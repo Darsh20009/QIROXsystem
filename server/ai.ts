@@ -420,6 +420,114 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_quotation",
+      description: "إنشاء عرض سعر فعلي ورسمي في النظام برقم تسلسلي ورابط طباعة. للموظفين والإدارة. استخدمها عندما يطلب المستخدم 'اعمل/أنشئ/سوّي عرض سعر' لعميل. تدعم عميل مسجّل (userId) أو عميل خارجي (externalName/externalEmail/externalCompany). تحسب الضريبة تلقائياً.",
+      parameters: {
+        type: "object",
+        required: ["items"],
+        properties: {
+          userId: { type: "string", description: "معرّف العميل المسجّل في النظام (إن وُجد)" },
+          externalName: { type: "string", description: "اسم العميل إن لم يكن مسجّلاً" },
+          externalEmail: { type: "string", description: "بريد العميل الخارجي" },
+          externalCompany: { type: "string", description: "اسم شركة العميل" },
+          title: { type: "string", description: "عنوان عرض السعر" },
+          items: {
+            type: "array",
+            description: "بنود عرض السعر",
+            items: {
+              type: "object",
+              required: ["name", "qty", "unitPrice"],
+              properties: {
+                name: { type: "string" },
+                description: { type: "string" },
+                qty: { type: "number" },
+                unitPrice: { type: "number" },
+              },
+            },
+          },
+          vatRate: { type: "number", description: "نسبة الضريبة المئوية (افتراضي 15)" },
+          validUntil: { type: "string", description: "تاريخ انتهاء صلاحية العرض ISO (اختياري)" },
+          notes: { type: "string", description: "ملاحظات للعميل" },
+          termsAndConditions: { type: "string", description: "شروط وأحكام العرض" },
+          status: { type: "string", enum: ["draft", "sent"], description: "الحالة (افتراضي draft)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_invoice",
+      description: "إنشاء فاتورة فعلية في النظام برقم تسلسلي. للموظفين والإدارة. استخدمها عندما يطلب المستخدم 'اعمل/أنشئ/أصدر فاتورة' لعميل. تربط الفاتورة بطلب موجود اختياريًا.",
+      parameters: {
+        type: "object",
+        required: ["userId", "amount"],
+        properties: {
+          userId: { type: "string", description: "معرّف العميل" },
+          orderId: { type: "string", description: "معرّف الطلب المرتبط (اختياري)" },
+          amount: { type: "number", description: "المبلغ قبل الضريبة" },
+          vatRate: { type: "number", description: "نسبة الضريبة المئوية (افتراضي 15، 0 = بدون ضريبة)" },
+          dueDate: { type: "string", description: "تاريخ الاستحقاق ISO" },
+          notes: { type: "string", description: "ملاحظات على الفاتورة" },
+          items: {
+            type: "array",
+            description: "بنود الفاتورة (اختياري)",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                qty: { type: "number" },
+                unitPrice: { type: "number" },
+                total: { type: "number" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_order",
+      description: "إنشاء طلب جديد في النظام نيابةً عن عميل (للموظفين والإدارة فقط). يفيد عند تسجيل طلب وارد عبر الهاتف أو واتساب. يُولّد رقم طلب تسلسلي.",
+      parameters: {
+        type: "object",
+        required: ["userId"],
+        properties: {
+          userId: { type: "string", description: "معرّف العميل صاحب الطلب" },
+          serviceType: { type: "string", description: "نوع الخدمة (مثال: website, app, ecommerce)" },
+          planTier: { type: "string", enum: ["lite", "pro", "infinite", "lifetime"], description: "مستوى الباقة" },
+          planPeriod: { type: "string", enum: ["monthly", "sixmonth", "annual", "lifetime"], description: "فترة الاشتراك" },
+          businessName: { type: "string", description: "اسم نشاط العميل" },
+          phone: { type: "string", description: "رقم الجوال" },
+          totalAmount: { type: "number", description: "المبلغ الإجمالي بالريال" },
+          notes: { type: "string", description: "ملاحظات للطلب" },
+          projectType: { type: "string", description: "نوع المشروع" },
+          sector: { type: "string", description: "القطاع" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_qr_code",
+      description: "توليد رمز QR من أي رابط أو نص. يُرجع صورة QR جاهزة للعرض أو الطباعة أو المشاركة. يُفيد لمشاركة فواتير، عروض أسعار، روابط دفع، روابط تحقق، أو أي رابط آخر.",
+      parameters: {
+        type: "object",
+        required: ["data"],
+        properties: {
+          data: { type: "string", description: "النص أو الرابط المراد تحويله إلى QR" },
+          size: { type: "number", description: "حجم الصورة بالبكسل (افتراضي 300، الحد الأقصى 800)" },
+          label: { type: "string", description: "وصف يُعرض مع الصورة (مثال: 'رمز QR للفاتورة INV-123')" },
+        },
+      },
+    },
+  },
 ];
 
 /* ─── Tool Executor ─── */
@@ -718,6 +826,185 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
       };
     }
 
+    /* ── create_quotation ── */
+    if (name === "create_quotation") {
+      if (!isAdmin && !isEmployee) {
+        return { success: false, error: "إنشاء عروض الأسعار متاح للموظفين والإدارة فقط" };
+      }
+      const items = Array.isArray(args.items) ? args.items : [];
+      if (!items.length) return { success: false, error: "يجب إضافة بند واحد على الأقل" };
+      const targetUserId = args.userId?.trim() || null;
+      const externalEmail = String(args.externalEmail || "").trim();
+      if (!targetUserId && !externalEmail) {
+        return { success: false, error: "يجب تحديد عميل مسجّل (userId) أو بريد عميل خارجي (externalEmail)" };
+      }
+      const { QuotationModel } = await import("./models");
+      const itemList = items.map((i: any) => {
+        const qty = Number(i.qty) || 1;
+        const unitPrice = Number(i.unitPrice) || 0;
+        const total = Math.round(qty * unitPrice * 100) / 100;
+        return { name: String(i.name || ""), description: String(i.description || ""), qty, unitPrice, total };
+      });
+      const amount = itemList.reduce((s: number, i: any) => s + i.total, 0);
+      const vatRate = args.vatRate !== undefined ? Number(args.vatRate) : 15;
+      const vatAmount = Math.round(amount * (vatRate / 100) * 100) / 100;
+      const totalAmount = Math.round((amount + vatAmount) * 100) / 100;
+      const year = new Date().getFullYear();
+      const prefix = `QT-${year}-`;
+      const count = await QuotationModel.countDocuments({ quotationNumber: new RegExp(`^${prefix}`) });
+      let seq = count + 1;
+      let quotationNumber = `${prefix}${String(seq).padStart(4, "0")}`;
+      while (await QuotationModel.exists({ quotationNumber })) {
+        seq++;
+        quotationNumber = `${prefix}${String(seq).padStart(4, "0")}`;
+      }
+      const quotation: any = await QuotationModel.create({
+        quotationNumber,
+        userId: targetUserId,
+        externalName: String(args.externalName || ""),
+        externalEmail,
+        externalCompany: String(args.externalCompany || ""),
+        title: String(args.title || ""),
+        items: itemList,
+        amount, vatRate, vatAmount, totalAmount,
+        validUntil: args.validUntil ? new Date(args.validUntil) : null,
+        notes: String(args.notes || ""),
+        termsAndConditions: String(args.termsAndConditions || ""),
+        status: args.status === "sent" ? "sent" : "draft",
+        createdBy: userId || null,
+      });
+      const id = String(quotation._id);
+      return {
+        success: true,
+        data: {
+          id,
+          quotationNumber,
+          totalAmount,
+          itemsCount: itemList.length,
+          printUrl: `/quotation-print/${id}`,
+          viewUrl: `/admin/quotations/${id}`,
+        },
+        display: { type: "action_success" },
+      };
+    }
+
+    /* ── create_invoice ── */
+    if (name === "create_invoice") {
+      if (!isAdmin && !isEmployee) {
+        return { success: false, error: "إنشاء الفواتير متاح للموظفين والإدارة فقط" };
+      }
+      const targetUserId = String(args.userId || "").trim();
+      if (!targetUserId) return { success: false, error: "userId مطلوب" };
+      const amount = Number(args.amount) || 0;
+      if (amount <= 0) return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
+      const { InvoiceModel, NotificationModel } = await import("./models");
+      const vatRate = args.vatRate !== undefined ? Number(args.vatRate) : 15;
+      const vatAmount = Math.round(amount * (vatRate / 100) * 100) / 100;
+      const totalAmount = Math.round((amount + vatAmount) * 100) / 100;
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const items = Array.isArray(args.items) ? args.items.map((i: any) => ({
+        name: String(i.name || ""), qty: Number(i.qty) || 1,
+        unitPrice: Number(i.unitPrice) || 0,
+        total: Number(i.total) || (Number(i.qty) || 1) * (Number(i.unitPrice) || 0),
+      })) : [];
+      const invoice: any = await InvoiceModel.create({
+        invoiceNumber,
+        userId: targetUserId,
+        orderId: args.orderId || undefined,
+        amount, vatAmount, totalAmount,
+        status: "unpaid",
+        dueDate: args.dueDate ? new Date(args.dueDate) : null,
+        notes: String(args.notes || ""),
+        items,
+      });
+      try {
+        await NotificationModel.create({
+          userId: targetUserId, type: "payment",
+          title: `فاتورة جديدة — ${invoiceNumber}`,
+          body: `صدرت فاتورة بقيمة ${totalAmount.toLocaleString("ar-SA")} ريال`,
+          link: `/client/invoice-print/${invoice._id}`, icon: "🧾",
+        });
+      } catch {}
+      return {
+        success: true,
+        data: {
+          id: String(invoice._id),
+          invoiceNumber,
+          amount, vatAmount, totalAmount,
+          printUrl: `/client/invoice-print/${invoice._id}`,
+        },
+        display: { type: "action_success" },
+      };
+    }
+
+    /* ── create_order ── */
+    if (name === "create_order") {
+      if (!isAdmin && !isEmployee) {
+        return { success: false, error: "إنشاء الطلبات نيابة عن العملاء متاح للموظفين والإدارة فقط" };
+      }
+      const targetUserId = String(args.userId || "").trim();
+      if (!targetUserId) return { success: false, error: "userId مطلوب" };
+      const exists = await UserModel.exists({ _id: targetUserId });
+      if (!exists) return { success: false, error: "العميل غير موجود" };
+      const count = await OrderModel.countDocuments({ orderNumber: { $exists: true, $ne: null } });
+      let seq = count + 1;
+      const buildNum = (n: number) => {
+        if (n <= 999) return String(n).padStart(3, "0");
+        const li = Math.floor((n - 1000) / 999);
+        const rem = ((n - 1000) % 999) + 1;
+        return `${String(rem).padStart(3, "0")}${String.fromCharCode(65 + Math.min(li, 25))}`;
+      };
+      let orderNumber = buildNum(seq);
+      while (await OrderModel.exists({ orderNumber })) {
+        seq++;
+        orderNumber = buildNum(seq);
+      }
+      const order: any = await OrderModel.create({
+        orderNumber,
+        userId: targetUserId,
+        status: "pending",
+        serviceType: args.serviceType || undefined,
+        planTier: args.planTier || undefined,
+        planPeriod: args.planPeriod || undefined,
+        businessName: args.businessName || undefined,
+        phone: args.phone || undefined,
+        notes: args.notes || `طلب مُنشأ عبر مساعد QIROX الذكي بواسطة ${userId || "موظف"}`,
+        totalAmount: args.totalAmount !== undefined ? Number(args.totalAmount) : undefined,
+        projectType: args.projectType || undefined,
+        sector: args.sector || undefined,
+        paymentStatus: "pending",
+      });
+      return {
+        success: true,
+        data: {
+          id: String(order._id),
+          orderNumber,
+          status: "pending",
+          viewUrl: `/admin/orders/${order._id}`,
+        },
+        display: { type: "action_success" },
+      };
+    }
+
+    /* ── generate_qr_code ── */
+    if (name === "generate_qr_code") {
+      const data = String(args.data || "").trim();
+      if (!data) return { success: false, error: "النص أو الرابط مطلوب" };
+      const size = Math.min(800, Math.max(100, Number(args.size) || 300));
+      const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+      return {
+        success: true,
+        data: {
+          imageUrl: url,
+          markdownEmbed: `![${args.label || "QR"}](${url})`,
+          source: data,
+          size,
+          label: args.label || "",
+        },
+        display: { type: "qr_code" },
+      };
+    }
+
     /* ── search_web ── */
     if (name === "search_web") {
       const result = await searchWeb(args.query);
@@ -820,6 +1107,11 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
   - إشعارات فورية داخل المنصة (أداة send_notification — للمدراء فقط)
   - **بريد إلكتروني فعلي** عبر صندوق QIROX إلى أي عنوان إيميل (أداة send_email — للموظفين والمدراء). استخدمها فوراً كلما طلب المستخدم "أرسل بريد/إيميل" لأي شخص. صُغ المحتوى بنفسك من سياق المحادثة إن لم يكتبه المستخدم بشكل صريح. لا تخلط بينها وبين الإشعارات.
   - تذاكر دعم (send_support_ticket)
+- 📄 **إنشاء مستندات رسمية فعلية في النظام** (للموظفين والإدارة):
+  - **عرض سعر** بأرقام تسلسلية (QT-YYYY-####) ورابط طباعة جاهز (أداة create_quotation). استخدمها فوراً عند طلب "اعمل/سوّي/أنشئ عرض سعر".
+  - **فاتورة** بأرقام تلقائية وحساب ضريبة 15% وإشعار العميل (أداة create_invoice). استخدمها عند "أصدر/اعمل فاتورة".
+  - **طلب جديد** نيابةً عن العميل بأرقام تسلسلية (أداة create_order) — للطلبات الواردة عبر الهاتف/واتساب.
+- 🔳 **توليد رمز QR** من أي رابط أو نص (أداة generate_qr_code). يُرجع صورة جاهزة. استخدمها لمشاركة روابط الفواتير، عروض الأسعار، روابط الدفع، أو أي رابط. **بعد إنشاء عرض سعر أو فاتورة، اقترح فوراً توليد QR لرابط الطباعة لتسهيل المشاركة.**
 - 🗑️ **الإلغاء**: إلغاء الطلبات المعلّقة (للعملاء فقط)
 - 📅 **للزوار بدون حساب**: إرسال طلب استشارة أو تواصل باسم الزائر ورقمه مباشرةً (أداة submit_consultation_request)
 
