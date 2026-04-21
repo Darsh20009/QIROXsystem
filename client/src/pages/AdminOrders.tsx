@@ -40,6 +40,7 @@ interface OrderData {
   shippingFee?: number;
   projectType?: string;
   sector?: string;
+  orderNumber?: string;
   createdAt?: string;
   assignedTo?: string;
   adminNotes?: string;
@@ -421,9 +422,9 @@ export default function AdminOrders() {
         <div>
           <h1 className="text-xl font-bold text-black flex items-center gap-2.5">
             <FileText className="w-6 h-6 text-black/40" />
-            {L ? "إدارة الطلبات" : "Orders Management"}
+            {L ? "إدارة المشاريع" : "Projects Management"}
           </h1>
-          <p className="text-xs text-black/35 mt-0.5">{L ? "عرض وإدارة وملء بيانات جميع الطلبات" : "View, manage, and fill in all order data"}</p>
+          <p className="text-xs text-black/35 mt-0.5">{L ? "عرض وإدارة وملء بيانات جميع المشاريع" : "View, manage, and fill in all project data"}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button
@@ -479,8 +480,8 @@ export default function AdminOrders() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-black/[0.06] bg-black/[0.01]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "رقم الطلب" : "Order #"}</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "النشاط" : "Activity"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "رقم المشروع" : "Project #"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "اسم المشروع" : "Project Name"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المسؤول" : "Assignee"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المبلغ" : "Amount"}</th>
@@ -494,11 +495,15 @@ export default function AdminOrders() {
                 return (
                   <tr key={order.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-order-${order.id}`}>
                     <td className="p-4">
-                      <p className="text-xs font-mono font-bold text-black/60">#{order.id?.toString().slice(-8)}</p>
-                      {order.businessName && <p className="text-[10px] text-black/35 mt-0.5">{order.businessName}</p>}
+                      <p className="text-sm font-mono font-bold text-black">
+                        #{order.orderNumber || order.id?.toString().slice(-3)}
+                      </p>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-medium text-black">{order.projectType || order.sector || "—"}</p>
+                      <p className="text-sm font-semibold text-black">{order.businessName || order.projectType || order.sector || "—"}</p>
+                      {(order.projectType || order.sector) && order.businessName && (
+                        <p className="text-[10px] text-black/35 mt-0.5">{order.projectType || order.sector}</p>
+                      )}
                       {order.sectorFeatures && order.sectorFeatures.length > 0 && (
                         <p className="text-[10px] text-black/30 mt-0.5">{order.sectorFeatures.length} {L ? "ميزة" : "features"}</p>
                       )}
@@ -550,7 +555,7 @@ export default function AdminOrders() {
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-black/30">
                     <FileText className="w-10 h-10 mx-auto mb-3 text-black/10" />
-                    <p className="text-sm">{L ? "لا توجد طلبات" : "No orders found"}</p>
+                    <p className="text-sm">{L ? "لا توجد مشاريع" : "No projects found"}</p>
                   </td>
                 </tr>
               )}

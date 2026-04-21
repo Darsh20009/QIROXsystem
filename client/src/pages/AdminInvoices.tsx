@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Printer, Mail, Check, Trash2, FileText, Search, X, Wand2 } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Check, Trash2, FileText, Search, X, Wand2, Pencil, Copy } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -303,6 +303,108 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
+  const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const qc = useQueryClient();
+
+  const [form, setForm] = useState({
+    amount: String(invoice.totalAmount || invoice.amount || ""),
+    status: invoice.status as "paid" | "unpaid" | "cancelled",
+    dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split("T")[0] : "",
+    notes: invoice.notes || "",
+    items: invoice.items || [] as { name: string; qty: number; unitPrice: number; total: number }[],
+    newItemName: "", newItemQty: "1", newItemPrice: "",
+  });
+
+  const addItem = () => {
+    if (!form.newItemName || !form.newItemPrice) return;
+    const qty = Number(form.newItemQty) || 1;
+    const unitPrice = Number(form.newItemPrice);
+    const total = qty * unitPrice;
+    setForm(p => ({ ...p, items: [...p.items, { name: p.newItemName, qty, unitPrice, total }], newItemName: "", newItemQty: "1", newItemPrice: "" }));
+  };
+
+  const removeItem = (i: number) => setForm(p => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }));
+  const totalFromItems = form.items.reduce((s, i) => s + i.total, 0);
+  const finalAmount = totalFromItems > 0 ? totalFromItems : Number(form.amount) || 0;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("PATCH", `/api/invoices/${invoice.id}`, {
+        amount: finalAmount, totalAmount: finalAmount,
+        status: form.status,
+        dueDate: form.dueDate || undefined,
+        notes: form.notes || undefined,
+        items: form.items.length > 0 ? form.items : undefined,
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: L ? "تم تحديث الفاتورة بنجاح ✅" : "Invoice updated successfully ✅" });
+      onClose();
+    },
+    onError: () => toast({ title: L ? "فشل تحديث الفاتورة" : "Failed to update invoice", variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
+      <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
+        {([["paid", L ? "✅ مدفوعة" : "✅ Paid"], ["unpaid", L ? "⏳ غير مدفوعة" : "⏳ Unpaid"], ["cancelled", L ? "❌ ملغي" : "❌ Cancelled"]] as const).map(([val, label]) => (
+          <button key={val} type="button" onClick={() => setForm(p => ({ ...p, status: val }))}
+            className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all ${form.status === val ? "bg-white shadow text-black" : "text-black/40 hover:text-black/70"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">{L ? "المبلغ" : "Amount"} (<SARIcon size={9} className="opacity-60" />)</Label>
+          <Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "تاريخ الاستحقاق" : "Due Date"}</Label>
+          <Input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+      </div>
+      <div>
+        <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود الفاتورة" : "Invoice Items"}</Label>
+        <div className="grid grid-cols-4 gap-2 mb-2">
+          <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
+          <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+          <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+        </div>
+        <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs mb-3" disabled={!form.newItemName || !form.newItemPrice}>
+          <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند" : "Add Item"}
+        </Button>
+        {form.items.length > 0 && (
+          <div className="space-y-1.5 mb-2">
+            {form.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between bg-black/[0.02] rounded-lg px-3 py-2 border border-black/[0.06]">
+                <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
+                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
+        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder={L ? "ملاحظات اختيارية..." : "Optional notes..."} />
+      </div>
+      <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || finalAmount <= 0}
+        className="w-full bg-black text-white h-10 rounded-xl font-bold">
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : (L ? "حفظ التعديلات" : "Save Changes")}
+      </Button>
+    </div>
+  );
+}
+
 export default function AdminInvoices() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
@@ -312,6 +414,7 @@ export default function AdminInvoices() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreate, setShowCreate] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   const { data: invoices, isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
@@ -347,6 +450,15 @@ export default function AdminInvoices() {
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: L ? "تم حذف الفاتورة" : "Invoice deleted" }); },
     onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("POST", `/api/invoices/${id}/duplicate`, {});
+      return r.json();
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: L ? "تم نسخ الفاتورة ✅" : "Invoice duplicated ✅" }); },
+    onError: () => toast({ title: L ? "فشل نسخ الفاتورة" : "Failed to duplicate invoice", variant: "destructive" }),
   });
 
   const filtered = (invoices || []).filter(inv => {
@@ -469,9 +581,26 @@ export default function AdminInvoices() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button
+                            onClick={() => setEditingInvoice(inv)}
+                            className="p-1.5 rounded-lg hover:bg-violet-50 text-black/40 hover:text-violet-600 transition-colors"
+                            title={L ? "تعديل" : "Edit"}
+                            data-testid={`button-edit-invoice-${inv.id}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => duplicateMutation.mutate(inv.id)}
+                            disabled={duplicateMutation.isPending}
+                            className="p-1.5 rounded-lg hover:bg-cyan-50 text-black/40 hover:text-cyan-600 transition-colors"
+                            title={L ? "نسخ الفاتورة" : "Duplicate Invoice"}
+                            data-testid={`button-duplicate-invoice-${inv.id}`}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => setLocation(`/admin/invoice-print/${inv.id}`)}
                             className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
-                            title={L ? "عرض وطباعة" : "View & Print"}
+                            title={L ? "عرض وتحميل" : "View & Download"}
                             data-testid={`button-print-${inv.id}`}
                           >
                             <Printer className="w-3.5 h-3.5" />
@@ -515,6 +644,16 @@ export default function AdminInvoices() {
           </div>
         )}
       </div>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog open={!!editingInvoice} onOpenChange={(v) => { if (!v) setEditingInvoice(null); }}>
+        <DialogContent className="max-w-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="font-black">{L ? `تعديل الفاتورة — ${editingInvoice?.invoiceNumber}` : `Edit Invoice — ${editingInvoice?.invoiceNumber}`}</DialogTitle>
+          </DialogHeader>
+          {editingInvoice && <EditInvoiceForm invoice={editingInvoice} onClose={() => setEditingInvoice(null)} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

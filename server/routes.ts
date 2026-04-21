@@ -1849,7 +1849,8 @@ export async function registerRoutes(
       safeBody.paidAt = new Date();
     }
 
-    const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending" } as any);
+    const orderNum = await generateOrderNumber();
+    const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending", orderNumber: orderNum } as any);
 
     // Deduct wallet atomically after order creation
     if (walletDeducted > 0) {
@@ -6482,6 +6483,28 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  // Duplicate invoice
+  app.post("/api/invoices/:id/duplicate", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel } = await import("./models");
+    const original = await InvoiceModel.findById(req.params.id);
+    if (!original) return res.sendStatus(404);
+    const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
+    const dup = await InvoiceModel.create({
+      userId: (original as any).userId,
+      orderId: (original as any).orderId,
+      amount: (original as any).amount,
+      vatAmount: (original as any).vatAmount || 0,
+      totalAmount: (original as any).totalAmount,
+      status: "unpaid",
+      dueDate: (original as any).dueDate,
+      notes: (original as any).notes,
+      items: (original as any).items,
+      invoiceNumber: invNum,
+    });
+    res.status(201).json(dup);
+  });
+
   // Send invoice by email
   app.post("/api/invoices/:id/send-email", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
@@ -6596,6 +6619,31 @@ export async function registerRoutes(
   // === QUOTATIONS (عروض الأسعار) ===
   // ═══════════════════════════════════════════════════════════
 
+  async function generateOrderNumber(): Promise<string> {
+    const { OrderModel } = await import("./models");
+    const count = await OrderModel.countDocuments({ orderNumber: { $exists: true, $ne: null } });
+    const seq = count + 1;
+    if (seq <= 999) {
+      let candidate = String(seq).padStart(3, "0");
+      let tries = 0;
+      while (await OrderModel.exists({ orderNumber: candidate }) && tries < 50) {
+        tries++;
+        candidate = String(seq + tries).padStart(3, "0");
+      }
+      return candidate;
+    }
+    const letterIdx = Math.floor((seq - 1000) / 999);
+    const rem = ((seq - 1000) % 999) + 1;
+    const letter = String.fromCharCode(65 + Math.min(letterIdx, 25));
+    let candidate = `${String(rem).padStart(3, "0")}${letter}`;
+    let tries = 0;
+    while (await OrderModel.exists({ orderNumber: candidate }) && tries < 50) {
+      tries++;
+      candidate = `${String(rem + tries).padStart(3, "0")}${letter}`;
+    }
+    return candidate;
+  }
+
   async function generateQuotationNumber(): Promise<string> {
     const { QuotationModel } = await import("./models");
     const year = new Date().getFullYear();
@@ -6683,6 +6731,36 @@ export async function registerRoutes(
     const quotation = await QuotationModel.findByIdAndUpdate(req.params.id, { $set: updates }, { returnDocument: "after", new: true });
     if (!quotation) return res.sendStatus(404);
     res.json(quotation);
+  });
+
+  // Duplicate quotation
+  app.post("/api/quotations/:id/duplicate", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { QuotationModel } = await import("./models");
+    const original = await QuotationModel.findById(req.params.id);
+    if (!original) return res.sendStatus(404);
+    const quotationNumber = await generateQuotationNumber();
+    const dup = await QuotationModel.create({
+      quotationNumber,
+      userId: (original as any).userId,
+      externalName: (original as any).externalName || "",
+      externalEmail: (original as any).externalEmail || "",
+      externalCompany: (original as any).externalCompany || "",
+      title: (original as any).title ? `${(original as any).title} (نسخة)` : "",
+      items: (original as any).items || [],
+      amount: (original as any).amount || 0,
+      vatRate: (original as any).vatRate || 15,
+      vatAmount: (original as any).vatAmount || 0,
+      totalAmount: (original as any).totalAmount || 0,
+      validUntil: null,
+      notes: (original as any).notes || "",
+      termsAndConditions: (original as any).termsAndConditions || "",
+      status: "draft",
+      createdBy: user.id,
+    });
+    res.status(201).json(dup);
   });
 
   app.delete("/api/quotations/:id", async (req, res) => {

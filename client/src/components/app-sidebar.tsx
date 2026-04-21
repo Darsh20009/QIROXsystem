@@ -90,7 +90,7 @@ export function AppSidebar() {
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "clients" },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Megaphone, url: "/sales/marketing", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
     // Employee — work (العمل والطلبات)
-    { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
+    { title: ar ? "المشاريع" : "Projects", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
     { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work" },
     { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
@@ -305,7 +305,7 @@ export function AppSidebar() {
     shopping:      { ar: "التسوق",              en: "Shopping",               accent: "text-cyan-600 dark:text-cyan-400" },
     services:      { ar: "خدماتي",             en: "My Services",            accent: "text-[#06b6d4] dark:text-cyan-400" },
     clients:       { ar: "العملاء",             en: "Clients",                accent: "text-blue-600 dark:text-blue-400" },
-    work:          { ar: "الطلبات والعمل",       en: "Orders & Work",          accent: "text-[#06b6d4] dark:text-cyan-400" },
+    work:          { ar: "المشاريع والعمل",       en: "Projects & Work",        accent: "text-[#06b6d4] dark:text-cyan-400" },
     communication: { ar: "التواصل",              en: "Communication",          accent: "text-green-600 dark:text-green-400" },
     account:       { ar: "حسابي",               en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
     finance:       { ar: "المالية",             en: "Finance",                accent: "text-amber-600 dark:text-amber-400" },

@@ -359,7 +359,7 @@ const ALL_PAGES = [
   { title: "عروضي وتحقق الهوية", titleEn: "Phone Verify", url: "/phone-verify", group: "client" },
   { title: "المصادقة الثنائية", titleEn: "Two-Factor Auth", url: "/settings/2fa", group: "client" },
   // Employee / Admin pages
-  { title: "الطلبات", titleEn: "Orders", url: "/admin/orders", group: "employee" },
+  { title: "المشاريع", titleEn: "Projects", url: "/admin/orders", group: "employee" },
   { title: "عربات التسوق المتروكة", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },

@@ -351,10 +351,13 @@ export default function Inbox() {
     onEvent: (evt) => {
       if (evt.type === "new_message") {
         const fromId = String(evt.message?.fromUserId?.id || evt.message?.fromUserId);
+        const toId = String(evt.message?.toUserId?.id || evt.message?.toUserId);
         queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
         queryClient.invalidateQueries({ queryKey: ["/api/badges"] });
-        if (fromId === activeContactIdRef.current) {
-          queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContactIdRef.current] });
+        const active = activeContactIdRef.current;
+        if (active && (fromId === active || toId === active)) {
+          queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", active] });
+          setIsTypingRemote(false);
         }
         if (fromId !== String(me?.id)) {
           playNotificationSound();

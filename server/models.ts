@@ -149,6 +149,7 @@ const orderSchema = new mongoose.Schema({
   // Assignment
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   adminNotes: String,
+  orderNumber: { type: String, sparse: true },
 }, { timestamps: true });
 orderSchema.index({ userId: 1, status: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });

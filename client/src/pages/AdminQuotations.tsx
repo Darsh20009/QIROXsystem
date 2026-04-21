@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Printer, Mail, Trash2, X, Search, FileText, Send, Check, XCircle } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Trash2, X, Search, FileText, Send, Check, XCircle, Pencil, Copy } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -258,6 +258,118 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClose: () => void }) {
+  const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const qc = useQueryClient();
+
+  const [form, setForm] = useState({
+    title: quotation.title || "",
+    vatRate: String(quotation.vatRate ?? 15),
+    validUntil: quotation.validUntil ? new Date(quotation.validUntil).toISOString().split("T")[0] : "",
+    notes: quotation.notes || "",
+    termsAndConditions: quotation.termsAndConditions || "",
+    items: quotation.items || [] as QuotationItem[],
+    newName: "", newDesc: "", newQty: "1", newPrice: "",
+  });
+
+  const addItem = () => {
+    if (!form.newName || !form.newPrice) return;
+    const qty = Number(form.newQty) || 1;
+    const unitPrice = Number(form.newPrice);
+    const total = qty * unitPrice;
+    setForm(p => ({ ...p, items: [...p.items, { name: p.newName, description: p.newDesc, qty, unitPrice, total }], newName: "", newDesc: "", newQty: "1", newPrice: "" }));
+  };
+
+  const removeItem = (i: number) => setForm(p => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }));
+  const subtotal = form.items.reduce((s, i) => s + i.total, 0);
+  const vatAmt = Math.round(subtotal * (Number(form.vatRate) / 100) * 100) / 100;
+  const total = subtotal + vatAmt;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("PATCH", `/api/quotations/${quotation.id}`, {
+        title: form.title, items: form.items, vatRate: Number(form.vatRate),
+        validUntil: form.validUntil || undefined,
+        notes: form.notes, termsAndConditions: form.termsAndConditions,
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/quotations"] });
+      toast({ title: L ? "تم تحديث العرض بنجاح ✅" : "Quotation updated successfully ✅" });
+      onClose();
+    },
+    onError: () => toast({ title: L ? "فشل تحديث العرض" : "Failed to update quotation", variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1" dir={dir}>
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "عنوان العرض" : "Title"}</Label>
+        <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "نسبة ضريبة القيمة المضافة %" : "VAT Rate %"}</Label>
+          <Input type="number" value={form.vatRate} onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "صالح حتى" : "Valid Until"}</Label>
+          <Input type="date" value={form.validUntil} onChange={e => setForm(p => ({ ...p, validUntil: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+      </div>
+      <div>
+        <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود العرض" : "Items"}</Label>
+        <div className="grid grid-cols-12 gap-2 mb-2">
+          <Input placeholder={L ? "اسم البند *" : "Item name *"} value={form.newName} onChange={e => setForm(p => ({ ...p, newName: e.target.value }))} className="col-span-4 h-8 text-xs border-black/[0.10]" />
+          <Input placeholder={L ? "وصف" : "Desc"} value={form.newDesc} onChange={e => setForm(p => ({ ...p, newDesc: e.target.value }))} className="col-span-3 h-8 text-xs border-black/[0.10]" />
+          <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newQty} onChange={e => setForm(p => ({ ...p, newQty: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" dir="ltr" />
+          <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newPrice} onChange={e => setForm(p => ({ ...p, newPrice: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" dir="ltr" />
+          <Button type="button" onClick={addItem} size="sm" className="col-span-1 bg-black text-white h-8 px-2" disabled={!form.newName || !form.newPrice}><Plus className="w-3 h-3" /></Button>
+        </div>
+        {form.items.length > 0 && (
+          <div className="space-y-1.5 mb-2">
+            {form.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between bg-black/[0.02] rounded-lg px-3 py-2 border border-black/[0.06]">
+                <div>
+                  <span className="text-xs text-black/70 font-bold">{item.name}</span>
+                  <span className="text-xs text-black/40 mr-2">× {item.qty} × {item.unitPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
+                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                </div>
+              </div>
+            ))}
+            <div className="text-xs text-black/50 space-y-0.5 px-3 pt-1 border-t border-black/[0.06]">
+              <div className="flex justify-between"><span>{L ? "المجموع الفرعي" : "Subtotal"}</span><span className="font-bold">{subtotal.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span>{L ? `ضريبة (${form.vatRate}%)` : `VAT (${form.vatRate}%)`}</span><span className="font-bold">{vatAmt.toLocaleString()}</span></div>
+              <div className="flex justify-between text-black font-black text-sm border-t border-black/[0.10] pt-1">
+                <span>{L ? "الإجمالي" : "Total"}</span>
+                <span className="flex items-center gap-1">{total.toLocaleString()} <SARIcon size={10} /></span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
+        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="text-sm border-black/[0.10] resize-none" />
+      </div>
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "الشروط والأحكام" : "Terms & Conditions"}</Label>
+        <Textarea value={form.termsAndConditions} onChange={e => setForm(p => ({ ...p, termsAndConditions: e.target.value }))} rows={2} className="text-sm border-black/[0.10] resize-none" />
+      </div>
+      <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || form.items.length === 0}
+        className="w-full bg-black text-white h-10">
+        {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "حفظ التعديلات" : "Save Changes")}
+      </Button>
+    </div>
+  );
+}
+
 interface SendEmailState {
   quotationId: string;
   clientEmail?: string;
@@ -278,6 +390,7 @@ export default function AdminQuotations() {
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [emailDialog, setEmailDialog] = useState<SendEmailState | null>(null);
+  const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
 
   const { data: quotations, isLoading } = useQuery<Quotation[]>({ queryKey: ["/api/quotations"] });
 
@@ -319,6 +432,15 @@ export default function AdminQuotations() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/quotations"] }),
     onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("POST", `/api/quotations/${id}/duplicate`, {});
+      return r.json();
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/quotations"] }); toast({ title: L ? "تم نسخ العرض ✅" : "Quotation duplicated ✅" }); },
+    onError: () => toast({ title: L ? "فشل نسخ العرض" : "Failed to duplicate", variant: "destructive" }),
   });
 
   const filtered = (quotations || []).filter(q => {
@@ -417,6 +539,19 @@ export default function AdminQuotations() {
                       </div>
                       {q.vatRate > 0 && <div className="text-xs text-black/30">شامل ضريبة {q.vatRate}%</div>}
                     </div>
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs gap-1 border-violet-100 text-violet-600 hover:bg-violet-50"
+                      onClick={() => setEditingQuotation(q)}
+                      data-testid={`button-edit-quotation-${q.id}`}>
+                      <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs gap-1 border-cyan-100 text-cyan-600 hover:bg-cyan-50"
+                      onClick={() => duplicateMutation.mutate(q.id)}
+                      disabled={duplicateMutation.isPending}
+                      data-testid={`button-duplicate-quotation-${q.id}`}>
+                      <Copy className="w-3 h-3" /> {L ? "نسخ" : "Copy"}
+                    </Button>
                     {q.status === "draft" && (
                       <Button size="sm" variant="outline"
                         className="h-8 text-xs gap-1 border-black/[0.12]"
@@ -553,6 +688,16 @@ export default function AdminQuotations() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Quotation Dialog */}
+      <Dialog open={!!editingQuotation} onOpenChange={(v) => { if (!v) setEditingQuotation(null); }}>
+        <DialogContent className="max-w-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle>{L ? `تعديل عرض — ${editingQuotation?.quotationNumber}` : `Edit Quotation — ${editingQuotation?.quotationNumber}`}</DialogTitle>
+          </DialogHeader>
+          {editingQuotation && <EditQuotationForm quotation={editingQuotation} onClose={() => setEditingQuotation(null)} />}
         </DialogContent>
       </Dialog>
     </div>

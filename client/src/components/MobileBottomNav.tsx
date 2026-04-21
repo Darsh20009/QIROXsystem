@@ -40,7 +40,7 @@ export function MobileBottomNav() {
 
   const employeeItems = [
     { icon: LayoutDashboard, label: "لوحتي", url: "/dashboard" },
-    { icon: FileText, label: "الطلبات", url: "/admin/orders", badge: pendingOrders },
+    { icon: FileText, label: "المشاريع", url: "/admin/orders", badge: pendingOrders },
     { icon: Wrench, label: "تعديلات", url: "/admin/mod-requests" },
     { icon: MessageSquare, label: "الرسائل", url: "/inbox", badge: unreadMessages },
     { icon: User, label: "ملفي", url: "/employee/profile" },
@@ -48,7 +48,7 @@ export function MobileBottomNav() {
 
   const adminItems = [
     { icon: LayoutDashboard, label: "الإدارة", url: "/admin" },
-    { icon: FileText, label: "الطلبات", url: "/admin/orders", badge: pendingOrders },
+    { icon: FileText, label: "المشاريع", url: "/admin/orders", badge: pendingOrders },
     { icon: Users, label: "العملاء", url: "/admin/customers" },
     { icon: BarChart3, label: "التحليل", url: "/admin/analytics" },
     { icon: MessageSquare, label: "الرسائل", url: "/inbox", badge: unreadMessages },
