@@ -127,6 +127,10 @@ export default function AdminOrders() {
   const [phoneReqNotes, setPhoneReqNotes] = useState("");
   const [rejectTransferOpen, setRejectTransferOpen] = useState(false);
   const [rejectTransferReason, setRejectTransferReason] = useState("");
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [editProjectForm, setEditProjectForm] = useState({
+    businessName: "", projectType: "", sector: "", status: "", adminNotes: "", totalAmount: "",
+  });
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -388,6 +392,18 @@ export default function AdminOrders() {
     saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: specsForm });
   };
 
+  const editProjectMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Record<string, any> }) =>
+      apiRequest("PATCH", `/api/admin/orders/${id}`, updates).then(r => r.json()),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(prev => prev ? { ...prev, ...updated } : prev);
+      setEditProjectOpen(false);
+      toast({ title: L ? "✅ تم تحديث المشروع" : "✅ Project updated" });
+    },
+    onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
+  });
+
   const openOrder = (order: OrderData) => {
     setSelectedOrder(order);
     setActiveTab("details");
@@ -396,6 +412,14 @@ export default function AdminOrders() {
     setEditAssignedTo(order.assignedTo || "none");
     setEditAdminNotes(order.adminNotes || "");
     setSpecsForm({ ...EMPTY_SPECS });
+    setEditProjectForm({
+      businessName: order.businessName || "",
+      projectType: order.projectType || "",
+      sector: order.sector || "",
+      status: order.status || "pending",
+      adminNotes: order.adminNotes || "",
+      totalAmount: order.totalAmount?.toString() || "",
+    });
   };
 
   const getAssigneeName = (assignedTo?: string) => {
@@ -570,21 +594,42 @@ export default function AdminOrders() {
           {selectedOrder && (
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
-                <SheetTitle className="text-base font-bold text-black">
-                  {L ? "طلب" : "Order"} #{selectedOrder.id?.toString().slice(-8)}
-                  {selectedOrder.businessName && <span className="text-black/40 font-normal mr-2">— {selectedOrder.businessName}</span>}
-                </SheetTitle>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${statusMap[selectedOrder.status]?.color || ""}`}>
-                    {statusMap[selectedOrder.status]?.label || selectedOrder.status}
-                  </span>
-                  {selectedOrder.totalAmount && (
-                    <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
-                  )}
-                  {selectedOrder.client?.fullName && (
-                    <span className="text-[10px] text-black/30">{selectedOrder.client.fullName}</span>
-                  )}
+              <div className="px-6 py-4 border-b border-black/[0.06] bg-white flex-shrink-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <SheetTitle className="text-base font-bold text-black leading-tight">
+                      {selectedOrder.orderNumber ? `#${selectedOrder.orderNumber}` : `#${selectedOrder.id?.toString().slice(-6)}`}
+                      {selectedOrder.businessName && <span className="text-black/40 font-normal mr-2">— {selectedOrder.businessName}</span>}
+                    </SheetTitle>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${statusMap[selectedOrder.status]?.color || ""}`}>
+                        {statusMap[selectedOrder.status]?.label || selectedOrder.status}
+                      </span>
+                      {selectedOrder.totalAmount && (
+                        <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
+                      )}
+                      {selectedOrder.client?.fullName && (
+                        <span className="text-[10px] text-black/30">{selectedOrder.client.fullName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditProjectForm({
+                        businessName: selectedOrder.businessName || "",
+                        projectType: selectedOrder.projectType || "",
+                        sector: selectedOrder.sector || "",
+                        status: selectedOrder.status || "pending",
+                        adminNotes: selectedOrder.adminNotes || "",
+                        totalAmount: selectedOrder.totalAmount?.toString() || "",
+                      });
+                      setEditProjectOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors text-xs font-semibold flex-shrink-0"
+                    data-testid="button-edit-project"
+                  >
+                    <Save className="w-3 h-3" /> {L ? "تعديل المشروع" : "Edit Project"}
+                  </button>
                 </div>
               </div>
 
@@ -1603,6 +1648,115 @@ export default function AdminOrders() {
               >
                 {phoneReqMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {L ? "رفع الطلب" : "Submit Request"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editProjectOpen} onOpenChange={setEditProjectOpen}>
+        <DialogContent dir={dir} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Save className="w-4 h-4 text-violet-500" />
+              {L ? "تعديل بيانات المشروع" : "Edit Project Details"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {L ? "عدّل بيانات المشروع الأساسية، سيتم إرسال إشعار للعميل عند تغيير الحالة" : "Edit core project data. Client will be notified if status changes."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs text-black/50 mb-1 block">{L ? "اسم النشاط / المشروع" : "Business / Project Name"}</Label>
+              <Input
+                value={editProjectForm.businessName}
+                onChange={e => setEditProjectForm(p => ({ ...p, businessName: e.target.value }))}
+                placeholder={L ? "اسم المشروع..." : "Project name..."}
+                className="h-9 text-sm border-black/[0.12]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-black/50 mb-1 block">{L ? "نوع المشروع" : "Project Type"}</Label>
+                <Input
+                  value={editProjectForm.projectType}
+                  onChange={e => setEditProjectForm(p => ({ ...p, projectType: e.target.value }))}
+                  placeholder={L ? "موقع، تطبيق..." : "Website, App..."}
+                  className="h-9 text-sm border-black/[0.12]"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-black/50 mb-1 block">{L ? "القطاع" : "Sector"}</Label>
+                <Input
+                  value={editProjectForm.sector}
+                  onChange={e => setEditProjectForm(p => ({ ...p, sector: e.target.value }))}
+                  placeholder={L ? "مطعم، تقنية..." : "Restaurant, Tech..."}
+                  className="h-9 text-sm border-black/[0.12]"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-black/50 mb-1 block">{L ? "الحالة" : "Status"}</Label>
+                <Select value={editProjectForm.status} onValueChange={v => setEditProjectForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger className="h-9 text-sm border-black/[0.12]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusMap).map(([val, { label }]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-black/50 mb-1 block flex items-center gap-1">{L ? "القيمة" : "Value"} (<SARIcon size={9} className="opacity-60" />)</Label>
+                <Input
+                  type="number"
+                  value={editProjectForm.totalAmount}
+                  onChange={e => setEditProjectForm(p => ({ ...p, totalAmount: e.target.value }))}
+                  placeholder="0"
+                  className="h-9 text-sm border-black/[0.12]"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات الإدارة" : "Admin Notes"}</Label>
+              <Textarea
+                value={editProjectForm.adminNotes}
+                onChange={e => setEditProjectForm(p => ({ ...p, adminNotes: e.target.value }))}
+                placeholder={L ? "ملاحظات داخلية للفريق..." : "Internal notes for team..."}
+                className="resize-none h-20 text-sm border-black/[0.12]"
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setEditProjectOpen(false)}
+              >
+                {L ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                disabled={editProjectMutation.isPending}
+                onClick={() => {
+                  if (!selectedOrder) return;
+                  const updates: Record<string, any> = {
+                    businessName: editProjectForm.businessName,
+                    projectType: editProjectForm.projectType,
+                    sector: editProjectForm.sector,
+                    status: editProjectForm.status,
+                    adminNotes: editProjectForm.adminNotes,
+                  };
+                  if (editProjectForm.totalAmount) updates.totalAmount = Number(editProjectForm.totalAmount);
+                  editProjectMutation.mutate({ id: selectedOrder.id, updates });
+                }}
+              >
+                {editProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {L ? "حفظ التعديلات" : "Save Changes"}
               </Button>
             </div>
           </div>

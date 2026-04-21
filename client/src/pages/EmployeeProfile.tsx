@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { BiometricManager } from "@/components/BiometricManager";
 import { UserAvatar } from "@/components/UserAvatar";
 import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
@@ -137,6 +138,29 @@ export default function EmployeeProfile() {
     },
     onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
+
+  // QR Login Token
+  const { data: qrData, refetch: refetchQr } = useQuery<{ token: string | null; createdAt: string | null }>({
+    queryKey: ["/api/employee/qr-token"],
+    queryFn: async () => {
+      const r = await fetch("/api/employee/qr-token", { credentials: "include" });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+  });
+
+  const generateQrMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/employee/generate-qr-token").then(r => r.json()),
+    onSuccess: () => {
+      refetchQr();
+      toast({ title: L ? "✅ تم إنشاء باركود تسجيل الدخول" : "✅ QR login code generated" });
+    },
+    onError: () => toast({ title: L ? "فشل إنشاء الباركود" : "Failed to generate QR", variant: "destructive" }),
+  });
+
+  const qrLoginUrl = qrData?.token
+    ? `${window.location.origin}/api/qr-login/${qrData.token}`
+    : null;
 
   const addSkill = () => {
     if (!newSkill.trim()) return;
@@ -506,6 +530,91 @@ export default function EmployeeProfile() {
                 placeholder="1xxxxxxxxx" dir="ltr" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* QR Barcode Login Card */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900 overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+            <QrCode className="w-4 h-4 text-violet-500" />
+            {L ? "باركود تسجيل الدخول" : "QR Login Barcode"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {qrLoginUrl ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-white border border-black/[0.08] rounded-2xl shadow-sm inline-block">
+                <QRCodeSVG
+                  id="qr-login-svg"
+                  value={qrLoginUrl}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="#ffffff"
+                  fgColor="#1a1a1a"
+                />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-xs font-semibold text-black/70 dark:text-white/70">
+                  {L ? "امسح هذا الباركود بكاميرا هاتفك لتسجيل الدخول فوراً" : "Scan this QR code with your phone camera to login instantly"}
+                </p>
+                {qrData?.createdAt && (
+                  <p className="text-[10px] text-black/30 dark:text-white/30">
+                    {L ? "تم الإنشاء:" : "Generated:"} {new Date(qrData.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 w-full">
+                <Button
+                  onClick={() => generateQrMutation.mutate()}
+                  disabled={generateQrMutation.isPending}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs border-violet-200 text-violet-700 hover:bg-violet-50"
+                  data-testid="button-regenerate-qr"
+                >
+                  {generateQrMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  {L ? "تجديد الباركود" : "Regenerate"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    const svg = document.querySelector("#qr-login-svg") as SVGSVGElement | null;
+                    if (!svg) return;
+                    const data = new XMLSerializer().serializeToString(svg);
+                    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = "login-qr.svg"; a.click();
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs border-black/10 hover:bg-black/[0.04]"
+                  data-testid="button-download-qr"
+                >
+                  <Download className="w-3 h-3" />
+                  {L ? "تحميل" : "Download"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center">
+                <QrCode className="w-8 h-8 text-violet-300" />
+              </div>
+              <p className="text-xs text-black/40 dark:text-white/40 text-center max-w-[200px]">
+                {L ? "أنشئ باركوداً خاصاً لتسجيل الدخول التلقائي بدون كلمة مرور" : "Create a personal QR code for instant passwordless login"}
+              </p>
+              <Button
+                onClick={() => generateQrMutation.mutate()}
+                disabled={generateQrMutation.isPending}
+                className="bg-violet-600 hover:bg-violet-700 text-white gap-2 text-sm"
+                data-testid="button-generate-qr"
+              >
+                {generateQrMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                {L ? "إنشاء باركود تسجيل الدخول" : "Generate Login QR Code"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -7602,6 +7602,56 @@ export async function registerRoutes(
     res.json(profile);
   });
 
+  // ── Employee QR Login Token ──────────────────────────────────────────────────
+  // Generate (or regenerate) a permanent QR login token for the current employee
+  app.post("/api/employee/generate-qr-token", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const token = "qrl_" + crypto.randomBytes(32).toString("hex");
+      await (UserModel as any).findByIdAndUpdate(uid, {
+        qrLoginToken: token,
+        qrLoginTokenCreatedAt: new Date(),
+      });
+      res.json({ token });
+    } catch (err: any) {
+      res.status(500).json({ error: "فشل إنشاء رمز الباركود" });
+    }
+  });
+
+  // Return existing token (or null) for the current employee
+  app.get("/api/employee/qr-token", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const user = await (UserModel as any).findById(uid).select("qrLoginToken qrLoginTokenCreatedAt").lean();
+      res.json({ token: user?.qrLoginToken || null, createdAt: user?.qrLoginTokenCreatedAt || null });
+    } catch (err: any) {
+      res.status(500).json({ error: "فشل جلب رمز الباركود" });
+    }
+  });
+
+  // Public route: login with QR token — sets session and redirects
+  app.get("/api/qr-login/:token", async (req, res) => {
+    try {
+      const { UserModel } = await import("./models");
+      const user = await (UserModel as any).findOne({ qrLoginToken: req.params.token }).lean();
+      if (!user) return res.redirect("/login?qr=invalid");
+      // Only allow employees (not clients) to use QR login
+      if (!user.role || user.role === "client") return res.redirect("/login?qr=denied");
+      // Log in the user via Passport
+      req.login(user, (err) => {
+        if (err) return res.redirect("/login?qr=error");
+        const dash = user.role === "admin" ? "/admin" : "/employee";
+        return res.redirect(dash);
+      });
+    } catch (err) {
+      res.redirect("/login?qr=error");
+    }
+  });
+
   app.get("/api/admin/employee-profiles", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { EmployeeProfileModel } = await import("./models");

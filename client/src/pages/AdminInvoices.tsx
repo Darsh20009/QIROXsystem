@@ -461,6 +461,32 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
         <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
         <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder={L ? "ملاحظات اختيارية..." : "Optional notes..."} />
       </div>
+      {/* Quick Actions: Resend email + Download */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const r = await fetch(`/api/invoices/${invoice.id}/send-email`, { method: "POST", credentials: "include" });
+              const d = await r.json();
+              if (r.ok) toast({ title: L ? "✅ تم إرسال الفاتورة بالبريد" : "✅ Invoice sent by email" });
+              else toast({ title: d.error || (L ? "فشل الإرسال" : "Send failed"), variant: "destructive" });
+            } catch { toast({ title: L ? "فشل الإرسال" : "Send failed", variant: "destructive" }); }
+          }}
+          className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
+        >
+          <Mail className="w-3.5 h-3.5" /> {L ? "إعادة إرسال" : "Resend Email"}
+        </button>
+        <a
+          href={`/admin/invoice-print/${invoice.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
+        >
+          <Printer className="w-3.5 h-3.5" /> {L ? "عرض وتحميل" : "View & Download"}
+        </a>
+      </div>
+
       <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || finalAmount <= 0}
         className="w-full bg-black text-white h-10 rounded-xl font-bold">
         {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : (L ? "💾 حفظ التعديلات" : "💾 Save Changes")}

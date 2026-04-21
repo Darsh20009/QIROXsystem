@@ -62,6 +62,9 @@ const userSchema = new mongoose.Schema({
   referralCode: { type: String, sparse: true, index: true },
   referredBy: { type: String, default: null },
   referralCreditsEarned: { type: Number, default: 0 },
+  // ── QR / Barcode Login ──
+  qrLoginToken: { type: String, sparse: true, index: true },
+  qrLoginTokenCreatedAt: { type: Date, default: null },
 }, { timestamps: true });
 userSchema.index({ role: 1 });
 userSchema.index({ role: 1, createdAt: -1 });

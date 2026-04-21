@@ -431,6 +431,32 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         <Label className="text-xs text-black/50 mb-1 block">{L ? "الشروط والأحكام" : "Terms & Conditions"}</Label>
         <Textarea value={form.termsAndConditions} onChange={e => setForm(p => ({ ...p, termsAndConditions: e.target.value }))} rows={2} className="text-sm border-black/[0.10] resize-none" />
       </div>
+      {/* Quick Actions: Resend email + Download */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const r = await fetch(`/api/quotations/${quotation.id}/send-email`, { method: "POST", credentials: "include" });
+              const d = await r.json();
+              if (r.ok) toast({ title: L ? "✅ تم إرسال عرض السعر بالبريد" : "✅ Quotation sent by email" });
+              else toast({ title: d.error || (L ? "فشل الإرسال" : "Send failed"), variant: "destructive" });
+            } catch { toast({ title: L ? "فشل الإرسال" : "Send failed", variant: "destructive" }); }
+          }}
+          className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
+        >
+          <Mail className="w-3.5 h-3.5" /> {L ? "إعادة إرسال" : "Resend Email"}
+        </button>
+        <a
+          href={`/admin/quotation-print/${quotation.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
+        >
+          <Printer className="w-3.5 h-3.5" /> {L ? "عرض وتحميل" : "View & Download"}
+        </a>
+      </div>
+
       <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}
         className="w-full bg-black text-white h-10 font-bold">
         {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "💾 حفظ التعديلات" : "💾 Save Changes")}
