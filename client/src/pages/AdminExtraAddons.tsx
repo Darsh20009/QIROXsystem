@@ -165,6 +165,28 @@ export default function AdminExtraAddons() {
     onError: (e: any) => toast({ title: L ? "فشل الترقية" : "Promote failed", description: e.message, variant: "destructive" }),
   });
 
+  // ── Custom feature for a specific client ──
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customForm, setCustomForm] = useState({ clientId: "", nameAr: "", descriptionAr: "", price: 0, cost: 0, billingType: "one_time" as "one_time"|"monthly"|"annual" });
+  const [clientSearch, setClientSearch] = useState("");
+  const { data: clients = [] } = useQuery<any[]>({ queryKey: ["/api/admin/customers"], enabled: customOpen });
+  const filteredClients = (clients as any[]).filter((c: any) => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [c.username, c.name, c.email, c.phone].filter(Boolean).some((v: string) => String(v).toLowerCase().includes(q));
+  }).slice(0, 50);
+  const createCustom = useMutation({
+    mutationFn: (d: any) => apiRequest("POST", "/api/admin/extra-addons/custom", d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
+      setCustomOpen(false);
+      setCustomForm({ clientId: "", nameAr: "", descriptionAr: "", price: 0, cost: 0, billingType: "one_time" });
+      setClientSearch("");
+      toast({ title: L ? "✅ تم إنشاء ميزة مخصصة للعميل" : "✅ Custom feature created" });
+    },
+    onError: (e: any) => toast({ title: L ? "فشل الإنشاء" : "Create failed", description: e.message, variant: "destructive" }),
+  });
+
   function openNew() { setEditId(null); setForm({ ...empty }); setOpen(true); }
   function openEdit(a: any) {
     setEditId(a.id);
@@ -206,11 +228,106 @@ export default function AdminExtraAddons() {
             <RefreshCw className="w-3.5 h-3.5" />
             {wipeAndSeed.isPending ? (L ? "..." : "...") : (L ? "كتالوج QIROX الجديد" : "QIROX Catalog")}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setCustomOpen(true)}
+            className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none border-black/30 text-black hover:bg-black hover:text-white"
+            data-testid="button-new-custom-addon"
+          >
+            <UserPlus className="w-3.5 h-3.5" /> {L ? "ميزة مخصصة لعميل" : "Custom for Client"}
+          </Button>
           <Button onClick={openNew} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none bg-black text-white hover:bg-black/90" data-testid="button-new-addon">
             <Plus className="w-3.5 h-3.5" /> {L ? "إضافة جديدة" : "New Add-on"}
           </Button>
         </div>
       </div>
+
+      {/* Custom feature dialog */}
+      <Dialog open={customOpen} onOpenChange={setCustomOpen}>
+        <DialogContent className="max-w-lg" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-black">
+              <UserPlus className="w-4 h-4" /> {L ? "ميزة مخصصة لعميل محدد" : "Custom feature for a client"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">{L ? "ابحث عن العميل" : "Search client"}</Label>
+              <Input value={clientSearch} onChange={e => setClientSearch(e.target.value)} placeholder={L ? "اسم، إيميل، أو جوال" : "name, email, phone"} data-testid="input-client-search" />
+              <div className="mt-2 max-h-48 overflow-y-auto border border-black/10 rounded-lg divide-y divide-black/5">
+                {filteredClients.length === 0 && (
+                  <div className="text-xs text-black/40 p-3 text-center">{L ? "لا يوجد عملاء" : "No clients"}</div>
+                )}
+                {filteredClients.map((c: any) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCustomForm(f => ({ ...f, clientId: c.id }))}
+                    className={`w-full text-right p-2 text-xs hover:bg-black/5 transition ${customForm.clientId === c.id ? "bg-black text-white hover:bg-black" : ""}`}
+                    data-testid={`button-pick-client-${c.id}`}
+                  >
+                    <div className="font-bold">{c.name || c.username}</div>
+                    <div className={`text-[10px] ${customForm.clientId === c.id ? "text-white/60" : "text-black/40"}`}>
+                      {c.email || c.phone || c.username}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">{L ? "اسم الميزة" : "Feature name"} *</Label>
+              <Input value={customForm.nameAr} onChange={e => setCustomForm(f => ({ ...f, nameAr: e.target.value }))} data-testid="input-custom-name" />
+            </div>
+
+            <div>
+              <Label className="text-xs">{L ? "الوصف" : "Description"}</Label>
+              <Textarea value={customForm.descriptionAr} onChange={e => setCustomForm(f => ({ ...f, descriptionAr: e.target.value }))} className="h-16 resize-none" data-testid="input-custom-desc" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs flex items-center gap-1">{L ? "السعر" : "Price"} <SARIcon size={9} className="opacity-60" /></Label>
+                <Input type="number" value={customForm.price} onChange={e => setCustomForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} min={0} step={10} data-testid="input-custom-price" />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1">{L ? "التكلفة" : "Cost"} <SARIcon size={9} className="opacity-60" /></Label>
+                <Input type="number" value={customForm.cost} onChange={e => setCustomForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} min={0} step={10} data-testid="input-custom-cost" />
+              </div>
+              <div>
+                <Label className="text-xs">{L ? "الفوترة" : "Billing"}</Label>
+                <Select value={customForm.billingType} onValueChange={(v: any) => setCustomForm(f => ({ ...f, billingType: v }))}>
+                  <SelectTrigger data-testid="select-custom-billing"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="one_time">{L ? "مرة واحدة" : "One-time"}</SelectItem>
+                    <SelectItem value="monthly">{L ? "شهري" : "Monthly"}</SelectItem>
+                    <SelectItem value="annual">{L ? "سنوي" : "Annual"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {customForm.price > 0 && customForm.cost > 0 && (
+              <div className="text-xs bg-black/[0.04] border border-black/10 rounded-lg p-2 text-center">
+                {L ? "ربح متوقع:" : "Expected profit:"}{" "}
+                <span className="font-black">{(customForm.price - customForm.cost).toLocaleString()} {L ? "ر.س" : "SAR"}</span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCustomOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
+            <Button
+              onClick={() => createCustom.mutate(customForm)}
+              disabled={!customForm.clientId || !customForm.nameAr || !customForm.price || createCustom.isPending}
+              className="bg-black text-white hover:bg-black/90"
+              data-testid="button-save-custom"
+            >
+              {createCustom.isPending ? (L ? "جاري الحفظ..." : "Saving...") : (L ? "حفظ الميزة المخصصة" : "Save custom feature")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Wipe confirmation */}
       <Dialog open={confirmWipe} onOpenChange={setConfirmWipe}>

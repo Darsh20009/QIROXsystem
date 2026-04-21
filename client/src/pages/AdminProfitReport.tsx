@@ -60,6 +60,7 @@ export default function AdminProfitReport() {
 
   const orders: any[] = data?.orders || [];
   const totals = data?.totals || { revenue: 0, expenses: 0, netProfit: 0 };
+  const addonStats = data?.addonStats || { revenue: 0, cost: 0, profit: 0, count: 0, items: [] as any[] };
   const overallMargin = totals.revenue > 0 ? ((totals.netProfit / totals.revenue) * 100).toFixed(1) : "0";
 
   const filtered = orders
@@ -139,6 +140,51 @@ export default function AdminProfitReport() {
               <p className="text-[10px] text-black/30">{L ? "متوسط الهامش" : "Average margin"}</p>
             </div>
           </div>
+
+          {/* ── Add-on subscription profit (NEW QIROX catalog) ── */}
+          {addonStats.count > 0 && (
+            <div className="bg-black text-white rounded-2xl p-5" data-testid="card-addon-profit">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <div>
+                  <p className="text-[11px] text-white/60 font-bold uppercase tracking-wider">{L ? "أرباح الميزات الإضافية" : "Add-on Subscriptions Profit"}</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">{addonStats.count} {L ? "اشتراك نشط من كتالوج المميزات" : "active subscriptions across catalog"}</p>
+                </div>
+                <div className="flex gap-4 text-right">
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "الإيراد" : "Revenue"}</p>
+                    <p className="text-lg font-black flex items-center gap-1">{addonStats.revenue.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "التكلفة" : "Cost"}</p>
+                    <p className="text-lg font-black flex items-center gap-1 text-white/70">{addonStats.cost.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "الربح" : "Profit"}</p>
+                    <p className="text-lg font-black flex items-center gap-1 text-white" data-testid="text-addon-total-profit">{addonStats.profit.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                </div>
+              </div>
+              {addonStats.items.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {addonStats.items.slice(0, 9).map((it: any) => (
+                    <div key={it.id} className="bg-white/[0.06] border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-2" data-testid={`row-addon-${it.id}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold truncate flex items-center gap-1.5">
+                          {it.nameAr}
+                          {it.isCustom && <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-black">CUSTOM</span>}
+                        </p>
+                        <p className="text-[10px] text-white/40">{it.count} {L ? "اشتراك" : "subs"} · {L ? "ربح/وحدة" : "profit/unit"}: {it.profit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-black">{(it.profit * it.count).toLocaleString()}</p>
+                        <p className="text-[9px] text-white/40">{L ? "ر.س" : "SAR"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Overall profit bar */}
           {totals.revenue > 0 && (

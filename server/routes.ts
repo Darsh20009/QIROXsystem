@@ -1637,7 +1637,30 @@ export async function registerRoutes(
       netProfit: acc.netProfit + r.netProfit,
     }), { revenue: 0, expenses: 0, netProfit: 0 });
 
-    res.json({ orders: result, totals });
+    // ── Add-on profit breakdown (from active subscriptions × addon cost) ──
+    let addonStats = { revenue: 0, cost: 0, profit: 0, count: 0, items: [] as any[] };
+    try {
+      const { ProjectAddonSubscriptionModel } = await import("./models");
+      const subs = await (ProjectAddonSubscriptionModel as any).find({ status: { $in: ["active","exhausted"] } })
+        .populate("addonId", "nameAr name price cost billingType isCustom");
+      const byAddon: Record<string, any> = {};
+      for (const s of subs) {
+        const a: any = s.addonId;
+        if (!a) continue;
+        const price = a.price || 0;
+        const cost  = a.cost  || 0;
+        addonStats.revenue += price;
+        addonStats.cost    += cost;
+        addonStats.count   += 1;
+        const k = String(a._id);
+        if (!byAddon[k]) byAddon[k] = { id: k, nameAr: a.nameAr || a.name, price, cost, profit: price - cost, count: 0, isCustom: !!a.isCustom };
+        byAddon[k].count += 1;
+      }
+      addonStats.profit = addonStats.revenue - addonStats.cost;
+      addonStats.items = Object.values(byAddon).sort((a: any, b: any) => (b.profit * b.count) - (a.profit * a.count));
+    } catch { /* addons optional */ }
+
+    res.json({ orders: result, totals, addonStats });
   });
 
   // === EMPLOYEE LIST (for assignment dropdowns) ===
