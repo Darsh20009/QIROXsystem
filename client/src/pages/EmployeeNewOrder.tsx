@@ -267,7 +267,7 @@ export default function EmployeeNewOrder() {
             ].map((s, i) => (
               <div key={s.key} className="flex items-center gap-2">
                 <button onClick={() => { if (s.key === "order" && !clientValid) return; setStep(s.key as Step); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${step === s.key ? "bg-black text-white shadow-md" : clientValid && s.key === "client" && step === "order" ? "bg-green-500 text-white" : "bg-white border border-black/[0.08] text-black/40"}`}>
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${step === s.key ? "bg-black text-white shadow-md" : clientValid && s.key === "client" && step === "order" ? "bg-black dark:bg-white text-white" : "bg-white border border-black/[0.08] text-black/40"}`}>
                   <s.icon className="w-4 h-4" />
                   {s.label}
                 </button>
@@ -292,14 +292,14 @@ export default function EmployeeNewOrder() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-black/70 dark:text-white/70">*</span></label>
                     <div className="relative">
                       <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
                       <input value={fullName} onChange={e => setFullName(e.target.value)} onBlur={() => { if (fullName && !username) setUsername(generateUsername(fullName)); }} placeholder={L ? "محمد أحمد العلي" : "John Smith"} className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-fullname" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-black/70 dark:text-white/70">*</span></label>
                     <div className="relative">
                       <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
                       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="client@email.com" dir="ltr" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-email" />
@@ -313,7 +313,7 @@ export default function EmployeeNewOrder() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "اسم المستخدم" : "Username"} <span className="text-red-400">*</span>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "اسم المستخدم" : "Username"} <span className="text-black/70 dark:text-white/70">*</span>
                       <button type="button" onClick={() => setUsername(generateUsername(fullName || "client"))} className="mr-2 text-[10px] text-black/30 hover:text-black/60 underline">{L ? "توليد تلقائي" : "Auto-generate"}</button>
                     </label>
                     <div className="relative">
@@ -322,7 +322,7 @@ export default function EmployeeNewOrder() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "كلمة المرور" : "Password"} <span className="text-red-400">*</span>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "كلمة المرور" : "Password"} <span className="text-black/70 dark:text-white/70">*</span>
                       <button type="button" onClick={() => setPassword(generatePassword())} className="mr-2 text-[10px] text-black/30 hover:text-black/60"><RefreshCw className="inline w-2.5 h-2.5 ml-0.5" /> {L ? "توليد جديد" : "Generate"}</button>
                     </label>
                     <div className="relative">
@@ -330,7 +330,7 @@ export default function EmployeeNewOrder() {
                       <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} dir="ltr" className="w-full h-11 pr-10 pl-20 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm font-mono outline-none focus:border-black/25 transition-colors" data-testid="input-client-password" />
                       <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-1">
                         <button type="button" onClick={() => setShowPw(!showPw)} className="p-1 text-black/20 hover:text-black/50">{showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}</button>
-                        <button type="button" onClick={copyPassword} className="p-1 text-black/20 hover:text-black/50">{copiedPw ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}</button>
+                        <button type="button" onClick={copyPassword} className="p-1 text-black/20 hover:text-black/50">{copiedPw ? <Check className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}</button>
                       </div>
                     </div>
                   </div>
@@ -381,7 +381,7 @@ export default function EmployeeNewOrder() {
                       <p className="text-white/50 text-xs truncate">{selectedClient.email}{selectedClient.phone ? ` · ${selectedClient.phone}` : ""}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <CheckCircle2 className="w-4 h-4 text-black/70 dark:text-white/70" />
                       <button onClick={() => setSelectedClient(null)}
                         className="text-white/30 hover:text-white/70 transition-colors"
                         data-testid="button-clear-client">
@@ -439,7 +439,7 @@ export default function EmployeeNewOrder() {
                           </p>
                         </div>
                         {isSelected
-                          ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          ? <CheckCircle2 className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
                           : <div className="w-5 h-5 rounded-full border-2 border-black/10 flex-shrink-0" />
                         }
                       </button>
@@ -656,12 +656,12 @@ export default function EmployeeNewOrder() {
                     <div className="space-y-1.5">
                       {selectedItems.map(item => (
                         <div key={item.id} className="flex items-center gap-2 bg-black/[0.02] rounded-lg px-3 py-2">
-                          <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${item.type === "plan" ? "bg-purple-100" : item.type === "product" ? "bg-blue-100" : item.type === "addon" ? "bg-green-100" : "bg-gray-100"}`}>
-                            {item.type === "plan" ? <Crown className="w-3 h-3 text-purple-600" /> : item.type === "product" ? <Smartphone className="w-3 h-3 text-blue-600" /> : item.type === "addon" ? <PlusCircle className="w-3 h-3 text-green-600" /> : <Tag className="w-3 h-3 text-gray-500" />}
+                          <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${item.type === "plan" ? "bg-black/[0.04] dark:bg-white/[0.06]" : item.type === "product" ? "bg-black/[0.04] dark:bg-white/[0.06]" : item.type === "addon" ? "bg-black/[0.04] dark:bg-white/[0.06]" : "bg-gray-100"}`}>
+                            {item.type === "plan" ? <Crown className="w-3 h-3 text-black dark:text-white" /> : item.type === "product" ? <Smartphone className="w-3 h-3 text-black dark:text-white" /> : item.type === "addon" ? <PlusCircle className="w-3 h-3 text-black dark:text-white" /> : <Tag className="w-3 h-3 text-gray-500" />}
                           </div>
                           <span className="flex-1 text-xs text-black font-medium truncate">{item.nameAr || item.name}</span>
                           {item.price != null && item.price > 0 && <span className="text-xs text-black/40 font-mono flex-shrink-0 flex items-center gap-0.5">{item.price.toLocaleString()} <SARIcon size={8} className="opacity-50" /></span>}
-                          <button onClick={() => removeItem(item.id)} className="text-black/20 hover:text-red-500 transition-colors flex-shrink-0" data-testid={`remove-item-${item.id}`}>
+                          <button onClick={() => removeItem(item.id)} className="text-black/20 hover:text-black dark:text-white transition-colors flex-shrink-0" data-testid={`remove-item-${item.id}`}>
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -721,13 +721,13 @@ export default function EmployeeNewOrder() {
                           </div>
                         </div>
                         {discount > 0 && base > 0 && (
-                          <div className="mt-2 flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
-                            <div className="text-xs text-green-700">
+                          <div className="mt-2 flex items-center justify-between bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5">
+                            <div className="text-xs text-black dark:text-white">
                               <span className="font-semibold inline-flex items-center gap-0.5">{base.toLocaleString()} <SARIcon size={8} className="opacity-60" /></span>
-                              <span className="mx-1.5 text-green-400">−</span>
-                              <span className="font-semibold text-red-500 inline-flex items-center gap-0.5">{discount.toLocaleString()} <SARIcon size={8} className="opacity-60" /> {L ? "خصم" : "off"}</span>
+                              <span className="mx-1.5 text-black/70 dark:text-white/70">−</span>
+                              <span className="font-semibold text-black dark:text-white inline-flex items-center gap-0.5">{discount.toLocaleString()} <SARIcon size={8} className="opacity-60" /> {L ? "خصم" : "off"}</span>
                             </div>
-                            <div className="text-sm font-black text-green-800 flex items-center gap-1">
+                            <div className="text-sm font-black text-black dark:text-white flex items-center gap-1">
                               = {finalTotal.toLocaleString()} <SARIcon size={10} className="opacity-60" />
                             </div>
                           </div>
@@ -754,8 +754,8 @@ export default function EmployeeNewOrder() {
           {step === "done" && result && (
             <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
               <div className="bg-white border border-black/[0.06] rounded-2xl p-8 text-center shadow-sm">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-black dark:text-white" />
                 </div>
                 <h2 className="text-xl font-black text-black mb-1">{L ? "تم بنجاح!" : "Done Successfully!"}</h2>
                 <p className="text-black/40 text-sm mb-6">{mode === "new" ? (L ? "تم إنشاء حساب العميل والطلب وإرسال بيانات الدخول بالبريد" : "Client account and order created, credentials sent by email") : (L ? "تم إنشاء الطلب وإرسال تأكيد للعميل" : "Order created and confirmation sent to client")}</p>

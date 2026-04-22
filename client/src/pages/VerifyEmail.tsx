@@ -171,14 +171,14 @@ export default function VerifyEmail() {
                 { n: 4, label: L ? "الترحيب" : "Welcome", done: false },
               ].map((step, i) => (
                 <div key={step.n} className="flex items-center gap-1">
-                  <div className={`flex items-center gap-1.5 ${step.active ? "text-black" : step.done ? "text-emerald-600" : "text-black/25"}`}>
+                  <div className={`flex items-center gap-1.5 ${step.active ? "text-black" : step.done ? "text-black dark:text-white" : "text-black/25"}`}>
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all
-                      ${step.active ? "border-black bg-black text-white" : step.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/15 bg-transparent text-black/25"}`}>
+                      ${step.active ? "border-black bg-black text-white" : step.done ? "border-black dark:border-white bg-black dark:bg-white text-white" : "border-black/15 bg-transparent text-black/25"}`}>
                       {step.done ? "✓" : step.n}
                     </div>
                     <span className="text-xs font-bold hidden sm:block">{step.label}</span>
                   </div>
-                  {i < 3 && <div className={`flex-1 h-0.5 mx-2 rounded-full ${step.done ? "bg-emerald-400" : "bg-black/10"}`} style={{ width: "2rem" }} />}
+                  {i < 3 && <div className={`flex-1 h-0.5 mx-2 rounded-full ${step.done ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/10"}`} style={{ width: "2rem" }} />}
                 </div>
               ))}
             </div>
@@ -269,22 +269,22 @@ export default function VerifyEmail() {
               </div>
 
               {/* Account locked notice */}
-              <div className="bg-red-50 border border-red-200/60 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-red-800 text-xs font-semibold mb-0.5">{L ? "حسابك مقفل مؤقتاً" : "Account Temporarily Locked"}</p>
-                  <p className="text-red-700 text-[11px] leading-relaxed">
+                  <p className="text-black dark:text-white text-xs font-semibold mb-0.5">{L ? "حسابك مقفل مؤقتاً" : "Account Temporarily Locked"}</p>
+                  <p className="text-black dark:text-white text-[11px] leading-relaxed">
                     {L ? "يجب تفعيل البريد الإلكتروني قبل الوصول للوحة التحكم. أدخل الرمز المُرسل إليك لإلغاء القفل." : "You must verify your email before accessing the dashboard. Enter the code sent to you to unlock."}
                   </p>
                 </div>
               </div>
 
               {/* Spam warning */}
-              <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
-                <span className="text-amber-500 text-base mt-0.5 flex-shrink-0">⚠️</span>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
+                <span className="text-black dark:text-white text-base mt-0.5 flex-shrink-0">⚠️</span>
                 <div>
-                  <p className="text-amber-800 text-xs font-semibold mb-0.5">{L ? "لم يصل البريد؟" : "Didn't receive the email?"}</p>
-                  <p className="text-amber-700 text-[11px] leading-relaxed">
+                  <p className="text-black dark:text-white text-xs font-semibold mb-0.5">{L ? "لم يصل البريد؟" : "Didn't receive the email?"}</p>
+                  <p className="text-black dark:text-white text-[11px] leading-relaxed">
                     {L ? <>تحقق من مجلد <strong>الإسبام / Spam</strong> — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.</> : <>Check your <strong>Spam</strong> folder — emails sometimes land there. If not found, click "Resend Code" below.</>}
                   </p>
                 </div>
@@ -313,7 +313,7 @@ export default function VerifyEmail() {
 
               {verifyError && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
-                  <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                  <Alert variant="destructive" className="bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-sm">{verifyError}</AlertDescription>
                   </Alert>

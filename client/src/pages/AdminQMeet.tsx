@@ -24,17 +24,17 @@ import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
 
 const STATUS = {
-  scheduled: { label: "مجدول", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", dot: "bg-blue-500", icon: Calendar },
-  live:      { label: "مباشر الآن", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300", dot: "bg-green-500", icon: Radio },
+  scheduled: { label: "مجدول", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white", icon: Calendar },
+  live:      { label: "مباشر الآن", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white", icon: Radio },
   completed: { label: "منتهي", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", dot: "bg-gray-400", icon: CheckCircle },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", dot: "bg-red-500", icon: XCircle },
+  cancelled: { label: "ملغي", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white", icon: XCircle },
 };
 
 const TYPES = {
-  internal: { label: "داخلي", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
-  client_individual: { label: "عميل محدد", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300" },
-  client_all: { label: "جميع العملاء", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  consultation: { label: "استشارة", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" },
+  internal: { label: "داخلي", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  client_individual: { label: "عميل محدد", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  client_all: { label: "جميع العملاء", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  consultation: { label: "استشارة", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
 };
 
 const EMPTY_FORM = {
@@ -311,12 +311,12 @@ export default function AdminQMeet() {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-bl from-blue-600/10 via-cyan-500/5 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-6 overflow-hidden">
-          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-purple-500/10 rounded-full blur-2xl" />
+        <div className="relative bg-gradient-to-bl from-black dark:from-white via-black dark:via-white to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-6 overflow-hidden">
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-3xl" />
+          <div className="absolute -bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-black dark:from-white rounded-full blur-2xl" />
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <Video className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -354,14 +354,14 @@ export default function AdminQMeet() {
               <Button
                 onClick={() => setOpenInstant(true)}
                 variant="outline"
-                className="gap-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                className="gap-2 border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white"
                 data-testid="button-quick-meeting"
               >
                 <Zap className="w-4 h-4" />
                 اجتماع سريع
               </Button>)}
               {isManagement && (
-                <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
+                <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
                   <Plus className="w-4 h-4" /> اجتماع جديد
                 </Button>
               )}
@@ -372,14 +372,14 @@ export default function AdminQMeet() {
           {isManagement && (
             <div className="relative mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "إجمالي الاجتماعات", value: stats?.total || 0, icon: Video, color: "text-blue-500" },
-                { label: "هذا الأسبوع", value: stats?.thisWeek ?? "—", icon: Calendar, color: "text-blue-500" },
-                { label: "هذا الشهر", value: stats?.thisMonth ?? "—", icon: Calendar, color: "text-cyan-500" },
-                { label: "مباشرة الآن", value: stats?.live || 0, icon: Radio, color: "text-green-500" },
+                { label: "إجمالي الاجتماعات", value: stats?.total || 0, icon: Video, color: "text-black dark:text-white" },
+                { label: "هذا الأسبوع", value: stats?.thisWeek ?? "—", icon: Calendar, color: "text-black dark:text-white" },
+                { label: "هذا الشهر", value: stats?.thisMonth ?? "—", icon: Calendar, color: "text-black dark:text-white" },
+                { label: "مباشرة الآن", value: stats?.live || 0, icon: Radio, color: "text-black dark:text-white" },
                 { label: "منتهية", value: stats?.completed || 0, icon: CheckCircle2, color: "text-gray-400" },
-                { label: "مجدولة", value: stats?.scheduled || 0, icon: Clock, color: "text-purple-500" },
-                { label: "متوسط التقييم", value: stats?.avgRating || "—", icon: Star, color: "text-amber-500" },
-                { label: "متوسط المشاركين", value: stats?.avgParticipants || "—", icon: Users, color: "text-indigo-500" },
+                { label: "مجدولة", value: stats?.scheduled || 0, icon: Clock, color: "text-black dark:text-white" },
+                { label: "متوسط التقييم", value: stats?.avgRating || "—", icon: Star, color: "text-black dark:text-white" },
+                { label: "متوسط المشاركين", value: stats?.avgParticipants || "—", icon: Users, color: "text-black dark:text-white" },
               ].map(stat => (
                 <div key={stat.label} className="bg-white/60 dark:bg-gray-900/60 backdrop-blur border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4" data-testid={`stat-${stat.label}`}>
                   <stat.icon className={`w-4 h-4 ${stat.color} mb-2`} />
@@ -400,7 +400,7 @@ export default function AdminQMeet() {
                 <h2 className="text-lg font-black text-black dark:text-white">مفاتيح API الخارجية</h2>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">أنشئ مفاتيح لربط تطبيقات خارجية مع QMeet · الخدمة مدفوعة</p>
               </div>
-              <Button onClick={() => setOpenNewKey(true)} className="gap-2 bg-gradient-to-l from-purple-600 to-blue-500 text-white" data-testid="button-new-api-key">
+              <Button onClick={() => setOpenNewKey(true)} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="button-new-api-key">
                 <Plus className="w-4 h-4" /> مفتاح جديد
               </Button>
             </div>
@@ -408,9 +408,9 @@ export default function AdminQMeet() {
             {/* API Docs box */}
             <div className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <Code className="w-4 h-4 text-purple-500" />
+                <Code className="w-4 h-4 text-black dark:text-white" />
                 <span className="font-bold text-sm text-black dark:text-white">توثيق API</span>
-                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-semibold">v1</span>
+                <span className="text-xs bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-semibold">v1</span>
               </div>
               <div className="grid md:grid-cols-2 gap-3 text-xs">
                 {[
@@ -420,7 +420,7 @@ export default function AdminQMeet() {
                   { method: "DELETE", path: "/api/qmeet/v1/meetings/:roomName", desc: "إلغاء اجتماع" },
                 ].map(e => (
                   <div key={e.path} className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2">
-                    <span className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded-md ${e.method === "POST" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : e.method === "GET" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{e.method}</span>
+                    <span className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded-md ${e.method === "POST" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : e.method === "GET" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>{e.method}</span>
                     <code className="text-black/60 dark:text-white/60 text-[10px] flex-1 truncate">{e.path}</code>
                     <span className="text-black/35 dark:text-white/35 text-[10px] hidden md:block">{e.desc}</span>
                   </div>
@@ -428,9 +428,9 @@ export default function AdminQMeet() {
               </div>
               <div className="bg-black/[0.04] dark:bg-white/[0.04] rounded-xl p-3 font-mono text-xs text-black/60 dark:text-white/60 space-y-1 select-all">
                 <p className="text-black/40 dark:text-white/40"># أضف هذا الـ header في كل طلب</p>
-                <p><span className="text-purple-600 dark:text-purple-400">x-qmeet-api-key</span>: qmeet_xxxxxxxxxxxxxxxx</p>
+                <p><span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">x-qmeet-api-key</span>: qmeet_xxxxxxxxxxxxxxxx</p>
                 <p className="text-black/40 dark:text-white/40 mt-2"># مثال: إنشاء اجتماع</p>
-                <p><span className="text-blue-600 dark:text-blue-400">POST</span> {window.location.origin}/api/qmeet/v1/meetings</p>
+                <p><span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">POST</span> {window.location.origin}/api/qmeet/v1/meetings</p>
                 <p>{"{"} "title": "اجتماع العميل", "scheduledAt": "2025-06-01T10:00:00Z", "durationMinutes": 60 {"}"}</p>
               </div>
             </div>
@@ -445,19 +445,19 @@ export default function AdminQMeet() {
               <div className="space-y-3">
                 {apiKeys.map((k: any) => (
                   <motion.div key={k.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                    className={`rounded-2xl border bg-white dark:bg-gray-900 p-5 ${k.active ? "border-black/[0.07] dark:border-white/[0.07]" : "border-red-200 dark:border-red-900/40 opacity-60"}`}
+                    className={`rounded-2xl border bg-white dark:bg-gray-900 p-5 ${k.active ? "border-black/[0.07] dark:border-white/[0.07]" : "border-black/10 dark:border-white/10 dark:border-black dark:border-white opacity-60"}`}
                     data-testid={`card-apikey-${k.id}`}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${k.plan === "pro" ? "bg-purple-100 dark:bg-purple-900/30" : "bg-blue-100 dark:bg-blue-900/30"}`}>
-                        <Shield className={`w-5 h-5 ${k.plan === "pro" ? "text-purple-600 dark:text-purple-400" : "text-blue-600 dark:text-blue-400"}`} />
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${k.plan === "pro" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"}`}>
+                        <Shield className={`w-5 h-5 ${k.plan === "pro" ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-bold text-black dark:text-white text-sm">{k.name}</span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${k.plan === "pro" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"}`}>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${k.plan === "pro" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>
                             {k.plan === "pro" ? <span className="flex items-center gap-1">برو — 299 <SARIcon size={9} />/شهر</span> : <span className="flex items-center gap-1">أساسي — 99 <SARIcon size={9} />/شهر</span>}
                           </span>
-                          {!k.active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">موقوف</span>}
+                          {!k.active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70">موقوف</span>}
                         </div>
                         {/* Key display */}
                         <div className="flex items-center gap-1.5">
@@ -472,7 +472,7 @@ export default function AdminQMeet() {
                           <button onClick={() => copyApiKey(k.key, k.id)}
                             className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
                             title="نسخ" data-testid={`button-copy-apikey-${k.id}`}>
-                            {copiedKey === k.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedKey === k.id ? <Check className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                         <div className="flex gap-3 mt-1.5 text-[10px] text-black/35 dark:text-white/35">
@@ -484,12 +484,12 @@ export default function AdminQMeet() {
                       {/* Actions */}
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => toggleKeyMutation.mutate({ id: k.id, active: !k.active })}
-                          className={`p-2 rounded-xl transition-colors ${k.active ? "hover:bg-red-50 dark:hover:bg-red-900/20 text-green-600" : "hover:bg-green-50 dark:hover:bg-green-900/20 text-red-500"}`}
+                          className={`p-2 rounded-xl transition-colors ${k.active ? "hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black dark:text-white" : "hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black dark:text-white"}`}
                           title={k.active ? "إيقاف المفتاح" : "تفعيل المفتاح"} data-testid={`button-toggle-apikey-${k.id}`}>
                           {k.active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                         </button>
                         <button onClick={() => { if (confirm(`هل تريد حذف المفتاح "${k.name}"؟`)) deleteKeyMutation.mutate(k.id); }}
-                          className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 hover:text-red-600 transition-colors"
+                          className="p-2 rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 hover:text-black dark:text-white transition-colors"
                           title="حذف" data-testid={`button-delete-apikey-${k.id}`}>
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -510,16 +510,16 @@ export default function AdminQMeet() {
                 <h2 className="text-lg font-black text-black dark:text-white">TURN Server — اختراق NAT</h2>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">يحل مشكلة عدم الاتصال بين المستخدمين خلف الجدران النارية المؤسسية</p>
               </div>
-              <Button onClick={() => saveTurnMutation.mutate()} disabled={saveTurnMutation.isPending} className="gap-2 bg-green-600 hover:bg-green-700 text-white border-0" data-testid="button-save-turn">
+              <Button onClick={() => saveTurnMutation.mutate()} disabled={saveTurnMutation.isPending} className="gap-2 bg-black dark:bg-white hover:bg-black dark:bg-white text-white border-0" data-testid="button-save-turn">
                 {saveTurnMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 حفظ الإعدادات
               </Button>
             </div>
 
             {/* Info box */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-4 flex gap-3">
-              <Network className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-              <div className="space-y-1.5 text-xs text-blue-800 dark:text-blue-300">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 flex gap-3">
+              <Network className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                 <p className="font-bold">ما هو TURN؟</p>
                 <p>عندما يكون مستخدمان خلف شبكات NAT صارمة (مكاتب، جامعات، شبكات مؤسسية)، لا يستطيع WebRTC الاتصال المباشر. يقوم TURN بتمرير البيانات عبر سيرفر وسيط موثوق.</p>
                 <p className="font-semibold mt-1">مزودون مجانيين: <span className="font-mono">openrelay.metered.ca</span> · مزودون مدفوعون: Twilio, Metered.ca, Xirsys</p>
@@ -533,7 +533,7 @@ export default function AdminQMeet() {
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">عند التفعيل، يُضاف TURN لكل اجتماع تلقائياً إلى جانب STUN</p>
               </div>
               <button onClick={() => setTurnEnabled(v => !v)} data-testid="toggle-turn-enabled"
-                className={`transition-colors ${turnEnabled ? "text-green-600" : "text-black/20 dark:text-white/20"}`}>
+                className={`transition-colors ${turnEnabled ? "text-black dark:text-white" : "text-black/20 dark:text-white/20"}`}>
                 {turnEnabled ? <ToggleRight className="w-9 h-9" /> : <ToggleLeft className="w-9 h-9" />}
               </button>
             </div>
@@ -562,7 +562,7 @@ export default function AdminQMeet() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-black/50 dark:text-white/50">سيرفر {i + 1}</span>
                     <button onClick={() => setTurnServers(v => v.filter((_, j) => j !== i))}
-                      className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/20 hover:text-red-500 transition-colors"
+                      className="p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/20 hover:text-black dark:text-white transition-colors"
                       data-testid={`button-remove-turn-${i}`}>
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -602,7 +602,7 @@ export default function AdminQMeet() {
                   <button key={t.label} onClick={() => setTurnServers(t.servers)}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 text-xs font-semibold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-all text-right"
                     data-testid={`template-${t.label}`}>
-                    <Zap className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                    <Zap className="w-3.5 h-3.5 shrink-0 text-black dark:text-white" />
                     {t.label}
                   </button>
                 ))}
@@ -616,10 +616,10 @@ export default function AdminQMeet() {
                 اختبار الاتصال
               </Button>
               {turnTestResult === "ok" && (
-                <span className="flex items-center gap-1.5 text-sm text-green-600 font-semibold"><CheckCircle className="w-4 h-4" /> اتصال relay ناجح ✓</span>
+                <span className="flex items-center gap-1.5 text-sm text-black dark:text-white font-semibold"><CheckCircle className="w-4 h-4" /> اتصال relay ناجح ✓</span>
               )}
               {turnTestResult === "fail" && (
-                <span className="flex items-center gap-1.5 text-sm text-red-500 font-semibold"><XCircle className="w-4 h-4" /> فشل الاتصال — تحقق من البيانات</span>
+                <span className="flex items-center gap-1.5 text-sm text-black dark:text-white font-semibold"><XCircle className="w-4 h-4" /> فشل الاتصال — تحقق من البيانات</span>
               )}
             </div>
           </div>
@@ -666,7 +666,7 @@ export default function AdminQMeet() {
               <button key={tab.key} onClick={() => setFilter(tab.key)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${filter === tab.key ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
                 data-testid={`tab-${tab.key}`}>
-                {tab.key === "live" && stats?.live > 0 && <span className="inline-block w-2 h-2 rounded-full bg-green-500 ml-1.5 animate-pulse" />}
+                {tab.key === "live" && stats?.live > 0 && <span className="inline-block w-2 h-2 rounded-full bg-black dark:bg-white ml-1.5 animate-pulse" />}
                 {tab.label}
                 {tab.key === "all" && meetings.length > 0 && <span className="ml-1.5 text-xs text-black/30 dark:text-white/30">({meetings.length})</span>}
               </button>
@@ -695,24 +695,24 @@ export default function AdminQMeet() {
 
                 return (
                   <motion.div key={meeting._id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                    className={`group relative rounded-2xl border transition-all overflow-hidden ${meeting.status === "live" ? "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"}`}
+                    className={`group relative rounded-2xl border transition-all overflow-hidden ${meeting.status === "live" ? "border-black/15 dark:border-white/15 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"}`}
                     data-testid={`card-meeting-${meeting._id}`}>
 
                     {/* Live pulse bar */}
-                    {meeting.status === "live" && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 animate-pulse" />}
+                    {meeting.status === "live" && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1] animate-pulse" />}
 
                     <div className="p-5">
                       <div className="flex items-start gap-4">
                         {/* Status dot + icon */}
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${meeting.status === "live" ? "bg-green-100 dark:bg-green-900/30" : meeting.status === "scheduled" ? "bg-blue-100 dark:bg-blue-900/30" : "bg-black/5 dark:bg-white/5"}`}>
-                          <StatusIcon className={`w-5 h-5 ${meeting.status === "live" ? "text-green-600" : meeting.status === "scheduled" ? "text-blue-600" : "text-black/40 dark:text-white/40"}`} />
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${meeting.status === "live" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : meeting.status === "scheduled" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/5 dark:bg-white/5"}`}>
+                          <StatusIcon className={`w-5 h-5 ${meeting.status === "live" ? "text-black dark:text-white" : meeting.status === "scheduled" ? "text-black dark:text-white" : "text-black/40 dark:text-white/40"}`} />
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1.5">
                             <h3 className="font-bold text-black dark:text-white text-base">{meeting.title}</h3>
                             <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${statusInfo.color}`}>
-                              {meeting.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                              {meeting.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />}
                               {statusInfo.label}
                             </span>
                             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>{typeInfo.label}</span>
@@ -765,7 +765,7 @@ export default function AdminQMeet() {
                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                           <button
                             onClick={() => window.open(meeting.meetingLink, '_blank')}
-                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${meeting.status === "live" ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${meeting.status === "live" ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white shadow-lg shadow-green-500/20" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
                             data-testid={`button-join-${meeting._id}`}>
                             <Video className="w-3.5 h-3.5" />
                             {meeting.status === "live" ? "انضم مباشرة" : "انضم"}
@@ -775,10 +775,10 @@ export default function AdminQMeet() {
                           </button>
                           {isManagement && (
                             <>
-                              <button onClick={() => openEditDialog(meeting)} className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-black/30 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" title="تعديل الاجتماع" data-testid={`button-edit-${meeting._id}`}>
+                              <button onClick={() => openEditDialog(meeting)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors" title="تعديل الاجتماع" data-testid={`button-edit-${meeting._id}`}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
-                              <button onClick={() => sendInvitesMutation.mutate(meeting._id)} className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-black/30 hover:text-blue-600 transition-colors" title="إعادة إرسال الدعوات" data-testid={`button-resend-${meeting._id}`}>
+                              <button onClick={() => sendInvitesMutation.mutate(meeting._id)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 hover:text-black dark:text-white transition-colors" title="إعادة إرسال الدعوات" data-testid={`button-resend-${meeting._id}`}>
                                 <Send className="w-3.5 h-3.5" />
                               </button>
                               <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-black/30 hover:text-black/70 dark:text-white/30 dark:hover:text-white/70 transition-colors" title="التفاصيل" data-testid={`button-detail-${meeting._id}`}>
@@ -794,10 +794,10 @@ export default function AdminQMeet() {
                         <div className="flex gap-2 mt-4 pt-3 border-t border-black/[0.05] dark:border-white/[0.05] flex-wrap">
                           {meeting.status === "scheduled" && (
                             <>
-                              <Button size="sm" className="gap-1.5 bg-green-500 hover:bg-green-600 text-white border-0 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "live" })} disabled={statusMutation.isPending}>
+                              <Button size="sm" className="gap-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white border-0 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "live" })} disabled={statusMutation.isPending}>
                                 <Play className="w-3 h-3" /> بدء البث
                               </Button>
-                              <Button size="sm" variant="outline" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "cancelled" })}>
+                              <Button size="sm" variant="outline" className="gap-1.5 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "cancelled" })}>
                                 <XCircle className="w-3 h-3" /> إلغاء
                               </Button>
                             </>
@@ -807,11 +807,11 @@ export default function AdminQMeet() {
                               <CheckCircle className="w-3 h-3" /> إنهاء الاجتماع
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 h-7 text-xs mr-auto" onClick={() => { if (confirm(`هل تريد حذف "${meeting.title}"؟`)) deleteMutation.mutate(meeting._id); }} data-testid={`button-delete-${meeting._id}`} disabled={deleteMutation.isPending}>
+                          <Button size="sm" variant="outline" className="gap-1.5 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white h-7 text-xs mr-auto" onClick={() => { if (confirm(`هل تريد حذف "${meeting.title}"؟`)) deleteMutation.mutate(meeting._id); }} data-testid={`button-delete-${meeting._id}`} disabled={deleteMutation.isPending}>
                             {deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} حذف
                           </Button>
                           {meeting.status === "completed" && (
-                            <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                            <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="text-xs text-black dark:text-white hover:underline flex items-center gap-1">
                               <FileText className="w-3 h-3" /> عرض التقرير
                             </button>
                           )}
@@ -833,8 +833,8 @@ export default function AdminQMeet() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                <Zap className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               اجتماع سريع
             </DialogTitle>
@@ -867,7 +867,7 @@ export default function AdminQMeet() {
               <Button
                 onClick={() => instantMutation.mutate(instantForm)}
                 disabled={instantMutation.isPending}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-2"
                 data-testid="button-start-instant"
               >
                 {instantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -884,8 +884,8 @@ export default function AdminQMeet() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                <Shield className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               إنشاء مفتاح API جديد
             </DialogTitle>
@@ -906,8 +906,8 @@ export default function AdminQMeet() {
               <label className="label-xs">الخطة</label>
               <div className="grid grid-cols-2 gap-3 mt-1.5">
                 {[
-                  { key: "basic", label: "أساسي", priceNum: "99", period: "شهر", limit: "100 طلب/شهر", color: "border-blue-300 bg-blue-50 dark:bg-blue-900/20" },
-                  { key: "pro", label: "برو", priceNum: "299", period: "شهر", limit: "1000 طلب/شهر", color: "border-purple-300 bg-purple-50 dark:bg-purple-900/20" },
+                  { key: "basic", label: "أساسي", priceNum: "99", period: "شهر", limit: "100 طلب/شهر", color: "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                  { key: "pro", label: "برو", priceNum: "299", period: "شهر", limit: "1000 طلب/شهر", color: "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
                 ].map(p => (
                   <button key={p.key} type="button"
                     onClick={() => setNewKeyForm(f => ({ ...f, plan: p.key }))}
@@ -920,8 +920,8 @@ export default function AdminQMeet() {
                 ))}
               </div>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-3">
-              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3">
+              <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium">
                 هذه خدمة مدفوعة — سيتم احتساب الرسوم على الحساب شهرياً
               </p>
             </div>
@@ -929,7 +929,7 @@ export default function AdminQMeet() {
               <Button
                 onClick={() => { if (!newKeyForm.name.trim()) { toast({ title: "اسم المفتاح مطلوب", variant: "destructive" }); return; } createKeyMutation.mutate(newKeyForm); }}
                 disabled={createKeyMutation.isPending}
-                className="flex-1 bg-gradient-to-l from-purple-600 to-blue-500 text-white gap-2"
+                className="flex-1 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white gap-2"
                 data-testid="button-submit-apikey"
               >
                 {createKeyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
@@ -946,7 +946,7 @@ export default function AdminQMeet() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center">
                 <Video className="w-4 h-4 text-white" />
               </div>
               إنشاء اجتماع جديد
@@ -989,7 +989,7 @@ export default function AdminQMeet() {
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <div
                     onClick={() => setForm(f => ({ ...f, lobbyEnabled: !f.lobbyEnabled }))}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${form.lobbyEnabled ? "bg-blue-500" : "bg-black/20 dark:bg-white/20"}`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${form.lobbyEnabled ? "bg-black dark:bg-white" : "bg-black/20 dark:bg-white/20"}`}
                     data-testid="toggle-lobby-enabled"
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.lobbyEnabled ? "translate-x-5" : ""}`} />
@@ -1006,7 +1006,7 @@ export default function AdminQMeet() {
 
             {/* Agenda */}
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
-              <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><FileText className="w-4 h-4 text-cyan-500" /> جدول الأعمال</label>
+              <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><FileText className="w-4 h-4 text-black dark:text-white" /> جدول الأعمال</label>
               <div className="flex gap-2">
                 <Input value={form.agendaInput} onChange={e => set("agendaInput", e.target.value)} onKeyDown={e => e.key === "Enter" && addAgenda()} placeholder="أضف بنداً..." />
                 <Button type="button" variant="outline" size="sm" onClick={addAgenda}>إضافة</Button>
@@ -1016,7 +1016,7 @@ export default function AdminQMeet() {
                   {form.agenda.map((item, i) => (
                     <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-lg px-3 py-1.5 text-sm">
                       <span className="text-black/70 dark:text-white/70">• {item}</span>
-                      <button onClick={() => setForm(f => ({ ...f, agenda: f.agenda.filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                      <button onClick={() => setForm(f => ({ ...f, agenda: f.agenda.filter((_, j) => j !== i) }))} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white text-xs">✕</button>
                     </div>
                   ))}
                 </div>
@@ -1026,7 +1026,7 @@ export default function AdminQMeet() {
             {/* Participants */}
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> المشاركون ({form.participantEmails.length})</label>
+                <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><Users className="w-4 h-4 text-black dark:text-white" /> المشاركون ({form.participantEmails.length})</label>
                 <Button type="button" variant="outline" size="sm" onClick={addAllClients} className="text-xs gap-1 h-7" data-testid="button-add-all-clients">
                   <Users className="w-3 h-3" /> الكل
                 </Button>
@@ -1064,11 +1064,11 @@ export default function AdminQMeet() {
                   {form.participantEmails.map((email, i) => (
                     <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-xl px-3 py-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center text-[10px] font-bold text-blue-600">{(form.participantNames[i] || email)[0]?.toUpperCase()}</div>
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-[10px] font-bold text-black dark:text-white">{(form.participantNames[i] || email)[0]?.toUpperCase()}</div>
                         <span className="font-medium text-black dark:text-white">{form.participantNames[i]}</span>
                         <span className="text-black/30 dark:text-white/30">{email}</span>
                       </div>
-                      <button type="button" onClick={() => removeParticipant(i)} className="text-red-400 hover:text-red-600">✕</button>
+                      <button type="button" onClick={() => removeParticipant(i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white">✕</button>
                     </div>
                   ))}
                 </div>
@@ -1077,7 +1077,7 @@ export default function AdminQMeet() {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => { setOpenCreate(false); setForm(EMPTY_FORM); }}>إلغاء</Button>
-              <Button type="button" onClick={handleCreate} disabled={createMutation.isPending} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white" data-testid="button-submit-meeting">
+              <Button type="button" onClick={handleCreate} disabled={createMutation.isPending} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="button-submit-meeting">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 {createMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء وإرسال الدعوات"}
               </Button>
@@ -1091,17 +1091,17 @@ export default function AdminQMeet() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                <Zap className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               تم إنشاء الاجتماع السريع
             </DialogTitle>
           </DialogHeader>
           {instantResult && (
             <div className="space-y-4 pt-2">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-2xl p-4">
-                <p className="text-green-700 dark:text-green-300 text-sm font-semibold">{instantResult.title}</p>
-                <p className="text-green-600/70 dark:text-green-400/60 text-xs mt-1">الاجتماع مباشر الآن · {instantResult.durationMinutes} دقيقة</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-semibold">{instantResult.title}</p>
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs mt-1">الاجتماع مباشر الآن · {instantResult.durationMinutes} دقيقة</p>
               </div>
 
               {/* Join Code */}
@@ -1114,7 +1114,7 @@ export default function AdminQMeet() {
                     className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                     data-testid="button-copy-instant-code"
                   >
-                    {copiedField === "code" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                    {copiedField === "code" ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
                   </button>
                 </div>
               </div>
@@ -1131,7 +1131,7 @@ export default function AdminQMeet() {
                     className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
                     data-testid="button-copy-instant-sharelink"
                   >
-                    {copiedField === "sharelink" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                    {copiedField === "sharelink" ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
                   </button>
                 </div>
               </div>
@@ -1139,7 +1139,7 @@ export default function AdminQMeet() {
               <div className="flex gap-3 pt-1">
                 <Button
                   onClick={() => { navigate(instantResult.meetingLink); setInstantResult(null); }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-2"
                   data-testid="button-enter-instant-meeting"
                 >
                   <Video className="w-4 h-4" />
@@ -1164,8 +1164,8 @@ export default function AdminQMeet() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                <Pencil className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               تعديل الاجتماع
             </DialogTitle>
@@ -1193,7 +1193,7 @@ export default function AdminQMeet() {
             )}
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>إلغاء</Button>
-              <Button type="button" onClick={handleEdit} disabled={editMutation.isPending} className="gap-2 bg-amber-500 hover:bg-amber-600 text-white border-0" data-testid="button-save-edit">
+              <Button type="button" onClick={handleEdit} disabled={editMutation.isPending} className="gap-2 bg-black dark:bg-white hover:bg-black dark:bg-white text-white border-0" data-testid="button-save-edit">
                 {editMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 حفظ التعديلات
               </Button>

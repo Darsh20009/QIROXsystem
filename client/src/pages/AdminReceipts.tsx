@@ -373,7 +373,7 @@ export default function AdminReceipts() {
                           <button
                             onClick={() => sendEmailMutation.mutate(r.id)}
                             disabled={sendEmailMutation.isPending}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-black/40 hover:text-blue-600 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/40 hover:text-black dark:text-white transition-colors"
                             title="إرسال بالبريد"
                             data-testid={`button-email-receipt-${r.id}`}
                           >
@@ -382,7 +382,7 @@ export default function AdminReceipts() {
                           <button
                             onClick={() => deleteMutation.mutate(r.id)}
                             disabled={deleteMutation.isPending}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-black/40 hover:text-red-500 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/40 hover:text-black dark:text-white transition-colors"
                             title={L ? "حذف" : "Delete"}
                             data-testid={`button-delete-receipt-${r.id}`}
                           >

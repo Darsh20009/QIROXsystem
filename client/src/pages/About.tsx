@@ -300,7 +300,7 @@ export default function About() {
                     </div>
                     <h3 className="font-bold text-black dark:text-white text-base mb-2">{item.title[lang]}</h3>
                     <p className="text-black/40 dark:text-white/40 text-sm mb-4 flex-1">{item.desc[lang]}</p>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${item.enabled ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30" : "bg-black/[0.04] text-black/40 dark:bg-white/[0.04] dark:text-white/40 border border-black/[0.06] dark:border-white/[0.06]"}`}>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${item.enabled ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-black/[0.04] text-black/40 dark:bg-white/[0.04] dark:text-white/40 border border-black/[0.06] dark:border-white/[0.06]"}`}>
                       {item.enabled && <CheckCircle2 className="w-3 h-3" />}
                       {item.badge[lang]}
                     </div>

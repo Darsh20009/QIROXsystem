@@ -80,9 +80,9 @@ export default function AdminBankSettings() {
         </div>
 
         {/* Info Banner */}
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-6">
-          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700 leading-relaxed">
+        <div className="flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl px-5 py-4 mb-6">
+          <Info className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+          <p className="text-xs text-black dark:text-white leading-relaxed">
             {L ? "هذه البيانات تظهر للعميل في خطوة الدفع عند إتمام الطلب. تأكد من صحة رقم IBAN واسم المستفيد قبل الحفظ." : "These details are shown to the customer during payment. Make sure the IBAN and beneficiary name are correct before saving."}
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function AdminBankSettings() {
               data-testid="button-save-bank-settings"
               className={`w-full h-12 rounded-2xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 ${
                 saved
-                  ? "bg-green-600 text-white"
+                  ? "bg-black dark:bg-white text-white"
                   : "bg-black text-white hover:bg-black/85 active:scale-[0.98]"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >

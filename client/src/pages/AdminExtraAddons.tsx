@@ -18,13 +18,13 @@ import { ImageUpload } from "@/components/ImageUpload";
 import SARIcon from "@/components/SARIcon";
 
 function getCategories(L: boolean) { return [
-  { value: "feature",     label: L ? "ميزة إضافية" : "Extra Feature",    color: "bg-blue-100 text-blue-700" },
-  { value: "hosting",     label: L ? "استضافة / قاعدة بيانات" : "Hosting / Database", color: "bg-green-100 text-green-700" },
-  { value: "design",      label: L ? "تصميم" : "Design",            color: "bg-pink-100 text-pink-700" },
-  { value: "support",     label: L ? "دعم فني" : "Tech Support",          color: "bg-amber-100 text-amber-700" },
-  { value: "integration", label: L ? "تكامل خارجي" : "External Integration",      color: "bg-purple-100 text-purple-700" },
-  { value: "app",         label: L ? "تطبيق جوال" : "Mobile App",       color: "bg-indigo-100 text-indigo-700" },
-  { value: "marketing",   label: L ? "تسويق وSEO" : "Marketing & SEO",       color: "bg-orange-100 text-orange-700" },
+  { value: "feature",     label: L ? "ميزة إضافية" : "Extra Feature",    color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "hosting",     label: L ? "استضافة / قاعدة بيانات" : "Hosting / Database", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "design",      label: L ? "تصميم" : "Design",            color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "support",     label: L ? "دعم فني" : "Tech Support",          color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "integration", label: L ? "تكامل خارجي" : "External Integration",      color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "app",         label: L ? "تطبيق جوال" : "Mobile App",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  { value: "marketing",   label: L ? "تسويق وSEO" : "Marketing & SEO",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 ]; }
 
 const ALL_SEGMENTS = [
@@ -210,8 +210,8 @@ export default function AdminExtraAddons() {
 
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-          <Tag className="w-5 h-5 text-blue-700" />
+        <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center shrink-0">
+          <Tag className="w-5 h-5 text-black dark:text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold">{L ? "المميزات الإضافية" : "Extra Add-ons"}</h1>
@@ -445,7 +445,7 @@ export default function AdminExtraAddons() {
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(a)} data-testid={`button-edit-addon-${a.id}`}>
                             <Pencil className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => setConfirmDeleteId(a.id)} data-testid={`button-delete-addon-${a.id}`}>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-black dark:text-white" onClick={() => setConfirmDeleteId(a.id)} data-testid={`button-delete-addon-${a.id}`}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -457,19 +457,19 @@ export default function AdminExtraAddons() {
                     {/* Restrictions */}
                     <div className="flex items-center gap-1.5 flex-wrap mt-1">
                       {(!a.segments?.length && !a.plans?.length) ? (
-                        <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                        <span className="flex items-center gap-1 text-[10px] text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10">
                           <Globe className="w-2.5 h-2.5" /> {L ? "لجميع القطاعات والباقات" : "All segments & plans"}
                         </span>
                       ) : (
                         <>
                           {a.segments?.length > 0 && (
-                            <span className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                            <span className="flex items-center gap-1 text-[10px] text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10">
                               <Lock className="w-2.5 h-2.5" />
                               {a.segments.map((s: string) => ALL_SEGMENTS.find(x => x.value === s)?.label || s).join(" · ")}
                             </span>
                           )}
                           {a.plans?.length > 0 && (
-                            <span className="flex items-center gap-1 text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                            <span className="flex items-center gap-1 text-[10px] text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10">
                               <Lock className="w-2.5 h-2.5" />
                               {a.plans.map((p: string) => ALL_PLANS.find(x => x.value === p)?.label || p).join(" · ")}
                             </span>
@@ -565,8 +565,8 @@ export default function AdminExtraAddons() {
             </div>
 
             {/* Segment restriction */}
-            <div className="border border-blue-100 rounded-xl p-4 bg-blue-50/40 space-y-3">
-              <p className="text-xs font-black text-blue-700 uppercase tracking-widest">{L ? "تقييد الظهور" : "Visibility Restrictions"}</p>
+            <div className="border border-black/10 dark:border-white/10 rounded-xl p-4 bg-black/[0.04] dark:bg-white/[0.06] space-y-3">
+              <p className="text-xs font-black text-black dark:text-white uppercase tracking-widest">{L ? "تقييد الظهور" : "Visibility Restrictions"}</p>
               <MultiToggle
                 label={L ? "القطاعات المسموح بها" : "Allowed Segments"}
                 options={ALL_SEGMENTS}
@@ -579,7 +579,7 @@ export default function AdminExtraAddons() {
                 selected={form.plans}
                 onChange={v => setForm(f => ({ ...f, plans: v }))}
               />
-              <p className="text-[10px] text-blue-600/60">
+              <p className="text-[10px] text-black dark:text-white">
                 {L ? "إذا تركت القطاعات أو الباقات فارغة، ستظهر الإضافة للجميع بغض النظر عن القطاع أو الباقة المختارة." : "If segments or plans are left empty, the add-on will be visible to all regardless of segment or plan."}
               </p>
             </div>

@@ -16,11 +16,11 @@ import { useI18n } from "@/lib/i18n";
 
 function getBookingStatusConfig(L: boolean): Record<string, { label: string; color: string }> {
   return {
-    pending:   { label: L ? "في انتظار تحديد الموعد" : "Awaiting Scheduling", color: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" },
-    confirmed: { label: L ? "تم تأكيد الموعد" : "Confirmed", color: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" },
-    rejected:  { label: L ? "مرفوض" : "Rejected", color: "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800" },
+    pending:   { label: L ? "في انتظار تحديد الموعد" : "Awaiting Scheduling", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    confirmed: { label: L ? "تم تأكيد الموعد" : "Confirmed", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    rejected:  { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
     cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700" },
-    completed: { label: L ? "مكتمل" : "Completed", color: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" },
+    completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   };
 }
 
@@ -181,9 +181,9 @@ export default function AdminConsultation() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: L ? "إجمالي الطلبات" : "Total Requests", value: stats.total,     icon: Calendar,     color: "text-black dark:text-white" },
-          { label: L ? "قيد الانتظار" : "Pending",   value: stats.pending,   icon: Clock,        color: "text-amber-600" },
-          { label: L ? "مؤكدة" : "Confirmed",          value: stats.confirmed, icon: CheckCircle,  color: "text-green-600" },
-          { label: L ? "مكتملة" : "Completed",         value: stats.completed, icon: Users,        color: "text-blue-600" },
+          { label: L ? "قيد الانتظار" : "Pending",   value: stats.pending,   icon: Clock,        color: "text-black dark:text-white" },
+          { label: L ? "مؤكدة" : "Confirmed",          value: stats.confirmed, icon: CheckCircle,  color: "text-black dark:text-white" },
+          { label: L ? "مكتملة" : "Completed",         value: stats.completed, icon: Users,        color: "text-black dark:text-white" },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
             <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
@@ -271,7 +271,7 @@ export default function AdminConsultation() {
                           <CalendarClock className="w-3.5 h-3.5" />{L ? "تحديد موعد" : "Schedule"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => { setRejectBooking(b); setRejectNotes(""); }}
-                          className="rounded-xl text-xs h-8 text-red-500 border-red-200 hover:bg-red-50"
+                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]"
                           data-testid={`button-reject-${b.id || b._id}`}>
                           <XCircle className="w-3.5 h-3.5" />{L ? "رفض" : "Reject"}
                         </Button>
@@ -286,7 +286,7 @@ export default function AdminConsultation() {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleComplete(b)}
                           disabled={updateBookingMutation.isPending}
-                          className="rounded-xl text-xs h-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]"
                           data-testid={`button-complete-${b.id || b._id}`}>
                           <CheckCircle className="w-3 h-3" />{L ? "مكتمل" : "Complete"}
                         </Button>
@@ -299,7 +299,7 @@ export default function AdminConsultation() {
                     </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => { setReminderBooking(b); setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" }); }}
-                      className="rounded-xl text-xs h-8 gap-1 border-amber-200 text-amber-600 hover:bg-amber-50"
+                      className="rounded-xl text-xs h-8 gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       data-testid={`button-reminder-${b.id || b._id}`}>
                       <Bell className="w-3 h-3" />{L ? "تذكير" : "Remind"}
                     </Button>
@@ -404,13 +404,13 @@ export default function AdminConsultation() {
       <Dialog open={!!rejectBooking} onOpenChange={v => !v && setRejectBooking(null)}>
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-2 text-red-500">
+            <DialogTitle className="text-right flex items-center gap-2 text-black dark:text-white">
               <XCircle className="w-5 h-5" />{L ? "رفض طلب الاستشارة" : "Reject Consultation Request"}
             </DialogTitle>
           </DialogHeader>
           {rejectBooking && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30">
+              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                 <p className="font-bold text-sm text-black dark:text-white">{rejectBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{rejectBooking.clientEmail}</p>
               </div>
@@ -424,7 +424,7 @@ export default function AdminConsultation() {
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setRejectBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
                 <Button onClick={handleReject} disabled={updateBookingMutation.isPending}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-xl gap-1.5"
+                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-1.5"
                   data-testid="button-confirm-reject">
                   {updateBookingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" />{L ? "تأكيد الرفض" : "Confirm Rejection"}</>}
                 </Button>
@@ -439,21 +439,21 @@ export default function AdminConsultation() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <Bell className="w-5 h-5 text-amber-500" />
+              <Bell className="w-5 h-5 text-black dark:text-white" />
               {L ? "جدولة تذكير تحوّل للعميل" : "Schedule Client Switch Reminder"}
             </DialogTitle>
           </DialogHeader>
           {reminderBooking && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-sm">
+              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-sm">
                 <p className="font-bold text-black dark:text-white">{reminderBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{reminderBooking.clientEmail}{reminderBooking.clientPhone ? ` · ${reminderBooking.clientPhone}` : ""}</p>
-                <p className="text-[11px] text-amber-600 mt-1">{L ? "سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً" : "This client will be automatically added to the switch reminders list"}</p>
+                <p className="text-[11px] text-black dark:text-white mt-1">{L ? "سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً" : "This client will be automatically added to the switch reminders list"}</p>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
-                  {L ? "الشركة / النظام الحالي" : "Current Company / System"} <span className="text-red-400">*</span>
+                  {L ? "الشركة / النظام الحالي" : "Current Company / System"} <span className="text-black/70 dark:text-white/70">*</span>
                 </label>
                 <Input
                   value={reminderForm.currentProvider}
@@ -487,7 +487,7 @@ export default function AdminConsultation() {
 
               <div>
                 <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
-                  {L ? "تاريخ انتهاء اشتراكه الحالي" : "Current Subscription End Date"} <span className="text-red-400">*</span>
+                  {L ? "تاريخ انتهاء اشتراكه الحالي" : "Current Subscription End Date"} <span className="text-black/70 dark:text-white/70">*</span>
                 </label>
                 <Input
                   type="date"
@@ -515,7 +515,7 @@ export default function AdminConsultation() {
                 <Button
                   onClick={handleCreateReminder}
                   disabled={createReminderMutation.isPending}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl gap-2"
+                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-2"
                   data-testid="button-confirm-reminder"
                 >
                   {createReminderMutation.isPending
@@ -570,7 +570,7 @@ export default function AdminConsultation() {
               )}
               {viewBooking.meetingLink && (
                 <a href={viewBooking.meetingLink} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-xs text-blue-600 hover:underline px-1">
+                  className="flex items-center gap-2 text-xs text-black dark:text-white hover:underline px-1">
                   <Video className="w-3.5 h-3.5" />{L ? "رابط الاجتماع" : "Meeting Link"}
                 </a>
               )}

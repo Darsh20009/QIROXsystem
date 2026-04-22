@@ -135,7 +135,7 @@ function VideoTile({
 
   return (
     <div className={`relative w-full h-full bg-[#3c4043] rounded-xl overflow-hidden flex items-center justify-center
-      ${speaking && peer.audioOn ? "ring-2 ring-green-400" : ""}`}>
+      ${speaking && peer.audioOn ? "ring-2 ring-black/15 dark:ring-white/15" : ""}`}>
       {showVideo
         ? <video ref={vidRef} autoPlay playsInline muted={isSelf}
             className="w-full h-full object-cover"
@@ -153,15 +153,15 @@ function VideoTile({
       {/* Connecting overlay — shown while WebRTC is establishing */}
       {!isSelf && !peer.stream && peer.connectionState !== "failed" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#3c4043]/80 gap-2 z-10">
-          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+          <Loader2 className="w-5 h-5 text-black/70 dark:text-white/70 animate-spin" />
           <span className="text-[#9aa0a6] text-xs">جارٍ الاتصال...</span>
         </div>
       )}
       {/* Failed connection overlay */}
       {!isSelf && peer.connectionState === "failed" && !peer.stream && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/30 gap-2 z-10">
-          <Wifi className="w-5 h-5 text-red-400" />
-          <span className="text-red-300 text-xs">فشل الاتصال</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black dark:bg-white gap-2 z-10">
+          <Wifi className="w-5 h-5 text-black/70 dark:text-white/70" />
+          <span className="text-black/70 dark:text-white/70 text-xs">فشل الاتصال</span>
         </div>
       )}
       {/* Audio unlock overlay — appears when browser blocks autoplay */}
@@ -170,14 +170,14 @@ function VideoTile({
           onClick={unlockAudio}
           className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 gap-2 z-10 cursor-pointer"
           title="اضغط لتفعيل الصوت">
-          <VolumeOff className="w-6 h-6 text-yellow-300" />
-          <span className="text-yellow-300 text-xs font-medium">اضغط لتشغيل الصوت</span>
+          <VolumeOff className="w-6 h-6 text-black/70 dark:text-white/70" />
+          <span className="text-black/70 dark:text-white/70 text-xs font-medium">اضغط لتشغيل الصوت</span>
         </button>
       )}
       <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-1">
-        {!peer.audioOn && <MicOff className={`${small ? "w-3 h-3" : "w-3.5 h-3.5"} text-red-400 shrink-0`} />}
+        {!peer.audioOn && <MicOff className={`${small ? "w-3 h-3" : "w-3.5 h-3.5"} text-black/70 dark:text-white/70 shrink-0`} />}
         {peer.raisedHand && <span className={small ? "text-xs" : "text-sm"}>✋</span>}
-        {speaking && peer.audioOn && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />}
+        {speaking && peer.audioOn && <span className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse shrink-0" />}
         <span className={`text-white font-medium truncate ${small ? "text-[10px]" : "text-xs"}`}>{label}</span>
       </div>
     </div>
@@ -1511,12 +1511,12 @@ export default function MeetingRoom() {
               {/* Controls overlay */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
                 <button onClick={toggleAudio}
-                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
                   title={audioOn ? "إيقاف الميكروفون" : "تشغيل الميكروفون"}>
                   {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
                 </button>
                 <button onClick={toggleVideo}
-                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
                   title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}>
                   {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
                 </button>
@@ -1534,8 +1534,8 @@ export default function MeetingRoom() {
             <div className="flex gap-2">
               <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
                 audioOn && localStream?.getAudioTracks()[0]?.readyState === "live"
-                  ? "bg-green-500/10 border border-green-500/30 text-green-400"
-                  : mediaError ? "bg-red-500/10 border border-red-500/30 text-red-400"
+                  ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
+                  : mediaError ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
                   : "bg-[#3c4043] text-[#9aa0a6]"
               }`}>
                 <Mic className="w-3.5 h-3.5 shrink-0" />
@@ -1546,7 +1546,7 @@ export default function MeetingRoom() {
               </div>
               <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
                 videoOn && localStream?.getVideoTracks()[0]?.readyState === "live"
-                  ? "bg-green-500/10 border border-green-500/30 text-green-400"
+                  ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
                   : "bg-[#3c4043] text-[#9aa0a6]"
               }`}>
                 <Camera className="w-3.5 h-3.5 shrink-0" />
@@ -1563,14 +1563,14 @@ export default function MeetingRoom() {
 
             {/* Permission error with fix guide */}
             {mediaError && (
-              <div className={`p-4 rounded-xl space-y-3 ${permissionDenied ? "bg-red-500/10 border border-red-500/30" : "bg-yellow-500/10 border border-yellow-500/30"}`}>
+              <div className={`p-4 rounded-xl space-y-3 ${permissionDenied ? "bg-black dark:bg-white border border-black dark:border-white" : "bg-black dark:bg-white border border-black dark:border-white"}`}>
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${permissionDenied ? "text-red-400" : "text-yellow-400"}`} />
+                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`} />
                   <div>
-                    <p className={`text-xs font-semibold mb-1 ${permissionDenied ? "text-red-300" : "text-yellow-300"}`}>
+                    <p className={`text-xs font-semibold mb-1 ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`}>
                       {permissionDenied ? "لم يتم منح الإذن" : noDevice ? "لا يوجد جهاز" : inUse ? "الجهاز مستخدم" : "مشكلة في الوصول"}
                     </p>
-                    <p className={`text-xs leading-relaxed ${permissionDenied ? "text-red-400" : "text-yellow-400"}`}>
+                    <p className={`text-xs leading-relaxed ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`}>
                       {permissionDenied
                         ? "اضغط على أيقونة القفل 🔒 في شريط العنوان واختر «السماح» للكاميرا والميكروفون"
                         : noDevice
@@ -1590,7 +1590,7 @@ export default function MeetingRoom() {
 
             {/* HTTPS warning */}
             {window.location.protocol !== "https:" && window.location.hostname !== "localhost" && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs leading-relaxed flex items-start gap-2">
+              <div className="p-3 rounded-xl bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70 text-xs leading-relaxed flex items-start gap-2">
                 <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>يجب فتح الاجتماع عبر رابط آمن (HTTPS) لاستخدام الكاميرا والميكروفون</span>
               </div>
@@ -1606,7 +1606,7 @@ export default function MeetingRoom() {
                   onKeyDown={e => e.key === "Enter" && (guestName.trim() || defaultName) && joinMeeting()}
                   placeholder="أدخل اسمك..."
                   maxLength={40}
-                  className="w-full px-4 py-3 rounded-xl bg-[#3c4043] text-white placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-[#3c4043] text-white placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition"
                   data-testid="input-guest-name"
                   autoFocus
                 />
@@ -1636,7 +1636,7 @@ export default function MeetingRoom() {
             <button
               onClick={joinMeeting}
               disabled={!defaultName && !guestName.trim()}
-              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition shadow-lg"
+              className="w-full py-3.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition shadow-lg"
               data-testid="button-join-meeting"
             >
               انضمام الآن
@@ -1668,9 +1668,9 @@ export default function MeetingRoom() {
           {/* Animated waiting icon */}
           <div className="relative">
             <div className="w-20 h-20 rounded-full bg-[#3c4043] flex items-center justify-center">
-              <Lock className="w-8 h-8 text-amber-400" />
+              <Lock className="w-8 h-8 text-black/70 dark:text-white/70" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black dark:bg-white flex items-center justify-center">
               <Loader2 className="w-4 h-4 text-white animate-spin" />
             </div>
           </div>
@@ -1687,7 +1687,7 @@ export default function MeetingRoom() {
           {/* Pulsing dots animation */}
           <div className="flex gap-1.5">
             {[0, 1, 2].map(i => (
-              <div key={i} className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
+              <div key={i} className="w-2 h-2 rounded-full bg-black dark:bg-white animate-bounce"
                 style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
@@ -1704,11 +1704,11 @@ export default function MeetingRoom() {
             </p>
             <button
               onClick={() => sendWs({ type: "webrtc_lobby_request", roomId, name: userName, userId: myIdRef.current })}
-              className="w-full py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm font-medium transition border border-blue-500/30">
+              className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-black/70 dark:text-white/70 text-sm font-medium transition border border-black dark:border-white">
               إعادة إرسال الطلب
             </button>
             <button onClick={leave}
-              className="w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-400 text-sm font-medium transition border border-red-500/30">
+              className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-black/70 dark:text-white/70 text-sm font-medium transition border border-black dark:border-white">
               إلغاء الطلب والخروج
             </button>
           </div>
@@ -1735,8 +1735,8 @@ export default function MeetingRoom() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-white font-medium text-sm truncate max-w-[120px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
           <span className="text-[#9aa0a6] text-xs tabular-nums shrink-0">{timer}</span>
-          {meetingLocked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-          {recording && <span className="flex items-center gap-1 text-red-400 text-xs animate-pulse shrink-0"><CircleDot className="w-3 h-3" />تسجيل</span>}
+          {meetingLocked && <Lock className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />}
+          {recording && <span className="flex items-center gap-1 text-black/70 dark:text-white/70 text-xs animate-pulse shrink-0"><CircleDot className="w-3 h-3" />تسجيل</span>}
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3c4043] text-[#9aa0a6] text-xs">
@@ -1744,7 +1744,7 @@ export default function MeetingRoom() {
           </div>
           {lobbyRequests.length > 0 && (
             <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-              className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium animate-pulse">
+              className="px-2.5 py-1 rounded-lg bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70 text-xs font-medium animate-pulse">
               {lobbyRequests.length} ينتظر
             </button>
           )}
@@ -1754,7 +1754,7 @@ export default function MeetingRoom() {
           </button>
           <button onClick={copyLink} title="نسخ الرابط"
             className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
-            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-black/70 dark:text-white/70" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
@@ -1776,7 +1776,7 @@ export default function MeetingRoom() {
               {`${window.location.origin}/meet/${roomId}`}
             </div>
             <button onClick={copyLink}
-              className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition flex items-center justify-center gap-2">
+              className="w-full py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition flex items-center justify-center gap-2">
               {copied ? <><Check className="w-4 h-4" /> تم النسخ</> : <><Copy className="w-4 h-4" /> نسخ الرابط</>}
             </button>
           </div>
@@ -1802,7 +1802,7 @@ export default function MeetingRoom() {
               <div className="flex gap-2 shrink-0 overflow-x-auto pb-1" style={{ height: isMobile ? "80px" : "110px" }}>
                 {thumbPeers.map(p => (
                   <div key={p.id} onClick={() => setPinnedId(p.id)}
-                    className="rounded-lg overflow-hidden relative shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+                    className="rounded-lg overflow-hidden relative shrink-0 cursor-pointer hover:ring-2 hover:ring-black/15 dark:ring-white/15 transition"
                     style={{ aspectRatio: "16/9", height: "100%" }}>
                     <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} small mirrored={facingModeRef.current === "user"} />
                   </div>
@@ -1828,7 +1828,7 @@ export default function MeetingRoom() {
           <div className="pointer-events-none absolute bottom-28 left-0 right-0 px-4 z-30 flex flex-col gap-1" style={{ direction: "rtl" }}>
             {captions.slice(-3).map(cap => (
               <div key={cap.id}
-                className={`self-center max-w-[80%] px-4 py-2 rounded-xl text-sm text-white shadow-lg backdrop-blur-sm ${cap.isSelf ? "bg-blue-700/80" : "bg-black/70"}`}>
+                className={`self-center max-w-[80%] px-4 py-2 rounded-xl text-sm text-white shadow-lg backdrop-blur-sm ${cap.isSelf ? "bg-black dark:bg-white" : "bg-black/70"}`}>
                 <span className="font-semibold ml-2 text-xs opacity-70">{cap.name}:</span>{cap.text}
               </div>
             ))}
@@ -1840,8 +1840,8 @@ export default function MeetingRoom() {
         {activePoll && (
           <div className="absolute top-3 left-3 z-30 bg-[#292b2f]/95 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-white/10 w-64" style={{ direction: "rtl" }}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-blue-300 text-xs font-semibold flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> استطلاع</span>
-              {isRoomHost && <button onClick={endPoll} className="text-[#9aa0a6] hover:text-red-400 text-xs transition">إنهاء</button>}
+              <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> استطلاع</span>
+              {isRoomHost && <button onClick={endPoll} className="text-[#9aa0a6] hover:text-black/70 dark:text-white/70 text-xs transition">إنهاء</button>}
             </div>
             <p className="text-white text-sm font-medium mb-3 leading-snug">{activePoll.question}</p>
             <div className="space-y-2">
@@ -1850,11 +1850,11 @@ export default function MeetingRoom() {
                 const pct = total > 0 ? Math.round(((opt.votes ?? 0) / total) * 100) : 0;
                 return (
                   <button key={i} onClick={() => votePoll(i)} disabled={myPollVote !== null}
-                    className={`w-full text-right px-3 py-2 rounded-xl text-sm transition relative overflow-hidden ${myPollVote === i ? "ring-2 ring-blue-500" : ""} ${myPollVote !== null ? "cursor-default" : "hover:bg-white/10"} bg-white/5`}>
-                    <div className="absolute inset-0 bg-blue-600/20 transition-all" style={{ width: `${pct}%` }} />
+                    className={`w-full text-right px-3 py-2 rounded-xl text-sm transition relative overflow-hidden ${myPollVote === i ? "ring-2 ring-black dark:ring-white" : ""} ${myPollVote !== null ? "cursor-default" : "hover:bg-white/10"} bg-white/5`}>
+                    <div className="absolute inset-0 bg-black dark:bg-white transition-all" style={{ width: `${pct}%` }} />
                     <div className="relative flex justify-between">
                       <span className="text-white">{opt.text}</span>
-                      {myPollVote !== null && <span className="text-blue-300 text-xs">{pct}%</span>}
+                      {myPollVote !== null && <span className="text-black/70 dark:text-white/70 text-xs">{pct}%</span>}
                     </div>
                   </button>
                 );
@@ -1873,19 +1873,19 @@ export default function MeetingRoom() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowPollCreator(false)}>
             <div className="bg-[#292b2f] rounded-2xl p-5 shadow-2xl w-80 space-y-3" onClick={e => e.stopPropagation()} dir={dir}>
               <div className="flex items-center justify-between">
-                <span className="text-white font-semibold flex items-center gap-2"><BarChart2 className="w-4 h-4 text-blue-400" /> إنشاء استطلاع</span>
+                <span className="text-white font-semibold flex items-center gap-2"><BarChart2 className="w-4 h-4 text-black/70 dark:text-white/70" /> إنشاء استطلاع</span>
                 <button onClick={() => setShowPollCreator(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
               </div>
               <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
                 placeholder="السؤال..."
-                className="w-full px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition" />
+                className="w-full px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition" />
               {pollOptions.map((opt, i) => (
                 <div key={i} className="flex gap-2">
                   <input value={opt} onChange={e => { const a = [...pollOptions]; a[i] = e.target.value; setPollOptions(a); }}
                     placeholder={`خيار ${i + 1}`}
-                    className="flex-1 px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition" />
+                    className="flex-1 px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition" />
                   {pollOptions.length > 2 && (
-                    <button onClick={() => setPollOptions(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">
+                    <button onClick={() => setPollOptions(prev => prev.filter((_, j) => j !== i))} className="text-black/70 dark:text-white/70 hover:text-black/70 dark:text-white/70">
                       <X className="w-4 h-4" />
                     </button>
                   )}
@@ -1898,7 +1898,7 @@ export default function MeetingRoom() {
                 </button>
               )}
               <button onClick={createPoll}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition">
+                className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-medium text-sm transition">
                 بدء الاستطلاع
               </button>
             </div>
@@ -1910,7 +1910,7 @@ export default function MeetingRoom() {
           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-[#292b2f] rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl border border-white/10">
             <span className="text-white text-sm">التسجيل جاهز</span>
             <button onClick={downloadRecording}
-              className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition flex items-center gap-1.5">
+              className="px-3 py-1.5 rounded-lg bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs font-medium transition flex items-center gap-1.5">
               <Download className="w-3.5 h-3.5" /> تنزيل
             </button>
             <button onClick={() => setRecordingBlob(null)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
@@ -1923,19 +1923,19 @@ export default function MeetingRoom() {
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08] shrink-0">
               <div className="flex gap-0.5 flex-wrap">
                 <button onClick={() => { setPanel("chat"); setUnread(0); }}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
-                  الدردشة {unread > 0 && panel !== "chat" && <span className="mr-1 w-4 h-4 rounded-full bg-red-500 text-[10px] inline-flex items-center justify-center">{unread}</span>}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  الدردشة {unread > 0 && panel !== "chat" && <span className="mr-1 w-4 h-4 rounded-full bg-black dark:bg-white text-[10px] inline-flex items-center justify-center">{unread}</span>}
                 </button>
                 <button onClick={() => setPanel("participants")}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
                   المشاركون
                 </button>
                 <button onClick={showAttendancePanel}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
                   الحضور
                 </button>
                 <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-purple-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
                   AI
                 </button>
               </div>
@@ -1952,7 +1952,7 @@ export default function MeetingRoom() {
                   {chat.map(msg => (
                     <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.isSelf ? "items-end" : "items-start"}`}>
                       <span className="text-[#9aa0a6] text-xs">{msg.isSelf ? "أنت" : msg.name} · {msg.time}</span>
-                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white leading-relaxed ${msg.isSelf ? "bg-blue-600" : "bg-[#3c4043]"}`}>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white leading-relaxed ${msg.isSelf ? "bg-black dark:bg-white" : "bg-[#3c4043]"}`}>
                         {msg.text}
                       </div>
                     </div>
@@ -1966,7 +1966,7 @@ export default function MeetingRoom() {
                       placeholder="اكتب رسالة..." maxLength={500}
                       className="flex-1 bg-transparent text-white text-sm placeholder:text-[#9aa0a6] outline-none"
                       data-testid="input-chat-message" />
-                    <button onClick={sendChat} className="text-blue-400 hover:text-blue-300 transition" data-testid="button-send-chat">
+                    <button onClick={sendChat} className="text-black/70 dark:text-white/70 hover:text-black/70 dark:text-white/70 transition" data-testid="button-send-chat">
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
@@ -1979,15 +1979,15 @@ export default function MeetingRoom() {
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {/* Host controls */}
                 {isRoomHost && (
-                  <div className="mb-3 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 space-y-2">
-                    <p className="text-blue-300 text-xs font-semibold">🎛 أدوات المضيف</p>
+                  <div className="mb-3 p-3 rounded-xl bg-black dark:bg-white border border-black dark:border-white space-y-2">
+                    <p className="text-black/70 dark:text-white/70 text-xs font-semibold">🎛 أدوات المضيف</p>
                     <div className="flex flex-wrap gap-2">
                       <button onClick={muteAll}
                         className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs font-medium transition flex items-center justify-center gap-1">
                         <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
                       </button>
                       <button onClick={toggleLock}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" : "bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6]"}`}>
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-black dark:bg-white text-black/70 dark:text-white/70 hover:bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6]"}`}>
                         {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
                       </button>
                     </div>
@@ -1995,15 +1995,15 @@ export default function MeetingRoom() {
                 )}
                 {lobbyRequests.length > 0 && (
                   <div className="mb-3 space-y-2">
-                    <p className="text-amber-300 text-xs font-medium px-1">في الانتظار</p>
+                    <p className="text-black/70 dark:text-white/70 text-xs font-medium px-1">في الانتظار</p>
                     {lobbyRequests.map(r => (
-                      <div key={r.userId} className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                      <div key={r.userId} className="bg-black dark:bg-white border border-black dark:border-white rounded-xl p-3">
                         <p className="text-white text-sm font-medium mb-2">{r.userName}</p>
                         <div className="flex gap-2">
                           <button onClick={() => approveLobby(r.userId)}
-                            className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition">قبول</button>
+                            className="flex-1 py-1.5 rounded-lg bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs font-medium transition">قبول</button>
                           <button onClick={() => denyLobby(r.userId)}
-                            className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-red-600 text-white text-xs font-medium transition">رفض</button>
+                            className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-black dark:bg-white text-white text-xs font-medium transition">رفض</button>
                         </div>
                       </div>
                     ))}
@@ -2019,7 +2019,7 @@ export default function MeetingRoom() {
                       <p className="text-white text-sm truncate">{p.id === myId ? `${p.name} (أنت)` : p.name}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
                       {!p.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
                       {p.raisedHand && <span className="text-sm">✋</span>}
                       {/* Host controls per peer */}
@@ -2029,7 +2029,7 @@ export default function MeetingRoom() {
                               if (!confirm(`نقل صلاحية المضيف إلى ${p.name}؟`)) return;
                               sendWs({ type: "webrtc_transfer_host", roomId, targetId: p.id });
                             }} title="نقل المضيف"
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-yellow-500/20 text-[#9aa0a6] hover:text-yellow-400 transition">
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black dark:bg-white text-[#9aa0a6] hover:text-black/70 dark:text-white/70 transition">
                             <Crown className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => mutePeer(p.id)} title="كتم"
@@ -2037,7 +2037,7 @@ export default function MeetingRoom() {
                             <VolumeX className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => kickPeer(p.id, p.name)} title="إخراج"
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-[#9aa0a6] hover:text-red-400 transition">
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black dark:bg-white text-[#9aa0a6] hover:text-black/70 dark:text-white/70 transition">
                             <UserX className="w-3.5 h-3.5" />
                           </button>
                         </>
@@ -2056,7 +2056,7 @@ export default function MeetingRoom() {
                   <div className="text-center text-[#9aa0a6] text-sm mt-8">لا يوجد سجل بعد</div>
                 ) : attendanceLog.map((entry, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-green-400" : "bg-red-400"}`} />
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
                     <div className="flex-1 min-w-0">
                       <span className="text-white text-sm truncate">{entry.name}</span>
                     </div>
@@ -2073,13 +2073,13 @@ export default function MeetingRoom() {
               <div className="flex-1 overflow-y-auto p-3">
                 {aiSummaryLoading ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                    <Loader2 className="w-8 h-8 text-black/70 dark:text-white/70 animate-spin" />
                     <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
                   </div>
                 ) : aiSummary ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-purple-300 text-xs font-semibold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> ملخص الذكاء الاصطناعي</span>
+                      <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> ملخص الذكاء الاصطناعي</span>
                       <button onClick={getAiSummary} className="text-[#9aa0a6] hover:text-white text-xs transition">تحديث</button>
                     </div>
                     <div className="text-white text-sm leading-relaxed whitespace-pre-wrap bg-[#3c4043]/50 rounded-xl p-3">
@@ -2088,10 +2088,10 @@ export default function MeetingRoom() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <Sparkles className="w-8 h-8 text-purple-400" />
+                    <Sparkles className="w-8 h-8 text-black/70 dark:text-white/70" />
                     <p className="text-[#9aa0a6] text-sm text-center">اضغط لتوليد ملخص ذكي للاجتماع</p>
                     <button onClick={getAiSummary}
-                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition">
+                      className="px-4 py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition">
                       توليد الملخص
                     </button>
                   </div>
@@ -2109,19 +2109,19 @@ export default function MeetingRoom() {
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08]">
               <div className="flex gap-0.5 flex-wrap">
                 <button onClick={() => { setPanel("chat"); setUnread(0); }}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
                   الدردشة
                 </button>
                 <button onClick={() => setPanel("participants")}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
                   المشاركون
                 </button>
                 <button onClick={showAttendancePanel}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
                   الحضور
                 </button>
                 <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-purple-600 text-white" : "text-[#9aa0a6]"}`}>
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
                   AI
                 </button>
               </div>
@@ -2135,7 +2135,7 @@ export default function MeetingRoom() {
                   {chat.map(msg => (
                     <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.isSelf ? "items-end" : "items-start"}`}>
                       <span className="text-[#9aa0a6] text-xs">{msg.isSelf ? "أنت" : msg.name} · {msg.time}</span>
-                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.isSelf ? "bg-blue-600" : "bg-[#3c4043]"}`}>{msg.text}</div>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.isSelf ? "bg-black dark:bg-white" : "bg-[#3c4043]"}`}>{msg.text}</div>
                     </div>
                   ))}
                   <div ref={chatEndRef} />
@@ -2146,7 +2146,7 @@ export default function MeetingRoom() {
                       onKeyDown={e => e.key === "Enter" && sendChat()}
                       placeholder="اكتب رسالة..." maxLength={500}
                       className="flex-1 bg-transparent text-white text-sm placeholder:text-[#9aa0a6] outline-none" />
-                    <button onClick={sendChat} className="text-blue-400"><Send className="w-4 h-4" /></button>
+                    <button onClick={sendChat} className="text-black/70 dark:text-white/70"><Send className="w-4 h-4" /></button>
                   </div>
                 </div>
               </>
@@ -2161,7 +2161,7 @@ export default function MeetingRoom() {
                       <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
                     </button>
                     <button onClick={toggleLock}
-                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-amber-500/20 text-amber-300" : "bg-[#3c4043] text-[#9aa0a6]"}`}>
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-black dark:bg-white text-black/70 dark:text-white/70" : "bg-[#3c4043] text-[#9aa0a6]"}`}>
                       {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
                     </button>
                   </div>
@@ -2174,7 +2174,7 @@ export default function MeetingRoom() {
                     </div>
                     <p className="flex-1 text-white text-sm truncate">{p.id === myId ? `${p.name} (أنت)` : p.name}</p>
                     <div className="flex items-center gap-1.5">
-                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
                       {!p.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
                       {p.raisedHand && <span>✋</span>}
                     </div>
@@ -2190,7 +2190,7 @@ export default function MeetingRoom() {
                   <div className="text-center text-[#9aa0a6] text-sm mt-6">لا يوجد سجل بعد</div>
                 ) : attendanceLog.map((entry, i) => (
                   <div key={i} className="flex items-center gap-2 p-2 rounded-lg">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-green-400" : "bg-red-400"}`} />
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
                     <span className="text-white text-xs flex-1 truncate">{entry.name}</span>
                     <span className="text-[#9aa0a6] text-xs">{entry.action === "join" ? "انضم" : "غادر"} · {entry.time}</span>
                   </div>
@@ -2202,18 +2202,18 @@ export default function MeetingRoom() {
               <div className="flex-1 overflow-y-auto p-3">
                 {aiSummaryLoading ? (
                   <div className="flex flex-col items-center justify-center h-32 gap-3">
-                    <Loader2 className="w-7 h-7 text-purple-400 animate-spin" />
+                    <Loader2 className="w-7 h-7 text-black/70 dark:text-white/70 animate-spin" />
                     <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
                   </div>
                 ) : aiSummary ? (
                   <div className="space-y-2">
-                    <span className="text-purple-300 text-xs font-semibold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> ملخص AI</span>
+                    <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> ملخص AI</span>
                     <div className="text-white text-sm leading-relaxed whitespace-pre-wrap">{aiSummary}</div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 mt-4">
                     <button onClick={getAiSummary}
-                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition">
+                      className="px-4 py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition">
                       توليد الملخص
                     </button>
                   </div>
@@ -2244,12 +2244,12 @@ export default function MeetingRoom() {
         {/* Mobile: secondary row */}
         <div className="flex md:hidden items-center justify-center gap-3 py-2 px-4">
           <button onClick={toggleScreen}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
             data-testid="button-toggle-screen">
             <Monitor className={`w-4 h-4 ${screenSharing ? "text-white" : "text-[#9aa0a6]"}`} />
           </button>
           <button onClick={toggleHand}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-yellow-500" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
             <Hand className={`w-4 h-4 ${raisedHand ? "text-white" : "text-[#9aa0a6]"}`} />
           </button>
           <button onClick={() => setShowEmojiPicker(s => !s)}
@@ -2273,14 +2273,14 @@ export default function MeetingRoom() {
                   navigate("/qmeet");
                 }
               }}
-              className="w-10 h-10 rounded-full bg-red-900 hover:bg-red-800 flex items-center justify-center transition"
+              className="w-10 h-10 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center transition"
               title="إنهاء للجميع"
               data-testid="button-end-for-all-mobile">
-              <XCircle className="w-4 h-4 text-red-300" />
+              <XCircle className="w-4 h-4 text-black/70 dark:text-white/70" />
             </button>
           )}
           <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
             {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
           </button>
         </div>
@@ -2290,12 +2290,12 @@ export default function MeetingRoom() {
           {/* Left / Desktop secondary */}
           <div className="hidden md:flex items-center gap-2 w-44">
             <button onClick={toggleScreen}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
               data-testid="button-toggle-screen">
               <Monitor className={`w-4 h-4 ${screenSharing ? "text-white" : "text-[#9aa0a6]"}`} />
             </button>
             <button onClick={toggleHand}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-yellow-500" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <Hand className={`w-4 h-4 ${raisedHand ? "text-white" : "text-[#9aa0a6]"}`} />
             </button>
             <button onClick={() => setShowEmojiPicker(s => !s)}
@@ -2313,12 +2313,12 @@ export default function MeetingRoom() {
           {/* Center: primary controls */}
           <div className="flex items-center gap-3">
             <button onClick={toggleAudio}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${audioOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${audioOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
               data-testid="button-toggle-audio">
               {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
             </button>
             <button onClick={toggleVideo}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${videoOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${videoOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
               data-testid="button-toggle-video">
               {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
             </button>
@@ -2334,7 +2334,7 @@ export default function MeetingRoom() {
               </button>
             )}
             <button onClick={leave}
-              className="w-14 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition shadow-lg"
+              className="w-14 h-12 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center transition shadow-lg"
               title="مغادرة الاجتماع"
               data-testid="button-leave">
               <PhoneOff className="w-5 h-5 text-white" />
@@ -2350,7 +2350,7 @@ export default function MeetingRoom() {
                     navigate("/qmeet");
                   }
                 }}
-                className="px-3 h-12 rounded-full bg-red-900 hover:bg-red-800 flex items-center justify-center gap-1.5 transition shadow-lg text-white text-xs font-semibold"
+                className="px-3 h-12 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center gap-1.5 transition shadow-lg text-white text-xs font-semibold"
                 title="إنهاء الاجتماع للجميع"
                 data-testid="button-end-for-all">
                 <XCircle className="w-4 h-4" />
@@ -2362,11 +2362,11 @@ export default function MeetingRoom() {
           {/* Right */}
           <div className="hidden md:flex items-center gap-2 justify-end">
             <button onClick={toggleCaptions} title="تعليقات مباشرة"
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${captionsOn ? "bg-green-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${captionsOn ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <Subtitles className={`w-4 h-4 ${captionsOn ? "text-white" : "text-[#9aa0a6]"}`} />
             </button>
             <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "بدء التسجيل"}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-red-600 animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-black dark:bg-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
             </button>
             {isRoomHost && (
@@ -2376,18 +2376,18 @@ export default function MeetingRoom() {
               </button>
             )}
             <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
               title={isSpotlight ? "وضع الشبكة" : "وضع التركيز"}>
               {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
             </button>
             <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
               data-testid="button-toggle-chat">
               <MessageSquare className="w-5 h-5 text-white" />
-              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
+              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black dark:bg-white text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
             </button>
             <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
               data-testid="button-toggle-participants">
               <Users className="w-5 h-5 text-white" />
             </button>
@@ -2396,16 +2396,16 @@ export default function MeetingRoom() {
           {/* Mobile: chat + participants + recording */}
           <div className="flex md:hidden items-center gap-2">
             <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "تسجيل"}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-red-600 animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-black dark:bg-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
             </button>
             <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <MessageSquare className="w-5 h-5 text-white" />
-              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-[10px] flex items-center justify-center font-bold text-white">{unread}</span>}
+              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black dark:bg-white text-[10px] flex items-center justify-center font-bold text-white">{unread}</span>}
             </button>
             <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <Users className="w-5 h-5 text-white" />
             </button>
           </div>

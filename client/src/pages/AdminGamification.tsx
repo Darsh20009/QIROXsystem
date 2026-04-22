@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Trophy, Star, Zap, Target, Award } from "lucide-react";
 
 const BADGE_META: Record<string, { emoji: string; color: string; bg: string }> = {
-  "محترف":  { emoji: "💎", color: "text-violet-700 dark:text-violet-300",  bg: "bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800" },
-  "متميز":  { emoji: "🥇", color: "text-yellow-700 dark:text-yellow-300",   bg: "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800" },
-  "نشط":    { emoji: "🥈", color: "text-blue-700 dark:text-blue-300",       bg: "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800" },
+  "محترف":  { emoji: "💎", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  "متميز":  { emoji: "🥇", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  "نشط":    { emoji: "🥈", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",       bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   "مبتدئ":  { emoji: "🥉", color: "text-slate-600 dark:text-slate-300",     bg: "bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700" },
 };
 
@@ -18,9 +18,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const RANK_STYLES = [
-  "from-yellow-400 to-yellow-600 text-white",
+  "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white text-white",
   "from-slate-400 to-slate-500 text-white",
-  "from-amber-600 to-amber-700 text-white",
+  "from-black dark:from-white to-black dark:to-white text-white",
 ];
 
 export default function AdminGamification() {
@@ -44,7 +44,7 @@ export default function AdminGamification() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2.5">
-          <Trophy className="w-6 h-6 text-yellow-500" />
+          <Trophy className="w-6 h-6 text-black dark:text-white" />
           {L ? "لوحة التميّز — نقاط الفريق" : "Team Excellence Board"}
         </h1>
         <p className="text-sm text-foreground/40 mt-1">
@@ -55,10 +55,10 @@ export default function AdminGamification() {
       {/* Stats overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: Trophy, label: L ? "إجمالي الأعضاء" : "Team Members",    value: leaderboard.length,                             color: "text-yellow-500" },
-          { icon: Star,   label: L ? "إجمالي النقاط" : "Total Points",      value: totalPoints,                                    color: "text-violet-500" },
-          { icon: Target, label: L ? "مهام مكتملة" : "Tasks Completed",     value: totalTasks,                                     color: "text-green-500" },
-          { icon: Award,  label: L ? "أعلى رتبة" : "Top Badge",             value: leaderboard[0]?.badge || "—",                  color: "text-blue-500" },
+          { icon: Trophy, label: L ? "إجمالي الأعضاء" : "Team Members",    value: leaderboard.length,                             color: "text-black dark:text-white" },
+          { icon: Star,   label: L ? "إجمالي النقاط" : "Total Points",      value: totalPoints,                                    color: "text-black dark:text-white" },
+          { icon: Target, label: L ? "مهام مكتملة" : "Tasks Completed",     value: totalTasks,                                     color: "text-black dark:text-white" },
+          { icon: Award,  label: L ? "أعلى رتبة" : "Top Badge",             value: leaderboard[0]?.badge || "—",                  color: "text-black dark:text-white" },
         ].map((s, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardContent className="pt-4 pb-4">
@@ -85,7 +85,7 @@ export default function AdminGamification() {
             <Card className="border-0 shadow-sm overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-yellow-500" />
+                  <Trophy className="w-4 h-4 text-black dark:text-white" />
                   {L ? "المتصدرون" : "Top Performers"}
                 </CardTitle>
               </CardHeader>
@@ -130,7 +130,7 @@ export default function AdminGamification() {
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-500" />
+                <Zap className="w-4 h-4 text-black dark:text-white" />
                 {L ? "قائمة الترتيب الكاملة" : "Full Leaderboard"}
               </CardTitle>
             </CardHeader>
@@ -143,9 +143,9 @@ export default function AdminGamification() {
                     <div key={emp.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-foreground/5 transition-colors group" data-testid={`row-employee-${emp.id}`}>
                       {/* Rank */}
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                        emp.rank === 1 ? "bg-yellow-500 text-white" :
+                        emp.rank === 1 ? "bg-black dark:bg-white text-white" :
                         emp.rank === 2 ? "bg-slate-400 text-white" :
-                        emp.rank === 3 ? "bg-amber-600 text-white" :
+                        emp.rank === 3 ? "bg-black dark:bg-white text-white" :
                         "bg-foreground/10 text-foreground/50"
                       }`}>
                         {emp.rank}
@@ -166,7 +166,7 @@ export default function AdminGamification() {
                         </div>
                         {/* Progress bar */}
                         <div className="mt-1 h-1.5 bg-foreground/10 rounded-full overflow-hidden w-full">
-                          <div className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                         </div>
                         <div className="flex gap-3 mt-1 text-[10px] text-foreground/40">
                           <span>✅ {emp.completedTasks} {L ? "مهمة" : "tasks"}</span>

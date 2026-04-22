@@ -130,9 +130,9 @@ export default function TwoFactorSetup() {
         </p>
       </div>
 
-      <div className={`rounded-2xl border p-4 flex items-center gap-3 ${anyEnabled ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50" : "bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.07] dark:border-white/[0.07]"}`}>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${anyEnabled ? "bg-emerald-100 dark:bg-emerald-900/40" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
-          {anyEnabled ? <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> : <X className="w-5 h-5 text-black/30 dark:text-white/30" />}
+      <div className={`rounded-2xl border p-4 flex items-center gap-3 ${anyEnabled ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.07] dark:border-white/[0.07]"}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${anyEnabled ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
+          {anyEnabled ? <Check className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70" /> : <X className="w-5 h-5 text-black/30 dark:text-white/30" />}
         </div>
         <div>
           <p className="font-bold text-sm text-black dark:text-white">{anyEnabled ? (L ? "مفعّل" : "Enabled") : (L ? "غير مفعّل" : "Not Enabled")}</p>
@@ -145,9 +145,9 @@ export default function TwoFactorSetup() {
       </div>
 
       {!anyEnabled && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3 flex gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-700 dark:text-amber-400">
+        <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 flex gap-2">
+          <AlertTriangle className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0 mt-0.5" />
+          <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
             {L ? "فعّل طريقة واحدة على الأقل لحماية حسابك. يمكنك تفعيل أكثر من طريقة للحصول على خيارات متعددة عند تسجيل الدخول." : "Enable at least one method to protect your account. You can enable multiple methods for more options at login."}
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function TwoFactorSetup() {
               <p className="text-xs text-white/40 mt-0.5">أدخل رمزك على أي جهاز جديد بدون تطبيق خارجي</p>
             </div>
             <div className="w-7 h-7 rounded-lg bg-white/10 group-hover:bg-white/15 flex items-center justify-center transition-colors">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
             </div>
           </div>
         </Link>
@@ -173,15 +173,15 @@ export default function TwoFactorSetup() {
 
       <div className="space-y-3">
         {methods.map(m => (
-          <div key={m.id} className={`rounded-2xl border p-4 transition-all ${m.enabled ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/10" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.02]"}`}>
+          <div key={m.id} className={`rounded-2xl border p-4 transition-all ${m.enabled ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.02]"}`}>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${m.enabled ? "bg-emerald-100 dark:bg-emerald-900/40" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
-                <m.icon className={`w-5 h-5 ${m.enabled ? "text-emerald-600 dark:text-emerald-400" : "text-black/40 dark:text-white/40"}`} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${m.enabled ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
+                <m.icon className={`w-5 h-5 ${m.enabled ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/40 dark:text-white/40"}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-sm text-black dark:text-white">{m.label}</p>
-                  {m.enabled && <span className="text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-full font-bold">{L ? "مفعّل" : "Enabled"}</span>}
+                  {m.enabled && <span className="text-[10px] px-2 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 rounded-full font-bold">{L ? "مفعّل" : "Enabled"}</span>}
                 </div>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{m.desc}</p>
               </div>
@@ -205,7 +205,7 @@ export default function TwoFactorSetup() {
               {m.enabled && disabling !== m.id && (
                 <Button size="sm" variant="outline"
                   onClick={() => setDisabling(m.id)}
-                  className="shrink-0 text-xs text-red-600 border-red-200 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="shrink-0 text-xs text-black dark:text-white border-black/10 dark:border-white/10 dark:border-black dark:border-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white"
                   data-testid={`button-disable-${m.id}`}
                 >
                   {L ? "إلغاء" : "Disable"}
@@ -214,7 +214,7 @@ export default function TwoFactorSetup() {
             </div>
 
             {m.id === "push" && !m.enabled && !status?.hasPushSubscriptions && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+              <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-2 flex items-center gap-1">
                 <Bell className="w-3 h-3 shrink-0" />
                 {L ? "فعّل إشعارات المتصفح أولاً حتى تتمكن من استخدام هذه الطريقة" : "Enable browser notifications first to use this method"}
               </p>
@@ -223,8 +223,8 @@ export default function TwoFactorSetup() {
             <AnimatePresence>
               {disabling === m.id && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                  <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800/50 space-y-2">
-                    <p className="text-xs text-red-600 dark:text-red-400 font-bold">
+                  <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 dark:border-black dark:border-white space-y-2">
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold">
                       {L ? `هل أنت متأكد من إلغاء تفعيل ${m.label}؟` : `Are you sure you want to disable ${m.label}?`}
                     </p>
                     <div className="flex gap-2">
@@ -352,7 +352,7 @@ export default function TwoFactorSetup() {
                       placeholder={L ? "تأكيد كلمة الاسترداد" : "Confirm recovery phrase"}
                       data-testid="input-passphrase-confirm" />
                     {passphrase && passphraseConfirm && passphrase !== passphraseConfirm && (
-                      <p className="text-xs text-red-500">{L ? "الكلمتان غير متطابقتين" : "Phrases do not match"}</p>
+                      <p className="text-xs text-black dark:text-white">{L ? "الكلمتان غير متطابقتين" : "Phrases do not match"}</p>
                     )}
                     <div className="flex gap-2">
                       <Button onClick={() => passphraseSetupMutation.mutate(passphrase)}

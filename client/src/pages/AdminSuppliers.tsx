@@ -15,10 +15,10 @@ import { Truck, Plus, Search, CheckCircle, XCircle, Clock, Eye, UserPlus, Packag
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 function getOfferStatus(L: boolean): Record<string, { label: string; color: string }> { return {
-  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  accepted: { label: L ? "مقبول" : "Accepted", color: "bg-green-100 text-green-700 border-green-200" },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 border-red-200" },
+  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  accepted: { label: L ? "مقبول" : "Accepted", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
 };
 }
 
@@ -75,9 +75,9 @@ export default function AdminSuppliers() {
 
       <div className="grid grid-cols-4 gap-4">
         <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{suppliers.length}</div><div className="text-xs text-black/50">إجمالي الموردين</div></CardContent></Card>
-        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-amber-600">{offers.filter(o => o.status === "pending").length}</div><div className="text-xs text-black/50">عروض بانتظار المراجعة</div></CardContent></Card>
-        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-green-600">{offers.filter(o => o.status === "accepted").length}</div><div className="text-xs text-black/50">عروض مقبولة</div></CardContent></Card>
-        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-blue-600">{offers.length}</div><div className="text-xs text-black/50">إجمالي العروض</div></CardContent></Card>
+        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-black dark:text-white">{offers.filter(o => o.status === "pending").length}</div><div className="text-xs text-black/50">عروض بانتظار المراجعة</div></CardContent></Card>
+        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-black dark:text-white">{offers.filter(o => o.status === "accepted").length}</div><div className="text-xs text-black/50">عروض مقبولة</div></CardContent></Card>
+        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-black dark:text-white">{offers.length}</div><div className="text-xs text-black/50">إجمالي العروض</div></CardContent></Card>
       </div>
 
       <div className="relative">
@@ -133,8 +133,8 @@ export default function AdminSuppliers() {
                       </div>
                       <div className="flex gap-2">
                         {offer.status === "pending" && <>
-                          <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => respondMutation.mutate({ id: offer.id, status: "accepted", adminNote: "" })} data-testid={`button-accept-offer-${offer.id}`}><CheckCircle className="w-3.5 h-3.5" /></Button>
-                          <Button size="sm" variant="outline" className="border-red-200 text-red-500" onClick={() => respondMutation.mutate({ id: offer.id, status: "rejected", adminNote: "" })} data-testid={`button-reject-offer-${offer.id}`}><XCircle className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white" onClick={() => respondMutation.mutate({ id: offer.id, status: "accepted", adminNote: "" })} data-testid={`button-accept-offer-${offer.id}`}><CheckCircle className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white" onClick={() => respondMutation.mutate({ id: offer.id, status: "rejected", adminNote: "" })} data-testid={`button-reject-offer-${offer.id}`}><XCircle className="w-3.5 h-3.5" /></Button>
                         </>}
                         <Button size="sm" variant="outline" className="border-black/20" onClick={() => setViewOffer(offer)} data-testid={`button-view-offer-${offer.id}`}><Eye className="w-3.5 h-3.5" /></Button>
                       </div>
@@ -169,7 +169,7 @@ export default function AdminSuppliers() {
               <label className="text-sm font-medium mb-1 block">الجوال</label>
               <Input value={inviteForm.phone} onChange={e => setInviteForm(f => ({ ...f, phone: e.target.value }))} placeholder="+966..." className="border-black/20" data-testid="input-supplier-phone" />
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
               سيُنشأ حساب للمورد بكلمة مرور مؤقتة يجب مشاركتها معه لتسجيل الدخول.
             </div>
             <div className="flex gap-2 justify-end">
@@ -187,17 +187,17 @@ export default function AdminSuppliers() {
           <DialogHeader><DialogTitle>{L ? "تم إنشاء حساب المورد" : "Supplier Account Created"}</DialogTitle></DialogHeader>
           {createdSupplier && (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <p className="text-center text-sm text-green-700">{L ? "تم إنشاء الحساب بنجاح!" : "Account created successfully!"}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-4">
+                <CheckCircle className="w-8 h-8 text-black dark:text-white mx-auto mb-2" />
+                <p className="text-center text-sm text-black dark:text-white">{L ? "تم إنشاء الحساب بنجاح!" : "Account created successfully!"}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-black/40">{L ? "اسم المستخدم" : "Username"}</span><span className="font-mono font-bold">{createdSupplier.username}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-black/40">{L ? "كلمة المرور المؤقتة" : "Temporary Password"}</span>
-                  <span className="font-mono font-bold bg-amber-100 px-2 py-0.5 rounded" data-testid="text-temp-password">{createdSupplier.tempPassword}</span>
+                  <span className="font-mono font-bold bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded" data-testid="text-temp-password">{createdSupplier.tempPassword}</span>
                 </div>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
                 <Key className="w-3.5 h-3.5 inline ml-1" /> {L ? "احفظ كلمة المرور المؤقتة وأرسلها للمورد. لن تتمكن من رؤيتها مرة أخرى." : "Save the temporary password and send it to the supplier. You won't be able to see it again."}
               </div>
               <Button onClick={() => setCreatedSupplier(null)} className="w-full bg-black text-white">{L ? "تم الاطلاع" : "Acknowledged"}</Button>
@@ -221,8 +221,8 @@ export default function AdminSuppliers() {
               {viewOffer.category && <div className="flex justify-between text-sm"><span className="text-black/50">{L ? "الفئة" : "Category"}</span><span>{viewOffer.category}</span></div>}
               {viewOffer.status === "pending" && (
                 <div className="flex gap-2 pt-2">
-                  <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "accepted", adminNote: "" })} data-testid="button-dialog-accept">{L ? "قبول العرض" : "Accept Offer"}</Button>
-                  <Button variant="outline" className="flex-1 border-red-200 text-red-500" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "rejected", adminNote: "" })} data-testid="button-dialog-reject">{L ? "رفض العرض" : "Reject Offer"}</Button>
+                  <Button className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "accepted", adminNote: "" })} data-testid="button-dialog-accept">{L ? "قبول العرض" : "Accept Offer"}</Button>
+                  <Button variant="outline" className="flex-1 border-black/10 dark:border-white/10 text-black dark:text-white" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "rejected", adminNote: "" })} data-testid="button-dialog-reject">{L ? "رفض العرض" : "Reject Offer"}</Button>
                 </div>
               )}
             </div>

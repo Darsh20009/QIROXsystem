@@ -19,7 +19,7 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(s => (
-        <Star key={s} style={{ width: size, height: size }} className={s <= rating ? "fill-amber-400 text-amber-400" : "text-black/20"} />
+        <Star key={s} style={{ width: size, height: size }} className={s <= rating ? "fill-amber-400 text-black/70 dark:text-white/70" : "text-black/20"} />
       ))}
     </div>
   );
@@ -66,8 +66,8 @@ export default function AdminReviews() {
           <p className="text-black/50 text-sm">{L ? "إدارة تقييمات العملاء والردود عليها" : "Manage customer reviews and replies"}</p>
         </div>
         <div className="flex gap-3 items-center">
-          <div className="text-center bg-amber-50 border border-amber-200 rounded-xl px-5 py-2">
-            <div className="text-2xl font-bold text-amber-600">{avgRating}</div>
+          <div className="text-center bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-5 py-2">
+            <div className="text-2xl font-bold text-black dark:text-white">{avgRating}</div>
             <StarRating rating={Math.round(Number(avgRating))} />
             <div className="text-xs text-black/40 mt-1">{reviews.length} {L ? "تقييم" : "reviews"}</div>
           </div>
@@ -76,8 +76,8 @@ export default function AdminReviews() {
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{reviews.length}</div><div className="text-xs text-black/50">{L ? "إجمالي التقييمات" : "Total Reviews"}</div></CardContent></Card>
-        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-green-600">{reviews.filter(r => r.isPublic).length}</div><div className="text-xs text-black/50">{L ? "ظاهرة للعموم" : "Public"}</div></CardContent></Card>
-        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-blue-600">{reviews.filter(r => r.adminReply).length}</div><div className="text-xs text-black/50">{L ? "تم الرد عليها" : "Replied"}</div></CardContent></Card>
+        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-black dark:text-white">{reviews.filter(r => r.isPublic).length}</div><div className="text-xs text-black/50">{L ? "ظاهرة للعموم" : "Public"}</div></CardContent></Card>
+        <Card className="border-black/10"><CardContent className="p-4 text-center"><div className="text-2xl font-bold text-black dark:text-white">{reviews.filter(r => r.adminReply).length}</div><div className="text-xs text-black/50">{L ? "تم الرد عليها" : "Replied"}</div></CardContent></Card>
       </div>
 
       {reviews.length > 0 && (
@@ -132,16 +132,16 @@ export default function AdminReviews() {
                         <div className="text-xs text-black/40">{review.client?.email}</div>
                       </div>
                       <StarRating rating={review.rating} />
-                      <Badge variant="outline" className={review.isPublic ? "border-green-300 text-green-700" : "border-black/20 text-black/40"}>
+                      <Badge variant="outline" className={review.isPublic ? "border-black/15 dark:border-white/15 text-black dark:text-white" : "border-black/20 text-black/40"}>
                         {review.isPublic ? (L ? "ظاهر" : "Public") : (L ? "مخفي" : "Hidden")}
                       </Badge>
                     </div>
                     {review.serviceTitle && <div className="text-xs text-black/40 bg-black/5 px-2 py-0.5 rounded w-fit">{review.serviceTitle}</div>}
                     {review.comment && <p className="text-sm text-black/70 bg-black/5 rounded-lg p-3">{review.comment}</p>}
                     {review.adminReply && (
-                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                        <div className="text-xs text-blue-500 mb-1 font-semibold">{L ? "رد الإدارة:" : "Admin Reply:"}</div>
-                        <p className="text-sm text-blue-800">{review.adminReply}</p>
+                      <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-lg p-3">
+                        <div className="text-xs text-black dark:text-white mb-1 font-semibold">{L ? "رد الإدارة:" : "Admin Reply:"}</div>
+                        <p className="text-sm text-black dark:text-white">{review.adminReply}</p>
                       </div>
                     )}
                     <div className="text-xs text-black/30">{new Date(review.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
@@ -153,7 +153,7 @@ export default function AdminReviews() {
                     <Button size="sm" variant="outline" className="border-black/20" onClick={() => replyMutation.mutate({ id: review.id, adminReply: review.adminReply, isPublic: !review.isPublic })} data-testid={`button-toggle-visibility-${review.id}`}>
                       {review.isPublic ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </Button>
-                    <Button size="sm" variant="outline" className="border-red-200 text-red-500 hover:bg-red-50" onClick={() => { if (confirm(L ? "حذف هذا التقييم؟" : "Delete this review?")) deleteMutation.mutate(review.id); }} data-testid={`button-delete-review-${review.id}`}>
+                    <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => { if (confirm(L ? "حذف هذا التقييم؟" : "Delete this review?")) deleteMutation.mutate(review.id); }} data-testid={`button-delete-review-${review.id}`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>

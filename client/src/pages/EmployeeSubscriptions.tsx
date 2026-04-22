@@ -22,16 +22,16 @@ const PERIOD_OPTIONS = [
 ];
 
 const STATUS_MAP = {
-  active:    { label: "نشط",     icon: CheckCircle2,  color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200" },
-  expired:   { label: "منتهي",   icon: XCircle,       color: "text-red-500 bg-red-50 dark:bg-red-900/20 border-red-200" },
-  suspended: { label: "موقوف",   icon: AlertTriangle, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200" },
+  active:    { label: "نشط",     icon: CheckCircle2,  color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
+  expired:   { label: "منتهي",   icon: XCircle,       color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
+  suspended: { label: "موقوف",   icon: AlertTriangle, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
   none:      { label: "لا يوجد", icon: Clock,         color: "text-black/40 bg-black/[0.03] dark:bg-white/[0.03] border-black/10" },
 };
 
 const ADDON_STATUS_MAP = {
-  active:    { label: "نشط",   color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20" },
-  expired:   { label: "منتهي", color: "text-red-500 bg-red-50 border-red-200 dark:bg-red-900/20" },
-  exhausted: { label: "نفذ",   color: "text-orange-500 bg-orange-50 border-orange-200 dark:bg-orange-900/20" },
+  active:    { label: "نشط",   color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white" },
+  expired:   { label: "منتهي", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white" },
+  exhausted: { label: "نفذ",   color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white" },
   cancelled: { label: "ملغي",  color: "text-gray-500 bg-gray-50 border-gray-200 dark:bg-gray-900/20" },
 };
 
@@ -192,10 +192,10 @@ export default function EmployeeSubscriptions() {
         {/* ── Stats Cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: Rocket,       label: "مشاريع Live",   value: counts.live,    color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40" },
+            { icon: Rocket,       label: "مشاريع Live",   value: counts.live,    color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
             { icon: WifiOff,      label: "غير Live",       value: counts.notlive, color: "text-gray-500",    bg: "bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700" },
-            { icon: CheckCircle2, label: "اشتراك نشط",    value: counts.active,  color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/40" },
-            { icon: XCircle,      label: "اشتراك منتهي",  value: counts.expired, color: "text-red-500",     bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40" },
+            { icon: CheckCircle2, label: "اشتراك نشط",    value: counts.active,  color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+            { icon: XCircle,      label: "اشتراك منتهي",  value: counts.expired, color: "text-black dark:text-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
           ].map(s => (
             <div key={s.label} className={`flex items-center gap-3 p-3 rounded-2xl border ${s.bg}`}>
               <s.icon className={`w-5 h-5 ${s.color}`} />
@@ -218,8 +218,8 @@ export default function EmployeeSubscriptions() {
             >
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                   </div>
                   <div>
                     <p className="font-black text-black dark:text-white">تفعيل اشتراك جديد</p>
@@ -246,15 +246,15 @@ export default function EmployeeSubscriptions() {
                   />
                 </div>
                 {selectedClient ? (
-                  <div className="mt-2 flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  <div className="mt-2 flex items-center gap-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                    <div className="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {(selectedClient.fullName || "?")[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">{selectedClient.fullName}</p>
-                      <p className="text-[11px] text-emerald-600 dark:text-emerald-500">{selectedClient.email}</p>
+                      <p className="font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm">{selectedClient.fullName}</p>
+                      <p className="text-[11px] text-black dark:text-white dark:text-black dark:text-white">{selectedClient.email}</p>
                     </div>
-                    <button onClick={() => { setSelectedClient(null); setActivateSearch(""); }} className="text-emerald-600 hover:text-red-500 transition-colors">
+                    <button onClick={() => { setSelectedClient(null); setActivateSearch(""); }} className="text-black dark:text-white hover:text-black dark:text-white transition-colors">
                       <XCircle className="w-4 h-4" />
                     </button>
                   </div>
@@ -275,7 +275,7 @@ export default function EmployeeSubscriptions() {
                           <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{c.email}</p>
                         </div>
                         {c.subscriptionStatus === "active" && (
-                          <span className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full font-bold">نشط</span>
+                          <span className="text-[10px] text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-2 py-0.5 rounded-full font-bold">نشط</span>
                         )}
                       </button>
                     ))}
@@ -322,7 +322,7 @@ export default function EmployeeSubscriptions() {
               <Button
                 onClick={() => activateMutation.mutate({ clientId: selectedClient?.id, period: selectedPeriod, startDate })}
                 disabled={!selectedClient || activateMutation.isPending}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-11"
+                className="w-full bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold rounded-xl h-11"
                 data-testid="btn-activate-confirm"
               >
                 {activateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Shield className="w-4 h-4 ml-2" />}
@@ -412,7 +412,7 @@ export default function EmployeeSubscriptions() {
                 <motion.div
                   key={client.id}
                   layout
-                  className={`bg-white dark:bg-gray-900 border rounded-2xl overflow-hidden shadow-sm transition-colors ${urgentDays || overdueAddon ? "border-orange-200 dark:border-orange-800/40" : "border-black/[0.06] dark:border-white/[0.06]"}`}
+                  className={`bg-white dark:bg-gray-900 border rounded-2xl overflow-hidden shadow-sm transition-colors ${urgentDays || overdueAddon ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "border-black/[0.06] dark:border-white/[0.06]"}`}
                   data-testid={`card-client-${client.id}`}
                 >
                   {/* Main Row */}
@@ -431,8 +431,8 @@ export default function EmployeeSubscriptions() {
                           </span>
                         )}
                         {client.isProjectLive ? (
-                          <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                          <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse inline-block" />
                             Live
                           </span>
                         ) : (
@@ -442,7 +442,7 @@ export default function EmployeeSubscriptions() {
                           </span>
                         )}
                         {overdueAddon && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 border border-orange-200">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white border border-black/10 dark:border-white/10">
                             ⚠ ميزة تحتاج تجديد
                           </span>
                         )}
@@ -457,12 +457,12 @@ export default function EmployeeSubscriptions() {
                           <p className="text-xs text-black/30">—</p>
                         ) : days < 0 ? (
                           <>
-                            <p className="text-base font-black text-red-500">منتهي</p>
-                            <p className="text-[10px] text-red-400">{Math.abs(days)} يوم مضى</p>
+                            <p className="text-base font-black text-black dark:text-white">منتهي</p>
+                            <p className="text-[10px] text-black/70 dark:text-white/70">{Math.abs(days)} يوم مضى</p>
                           </>
                         ) : (
                           <>
-                            <p className={`text-2xl font-black leading-none ${days <= 7 ? "text-orange-500" : days <= 30 ? "text-amber-500" : "text-emerald-600"}`}>{days}</p>
+                            <p className={`text-2xl font-black leading-none ${days <= 7 ? "text-black dark:text-white" : days <= 30 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{days}</p>
                             <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">يوم متبقي</p>
                           </>
                         )
@@ -487,7 +487,7 @@ export default function EmployeeSubscriptions() {
                           size="sm"
                           onClick={() => goLiveMutation.mutate(client.id)}
                           disabled={goLiveMutation.isPending}
-                          className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1 font-bold"
+                          className="text-xs h-8 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-1 font-bold"
                           data-testid={`btn-golive-${client.id}`}
                         >
                           <Rocket className="w-3 h-3" />
@@ -511,7 +511,7 @@ export default function EmployeeSubscriptions() {
                         <Button size="sm" variant="outline"
                           onClick={() => statusMutation.mutate({ clientId: client.id, status: "suspended" })}
                           disabled={statusMutation.isPending}
-                          className="text-xs h-8 border-amber-200 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl gap-1"
+                          className="text-xs h-8 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white rounded-xl gap-1"
                           data-testid={`btn-suspend-${client.id}`}
                         >
                           <AlertTriangle className="w-3 h-3" />
@@ -523,7 +523,7 @@ export default function EmployeeSubscriptions() {
                         <Button size="sm" variant="outline"
                           onClick={() => statusMutation.mutate({ clientId: client.id, status: "active" })}
                           disabled={statusMutation.isPending}
-                          className="text-xs h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl gap-1"
+                          className="text-xs h-8 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white rounded-xl gap-1"
                           data-testid={`btn-reactivate-${client.id}`}
                         >
                           <CheckCircle2 className="w-3 h-3" />
@@ -535,7 +535,7 @@ export default function EmployeeSubscriptions() {
                         <Button size="sm" variant="outline"
                           onClick={() => statusMutation.mutate({ clientId: client.id, status: "none" })}
                           disabled={statusMutation.isPending}
-                          className="text-xs h-8 border-red-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl gap-1"
+                          className="text-xs h-8 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white rounded-xl gap-1"
                           data-testid={`btn-reset-${client.id}`}
                         >
                           <XCircle className="w-3 h-3" />
@@ -605,7 +605,7 @@ export default function EmployeeSubscriptions() {
                                           <span className="font-semibold text-sm text-black dark:text-white">{addon.addonNameAr}</span>
                                           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${addonSt.color}`}>{addonSt.label}</span>
                                           {needsRenewal && (
-                                            <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full border border-orange-200">
+                                            <span className="text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10">
                                               ⚠ يحتاج تجديد
                                             </span>
                                           )}
@@ -624,7 +624,7 @@ export default function EmployeeSubscriptions() {
                                           </div>
                                           <div className="w-full h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                                             <div
-                                              className={`h-full rounded-full transition-all ${pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-orange-400" : "bg-emerald-500"}`}
+                                              className={`h-full rounded-full transition-all ${pct >= 90 ? "bg-black dark:bg-white" : pct >= 70 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black dark:bg-white"}`}
                                               style={{ width: `${pct}%` }}
                                             />
                                           </div>

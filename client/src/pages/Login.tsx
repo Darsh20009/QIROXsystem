@@ -722,12 +722,12 @@ export default function Login() {
               <p className="text-black/40 text-sm leading-relaxed">اختر طريقة التحقق لإكمال تسجيل الدخول</p>
               <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-xs font-mono font-semibold transition-colors ${
                 twoFASecondsLeft <= 60
-                  ? "bg-red-50 text-red-500 border border-red-200/60"
+                  ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10"
                   : twoFASecondsLeft <= 180
-                    ? "bg-amber-50 text-amber-600 border border-amber-200/60"
+                    ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10"
                     : "bg-black/[0.04] text-black/40 border border-black/[0.08]"
               }`} data-testid="text-2fa-countdown">
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${twoFASecondsLeft <= 60 ? "bg-red-400 animate-pulse" : twoFASecondsLeft <= 180 ? "bg-amber-400 animate-pulse" : "bg-black/20"}`} />
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${twoFASecondsLeft <= 60 ? "bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" : twoFASecondsLeft <= 180 ? "bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" : "bg-black/20"}`} />
                 {String(Math.floor(twoFASecondsLeft / 60)).padStart(2, "0")}:{String(twoFASecondsLeft % 60).padStart(2, "0")}
               </div>
             </div>
@@ -773,11 +773,11 @@ export default function Login() {
                         strokeDasharray={`${2 * Math.PI * 8}`}
                         strokeDashoffset={`${2 * Math.PI * 8 * (1 - totpSecondsLeft / 30)}`}
                         strokeLinecap="round"
-                        className={`transition-all duration-1000 ${totpSecondsLeft <= 5 ? "text-red-400" : "text-black/40"}`}
+                        className={`transition-all duration-1000 ${totpSecondsLeft <= 5 ? "text-black/70 dark:text-white/70" : "text-black/40"}`}
                       />
                     </svg>
                   </div>
-                  <span className={`text-xs font-mono font-medium ${totpSecondsLeft <= 5 ? "text-red-500" : "text-black/40"}`}>
+                  <span className={`text-xs font-mono font-medium ${totpSecondsLeft <= 5 ? "text-black dark:text-white" : "text-black/40"}`}>
                     ينتهي الرمز خلال {totpSecondsLeft} ثانية
                   </span>
                 </div>
@@ -934,17 +934,17 @@ export default function Login() {
 
                 {pushStatus === "denied" && (
                   <div className="text-center py-4">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-3">
-                      <X className="w-6 h-6 text-red-500" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] mx-auto mb-3">
+                      <X className="w-6 h-6 text-black dark:text-white" />
                     </div>
-                    <p className="text-sm text-red-600 font-medium mb-3">تم رفض طلب تسجيل الدخول</p>
+                    <p className="text-sm text-black dark:text-white font-medium mb-3">تم رفض طلب تسجيل الدخول</p>
                     <button onClick={() => { setPushStatus("idle"); setTwoFAError(""); }} className="text-xs text-black/40 hover:text-black/70 underline">المحاولة مجدداً</button>
                   </div>
                 )}
 
                 {pushStatus === "expired" && (
                   <div className="text-center py-4">
-                    <p className="text-sm text-amber-600 mb-3">انتهت صلاحية الرمز</p>
+                    <p className="text-sm text-black dark:text-white mb-3">انتهت صلاحية الرمز</p>
                     <button onClick={() => { setPushStatus("idle"); setTwoFAError(""); }} className="text-xs text-black/40 hover:text-black/70 underline">المحاولة مجدداً</button>
                   </div>
                 )}
@@ -953,7 +953,7 @@ export default function Login() {
 
             {twoFAError && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
-                <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                <Alert variant="destructive" className="bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-sm">{twoFAError}</AlertDescription>
                 </Alert>
@@ -1023,11 +1023,11 @@ export default function Login() {
             </div>
 
             {/* Info notice */}
-            <div className="border rounded-xl px-4 py-3 mb-5 flex items-start gap-3 bg-amber-50 border-amber-200/60">
-              <span className="text-base mt-0.5 flex-shrink-0 text-amber-500">⚠️</span>
+            <div className="border rounded-xl px-4 py-3 mb-5 flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10">
+              <span className="text-base mt-0.5 flex-shrink-0 text-black dark:text-white">⚠️</span>
               <div>
-                <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
-                <p className="text-amber-700 text-[11px] leading-relaxed">
+                <p className="text-black dark:text-white text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
+                <p className="text-black dark:text-white text-[11px] leading-relaxed">
                   تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
                 </p>
               </div>
@@ -1056,7 +1056,7 @@ export default function Login() {
 
             {verifyError && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
-                <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                <Alert variant="destructive" className="bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-sm">{verifyError}</AlertDescription>
                 </Alert>
@@ -1120,7 +1120,7 @@ export default function Login() {
           <AnimatePresence>
             {error && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
-                <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                <Alert variant="destructive" className="bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-sm">{error.message}</AlertDescription>
                 </Alert>
@@ -1301,9 +1301,9 @@ export default function Login() {
                   const detectedPhone = /^[\+\d]/.test(v) && v.replace(/\D/g, "").length >= 6;
                   const IdentifierIcon = detectedEmail ? Mail : detectedPhone ? Phone : isRegister ? User : AtSign;
                   const iconColor = detectedEmail
-                    ? "text-cyan-500"
+                    ? "text-black dark:text-white"
                     : detectedPhone
-                    ? "text-emerald-500"
+                    ? "text-black dark:text-white"
                     : "text-black/20 dark:text-white/20";
                   const labelText = ar
                     ? "اسم المستخدم أو البريد أو الجوال"
@@ -1314,9 +1314,9 @@ export default function Login() {
                         <FormLabel className="text-black/50 dark:text-white/50 text-xs font-semibold">{labelText}</FormLabel>
                         {!isRegister && (
                           <span className="flex gap-0.5 items-center text-[10px] text-black/30 dark:text-white/30 font-mono">
-                            <span className={`w-1.5 h-1.5 rounded-full ${detectedEmail ? "bg-cyan-400" : "bg-black/15 dark:bg-white/15"}`} />
-                            <span className={`w-1.5 h-1.5 rounded-full ${detectedPhone ? "bg-emerald-400" : "bg-black/15 dark:bg-white/15"}`} />
-                            <span className={`w-1.5 h-1.5 rounded-full ${!detectedEmail && !detectedPhone && v ? "bg-violet-400" : "bg-black/15 dark:bg-white/15"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${detectedEmail ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/15 dark:bg-white/15"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${detectedPhone ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/15 dark:bg-white/15"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${!detectedEmail && !detectedPhone && v ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/15 dark:bg-white/15"}`} />
                           </span>
                         )}
                       </div>

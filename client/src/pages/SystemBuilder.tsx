@@ -40,11 +40,11 @@ interface TemplateMeta {
 }
 
 const TEMPLATE_META: Record<string, TemplateMeta> = {
-  blank: { icon: Server, label: "Node.js API", labelAr: "Node.js API", color: "bg-green-600" },
+  blank: { icon: Server, label: "Node.js API", labelAr: "Node.js API", color: "bg-black dark:bg-white" },
   express: { icon: Server, label: "Express", labelAr: "Express", color: "bg-gray-600" },
-  static: { icon: Globe, label: "HTML/CSS/JS", labelAr: "HTML/CSS/JS", color: "bg-blue-600" },
-  react: { icon: Code2, label: "React", labelAr: "React", color: "bg-cyan-600" },
-  vue: { icon: Code2, label: "Vue", labelAr: "Vue", color: "bg-emerald-600" },
+  static: { icon: Globe, label: "HTML/CSS/JS", labelAr: "HTML/CSS/JS", color: "bg-black dark:bg-white" },
+  react: { icon: Code2, label: "React", labelAr: "React", color: "bg-black dark:bg-white" },
+  vue: { icon: Code2, label: "Vue", labelAr: "Vue", color: "bg-black dark:bg-white" },
   nextjs: { icon: FileCode, label: "Next.js", labelAr: "Next.js", color: "bg-black" },
 };
 

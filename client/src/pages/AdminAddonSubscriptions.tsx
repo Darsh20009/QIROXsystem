@@ -11,9 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
 const STATUS_MAP: Record<string, { label: string; icon: any; color: string }> = {
-  active:    { label: "نشط",         icon: CheckCircle,   color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200" },
-  expired:   { label: "منتهي",       icon: XCircle,       color: "text-red-500 bg-red-50 dark:bg-red-900/20 border-red-200" },
-  exhausted: { label: "نفذت الحصة", icon: AlertTriangle, color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200" },
+  active:    { label: "نشط",         icon: CheckCircle,   color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
+  expired:   { label: "منتهي",       icon: XCircle,       color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
+  exhausted: { label: "نفذت الحصة", icon: AlertTriangle, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10" },
   cancelled: { label: "ملغي",        icon: XCircle,       color: "text-black/40 bg-black/[0.03] dark:bg-white/[0.03] border-black/10" },
 };
 
@@ -159,10 +159,10 @@ export default function AdminAddonSubscriptions() {
               />
             </div>
             {selectedClient ? (
-              <div className="mt-2 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 rounded-xl p-2.5">
-                <User className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{selectedClient.fullName} — {selectedClient.email}</span>
-                <button onClick={() => { setSelectedClient(null); setClientSearch(""); }} className="mr-auto text-emerald-500 hover:text-red-500">
+              <div className="mt-2 flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 rounded-xl p-2.5">
+                <User className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-sm font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70">{selectedClient.fullName} — {selectedClient.email}</span>
+                <button onClick={() => { setSelectedClient(null); setClientSearch(""); }} className="mr-auto text-black dark:text-white hover:text-black dark:text-white">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -287,7 +287,7 @@ export default function AdminAddonSubscriptions() {
             const isEditing = editingId === subId;
 
             return (
-              <div key={subId} className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden ${needsRenewal ? "border-orange-200 dark:border-orange-800/40" : "border-black/[0.06] dark:border-white/[0.06]"}`} data-testid={`row-sub-${subId}`}>
+              <div key={subId} className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden ${needsRenewal ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "border-black/[0.06] dark:border-white/[0.06]"}`} data-testid={`row-sub-${subId}`}>
                 <div className="p-4 flex items-center gap-3 flex-wrap">
                   <div className="flex-1 min-w-[140px]">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -297,7 +297,7 @@ export default function AdminAddonSubscriptions() {
                         {st.label}
                       </span>
                       {needsRenewal && (
-                        <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full border border-orange-200">
+                        <span className="text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10">
                           ⚠ {L ? "يحتاج تجديد" : "Needs Renewal"}
                         </span>
                       )}
@@ -318,7 +318,7 @@ export default function AdminAddonSubscriptions() {
                       </div>
                       <div className="w-full h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${quotaPct >= 90 ? "bg-red-500" : quotaPct >= 70 ? "bg-amber-400" : "bg-emerald-500"}`}
+                          className={`h-full rounded-full ${quotaPct >= 90 ? "bg-black dark:bg-white" : quotaPct >= 70 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black dark:bg-white"}`}
                           style={{ width: `${quotaPct}%` }}
                         />
                       </div>
@@ -335,7 +335,7 @@ export default function AdminAddonSubscriptions() {
                         size="sm"
                         onClick={() => renewMutation.mutate(subId)}
                         disabled={renewMutation.isPending}
-                        className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1 font-bold"
+                        className="text-xs h-8 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-1 font-bold"
                         data-testid={`btn-renew-${subId}`}
                       >
                         <RotateCcw className="w-3 h-3" />

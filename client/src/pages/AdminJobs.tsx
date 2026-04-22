@@ -48,9 +48,9 @@ const emptyForm: JobFormData = {
 };
 
 function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
-  open:   { label: L ? "مفتوح" : "Open",   color: "bg-green-100 text-green-700 border-green-200" },
-  closed: { label: L ? "مغلق" : "Closed",   color: "bg-red-100 text-red-600 border-red-200" },
-  paused: { label: L ? "متوقف" : "Paused",  color: "bg-amber-100 text-amber-700 border-amber-200" },
+  open:   { label: L ? "مفتوح" : "Open",   color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  closed: { label: L ? "مغلق" : "Closed",   color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  paused: { label: L ? "متوقف" : "Paused",  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
 };
 }
 
@@ -61,12 +61,12 @@ function getTypeMap(L: boolean): Record<string, string> { return {
 }
 
 function getAppStatusMap(L: boolean): Record<string, { label: string; color: string; icon: any }> { return {
-  new:       { label: L ? "جديد" : "New",          color: "bg-blue-100 text-blue-700 border-blue-200",     icon: Star },
-  reviewing: { label: L ? "قيد المراجعة" : "Reviewing", color: "bg-amber-100 text-amber-700 border-amber-200",  icon: Eye },
-  interview: { label: L ? "مقابلة" : "Interview",        color: "bg-purple-100 text-purple-700 border-purple-200", icon: Users },
-  accepted:  { label: L ? "مقبول ✓" : "Accepted ✓",      color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
-  hired:     { label: L ? "موظف ✓✓" : "Hired ✓✓",       color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: Shield },
-  rejected:  { label: L ? "مرفوض" : "Rejected",         color: "bg-red-100 text-red-600 border-red-200",        icon: X },
+  new:       { label: L ? "جديد" : "New",          color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",     icon: Star },
+  reviewing: { label: L ? "قيد المراجعة" : "Reviewing", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",  icon: Eye },
+  interview: { label: L ? "مقابلة" : "Interview",        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Users },
+  accepted:  { label: L ? "مقبول ✓" : "Accepted ✓",      color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",  icon: CheckCircle },
+  hired:     { label: L ? "موظف ✓✓" : "Hired ✓✓",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Shield },
+  rejected:  { label: L ? "مرفوض" : "Rejected",         color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",        icon: X },
 };
 }
 
@@ -254,10 +254,10 @@ export default function AdminJobs() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: Briefcase, val: jobs?.filter(j => j.status === "open").length || 0, label: L ? "وظائف مفتوحة" : "Open Jobs",  color: "text-green-500" },
-          { icon: Users,     val: appStats.total,                                      label: L ? "إجمالي الطلبات" : "Total Applications", color: "text-blue-500" },
-          { icon: Star,      val: appStats.new,                                         label: L ? "طلبات جديدة" : "New Applications",  color: "text-amber-500" },
-          { icon: Shield,    val: appStats.hired,                                       label: L ? "تم تعيينهم" : "Hired",    color: "text-emerald-500" },
+          { icon: Briefcase, val: jobs?.filter(j => j.status === "open").length || 0, label: L ? "وظائف مفتوحة" : "Open Jobs",  color: "text-black dark:text-white" },
+          { icon: Users,     val: appStats.total,                                      label: L ? "إجمالي الطلبات" : "Total Applications", color: "text-black dark:text-white" },
+          { icon: Star,      val: appStats.new,                                         label: L ? "طلبات جديدة" : "New Applications",  color: "text-black dark:text-white" },
+          { icon: Shield,    val: appStats.hired,                                       label: L ? "تم تعيينهم" : "Hired",    color: "text-black dark:text-white" },
         ].map(({ icon: Icon, val, label, color }, i) => (
           <div key={i} className="border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
             <Icon className={`w-5 h-5 ${color}`} />
@@ -318,10 +318,10 @@ export default function AdminJobs() {
                           <td className="p-4 text-sm text-black/60 dark:text-white/60">{job.salaryRange || "—"}</td>
                           <td className="p-4">
                             <button onClick={() => { setFilterJob(job.id?.toString()); setActiveTab("applications"); }}
-                              className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
+                              className="flex items-center gap-1.5 text-sm font-bold text-black dark:text-white hover:underline"
                               data-testid={`button-view-apps-${job.id}`}>
                               <Users className="w-3.5 h-3.5" />{appCount}
-                              {newCount > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{newCount} {L ? "جديد" : "new"}</span>}
+                              {newCount > 0 && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white px-1.5 py-0.5 rounded-full font-bold">{newCount} {L ? "جديد" : "new"}</span>}
                             </button>
                           </td>
                           <td className="p-4">
@@ -332,7 +332,7 @@ export default function AdminJobs() {
                               <Button size="icon" variant="ghost" className="text-black/60 dark:text-white/60" onClick={() => handleEdit(job)} data-testid={`button-edit-job-${job.id}`}>
                                 <Edit2 className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="text-red-500" onClick={() => deleteMutation.mutate(job.id?.toString())} disabled={deleteMutation.isPending} data-testid={`button-delete-job-${job.id}`}>
+                              <Button size="icon" variant="ghost" className="text-black dark:text-white" onClick={() => deleteMutation.mutate(job.id?.toString())} disabled={deleteMutation.isPending} data-testid={`button-delete-job-${job.id}`}>
                                 {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                               </Button>
                             </div>
@@ -405,11 +405,11 @@ export default function AdminJobs() {
 
                   return (
                     <motion.div key={app.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className={`border rounded-2xl overflow-hidden transition-all ${isHired ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" : isAccepted ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/20" : "border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900"}`}
+                      className={`border rounded-2xl overflow-hidden transition-all ${isHired ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : isAccepted ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900"}`}
                       data-testid={`row-app-${app.id}`}>
 
                       {/* Status bar */}
-                      <div className={`h-1 w-full ${isHired ? "bg-gradient-to-r from-emerald-400 to-teal-400" : isAccepted ? "bg-gradient-to-r from-green-400 to-emerald-400" : app.status === "interview" ? "bg-gradient-to-r from-purple-400 to-violet-400" : app.status === "reviewing" ? "bg-gradient-to-r from-amber-400 to-orange-400" : app.status === "rejected" ? "bg-gradient-to-r from-red-400 to-red-500" : "bg-gradient-to-r from-blue-400 to-cyan-400"}`} />
+                      <div className={`h-1 w-full ${isHired ? "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : isAccepted ? "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : app.status === "interview" ? "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : app.status === "reviewing" ? "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : app.status === "rejected" ? "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" : "bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]"}`} />
 
                       <div className="p-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -429,12 +429,12 @@ export default function AdminJobs() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                               <div className="flex items-center gap-2 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl px-3 py-2">
-                                <Mail className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                <Mail className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
                                 <p className="text-xs text-black/70 dark:text-white/70 truncate" dir="ltr">{app.email}</p>
                               </div>
                               {app.phone && (
                                 <div className="flex items-center gap-2 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl px-3 py-2">
-                                  <Phone className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                                  <Phone className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
                                   <p className="text-xs text-black/70 dark:text-white/70" dir="ltr">{app.phone}</p>
                                 </div>
                               )}
@@ -443,7 +443,7 @@ export default function AdminJobs() {
                             <div className="flex items-center gap-3 mt-3 flex-wrap">
                               {app.resumeUrl && (
                                 <a href={app.resumeUrl} target="_blank" rel="noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline font-semibold"
+                                  className="inline-flex items-center gap-1.5 text-xs text-black dark:text-white hover:underline font-semibold"
                                   data-testid={`link-resume-${app.id}`}>
                                   <Download className="w-3.5 h-3.5" />
                                   {app.resumeUrl.startsWith("/uploads") ? (L ? "تحميل السيرة الذاتية" : "Download Resume") : (L ? "عرض السيرة الذاتية" : "View Resume")}
@@ -483,7 +483,7 @@ export default function AdminJobs() {
                                 </Button>
                               )}
                               {isHired && (
-                                <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl">
+                                <div className="flex items-center gap-1.5 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-3 py-1.5 rounded-xl">
                                   <Shield className="w-3.5 h-3.5" />{L ? "موظف" : "Employee"}
                                 </div>
                               )}
@@ -558,7 +558,7 @@ export default function AdminJobs() {
                   <ListChecks className="w-4 h-4 text-black/40 dark:text-white/40" />
                   <label className="text-sm font-semibold text-black/70 dark:text-white/70">{L ? "أسئلة الطلب" : "Application Questions"}</label>
                   {formData.questions.length > 0 && (
-                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">{formData.questions.length}</span>
+                    <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-bold">{formData.questions.length}</span>
                   )}
                 </div>
                 <Button type="button" size="sm" variant="outline" onClick={addQuestion}
@@ -591,7 +591,7 @@ export default function AdminJobs() {
                             data-testid={`question-text-${qIdx}`}
                           />
                         </div>
-                        <Button type="button" size="icon" variant="ghost" className="w-7 h-7 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 flex-shrink-0 rounded-lg"
+                        <Button type="button" size="icon" variant="ghost" className="w-7 h-7 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0 rounded-lg"
                           onClick={() => removeQuestion(qIdx)} data-testid={`button-remove-question-${qIdx}`}>
                           <X className="w-3.5 h-3.5" />
                         </Button>
@@ -614,7 +614,7 @@ export default function AdminJobs() {
 
                         <button type="button"
                           onClick={() => updateQuestion(qIdx, { required: !q.required })}
-                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all flex-shrink-0 ${q.required ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40"}`}
+                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all flex-shrink-0 ${q.required ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40"}`}
                           data-testid={`question-required-${qIdx}`}>
                           {q.required ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
                           {q.required ? (L ? "إجباري" : "Required") : (L ? "اختياري" : "Optional")}
@@ -636,13 +636,13 @@ export default function AdminJobs() {
                                 data-testid={`option-text-${qIdx}-${oIdx}`}
                               />
                               <button type="button" onClick={() => removeOption(qIdx, oIdx)}
-                                className="text-red-400 hover:text-red-600 flex-shrink-0" data-testid={`button-remove-option-${qIdx}-${oIdx}`}>
+                                className="text-black/70 dark:text-white/70 hover:text-black dark:text-white flex-shrink-0" data-testid={`button-remove-option-${qIdx}-${oIdx}`}>
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ))}
                           <button type="button" onClick={() => addOption(qIdx)}
-                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 pr-5"
+                            className="text-xs text-black dark:text-white hover:underline flex items-center gap-1 pr-5"
                             data-testid={`button-add-option-${qIdx}`}>
                             <Plus className="w-3 h-3" />{L ? "إضافة خيار" : "Add Option"}
                           </button>
@@ -693,7 +693,7 @@ export default function AdminJobs() {
               </div>
               {viewApp.resumeUrl && (
                 <a href={viewApp.resumeUrl} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-sm font-semibold hover:bg-blue-100 transition-colors"
+                  className="flex items-center gap-2 p-3 rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-semibold hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                   data-testid="link-view-resume">
                   <FileText className="w-4 h-4" />
                   {viewApp.resumeUrl.startsWith("/uploads") ? (L ? "تحميل السيرة الذاتية" : "Download Resume") : (L ? "عرض السيرة الذاتية على الرابط" : "View Resume Link")}
@@ -723,14 +723,14 @@ export default function AdminJobs() {
           {hired ? (
             <div className="py-4 space-y-4">
               <div className="text-center">
-                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Shield className="w-7 h-7 text-emerald-600" />
+                <div className="w-14 h-14 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Shield className="w-7 h-7 text-black dark:text-white" />
                 </div>
                 <h3 className="font-bold text-lg mb-1">{L ? "تم التعيين بنجاح!" : "Hired successfully!"}</h3>
                 <p className="text-black/40 dark:text-white/40 text-sm">{L ? "احتفظ ببيانات الدخول — تم إرسالها بالبريد أيضاً" : "Keep the credentials — they were also sent by email"}</p>
               </div>
-              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2">{L ? "بيانات دخول الموظف" : "Employee Login Credentials"}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-2">{L ? "بيانات دخول الموظف" : "Employee Login Credentials"}</p>
                 {[[L ? "البريد الإلكتروني" : "Email", hired.email], [L ? "اسم المستخدم" : "Username", hired.username]].map(([label, val]) => (
                   <div key={label} className="bg-white dark:bg-gray-800 rounded-xl p-3 flex items-center justify-between gap-2">
                     <div>
@@ -752,9 +752,9 @@ export default function AdminJobs() {
                   </button>
                 </div>
               </div>
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-2.5 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-amber-600 shrink-0" />
-                <p className="text-amber-700 dark:text-amber-400 text-xs">{L ? "تم إرسال هذه البيانات إلى بريد الموظف تلقائياً" : "These credentials were automatically sent to the employee's email"}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-black dark:text-white shrink-0" />
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs">{L ? "تم إرسال هذه البيانات إلى بريد الموظف تلقائياً" : "These credentials were automatically sent to the employee's email"}</p>
               </div>
               <Button className="w-full premium-btn rounded-xl" onClick={() => { setHireOpen(false); setHired(null); }}>{L ? "إغلاق" : "Close"}</Button>
             </div>

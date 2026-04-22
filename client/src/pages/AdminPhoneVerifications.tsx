@@ -77,15 +77,15 @@ export default function AdminPhoneVerifications() {
           </div>
         ) : requests.length === 0 ? (
           <div className="bg-white rounded-3xl border border-black/[0.06] p-10 text-center">
-            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ShieldCheck className="w-8 h-8 text-emerald-600" />
+            <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-8 h-8 text-black dark:text-white" />
             </div>
             <h2 className="font-black text-black text-lg mb-1">{L ? "لا يوجد طلبات معلقة" : "No pending requests"}</h2>
             <p className="text-black/40 text-sm">{L ? "جميع طلبات توثيق الجوال تمت معالجتها" : "All phone verification requests have been processed"}</p>
           </div>
         ) : (
           <>
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-sm text-amber-700 font-medium">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-black dark:text-white font-medium">
               {L ? `يوجد ${requests.length} طلب ${requests.length === 1 ? "معلق" : "معلقة"} — اتصل بالعميل وتحقق من هويته ثم اضغط "تأكيد التوثيق"` : `There are ${requests.length} pending request${requests.length === 1 ? "" : "s"} — call the client, verify identity, then click "Confirm Verification"`}
             </div>
             {requests.map((req: any, i: number) => (
@@ -93,10 +93,10 @@ export default function AdminPhoneVerifications() {
                 className="bg-white rounded-2xl border border-black/[0.06] shadow-sm overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center shrink-0">
                       {req.userId?.avatarUrl
                         ? <img src={req.userId.avatarUrl} className="w-11 h-11 rounded-xl object-cover" alt="" />
-                        : <User className="w-5 h-5 text-emerald-700" />
+                        : <User className="w-5 h-5 text-black dark:text-white" />
                       }
                     </div>
                     <div className="flex-1 min-w-0">
@@ -123,7 +123,7 @@ export default function AdminPhoneVerifications() {
                     onClick={() => cancelMutation.mutate(req.token)}
                     disabled={cancelMutation.isPending}
                     variant="outline"
-                    className="rounded-xl h-9 px-3 text-xs text-red-600 border-red-200 hover:bg-red-50 gap-1.5"
+                    className="rounded-xl h-9 px-3 text-xs text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] gap-1.5"
                     data-testid={`btn-cancel-${req.token}`}
                   >
                     <X className="w-3.5 h-3.5" /> {L ? "إلغاء" : "Cancel"}
@@ -132,7 +132,7 @@ export default function AdminPhoneVerifications() {
                     size="sm"
                     onClick={() => resolveMutation.mutate(req.token)}
                     disabled={resolveMutation.isPending}
-                    className="rounded-xl h-9 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5"
+                    className="rounded-xl h-9 px-4 text-xs bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-1.5"
                     data-testid={`btn-resolve-${req.token}`}
                   >
                     {resolveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><CheckCircle2 className="w-3.5 h-3.5" /> {L ? "تأكيد التوثيق" : "Confirm Verification"}</>}

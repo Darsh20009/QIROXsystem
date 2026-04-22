@@ -88,8 +88,8 @@ export default function AdminMongoAtlas() {
     <div className="p-6 max-w-6xl mx-auto" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-          <Database className="w-5 h-5 text-green-700" />
+        <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+          <Database className="w-5 h-5 text-black dark:text-white" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">MongoDB Atlas</h1>
@@ -122,8 +122,8 @@ export default function AdminMongoAtlas() {
                 <Card key={u.id} data-testid={`card-dbuser-${u.id}`} className="border border-gray-200">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
-                      <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Database className="w-4 h-4 text-green-700" />
+                      <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg flex items-center justify-center shrink-0">
+                        <Database className="w-4 h-4 text-black dark:text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -147,7 +147,7 @@ export default function AdminMongoAtlas() {
                         {u.notes && <p className="text-xs text-gray-400 mt-1">{u.notes}</p>}
                         <p className="text-[10px] text-gray-300 mt-1">{new Date(u.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</p>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-red-500 shrink-0 h-7 px-2" onClick={() => { if (confirm(L ? "حذف المستخدم من Atlas أيضاً؟" : "Delete this user from Atlas too?")) delUser.mutate(u.id); }} data-testid={`button-delete-dbuser-${u.id}`}>
+                      <Button size="sm" variant="ghost" className="text-black dark:text-white shrink-0 h-7 px-2" onClick={() => { if (confirm(L ? "حذف المستخدم من Atlas أيضاً؟" : "Delete this user from Atlas too?")) delUser.mutate(u.id); }} data-testid={`button-delete-dbuser-${u.id}`}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -174,7 +174,7 @@ export default function AdminMongoAtlas() {
           ) : (
             <div className="grid gap-3">
               {configs.map((c: any) => (
-                <Card key={c.id} data-testid={`card-atlas-config-${c.id}`} className={`border ${c.isDefault ? "border-green-400" : "border-gray-200"}`}>
+                <Card key={c.id} data-testid={`card-atlas-config-${c.id}`} className={`border ${c.isDefault ? "border-black/15 dark:border-white/15" : "border-gray-200"}`}>
                   <CardContent className="p-4 flex items-start gap-4">
                     <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                       <Server className="w-4 h-4 text-gray-500" />
@@ -182,7 +182,7 @@ export default function AdminMongoAtlas() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm">{c.label}</span>
-                        {c.isDefault && <Badge className="text-[10px] bg-green-100 text-green-700">{L ? "افتراضي" : "Default"}</Badge>}
+                        {c.isDefault && <Badge className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">{L ? "افتراضي" : "Default"}</Badge>}
                         {c.projectName && <Badge variant="outline" className="text-[10px]">{c.projectName}</Badge>}
                         {c.clusterName && <Badge variant="outline" className="text-[10px]">{c.clusterName}</Badge>}
                       </div>
@@ -190,7 +190,7 @@ export default function AdminMongoAtlas() {
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEditConfig(c)}>{L ? "تعديل" : "Edit"}</Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500" onClick={() => delConfig.mutate(c.id)} data-testid={`button-delete-config-${c.id}`}>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-black dark:text-white" onClick={() => delConfig.mutate(c.id)} data-testid={`button-delete-config-${c.id}`}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -213,7 +213,7 @@ export default function AdminMongoAtlas() {
               <Label>{L ? "تسمية الإعداد *" : "Config Label *"}</Label>
               <Input value={configForm.label} onChange={e => setConfigForm(f => ({ ...f, label: e.target.value }))} placeholder={L ? "مثال: قيروكس الرئيسي" : "e.g. Qirox Main"} data-testid="input-atlas-label" />
             </div>
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-lg p-3 text-xs text-black dark:text-white">
               {L ? <>يدعم النظام نوعين: <strong>API Key</strong> (Public/Private Key) أو <strong>Service Account</strong> (Client ID/Secret — يبدأ بـ mdb_sa_id_)</> : <>Supports two types: <strong>API Key</strong> (Public/Private Key) or <strong>Service Account</strong> (Client ID/Secret — starts with mdb_sa_id_)</>}
             </div>
             <div className="grid grid-cols-1 gap-3">
@@ -221,7 +221,7 @@ export default function AdminMongoAtlas() {
                 <Label>Public Key / Client ID *</Label>
                 <Input value={configForm.publicKey} onChange={e => setConfigForm(f => ({ ...f, publicKey: e.target.value }))} placeholder={L ? "مفتاح API العام أو Client ID" : "Public API Key or Client ID"} dir="ltr" data-testid="input-atlas-public-key" />
                 {configForm.publicKey.startsWith("mdb_sa_id_") && (
-                  <p className="text-xs text-green-600 mt-1">{L ? "✓ تم اكتشاف Service Account" : "✓ Service Account detected"}</p>
+                  <p className="text-xs text-black dark:text-white mt-1">{L ? "✓ تم اكتشاف Service Account" : "✓ Service Account detected"}</p>
                 )}
               </div>
               <div>
@@ -254,7 +254,7 @@ export default function AdminMongoAtlas() {
                   {testLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} {L ? "اختبار الاتصال" : "Test Connection"}
                 </Button>
                 {testResult && (
-                  <div className={`flex items-center gap-1 text-xs font-medium ${testResult.success ? "text-green-600" : "text-red-600"}`}>
+                  <div className={`flex items-center gap-1 text-xs font-medium ${testResult.success ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                     {testResult.success ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     {testResult.message}
                   </div>
@@ -264,7 +264,7 @@ export default function AdminMongoAtlas() {
                 <div className="mt-2 space-y-1">
                   <p className="text-xs font-medium text-gray-500">{L ? "المشاريع المتاحة:" : "Available Projects:"}</p>
                   {testResult.projects.map((p: any) => (
-                    <button key={p.id} className="block w-full text-right text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded px-2 py-0.5" onClick={() => setConfigForm(f => ({ ...f, projectId: p.id, projectName: p.name }))}>
+                    <button key={p.id} className="block w-full text-right text-xs text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] rounded px-2 py-0.5" onClick={() => setConfigForm(f => ({ ...f, projectId: p.id, projectName: p.name }))}>
                       {p.name} ({p.id})
                     </button>
                   ))}
@@ -317,7 +317,7 @@ export default function AdminMongoAtlas() {
               <Label>{L ? "ملاحظات (اختياري)" : "Notes (optional)"}</Label>
               <Textarea value={userForm.notes} onChange={e => setUserForm(f => ({ ...f, notes: e.target.value }))} className="h-16" data-testid="input-db-notes" />
             </div>
-            <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-3 text-xs text-black dark:text-white">
               {L ? "سيتم إنشاء مستخدم Atlas جديد بصلاحيات readWrite و dbAdmin على قاعدة البيانات المحددة، وإنتاج connection string جاهزة للاستخدام." : "A new Atlas user will be created with readWrite & dbAdmin permissions on the specified database, and a ready-to-use connection string will be generated."}
             </div>
           </div>

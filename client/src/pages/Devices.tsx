@@ -26,13 +26,13 @@ import {
 } from "lucide-react";
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string; bg: string; dark: string; accent: string }> = {
-  device:   { label: "أجهزة",         icon: Cpu,     color: "text-blue-600",    bg: "bg-blue-50",    dark: "bg-gradient-to-br from-blue-600 to-indigo-600",    accent: "#2563eb" },
-  hosting:  { label: "استضافة",        icon: Server,  color: "text-purple-600",  bg: "bg-purple-50",  dark: "bg-gradient-to-br from-purple-600 to-violet-700",  accent: "#9333ea" },
-  domain:   { label: "دومين",          icon: Globe,   color: "text-emerald-600", bg: "bg-emerald-50", dark: "bg-gradient-to-br from-emerald-500 to-teal-600",   accent: "#059669" },
-  email:    { label: "بريد احترافي",   icon: Mail,    color: "text-orange-600",  bg: "bg-orange-50",  dark: "bg-gradient-to-br from-orange-500 to-red-500",     accent: "#ea580c" },
-  gift:     { label: "هدايا",          icon: Gift,    color: "text-pink-600",    bg: "bg-pink-50",    dark: "bg-gradient-to-br from-pink-500 to-rose-600",      accent: "#ec4899" },
-  software: { label: "برمجيات",        icon: Code2,   color: "text-indigo-600",  bg: "bg-indigo-50",  dark: "bg-gradient-to-br from-indigo-600 to-blue-700",    accent: "#4f46e5" },
-  system:   { label: "أنظمة",          icon: Monitor, color: "text-teal-600",    bg: "bg-teal-50",    dark: "bg-gradient-to-br from-teal-500 to-cyan-600",      accent: "#0d9488" },
+  device:   { label: "أجهزة",         icon: Cpu,     color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",    dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",    accent: "#2563eb" },
+  hosting:  { label: "استضافة",        icon: Server,  color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",  accent: "#9333ea" },
+  domain:   { label: "دومين",          icon: Globe,   color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",   accent: "#059669" },
+  email:    { label: "بريد احترافي",   icon: Mail,    color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",     accent: "#ea580c" },
+  gift:     { label: "هدايا",          icon: Gift,    color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",    dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",      accent: "#ec4899" },
+  software: { label: "برمجيات",        icon: Code2,   color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",    accent: "#4f46e5" },
+  system:   { label: "أنظمة",          icon: Monitor, color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",    dark: "bg-gradient-to-br from-black dark:from-white to-black dark:to-white",      accent: "#0d9488" },
   other:    { label: "أخرى",           icon: Package, color: "text-gray-600",    bg: "bg-gray-50",    dark: "bg-gradient-to-br from-gray-600 to-gray-700",      accent: "#4b5563" },
 };
 
@@ -108,10 +108,10 @@ function ImageCarousel({ images, productName, height = 320 }: { images: string[]
 
 
 const TIER_META_SIMPLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  lite:     { label: "لايت",    color: "text-teal-700 dark:text-teal-300",    bg: "bg-teal-50 dark:bg-teal-900/20",    border: "border-teal-200 dark:border-teal-700/40" },
-  pro:      { label: "برو",     color: "text-violet-700 dark:text-violet-300", bg: "bg-violet-50 dark:bg-violet-900/20", border: "border-violet-200 dark:border-violet-700/40" },
-  infinite: { label: "إنفينتي", color: "text-amber-700 dark:text-amber-300",   bg: "bg-amber-50 dark:bg-amber-900/20",   border: "border-amber-200 dark:border-amber-700/40" },
-  custom:   { label: "مخصص",   color: "text-blue-700 dark:text-blue-300",     bg: "bg-blue-50 dark:bg-blue-900/20",     border: "border-blue-200 dark:border-blue-700/40" },
+  lite:     { label: "لايت",    color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  pro:      { label: "برو",     color: "text-black dark:text-white dark:text-black/70 dark:text-white/70", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  infinite: { label: "إنفينتي", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  custom:   { label: "مخصص",   color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",     border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
 };
 
 function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending }: {
@@ -181,12 +181,12 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
               </span>
             )}
             {p.featured && (
-              <span className="text-xs font-black bg-amber-400 text-white px-3 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs font-black bg-black/[0.08] dark:bg-white/[0.1] text-white px-3 py-1 rounded-full flex items-center gap-1">
                 <Star className="w-3 h-3" />مميز
               </span>
             )}
             {isPhysical && (
-              <span className="text-xs font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-3 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs font-bold bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-3 py-1 rounded-full flex items-center gap-1">
                 <Truck className="w-3 h-3" />شحن مجاني داخل المملكة
               </span>
             )}
@@ -203,10 +203,10 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           </div>
 
           {p.stock !== -1 && p.stock > 0 && (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">متوفر في المخزون ({p.stock} وحدة)</p>
+            <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold">متوفر في المخزون ({p.stock} وحدة)</p>
           )}
-          {p.stock === -1 && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">متوفر</p>}
-          {p.stock === 0 && <p className="text-xs text-red-500 font-bold">نفد المخزون</p>}
+          {p.stock === -1 && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold">متوفر</p>}
+          {p.stock === 0 && <p className="text-xs text-black dark:text-white font-bold">نفد المخزون</p>}
 
           {p.descriptionAr && (
             <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl p-4">
@@ -233,11 +233,11 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
 
           {/* Linked plan (static label) */}
           {(p as any).linkedPlanSlug && !hasBundles && (
-            <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-2xl p-4">
-              <p className="text-xs font-black text-cyan-700 dark:text-cyan-300 mb-1 flex items-center gap-1.5">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+              <p className="text-xs font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />يأتي مع باقة نظام
               </p>
-              <p className="text-sm text-cyan-900 dark:text-cyan-100">{(p as any).linkedPlanSlug}</p>
+              <p className="text-sm text-black dark:text-white dark:text-black/60 dark:text-white/60">{(p as any).linkedPlanSlug}</p>
             </div>
           )}
 
@@ -245,9 +245,9 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           {hasBundles && (
             <div>
               <h3 className="text-xs font-black text-black/60 dark:text-white/60 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
                 اختر الباقة المرفقة
-                <span className="text-red-500">*</span>
+                <span className="text-black dark:text-white">*</span>
               </h3>
               <div className="space-y-2.5">
                 {planBundles.map((bundle: any, idx: number) => {
@@ -262,7 +262,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                       data-testid={`bundle-option-${idx}`}
                       className={`w-full text-right rounded-2xl border-2 p-4 transition-all duration-200 ${
                         isSelected
-                          ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 shadow-sm"
+                          ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white shadow-sm"
                           : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"
                       }`}
                     >
@@ -281,7 +281,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                             <div className="flex flex-wrap gap-1">
                               {features.slice(0, 4).map((f: string, fi: number) => (
                                 <span key={fi} className="text-[10px] flex items-center gap-1 text-black/50 dark:text-white/50">
-                                  <Check className="w-2.5 h-2.5 text-emerald-500" />{f}
+                                  <Check className="w-2.5 h-2.5 text-black dark:text-white" />{f}
                                 </span>
                               ))}
                               {features.length > 4 && (
@@ -292,14 +292,14 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                         </div>
                         <div className="text-right shrink-0">
                           {bundle.isFree ? (
-                            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">مجاناً</span>
+                            <span className="text-sm font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">مجاناً</span>
                           ) : (
                             <div>
                               <span className="text-sm font-black text-black dark:text-white">+{bPrice.toLocaleString()}</span>
                               <SARIcon size={8} className="opacity-35 block" />
                             </div>
                           )}
-                          <div className={`mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center mx-auto ${isSelected ? "border-violet-500 bg-violet-500" : "border-black/20 dark:border-white/20"}`}>
+                          <div className={`mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center mx-auto ${isSelected ? "border-black dark:border-white bg-black dark:bg-white" : "border-black/20 dark:border-white/20"}`}>
                             {isSelected && <Check className="w-3 h-3 text-white" />}
                           </div>
                         </div>
@@ -323,7 +323,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                     </div>
                   )}
                   {selectedBundle.isFree && (
-                    <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 mb-1">
+                    <div className="flex items-center justify-between text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1">
                       <span>الباقة: {selectedBundle.planNameAr}</span>
                       <span>مجاناً</span>
                     </div>
@@ -345,7 +345,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
               </h3>
               <Textarea value={notes} onChange={e => setNotes(e.target.value)}
                 placeholder="أي تفاصيل إضافية..." className="rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm resize-none h-20" data-testid="input-product-notes" />
-              {bundleError && <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{bundleError}</p>}
+              {bundleError && <p className="text-black dark:text-white text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{bundleError}</p>}
             </div>
           </div>
         </div>
@@ -354,8 +354,8 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
       {/* Sticky footer */}
       <div className="shrink-0 p-4 border-t border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 space-y-2">
         {p.stock === 0 ? (
-          <div className="w-full h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center justify-center">
-            <span className="text-sm font-bold text-red-500">نفد المخزون</span>
+          <div className="w-full h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white flex items-center justify-center">
+            <span className="text-sm font-bold text-black dark:text-white">نفد المخزون</span>
           </div>
         ) : (
           <Button
@@ -427,7 +427,7 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
         <div className="absolute top-3 right-3 flex flex-col gap-1.5">
           {p.badge && <span className="text-[10px] font-black bg-black text-white px-2.5 py-1 rounded-full shadow">{p.badge}</span>}
           {isFeat && (
-            <span className="text-[10px] font-black bg-amber-400 text-white px-2.5 py-1 rounded-full flex items-center gap-1">
+            <span className="text-[10px] font-black bg-black/[0.08] dark:bg-white/[0.1] text-white px-2.5 py-1 rounded-full flex items-center gap-1">
               <Star className="w-2.5 h-2.5" />مميز
             </span>
           )}
@@ -468,8 +468,8 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
 
         {(p as any).linkedPlanSlug && (
           <div className="flex items-center gap-1 mb-2.5">
-            <Sparkles className="w-3 h-3 text-cyan-500" />
-            <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold">يشمل باقة نظام</span>
+            <Sparkles className="w-3 h-3 text-black dark:text-white" />
+            <span className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold">يشمل باقة نظام</span>
           </div>
         )}
 
@@ -484,13 +484,13 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
             <Button
               size="sm"
               onClick={e => { e.stopPropagation(); onOpen(); }}
-              className={`rounded-xl text-xs h-9 px-4 font-bold transition-all ${isAdded ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
+              className={`rounded-xl text-xs h-9 px-4 font-bold transition-all ${isAdded ? "bg-black dark:bg-white text-white hover:bg-black dark:bg-white" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
               data-testid={`button-add-to-cart-${p.id}`}
             >
               {isAdded ? <><Check className="w-3.5 h-3.5 ml-1" />أُضيف</> : <><ShoppingCart className="w-3.5 h-3.5 ml-1" />اشتر الآن</>}
             </Button>
           ) : (
-            <span className="text-[10px] text-red-500 font-bold bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl">نفد المخزون</span>
+            <span className="text-[10px] text-black dark:text-white font-bold bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-3 py-1.5 rounded-xl">نفد المخزون</span>
           )}
         </div>
       </div>
@@ -608,12 +608,12 @@ export default function Devices() {
   const regular = filtered.filter(p => !p.featured);
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    processing: "bg-blue-50 text-blue-700 border-blue-200",
-    shipped: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    out_for_delivery: "bg-orange-50 text-orange-700 border-orange-200",
-    delivered: "bg-green-50 text-green-700 border-green-200",
-    cancelled: "bg-red-50 text-red-700 border-red-200",
+    pending: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+    processing: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+    shipped: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+    out_for_delivery: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+    delivered: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+    cancelled: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   };
   const statusLabels: Record<string, string> = {
     pending: "قيد الانتظار", processing: "قيد التجهيز", shipped: "تم الشحن",
@@ -630,8 +630,8 @@ export default function Devices() {
           <PageGraphics variant="full-dark" />
           <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "24px 24px" }} />
           {[
-            { w: 400, h: 400, top: "-10%", right: "-5%", from: "from-blue-500/20", to: "to-indigo-600/10", dur: 9 },
-            { w: 280, h: 280, top: "30%", left: "-5%", from: "from-purple-500/15", to: "to-violet-600/8", dur: 12 },
+            { w: 400, h: 400, top: "-10%", right: "-5%", from: "from-black dark:from-white", to: "to-black dark:to-white", dur: 9 },
+            { w: 280, h: 280, top: "30%", left: "-5%", from: "from-black dark:from-white", to: "to-black dark:to-white", dur: 12 },
           ].map((o, i) => (
             <motion.div key={i} className={`absolute rounded-full bg-gradient-to-br ${o.from} ${o.to} blur-3xl pointer-events-none`}
               style={{ width: o.w, height: o.h, top: o.top, ...(o.right ? { right: o.right } : { left: o.left }) }}
@@ -646,7 +646,7 @@ export default function Devices() {
               </div>
               <h1 className="text-5xl md:text-7xl font-black text-white mb-4 leading-[1.05] tracking-tight">
                 الأجهزة<br />
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">والإضافات</span>
+                <span className="bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] via-black/[0.08] dark:via-white/[0.1] to-black/[0.08] dark:to-white/[0.1] bg-clip-text text-transparent">والإضافات</span>
               </h1>
               <p className="text-white/45 text-lg max-w-xl">كل ما تحتاجه لإطلاق مشروعك الرقمي — أجهزة، استضافة، دومين، بريد احترافي، وأكثر</p>
             </motion.div>
@@ -703,7 +703,7 @@ export default function Devices() {
             {featured.length > 0 && (
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-5">
-                  <Star className="w-4 h-4 text-amber-500" />
+                  <Star className="w-4 h-4 text-black dark:text-white" />
                   <h2 className="text-sm font-black text-black/60 dark:text-white/60 uppercase tracking-wider">المنتجات المميزة</h2>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -33,8 +33,8 @@ function getStatusMap(L: boolean): Record<string, { label: string; color: string
   const labels = L ? { draft: "مسودة", published: "منشور", archived: "مؤرشف" } : { draft: "Draft", published: "Published", archived: "Archived" };
   return {
     draft: { label: labels.draft, color: "bg-gray-100 text-gray-600" },
-    published: { label: labels.published, color: "bg-green-100 text-green-700" },
-    archived: { label: labels.archived, color: "bg-amber-100 text-amber-700" },
+    published: { label: labels.published, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+    archived: { label: labels.archived, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
   };
 }
 
@@ -161,7 +161,7 @@ export default function AdminNews() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {["draft", "published", "archived"].map((s) => (
           <div key={s} className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${s === "published" ? "bg-green-500" : s === "draft" ? "bg-gray-400" : "bg-amber-400"}`} />
+            <div className={`w-2 h-2 rounded-full ${s === "published" ? "bg-black dark:bg-white" : s === "draft" ? "bg-gray-400" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
             <div>
               <p className="text-lg font-bold text-black">{newsList?.filter(n => n.status === s).length || 0}</p>
               <p className="text-xs text-black/40">{statusMap[s]?.label}</p>
@@ -229,7 +229,7 @@ export default function AdminNews() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className={item.status === "published" ? "text-green-600" : "text-black/40"}
+                          className={item.status === "published" ? "text-black dark:text-white" : "text-black/40"}
                           onClick={() => handleQuickToggle(item)}
                           title={item.status === "published" ? (L ? "إلغاء النشر" : "Unpublish") : (L ? "نشر" : "Publish")}
                           data-testid={`button-toggle-news-${item.id}`}
@@ -239,7 +239,7 @@ export default function AdminNews() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="text-red-500"
+                          className="text-black dark:text-white"
                           onClick={() => deleteMutation.mutate(item.id.toString())}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-delete-news-${item.id}`}

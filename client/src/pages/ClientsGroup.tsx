@@ -143,7 +143,7 @@ export default function ClientsGroup() {
             <div className="w-10 h-10 rounded-full bg-black dark:bg-white flex items-center justify-center">
               <img src={qiroxLogoPath} alt="QIROX" className="w-7 h-7 object-contain dark:invert" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-black dark:bg-white border-2 border-white dark:border-gray-900 rounded-full" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-black dark:text-white truncate">
@@ -153,8 +153,8 @@ export default function ClientsGroup() {
               <Users className="w-3 h-3" />
               <span>{lang === "ar" ? "قناة إعلانات رسمية" : "Official announcements channel"}</span>
               <span className="mx-1">·</span>
-              <Shield className="w-3 h-3 text-green-500" />
-              <span className="text-green-600 dark:text-green-400">{lang === "ar" ? "موثّق" : "Verified"}</span>
+              <Shield className="w-3 h-3 text-black dark:text-white" />
+              <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">{lang === "ar" ? "موثّق" : "Verified"}</span>
             </div>
           </div>
           {isAdmin && (
@@ -278,8 +278,8 @@ export default function ClientsGroup() {
                 </button>
               </div>
               <div className="px-6 py-5 space-y-4">
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl p-3">
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                     {lang === "ar"
                       ? "⚡ سيظهر هذا الإعلان في مجموعة العملاء وصفحة الأخبار في آن واحد"
                       : "⚡ This announcement will appear in both the Clients Group and the News page"}

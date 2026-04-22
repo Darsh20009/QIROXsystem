@@ -33,9 +33,9 @@ type Payment = {
 type AllUsersResp = { users: { id: string; _id?: string; fullName: string; username: string; email: string; role: string }[] };
 
 function getStatusConfig(L: boolean) { return {
-  pending: { label: L ? "بانتظار المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-  approved: { label: L ? "موافق" : "Approved", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: XCircle },
+  pending: { label: L ? "بانتظار المراجعة" : "Under Review", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: Clock },
+  approved: { label: L ? "موافق" : "Approved", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: CheckCircle2 },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: XCircle },
 };
 }
 
@@ -126,11 +126,11 @@ export default function AdminInvestors() {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-bl from-amber-500/10 via-yellow-500/5 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
-          <div className="absolute -top-10 -left-10 w-48 h-48 bg-gradient-to-br from-amber-500/20 to-yellow-500/10 rounded-full blur-3xl" />
+        <div className="relative bg-gradient-to-bl from-black dark:from-white via-black dark:via-white to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-48 h-48 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-3xl" />
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/30">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] flex items-center justify-center shadow-lg shadow-amber-500/30">
                 <TrendingUp className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -138,7 +138,7 @@ export default function AdminInvestors() {
                 <p className="text-black/40 dark:text-white/40 text-sm">{L ? "تتبع حصص الاستثمار والمدفوعات" : "Track investment stakes and payments"}</p>
               </div>
             </div>
-            <Button onClick={() => setAddOpen(true)} className="gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white shadow-lg shadow-amber-500/20" data-testid="btn-add-investor">
+            <Button onClick={() => setAddOpen(true)} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] text-white shadow-lg shadow-amber-500/20" data-testid="btn-add-investor">
               <Plus className="w-4 h-4" /> {L ? "إضافة مستثمر" : "Add Investor"}
             </Button>
           </div>
@@ -146,10 +146,10 @@ export default function AdminInvestors() {
           {/* Stats */}
           <div className="relative mt-5 grid grid-cols-4 gap-3">
             {[
-              { label: L ? "المستثمرون" : "Investors", value: investors.length, icon: Users, color: "text-amber-500" },
-              { label: L ? "إجمالي الاستثمارات" : "Total Invested", value: totalInvested.toLocaleString(L ? "ar-SA" : "en-US"), hasSAR: true, icon: Wallet, color: "text-green-500" },
-              { label: L ? "مجموع الحصص" : "Total Stakes", value: `${totalStake}%`, icon: Percent, color: "text-blue-500" },
-              { label: L ? "دفعات معلقة" : "Pending Payments", value: pendingPayments, icon: AlertCircle, color: "text-red-500" },
+              { label: L ? "المستثمرون" : "Investors", value: investors.length, icon: Users, color: "text-black dark:text-white" },
+              { label: L ? "إجمالي الاستثمارات" : "Total Invested", value: totalInvested.toLocaleString(L ? "ar-SA" : "en-US"), hasSAR: true, icon: Wallet, color: "text-black dark:text-white" },
+              { label: L ? "مجموع الحصص" : "Total Stakes", value: `${totalStake}%`, icon: Percent, color: "text-black dark:text-white" },
+              { label: L ? "دفعات معلقة" : "Pending Payments", value: pendingPayments, icon: AlertCircle, color: "text-black dark:text-white" },
             ].map(stat => (
               <div key={stat.label} className="bg-white/50 dark:bg-gray-900/50 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <stat.icon className={`w-4 h-4 ${stat.color} mb-1.5`} />
@@ -167,10 +167,10 @@ export default function AdminInvestors() {
             { id: "payments" as Tab, label: L ? "الدفعات" : "Payments", icon: DollarSign },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-transparent text-black/40 dark:text-white/40"}`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-transparent text-black/40 dark:text-white/40"}`}
               data-testid={`tab-${t.id}`}>
               <t.icon className="w-4 h-4" />{t.label}
-              {t.id === "payments" && pendingPayments > 0 && <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center">{pendingPayments}</span>}
+              {t.id === "payments" && pendingPayments > 0 && <span className="w-4 h-4 rounded-full bg-black dark:bg-white text-white text-[9px] flex items-center justify-center">{pendingPayments}</span>}
             </button>
           ))}
         </div>
@@ -185,24 +185,24 @@ export default function AdminInvestors() {
                   <motion.div key={inv.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-4 p-5 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"
                     data-testid={`investor-${inv.id}`}>
-                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 shrink-0 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white shrink-0 flex items-center justify-center">
                       {inv.userId?.profilePhotoUrl ? <img src={inv.userId.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-xl">{inv.userId?.fullName?.[0]?.toUpperCase()}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-black dark:text-white">{inv.userId?.fullName}</span>
-                        {inv.isVerified && <Badge className="text-[10px] px-2 py-0 border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{L ? "✓ موثق" : "✓ Verified"}</Badge>}
-                        {!inv.isActive && <Badge className="text-[10px] px-2 py-0 border-0 bg-red-100 text-red-700">{L ? "غير نشط" : "Inactive"}</Badge>}
+                        {inv.isVerified && <Badge className="text-[10px] px-2 py-0 border-0 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70">{L ? "✓ موثق" : "✓ Verified"}</Badge>}
+                        {!inv.isActive && <Badge className="text-[10px] px-2 py-0 border-0 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">{L ? "غير نشط" : "Inactive"}</Badge>}
                       </div>
                       <p className="text-xs text-black/30 dark:text-white/30">{inv.userId?.email}</p>
-                      {inv.userId?.jobTitle && <p className="text-xs text-cyan-600 dark:text-cyan-400">{inv.userId.jobTitle}</p>}
+                      {inv.userId?.jobTitle && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{inv.userId.jobTitle}</p>}
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{inv.stakePercentage}%</p>
+                      <p className="text-2xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{inv.stakePercentage}%</p>
                       <p className="text-xs text-black/30 dark:text-white/30">{L ? "حصة" : "Stake"}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-green-600 dark:text-green-400">{inv.totalInvested.toLocaleString(L ? "ar-SA" : "en-US")}</p>
+                      <p className="text-base font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{inv.totalInvested.toLocaleString(L ? "ar-SA" : "en-US")}</p>
                       <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-60" /> {L ? "مستثمر" : "invested"}</p>
                     </div>
                     <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditInvestor(inv); setNewStake(String(inv.stakePercentage)); setNewNotes(inv.notes || ""); }} data-testid={`btn-edit-${inv.id}`}>
@@ -243,17 +243,17 @@ export default function AdminInvestors() {
                           {p.description && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 italic">"{p.description}"</p>}
                         </div>
                         <div className="text-left">
-                          <p className="text-xl font-black text-green-600 dark:text-green-400">{p.amount.toLocaleString(L ? "ar-SA" : "en-US")} {p.currency}</p>
-                          {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 underline flex items-center gap-1"><Eye className="w-3 h-3" /> {L ? "عرض الإيصال" : "View Receipt"}</a>}
+                          <p className="text-xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{p.amount.toLocaleString(L ? "ar-SA" : "en-US")} {p.currency}</p>
+                          {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-black dark:text-white underline flex items-center gap-1"><Eye className="w-3 h-3" /> {L ? "عرض الإيصال" : "View Receipt"}</a>}
                         </div>
                       </div>
                       {p.signatureText && <p className="text-xs text-black/40 dark:text-white/40">{L ? "التوقيع النصي:" : "Text Signature:"} {p.signatureText}</p>}
                       {p.status === "pending" && (
                         <div className="flex gap-2 pt-1">
-                          <Button size="sm" className="gap-1.5 bg-green-500 hover:bg-green-600 text-white" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "approved" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-approve-${p.id}`}>
+                          <Button size="sm" className="gap-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "approved" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-approve-${p.id}`}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> {L ? "موافقة" : "Approve"}
                           </Button>
-                          <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "rejected" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-reject-${p.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1.5 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "rejected" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-reject-${p.id}`}>
                             <XCircle className="w-3.5 h-3.5" /> {L ? "رفض" : "Reject"}
                           </Button>
                         </div>
@@ -270,7 +270,7 @@ export default function AdminInvestors() {
       {/* Add Investor Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-md" dir={dir}>
-          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><UserCheck className="w-5 h-5 text-amber-500" />{L ? "إضافة مستثمر جديد" : "Add New Investor"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><UserCheck className="w-5 h-5 text-black dark:text-white" />{L ? "إضافة مستثمر جديد" : "Add New Investor"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "بحث واختيار المستخدم" : "Search & Select User"}</label>
@@ -278,7 +278,7 @@ export default function AdminInvestors() {
               <div className="mt-2 max-h-48 overflow-y-auto space-y-1 rounded-xl border border-black/[0.07] dark:border-white/[0.07] p-1">
                 {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).slice(0, 10).map(u => (
                   <button key={u.id || u._id} onClick={() => setSelectedUserId(String(u.id || u._id || ""))}
-                    className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-all ${selectedUserId === (u.id || u._id) ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" : "hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
+                    className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-all ${selectedUserId === (u.id || u._id) ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
                     data-testid={`select-user-${u.id || u._id}`}>
                     <span className="font-medium">{u.fullName}</span> <span className="text-xs text-black/40 dark:text-white/40">({u.role}) — {u.email}</span>
                   </button>
@@ -294,7 +294,7 @@ export default function AdminInvestors() {
               <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
               <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder={L ? "ملاحظات للأدمن..." : "Admin notes..."} data-testid="input-notes" />
             </div>
-            <Button className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white" onClick={() => addInvestorMutation.mutate()} disabled={!selectedUserId || addInvestorMutation.isPending} data-testid="btn-confirm-add-investor">
+            <Button className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] text-white" onClick={() => addInvestorMutation.mutate()} disabled={!selectedUserId || addInvestorMutation.isPending} data-testid="btn-confirm-add-investor">
               {addInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {L ? "إضافة المستثمر" : "Add Investor"}
             </Button>
           </div>
@@ -304,7 +304,7 @@ export default function AdminInvestors() {
       {/* Edit Investor Dialog */}
       <Dialog open={!!editInvestor} onOpenChange={v => !v && setEditInvestor(null)}>
         <DialogContent className="max-w-md" dir={dir}>
-          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><Edit2 className="w-5 h-5 text-amber-500" />{L ? "تعديل:" : "Edit:"} {editInvestor?.userId?.fullName}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><Edit2 className="w-5 h-5 text-black dark:text-white" />{L ? "تعديل:" : "Edit:"} {editInvestor?.userId?.fullName}</DialogTitle></DialogHeader>
           {editInvestor && (
             <div className="space-y-4">
               <div>
@@ -325,7 +325,7 @@ export default function AdminInvestors() {
                 <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
                 <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} data-testid="input-edit-notes" />
               </div>
-              <Button className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white" onClick={() => updateInvestorMutation.mutate()} disabled={updateInvestorMutation.isPending} data-testid="btn-confirm-edit">
+              <Button className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] text-white" onClick={() => updateInvestorMutation.mutate()} disabled={updateInvestorMutation.isPending} data-testid="btn-confirm-edit">
                 {updateInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} {L ? "حفظ التعديلات" : "Save Changes"}
               </Button>
             </div>

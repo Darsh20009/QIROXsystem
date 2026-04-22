@@ -72,9 +72,9 @@ function getFileType(filename: string): PortfolioFile["type"] {
 }
 
 function getFileIcon(type: string) {
-  if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
-  if (type === "video") return <Video className="w-4 h-4 text-blue-500" />;
-  if (type === "document") return <FileText className="w-4 h-4 text-green-500" />;
+  if (type === "pdf") return <FileText className="w-4 h-4 text-black dark:text-white" />;
+  if (type === "video") return <Video className="w-4 h-4 text-black dark:text-white" />;
+  if (type === "document") return <FileText className="w-4 h-4 text-black dark:text-white" />;
   return <File className="w-4 h-4 text-black/40" />;
 }
 
@@ -347,7 +347,7 @@ export default function AdminServices() {
                     <td className="p-4 text-sm text-black/60">{service.estimatedDuration || "—"}</td>
                     <td className="p-4 text-sm text-black/60">
                       {filesCount > 0 ? (
-                        <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                        <span className="text-xs px-2 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10">
                           {filesCount} ملف
                         </span>
                       ) : "—"}
@@ -366,7 +366,7 @@ export default function AdminServices() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="text-red-500"
+                          className="text-black dark:text-white"
                           onClick={() => deleteMutation.mutate(String(service.id))}
                           disabled={deleteMutation.isPending}
                           data-testid={`button-delete-${service.id}`}
@@ -549,10 +549,10 @@ export default function AdminServices() {
                       <button
                         type="button"
                         onClick={() => removeFile(idx)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                         data-testid={`button-remove-file-${idx}`}
                       >
-                        <X className="w-3.5 h-3.5 text-red-500" />
+                        <X className="w-3.5 h-3.5 text-black dark:text-white" />
                       </button>
                     </div>
                   ))}

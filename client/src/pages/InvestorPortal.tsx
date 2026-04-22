@@ -32,9 +32,9 @@ type Payment = {
 };
 
 const STATUS_CONFIG = {
-  pending: { label: "بانتظار المراجعة", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-  approved: { label: "موافق", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: XCircle },
+  pending: { label: "بانتظار المراجعة", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: Clock },
+  approved: { label: "موافق", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: CheckCircle2 },
+  rejected: { label: "مرفوض", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: XCircle },
 };
 
 const PAYMENT_METHODS = [
@@ -101,7 +101,7 @@ function SignaturePad({ onChange }: { onChange: (data: string) => void }) {
         </div>
       )}
       {!empty && (
-        <button onClick={clear} className="absolute top-2 left-2 p-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 hover:bg-red-200 transition-colors" data-testid="btn-clear-sig">
+        <button onClick={clear} className="absolute top-2 left-2 p-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors" data-testid="btn-clear-sig">
           <X className="w-4 h-4" />
         </button>
       )}
@@ -162,8 +162,8 @@ export default function InvestorPortal() {
   if (currentUser && !isInvestorOrAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-8" dir={dir}>
-        <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <Lock className="w-10 h-10 text-amber-500" />
+        <div className="w-20 h-20 rounded-3xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+          <Lock className="w-10 h-10 text-black dark:text-white" />
         </div>
         <h2 className="text-xl font-black text-black dark:text-white">صفحة مقيّدة</h2>
         <p className="text-sm text-black/40 dark:text-white/40 max-w-xs">هذه البوابة خاصة بالمستثمرين فقط. تواصل مع الإدارة لمزيد من المعلومات.</p>
@@ -177,8 +177,8 @@ export default function InvestorPortal() {
     console.error("Investor Portal Error:", error);
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4 text-center" dir={dir}>
-        <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-          <Lock className="w-10 h-10 text-amber-500" />
+        <div className="w-20 h-20 rounded-3xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+          <Lock className="w-10 h-10 text-black dark:text-white" />
         </div>
         <h2 className="text-xl font-black text-black dark:text-white">بوابة المستثمرين</h2>
         <p className="text-sm text-black/40 dark:text-white/40 max-w-xs">لا يوجد لديك ملف مستثمر حتى الآن. تواصل مع الإدارة لتفعيل وصولك.</p>
@@ -198,28 +198,28 @@ export default function InvestorPortal() {
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Hero Card */}
-        <div className="relative bg-gradient-to-bl from-amber-500/15 via-yellow-400/8 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
-          <div className="absolute -top-16 -left-16 w-64 h-64 bg-gradient-to-br from-amber-500/20 to-yellow-400/10 rounded-full blur-3xl" />
-          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-orange-400/10 to-transparent rounded-full blur-2xl" />
+        <div className="relative bg-gradient-to-bl from-black dark:from-white via-black/[0.08] dark:via-white/[0.1] to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
+          <div className="absolute -top-16 -left-16 w-64 h-64 bg-gradient-to-br from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-black/[0.08] dark:from-white/[0.1] to-transparent rounded-full blur-2xl" />
           <div className="relative flex items-start gap-5 flex-wrap">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 shrink-0">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white shrink-0">
                 {profile.userId?.profilePhotoUrl ? <img src={profile.userId.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-black text-amber-600">{profile.userId?.fullName?.[0]}</div>
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-black text-black dark:text-white">{profile.userId?.fullName?.[0]}</div>
                 )}
               </div>
-              {profile.isVerified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+              {profile.isVerified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-black dark:bg-white rounded-full flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-black text-black dark:text-white">{profile.userId?.fullName}</h1>
-                <Badge className="text-xs px-3 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 gap-1"><Star className="w-3 h-3" /> مستثمر</Badge>
-                {profile.isVerified && <Badge className="text-xs px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">✓ موثق</Badge>}
+                <Badge className="text-xs px-3 py-1 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0 gap-1"><Star className="w-3 h-3" /> مستثمر</Badge>
+                {profile.isVerified && <Badge className="text-xs px-3 py-1 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0">✓ موثق</Badge>}
               </div>
               <p className="text-sm text-black/40 dark:text-white/40 mt-1">انضم منذ {profile.joinedAt ? new Date(profile.joinedAt).toLocaleDateString("ar-SA") : "—"}</p>
             </div>
             <div className="text-center bg-white/60 dark:bg-black/20 rounded-2xl px-6 py-3">
-              <p className="text-4xl font-black text-amber-600 dark:text-amber-400">{profile.stakePercentage}%</p>
+              <p className="text-4xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{profile.stakePercentage}%</p>
               <p className="text-xs text-black/40 dark:text-white/40 mt-1">حصتك من النظام</p>
             </div>
           </div>
@@ -227,10 +227,10 @@ export default function InvestorPortal() {
           {/* Key Metrics */}
           <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "قيمة حصتك", value: `${(myValue || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: TrendingUp, color: "text-amber-500" },
-              { label: "إجمالي مستثمراتك", value: `${(profile.totalInvested || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: Wallet, color: "text-green-500" },
-              { label: "تقييم النظام", value: `${(settings?.systemValuation || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: BarChart3, color: "text-blue-500" },
-              { label: "عدد المستثمرين", value: allInvestors?.length || 0, icon: Users, color: "text-purple-500" },
+              { label: "قيمة حصتك", value: `${(myValue || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: TrendingUp, color: "text-black dark:text-white" },
+              { label: "إجمالي مستثمراتك", value: `${(profile.totalInvested || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: Wallet, color: "text-black dark:text-white" },
+              { label: "تقييم النظام", value: `${(settings?.systemValuation || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: BarChart3, color: "text-black dark:text-white" },
+              { label: "عدد المستثمرين", value: allInvestors?.length || 0, icon: Users, color: "text-black dark:text-white" },
             ].map(m => (
               <div key={m.label} className="bg-white/70 dark:bg-gray-900/70 backdrop-blur border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <m.icon className={`w-4 h-4 ${m.color} mb-2`} />
@@ -249,7 +249,7 @@ export default function InvestorPortal() {
               </p>
               <div className="h-4 rounded-full overflow-hidden flex bg-black/5 dark:bg-white/5">
                 {allInvestors.map((inv, i) => {
-                  const colors = ["bg-amber-400", "bg-yellow-400", "bg-orange-400", "bg-red-400", "bg-pink-400"];
+                  const colors = ["bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]"];
                   const isMe = inv.userId?.fullName === profile.userId?.fullName;
                   const shareWidth = inv.stakePercentage || 0;
                   return (
@@ -260,7 +260,7 @@ export default function InvestorPortal() {
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {allInvestors.map((inv, i) => {
-                  const colors = ["bg-amber-400", "bg-yellow-400", "bg-orange-400", "bg-red-400", "bg-pink-400"];
+                  const colors = ["bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]"];
                   const isMe = inv.userId?.fullName === profile.userId?.fullName;
                   return (
                     <span key={inv.id} className={`flex items-center gap-1 text-xs ${isMe ? "font-bold text-black dark:text-white" : "text-black/40 dark:text-white/40"}`}>
@@ -275,9 +275,9 @@ export default function InvestorPortal() {
 
           {/* Profit Share */}
           {profitShare && (settings?.systemValuation || 0) > 0 && (
-            <div className="relative mt-5 p-4 rounded-2xl bg-green-50/80 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
-              <p className="text-xs text-green-700 dark:text-green-400 font-semibold mb-1">نسبة الأرباح المخصصة للمستثمرين: {profitShare.percentage}%</p>
-              <p className="text-xl font-black text-green-700 dark:text-green-400">
+            <div className="relative mt-5 p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+              <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">نسبة الأرباح المخصصة للمستثمرين: {profitShare.percentage}%</p>
+              <p className="text-xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">
                 حصتك من الأرباح: {((settings!.systemValuation * profitShare.percentage / 100) * profile.stakePercentage / 100).toLocaleString("ar-SA")} {settings!.currency}
               </p>
               <p className="text-xs text-black/30 dark:text-white/30 mt-1">بناءً على حصة {profile.stakePercentage}% × أرباح المستثمرين {profitShare.percentage}% من التقييم الكلي</p>
@@ -293,10 +293,10 @@ export default function InvestorPortal() {
             { id: "submit" as Tab, label: "إرسال دفعة جديدة", icon: Upload },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"}`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"}`}
               data-testid={`tab-${t.id}`}>
               <t.icon className="w-4 h-4" />{t.label}
-              {t.id === "payments" && pendingPayments > 0 && <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center">{pendingPayments}</span>}
+              {t.id === "payments" && pendingPayments > 0 && <span className="w-4 h-4 rounded-full bg-black dark:bg-white text-white text-[9px] flex items-center justify-center">{pendingPayments}</span>}
             </button>
           ))}
         </div>
@@ -306,13 +306,13 @@ export default function InvestorPortal() {
           <div className="space-y-4">
             {/* Other Investors */}
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-amber-500" /> فريق المستثمرين</h3>
+              <h3 className="font-bold text-black dark:text-white mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-black dark:text-white" /> فريق المستثمرين</h3>
               <div className="space-y-3">
                 {allInvestors.map((inv, i) => {
                   const isMe = inv.userId?.fullName === profile.userId?.fullName;
                   return (
-                    <div key={inv.id} className={`flex items-center gap-3 p-3 rounded-xl ${isMe ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800" : "bg-black/[0.02] dark:bg-white/[0.02]"}`} data-testid={`investor-item-${i}`}>
-                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 shrink-0 flex items-center justify-center">
+                    <div key={inv.id} className={`flex items-center gap-3 p-3 rounded-xl ${isMe ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "bg-black/[0.02] dark:bg-white/[0.02]"}`} data-testid={`investor-item-${i}`}>
+                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white shrink-0 flex items-center justify-center">
                         {inv.userId?.profilePhotoUrl ? <img src={inv.userId.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-base font-bold">{inv.userId?.fullName?.[0] || 'م'}</span>}
                       </div>
                       <div className="flex-1">
@@ -320,7 +320,7 @@ export default function InvestorPortal() {
                         {inv.userId?.jobTitle && <p className="text-xs text-black/40 dark:text-white/40">{inv.userId.jobTitle}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-amber-600 dark:text-amber-400">{inv.stakePercentage || 0}%</p>
+                        <p className="font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{inv.stakePercentage || 0}%</p>
                       </div>
                     </div>
                   );
@@ -331,7 +331,7 @@ export default function InvestorPortal() {
             {/* Company Info */}
             {settings?.companyNameAr && (
               <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 bg-white dark:bg-gray-900">
-                <h3 className="font-bold text-black dark:text-white mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-blue-500" /> بيانات الشركة</h3>
+                <h3 className="font-bold text-black dark:text-white mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-black dark:text-white" /> بيانات الشركة</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02]">
                     <p className="text-xs text-black/40 dark:text-white/40">اسم الشركة</p>
@@ -365,8 +365,8 @@ export default function InvestorPortal() {
                         </div>
                         <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">{new Date(p.createdAt).toLocaleDateString("ar-SA")} · {PAYMENT_METHODS.find(m => m.value === p.paymentMethod)?.label || p.paymentMethod}</p>
                         {p.description && <p className="text-xs text-black/40 dark:text-white/40 mt-1 italic">"{p.description}"</p>}
-                        {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 underline mt-1 inline-block">عرض الإيصال</a>}
-                        {p.adminNote && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 border-t border-black/[0.05] dark:border-white/[0.05] pt-1">ملاحظة: {p.adminNote}</p>}
+                        {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-black dark:text-white underline mt-1 inline-block">عرض الإيصال</a>}
+                        {p.adminNote && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1 border-t border-black/[0.05] dark:border-white/[0.05] pt-1">ملاحظة: {p.adminNote}</p>}
                       </div>
                     </div>
                   );
@@ -378,7 +378,7 @@ export default function InvestorPortal() {
         {/* Submit Tab */}
         {tab === "submit" && (
           <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 bg-white dark:bg-gray-900 space-y-5">
-            <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Upload className="w-4 h-4 text-amber-500" /> إرسال دفعة استثمارية جديدة</h3>
+            <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Upload className="w-4 h-4 text-black dark:text-white" /> إرسال دفعة استثمارية جديدة</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -408,7 +408,7 @@ export default function InvestorPortal() {
                 <Button type="button" variant="outline" className="gap-2" onClick={() => fileRef.current?.click()} data-testid="btn-upload-proof">
                   <Upload className="w-4 h-4" />{proofFile ? "تغيير الملف" : "رفع الإيصال"}
                 </Button>
-                {proofFile && <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" />{proofFile.name}</span>}
+                {proofFile && <span className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" />{proofFile.name}</span>}
               </div>
             </div>
 
@@ -422,7 +422,7 @@ export default function InvestorPortal() {
               </div>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-start gap-2">
               <Lock className="w-4 h-4 mt-0.5 shrink-0" />
               <p>بالإرسال تؤكد صحة المعلومات المدخلة. الدفعة ستُراجع وتُوافق عليها من قبل الإدارة قبل احتسابها.</p>
             </div>
@@ -430,7 +430,7 @@ export default function InvestorPortal() {
             <Button
               onClick={() => submitMutation.mutate()}
               disabled={!amount || parseFloat(amount) <= 0 || submitMutation.isPending || (!signatureData && !signatureText)}
-              className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white h-12 text-base font-bold shadow-lg shadow-amber-500/20"
+              className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] text-white h-12 text-base font-bold shadow-lg shadow-amber-500/20"
               data-testid="btn-submit-payment"
             >
               {submitMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <DollarSign className="w-5 h-5" />}

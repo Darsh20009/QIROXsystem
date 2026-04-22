@@ -168,9 +168,9 @@ export default function Customers() {
 
       {/* No phone warning */}
       {noPhone.length > 0 && !search && (
-        <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3.5">
-          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+        <div className="flex items-start gap-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3.5">
+          <AlertTriangle className="w-4 h-4 text-black dark:text-white mt-0.5 shrink-0" />
+          <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">
             <span className="font-semibold">{noPhone.length} {L ? "عميل" : "customers"}</span> {L ? "ليس لديهم رقم هاتف مسجّل — قد لا يتلقون إشعارات واتساب" : "don't have a registered phone number — they may not receive WhatsApp notifications"}
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function Customers() {
               <PhoneOff className="w-4 h-4 text-foreground/50" />
               <span className="text-sm font-semibold text-foreground">{L ? "طلبات تصحيح الرقم" : "Phone Correction Requests"}</span>
               {pendingCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                <span className="bg-black dark:bg-white text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                   {pendingCount}
                 </span>
               )}
@@ -208,14 +208,14 @@ export default function Customers() {
                 <div className="divide-y divide-foreground/[0.04] dark:divide-white/[0.04]">
                   {phoneRequests.map(req => (
                     <div key={req.id} className="px-5 py-4 flex items-start gap-4 hover:bg-foreground/[0.01] dark:hover:bg-white/[0.02]" data-testid={`row-phone-request-${req.id}`}>
-                      <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${req.status === "pending" ? "bg-amber-400" : req.status === "resolved" ? "bg-emerald-400" : "bg-slate-400"}`} />
+                      <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${req.status === "pending" ? "bg-black/[0.08] dark:bg-white/[0.1]" : req.status === "resolved" ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-slate-400"}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-foreground">{req.clientName}</span>
                           {req.clientPhone && (
                             <span className="text-xs text-foreground/40 font-mono">{req.clientPhone}</span>
                           )}
-                          <Badge className={`text-[9px] px-2 py-0.5 border-0 ${req.status === "pending" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" : req.status === "resolved" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" : "bg-foreground/[0.06] text-foreground/50"}`}>
+                          <Badge className={`text-[9px] px-2 py-0.5 border-0 ${req.status === "pending" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : req.status === "resolved" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "bg-foreground/[0.06] text-foreground/50"}`}>
                             {req.status === "pending" ? (L ? "قيد الانتظار" : "Pending") : req.status === "resolved" ? (L ? "تم الحل" : "Resolved") : (L ? "ملغى" : "Cancelled")}
                           </Badge>
                         </div>
@@ -224,7 +224,7 @@ export default function Customers() {
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(req.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>
                           <span>{L ? "بواسطة:" : "By:"} {req.requestedByName}</span>
                           {req.status === "resolved" && req.newPhone && (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">→ {req.newPhone}</span>
+                            <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold">→ {req.newPhone}</span>
                           )}
                         </div>
                       </div>
@@ -300,7 +300,7 @@ export default function Customers() {
                             {customer.phone}
                           </a>
                         ) : (
-                          <span className="text-xs text-amber-500 flex items-center gap-1">
+                          <span className="text-xs text-black dark:text-white flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             {L ? "لا يوجد هاتف" : "No phone"}
                           </span>
@@ -313,7 +313,7 @@ export default function Customers() {
                               href={buildWaLink(cleanPhone)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                               title={L ? "فتح واتساب" : "Open WhatsApp"}
                               data-testid={`link-whatsapp-${customer.id}`}
                             >
@@ -324,7 +324,7 @@ export default function Customers() {
                               href={buildTgLink(cleanPhone)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                               title={L ? "فتح تيليغرام" : "Open Telegram"}
                               data-testid={`link-telegram-${customer.id}`}
                             >
@@ -337,7 +337,7 @@ export default function Customers() {
                         {/* Wrong phone button */}
                         <button
                           onClick={() => { setPhoneReqTarget(customer); setPhoneReqNotes(""); }}
-                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                           title={L ? "الرقم خطأ — رفع طلب تصحيح" : "Wrong number — submit correction request"}
                           data-testid={`button-wrong-phone-${customer.id}`}
                         >
@@ -367,7 +367,7 @@ export default function Customers() {
                     <td className="p-4">
                       <button
                         onClick={() => setDeleteTarget(customer)}
-                        className="p-2 rounded-lg text-foreground/20 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        className="p-2 rounded-lg text-foreground/20 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                         title={L ? "حذف العميل" : "Delete customer"}
                         data-testid={`button-delete-customer-${customer.id}`}
                       >
@@ -398,14 +398,14 @@ export default function Customers() {
             <AlertDialogDescription>
               {L ? "هل أنت متأكد من حذف حساب" : "Are you sure you want to delete"} <span className="font-semibold text-foreground">{deleteTarget?.fullName}</span>{L ? "؟" : "?"}
               <br />
-              <span className="text-red-500 text-xs mt-1 inline-block">{L ? "هذا الإجراء لا يمكن التراجع عنه." : "This action cannot be undone."}</span>
+              <span className="text-black dark:text-white text-xs mt-1 inline-block">{L ? "هذا الإجراء لا يمكن التراجع عنه." : "This action cannot be undone."}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogCancel data-testid="button-cancel-delete">{L ? "إلغاء" : "Cancel"}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && deleteMutation.mutate(String(deleteTarget.id))}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white"
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
@@ -420,7 +420,7 @@ export default function Customers() {
         <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PhoneOff className="w-4 h-4 text-rose-500" />
+              <PhoneOff className="w-4 h-4 text-black dark:text-white" />
               {L ? "رفع طلب تصحيح الرقم" : "Submit Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
@@ -445,7 +445,7 @@ export default function Customers() {
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setPhoneReqTarget(null)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
-                className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
+                className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                 onClick={() => phoneReqTarget && phoneReqMutation.mutate({ clientId: String(phoneReqTarget.id), notes: phoneReqNotes })}
                 disabled={phoneReqMutation.isPending}
                 data-testid="button-submit-phone-request"
@@ -463,7 +463,7 @@ export default function Customers() {
         <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />
               {L ? "حل طلب تصحيح الرقم" : "Resolve Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
@@ -494,7 +494,7 @@ export default function Customers() {
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setResolveTarget(null)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                 onClick={() => resolveTarget && resolveMutation.mutate({ id: resolveTarget.id, newPhone: resolveNewPhone, status: "resolved" })}
                 disabled={resolveMutation.isPending || !resolveNewPhone.trim()}
                 data-testid="button-confirm-resolve"

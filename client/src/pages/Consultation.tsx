@@ -16,17 +16,17 @@ import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const typeConfig: Record<string, { label: string; labelEn: string; icon: any; color: string; bg: string }> = {
-  phone:     { label: "مكالمة هاتفية", labelEn: "Phone Call",    icon: Phone,  color: "text-emerald-600", bg: "bg-emerald-50" },
-  video:     { label: "اجتماع فيديو",  labelEn: "Video Meeting", icon: Video,  color: "text-blue-600",    bg: "bg-blue-50" },
-  in_person: { label: "حضوري",          labelEn: "In Person",     icon: MapPin, color: "text-violet-600",  bg: "bg-violet-50" },
+  phone:     { label: "مكالمة هاتفية", labelEn: "Phone Call",    icon: Phone,  color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+  video:     { label: "اجتماع فيديو",  labelEn: "Video Meeting", icon: Video,  color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+  in_person: { label: "حضوري",          labelEn: "In Person",     icon: MapPin, color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
 };
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending:   { label: "في انتظار تحديد الموعد", color: "bg-amber-50 text-amber-700 border-amber-200",   icon: Clock },
-  confirmed: { label: "تم تأكيد الموعد",        color: "bg-green-50 text-green-700 border-green-200",   icon: CheckCircle },
-  rejected:  { label: "مرفوض",                  color: "bg-red-50 text-red-700 border-red-200",         icon: AlertCircle },
+  pending:   { label: "في انتظار تحديد الموعد", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",   icon: Clock },
+  confirmed: { label: "تم تأكيد الموعد",        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",   icon: CheckCircle },
+  rejected:  { label: "مرفوض",                  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",         icon: AlertCircle },
   cancelled: { label: "ملغي",                    color: "bg-gray-50 text-gray-600 border-gray-200",      icon: AlertCircle },
-  completed: { label: "مكتمل",                   color: "bg-blue-50 text-blue-700 border-blue-200",      icon: CheckCircle },
+  completed: { label: "مكتمل",                   color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",      icon: CheckCircle },
 };
 
 export default function Consultation() {
@@ -85,8 +85,8 @@ export default function Consultation() {
         <section className="relative py-20 md:py-28 bg-black text-white overflow-hidden">
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
           {[
-            { w: 400, h: 400, top: "-10%", right: "-5%",  from: "from-violet-500/20", to: "to-purple-500/10" },
-            { w: 300, h: 300, top: "50%",  left: "-5%",   from: "from-teal-500/15",   to: "to-cyan-500/10" },
+            { w: 400, h: 400, top: "-10%", right: "-5%",  from: "from-black dark:from-white", to: "to-black dark:to-white" },
+            { w: 300, h: 300, top: "50%",  left: "-5%",   from: "from-black dark:from-white",   to: "to-black dark:to-white" },
           ].map((o, i) => (
             <motion.div key={i} className={`absolute rounded-full bg-gradient-to-br ${o.from} ${o.to} blur-3xl`}
               style={{ width: o.w, height: o.h, top: o.top, ...(o.right ? { right: o.right } : { left: o.left }) }}
@@ -119,8 +119,8 @@ export default function Consultation() {
                 {submitted ? (
                   <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                     className="text-center py-16 px-8 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl">
-                    <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <CheckCircle className="w-10 h-10 text-green-500" />
+                    <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center mx-auto mb-6">
+                      <CheckCircle className="w-10 h-10 text-black dark:text-white" />
                     </div>
                     <h2 className="text-2xl font-black text-black dark:text-white mb-3">
                       {lang === "ar" ? "تم استلام طلبك!" : "Request Received!"}
@@ -337,7 +337,7 @@ export default function Consultation() {
                         {/* Appointment details if confirmed */}
                         {b.status === "confirmed" && b.date && (
                           <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
-                            <p className="text-xs font-semibold text-green-600 mb-3 flex items-center gap-1.5">
+                            <p className="text-xs font-semibold text-black dark:text-white mb-3 flex items-center gap-1.5">
                               <CheckCircle className="w-3.5 h-3.5" />
                               {lang === "ar" ? "تم تحديد موعدك" : "Your appointment is set"}
                             </p>
@@ -372,7 +372,7 @@ export default function Consultation() {
                             </div>
                             {b.meetingLink && (
                               <button onClick={() => window.open(b.meetingLink, '_blank')}
-                                className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:underline">
+                                className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-black dark:text-white hover:underline">
                                 <Video className="w-3.5 h-3.5" />
                                 {lang === "ar" ? "انضم للاجتماع" : "Join Meeting"}
                               </button>
@@ -388,7 +388,7 @@ export default function Consultation() {
                         {/* Rejected reason */}
                         {b.status === "rejected" && b.adminNotes && (
                           <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
-                            <p className="text-xs text-red-500">{b.adminNotes}</p>
+                            <p className="text-xs text-black dark:text-white">{b.adminNotes}</p>
                           </div>
                         )}
                       </motion.div>

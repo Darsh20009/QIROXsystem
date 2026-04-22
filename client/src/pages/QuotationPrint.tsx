@@ -230,7 +230,7 @@ export default function QuotationPrint() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
+              className="h-8 text-xs gap-1.5 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
               onClick={() => convertMutation.mutate()}
               disabled={convertMutation.isPending}
               data-testid="button-convert-to-order"
@@ -240,7 +240,7 @@ export default function QuotationPrint() {
             </Button>
           )}
           {quotation.orderId && (
-            <span className="text-xs text-green-600 font-bold bg-green-50 border border-green-100 px-2 py-1 rounded-lg">
+            <span className="text-xs text-black dark:text-white font-bold bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 px-2 py-1 rounded-lg">
               ✓ تم التحويل لطلب
             </span>
           )}
@@ -258,7 +258,7 @@ export default function QuotationPrint() {
             onClick={() => setShowBankInfo(v => !v)}
             variant="outline"
             size="sm"
-            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" : "border-black/[0.12] text-black/50"}`}
+            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-black/10 dark:border-white/10 text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.12] text-black/50"}`}
             data-testid="button-toggle-bank-info-quotation"
             title={showBankInfo ? "إخفاء بيانات التحويل البنكي" : "إظهار بيانات التحويل البنكي"}
           >
@@ -299,7 +299,7 @@ export default function QuotationPrint() {
                 {new Date(quotation.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
               </p>
               {quotation.validUntil && (
-                <p className="text-yellow-300 text-xs mt-0.5">
+                <p className="text-black/70 dark:text-white/70 text-xs mt-0.5">
                   صالح حتى: {new Date(quotation.validUntil).toLocaleDateString("ar-SA")}
                 </p>
               )}
@@ -328,7 +328,7 @@ export default function QuotationPrint() {
               {clientPhone && <p className="text-xs text-black/40">{clientPhone}</p>}
               {clientCountry && <p className="text-xs text-black/40">{clientCountry}</p>}
               {isExternal && (
-                <span className="text-[10px] bg-orange-50 text-orange-500 border border-orange-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded mt-1 inline-block">
                   عميل خارجي
                 </span>
               )}
@@ -424,9 +424,9 @@ export default function QuotationPrint() {
           {/* Bank Transfer Info — toggleable */}
           {showBankInfo && (
             <div className="px-10 py-5 border-t border-black/[0.06]">
-              <div className="border border-blue-100 bg-blue-50/40 rounded-xl px-4 py-4">
+              <div className="border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-3.5 h-3.5 text-blue-500/60" />
+                  <Building2 className="w-3.5 h-3.5 text-black dark:text-white" />
                   <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-xs">

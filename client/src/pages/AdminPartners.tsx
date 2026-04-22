@@ -226,7 +226,7 @@ export default function AdminPartners() {
       <div className="flex flex-wrap justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl font-black text-black dark:text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Handshake className="w-5 h-5 text-white" />
             </div>
             {L ? "إدارة الشركاء" : "Partners Management"}
@@ -235,7 +235,7 @@ export default function AdminPartners() {
             {(partners || []).length} {L ? "شريك إجمالاً" : "total"} · {activeCount} {L ? "نشط" : "active"} · {inactiveCount} {L ? "مخفي" : "hidden"}
           </p>
         </div>
-        <Button onClick={() => { setEditingId(null); setFormData(emptyForm); setOpen(true); }} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-add-partner">
+        <Button onClick={() => { setEditingId(null); setFormData(emptyForm); setOpen(true); }} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white shadow-lg shadow-blue-500/20" data-testid="button-add-partner">
           <Plus className="w-4 h-4" /> {L ? "إضافة شريك" : "Add Partner"}
         </Button>
       </div>
@@ -271,7 +271,7 @@ export default function AdminPartners() {
               {/* Active badge */}
               <div className="absolute top-3 left-3 z-10">
                 {partner.isActive
-                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{L ? "نشط" : "Active"}</span>
+                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />{L ? "نشط" : "Active"}</span>
                   : <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full"><EyeOff className="w-3 h-3" />{L ? "مخفي" : "Hidden"}</span>
                 }
               </div>
@@ -289,10 +289,10 @@ export default function AdminPartners() {
 
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {partner.category && (
-                        <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">{partner.category}</span>
+                        <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-medium">{partner.category}</span>
                       )}
                       {partner.relatedService && (
-                        <span className="text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                           <Layers className="w-2.5 h-2.5" />{partner.relatedService}
                         </span>
                       )}
@@ -312,7 +312,7 @@ export default function AdminPartners() {
                   <div className="mt-3 space-y-1">
                     {(partner.featuresAr?.length ? partner.featuresAr : partner.features || []).slice(0, 3).map((f, i) => (
                       <div key={i} className="flex items-center gap-1.5 text-xs text-black/60 dark:text-white/60">
-                        <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-black dark:text-white shrink-0" />
                         {f}
                       </div>
                     ))}
@@ -327,7 +327,7 @@ export default function AdminPartners() {
                   <div className="flex items-center gap-2">
                     {partner.websiteUrl ? (
                       <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-blue-500 hover:underline" data-testid={`link-partner-site-${partner.id}`}>
+                        className="flex items-center gap-1 text-xs text-black dark:text-white hover:underline" data-testid={`link-partner-site-${partner.id}`}>
                         <Globe className="w-3 h-3" />
                         {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return L ? "رابط" : "link"; } })()}
                       </a>
@@ -337,7 +337,7 @@ export default function AdminPartners() {
 
                   <div className="flex items-center gap-1">
                     <button onClick={() => toggleActiveMutation.mutate({ id: partner.id, isActive: !partner.isActive })}
-                      className={`p-1.5 rounded-lg transition-colors ${partner.isActive ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" : "text-black/30 dark:text-white/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
+                      className={`p-1.5 rounded-lg transition-colors ${partner.isActive ? "text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white" : "text-black/30 dark:text-white/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
                       title={partner.isActive ? (L ? "إخفاء" : "Hide") : (L ? "إظهار" : "Show")} data-testid={`button-toggle-${partner.id}`}>
                       {partner.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
@@ -347,7 +347,7 @@ export default function AdminPartners() {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => { if (confirm(L ? "هل تريد حذف هذا الشريك؟" : "Delete this partner?")) deleteMutation.mutate(partner.id); }}
-                      className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="p-1.5 rounded-lg text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                       data-testid={`button-delete-partner-${partner.id}`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -364,7 +364,7 @@ export default function AdminPartners() {
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center">
                 <Handshake className="w-4 h-4 text-white" />
               </div>
               {editingId ? (L ? "تعديل الشريك" : "Edit Partner") : (L ? "إضافة شريك جديد" : "Add New Partner")}
@@ -429,7 +429,7 @@ export default function AdminPartners() {
             {/* Features */}
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
               <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-500" /> {L ? "مميزات النظام المقدّم" : "System Features Provided"}
+                <Star className="w-4 h-4 text-black dark:text-white" /> {L ? "مميزات النظام المقدّم" : "System Features Provided"}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <Input value={formData.featureArInput} onChange={e => set("featureArInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder={L ? "الميزة بالعربي" : "Feature in Arabic"} data-testid="input-feature-ar" />
@@ -443,13 +443,13 @@ export default function AdminPartners() {
                   {formData.features.map((f, i) => (
                     <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-xl px-3 py-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" />
                         <span className="text-black dark:text-white font-medium">{formData.featuresAr[i] || f}</span>
                         {formData.featuresAr[i] && f && formData.featuresAr[i] !== f && (
                           <span className="text-black/30 dark:text-white/30 text-xs">/ {f}</span>
                         )}
                       </div>
-                      <button type="button" onClick={() => removeFeature(i)} className="text-red-400 hover:text-red-600 text-sm font-bold">✕</button>
+                      <button type="button" onClick={() => removeFeature(i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white text-sm font-bold">✕</button>
                     </div>
                   ))}
                 </div>
@@ -466,14 +466,14 @@ export default function AdminPartners() {
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "عند الإيقاف، لن يظهر الشريك للزوار" : "When disabled, the partner won't appear to visitors"}</p>
               </div>
               <button type="button" onClick={() => set("isActive", !formData.isActive)}
-                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? "bg-green-500" : "bg-black/20 dark:bg-white/20"}`}
+                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? "bg-black dark:bg-white" : "bg-black/20 dark:bg-white/20"}`}
                 data-testid="toggle-partner-active">
                 <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${formData.isActive ? "right-1" : "left-1"}`} />
               </button>
             </div>
 
             <div className="flex gap-3 pt-1">
-              <Button type="submit" className="flex-1 gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white"
+              <Button type="submit" className="flex-1 gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white"
                 disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-partner">
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingId ? (L ? "تحديث الشريك" : "Update Partner") : (L ? "إضافة الشريك" : "Add Partner")}

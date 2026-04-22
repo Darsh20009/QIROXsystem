@@ -14,12 +14,12 @@ import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 function getStatusConfig(L: boolean): Record<string, { label: string; color: string; icon: any }> { return {
-  pending:          { label: L ? "قيد الانتظار" : "Pending", color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock },
-  processing:       { label: L ? "قيد التجهيز" : "Processing", color: "bg-blue-50 text-blue-700 border-blue-200", icon: Package },
-  shipped:          { label: L ? "تم الشحن" : "Shipped", color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: Truck },
-  out_for_delivery: { label: L ? "في الطريق" : "Out for Delivery", color: "bg-orange-50 text-orange-700 border-orange-200", icon: MapPin },
-  delivered:        { label: L ? "تم التوصيل" : "Delivered", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle },
-  cancelled:        { label: L ? "ملغي" : "Cancelled", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+  pending:          { label: L ? "قيد الانتظار" : "Pending", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Clock },
+  processing:       { label: L ? "قيد التجهيز" : "Processing", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Package },
+  shipped:          { label: L ? "تم الشحن" : "Shipped", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Truck },
+  out_for_delivery: { label: L ? "في الطريق" : "Out for Delivery", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: MapPin },
+  delivered:        { label: L ? "تم التوصيل" : "Delivered", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: CheckCircle },
+  cancelled:        { label: L ? "ملغي" : "Cancelled", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: XCircle },
   returned:         { label: L ? "مُرتجع" : "Returned", color: "bg-gray-50 text-gray-600 border-gray-200", icon: ArrowLeft },
 };
 }
@@ -147,9 +147,9 @@ export default function AdminShipments() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: L ? "إجمالي الشحنات" : "Total Shipments", value: stats.total, color: "text-black dark:text-white" },
-          { label: L ? "قيد الانتظار" : "Pending", value: stats.pending, color: "text-yellow-600" },
-          { label: L ? "في الشحن" : "In Transit", value: stats.shipped, color: "text-indigo-600" },
-          { label: L ? "تم التوصيل" : "Delivered", value: stats.delivered, color: "text-green-600" },
+          { label: L ? "قيد الانتظار" : "Pending", value: stats.pending, color: "text-black dark:text-white" },
+          { label: L ? "في الشحن" : "In Transit", value: stats.shipped, color: "text-black dark:text-white" },
+          { label: L ? "تم التوصيل" : "Delivered", value: stats.delivered, color: "text-black dark:text-white" },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
             <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
@@ -354,7 +354,7 @@ export default function AdminShipments() {
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {[...viewItem.statusHistory].reverse().map((h: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
-                        <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${statusConfig[h.status]?.color?.includes("green") ? "bg-green-500" : statusConfig[h.status]?.color?.includes("red") ? "bg-red-500" : "bg-black/30"}`} />
+                        <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${statusConfig[h.status]?.color?.includes("green") ? "bg-black dark:bg-white" : statusConfig[h.status]?.color?.includes("red") ? "bg-black dark:bg-white" : "bg-black/30"}`} />
                         <div>
                           <span className="font-medium text-black/70 dark:text-white/70">{statusConfig[h.status]?.label || h.status}</span>
                           {h.note && <span className="text-black/40 dark:text-white/40 ml-2">— {h.note}</span>}

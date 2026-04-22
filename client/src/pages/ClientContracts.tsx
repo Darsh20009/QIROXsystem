@@ -97,11 +97,11 @@ function StepIndicator({ step, L }: { step: number; L: boolean }) {
     <div className="flex items-center justify-between mb-6">
       {steps.map((label, i) => (
         <div key={i} className="flex items-center gap-1.5 flex-1">
-          <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step ? "bg-green-500 text-white" : i === step ? "bg-black text-white" : "bg-black/10 text-black/40"}`}>
+          <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step ? "bg-black dark:bg-white text-white" : i === step ? "bg-black text-white" : "bg-black/10 text-black/40"}`}>
             {i < step ? <CheckCircle className="w-4 h-4" /> : i + 1}
           </div>
           <span className={`text-xs hidden sm:block ${i === step ? "font-semibold text-black" : "text-black/40"}`}>{label}</span>
-          {i < steps.length - 1 && <div className={`flex-1 h-px mx-1 ${i < step ? "bg-green-400" : "bg-black/10"}`} />}
+          {i < steps.length - 1 && <div className={`flex-1 h-px mx-1 ${i < step ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/10"}`} />}
         </div>
       ))}
     </div>
@@ -115,9 +115,9 @@ export default function ClientContracts() {
   const L = lang === "ar";
 
   const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
-    pending:     { label: L ? "بانتظار توقيعك" : "Awaiting Your Signature", color: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock },
-    acknowledged:{ label: L ? "موقّع ✓" : "Signed ✓",                      color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
-    rejected:    { label: L ? "مرفوض" : "Rejected",                         color: "bg-red-100 text-red-700 border-red-200",        icon: XCircle },
+    pending:     { label: L ? "بانتظار توقيعك" : "Awaiting Your Signature", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", icon: Clock },
+    acknowledged:{ label: L ? "موقّع ✓" : "Signed ✓",                      color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",  icon: CheckCircle },
+    rejected:    { label: L ? "مرفوض" : "Rejected",                         color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",        icon: XCircle },
   };
 
   const [signDialog, setSignDialog] = useState<any>(null);
@@ -196,17 +196,17 @@ export default function ClientContracts() {
           {pending.length > 0 && (
             <div>
               <h2 className="font-semibold text-sm text-black/60 mb-3 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-500" />
+                <Clock className="w-4 h-4 text-black dark:text-white" />
                 {L ? `تحتاج إلى توقيعك (${pending.length})` : `Awaiting your signature (${pending.length})`}
               </h2>
               <div className="space-y-3">
                 {pending.map(c => (
-                  <Card key={c.id} className="border-amber-200 bg-amber-50/40 dark:bg-amber-950/20" data-testid={`card-contract-${c.id}`}>
+                  <Card key={c.id} className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" data-testid={`card-contract-${c.id}`}>
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-amber-600" />
+                          <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-black dark:text-white" />
                           </div>
                           <div>
                             <div className="font-semibold text-sm">{c.contractNumber || (L ? "عقد خدمة" : "Service Contract")}</div>
@@ -241,7 +241,7 @@ export default function ClientContracts() {
                             <div className="font-medium text-sm flex items-center gap-2">
                               {c.contractNumber || (L ? "عقد" : "Contract")}
                               {c.signedOtpVerified && (
-                                <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+                                <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full px-2 py-0.5 flex items-center gap-1">
                                   <ShieldCheck className="w-3 h-3" /> OTP
                                 </span>
                               )}
@@ -253,12 +253,12 @@ export default function ClientContracts() {
                           <Badge className={`${st.color} border text-xs`}>{st.label}</Badge>
                         </div>
                         {c.status === "acknowledged" && c.signatureData && (
-                          <div className="mt-3 border border-green-200 rounded-lg p-2 bg-green-50 inline-block">
+                          <div className="mt-3 border border-black/10 dark:border-white/10 rounded-lg p-2 bg-black/[0.04] dark:bg-white/[0.06] inline-block">
                             <img src={c.signatureData} alt={L ? "توقيعك" : "Your signature"} className="max-h-12 max-w-xs" />
                           </div>
                         )}
                         {c.status === "acknowledged" && c.signatureText && (
-                          <div className="mt-2 text-lg font-bold text-green-700" style={{ fontFamily: "cursive" }}>{c.signatureText}</div>
+                          <div className="mt-2 text-lg font-bold text-black dark:text-white" style={{ fontFamily: "cursive" }}>{c.signatureText}</div>
                         )}
                       </CardContent>
                     </Card>
@@ -299,12 +299,12 @@ export default function ClientContracts() {
                   <span className="font-bold text-lg">{signDialog.totalAmount?.toLocaleString()} <span className="text-sm font-normal text-black/40">{L ? "ريال" : "SAR"}</span></span>
                 </div>
               )}
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-2 text-xs text-blue-700">
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 flex gap-2 text-xs text-black dark:text-white">
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <p>{L ? "قراءة العقد جيداً قبل التوقيع. بالتوقيع الإلكتروني تؤكد موافقتك على جميع البنود المذكورة." : "Read the contract carefully before signing. By signing electronically you confirm your agreement to all stated terms."}</p>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="border-red-200 text-red-500 hover:bg-red-50" onClick={() => { if (confirm(L ? "رفض هذا العقد؟" : "Reject this contract?")) rejectMutation.mutate(); }} disabled={rejectMutation.isPending} data-testid="button-reject-contract">
+                <Button variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => { if (confirm(L ? "رفض هذا العقد؟" : "Reject this contract?")) rejectMutation.mutate(); }} disabled={rejectMutation.isPending} data-testid="button-reject-contract">
                   {L ? "رفض العقد" : "Reject Contract"}
                 </Button>
                 <Button onClick={() => setStep(1)} className="flex-1 bg-black text-white hover:bg-black/80 gap-2" data-testid="button-proceed-to-sign">
@@ -331,7 +331,7 @@ export default function ClientContracts() {
                   <label className="text-sm text-black/60">{L ? "ارسم توقيعك داخل المنطقة البيضاء:" : "Draw your signature in the white area:"}</label>
                   <SignaturePad onSave={setSignatureData} />
                   {signatureData && (
-                    <div className="text-xs text-green-600 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {L ? "تم حفظ التوقيع" : "Signature saved"}</div>
+                    <div className="text-xs text-black dark:text-white flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {L ? "تم حفظ التوقيع" : "Signature saved"}</div>
                   )}
                 </div>
               ) : (
@@ -371,10 +371,10 @@ export default function ClientContracts() {
           {/* STEP 2: OTP */}
           {signDialog && step === 2 && (
             <div className="space-y-5">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center space-y-2">
-                <ShieldCheck className="w-10 h-10 text-blue-500 mx-auto" />
-                <div className="font-semibold text-blue-800">{L ? "تحقق من هويتك" : "Verify Your Identity"}</div>
-                <p className="text-sm text-blue-600">{L ? "تم إرسال رمز التحقق المكوّن من 6 أرقام إلى إشعاراتك داخل التطبيق. أدخله أدناه لإتمام التوقيع القانوني." : "A 6-digit OTP has been sent to your in-app notifications. Enter it below to complete the legal signature."}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-5 text-center space-y-2">
+                <ShieldCheck className="w-10 h-10 text-black dark:text-white mx-auto" />
+                <div className="font-semibold text-black dark:text-white">{L ? "تحقق من هويتك" : "Verify Your Identity"}</div>
+                <p className="text-sm text-black dark:text-white">{L ? "تم إرسال رمز التحقق المكوّن من 6 أرقام إلى إشعاراتك داخل التطبيق. أدخله أدناه لإتمام التوقيع القانوني." : "A 6-digit OTP has been sent to your in-app notifications. Enter it below to complete the legal signature."}</p>
               </div>
 
               <div className="space-y-2">
@@ -416,16 +416,16 @@ export default function ClientContracts() {
           {/* STEP 3: Done */}
           {step === 3 && (
             <div className="text-center py-8 space-y-5">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <ShieldCheck className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center mx-auto">
+                <ShieldCheck className="w-10 h-10 text-black dark:text-white" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-bold text-green-700">{L ? "تم التوقيع بنجاح!" : "Signed Successfully!"}</h3>
+                <h3 className="text-xl font-bold text-black dark:text-white">{L ? "تم التوقيع بنجاح!" : "Signed Successfully!"}</h3>
                 <p className="text-sm text-black/50">{L ? "وُقِّع العقد إلكترونياً وتم التحقق من هويتك بـ OTP. هذا التوقيع ملزم قانونياً." : "The contract was signed electronically with OTP identity verification. This signature is legally binding."}</p>
               </div>
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700 space-y-1">
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-4 text-sm text-black dark:text-white space-y-1">
                 <div className="flex items-center gap-2 justify-center font-semibold"><CheckCircle className="w-4 h-4" /> {L ? "العقد موقّع ✓" : "Contract Signed ✓"}</div>
-                <div className="text-xs text-green-500">{L ? "تم إشعار الفريق" : "Team notified"}</div>
+                <div className="text-xs text-black dark:text-white">{L ? "تم إشعار الفريق" : "Team notified"}</div>
               </div>
               <Button onClick={resetDialog} className="bg-black text-white hover:bg-black/80" data-testid="button-close-done">
                 {L ? "إغلاق" : "Close"}

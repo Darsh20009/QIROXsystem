@@ -262,7 +262,7 @@ export default function ProjectDetails() {
           <TabsTrigger value="addons" className="data-[state=active]:bg-primary data-[state=active]:text-white relative">
             {L ? "الإضافات" : "Add-ons"}
             {addonSubs.some((s: any) => s.status === "expired" || s.status === "exhausted") && (
-              <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+              <span className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white rounded-full" />
             )}
           </TabsTrigger>
           {order?.wizardData && (
@@ -284,7 +284,7 @@ export default function ProjectDetails() {
                 <CardHeader><CardTitle className="font-heading">{L ? "ملخص الحالة" : "Status Summary"}</CardTitle></CardHeader>
                 <CardContent className="space-y-4 text-slate-600">
                   <p>{L ? "المشروع يسير وفق الخطة الزمنية المحددة. تم الانتهاء من مرحلة التحليل والتصميم، ونحن الآن في مرحلة البرمجة." : "The project is on track. Analysis and design phases are complete; we are now in the programming phase."}</p>
-                  <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg text-sm border border-green-100">
+                  <div className="flex items-center gap-2 p-3 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white rounded-lg text-sm border border-black/10 dark:border-white/10">
                     <CheckCircle2 className="w-4 h-4" />
                     {L ? "تم تسليم جميع متطلبات المرحلة الأولى" : "All Phase 1 requirements have been delivered"}
                   </div>
@@ -322,7 +322,7 @@ export default function ProjectDetails() {
                      tasks?.map((task: any) => (
                       <div key={task.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors group">
                         <div className="flex items-center gap-3">
-                          <CheckCircle2 className={`w-5 h-5 ${task.status === 'completed' ? 'text-green-500' : 'text-slate-300'}`} />
+                          <CheckCircle2 className={`w-5 h-5 ${task.status === 'completed' ? 'text-black dark:text-white' : 'text-slate-300'}`} />
                           <div>
                             <p className="font-bold text-primary">{task.title}</p>
                             <p className="text-xs text-slate-500">{task.priority === 'high' ? (L ? 'أولوية قصوى' : 'High Priority') : task.priority}</p>
@@ -336,7 +336,7 @@ export default function ProjectDetails() {
                             <button
                               onClick={() => deleteTaskMutation.mutate(task.id)}
                               disabled={deleteTaskMutation.isPending}
-                              className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
+                              className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white transition-all"
                               data-testid={`button-delete-task-${task.id}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export default function ProjectDetails() {
                     <div className="mb-5">
                       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full transition-all duration-700"
+                          className="h-full bg-gradient-to-r from-primary to-black dark:to-white rounded-full transition-all duration-700"
                           style={{ width: `${Math.round((tasks.filter((t: any) => t.status === 'completed').length / tasks.length) * 100)}%` }}
                         />
                       </div>
@@ -389,16 +389,16 @@ export default function ProjectDetails() {
                           <div key={i} className="flex gap-3 relative">
                             {i !== arr.length - 1 && <div className="absolute right-[9px] top-5 bottom-0 w-[2px] bg-slate-100" />}
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 text-[10px] font-bold ${
-                              step.status === 'completed' ? 'bg-green-500 text-white' :
-                              step.status === 'in-progress' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400'
+                              step.status === 'completed' ? 'bg-black dark:bg-white text-white' :
+                              step.status === 'in-progress' ? 'bg-black dark:bg-white text-white' : 'bg-slate-200 text-slate-400'
                             }`}>
                               {step.status === 'completed' ? '✓' : i + 1}
                             </div>
                             <div className="flex-1 pb-3">
                               <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{step.title}</p>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                step.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                step.status === 'in-progress' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+                                step.status === 'completed' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' :
+                                step.status === 'in-progress' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' : 'bg-slate-100 text-slate-400'
                               }`}>
                                 {step.status === 'completed' ? (L ? 'مكتملة' : 'Done') : step.status === 'in-progress' ? (L ? 'جارية' : 'Active') : (L ? 'قادمة' : 'Pending')}
                               </span>
@@ -411,8 +411,8 @@ export default function ProjectDetails() {
                         <div key={task.id} className="flex gap-3 relative">
                           {i !== tasks.length - 1 && <div className="absolute right-[9px] top-5 bottom-0 w-[2px] bg-slate-100" />}
                           <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 text-[10px] font-bold ${
-                            task.status === 'completed' ? 'bg-green-500 text-white' :
-                            task.priority === 'high' ? 'bg-orange-400 text-white' : 'bg-blue-500 text-white'
+                            task.status === 'completed' ? 'bg-black dark:bg-white text-white' :
+                            task.priority === 'high' ? 'bg-black/[0.08] dark:bg-white/[0.1] text-white' : 'bg-black dark:bg-white text-white'
                           }`}>
                             {task.status === 'completed' ? '✓' : i + 1}
                           </div>
@@ -420,8 +420,8 @@ export default function ProjectDetails() {
                             <p className={`text-sm font-medium ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{task.title}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                task.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                task.priority === 'high' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
+                                task.status === 'completed' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' :
+                                task.priority === 'high' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white'
                               }`}>
                                 {task.status === 'completed' ? (L ? 'مكتملة' : 'Done') : task.priority === 'high' ? (L ? 'أولوية قصوى' : 'High') : (L ? 'جارية' : 'Active')}
                               </span>
@@ -540,7 +540,7 @@ export default function ProjectDetails() {
                             <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
                           </div>
                           <h4 className="font-bold text-primary mb-1">{item.title}</h4>
-                          <div className="mt-4 p-3 bg-slate-900 rounded-lg text-xs font-mono text-cyan-400 break-all">
+                          <div className="mt-4 p-3 bg-slate-900 rounded-lg text-xs font-mono text-black/70 dark:text-white/70 break-all">
                             {item.isSecret ? "••••••••••••" : item.content}
                           </div>
                           <div className="flex gap-2 mt-4">
@@ -549,7 +549,7 @@ export default function ProjectDetails() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-400 hover:text-red-600 hover:bg-red-50 px-2"
+                                className="text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] px-2"
                                 onClick={() => deleteVaultMutation.mutate(item.id || item._id)}
                                 disabled={deleteVaultMutation.isPending}
                                 data-testid={`button-delete-vault-${item.id || item._id}`}
@@ -582,7 +582,7 @@ export default function ProjectDetails() {
                         <Link2 className="w-5 h-5 text-primary" />
                         <span className="font-medium text-slate-700">{tool.name}</span>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-blue-600">{L ? "زيارة الرابط" : "Visit Link"}</Button>
+                      <Button size="sm" variant="ghost" className="text-black dark:text-white">{L ? "زيارة الرابط" : "Visit Link"}</Button>
                     </div>
                   ))}
                 </div>
@@ -639,7 +639,7 @@ export default function ProjectDetails() {
                     <FileSignature className="w-5 h-5 text-primary" />
                     <span className="font-medium">{L ? "عقد تقديم الخدمات البرمجية.pdf" : "Software Services Contract.pdf"}</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-700">{L ? "موقع إلكترونياً" : "Digitally Signed"}</Badge>
+                  <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">{L ? "موقع إلكترونياً" : "Digitally Signed"}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -650,9 +650,9 @@ export default function ProjectDetails() {
               <CardHeader><CardTitle className="font-heading">التنبيهات</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-sm text-blue-800">{L ? 'تم تحديث حالة المشروع إلى "قيد التنفيذ"' : 'Project status updated to "In Progress"'}</p>
-                    <p className="text-[10px] text-blue-600 mt-1">{L ? "منذ ساعتين" : "2 hours ago"}</p>
+                  <div className="p-4 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl">
+                    <p className="text-sm text-black dark:text-white">{L ? 'تم تحديث حالة المشروع إلى "قيد التنفيذ"' : 'Project status updated to "In Progress"'}</p>
+                    <p className="text-[10px] text-black dark:text-white mt-1">{L ? "منذ ساعتين" : "2 hours ago"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -704,15 +704,15 @@ export default function ProjectDetails() {
                   <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(project as any).deliveryFiles.map((file: any, idx: number) => (
                       <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" data-testid={`delivery-file-${idx}`}
-                        className="flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl transition-all group">
-                        <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0 text-lg">
+                        className="flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-black/[0.04] dark:bg-white/[0.06] border border-slate-100 hover:border-black/10 dark:border-white/10 rounded-xl transition-all group">
+                        <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center shrink-0 text-lg">
                           {file.icon || "📄"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-slate-800 truncate">{file.nameAr || (L ? "ملف" : "File")}</p>
                           <p className="text-[10px] text-slate-400 truncate" dir="ltr">{file.url}</p>
                         </div>
-                        <Download className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0" />
+                        <Download className="w-4 h-4 text-slate-300 group-hover:text-black dark:text-white transition-colors shrink-0" />
                       </a>
                     ))}
                   </div>
@@ -723,7 +723,7 @@ export default function ProjectDetails() {
               {(project as any).usageGuide?.description ? (
                 <div className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-violet-600" />
+                    <BookOpen className="w-5 h-5 text-black dark:text-white" />
                     <h3 className="font-bold text-slate-800">{(project as any).usageGuide?.title || (L ? "دليل الاستخدام" : "Usage Guide")}</h3>
                   </div>
                   <div className="p-5">
@@ -733,7 +733,7 @@ export default function ProjectDetails() {
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{L ? "ملفات الدليل" : "Guide Files"}</p>
                         {(project as any).usageGuide.files.map((f: string, i: number) => (
                           <a key={i} href={f} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2.5 bg-violet-50 hover:bg-violet-100 border border-violet-100 rounded-lg text-sm text-violet-700 transition-colors">
+                            className="flex items-center gap-2 p-2.5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-lg text-sm text-black dark:text-white transition-colors">
                             <FileText className="w-4 h-4" />
                             <span className="truncate" dir="ltr">{f.split("/").pop() || f}</span>
                             <ExternalLink className="w-3 h-3 mr-auto shrink-0" />
@@ -787,9 +787,9 @@ export default function ProjectDetails() {
                       const alreadyRequested = !!sub.renewalRequestedAt;
 
                       const statusConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
-                        active: { icon: CheckCheck, label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-100" },
-                          expired: { icon: XCircle, label: L ? "منتهي الصلاحية" : "Expired", color: "text-red-700", bg: "bg-red-100" },
-                          exhausted: { icon: AlertCircle, label: L ? "استُنفدت الحصة" : "Quota Exhausted", color: "text-amber-700", bg: "bg-amber-100" },
+                        active: { icon: CheckCheck, label: L ? "نشط" : "Active", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+                          expired: { icon: XCircle, label: L ? "منتهي الصلاحية" : "Expired", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+                          exhausted: { icon: AlertCircle, label: L ? "استُنفدت الحصة" : "Quota Exhausted", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
                           cancelled: { icon: XCircle, label: L ? "ملغي" : "Cancelled", color: "text-slate-500", bg: "bg-slate-100" },
                       };
                       const st = statusConfig[sub.status] || statusConfig.active;
@@ -809,7 +809,7 @@ export default function ProjectDetails() {
                       return (
                         <div
                           key={sub._id || sub.id}
-                          className={`rounded-2xl border p-4 transition-all ${needsAction ? "border-red-200 bg-red-50/50" : "border-slate-100 bg-white"}`}
+                          className={`rounded-2xl border p-4 transition-all ${needsAction ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" : "border-slate-100 bg-white"}`}
                           data-testid={`addon-sub-${sub._id || sub.id}`}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -835,7 +835,7 @@ export default function ProjectDetails() {
                                   </div>
                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                     <div
-                                      className={`h-full rounded-full transition-all ${quotaPct >= 90 ? "bg-red-400" : quotaPct >= 60 ? "bg-amber-400" : "bg-green-400"}`}
+                                      className={`h-full rounded-full transition-all ${quotaPct >= 90 ? "bg-black/[0.08] dark:bg-white/[0.1]" : quotaPct >= 60 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08] dark:bg-white/[0.1]"}`}
                                       style={{ width: `${quotaPct}%` }}
                                     />
                                   </div>
@@ -850,7 +850,7 @@ export default function ProjectDetails() {
                                   </span>
                                 )}
                                 {sub.expiresAt && (
-                                  <span className={`text-[10px] flex items-center gap-1 ${isExpired ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                                  <span className={`text-[10px] flex items-center gap-1 ${isExpired ? "text-black dark:text-white font-bold" : "text-slate-400"}`}>
                                     <Calendar className="w-3 h-3" />
                                     {isExpired ? (L ? "انتهى:" : "Expired:") : (L ? "ينتهي:" : "Expires:")} {new Date(sub.expiresAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                                   </span>
@@ -861,7 +861,7 @@ export default function ProjectDetails() {
                             <div className="shrink-0 text-left">
                               {needsAction && (
                                 alreadyRequested ? (
-                                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                  <div className="flex items-center gap-1 text-[10px] text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10">
                                     <CheckCheck className="w-3 h-3" />
                                     تم إرسال طلب التجديد
                                   </div>
@@ -910,7 +910,7 @@ export default function ProjectDetails() {
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <CardTitle className="font-heading flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-blue-600" />
+                        <CreditCard className="w-5 h-5 text-black dark:text-white" />
                         {L ? "وثائق تفعيل Paymob" : "Paymob Activation Documents"}
                       </CardTitle>
                       <p className="text-xs text-slate-400 mt-1">{L ? "يمكنك مراجعة وتعديل الوثائق التي أرفقتها في طلب التفعيل" : "You can review and update the documents you attached in the activation request"}</p>
@@ -932,7 +932,7 @@ export default function ProjectDetails() {
                 <CardContent>
                   <div className="space-y-6">
                     {/* Status banner */}
-                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${paymobData.status === "approved" ? "bg-green-50 border-green-200 text-green-700" : paymobData.status === "rejected" ? "bg-red-50 border-red-200 text-red-700" : paymobData.status === "reviewing" ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${paymobData.status === "approved" ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white" : paymobData.status === "rejected" ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white" : paymobData.status === "reviewing" ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white" : "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white"}`}>
                       <ShieldCheck className="w-4 h-4 shrink-0" />
                       {L
                         ? paymobData.status === "approved" ? "تمت الموافقة على طلبك ✓" : paymobData.status === "rejected" ? "تم رفض الطلب — يرجى التواصل مع الفريق" : paymobData.status === "reviewing" ? "طلبك قيد المراجعة" : "الطلب بانتظار المراجعة"
@@ -998,7 +998,7 @@ export default function ProjectDetails() {
                               href={paymobData[key]}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                               data-testid={`link-paymob-${key}`}
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -1173,7 +1173,7 @@ function ProjectBriefTab({ order, L }: { order: any; L: boolean }) {
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {wd.technicalFeatures.map((f: string, i: number) => (
-                  <span key={i} className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">{f}</span>
+                  <span key={i} className="px-2.5 py-1 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white text-xs font-bold rounded-lg">{f}</span>
                 ))}
               </div>
             </CardContent>

@@ -90,9 +90,9 @@ export default function PushApproval() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-gray-900 flex items-center justify-center p-6" dir={dir}>
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-8 max-w-sm w-full text-center">
-          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-          <p className="text-amber-300 font-bold">{L ? "يجب تسجيل الدخول لتأكيد هذا الطلب" : "You must be logged in to approve this request"}</p>
+        <div className="bg-black dark:bg-white border border-black dark:border-white rounded-2xl p-8 max-w-sm w-full text-center">
+          <AlertTriangle className="w-10 h-10 text-black/70 dark:text-white/70 mx-auto mb-3" />
+          <p className="text-black/70 dark:text-white/70 font-bold">{L ? "يجب تسجيل الدخول لتأكيد هذا الطلب" : "You must be logged in to approve this request"}</p>
         </div>
       </div>
     );
@@ -107,8 +107,8 @@ export default function PushApproval() {
           <div className="w-16 h-16 rounded-3xl overflow-hidden border border-white/[0.15] shadow-2xl">
             <img src="/icon-192.png" alt="QIROX" className="w-full h-full object-cover" />
           </div>
-          <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center border-2 border-gray-950 shadow-lg">
-            <Shield className="w-3.5 h-3.5 text-amber-900" />
+          <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-black/[0.08] dark:bg-white/[0.1] flex items-center justify-center border-2 border-gray-950 shadow-lg">
+            <Shield className="w-3.5 h-3.5 text-black dark:text-white" />
           </div>
         </div>
         <h1 className="text-2xl font-black text-white">{L ? "تأكيد تسجيل الدخول" : "Confirm Login"}</h1>
@@ -131,7 +131,7 @@ export default function PushApproval() {
 
               {/* Instruction card */}
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-3xl p-6 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-black dark:from-white to-black dark:to-white pointer-events-none rounded-3xl" />
 
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Smartphone className="w-4 h-4 text-white/40 flex-shrink-0" />
@@ -163,8 +163,8 @@ export default function PushApproval() {
                       className={`h-20 rounded-2xl font-black text-3xl flex items-center justify-center transition-all relative overflow-hidden disabled:cursor-not-allowed
                         ${isSelected
                           ? isCorrect
-                            ? "bg-green-500/30 border-2 border-green-400"
-                            : "bg-red-500/20 border-2 border-red-400"
+                            ? "bg-black dark:bg-white border-2 border-black/15 dark:border-white/15"
+                            : "bg-black dark:bg-white border-2 border-black/15 dark:border-white/15"
                           : "bg-white/[0.07] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.25]"
                         }
                       `}
@@ -182,7 +182,7 @@ export default function PushApproval() {
                 })}
               </div>
 
-              {error && <p className="text-red-400 text-xs text-center mt-2">{error}</p>}
+              {error && <p className="text-black/70 dark:text-white/70 text-xs text-center mt-2">{error}</p>}
 
               {/* Deny option */}
               <motion.button
@@ -190,7 +190,7 @@ export default function PushApproval() {
                 disabled={responding}
                 whileTap={{ scale: 0.97 }}
                 data-testid="button-push-deny"
-                className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-white/[0.04] border border-white/[0.06] text-red-400/70 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 disabled:opacity-40"
+                className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-white/[0.04] border border-white/[0.06] text-black/70 dark:text-white/70 hover:bg-black dark:bg-white hover:border-black dark:border-white hover:text-black/70 dark:text-white/70 disabled:opacity-40"
               >
                 <X className="w-4 h-4" />
                 {L ? "لم أكن أنا — رفض الطلب" : "Not me — Deny this request"}
@@ -198,7 +198,7 @@ export default function PushApproval() {
 
               {/* Security warning */}
               <div className="flex items-start gap-2 px-1">
-                <Lock className="w-3.5 h-3.5 text-amber-400/60 flex-shrink-0 mt-0.5" />
+                <Lock className="w-3.5 h-3.5 text-black/70 dark:text-white/70 flex-shrink-0 mt-0.5" />
                 <p className="text-white/25 text-[11px] leading-relaxed">
                   {L
                     ? "إذا لم تكن أنت من يحاول الدخول، انقر رفض الطلب وغيّر كلمة مرورك فوراً."
@@ -210,16 +210,16 @@ export default function PushApproval() {
 
           {/* Approved */}
           {status === "approved" && (
-            <motion.div key="approved" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-green-500/10 border border-green-500/20 rounded-3xl p-10 text-center">
+            <motion.div key="approved" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-black dark:bg-white border border-black dark:border-white rounded-3xl p-10 text-center">
               <motion.div
                 initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
-                className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 rounded-full bg-black dark:bg-white flex items-center justify-center mx-auto mb-4"
               >
-                <Check className="w-8 h-8 text-green-400" />
+                <Check className="w-8 h-8 text-black/70 dark:text-white/70" />
               </motion.div>
-              <h2 className="text-green-300 font-black text-lg mb-1">{L ? "تم التأكيد ✓" : "Approved ✓"}</h2>
-              <p className="text-green-400/60 text-sm">{L ? "تم السماح للجهاز الجديد بالدخول بنجاح." : "The new device has been granted access."}</p>
-              <button onClick={() => navigate("/dashboard")} className="mt-6 px-6 py-2.5 rounded-xl bg-green-500/20 text-green-300 text-sm font-bold hover:bg-green-500/30 transition-all">
+              <h2 className="text-black/70 dark:text-white/70 font-black text-lg mb-1">{L ? "تم التأكيد ✓" : "Approved ✓"}</h2>
+              <p className="text-black/70 dark:text-white/70 text-sm">{L ? "تم السماح للجهاز الجديد بالدخول بنجاح." : "The new device has been granted access."}</p>
+              <button onClick={() => navigate("/dashboard")} className="mt-6 px-6 py-2.5 rounded-xl bg-black dark:bg-white text-black/70 dark:text-white/70 text-sm font-bold hover:bg-black dark:bg-white transition-all">
                 {L ? "العودة للوحة التحكم" : "Back to Dashboard"}
               </button>
             </motion.div>
@@ -227,10 +227,10 @@ export default function PushApproval() {
 
           {/* Denied */}
           {status === "denied" && (
-            <motion.div key="denied" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-red-500/10 border border-red-500/20 rounded-3xl p-10 text-center">
-              <X className="w-10 h-10 text-red-400 mx-auto mb-3" />
-              <h2 className="text-red-300 font-black text-lg mb-1">{L ? "تم رفض الطلب" : "Request Denied"}</h2>
-              <p className="text-red-400/60 text-sm mb-5">{L ? "لم يُسمح للجهاز الجديد بالدخول." : "The new device was not granted access."}</p>
+            <motion.div key="denied" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-black dark:bg-white border border-black dark:border-white rounded-3xl p-10 text-center">
+              <X className="w-10 h-10 text-black/70 dark:text-white/70 mx-auto mb-3" />
+              <h2 className="text-black/70 dark:text-white/70 font-black text-lg mb-1">{L ? "تم رفض الطلب" : "Request Denied"}</h2>
+              <p className="text-black/70 dark:text-white/70 text-sm mb-5">{L ? "لم يُسمح للجهاز الجديد بالدخول." : "The new device was not granted access."}</p>
               <button onClick={() => navigate("/dashboard")} className="px-6 py-2.5 rounded-xl bg-white/10 text-white text-sm font-bold hover:bg-white/20 transition-all">
                 {L ? "العودة للوحة التحكم" : "Back to Dashboard"}
               </button>
@@ -239,9 +239,9 @@ export default function PushApproval() {
 
           {/* Expired / Error */}
           {(status === "expired" || status === "error") && (
-            <motion.div key="expired" className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-8 text-center">
-              <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-              <p className="text-amber-300 font-bold">{status === "expired" ? (L ? "انتهت صلاحية الرمز" : "Challenge expired") : (error || (L ? "حدث خطأ" : "An error occurred"))}</p>
+            <motion.div key="expired" className="bg-black dark:bg-white border border-black dark:border-white rounded-3xl p-8 text-center">
+              <AlertTriangle className="w-10 h-10 text-black/70 dark:text-white/70 mx-auto mb-3" />
+              <p className="text-black/70 dark:text-white/70 font-bold">{status === "expired" ? (L ? "انتهت صلاحية الرمز" : "Challenge expired") : (error || (L ? "حدث خطأ" : "An error occurred"))}</p>
             </motion.div>
           )}
         </AnimatePresence>

@@ -200,8 +200,8 @@ export default function PaymobOnboarding() {
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-md w-full text-center"
           >
-            <div className="w-24 h-24 rounded-full bg-green-50 dark:bg-green-500/10 border-2 border-green-200 dark:border-green-500/30 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
+            <div className="w-24 h-24 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-2 border-black/10 dark:border-white/10 dark:border-black dark:border-white flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-12 h-12 text-black dark:text-white" />
             </div>
             <h1 className="text-3xl font-bold text-black dark:text-white mb-3">
               {L ? "تم إرسال طلبك بنجاح!" : "Your request has been submitted!"}
@@ -236,7 +236,7 @@ export default function PaymobOnboarding() {
       {/* Hero section */}
       <section className="pt-28 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 dark:from-blue-950/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/[0.04] dark:from-white/[0.06] dark:from-black dark:from-white to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} className="text-center max-w-2xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-6">
@@ -281,14 +281,14 @@ export default function PaymobOnboarding() {
                       isDone
                         ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-black cursor-pointer"
                         : isActive
-                        ? "bg-blue-50 dark:bg-blue-500/10 border-blue-500 text-blue-600 dark:text-blue-400"
+                        ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
                         : "bg-white dark:bg-gray-950 border-black/[0.1] dark:border-white/[0.1] text-black/20 dark:text-white/20"
                     }`}
                   >
                     {isDone ? <Check className="w-5 h-5" /> : <Icon className="w-4 h-4" />}
                   </button>
                   <span className={`text-[10px] font-medium hidden sm:block text-center max-w-[80px] leading-tight ${
-                    isActive ? "text-blue-600 dark:text-blue-400" : isDone ? "text-black/30 dark:text-white/30" : "text-black/20 dark:text-white/20"
+                    isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : isDone ? "text-black/30 dark:text-white/30" : "text-black/20 dark:text-white/20"
                   }`}>
                     {stepTitles[i]}
                   </span>
@@ -300,7 +300,7 @@ export default function PaymobOnboarding() {
           {/* Progress bar */}
           <div className="w-full h-1.5 bg-black/[0.04] dark:bg-white/[0.04] rounded-full mb-8 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] rounded-full transition-all duration-500"
               style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
             />
           </div>
@@ -317,8 +317,8 @@ export default function PaymobOnboarding() {
             >
               {/* Step header */}
               <div className="flex items-center gap-3 px-6 sm:px-8 py-5 border-b border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center shrink-0">
-                  {(() => { const Icon = STEPS[step].icon; return <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />; })()}
+                <div className="w-10 h-10 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white flex items-center justify-center shrink-0">
+                  {(() => { const Icon = STEPS[step].icon; return <Icon className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70" />; })()}
                 </div>
                 <div>
                   <p className="text-[10px] text-black/30 dark:text-white/30 uppercase tracking-widest font-semibold">
@@ -391,7 +391,7 @@ export default function PaymobOnboarding() {
                         accept="image/*,.pdf"
                       />
                       {!form.docFileUrl && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1.5 flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5" />
                           {L ? "يجب رفع صورة واضحة للوثيقة" : "A clear image of the document is required"}
                         </p>
@@ -403,8 +403,8 @@ export default function PaymobOnboarding() {
                 {/* ── Step 1: Banking ── */}
                 {step === 1 && (
                   <div className="space-y-5">
-                    <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10 rounded-2xl">
-                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div className="flex gap-3 p-4 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl">
+                      <Info className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0 mt-0.5" />
                       <p className="text-sm text-black/60 dark:text-white/50 leading-relaxed">
                         {L
                           ? "شهادة الآيبان هي وثيقة رسمية من البنك تُثبت صحة حسابك البنكي. يمكن الحصول عليها من تطبيق البنك أو من الفرع."
@@ -420,7 +420,7 @@ export default function PaymobOnboarding() {
                         accept="image/*,.pdf"
                       />
                       {!form.ibanCertUrl && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1.5 flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5" />
                           {L ? "شهادة الآيبان مطلوبة" : "IBAN certificate is required"}
                         </p>
@@ -472,7 +472,7 @@ export default function PaymobOnboarding() {
                         accept="image/*"
                       />
                       {!form.nationalIdFront && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1.5 flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5" />
                           {L ? "صورة الوجه الأمامي للهوية مطلوبة" : "Front face of ID is required"}
                         </p>
@@ -488,8 +488,8 @@ export default function PaymobOnboarding() {
                       />
                     </div>
 
-                    <div className="flex gap-3 p-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 rounded-2xl">
-                      <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="flex gap-3 p-4 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl">
+                      <AlertCircle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                       <p className="text-sm text-black/50 dark:text-white/50">
                         {L
                           ? "تأكد من أن الصورة واضحة وجميع البيانات مقروءة. سيتم التحقق من الهوية بشكل آمن وسري."
@@ -502,10 +502,10 @@ export default function PaymobOnboarding() {
                 {/* ── Step 3: Paymob Registration ── */}
                 {step === 3 && (
                   <div className="space-y-5">
-                    <div className="p-5 bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/15 rounded-2xl">
+                    <div className="p-5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                          <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center shrink-0 mt-0.5">
+                          <Info className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                         </div>
                         <div>
                           <p className="text-sm font-bold text-black dark:text-white mb-1">
@@ -522,9 +522,9 @@ export default function PaymobOnboarding() {
 
                     <div className="rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.01] dark:bg-white/[0.01] relative" style={{ height: 520 }}>
                       <div className="absolute top-0 left-0 right-0 z-10 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 py-2.5 flex items-center gap-2 border-b border-black/[0.06] dark:border-white/[0.06]">
-                        <div className="w-2 h-2 rounded-full bg-red-400" />
-                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                        <div className="w-2 h-2 rounded-full bg-green-400" />
+                        <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
+                        <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
+                        <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                         <span className="text-xs text-black/30 dark:text-white/30 mx-auto">ksa.paymob.com</span>
                         <a
                           href="https://ksa.paymob.com/portal2/en/register?accept_sales_owner=Amira_nabil"
@@ -552,7 +552,7 @@ export default function PaymobOnboarding() {
                           href="https://ksa.paymob.com/portal2/en/register?accept_sales_owner=Amira_nabil"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 underline hover:text-blue-500 dark:hover:text-blue-300"
+                          className="text-black dark:text-white dark:text-black/70 dark:text-white/70 underline hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70"
                         >
                           {L ? "افتحها في نافذة جديدة" : "open it in a new window"}
                         </a>
@@ -581,12 +581,12 @@ export default function PaymobOnboarding() {
                     {/* Fee Table */}
                     <div>
                       <h3 className="text-base font-bold font-heading text-black dark:text-white mb-4 flex items-center gap-2">
-                        <Percent className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <Percent className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                         {L ? "جدول رسوم بوابة الدفع" : "Payment Gateway Fee Table"}
                       </h3>
                       <div className="rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
-                        <div className="bg-blue-50 dark:bg-blue-600/10 border-b border-blue-100 dark:border-blue-500/15 px-5 py-3 text-center">
-                          <p className="text-sm font-bold text-blue-700 dark:text-blue-300">{L ? "جدول الرسوم" : "Fee Schedule"}</p>
+                        <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-b border-black/10 dark:border-white/10 dark:border-black dark:border-white px-5 py-3 text-center">
+                          <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "جدول الرسوم" : "Fee Schedule"}</p>
                         </div>
                         {FEE_TABLE.map((row, i) => (
                           <div
@@ -594,7 +594,7 @@ export default function PaymobOnboarding() {
                             className={`flex items-center justify-between px-5 py-3.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-b-0 ${i % 2 === 0 ? "bg-black/[0.01] dark:bg-white/[0.01]" : "bg-transparent"}`}
                           >
                             <span className="text-sm text-black/60 dark:text-white/60 font-medium">{L ? row.method : row.methodEn}</span>
-                            <span className={`text-sm font-bold ${row.free ? "text-green-600 dark:text-green-400" : "text-black dark:text-white"}`}>
+                            <span className={`text-sm font-bold ${row.free ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white"}`}>
                               {L ? row.fee : row.feeEn}
                             </span>
                           </div>
@@ -606,7 +606,7 @@ export default function PaymobOnboarding() {
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-base font-bold font-heading text-black dark:text-white flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <FileText className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                           {L ? "اتفاقية الخدمة" : "Service Agreement"}
                         </h3>
                         <button
@@ -629,7 +629,7 @@ export default function PaymobOnboarding() {
                     </div>
 
                     {/* Checkbox + Signature */}
-                    <div className="p-5 bg-blue-50 dark:bg-blue-500/[0.05] border border-blue-100 dark:border-blue-500/10 rounded-2xl space-y-4">
+                    <div className="p-5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white/[0.05] border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl space-y-4">
                       <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
@@ -714,7 +714,7 @@ export default function PaymobOnboarding() {
 
           {/* Required fields note */}
           <p className="text-center text-xs text-black/25 dark:text-white/25 mt-4">
-            <span className="text-red-500">*</span> {L ? "الحقول المطلوبة" : "Required fields"}
+            <span className="text-black dark:text-white">*</span> {L ? "الحقول المطلوبة" : "Required fields"}
           </p>
         </div>
       </section>

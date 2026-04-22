@@ -92,7 +92,7 @@ export default function InvoicePrint() {
             onClick={() => setShowBankInfo(v => !v)}
             variant="outline"
             size="sm"
-            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" : "border-black/[0.12] text-black/50"}`}
+            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-black/10 dark:border-white/10 text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.12] text-black/50"}`}
             data-testid="button-toggle-bank-info"
             title={showBankInfo ? "إخفاء بيانات التحويل البنكي" : "إظهار بيانات التحويل البنكي"}
           >
@@ -156,7 +156,7 @@ export default function InvoicePrint() {
             {invoice.paidAt && (
               <div>
                 <span className="text-black/30">تاريخ السداد: </span>
-                <span className="font-medium text-green-600">{new Date(invoice.paidAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}</span>
+                <span className="font-medium text-black dark:text-white">{new Date(invoice.paidAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}</span>
               </div>
             )}
           </div>
@@ -236,9 +236,9 @@ export default function InvoicePrint() {
 
             {/* Bank info — toggleable */}
             {showBankInfo && (
-              <div className="border border-blue-100 bg-blue-50/40 rounded-xl px-4 py-4 mb-6">
+              <div className="border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4 mb-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-3.5 h-3.5 text-blue-500/60" />
+                  <Building2 className="w-3.5 h-3.5 text-black dark:text-white" />
                   <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-xs">

@@ -36,10 +36,10 @@ interface ShippingCompany {
 }
 
 function getRegionLabels(L: boolean): Record<string, { label: string; icon: string; color: string }> { return {
-  riyadh:        { label: L ? "الرياض" : "Riyadh", icon: "🏙️", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  saudi:         { label: L ? "السعودية" : "Saudi Arabia", icon: "🇸🇦", color: "bg-green-50 text-green-700 border-green-200" },
-  gcc:           { label: L ? "دول الخليج" : "GCC Countries", icon: "🌍", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  international: { label: L ? "دولي" : "International", icon: "✈️", color: "bg-purple-50 text-purple-700 border-purple-200" },
+  riyadh:        { label: L ? "الرياض" : "Riyadh", icon: "🏙️", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  saudi:         { label: L ? "السعودية" : "Saudi Arabia", icon: "🇸🇦", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  gcc:           { label: L ? "دول الخليج" : "GCC Countries", icon: "🌍", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  international: { label: L ? "دولي" : "International", icon: "✈️", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
 };
 }
 
@@ -185,7 +185,7 @@ export default function AdminShipping() {
         <div className="flex gap-2">
           {total === 0 && (
             <Button variant="outline" className="gap-2 text-sm border-black/10 dark:border-white/10" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} data-testid="button-seed-defaults">
-              {seedMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-500" />}
+              {seedMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-black dark:text-white" />}
               {L ? "إضافة الشركات الافتراضية" : "Add Default Companies"}
             </Button>
           )}
@@ -199,9 +199,9 @@ export default function AdminShipping() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: L ? "إجمالي الشركات" : "Total Companies", val: total, icon: Truck, color: "text-black dark:text-white", bg: "bg-black/[0.03] dark:bg-white/[0.05]" },
-          { label: L ? "نشطة" : "Active", val: active, icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/20" },
-          { label: L ? "متوقفة" : "Inactive", val: total - active, icon: XCircle, color: "text-red-500 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20" },
-          { label: L ? "تغطية دولية" : "International Coverage", val: companies?.filter(c => c.regions?.includes("international")).length || 0, icon: Globe, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20" },
+          { label: L ? "نشطة" : "Active", val: active, icon: CheckCircle2, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+          { label: L ? "متوقفة" : "Inactive", val: total - active, icon: XCircle, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+          { label: L ? "تغطية دولية" : "International Coverage", val: companies?.filter(c => c.regions?.includes("international")).length || 0, icon: Globe, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -268,7 +268,7 @@ export default function AdminShipping() {
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-2.5 text-center">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
-                      <MapPin className="w-3 h-3 text-blue-500" />
+                      <MapPin className="w-3 h-3 text-black dark:text-white" />
                       <span className="text-[10px] text-black/40 dark:text-white/40">{L ? "الرياض" : "Riyadh"}</span>
                     </div>
                     <p className="text-base font-black text-black dark:text-white flex items-center gap-1">{c.basePrice} <SARIcon size={11} className="opacity-40" /></p>
@@ -276,13 +276,13 @@ export default function AdminShipping() {
                       <Clock className="w-2.5 h-2.5" />{c.estimatedDays}
                     </p>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-2.5 text-center border border-amber-200/60 dark:border-amber-700/30">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl p-2.5 text-center border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
-                      <Globe className="w-3 h-3 text-amber-500" />
-                      <span className="text-[10px] text-amber-700 dark:text-amber-400">{L ? "خارج الرياض" : "Outside Riyadh"}</span>
+                      <Globe className="w-3 h-3 text-black dark:text-white" />
+                      <span className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "خارج الرياض" : "Outside Riyadh"}</span>
                     </div>
-                    <p className="text-base font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">{c.outsideCityPrice} <SARIcon size={11} className="opacity-60" /></p>
-                    <p className="text-[9px] text-amber-600/60 dark:text-amber-500/60 flex items-center justify-center gap-0.5 mt-0.5">
+                    <p className="text-base font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">{c.outsideCityPrice} <SARIcon size={11} className="opacity-60" /></p>
+                    <p className="text-[9px] text-black dark:text-white dark:text-black dark:text-white flex items-center justify-center gap-0.5 mt-0.5">
                       <Clock className="w-2.5 h-2.5" />{c.outsideCityDays}
                     </p>
                   </div>
@@ -316,7 +316,7 @@ export default function AdminShipping() {
                   </Button>
                   <Button
                     size="sm" variant="ghost"
-                    className="h-8 w-8 text-red-400 hover:text-red-600"
+                    className="h-8 w-8 text-black/70 dark:text-white/70 hover:text-black dark:text-white"
                     onClick={() => { if (confirm(L ? "حذف شركة الشحن؟" : "Delete shipping company?")) deleteMutation.mutate(c.id); }}
                     data-testid={`button-delete-${c.id}`}
                   >
@@ -375,13 +375,13 @@ export default function AdminShipping() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1 block">
+                  <label className="text-[11px] font-medium text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 flex items-center gap-1 block">
                     <MapPin className="w-3 h-3" /> داخل الرياض (<SARIcon size={10} className="opacity-60" />)
                   </label>
                   <Input type="number" value={form.basePrice} onChange={e => setForm(f => ({ ...f, basePrice: e.target.value }))} placeholder="25" data-testid="input-base-price" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1 block">
+                  <label className="text-[11px] font-medium text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 flex items-center gap-1 block">
                     <Globe className="w-3 h-3" /> خارج الرياض (<SARIcon size={10} className="opacity-60" />)
                   </label>
                   <Input type="number" value={form.outsideCityPrice} onChange={e => setForm(f => ({ ...f, outsideCityPrice: e.target.value }))} placeholder="40" data-testid="input-outside-price" />

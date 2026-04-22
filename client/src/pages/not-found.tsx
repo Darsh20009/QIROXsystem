@@ -15,8 +15,8 @@ export default function NotFound() {
       style={{ background: "linear-gradient(160deg, #f8faff 0%, #f0f4ff 50%, #f8faff 100%)" }}
     >
       {/* Decorative blobs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-100/60 rounded-full blur-3xl -translate-y-1/2 pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl translate-y-1/2 pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-black/[0.04] dark:bg-white/[0.06] rounded-full blur-3xl -translate-y-1/2 pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-black/[0.04] dark:bg-white/[0.06] rounded-full blur-3xl translate-y-1/2 pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -29,7 +29,7 @@ export default function NotFound() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 text-xs font-bold px-3 py-1.5 rounded-full mb-6 border border-violet-200"
+          className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white text-xs font-bold px-3 py-1.5 rounded-full mb-6 border border-black/10 dark:border-white/10"
         >
           <Search className="w-3 h-3" />
           {L ? "الصفحة غير موجودة" : "Page Not Found"}

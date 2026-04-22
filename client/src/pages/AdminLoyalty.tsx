@@ -68,9 +68,9 @@ export default function AdminLoyalty() {
       {activeTab === "accounts" && (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <Card className="border-black/10"><CardContent className="p-4 text-center"><Star className="w-6 h-6 text-amber-500 mx-auto mb-1" /><div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div><div className="text-xs text-black/50">{L ? "إجمالي النقاط النشطة" : "Total Active Points"}</div></CardContent></Card>
-            <Card className="border-black/10"><CardContent className="p-4 text-center"><TrendingUp className="w-6 h-6 text-green-500 mx-auto mb-1" /><div className="text-2xl font-bold text-green-600">{totalEarned.toLocaleString()}</div><div className="text-xs text-black/50">{L ? "إجمالي النقاط المكتسبة" : "Total Points Earned"}</div></CardContent></Card>
-            <Card className="border-black/10"><CardContent className="p-4 text-center"><Users className="w-6 h-6 text-blue-500 mx-auto mb-1" /><div className="text-2xl font-bold text-blue-600">{accounts.length}</div><div className="text-xs text-black/50">{L ? "عملاء في البرنامج" : "Clients in Program"}</div></CardContent></Card>
+            <Card className="border-black/10"><CardContent className="p-4 text-center"><Star className="w-6 h-6 text-black dark:text-white mx-auto mb-1" /><div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div><div className="text-xs text-black/50">{L ? "إجمالي النقاط النشطة" : "Total Active Points"}</div></CardContent></Card>
+            <Card className="border-black/10"><CardContent className="p-4 text-center"><TrendingUp className="w-6 h-6 text-black dark:text-white mx-auto mb-1" /><div className="text-2xl font-bold text-black dark:text-white">{totalEarned.toLocaleString()}</div><div className="text-xs text-black/50">{L ? "إجمالي النقاط المكتسبة" : "Total Points Earned"}</div></CardContent></Card>
+            <Card className="border-black/10"><CardContent className="p-4 text-center"><Users className="w-6 h-6 text-black dark:text-white mx-auto mb-1" /><div className="text-2xl font-bold text-black dark:text-white">{accounts.length}</div><div className="text-xs text-black/50">{L ? "عملاء في البرنامج" : "Clients in Program"}</div></CardContent></Card>
           </div>
 
           <div className="relative">
@@ -89,7 +89,7 @@ export default function AdminLoyalty() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-sm">
+                        <div className="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white font-bold text-sm">
                           {account.client?.fullName?.[0] || "؟"}
                         </div>
                         <div>
@@ -99,15 +99,15 @@ export default function AdminLoyalty() {
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-center">
-                          <div className="text-lg font-bold text-amber-600">{(account.points || 0).toLocaleString()}</div>
+                          <div className="text-lg font-bold text-black dark:text-white">{(account.points || 0).toLocaleString()}</div>
                           <div className="text-xs text-black/40">{L ? "النقاط الحالية" : "Current Points"}</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-sm font-medium text-green-600">+{(account.totalEarned || 0).toLocaleString()}</div>
+                          <div className="text-sm font-medium text-black dark:text-white">+{(account.totalEarned || 0).toLocaleString()}</div>
                           <div className="text-xs text-black/40">{L ? "مكتسبة" : "Earned"}</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-sm font-medium text-red-500">-{(account.totalRedeemed || 0).toLocaleString()}</div>
+                          <div className="text-sm font-medium text-black dark:text-white">-{(account.totalRedeemed || 0).toLocaleString()}</div>
                           <div className="text-xs text-black/40">{L ? "مستردة" : "Redeemed"}</div>
                         </div>
                         <div className="text-center">
@@ -156,7 +156,7 @@ export default function AdminLoyalty() {
                   <Input type="number" value={currentConfig.expiryDays} onChange={e => setConfig((c: any) => ({ ...currentConfig, ...c, expiryDays: Number(e.target.value) }))} className="border-black/20" data-testid="input-expiry-days" />
                 </div>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
                 <strong>{L ? "مثال" : "Example"}:</strong> {L ? "عميل يدفع 1000 ريال" : "Client pays 1000 SAR"} = {currentConfig.pointsPerSAR * 1000} {L ? "نقطة" : "points"} = {(currentConfig.pointsPerSAR * 1000 * currentConfig.sarPerPoint).toFixed(2)} {L ? "ريال خصم" : "SAR discount"}
               </div>
               <Button onClick={() => saveConfigMutation.mutate(currentConfig)} disabled={saveConfigMutation.isPending} className="w-full bg-black text-white hover:bg-black/80" data-testid="button-save-config">
@@ -171,8 +171,8 @@ export default function AdminLoyalty() {
         <DialogContent className="sm:max-w-sm font-sans" dir={dir}>
           <DialogHeader><DialogTitle>{L ? "تعديل نقاط" : "Adjust Points for"} {adjustDialog?.client?.fullName}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="text-center py-3 bg-amber-50 rounded-xl">
-              <div className="text-2xl font-bold text-amber-600">{(adjustDialog?.points || 0).toLocaleString()}</div>
+            <div className="text-center py-3 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl">
+              <div className="text-2xl font-bold text-black dark:text-white">{(adjustDialog?.points || 0).toLocaleString()}</div>
               <div className="text-xs text-black/40">{L ? "الرصيد الحالي" : "Current Balance"}</div>
             </div>
             <div>

@@ -127,14 +127,14 @@ export default function AdminPushNotifications() {
   ];
 
   const tabColors: Record<string, string> = {
-    blue: "bg-blue-600 text-white",
-    violet: "bg-violet-600 text-white",
-    amber: "bg-amber-600 text-white",
+    blue: "bg-black dark:bg-white text-white",
+    violet: "bg-black dark:bg-white text-white",
+    amber: "bg-black dark:bg-white text-white",
   };
   const tabActiveBorder: Record<string, string> = {
-    blue: "border-blue-500",
-    violet: "border-violet-500",
-    amber: "border-amber-500",
+    blue: "border-black dark:border-white",
+    violet: "border-black dark:border-white",
+    amber: "border-black dark:border-white",
   };
 
   const currentTab = tabs.find(t => t.key === tab)!;
@@ -180,10 +180,10 @@ export default function AdminPushNotifications() {
         <div className="lg:col-span-3 space-y-4">
 
           {tab === "push" && (
-            <Card className={`border-2 ${tabActiveBorder.blue} dark:border-blue-500/40`}>
+            <Card className={`border-2 ${tabActiveBorder.blue} dark:border-black dark:border-white`}>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <BellRing className="w-4 h-4 text-blue-500" />
+                  <BellRing className="w-4 h-4 text-black dark:text-white" />
                   {ar ? "إشعار Push للمتصفح" : "Browser Push Notification"}
                 </CardTitle>
                 <p className="text-xs text-black/40 dark:text-white/30">
@@ -204,9 +204,9 @@ export default function AdminPushNotifications() {
                     </Select>
                   </div>
                   <div className="flex items-end">
-                    <div className="w-full bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2 text-center">
-                      <div className="text-lg font-bold text-blue-600">{subData?.count ?? 0}</div>
-                      <div className="text-xs text-blue-500">{ar ? "مشتركو Push" : "push subscribers"}</div>
+                    <div className="w-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl px-3 py-2 text-center">
+                      <div className="text-lg font-bold text-black dark:text-white">{subData?.count ?? 0}</div>
+                      <div className="text-xs text-black dark:text-white">{ar ? "مشتركو Push" : "push subscribers"}</div>
                     </div>
                   </div>
                 </div>
@@ -223,21 +223,21 @@ export default function AdminPushNotifications() {
                   <Input value={pushForm.url} onChange={e => setPushForm(f => ({ ...f, url: e.target.value }))} placeholder="/dashboard" className="border-black/20" dir="ltr" data-testid="input-push-url" />
                 </div>
                 {pushResult && (
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-3 grid grid-cols-3 text-center gap-2">
-                    <div><span className="text-green-600 font-bold text-lg">{pushResult.sent}</span><div className="text-xs text-black/40">{ar ? "نجح" : "success"}</div></div>
-                    <div><span className="text-red-500 font-bold text-lg">{pushResult.failed}</span><div className="text-xs text-black/40">{ar ? "فشل" : "failed"}</div></div>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 grid grid-cols-3 text-center gap-2">
+                    <div><span className="text-black dark:text-white font-bold text-lg">{pushResult.sent}</span><div className="text-xs text-black/40">{ar ? "نجح" : "success"}</div></div>
+                    <div><span className="text-black dark:text-white font-bold text-lg">{pushResult.failed}</span><div className="text-xs text-black/40">{ar ? "فشل" : "failed"}</div></div>
                     <div><span className="font-bold text-lg">{pushResult.total}</span><div className="text-xs text-black/40">{ar ? "إجمالي" : "total"}</div></div>
                   </div>
                 )}
                 {(subData?.count ?? 0) === 0 && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3 text-xs text-amber-700 dark:text-amber-400">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                     {ar ? "لا يوجد مشتركون في Push للفئة المختارة. استخدم الإشعار الداخلي أو البريد." : "No push subscribers for this target. Use In-App or Email instead."}
                   </div>
                 )}
                 <Button
                   onClick={() => pushMutation.mutate(pushForm)}
                   disabled={pushMutation.isPending || !pushForm.title || !pushForm.body}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                  className="w-full bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                   data-testid="button-send-push"
                 >
                   {pushMutation.isPending ? <><Zap className="w-4 h-4 animate-pulse" /> {ar ? "جاري الإرسال..." : "Sending..."}</> : <><Send className="w-4 h-4" /> {ar ? `إرسال Push لـ ${subData?.count ?? 0} مشترك` : `Send Push to ${subData?.count ?? 0} subscribers`}</>}
@@ -247,10 +247,10 @@ export default function AdminPushNotifications() {
           )}
 
           {tab === "inapp" && (
-            <Card className={`border-2 ${tabActiveBorder.violet} dark:border-violet-500/40`}>
+            <Card className={`border-2 ${tabActiveBorder.violet} dark:border-black dark:border-white`}>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <AppWindow className="w-4 h-4 text-violet-500" />
+                  <AppWindow className="w-4 h-4 text-black dark:text-white" />
                   {ar ? "إشعار داخل التطبيق" : "In-App Notification"}
                 </CardTitle>
                 <p className="text-xs text-black/40 dark:text-white/30">
@@ -282,9 +282,9 @@ export default function AdminPushNotifications() {
                   <Input value={inappForm.url} onChange={e => setInappForm(f => ({ ...f, url: e.target.value }))} placeholder="/dashboard" className="border-black/20" dir="ltr" data-testid="input-inapp-url" />
                 </div>
                 {inappResult && (
-                  <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700 rounded-xl p-3 flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-violet-500" />
-                    <span className="text-violet-700 dark:text-violet-300 font-semibold">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-black dark:text-white" />
+                    <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold">
                       {ar ? `تم إرسال الإشعار لـ ${inappResult.count} مستخدم ✓` : `Notification delivered to ${inappResult.count} users ✓`}
                     </span>
                   </div>
@@ -292,7 +292,7 @@ export default function AdminPushNotifications() {
                 <Button
                   onClick={() => inappMutation.mutate({ title: inappForm.title, body: inappForm.body, link: inappForm.url, targetRole: inappForm.targetRole })}
                   disabled={inappMutation.isPending || !inappForm.title}
-                  className="w-full bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                  className="w-full bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                   data-testid="button-send-inapp"
                 >
                   {inappMutation.isPending ? <><Zap className="w-4 h-4 animate-pulse" /> {ar ? "جاري الإرسال..." : "Sending..."}</> : <><MessageSquare className="w-4 h-4" /> {ar ? "إرسال للجميع داخل التطبيق" : "Send In-App to All"}</>}
@@ -302,10 +302,10 @@ export default function AdminPushNotifications() {
           )}
 
           {tab === "email" && (
-            <Card className={`border-2 ${tabActiveBorder.amber} dark:border-amber-500/40`}>
+            <Card className={`border-2 ${tabActiveBorder.amber} dark:border-black dark:border-white`}>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <MailCheck className="w-4 h-4 text-amber-500" />
+                  <MailCheck className="w-4 h-4 text-black dark:text-white" />
                   {ar ? "البريد الجماعي" : "Mass Email"}
                 </CardTitle>
                 <p className="text-xs text-black/40 dark:text-white/30">
@@ -333,19 +333,19 @@ export default function AdminPushNotifications() {
                   <Textarea value={emailForm.body} onChange={e => setEmailForm(f => ({ ...f, body: e.target.value }))} placeholder={ar ? "محتوى البريد الإلكتروني..." : "Email content..."} className="border-black/20 min-h-28" data-testid="textarea-email-body" />
                 </div>
                 {emailResult && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3 grid grid-cols-3 text-center gap-2">
-                    <div><span className="text-green-600 font-bold text-lg">{emailResult.sent}</span><div className="text-xs text-black/40">{ar ? "أُرسل" : "sent"}</div></div>
-                    <div><span className="text-red-500 font-bold text-lg">{emailResult.failed}</span><div className="text-xs text-black/40">{ar ? "فشل" : "failed"}</div></div>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 grid grid-cols-3 text-center gap-2">
+                    <div><span className="text-black dark:text-white font-bold text-lg">{emailResult.sent}</span><div className="text-xs text-black/40">{ar ? "أُرسل" : "sent"}</div></div>
+                    <div><span className="text-black dark:text-white font-bold text-lg">{emailResult.failed}</span><div className="text-xs text-black/40">{ar ? "فشل" : "failed"}</div></div>
                     <div><span className="font-bold text-lg">{emailResult.total}</span><div className="text-xs text-black/40">{ar ? "إجمالي" : "total"}</div></div>
                   </div>
                 )}
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3 text-xs text-amber-700 dark:text-amber-400">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                   {ar ? "⚠️ تأكد من إعداد SMTP في إعدادات الاتصال قبل الإرسال." : "⚠️ Make sure SMTP is configured in Connection Settings before sending."}
                 </div>
                 <Button
                   onClick={() => emailMutation.mutate(emailForm)}
                   disabled={emailMutation.isPending || !emailForm.subject || !emailForm.body}
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white gap-2"
+                  className="w-full bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                   data-testid="button-send-email"
                 >
                   {emailMutation.isPending ? <><Zap className="w-4 h-4 animate-pulse" /> {ar ? "جاري الإرسال..." : "Sending..."}</> : <><Mail className="w-4 h-4" /> {ar ? "إرسال البريد الجماعي" : "Send Mass Email"}</>}
@@ -427,9 +427,9 @@ export default function AdminPushNotifications() {
             <CardContent className="p-4 space-y-2">
               <div className="text-xs font-black uppercase tracking-widest text-black/30 dark:text-white/30 mb-3">{ar ? "الفرق بين القنوات" : "Channel Comparison"}</div>
               {[
-                { icon: BellRing, label: ar ? "Push" : "Push", desc: ar ? "حتى خارج التطبيق — يحتاج إذناً" : "Outside app — needs permission", color: "text-blue-500" },
-                { icon: AppWindow, label: ar ? "داخلي" : "In-App", desc: ar ? "لكل المسجّلين عند الفتح" : "All registered users on open", color: "text-violet-500" },
-                { icon: MailCheck, label: ar ? "بريد" : "Email", desc: ar ? "يصل حتى للمعطَّلين" : "Reaches inactive users too", color: "text-amber-500" },
+                { icon: BellRing, label: ar ? "Push" : "Push", desc: ar ? "حتى خارج التطبيق — يحتاج إذناً" : "Outside app — needs permission", color: "text-black dark:text-white" },
+                { icon: AppWindow, label: ar ? "داخلي" : "In-App", desc: ar ? "لكل المسجّلين عند الفتح" : "All registered users on open", color: "text-black dark:text-white" },
+                { icon: MailCheck, label: ar ? "بريد" : "Email", desc: ar ? "يصل حتى للمعطَّلين" : "Reaches inactive users too", color: "text-black dark:text-white" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <item.icon className={`w-4 h-4 ${item.color} shrink-0`} />

@@ -28,15 +28,15 @@ function getRoleLabels(L: boolean): Record<string, string> {
 }
 
 const roleColors: Record<string, string> = {
-  admin: "bg-red-50 text-red-700 border-red-200",
-  manager: "bg-purple-50 text-purple-700 border-purple-200",
-  developer: "bg-blue-50 text-blue-700 border-blue-200",
-  designer: "bg-pink-50 text-pink-700 border-pink-200",
-  accountant: "bg-green-50 text-green-700 border-green-200",
-  sales_manager: "bg-amber-50 text-amber-700 border-amber-200",
-  sales: "bg-orange-50 text-orange-700 border-orange-200",
-  support: "bg-teal-50 text-teal-700 border-teal-200",
-  merchant: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  admin: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  developer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  designer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  accountant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  sales_manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  sales: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  support: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  merchant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   client: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
@@ -247,7 +247,7 @@ export default function AdminEmployees() {
 
   if (isError) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center" data-testid="employees-error-state">
-      <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
+      <AlertCircle className="w-12 h-12 text-black/70 dark:text-white/70 mb-3" />
       <p className="text-sm font-medium text-black/60 dark:text-white/60 mb-1">{L ? "حدث خطأ أثناء تحميل بيانات الفريق" : "Failed to load team data"}</p>
       <p className="text-xs text-black/30 dark:text-white/30 mb-4">{L ? "تأكد من اتصالك بالإنترنت وحاول مرة أخرى" : "Check your connection and try again"}</p>
       <Button variant="outline" size="sm" className="text-xs" onClick={() => refetch()} data-testid="button-retry-employees">
@@ -372,13 +372,13 @@ export default function AdminEmployees() {
                   <p className="text-[11px] font-bold text-black/40 mb-3 flex items-center gap-1.5"><Link className="w-3 h-3" /> {L ? "حسابات السوشيال ميديا (تظهر في صفحة الفريق)" : "Social Media Accounts (shown on team page)"}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
-                      { key: "instagram", icon: SiInstagram, color: "text-pink-500", placeholder: "https://instagram.com/username", label: "Instagram" },
+                      { key: "instagram", icon: SiInstagram, color: "text-black dark:text-white", placeholder: "https://instagram.com/username", label: "Instagram" },
                       { key: "twitter", icon: SiX, color: "text-black dark:text-white", placeholder: "https://x.com/username", label: "X (Twitter)" },
-                      { key: "linkedin", icon: SiLinkedin, color: "text-blue-600", placeholder: "https://linkedin.com/in/username", label: "LinkedIn" },
-                      { key: "snapchat", icon: SiSnapchat, color: "text-yellow-400", placeholder: "https://snapchat.com/add/username", label: "Snapchat" },
+                      { key: "linkedin", icon: SiLinkedin, color: "text-black dark:text-white", placeholder: "https://linkedin.com/in/username", label: "LinkedIn" },
+                      { key: "snapchat", icon: SiSnapchat, color: "text-black/70 dark:text-white/70", placeholder: "https://snapchat.com/add/username", label: "Snapchat" },
                       { key: "tiktok", icon: SiTiktok, color: "text-black dark:text-white", placeholder: "https://tiktok.com/@username", label: "TikTok" },
-                      { key: "youtube", icon: SiYoutube, color: "text-red-500", placeholder: "https://youtube.com/@channel", label: "YouTube" },
-                      { key: "linktree", icon: Link2, color: "text-green-500", placeholder: "https://linktr.ee/username", label: "Linktree" },
+                      { key: "youtube", icon: SiYoutube, color: "text-black dark:text-white", placeholder: "https://youtube.com/@channel", label: "YouTube" },
+                      { key: "linktree", icon: Link2, color: "text-black dark:text-white", placeholder: "https://linktr.ee/username", label: "Linktree" },
                     ].map(({ key, icon: Icon, color, placeholder, label }) => (
                       <div key={key} className="relative">
                         <div className={`absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${color}`}>
@@ -446,9 +446,9 @@ export default function AdminEmployees() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: L ? "إجمالي الفريق" : "Total Team", value: employees.length, color: "text-black dark:text-white" },
-          { label: L ? "المدراء" : "Managers", value: employees.filter(e => ["admin","manager"].includes(e.role)).length, color: "text-violet-600" },
-          { label: L ? "الموظفون" : "Staff", value: employees.filter(e => !["admin","manager","client"].includes(e.role)).length, color: "text-blue-600" },
-          { label: L ? "العملاء" : "Clients", value: clients.length, color: "text-emerald-600" },
+          { label: L ? "المدراء" : "Managers", value: employees.filter(e => ["admin","manager"].includes(e.role)).length, color: "text-black dark:text-white" },
+          { label: L ? "الموظفون" : "Staff", value: employees.filter(e => !["admin","manager","client"].includes(e.role)).length, color: "text-black dark:text-white" },
+          { label: L ? "العملاء" : "Clients", value: clients.length, color: "text-black dark:text-white" },
         ].map((s, i) => (
           <Card key={i} className="border border-black/[0.06] shadow-none">
             <CardContent className="p-3 flex items-center gap-3">
@@ -522,10 +522,10 @@ export default function AdminEmployees() {
                   </Button>
                   {emp.role !== 'admin' && (
                     <>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-blue-200 text-blue-500 hover:bg-blue-50" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
                         {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-${emp.id}`}>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-${emp.id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </>
@@ -563,10 +563,10 @@ export default function AdminEmployees() {
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black/60" onClick={() => startEdit(emp)} data-testid={`button-edit-list-${emp.id}`}><Edit2 className="w-3.5 h-3.5" /></Button>
                     {emp.role !== 'admin' && (
                       <>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:text-blue-600 hover:bg-blue-50" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
                           {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-red-500" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-list-${emp.id}`}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black dark:text-white" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-list-${emp.id}`}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </>
                     )}
                   </div>
@@ -638,9 +638,9 @@ export default function AdminEmployees() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/60 rounded-xl px-3 py-2">
-              <Mail className="w-4 h-4 text-amber-600 shrink-0" />
-              <p className="text-amber-700 text-xs">{L ? "تم إرسال هذه البيانات إلى" : "These credentials were sent to"}: <strong>{credResult?.email}</strong></p>
+            <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-3 py-2">
+              <Mail className="w-4 h-4 text-black dark:text-white shrink-0" />
+              <p className="text-black dark:text-white text-xs">{L ? "تم إرسال هذه البيانات إلى" : "These credentials were sent to"}: <strong>{credResult?.email}</strong></p>
             </div>
 
             <Button

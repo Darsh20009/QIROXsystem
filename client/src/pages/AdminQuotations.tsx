@@ -30,10 +30,10 @@ interface Quotation {
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: "مسودة", color: "bg-black/10 text-black/60" },
-  sent: { label: "مُرسل", color: "bg-blue-100 text-blue-700" },
-  accepted: { label: "مقبول", color: "bg-green-100 text-green-700" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700" },
-  expired: { label: "منتهي", color: "bg-orange-100 text-orange-700" },
+  sent: { label: "مُرسل", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  accepted: { label: "مقبول", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  rejected: { label: "مرفوض", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  expired: { label: "منتهي", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 };
 
 function QuotationForm({ onClose }: { onClose: () => void }) {
@@ -221,7 +221,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
                   <span className="text-xs font-bold text-black flex items-center gap-1">
                     {item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" />
                   </span>
-                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600">
+                  <button onClick={() => removeItem(i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -357,30 +357,30 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
             {form.items.map((item, i) => (
               editingIdx === i ? (
                 /* ── Edit mode row ── */
-                <div key={i} className="bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
+                <div key={i} className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 space-y-2">
                   <div className="grid grid-cols-12 gap-2">
-                    <Input value={editBuf.name} onChange={e => setEditBuf(p => ({ ...p, name: e.target.value }))} placeholder={L ? "اسم البند *" : "Name *"} className="col-span-5 h-8 text-xs border-violet-300 focus:border-violet-500" />
-                    <Input value={editBuf.desc} onChange={e => setEditBuf(p => ({ ...p, desc: e.target.value }))} placeholder={L ? "وصف" : "Desc"} className="col-span-3 h-8 text-xs border-violet-300" />
-                    <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="col-span-2 h-8 text-xs border-violet-300" dir="ltr" />
-                    <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="col-span-2 h-8 text-xs border-violet-300" dir="ltr" />
+                    <Input value={editBuf.name} onChange={e => setEditBuf(p => ({ ...p, name: e.target.value }))} placeholder={L ? "اسم البند *" : "Name *"} className="col-span-5 h-8 text-xs border-black/15 dark:border-white/15 focus:border-black dark:border-white" />
+                    <Input value={editBuf.desc} onChange={e => setEditBuf(p => ({ ...p, desc: e.target.value }))} placeholder={L ? "وصف" : "Desc"} className="col-span-3 h-8 text-xs border-black/15 dark:border-white/15" />
+                    <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="col-span-2 h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
+                    <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="col-span-2 h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-violet-600 font-bold px-1">
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
                       {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
                     </p>
                   )}
                   <div className="flex gap-2">
-                    <Button type="button" onClick={saveEdit} size="sm" className="bg-violet-600 hover:bg-violet-700 text-white h-7 text-xs px-3 gap-1" disabled={!editBuf.name || !editBuf.unitPrice}>
+                    <Button type="button" onClick={saveEdit} size="sm" className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white h-7 text-xs px-3 gap-1" disabled={!editBuf.name || !editBuf.unitPrice}>
                       <Check className="w-3 h-3" /> {L ? "حفظ" : "Save"}
                     </Button>
-                    <Button type="button" onClick={cancelEdit} size="sm" variant="outline" className="h-7 text-xs px-3 border-violet-200">
+                    <Button type="button" onClick={cancelEdit} size="sm" variant="outline" className="h-7 text-xs px-3 border-black/10 dark:border-white/10">
                       <X className="w-3 h-3" /> {L ? "إلغاء" : "Cancel"}
                     </Button>
                   </div>
                 </div>
               ) : (
                 /* ── View mode row ── */
-                <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-violet-50/60 rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-violet-200 transition-all">
+                <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-black/10 dark:border-white/10 transition-all">
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-black font-semibold">{item.name}</span>
                     {item.description && <span className="text-[10px] text-black/40 mr-2">{item.description}</span>}
@@ -388,10 +388,10 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
-                    <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-violet-500 hover:text-violet-700 transition-all p-1 rounded-lg hover:bg-violet-100" title={L ? "تعديل البند" : "Edit item"}>
+                    <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-black dark:text-white hover:text-black dark:text-white transition-all p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]" title={L ? "تعديل البند" : "Edit item"}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 rounded-lg hover:bg-red-50">
+                    <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-all p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -614,8 +614,8 @@ export default function AdminQuotations() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-black text-black font-mono text-sm">{q.quotationNumber}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
-                      {isExternal && <span className="text-[10px] bg-orange-50 text-orange-500 border border-orange-100 px-1.5 py-0.5 rounded">خارجي</span>}
-                      {(q as any).orderId && <span className="text-[10px] bg-green-50 text-green-600 border border-green-100 px-1.5 py-0.5 rounded">✓ طلب</span>}
+                      {isExternal && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded">خارجي</span>}
+                      {(q as any).orderId && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded">✓ طلب</span>}
                       {q.title && <span className="text-sm text-black/60 truncate">{q.title}</span>}
                     </div>
                     <div className="text-xs text-black/40 mt-1 flex items-center gap-3 flex-wrap">
@@ -635,13 +635,13 @@ export default function AdminQuotations() {
                       {q.vatRate > 0 && <div className="text-xs text-black/30">شامل ضريبة {q.vatRate}%</div>}
                     </div>
                     <Button size="sm" variant="outline"
-                      className="h-8 text-xs gap-1 border-violet-100 text-violet-600 hover:bg-violet-50"
+                      className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => setEditingQuotation(q)}
                       data-testid={`button-edit-quotation-${q.id}`}>
                       <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
                     </Button>
                     <Button size="sm" variant="outline"
-                      className="h-8 text-xs gap-1 border-cyan-100 text-cyan-600 hover:bg-cyan-50"
+                      className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => duplicateMutation.mutate(q.id)}
                       disabled={duplicateMutation.isPending}
                       data-testid={`button-duplicate-quotation-${q.id}`}>
@@ -677,7 +677,7 @@ export default function AdminQuotations() {
                       <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
                     </Button>
                     <Button size="sm" variant="outline"
-                      className="h-8 text-xs gap-1 border-red-100 text-red-500 hover:bg-red-50"
+                      className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => { if (confirm(L ? "هل تريد حذف هذا العرض؟" : "Delete this quotation?")) deleteMutation.mutate(q.id); }}
                       disabled={deleteMutation.isPending}
                       data-testid={`button-delete-quotation-${q.id}`}>

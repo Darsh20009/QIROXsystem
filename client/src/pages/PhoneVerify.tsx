@@ -122,8 +122,8 @@ export default function PhoneVerify() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950 p-4" dir={dir}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
-            <ShieldCheck className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-full flex items-center justify-center mx-auto mb-5">
+            <ShieldCheck className="w-10 h-10 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
           </div>
           <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{L ? "رقمك موثّق" : "Phone Already Verified"}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">{L ? "رقم جوالك تم توثيقه مسبقاً." : "Your phone number has already been verified."}</p>
@@ -136,7 +136,7 @@ export default function PhoneVerify() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-violet-950 flex flex-col" dir={dir}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black dark:to-white flex flex-col" dir={dir}>
       {/* Header */}
       <div className="px-5 pt-6 pb-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
@@ -151,12 +151,12 @@ export default function PhoneVerify() {
                 <div key={step.n} className="flex items-center gap-1">
                   <div className="flex items-center gap-1.5">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all
-                      ${step.active ? "bg-white text-gray-900" : step.done ? "bg-emerald-500 text-white" : "bg-white/10 text-white/30"}`}>
+                      ${step.active ? "bg-white text-gray-900" : step.done ? "bg-black dark:bg-white text-white" : "bg-white/10 text-white/30"}`}>
                       {step.done ? "✓" : step.n}
                     </div>
-                    <span className={`text-[10px] font-semibold hidden sm:block ${step.active ? "text-white" : step.done ? "text-emerald-400" : "text-white/20"}`}>{step.label}</span>
+                    <span className={`text-[10px] font-semibold hidden sm:block ${step.active ? "text-white" : step.done ? "text-black/70 dark:text-white/70" : "text-white/20"}`}>{step.label}</span>
                   </div>
-                  {i < 3 && <div className={`h-px w-5 mx-1 ${step.done ? "bg-emerald-400" : "bg-white/10"}`} />}
+                  {i < 3 && <div className={`h-px w-5 mx-1 ${step.done ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-white/10"}`} />}
                 </div>
               ))}
             </div>
@@ -196,9 +196,9 @@ export default function PhoneVerify() {
                     onKeyDown={e => e.key === "Enter" && handleStart()}
                   />
                 </div>
-                <div className="flex items-start gap-2 mt-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl p-3">
-                  <Info className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                <div className="flex items-start gap-2 mt-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl p-3">
+                  <Info className="w-4 h-4 text-black dark:text-white mt-0.5 shrink-0" />
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
                     {L ? "سيتصل بك أحد موظفي QIROX على رقمك ويُؤكد توثيق الحساب." : "A QIROX staff member will call you at your number to confirm account verification."}
                   </p>
                 </div>
@@ -228,10 +228,10 @@ export default function PhoneVerify() {
             <motion.div key="call" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-6 text-center shadow-sm">
                 <div className="relative w-20 h-20 mx-auto mb-4">
-                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                    <PhoneCall className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-full flex items-center justify-center">
+                    <PhoneCall className="w-10 h-10 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                   </div>
-                  <div className="absolute inset-0 rounded-full border-2 border-emerald-400/30 animate-ping" />
+                  <div className="absolute inset-0 rounded-full border-2 border-black/15 dark:border-white/15 animate-ping" />
                 </div>
                 <h2 className="font-black text-gray-900 dark:text-white text-xl mb-1">{L ? "انتظر الاتصال" : "Waiting for Call"}</h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{L ? "طلبك وصل إلى فريق QIROX" : "Your request has been sent to the QIROX team"}</p>
@@ -239,13 +239,13 @@ export default function PhoneVerify() {
                   <Phone className="w-4 h-4 text-gray-400" />
                   <span className="font-mono font-bold text-gray-700 dark:text-gray-200" dir="ltr">{phone}</span>
                 </div>
-                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl p-4 text-right space-y-2">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 text-right space-y-2">
                   {[
                     L ? "تم إشعار فريق QIROX بطلبك" : "QIROX team has been notified",
                     L ? "سيتصل بك موظف خلال دقائق قليلة" : "A staff member will call you in a few minutes",
                     L ? "بعد التأكيد يُحدَّث حسابك تلقائياً" : "After confirmation, your account will update automatically",
                   ].map((t, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
+                    <div key={i} className="flex items-center gap-2 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span>{t}</span>
                     </div>
@@ -275,28 +275,28 @@ export default function PhoneVerify() {
             <motion.div key="done" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-center">
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-8 shadow-sm space-y-4">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1, stiffness: 250 }}
-                  className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
-                  <ShieldCheck className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+                  className="w-24 h-24 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-full flex items-center justify-center mx-auto">
+                  <ShieldCheck className="w-12 h-12 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                 </motion.div>
                 <div>
                   <h2 className="font-black text-gray-900 dark:text-white text-2xl mb-1">{L ? "تم التوثيق بنجاح! 🎉" : "Verified Successfully! 🎉"}</h2>
                   <p className="text-gray-500 dark:text-gray-400 text-sm">{L ? "رقم جوالك موثّق الآن" : "Your phone number is now verified"}</p>
                 </div>
-                <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl px-4 py-2">
-                  <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">{phone}</span>
+                <div className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl px-4 py-2">
+                  <Phone className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
+                  <span className="font-mono font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70" dir="ltr">{phone}</span>
                 </div>
                 {/* Service rating prompt */}
-                <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800/30 rounded-2xl p-4">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {[1,2,3,4,5].map(s => (
-                      <Star key={s} className="w-5 h-5 text-violet-400 fill-violet-400" />
+                      <Star key={s} className="w-5 h-5 text-black/70 dark:text-white/70 fill-violet-400" />
                     ))}
                   </div>
-                  <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold">
                     {L ? "شكراً لاستخدام خدمات QIROX Studio!" : "Thank you for using QIROX Studio services!"}
                   </p>
-                  <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5">
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5">
                     {L ? "يسعدنا خدمتك دائماً" : "We're always happy to serve you"}
                   </p>
                 </div>

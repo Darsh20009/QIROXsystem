@@ -23,27 +23,27 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const STATUSES = [
   { value: 'pending', label: 'قيد الانتظار', icon: Clock, color: 'text-gray-500 bg-gray-100' },
-  { value: 'in_progress', label: 'جارٍ التنفيذ', icon: Play, color: 'text-amber-600 bg-amber-100' },
-  { value: 'completed', label: 'مكتملة', icon: CheckCircle2, color: 'text-green-700 bg-green-100' },
-  { value: 'cancelled', label: 'ملغاة', icon: XCircle, color: 'text-red-600 bg-red-100' },
+  { value: 'in_progress', label: 'جارٍ التنفيذ', icon: Play, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
+  { value: 'completed', label: 'مكتملة', icon: CheckCircle2, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
+  { value: 'cancelled', label: 'ملغاة', icon: XCircle, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
 ];
 const ISSUE_STATUSES = [
-  { value: 'open', label: 'مفتوح', color: 'bg-red-100 text-red-700' },
-  { value: 'in_progress', label: 'جارٍ', color: 'bg-amber-100 text-amber-700' },
-  { value: 'resolved', label: 'محلول', color: 'bg-green-100 text-green-700' },
+  { value: 'open', label: 'مفتوح', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'in_progress', label: 'جارٍ', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'resolved', label: 'محلول', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
   { value: 'closed', label: 'مغلق', color: 'bg-gray-100 text-gray-500' },
 ];
 const MEETING_STATUSES = [
-  { value: 'pending', label: 'في الانتظار', color: 'bg-amber-100 text-amber-700' },
-  { value: 'scheduled', label: 'محدد', color: 'bg-blue-100 text-blue-700' },
-  { value: 'cancelled', label: 'ملغي', color: 'bg-red-100 text-red-700' },
-  { value: 'completed', label: 'مكتمل', color: 'bg-green-100 text-green-700' },
+  { value: 'pending', label: 'في الانتظار', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'scheduled', label: 'محدد', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'cancelled', label: 'ملغي', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'completed', label: 'مكتمل', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
 ];
 const PRIORITIES = [
   { value: 'low', label: 'منخفضة', color: 'bg-gray-100 text-gray-600' },
-  { value: 'medium', label: 'متوسطة', color: 'bg-blue-100 text-blue-700' },
-  { value: 'high', label: 'عالية', color: 'bg-amber-100 text-amber-700' },
-  { value: 'critical', label: 'حرجة', color: 'bg-red-100 text-red-700' },
+  { value: 'medium', label: 'متوسطة', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'high', label: 'عالية', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'critical', label: 'حرجة', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
 ];
 
 function statusInfo(s: string) { return STATUSES.find(x => x.value === s) || STATUSES[0]; }
@@ -222,7 +222,7 @@ export default function ProjectWorkspace() {
               <ArrowLeft className="w-4 h-4 text-black/40 dark:text-white/40" />
             </button>
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black flex-shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white text-sm font-black flex-shrink-0">
             {projectName[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -231,9 +231,9 @@ export default function ProjectWorkspace() {
           </div>
           {/* Summary badges */}
           <div className="hidden sm:flex items-center gap-2">
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${pct === 100 ? 'bg-green-100 text-green-700' : 'bg-violet-100 text-violet-700'}`}>{pct}% {L ? "مكتمل" : "complete"}</span>
-            {openIssues > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">{openIssues} {L ? "مشكلة" : "issue(s)"}</span>}
-            {upcomingMeetings > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{upcomingMeetings} {L ? "اجتماع" : "meeting(s)"}</span>}
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${pct === 100 ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white'}`}>{pct}% {L ? "مكتمل" : "complete"}</span>
+            {openIssues > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">{openIssues} {L ? "مشكلة" : "issue(s)"}</span>}
+            {upcomingMeetings > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">{upcomingMeetings} {L ? "اجتماع" : "meeting(s)"}</span>}
           </div>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function ProjectWorkspace() {
               <LayoutGrid className="w-3.5 h-3.5 ml-1" /> {L ? "المميزات" : "Features"} ({features.length})
             </TabsTrigger>
             <TabsTrigger value="issues" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-issues">
-              <Bug className="w-3.5 h-3.5 ml-1" /> {L ? "المشاكل" : "Issues"} {openIssues > 0 && <span className="mr-1 bg-red-500 text-white rounded-full text-[8px] px-1">{openIssues}</span>}
+              <Bug className="w-3.5 h-3.5 ml-1" /> {L ? "المشاكل" : "Issues"} {openIssues > 0 && <span className="mr-1 bg-black dark:bg-white text-white rounded-full text-[8px] px-1">{openIssues}</span>}
             </TabsTrigger>
             <TabsTrigger value="meetings" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-meetings">
               <Calendar className="w-3.5 h-3.5 ml-1" /> {L ? "الاجتماعات" : "Meetings"}
@@ -267,7 +267,7 @@ export default function ProjectWorkspace() {
                   <p className="text-xs font-black text-black dark:text-white">{pct}%</p>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-white/[0.08] rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-l from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-gradient-to-l from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="text-[10px] text-black/30 dark:text-white/20">{completed} {L ? "مكتملة" : "done"}</span>
@@ -298,11 +298,11 @@ export default function ProjectWorkspace() {
                         {/* Status icon / Checkbox */}
                         <div className="pt-0.5 flex-shrink-0">
                           {f.status === 'completed' ? (
-                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-black dark:bg-white flex items-center justify-center">
                               <CheckCheck className="w-3 h-3 text-white" />
                             </div>
                           ) : f.status === 'in_progress' ? (
-                            <div className="w-5 h-5 rounded-full bg-amber-400 animate-pulse flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse flex items-center justify-center">
                               <Play className="w-2.5 h-2.5 text-white" />
                             </div>
                           ) : (
@@ -324,18 +324,18 @@ export default function ProjectWorkspace() {
                                 <User className="w-2.5 h-2.5" /> {f.assignedTo.fullName || f.assignedTo.username}
                               </span>
                             )}
-                            {f.completedAt && <span className="text-[10px] text-green-600 dark:text-green-400">✓ {new Date(f.completedAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}</span>}
+                            {f.completedAt && <span className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70">✓ {new Date(f.completedAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}</span>}
                           </div>
                           {/* Employee action buttons */}
                           {isEmployee && (canStart || canComplete) && (
                             <div className="flex gap-2 mt-2">
                               {canStart && (
-                                <Button size="sm" className="h-6 text-[10px] gap-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'in_progress' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-start-feature-${f.id}`}>
+                                <Button size="sm" className="h-6 text-[10px] gap-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'in_progress' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-start-feature-${f.id}`}>
                                   <Play className="w-2.5 h-2.5" /> {L ? "بدء التنفيذ" : "Start"}
                                 </Button>
                               )}
                               {canComplete && (
-                                <Button size="sm" className="h-6 text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'completed' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-complete-feature-${f.id}`}>
+                                <Button size="sm" className="h-6 text-[10px] gap-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'completed' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-complete-feature-${f.id}`}>
                                   <CheckCircle2 className="w-2.5 h-2.5" /> {L ? "إنهاء الميزة" : "Complete"}
                                 </Button>
                               )}
@@ -375,7 +375,7 @@ export default function ProjectWorkspace() {
                     return (
                       <div key={issue.id} className="bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.07] p-3.5" data-testid={`issue-card-${issue.id}`}>
                         <div className="flex items-start gap-2">
-                          <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${issue.status === 'open' ? 'bg-red-500' : issue.status === 'in_progress' ? 'bg-amber-500' : 'bg-green-500'}`} />
+                          <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${issue.status === 'open' ? 'bg-black dark:bg-white' : issue.status === 'in_progress' ? 'bg-black dark:bg-white' : 'bg-black dark:bg-white'}`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-bold text-black dark:text-white">{issue.title}</p>
@@ -391,12 +391,12 @@ export default function ProjectWorkspace() {
                             {isEmployee && issue.status !== 'resolved' && issue.status !== 'closed' && (
                               <div className="flex gap-2 mt-2">
                                 {issue.status === 'open' && (
-                                  <Button size="sm" className="h-6 text-[10px] gap-1 bg-amber-500 text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'in_progress' } })} data-testid={`button-issue-progress-${issue.id}`}>
+                                  <Button size="sm" className="h-6 text-[10px] gap-1 bg-black dark:bg-white text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'in_progress' } })} data-testid={`button-issue-progress-${issue.id}`}>
                                     <Play className="w-2.5 h-2.5" /> {L ? "بدء المعالجة" : "Start"}
                                   </Button>
                                 )}
                                 {issue.status === 'in_progress' && (
-                                  <Button size="sm" className="h-6 text-[10px] gap-1 bg-green-600 text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'resolved' } })} data-testid={`button-issue-resolve-${issue.id}`}>
+                                  <Button size="sm" className="h-6 text-[10px] gap-1 bg-black dark:bg-white text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'resolved' } })} data-testid={`button-issue-resolve-${issue.id}`}>
                                     <CheckCircle2 className="w-2.5 h-2.5" /> {L ? "تم الحل" : "Resolve"}
                                   </Button>
                                 )}
@@ -461,10 +461,10 @@ export default function ProjectWorkspace() {
                     const canJoin = isMeetingOpen(meeting);
                     const scheduledDate = meeting.scheduledAt ? new Date(meeting.scheduledAt) : null;
                     return (
-                      <div key={meeting.id} className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${canJoin ? 'border-green-400 dark:border-green-600 ring-1 ring-green-400/30' : 'border-black/[0.06] dark:border-white/[0.07]'}`} data-testid={`meeting-card-${meeting.id}`}>
+                      <div key={meeting.id} className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${canJoin ? 'border-black/15 dark:border-white/15 dark:border-black dark:border-white ring-1 ring-black/15 dark:ring-white/15' : 'border-black/[0.06] dark:border-white/[0.07]'}`} data-testid={`meeting-card-${meeting.id}`}>
                         <div className="flex items-start gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${canJoin ? 'bg-green-100 dark:bg-green-900/20' : 'bg-violet-100 dark:bg-violet-900/20'}`}>
-                            <VideoIcon className={`w-5 h-5 ${canJoin ? 'text-green-600' : 'text-violet-600'}`} />
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${canJoin ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white'}`}>
+                            <VideoIcon className={`w-5 h-5 ${canJoin ? 'text-black dark:text-white' : 'text-black dark:text-white'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -472,7 +472,7 @@ export default function ProjectWorkspace() {
                                 {scheduledDate ? scheduledDate.toLocaleDateString(L ? 'ar-SA' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : (L ? "اجتماع مطلوب" : "Meeting Requested")}
                               </p>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${ms.color}`}>{ms.label}</span>
-                              {canJoin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white animate-pulse">{L ? "الآن!" : "Now!"}</span>}
+                              {canJoin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black dark:bg-white text-white animate-pulse">{L ? "الآن!" : "Now!"}</span>}
                             </div>
                             {scheduledDate && (
                               <p className="text-[11px] text-black/45 dark:text-white/35 mt-0.5">
@@ -489,7 +489,7 @@ export default function ProjectWorkspace() {
                               {/* Client: can join if link available and time is right */}
                               {isClient && canJoin && meeting.meetingLink && (
                                 <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
-                                  <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white rounded-lg" data-testid={`button-join-meeting-${meeting.id}`}>
+                                  <Button size="sm" className="h-7 text-xs gap-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-lg" data-testid={`button-join-meeting-${meeting.id}`}>
                                     <VideoIcon className="w-3.5 h-3.5" /> {L ? "دخول الاجتماع" : "Join Meeting"}
                                   </Button>
                                 </a>
@@ -513,14 +513,14 @@ export default function ProjectWorkspace() {
                                 </Button>
                               )}
                               {isEmployee && meeting.status === 'scheduled' && (
-                                <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 text-white rounded-lg" onClick={() => updateMeetingMutation.mutate({ id: meeting.id, updates: { status: 'completed' } })} data-testid={`button-complete-meeting-${meeting.id}`}>
+                                <Button size="sm" className="h-7 text-xs gap-1 bg-black dark:bg-white text-white rounded-lg" onClick={() => updateMeetingMutation.mutate({ id: meeting.id, updates: { status: 'completed' } })} data-testid={`button-complete-meeting-${meeting.id}`}>
                                   <CheckCircle2 className="w-3.5 h-3.5" /> {L ? "إنهاء الاجتماع" : "Complete Meeting"}
                                 </Button>
                               )}
                               {/* Employee join too */}
                               {isEmployee && canJoin && meeting.meetingLink && (
                                 <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
-                                  <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 text-white rounded-lg">
+                                  <Button size="sm" className="h-7 text-xs gap-1 bg-black dark:bg-white text-white rounded-lg">
                                     <VideoIcon className="w-3.5 h-3.5" /> {L ? "دخول" : "Join"}
                                   </Button>
                                 </a>
@@ -604,10 +604,10 @@ export default function ProjectWorkspace() {
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-500" />
+                    <CreditCard className="w-4 h-4 text-black dark:text-white" />
                     <p className="text-sm font-black text-black dark:text-white">{L ? "وثائق تفعيل Paymob" : "Paymob Activation Documents"}</p>
                   </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${paymobData.status === "approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : paymobData.status === "rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : paymobData.status === "reviewing" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${paymobData.status === "approved" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : paymobData.status === "rejected" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : paymobData.status === "reviewing" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>
                     {paymobData.status === "approved" ? (L ? "موافق عليه" : "Approved") : paymobData.status === "rejected" ? (L ? "مرفوض" : "Rejected") : paymobData.status === "reviewing" ? (L ? "قيد المراجعة" : "Reviewing") : (L ? "بانتظار المراجعة" : "Pending")}
                   </span>
                 </div>
@@ -649,7 +649,7 @@ export default function ProjectWorkspace() {
                               href={paymobData[key]}
                               target="_blank"
                               rel="noreferrer"
-                              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors"
+                              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 rounded-lg text-[11px] font-bold hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                               data-testid={`link-emp-paymob-${key}`}
                             >
                               {L ? "عرض" : "View"} <ExternalLink className="w-3 h-3" />
@@ -663,7 +663,7 @@ export default function ProjectWorkspace() {
                   </div>
 
                   {/* Paymob registration status */}
-                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold ${paymobData.paymobRegistered ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"}`}>
+                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold ${paymobData.paymobRegistered ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                     {paymobData.paymobRegistered
                       ? (L ? "العميل أكد اكتمال التسجيل في منصة Paymob" : "Client confirmed Paymob portal registration")

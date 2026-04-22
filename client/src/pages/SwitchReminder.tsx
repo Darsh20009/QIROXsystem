@@ -87,19 +87,19 @@ export default function SwitchReminder() {
       {/* Hero */}
       <div className="relative bg-black overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-black dark:bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-black dark:bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 py-16 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6 text-sm text-white/70">
-              <Bell className="w-4 h-4 text-violet-400" />
+              <Bell className="w-4 h-4 text-black/70 dark:text-white/70" />
               خدمة التذكير الذكي
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
               اشتراكك ينتهي قريباً؟
               <br />
-              <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1] bg-clip-text text-transparent">
                 نحن هنا قبل أن يفوت الأوان
               </span>
             </h1>
@@ -135,8 +135,8 @@ export default function SwitchReminder() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-12"
             >
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-10 h-10 text-black dark:text-white" />
               </div>
               <h2 className="text-2xl font-black text-black dark:text-white mb-3">تم التسجيل بنجاح! 🎉</h2>
               <p className="text-black/50 dark:text-white/50 text-base max-w-md mx-auto leading-relaxed mb-2">
@@ -275,11 +275,11 @@ export default function SwitchReminder() {
                     )} />
 
                     {/* Info banner */}
-                    <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50 rounded-2xl p-4 flex gap-3">
-                      <Shield className="w-5 h-5 text-violet-600 dark:text-violet-400 flex-shrink-0 mt-0.5" />
+                    <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 flex gap-3">
+                      <Shield className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-violet-800 dark:text-violet-300 text-sm font-semibold">بياناتك آمنة معنا</p>
-                        <p className="text-violet-600/70 dark:text-violet-400/70 text-xs mt-0.5 leading-relaxed">
+                        <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-semibold">بياناتك آمنة معنا</p>
+                        <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs mt-0.5 leading-relaxed">
                           لن تُستخدم بياناتك إلا للتواصل معك بشأن عرضنا. لا مشاركة مع أطراف ثالثة.
                         </p>
                       </div>
@@ -304,9 +304,9 @@ export default function SwitchReminder() {
               {/* Social proof */}
               <div className="mt-8 grid grid-cols-3 gap-4 text-center">
                 {[
-                  { icon: <Star className="w-5 h-5 text-amber-500 mx-auto mb-1" />, val: "4.9/5", label: "تقييم العملاء" },
-                  { icon: <Sparkles className="w-5 h-5 text-violet-500 mx-auto mb-1" />, val: "+200", label: "عميل موثوق" },
-                  { icon: <Clock className="w-5 h-5 text-blue-500 mx-auto mb-1" />, val: "24 ساعة", label: "وقت الاستجابة" },
+                  { icon: <Star className="w-5 h-5 text-black dark:text-white mx-auto mb-1" />, val: "4.9/5", label: "تقييم العملاء" },
+                  { icon: <Sparkles className="w-5 h-5 text-black dark:text-white mx-auto mb-1" />, val: "+200", label: "عميل موثوق" },
+                  { icon: <Clock className="w-5 h-5 text-black dark:text-white mx-auto mb-1" />, val: "24 ساعة", label: "وقت الاستجابة" },
                 ].map((s, i) => (
                   <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-4 border border-black/[0.05] dark:border-white/[0.05]">
                     {s.icon}

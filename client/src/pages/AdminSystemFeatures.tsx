@@ -76,8 +76,8 @@ export default function AdminSystemFeatures() {
     <div className="p-6 max-w-5xl mx-auto" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-          <Settings2 className="w-5 h-5 text-purple-700" />
+        <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+          <Settings2 className="w-5 h-5 text-black dark:text-white" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">مميزات الباقات</h1>
@@ -89,16 +89,16 @@ export default function AdminSystemFeatures() {
       </div>
 
       {/* Info Banner */}
-      <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/40 p-4 flex gap-3 items-start">
-        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      <div className="mb-5 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white dark:border-black dark:border-white p-4 flex gap-3 items-start">
+        <Info className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">هذه الصفحة للمميزات الوصفية فقط</p>
-          <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+          <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1">هذه الصفحة للمميزات الوصفية فقط</p>
+          <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
             المميزات هنا تظهر كنقاط توضيحية داخل كاردات اختيار الباقة (لايت/برو/إنفينتي) — <strong>لا تُضاف للطلب ولا تؤثر على المبلغ الإجمالي.</strong>
             <br />إذا أردت إضافة خدمة مدفوعة تظهر في الطلب وتؤثر على السعر، استخدم:
           </p>
           <Link href="/admin/extra-addons">
-            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 underline underline-offset-2 cursor-pointer hover:text-amber-900">
+            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 underline underline-offset-2 cursor-pointer hover:text-black dark:text-white">
               <ExternalLink className="w-3.5 h-3.5" /> الإضافات الخارجية (Extra Addons)
             </span>
           </Link>
@@ -109,8 +109,8 @@ export default function AdminSystemFeatures() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
           { label: "لايت", count: lite, color: "bg-gray-100 text-gray-700" },
-          { label: "برو", count: pro, color: "bg-blue-100 text-blue-700" },
-          { label: "إنفينتي", count: inf, color: "bg-purple-100 text-purple-700" },
+          { label: "برو", count: pro, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+          { label: "إنفينتي", count: inf, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
         ].map(t => (
           <div key={t.label} className={`rounded-xl p-4 text-center ${t.color}`}>
             <p className="text-2xl font-black">{t.count}</p>
@@ -140,13 +140,13 @@ export default function AdminSystemFeatures() {
                     {f.description && <p className="text-xs text-gray-400 mt-0.5">{f.description}</p>}
                     <div className="flex gap-2 mt-1.5">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${f.isInLite ? "bg-gray-200 text-gray-700" : "bg-gray-50 text-gray-300 line-through"}`}>لايت</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${f.isInPro ? "bg-blue-100 text-blue-700" : "bg-gray-50 text-gray-300 line-through"}`}>برو</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${f.isInInfinite ? "bg-purple-100 text-purple-700" : "bg-gray-50 text-gray-300 line-through"}`}>إنفينتي</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${f.isInPro ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-50 text-gray-300 line-through"}`}>برو</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${f.isInInfinite ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-50 text-gray-300 line-through"}`}>إنفينتي</span>
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(f)} data-testid={`button-edit-feature-${f.id}`}><Pencil className="w-3 h-3" /></Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500" onClick={() => del.mutate(f.id)} data-testid={`button-delete-feature-${f.id}`}><Trash2 className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-black dark:text-white" onClick={() => del.mutate(f.id)} data-testid={`button-delete-feature-${f.id}`}><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </CardContent>
               </Card>

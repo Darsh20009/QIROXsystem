@@ -24,9 +24,9 @@ import { useI18n } from "@/lib/i18n";
 
 const PRIORITY_CONFIG = {
   low:    { label: "منخفضة", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", dot: "bg-gray-400" },
-  medium: { label: "متوسطة", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", dot: "bg-blue-500" },
-  high:   { label: "عالية",  color: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300", dot: "bg-amber-500" },
-  urgent: { label: "عاجلة",  color: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300", dot: "bg-red-500" },
+  medium: { label: "متوسطة", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white" },
+  high:   { label: "عالية",  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white" },
+  urgent: { label: "عاجلة",  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", dot: "bg-black dark:bg-white" },
 };
 
 const CATEGORIES = ["عام", "تصميم", "تطوير", "اختبار", "نشر", "عميل", "إدارة"];
@@ -34,17 +34,17 @@ const CATEGORIES = ["عام", "تصميم", "تطوير", "اختبار", "نش�
 const DEV_TOOLS = [
   { label: "Vercel", icon: Globe, url: "https://vercel.com", color: "text-black dark:text-white" },
   { label: "GitHub", icon: GitBranch, url: "https://github.com", color: "text-gray-700 dark:text-gray-300" },
-  { label: "Figma", icon: Layers, url: "https://figma.com", color: "text-purple-600" },
-  { label: "Postman", icon: Zap, url: "https://postman.com", color: "text-orange-500" },
-  { label: "MongoDB Atlas", icon: Database, url: "https://cloud.mongodb.com", color: "text-green-600" },
-  { label: "Netlify", icon: Shield, url: "https://netlify.com", color: "text-teal-600" },
-  { label: "CodePen", icon: Code2, url: "https://codepen.io", color: "text-blue-600" },
-  { label: "Can I Use", icon: Smartphone, url: "https://caniuse.com", color: "text-indigo-600" },
-  { label: "DevDocs", icon: FileCode, url: "https://devdocs.io", color: "text-red-600" },
-  { label: "regex101", icon: Terminal, url: "https://regex101.com", color: "text-yellow-600" },
-  { label: "JSON Formatter", icon: Code2, url: "https://jsonformatter.org", color: "text-pink-600" },
-  { label: "URL Encoder", icon: Link2, url: "https://www.urlencoder.org", color: "text-cyan-600" },
-  { label: "Barcode Studio", icon: Barcode, url: "/barcode-studio", color: "text-violet-600" },
+  { label: "Figma", icon: Layers, url: "https://figma.com", color: "text-black dark:text-white" },
+  { label: "Postman", icon: Zap, url: "https://postman.com", color: "text-black dark:text-white" },
+  { label: "MongoDB Atlas", icon: Database, url: "https://cloud.mongodb.com", color: "text-black dark:text-white" },
+  { label: "Netlify", icon: Shield, url: "https://netlify.com", color: "text-black dark:text-white" },
+  { label: "CodePen", icon: Code2, url: "https://codepen.io", color: "text-black dark:text-white" },
+  { label: "Can I Use", icon: Smartphone, url: "https://caniuse.com", color: "text-black dark:text-white" },
+  { label: "DevDocs", icon: FileCode, url: "https://devdocs.io", color: "text-black dark:text-white" },
+  { label: "regex101", icon: Terminal, url: "https://regex101.com", color: "text-black dark:text-white" },
+  { label: "JSON Formatter", icon: Code2, url: "https://jsonformatter.org", color: "text-black dark:text-white" },
+  { label: "URL Encoder", icon: Link2, url: "https://www.urlencoder.org", color: "text-black dark:text-white" },
+  { label: "Barcode Studio", icon: Barcode, url: "/barcode-studio", color: "text-black dark:text-white" },
 ];
 
 type Employee = { id: string; fullName: string; username: string; role: string };
@@ -229,8 +229,8 @@ export default function DevChecklist() {
             <h1 className="text-2xl font-black text-black dark:text-white tracking-tight">أدوات المطور</h1>
             <p className="text-sm text-black/40 dark:text-white/40 mt-1 flex items-center gap-2 flex-wrap">
               <span>{pendingCount} مهمة معلّقة</span>
-              {assignedToMePending > 0 && <span className="text-cyan-600 dark:text-cyan-400 font-medium">· {assignedToMePending} تكليف بانتظارك</span>}
-              {assignedByMePending > 0 && <span className="text-blue-600 dark:text-blue-400 font-medium">· {assignedByMePending} تكليف لم ينتهِ</span>}
+              {assignedToMePending > 0 && <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium">· {assignedToMePending} تكليف بانتظارك</span>}
+              {assignedByMePending > 0 && <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium">· {assignedByMePending} تكليف لم ينتهِ</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -256,7 +256,7 @@ export default function DevChecklist() {
 
         {/* Push notification denied banner */}
         {pushStatus === "denied" && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm text-red-700 dark:text-red-400">
+          <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">
             الإشعارات محظورة في إعدادات المتصفح. افتح الإعدادات وأعد تفعيلها.
           </div>
         )}
@@ -267,7 +267,7 @@ export default function DevChecklist() {
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${
                 tab === t.id
-                  ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
+                  ? "border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
                   : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
               }`}
               data-testid={`tab-${t.id}`}
@@ -275,7 +275,7 @@ export default function DevChecklist() {
               <t.icon className="w-3.5 h-3.5" />
               {t.label}
               {t.count > 0 && (
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] bg-cyan-500 text-white font-bold">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] bg-black dark:bg-white text-white font-bold">
                   {t.count}
                 </span>
               )}
@@ -319,21 +319,21 @@ export default function DevChecklist() {
 
         {/* Tab hints */}
         {tab === "assigned-to-me" && assignedToMeItems.length > 0 && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 text-sm text-cyan-700 dark:text-cyan-400">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">
             <UserCheck className="w-4 h-4 shrink-0" />
             هذه مهام كلّفك بها زملاؤك — أنجزها وعلّم عليها وستصل إشعار للمُكلِّف فوراً
           </div>
         )}
         {tab === "assigned-by-me" && (
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-400 flex-1">
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-1">
               <ClipboardList className="w-4 h-4 shrink-0" />
               <span>تكليفاتك للموظفين — ستصلك إشعار فوراً عند إنجاز أي منها</span>
             </div>
             {assignedByMe.length > 0 && (
               <div className="flex items-center gap-3 text-xs text-black/40 dark:text-white/40">
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-amber-500" /> {assignedByMePending} معلّق</span>
-                <span className="flex items-center gap-1"><CheckSquare className="w-3 h-3 text-green-500" /> {assignedByMeDone} مكتمل</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-black dark:text-white" /> {assignedByMePending} معلّق</span>
+                <span className="flex items-center gap-1"><CheckSquare className="w-3 h-3 text-black dark:text-white" /> {assignedByMeDone} مكتمل</span>
               </div>
             )}
           </div>
@@ -410,13 +410,13 @@ export default function DevChecklist() {
                     exit={{ opacity: 0, x: -10 }}
                     className={`group flex items-start gap-3 p-4 rounded-xl border transition-all ${
                       isNewlyDone
-                        ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-200 dark:ring-green-800"
+                        ? "border-black/15 dark:border-white/15 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white ring-2 ring-black/10 dark:ring-white/10 dark:ring-black dark:ring-white"
                         : item.done
                           ? "border-black/[0.04] dark:border-white/[0.04] bg-black/[0.01] dark:bg-white/[0.01] opacity-60"
                           : isAssignedToMe
-                            ? "border-cyan-200 dark:border-cyan-800 bg-cyan-50/30 dark:bg-cyan-900/10 hover:border-cyan-300 dark:hover:border-cyan-700"
+                            ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white hover:border-black/15 dark:border-white/15 dark:hover:border-black dark:border-white"
                             : isAssignedByMe && !item.done
-                              ? "border-blue-100 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800"
+                              ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white hover:border-black/10 dark:border-white/10 dark:hover:border-black dark:border-white"
                               : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"
                     }`}
                     data-testid={`item-checklist-${getItemId(item)}`}
@@ -429,7 +429,7 @@ export default function DevChecklist() {
                       data-testid={`toggle-item-${getItemId(item)}`}
                     >
                       {item.done
-                        ? <CheckSquare className={`w-5 h-5 ${isNewlyDone ? "text-green-500" : "text-black dark:text-white"}`} />
+                        ? <CheckSquare className={`w-5 h-5 ${isNewlyDone ? "text-black dark:text-white" : "text-black dark:text-white"}`} />
                         : <Square className="w-5 h-5 text-black/25 dark:text-white/25" />}
                     </button>
 
@@ -450,7 +450,7 @@ export default function DevChecklist() {
 
                         {/* "assigned to me by" badge */}
                         {isAssignedToMe && item.assignedBy && (
-                          <Badge className="text-[10px] px-2 py-0 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-0">
+                          <Badge className="text-[10px] px-2 py-0 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0">
                             <UserCheck className="w-2.5 h-2.5 ml-1" />
                             من: {item.assignedBy.fullName || item.assignedBy.username}
                           </Badge>
@@ -460,8 +460,8 @@ export default function DevChecklist() {
                         {isAssignedByMe && item.assignedTo && (
                           <Badge className={`text-[10px] px-2 py-0 border-0 ${
                             item.done
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"
+                              : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"
                           }`}>
                             {item.done
                               ? <><PartyPopper className="w-2.5 h-2.5 ml-1 inline" />{item.assignedTo.fullName || item.assignedTo.username} · أنجزها</>
@@ -472,7 +472,7 @@ export default function DevChecklist() {
 
                         {/* Newly done glow */}
                         {isNewlyDone && (
-                          <Badge className="text-[10px] px-2 py-0 bg-green-500 text-white border-0 animate-pulse">
+                          <Badge className="text-[10px] px-2 py-0 bg-black dark:bg-white text-white border-0 animate-pulse">
                             <PartyPopper className="w-2.5 h-2.5 ml-1" /> أُنجزت الآن!
                           </Badge>
                         )}
@@ -482,7 +482,7 @@ export default function DevChecklist() {
                         <p className="text-xs text-black/40 dark:text-white/40 mt-1">{item.description}</p>
                       )}
                       {item.assignNote && (isAssignedToMe || isAssignedByMe) && (
-                        <p className="text-xs text-cyan-600/70 dark:text-cyan-400/70 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1 flex items-center gap-1">
                           <MessageSquare className="w-3 h-3 shrink-0" />
                           {item.assignNote}
                         </p>
@@ -495,7 +495,7 @@ export default function DevChecklist() {
                           </p>
                         )}
                         {isAssignedByMe && item.done && item.updatedAt && (
-                          <p className="text-[10px] text-green-600/70 dark:text-green-400/70 flex items-center gap-1">
+                          <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">
                             <CheckSquare className="w-3 h-3" />
                             أُنجزت {new Date(item.updatedAt).toLocaleDateString("ar-SA")}
                           </p>
@@ -513,7 +513,7 @@ export default function DevChecklist() {
                         </button>
                       )}
                       <button onClick={() => deleteMutation.mutate(getItemId(item))}
-                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 dark:text-white/30 hover:text-red-500 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 dark:text-white/30 hover:text-black dark:text-white transition-colors"
                         data-testid={`delete-item-${getItemId(item)}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -610,7 +610,7 @@ export default function DevChecklist() {
 
             <Button
               className={`w-full gap-2 ${form.assignedTo && form.assignedTo !== "none"
-                ? "bg-gradient-to-l from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700"
+                ? "bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white hover:from-black dark:from-white hover:to-black dark:to-white"
                 : "bg-black dark:bg-white text-white dark:text-black"}`}
               onClick={() => createMutation.mutate(form)}
               disabled={!form.title || createMutation.isPending}

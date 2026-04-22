@@ -41,34 +41,34 @@ const FEATURE_TYPE_CONFIG = {
   new: {
     label: "جديد",
     icon: Sparkles,
-    bg: "bg-emerald-50 dark:bg-emerald-900/20",
-    border: "border-emerald-200 dark:border-emerald-800/50",
-    badge: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400",
-    icon_color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+    badge: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70",
+    icon_color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",
   },
   improvement: {
     label: "تحسين",
     icon: TrendingUp,
-    bg: "bg-blue-50 dark:bg-blue-900/20",
-    border: "border-blue-200 dark:border-blue-800/50",
-    badge: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400",
-    icon_color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+    badge: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70",
+    icon_color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",
   },
   fix: {
     label: "إصلاح",
     icon: Wrench,
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    border: "border-amber-200 dark:border-amber-800/50",
-    badge: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400",
-    icon_color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+    badge: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70",
+    icon_color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",
   },
   security: {
     label: "أمان",
     icon: Shield,
-    bg: "bg-purple-50 dark:bg-purple-900/20",
-    border: "border-purple-200 dark:border-purple-800/50",
-    badge: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400",
-    icon_color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+    badge: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70",
+    icon_color: "text-black dark:text-white dark:text-black/70 dark:text-white/70",
   },
 };
 
@@ -128,7 +128,7 @@ function VersionCard({ entry, isLatest, index }: { entry: VersionEntry; isLatest
               : "bg-black/[0.06] dark:bg-white/[0.06] text-black/50 dark:text-white/50"
             }`}>v{entry.version}</span>
             {isLatest && (
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70">
                 الإصدار الحالي
               </span>
             )}
@@ -339,8 +339,8 @@ export default function EmployeeChangelog() {
             {/* Latest version features highlight */}
             {latest && (
               <div className="flex items-center gap-2 px-1 mb-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                <span className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">
                   {latest.features.filter(f => f.type === "new").length} ميزة جديدة في آخر إصدار
                 </span>
                 <span className="text-xs text-black/30 dark:text-white/30">·</span>
@@ -365,12 +365,12 @@ export default function EmployeeChangelog() {
             exit={{ opacity: 0, x: -10 }}
             className="space-y-3"
           >
-            <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40">
+            <div className="p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
               <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <p className="text-sm font-bold text-blue-700 dark:text-blue-400">مرحباً يا {user?.fullName || "زميل"}!</p>
+                <BookOpen className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
+                <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">مرحباً يا {user?.fullName || "زميل"}!</p>
               </div>
-              <p className="text-xs text-blue-600/80 dark:text-blue-400/70 leading-relaxed">
+              <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
                 هذا الدليل مصمم خصيصاً لمساعدتك على الانطلاق بسرعة. اقرأه بالترتيب إذا كنت جديداً.
               </p>
             </div>

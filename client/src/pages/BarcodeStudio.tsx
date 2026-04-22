@@ -287,11 +287,11 @@ export default function BarcodeStudio() {
                     data-testid="input-barcode-value"
                   />
                   <Button size="icon" variant="outline" className="h-11 w-11 rounded-xl shrink-0" onClick={() => copyValue(barcodeValue)}>
-                    {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4" />}
                   </Button>
                 </div>
                 {barcodeError && (
-                  <p className="text-[11px] text-red-600 mt-1.5 font-medium">{barcodeError}</p>
+                  <p className="text-[11px] text-black dark:text-white mt-1.5 font-medium">{barcodeError}</p>
                 )}
               </div>
 
@@ -392,7 +392,7 @@ export default function BarcodeStudio() {
               <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-6 flex flex-col items-center justify-center min-h-[260px]" style={{ background: barBg }}>
                 {barcodeError ? (
                   <div className="text-center">
-                    <p className="text-red-500 text-sm font-bold mb-2">⚠️ {barcodeError}</p>
+                    <p className="text-black dark:text-white text-sm font-bold mb-2">⚠️ {barcodeError}</p>
                     <p className="text-xs text-black/40">تحقق من نوع الباركود والقيمة المدخلة</p>
                   </div>
                 ) : (
@@ -595,7 +595,7 @@ export default function BarcodeStudio() {
               <>
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-sm font-bold text-black/50 dark:text-white/50">{gallery.length} عنصر محفوظ</p>
-                  <Button onClick={() => setGallery([])} variant="outline" size="sm" className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 gap-1.5 text-xs">
+                  <Button onClick={() => setGallery([])} variant="outline" size="sm" className="rounded-xl border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] gap-1.5 text-xs">
                     <Trash2 className="w-3.5 h-3.5" /> مسح الكل
                   </Button>
                 </div>
@@ -607,7 +607,7 @@ export default function BarcodeStudio() {
                       </div>
                       <div className="p-3 border-t border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
                         <div className="flex items-center gap-1.5 mb-2">
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${item.type === "qr" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"}`}>
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${item.type === "qr" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>
                             {item.type === "qr" ? "QR" : "BARCODE"}
                           </span>
                         </div>
@@ -618,7 +618,7 @@ export default function BarcodeStudio() {
                             <Download className="w-3 h-3" /> تحميل
                           </a>
                           <button onClick={() => deleteFromGallery(item.id)}
-                            className="h-7 w-7 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors" data-testid={`delete-gallery-${item.id}`}>
+                            className="h-7 w-7 rounded-lg border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center transition-colors" data-testid={`delete-gallery-${item.id}`}>
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>

@@ -35,9 +35,9 @@ const CONTRACT_TEMPLATES = [
 
 function getStatusMap(L: boolean) {
   return {
-    pending:     { label: L ? "بانتظار التوقيع" : "Awaiting Signature", color: "bg-amber-100 text-amber-700 border-amber-200" },
-    acknowledged:{ label: L ? "موقّع" : "Signed",                       color: "bg-green-100 text-green-700 border-green-200"  },
-    rejected:    { label: L ? "مرفوض" : "Rejected",                      color: "bg-red-100 text-red-700 border-red-200"        },
+    pending:     { label: L ? "بانتظار التوقيع" : "Awaiting Signature", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    acknowledged:{ label: L ? "موقّع" : "Signed",                       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10"  },
+    rejected:    { label: L ? "مرفوض" : "Rejected",                      color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10"        },
   };
 }
 
@@ -109,7 +109,7 @@ export default function AdminContracts() {
           <p className="text-black/50 dark:text-white/40 text-sm">{L ? "إنشاء وإدارة عقود موقّعة بـ OTP للتحقق القانوني" : "Create and manage OTP-verified legally binding contracts"}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setAiDialog(true)} className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30" data-testid="button-ai-generate-contract">
+          <Button variant="outline" onClick={() => setAiDialog(true)} className="gap-2 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:text-black/70 dark:text-white/70 dark:hover:bg-black dark:bg-white" data-testid="button-ai-generate-contract">
             <Wand2 className="w-4 h-4" /> {L ? "توليد بالذكاء الاصطناعي" : "AI Generate"}
           </Button>
           <Button onClick={() => setCreateDialog(true)} className="bg-black text-white hover:bg-black/80 gap-2" data-testid="button-create-contract">
@@ -122,9 +122,9 @@ export default function AdminContracts() {
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: L ? "إجمالي العقود" : "Total Contracts",      value: stats.total,    color: "text-black dark:text-white" },
-          { label: L ? "بانتظار التوقيع" : "Awaiting Signature", value: stats.pending,  color: "text-amber-600" },
-          { label: L ? "موقّعة" : "Signed",                       value: stats.signed,   color: "text-green-600" },
-          { label: L ? "مرفوضة" : "Rejected",                     value: stats.rejected, color: "text-red-500"   },
+          { label: L ? "بانتظار التوقيع" : "Awaiting Signature", value: stats.pending,  color: "text-black dark:text-white" },
+          { label: L ? "موقّعة" : "Signed",                       value: stats.signed,   color: "text-black dark:text-white" },
+          { label: L ? "مرفوضة" : "Rejected",                     value: stats.rejected, color: "text-black dark:text-white"   },
         ].map((s, i) => (
           <Card key={i} className="border-black/10">
             <CardContent className="p-4 text-center">
@@ -176,7 +176,7 @@ export default function AdminContracts() {
                         <div className="font-semibold text-sm flex items-center gap-2">
                           {contract.client?.fullName || (L ? "عميل" : "Client")}
                           {contract.signedOtpVerified && (
-                            <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 flex items-center gap-1 flex-shrink-0">
+                            <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 rounded-full px-2 py-0.5 flex items-center gap-1 flex-shrink-0">
                               <ShieldCheck className="w-3 h-3" /> OTP
                             </span>
                           )}
@@ -201,10 +201,10 @@ export default function AdminContracts() {
                       </Button>
                       {contract.status === "pending" && (
                         <>
-                          <Button size="sm" variant="outline" className="border-blue-200 text-blue-500 hover:bg-blue-50 h-8 px-2 gap-1 text-xs" onClick={() => remindMutation.mutate(contract.id)} disabled={remindMutation.isPending} data-testid={`button-remind-contract-${contract.id}`}>
+                          <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] h-8 px-2 gap-1 text-xs" onClick={() => remindMutation.mutate(contract.id)} disabled={remindMutation.isPending} data-testid={`button-remind-contract-${contract.id}`}>
                             <Bell className="w-3.5 h-3.5" /> {L ? "تذكير" : "Remind"}
                           </Button>
-                          <Button size="sm" variant="outline" className="border-red-200 text-red-500 hover:bg-red-50 h-8 w-8 p-0" onClick={() => { if (confirm(L ? "حذف هذا العقد؟" : "Delete this contract?")) deleteMutation.mutate(contract.id); }} data-testid={`button-delete-contract-${contract.id}`}>
+                          <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] h-8 w-8 p-0" onClick={() => { if (confirm(L ? "حذف هذا العقد؟" : "Delete this contract?")) deleteMutation.mutate(contract.id); }} data-testid={`button-delete-contract-${contract.id}`}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </>
@@ -272,7 +272,7 @@ export default function AdminContracts() {
               <label className="text-sm font-medium mb-1.5 block">{L ? "ملاحظات" : "Notes"}</label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={L ? "ملاحظات إضافية..." : "Additional notes..."} className="border-black/20" data-testid="input-contract-notes" />
             </div>
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-600">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
               {L ? "سيتلقى العميل إشعاراً فور إنشاء العقد ويُطلب منه التوقيع الإلكتروني مع التحقق بـ OTP." : "The client will receive a notification immediately and will be asked to e-sign with OTP verification."}
             </div>
             <div className="flex gap-2 justify-end">
@@ -301,7 +301,7 @@ export default function AdminContracts() {
                   {(STATUS_MAP[viewDialog.status] || STATUS_MAP.pending).label}
                 </Badge>
                 {viewDialog.signedOtpVerified && (
-                  <Badge className="bg-green-100 text-green-700 border border-green-300 gap-1 flex items-center">
+                  <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/15 dark:border-white/15 gap-1 flex items-center">
                     <ShieldCheck className="w-3 h-3" /> {L ? "موثّق بـ OTP" : "OTP Verified"}
                   </Badge>
                 )}
@@ -316,11 +316,11 @@ export default function AdminContracts() {
               </div>
 
               {viewDialog.status === "acknowledged" && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-black dark:text-white font-semibold text-sm">
                     <CheckCircle className="w-4 h-4" /> {L ? "وُقِّع إلكترونياً" : "Electronically Signed"}
                   </div>
-                  <div className="text-xs text-green-600 space-y-1">
+                  <div className="text-xs text-black dark:text-white space-y-1">
                     {viewDialog.acknowledgedAt && (
                       <div>{L ? "تاريخ التوقيع:" : "Signed on:"} {new Date(viewDialog.acknowledgedAt).toLocaleString(L ? "ar-SA" : "en-US")}</div>
                     )}
@@ -332,12 +332,12 @@ export default function AdminContracts() {
                     )}
                   </div>
                   {viewDialog.signatureText && (
-                    <div className="text-xl font-bold text-green-800 border-t border-green-200 pt-2" style={{ fontFamily: "cursive" }}>
+                    <div className="text-xl font-bold text-black dark:text-white border-t border-black/10 dark:border-white/10 pt-2" style={{ fontFamily: "cursive" }}>
                       {viewDialog.signatureText}
                     </div>
                   )}
                   {viewDialog.signatureData && (
-                    <div className="border border-green-200 rounded-lg bg-white p-2 inline-block">
+                    <div className="border border-black/10 dark:border-white/10 rounded-lg bg-white p-2 inline-block">
                       <img src={viewDialog.signatureData} alt={L ? "التوقيع" : "Signature"} className="max-h-28 max-w-xs" />
                     </div>
                   )}
@@ -358,7 +358,7 @@ export default function AdminContracts() {
       <Dialog open={aiDialog} onOpenChange={setAiDialog}>
         <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+            <DialogTitle className="flex items-center gap-2 text-black dark:text-white dark:text-black/70 dark:text-white/70">
               <Wand2 className="w-5 h-5" />
               {L ? "أداة الذكاء الاصطناعي للعقود" : "AI Contract Tool"}
             </DialogTitle>

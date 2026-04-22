@@ -31,10 +31,10 @@ export default function ClientOnboarding() {
       visual: (
         <div className="flex items-center justify-center gap-4 flex-wrap">
           {[
-            { icon: Package, label: L ? "طلباتك" : "Your Orders", color: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" },
-            { icon: BarChart3, label: L ? "مشاريعك" : "Your Projects", color: "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400" },
-            { icon: Wallet, label: L ? "محفظتك" : "Your Wallet", color: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" },
-            { icon: MessageCircle, label: L ? "دعمنا" : "Support", color: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" },
+            { icon: Package, label: L ? "طلباتك" : "Your Orders", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+            { icon: BarChart3, label: L ? "مشاريعك" : "Your Projects", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+            { icon: Wallet, label: L ? "محفظتك" : "Your Wallet", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+            { icon: MessageCircle, label: L ? "دعمنا" : "Support", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
           ].map((item, i) => (
             <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.15 }}
               className={`flex flex-col items-center gap-2 rounded-2xl p-4 ${item.color} w-20`}>
@@ -48,7 +48,7 @@ export default function ClientOnboarding() {
     {
       id: "services",
       icon: ShoppingCart,
-      color: "from-blue-600 to-blue-800",
+      color: "from-black dark:from-white to-black dark:to-white",
       title: L ? "اطلب خدمتك بسهولة" : "Order Your Service Easily",
       subtitle: L ? "باقات مصممة لكل نوع نشاط تجاري" : "Packages designed for every type of business",
       description: L
@@ -58,8 +58,8 @@ export default function ClientOnboarding() {
         <div className="space-y-3">
           {[
             { tier: L ? "لايت" : "Lite", desc: L ? "للمشاريع الناشئة" : "For startups", color: "border-gray-200 dark:border-gray-700", badge: "" },
-            { tier: L ? "برو" : "Pro", desc: L ? "للمشاريع المتنامية" : "For growing projects", color: "border-blue-200 dark:border-blue-700", badge: L ? "الأكثر طلباً" : "Most Popular" },
-            { tier: L ? "إنفينيت" : "Infinite", desc: L ? "للمشاريع الكبيرة" : "For large projects", color: "border-purple-200 dark:border-purple-700", badge: L ? "لا حدود" : "Unlimited" },
+            { tier: L ? "برو" : "Pro", desc: L ? "للمشاريع المتنامية" : "For growing projects", color: "border-black/10 dark:border-white/10 dark:border-black dark:border-white", badge: L ? "الأكثر طلباً" : "Most Popular" },
+            { tier: L ? "إنفينيت" : "Infinite", desc: L ? "للمشاريع الكبيرة" : "For large projects", color: "border-black/10 dark:border-white/10 dark:border-black dark:border-white", badge: L ? "لا حدود" : "Unlimited" },
           ].map((p, i) => (
             <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.15 }}
               className={`flex items-center justify-between p-3 rounded-xl border ${p.color} bg-white dark:bg-gray-900`}>
@@ -67,7 +67,7 @@ export default function ClientOnboarding() {
                 <p className="font-bold text-sm text-black dark:text-white">{p.tier}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{p.desc}</p>
               </div>
-              {p.badge && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">{p.badge}</span>}
+              {p.badge && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70">{p.badge}</span>}
             </motion.div>
           ))}
         </div>
@@ -76,7 +76,7 @@ export default function ClientOnboarding() {
     {
       id: "track",
       icon: BarChart3,
-      color: "from-purple-600 to-purple-800",
+      color: "from-black dark:from-white to-black dark:to-white",
       title: L ? "تابع مشروعك لحظة بلحظة" : "Track Your Project in Real Time",
       subtitle: L ? "شفافية كاملة في كل مراحل التنفيذ" : "Full transparency across all execution stages",
       description: L
@@ -92,12 +92,12 @@ export default function ClientOnboarding() {
             { label: L ? "التسليم النهائي" : "Final Delivery", done: false },
           ].map((phase, i) => (
             <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.12 }}
-              className={`flex items-center gap-3 p-2.5 rounded-xl ${phase.active ? "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700" : ""}`}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${phase.done ? "bg-black dark:bg-white" : phase.active ? "bg-purple-500" : "bg-black/[0.06] dark:bg-white/[0.06]"}`}>
+              className={`flex items-center gap-3 p-2.5 rounded-xl ${phase.active ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white" : ""}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${phase.done ? "bg-black dark:bg-white" : phase.active ? "bg-black dark:bg-white" : "bg-black/[0.06] dark:bg-white/[0.06]"}`}>
                 {phase.done ? <CheckCircle2 className="w-3.5 h-3.5 text-white dark:text-black" /> : phase.active ? <Clock className="w-3 h-3 text-white" /> : <span className="w-2 h-2 rounded-full bg-black/20 dark:bg-white/20" />}
               </div>
-              <span className={`text-xs font-medium ${phase.active ? "text-purple-700 dark:text-purple-400 font-bold" : phase.done ? "text-black dark:text-white" : "text-black/40 dark:text-white/40"}`}>{phase.label}</span>
-              {phase.active && <span className="text-[10px] text-purple-500 mr-auto">{L ? "جارٍ الآن" : "In Progress"}</span>}
+              <span className={`text-xs font-medium ${phase.active ? "text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold" : phase.done ? "text-black dark:text-white" : "text-black/40 dark:text-white/40"}`}>{phase.label}</span>
+              {phase.active && <span className="text-[10px] text-black dark:text-white mr-auto">{L ? "جارٍ الآن" : "In Progress"}</span>}
             </motion.div>
           ))}
         </div>
@@ -106,7 +106,7 @@ export default function ClientOnboarding() {
     {
       id: "support",
       icon: Headphones,
-      color: "from-emerald-600 to-emerald-800",
+      color: "from-black dark:from-white to-black dark:to-white",
       title: L ? "دعم دائم معك" : "Always-On Support",
       subtitle: L ? "فريقنا جاهز للمساعدة في أي وقت" : "Our team is ready to help at any time",
       description: L
@@ -115,10 +115,10 @@ export default function ClientOnboarding() {
       visual: (
         <div className="space-y-3">
           {[
-            { icon: MessageCircle, title: L ? "محادثة مباشرة" : "Live Chat", desc: L ? "تكلم مع الدعم فوراً" : "Talk to support instantly", color: "text-emerald-500" },
-            { icon: Zap, title: "QIROX AI", desc: L ? "مساعد ذكي متاح 24/7" : "AI assistant available 24/7", color: "text-amber-500" },
-            { icon: Shield, title: L ? "ضمان الجودة" : "Quality Guarantee", desc: L ? "ما بتدفع إلا لما تتأكد" : "You only pay when satisfied", color: "text-blue-500" },
-            { icon: Star, title: L ? "برنامج الولاء" : "Loyalty Program", desc: L ? "نقاط مع كل طلب" : "Points with every order", color: "text-purple-500" },
+            { icon: MessageCircle, title: L ? "محادثة مباشرة" : "Live Chat", desc: L ? "تكلم مع الدعم فوراً" : "Talk to support instantly", color: "text-black dark:text-white" },
+            { icon: Zap, title: "QIROX AI", desc: L ? "مساعد ذكي متاح 24/7" : "AI assistant available 24/7", color: "text-black dark:text-white" },
+            { icon: Shield, title: L ? "ضمان الجودة" : "Quality Guarantee", desc: L ? "ما بتدفع إلا لما تتأكد" : "You only pay when satisfied", color: "text-black dark:text-white" },
+            { icon: Star, title: L ? "برنامج الولاء" : "Loyalty Program", desc: L ? "نقاط مع كل طلب" : "Points with every order", color: "text-black dark:text-white" },
           ].map((item, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06]">

@@ -9,10 +9,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  sent: { label: "بانتظار ردك", color: "bg-blue-100 text-blue-700" },
-  accepted: { label: "مقبول", color: "bg-green-100 text-green-700" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700" },
-  expired: { label: "منتهي الصلاحية", color: "bg-orange-100 text-orange-700" },
+  sent: { label: "بانتظار ردك", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  accepted: { label: "مقبول", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  rejected: { label: "مرفوض", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  expired: { label: "منتهي الصلاحية", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 };
 
 export default function ClientQuotations() {
@@ -151,14 +151,14 @@ export default function ClientQuotations() {
                     {canRespond && (
                       <>
                         <Button size="sm"
-                          className="h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                          className="h-8 text-xs gap-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white"
                           onClick={() => statusMutation.mutate({ id: q.id, status: "accepted" })}
                           disabled={statusMutation.isPending}
                           data-testid={`button-accept-${q.id}`}>
                           <Check className="w-3 h-3" /> {L ? "قبول العرض" : "Accept"}
                         </Button>
                         <Button size="sm" variant="outline"
-                          className="h-8 text-xs gap-1.5 border-red-200 text-red-500 hover:bg-red-50"
+                          className="h-8 text-xs gap-1.5 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                           onClick={() => statusMutation.mutate({ id: q.id, status: "rejected" })}
                           disabled={statusMutation.isPending}
                           data-testid={`button-reject-${q.id}`}>

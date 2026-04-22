@@ -26,10 +26,10 @@ const canvaTemplates = [
 ];
 
 const tawiqTemplates = [
-  { name: "قالب عرض خدمات", desc: "تصميم جاهز لعرض خدمات QIROX", color: "from-purple-500 to-blue-600" },
-  { name: "قالب حملة رمضان", desc: "تصاميم رمضانية احترافية", color: "from-amber-500 to-orange-600" },
-  { name: "قالب إعلان مشروع", desc: "للإعلان عن إطلاق مشروع جديد", color: "from-green-500 to-teal-600" },
-  { name: "قالب عروض الأسعار", desc: "تصميم احترافي لعروض الباقات", color: "from-blue-500 to-indigo-600" },
+  { name: "قالب عرض خدمات", desc: "تصميم جاهز لعرض خدمات QIROX", color: "from-black dark:from-white to-black dark:to-white" },
+  { name: "قالب حملة رمضان", desc: "تصاميم رمضانية احترافية", color: "from-black dark:from-white to-black dark:to-white" },
+  { name: "قالب إعلان مشروع", desc: "للإعلان عن إطلاق مشروع جديد", color: "from-black dark:from-white to-black dark:to-white" },
+  { name: "قالب عروض الأسعار", desc: "تصميم احترافي لعروض الباقات", color: "from-black dark:from-white to-black dark:to-white" },
 ];
 
 interface MarketingPost {
@@ -160,9 +160,9 @@ export default function SalesMarketing() {
         {/* Quick Stats */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="space-y-3">
           {[
-            { icon: Image, label: "إجمالي البوسترات", val: posts?.length || 0, color: "bg-purple-50 text-purple-600" },
-            { icon: Star, label: "هذا الشهر", val: posts?.filter(p => new Date(p.createdAt).getMonth() === new Date().getMonth()).length || 0, color: "bg-amber-50 text-amber-600" },
-            { icon: Globe, label: "منصات مختلفة", val: new Set(posts?.map(p => p.platform)).size || 0, color: "bg-blue-50 text-blue-600" },
+            { icon: Image, label: "إجمالي البوسترات", val: posts?.length || 0, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+            { icon: Star, label: "هذا الشهر", val: posts?.filter(p => new Date(p.createdAt).getMonth() === new Date().getMonth()).length || 0, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+            { icon: Globe, label: "منصات مختلفة", val: new Set(posts?.map(p => p.platform)).size || 0, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
           ].map(({ icon: Icon, label, val, color }, i) => (
             <Card key={i} className="border border-black/[0.06] shadow-none">
               <CardContent className="p-4 flex items-center gap-3">
@@ -183,7 +183,7 @@ export default function SalesMarketing() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <div className="border border-black/[0.06] bg-white rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-amber-500" />
+            <Zap className="w-5 h-5 text-black dark:text-white" />
             <h2 className="font-bold text-black text-sm">قوالب QIROX الجاهزة</h2>
             <p className="text-xs text-black/40 mr-1">قوالب تصميم جاهزة بهوية QIROX Studio</p>
           </div>
@@ -206,7 +206,7 @@ export default function SalesMarketing() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
-            <Image className="w-4 h-4 text-purple-500" />
+            <Image className="w-4 h-4 text-black dark:text-white" />
             البوسترات المرفوعة
             {posts && posts.length > 0 && <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full">{posts.length}</span>}
           </h2>
@@ -243,7 +243,7 @@ export default function SalesMarketing() {
                     <a href={post.imageUrl} download target="_blank" rel="noreferrer" className="w-8 h-8 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-transform">
                       <Download className="w-4 h-4 text-black" />
                     </a>
-                    <button onClick={() => deleteMutation.mutate(post.id)} className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+                    <button onClick={() => deleteMutation.mutate(post.id)} className="w-8 h-8 bg-black dark:bg-white rounded-full flex items-center justify-center hover:scale-110 transition-transform">
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
                   </div>

@@ -26,8 +26,8 @@ interface Ticket {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-yellow-100 text-yellow-700", in_review: "bg-blue-100 text-blue-700",
-  resolved: "bg-green-100 text-green-700", closed: "bg-gray-100 text-gray-500",
+  open: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", in_review: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+  resolved: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", closed: "bg-gray-100 text-gray-500",
 };
 
 export default function SupportTickets() {
@@ -47,8 +47,8 @@ export default function SupportTickets() {
   };
   const PRIORITY_COLORS: Record<string, string> = {
     low: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-    medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    high: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    medium: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+    high: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   };
   const PRIORITY_LABELS: Record<string, string> = {
     low: L ? "منخفض" : "Low", medium: L ? "متوسط" : "Medium", high: L ? "عالٍ" : "High",
@@ -209,14 +209,14 @@ export default function SupportTickets() {
                     <p className="text-xs text-black/40 dark:text-white/40 mb-1">{CAT_LABELS[ticket.category]}</p>
                     <p className="text-sm text-black/60 dark:text-white/60 line-clamp-2">{ticket.body}</p>
                     {ticket.adminReply && (
-                      <div className="mt-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl p-3">
+                      <div className="mt-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                          <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                          <CheckCircle className="w-3.5 h-3.5 text-black dark:text-white" />
+                          <span className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">
                             {L ? "رد الفريق" : "Team Reply"}
                           </span>
                         </div>
-                        <p className="text-sm text-green-800 dark:text-green-300">{ticket.adminReply}</p>
+                        <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">{ticket.adminReply}</p>
                       </div>
                     )}
                   </div>

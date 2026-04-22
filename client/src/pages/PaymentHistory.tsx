@@ -92,9 +92,9 @@ export default function PaymentHistory() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: L ? "إجمالي المدفوع" : "Total Paid", value: totalPaid.toLocaleString(), hasSAR: true, color: "text-green-500", icon: TrendingUp },
-          { label: L ? "مستحق الدفع" : "Due Amount", value: totalPending.toLocaleString(), hasSAR: true, color: "text-yellow-500", icon: CreditCard },
-          { label: L ? "عدد الطلبات" : "Total Orders", value: (data?.orders || []).length, hasSAR: false, color: "text-blue-500", icon: Receipt },
+          { label: L ? "إجمالي المدفوع" : "Total Paid", value: totalPaid.toLocaleString(), hasSAR: true, color: "text-black dark:text-white", icon: TrendingUp },
+          { label: L ? "مستحق الدفع" : "Due Amount", value: totalPending.toLocaleString(), hasSAR: true, color: "text-black dark:text-white", icon: CreditCard },
+          { label: L ? "عدد الطلبات" : "Total Orders", value: (data?.orders || []).length, hasSAR: false, color: "text-black dark:text-white", icon: Receipt },
         ].map((s, i) => (
           <Card key={i} className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardContent className="pt-4 pb-3">
@@ -123,7 +123,7 @@ export default function PaymentHistory() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-black dark:text-white">{order.projectType || order.sector || (L ? "طلب خدمة" : "Service Request")}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge className={order.isDepositPaid ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"} style={{ fontSize: "10px" }}>
+                      <Badge className={order.isDepositPaid ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white"} style={{ fontSize: "10px" }}>
                         {order.isDepositPaid ? (L ? "دفعة أولى ✓" : "Deposit Paid ✓") : (L ? "بانتظار الدفع" : "Awaiting Payment")}
                       </Badge>
                       <span className="text-[11px] text-black/30 dark:text-white/30">{order.paymentMethod || "-"}</span>
@@ -152,7 +152,7 @@ export default function PaymentHistory() {
                 <div key={i} className="flex items-center justify-between gap-3 border-b border-black/[0.04] dark:border-white/[0.04] pb-3 last:border-0" data-testid={`row-payment-invoice-${i}`}>
                   <div>
                     <p className="font-bold text-sm text-black dark:text-white">{L ? "فاتورة" : "Invoice"} #{inv.invoiceNumber}</p>
-                    <Badge className={inv.status === "paid" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"} style={{ fontSize: "10px" }}>
+                    <Badge className={inv.status === "paid" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-100 text-gray-500"} style={{ fontSize: "10px" }}>
                       {inv.status === "paid" ? (L ? "مدفوع" : "Paid") : inv.status === "unpaid" ? (L ? "غير مدفوع" : "Unpaid") : (L ? "ملغي" : "Cancelled")}
                     </Badge>
                   </div>

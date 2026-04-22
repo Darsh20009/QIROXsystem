@@ -126,8 +126,8 @@ export default function AdminCountries() {
     <div className="p-6 space-y-6" dir={dir}>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-500/10">
-            <Globe className="w-6 h-6 text-blue-500" />
+          <div className="p-2 rounded-xl bg-black dark:bg-white">
+            <Globe className="w-6 h-6 text-black dark:text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold">{L ? "إدارة الدول" : "Countries Management"}</h1>
@@ -154,15 +154,15 @@ export default function AdminCountries() {
           <p className="text-xs text-muted-foreground mt-1">{L ? "إجمالي الدول" : "Total Countries"}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-2xl font-bold text-green-500">{activeCount}</p>
+          <p className="text-2xl font-bold text-black dark:text-white">{activeCount}</p>
           <p className="text-xs text-muted-foreground mt-1">{L ? "دول نشطة" : "Active Countries"}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-2xl font-bold text-red-400">{inactiveCount}</p>
+          <p className="text-2xl font-bold text-black/70 dark:text-white/70">{inactiveCount}</p>
           <p className="text-xs text-muted-foreground mt-1">{L ? "دول موقوفة" : "Inactive Countries"}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-2xl font-bold text-blue-500">{continentGroups.length}</p>
+          <p className="text-2xl font-bold text-black dark:text-white">{continentGroups.length}</p>
           <p className="text-xs text-muted-foreground mt-1">{L ? "قارات مغطّاة" : "Continents Covered"}</p>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function AdminCountries() {
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)} data-testid={`btn-edit-country-${c.id}`}>
                     <Pencil className="w-3.5 h-3.5" />
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-500" onClick={() => deleteM.mutate(c.id)} data-testid={`btn-delete-country-${c.id}`}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white" onClick={() => deleteM.mutate(c.id)} data-testid={`btn-delete-country-${c.id}`}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -268,7 +268,7 @@ export default function AdminCountries() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5">
-              <Label>{L ? "الاسم بالعربية" : "Arabic Name"} <span className="text-red-500">*</span></Label>
+              <Label>{L ? "الاسم بالعربية" : "Arabic Name"} <span className="text-black dark:text-white">*</span></Label>
               <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder="مثال: المملكة العربية السعودية" data-testid="input-country-name-ar" />
             </div>
             <div className="space-y-1.5">
@@ -276,7 +276,7 @@ export default function AdminCountries() {
               <Input value={form.nameEn} onChange={e => setForm(f => ({ ...f, nameEn: e.target.value }))} placeholder="Saudi Arabia" data-testid="input-country-name-en" />
             </div>
             <div className="space-y-1.5">
-              <Label>{L ? "كود الدولة (ISO)" : "Country Code (ISO)"} <span className="text-red-500">*</span></Label>
+              <Label>{L ? "كود الدولة (ISO)" : "Country Code (ISO)"} <span className="text-black dark:text-white">*</span></Label>
               <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="SA" maxLength={3} data-testid="input-country-code" />
             </div>
             <div className="space-y-1.5">

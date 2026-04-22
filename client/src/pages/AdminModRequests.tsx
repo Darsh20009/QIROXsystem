@@ -12,18 +12,18 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 
 const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد الانتظار", color: "bg-amber-100 text-amber-700" },
-  in_review: { label: "قيد المراجعة", color: "bg-blue-100 text-blue-700" },
-  in_progress: { label: "قيد التنفيذ", color: "bg-indigo-100 text-indigo-700" },
-  completed: { label: "مكتمل", color: "bg-green-100 text-green-700" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-600" },
+  pending: { label: "قيد الانتظار", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  in_review: { label: "قيد المراجعة", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  in_progress: { label: "قيد التنفيذ", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  completed: { label: "مكتمل", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  rejected: { label: "مرفوض", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 };
 
 const priorityMap: Record<string, { label: string; color: string }> = {
   low: { label: "منخفض", color: "bg-gray-100 text-gray-600" },
-  medium: { label: "متوسط", color: "bg-blue-100 text-blue-600" },
-  high: { label: "عالي", color: "bg-amber-100 text-amber-600" },
-  urgent: { label: "عاجل", color: "bg-red-100 text-red-600" },
+  medium: { label: "متوسط", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  high: { label: "عالي", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  urgent: { label: "عاجل", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 };
 
 export default function AdminModRequests() {
@@ -115,7 +115,7 @@ export default function AdminModRequests() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {Object.entries(statusMap).map(([key, val]) => (
           <div key={key} className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-black/[0.02]" onClick={() => setFilterStatus(key)}>
-            <div className={`w-2 h-2 rounded-full ${key === "pending" ? "bg-amber-400" : key === "in_review" ? "bg-blue-400" : key === "in_progress" ? "bg-indigo-400" : key === "completed" ? "bg-green-500" : "bg-red-400"}`} />
+            <div className={`w-2 h-2 rounded-full ${key === "pending" ? "bg-black/[0.08] dark:bg-white/[0.1]" : key === "in_review" ? "bg-black/[0.08] dark:bg-white/[0.1]" : key === "in_progress" ? "bg-black/[0.08] dark:bg-white/[0.1]" : key === "completed" ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
             <div>
               <p className="text-lg font-bold text-black">{requests?.filter(r => r.status === key).length || 0}</p>
               <p className="text-xs text-black/40">{val.label}</p>
@@ -166,11 +166,11 @@ export default function AdminModRequests() {
                         </Button>
                         {req.status === "pending" && (
                           <>
-                            <Button size="sm" variant="ghost" className="text-green-600 h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "in_review")} data-testid={`button-review-mod-${req.id}`}>
+                            <Button size="sm" variant="ghost" className="text-black dark:text-white h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "in_review")} data-testid={`button-review-mod-${req.id}`}>
                               <CheckCircle className="w-3.5 h-3.5 mr-1" />
                               {L ? "مراجعة" : "Review"}
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-red-500 h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "rejected")} data-testid={`button-reject-mod-${req.id}`}>
+                            <Button size="sm" variant="ghost" className="text-black dark:text-white h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "rejected")} data-testid={`button-reject-mod-${req.id}`}>
                               <XCircle className="w-3.5 h-3.5 mr-1" />
                               {L ? "رفض" : "Reject"}
                             </Button>
@@ -250,7 +250,7 @@ export default function AdminModRequests() {
                   {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   {L ? "حفظ التغييرات" : "Save Changes"}
                 </Button>
-                <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => { deleteMutation.mutate(selected.id); setSelected(null); }} disabled={deleteMutation.isPending}>
+                <Button variant="outline" className="text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => { deleteMutation.mutate(selected.id); setSelected(null); }} disabled={deleteMutation.isPending}>
                   {L ? "حذف" : "Delete"}
                 </Button>
               </div>

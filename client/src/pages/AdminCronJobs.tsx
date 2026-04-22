@@ -51,9 +51,9 @@ function getSchedulePresets(L: boolean) { return L ? [
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 const statusColor: Record<string, string> = {
-  success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  error: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  success: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  error: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  pending: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   never: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 
@@ -194,9 +194,9 @@ export default function AdminCronJobs() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
         {[
-          { label: L ? "مهام نشطة" : "Active Tasks", value: activeCount, icon: Zap, color: "from-emerald-500 to-teal-600" },
-          { label: L ? "تشغيل ناجح" : "Successful Runs", value: totalSuccess, icon: CheckCircle2, color: "from-blue-500 to-indigo-600" },
-          { label: L ? "أخطاء" : "Errors", value: totalError, icon: AlertTriangle, color: "from-red-500 to-orange-500" },
+          { label: L ? "مهام نشطة" : "Active Tasks", value: activeCount, icon: Zap, color: "from-black dark:from-white to-black dark:to-white" },
+          { label: L ? "تشغيل ناجح" : "Successful Runs", value: totalSuccess, icon: CheckCircle2, color: "from-black dark:from-white to-black dark:to-white" },
+          { label: L ? "أخطاء" : "Errors", value: totalError, icon: AlertTriangle, color: "from-black dark:from-white to-black dark:to-white" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
             <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 text-center sm:text-right">
@@ -251,7 +251,7 @@ export default function AdminCronJobs() {
                       </div>
 
                       {/* URL */}
-                      <p className="text-[11px] text-blue-500 dark:text-blue-400 truncate mb-1.5 max-w-full">{j.url}</p>
+                      <p className="text-[11px] text-black dark:text-white dark:text-black/70 dark:text-white/70 truncate mb-1.5 max-w-full">{j.url}</p>
 
                       {/* Status + stats */}
                       <div className="flex items-center flex-wrap gap-1.5 sm:gap-3">
@@ -263,10 +263,10 @@ export default function AdminCronJobs() {
                             <Timer className="w-2.5 h-2.5" />{j.lastRunDuration}ms
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span className="flex items-center gap-1 text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0">
                           <CheckCircle2 className="w-2.5 h-2.5" />{j.successCount}
                         </span>
-                        <span className="flex items-center gap-1 text-[10px] text-red-500 dark:text-red-400 shrink-0">
+                        <span className="flex items-center gap-1 text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 shrink-0">
                           <XCircle className="w-2.5 h-2.5" />{j.errorCount}
                         </span>
                         {j.lastRunAt && (
@@ -313,7 +313,7 @@ export default function AdminCronJobs() {
                         <Button size="sm" variant="ghost" onClick={() => openEdit(j)} data-testid={`button-edit-${j.id}`} className="h-8 w-8 p-0 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white rounded-lg" title={L ? "تعديل" : "Edit"}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-400 hover:text-red-600 rounded-lg" onClick={() => del.mutate(j.id)} data-testid={`button-delete-${j.id}`} title={L ? "حذف" : "Delete"}>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/70 dark:text-white/70 hover:text-black dark:text-white rounded-lg" onClick={() => del.mutate(j.id)} data-testid={`button-delete-${j.id}`} title={L ? "حذف" : "Delete"}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -330,7 +330,7 @@ export default function AdminCronJobs() {
                             <DropdownMenuItem onClick={() => openEdit(j)} data-testid={`menu-edit-${j.id}`}>
                               <Pencil className="w-3.5 h-3.5 ml-2" /> {L ? "تعديل" : "Edit"}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => del.mutate(j.id)} className="text-red-500 focus:text-red-600" data-testid={`menu-delete-${j.id}`}>
+                            <DropdownMenuItem onClick={() => del.mutate(j.id)} className="text-black dark:text-white focus:text-black dark:text-white" data-testid={`menu-delete-${j.id}`}>
                               <Trash2 className="w-3.5 h-3.5 ml-2" /> {L ? "حذف" : "Delete"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -386,8 +386,8 @@ export default function AdminCronJobs() {
             {logJob && (
               <div className="flex items-center gap-2 sm:gap-3 mt-3">
                 {[
-                  { value: logJob.successCount, label: L ? "ناجح" : "Success", color: "text-emerald-600 dark:text-emerald-400" },
-                  { value: logJob.errorCount, label: L ? "فشل" : "Failed", color: "text-red-500 dark:text-red-400" },
+                  { value: logJob.successCount, label: L ? "ناجح" : "Success", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+                  { value: logJob.errorCount, label: L ? "فشل" : "Failed", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
                   {
                     value: `${logJob.successCount + logJob.errorCount > 0 ? Math.round((logJob.successCount / (logJob.successCount + logJob.errorCount)) * 100) : 0}%`,
                     label: L ? "نسبة النجاح" : "Success Rate",
@@ -427,8 +427,8 @@ export default function AdminCronJobs() {
                       transition={{ delay: i < 5 ? i * 0.04 : 0 }}
                       className={`rounded-xl border overflow-hidden ${
                         log.status === "success"
-                          ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/10"
-                          : "border-red-200 dark:border-red-800/50 bg-red-50/50 dark:bg-red-900/10"
+                          ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"
+                          : "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"
                       }`}
                     >
                       <button
@@ -436,7 +436,7 @@ export default function AdminCronJobs() {
                         onClick={() => setExpandedLog(expandedLog === i ? null : i)}
                       >
                         <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          log.status === "success" ? "bg-emerald-500" : "bg-red-500"
+                          log.status === "success" ? "bg-black dark:bg-white" : "bg-black dark:bg-white"
                         }`}>
                           {log.status === "success"
                             ? <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
@@ -446,11 +446,11 @@ export default function AdminCronJobs() {
 
                         <div className="flex-1 min-w-0 text-right">
                           <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                            <span className={`text-[11px] font-bold ${log.status === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
+                            <span className={`text-[11px] font-bold ${log.status === "success" ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>
                               {log.status === "success" ? (L ? "تشغيل ناجح" : "Successful Run") : (L ? "فشل التشغيل" : "Failed Run")}
                             </span>
                             {log.triggeredBy === "manual" && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-bold">{L ? "يدوي" : "Manual"}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 rounded-full font-bold">{L ? "يدوي" : "Manual"}</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap text-[10px] text-black/35 dark:text-white/35">
@@ -583,7 +583,7 @@ export default function AdminCronJobs() {
                   {L ? "اختبار الاتصال" : "Test Connection"}
                 </Button>
                 {testResult && (
-                  <div className={`mt-2 text-xs p-2.5 rounded-xl font-mono ${testResult.success ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"}`} dir="ltr">
+                  <div className={`mt-2 text-xs p-2.5 rounded-xl font-mono ${testResult.success ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} dir="ltr">
                     {testResult.success ? "✅ " : "❌ "}{testResult.statusCode} {testResult.statusText}
                   </div>
                 )}

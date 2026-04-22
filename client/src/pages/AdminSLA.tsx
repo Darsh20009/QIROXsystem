@@ -14,16 +14,16 @@ import { Clock, AlertTriangle, CheckCircle, Plus, Settings, Trash2, ShieldAlert,
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 function getPriorityMap(L: boolean): Record<string, { label: string; color: string }> { return {
-  low: { label: L ? "منخفضة" : "Low", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  medium: { label: L ? "متوسطة" : "Medium", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  high: { label: L ? "عالية" : "High", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  critical: { label: L ? "حرجة" : "Critical", color: "bg-red-100 text-red-700 border-red-200" },
+  low: { label: L ? "منخفضة" : "Low", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  medium: { label: L ? "متوسطة" : "Medium", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  high: { label: L ? "عالية" : "High", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  critical: { label: L ? "حرجة" : "Critical", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
 };
 }
 
 function HoursBar({ hoursElapsed, slaHours = 48, L = true }: { hoursElapsed: number; slaHours?: number; L?: boolean }) {
   const pct = Math.min(100, Math.round((hoursElapsed / slaHours) * 100));
-  const color = pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-orange-400" : pct >= 50 ? "bg-amber-400" : "bg-green-500";
+  const color = pct >= 100 ? "bg-black dark:bg-white" : pct >= 80 ? "bg-black/[0.08] dark:bg-white/[0.1]" : pct >= 50 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black dark:bg-white";
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs text-black/40">
@@ -86,9 +86,9 @@ export default function AdminSLA() {
           <div className="grid grid-cols-4 gap-4">
             {[
               { label: L ? "الطلبات النشطة" : "Active Requests", value: stats.total, color: "text-black", bg: "bg-black/5", icon: Timer },
-              { label: L ? "متأخرة (SLA منتهي)" : "Overdue (SLA expired)", value: stats.overdueCount, color: "text-red-600", bg: "bg-red-50", icon: ShieldAlert },
-              { label: L ? "في خطر (< 12 ساعة)" : "At Risk (< 12h)", value: stats.atRiskCount, color: "text-orange-600", bg: "bg-orange-50", icon: AlertTriangle },
-              { label: L ? "في الوقت المناسب" : "On Track", value: stats.onTrackCount, color: "text-green-600", bg: "bg-green-50", icon: CheckCircle },
+              { label: L ? "متأخرة (SLA منتهي)" : "Overdue (SLA expired)", value: stats.overdueCount, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", icon: ShieldAlert },
+              { label: L ? "في خطر (< 12 ساعة)" : "At Risk (< 12h)", value: stats.atRiskCount, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", icon: AlertTriangle },
+              { label: L ? "في الوقت المناسب" : "On Track", value: stats.onTrackCount, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", icon: CheckCircle },
             ].map((s, i) => (
               <Card key={i} className={`border-black/10 ${s.bg}`}>
                 <CardContent className="p-4">
@@ -110,23 +110,23 @@ export default function AdminSLA() {
             <div className="space-y-4">
               {slaData?.overdue?.length > 0 && (
                 <div>
-                  <h2 className="font-semibold text-sm text-red-600 mb-3 flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> {L ? "طلبات متأخرة" : "Overdue Requests"} ({slaData.overdue.length})</h2>
+                  <h2 className="font-semibold text-sm text-black dark:text-white mb-3 flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> {L ? "طلبات متأخرة" : "Overdue Requests"} ({slaData.overdue.length})</h2>
                   <div className="space-y-3">
                     {slaData.overdue.map((order: any) => (
-                      <Card key={order.id} className="border-red-200 bg-red-50/50" data-testid={`card-sla-overdue-${order.id}`}>
+                      <Card key={order.id} className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" data-testid={`card-sla-overdue-${order.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <div className="font-semibold text-sm">{order.serviceTitle || order.title || (L ? "طلب" : "Request")}</div>
-                                <Badge className="bg-red-100 text-red-700 border border-red-200 text-xs">{L ? `متأخر بـ ${Math.abs(order.hoursRemaining)} ساعة` : `${Math.abs(order.hoursRemaining)}h overdue`}</Badge>
+                                <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 text-xs">{L ? `متأخر بـ ${Math.abs(order.hoursRemaining)} ساعة` : `${Math.abs(order.hoursRemaining)}h overdue`}</Badge>
                               </div>
                               <div className="text-xs text-black/40 mt-0.5">{order.client?.fullName} · {order.client?.email}</div>
                               <div className="mt-2"><HoursBar hoursElapsed={order.hoursElapsed} L={L} /></div>
                             </div>
                             <div className="text-right text-xs text-black/40">
                               <div>{new Date(order.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
-                              <div className="font-medium text-red-500">{L ? "تجاوز الـ SLA" : "SLA breached"}</div>
+                              <div className="font-medium text-black dark:text-white">{L ? "تجاوز الـ SLA" : "SLA breached"}</div>
                             </div>
                           </div>
                         </CardContent>
@@ -138,16 +138,16 @@ export default function AdminSLA() {
 
               {slaData?.atRisk?.length > 0 && (
                 <div>
-                  <h2 className="font-semibold text-sm text-orange-600 mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {L ? "في خطر" : "At Risk"} ({slaData.atRisk.length})</h2>
+                  <h2 className="font-semibold text-sm text-black dark:text-white mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> {L ? "في خطر" : "At Risk"} ({slaData.atRisk.length})</h2>
                   <div className="space-y-3">
                     {slaData.atRisk.map((order: any) => (
-                      <Card key={order.id} className="border-orange-200 bg-orange-50/30" data-testid={`card-sla-atrisk-${order.id}`}>
+                      <Card key={order.id} className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" data-testid={`card-sla-atrisk-${order.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <div className="font-semibold text-sm">{order.serviceTitle || order.title || (L ? "طلب" : "Request")}</div>
-                                <Badge className="bg-orange-100 text-orange-700 border border-orange-200 text-xs">{L ? `متبقي ${order.hoursRemaining} ساعة` : `${order.hoursRemaining}h remaining`}</Badge>
+                                <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 text-xs">{L ? `متبقي ${order.hoursRemaining} ساعة` : `${order.hoursRemaining}h remaining`}</Badge>
                               </div>
                               <div className="text-xs text-black/40 mt-0.5">{order.client?.fullName} · {order.client?.email}</div>
                               <div className="mt-2"><HoursBar hoursElapsed={order.hoursElapsed} L={L} /></div>
@@ -162,7 +162,7 @@ export default function AdminSLA() {
 
               {slaData?.onTrack?.length > 0 && (
                 <div>
-                  <h2 className="font-semibold text-sm text-green-600 mb-3 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {L ? "في الوقت المناسب" : "On Track"} ({slaData.onTrack.length})</h2>
+                  <h2 className="font-semibold text-sm text-black dark:text-white mb-3 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> {L ? "في الوقت المناسب" : "On Track"} ({slaData.onTrack.length})</h2>
                   <div className="space-y-2">
                     {slaData.onTrack.slice(0, 10).map((order: any) => (
                       <Card key={order.id} className="border-black/10" data-testid={`card-sla-ontrack-${order.id}`}>
@@ -173,7 +173,7 @@ export default function AdminSLA() {
                               <div className="text-xs text-black/40">{order.client?.fullName}</div>
                               <div className="mt-2"><HoursBar hoursElapsed={order.hoursElapsed} L={L} /></div>
                             </div>
-                            <div className="text-xs text-green-600 font-medium">{L ? `${order.hoursRemaining} ساعة متبقية` : `${order.hoursRemaining}h remaining`}</div>
+                            <div className="text-xs text-black dark:text-white font-medium">{L ? `${order.hoursRemaining} ساعة متبقية` : `${order.hoursRemaining}h remaining`}</div>
                           </div>
                         </CardContent>
                       </Card>
@@ -221,7 +221,7 @@ export default function AdminSLA() {
                         </div>
                         <Badge className={`${(PRIORITY_MAP[c.priority] || PRIORITY_MAP.medium).color} border text-xs`}>{(PRIORITY_MAP[c.priority] || PRIORITY_MAP.medium).label}</Badge>
                       </div>
-                      <Button size="sm" variant="outline" className="border-red-200 text-red-500" onClick={() => { if (confirm(L ? "حذف هذا الإعداد؟" : "Delete this config?")) deleteConfigMutation.mutate(c.id); }} data-testid={`button-delete-sla-${c.id}`}>
+                      <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white" onClick={() => { if (confirm(L ? "حذف هذا الإعداد؟" : "Delete this config?")) deleteConfigMutation.mutate(c.id); }} data-testid={`button-delete-sla-${c.id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>

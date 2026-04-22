@@ -27,9 +27,9 @@ interface ContactMessage {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  read: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-  replied: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  new: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  read: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  replied: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
 function getStatusLabels(L: boolean): Record<string, string> {
@@ -180,7 +180,7 @@ export default function AdminContactMessages() {
                       {msg.read ? (
                         <MailOpen className="w-4 h-4 text-black/30 dark:text-white/30" />
                       ) : (
-                        <Mail className="w-4 h-4 text-blue-500" />
+                        <Mail className="w-4 h-4 text-black dark:text-white" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -203,13 +203,13 @@ export default function AdminContactMessages() {
                     <p className="text-sm text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3 whitespace-pre-wrap">{msg.message}</p>
 
                     {msg.adminReply && (
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl p-3">
+                      <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                          <span className="text-xs font-bold text-green-700 dark:text-green-400">{L ? "الرد" : "Reply"}</span>
-                          {msg.repliedAt && <span className="text-[10px] text-green-500">{new Date(msg.repliedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
+                          <CheckCircle className="w-3.5 h-3.5 text-black dark:text-white" />
+                          <span className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "الرد" : "Reply"}</span>
+                          {msg.repliedAt && <span className="text-[10px] text-black dark:text-white">{new Date(msg.repliedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
                         </div>
-                        <p className="text-sm text-green-800 dark:text-green-300">{msg.adminReply}</p>
+                        <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">{msg.adminReply}</p>
                       </div>
                     )}
 
@@ -225,7 +225,7 @@ export default function AdminContactMessages() {
                       </Button>
                       <Button
                         size="sm" variant="outline"
-                        className="gap-1 text-xs text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                        className="gap-1 text-xs text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:hover:bg-black dark:bg-white"
                         onClick={() => { if (confirm(L ? "هل أنت متأكد من حذف هذه الرسالة؟" : "Delete this message?")) deleteMutation.mutate(msg.id); }}
                         data-testid={`button-delete-${msg.id}`}
                       >

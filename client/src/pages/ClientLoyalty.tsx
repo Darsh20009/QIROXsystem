@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 import { Star, Gift, TrendingUp, ArrowDown, ArrowUp, Clock, CheckCircle } from "lucide-react";
 
 const TX_ICONS: Record<string, any> = { earned: ArrowUp, redeemed: ArrowDown, adjusted: Clock, expired: Clock };
-const TX_COLORS: Record<string, string> = { earned: "text-green-600", redeemed: "text-red-500", adjusted: "text-blue-600", expired: "text-black/30" };
+const TX_COLORS: Record<string, string> = { earned: "text-black dark:text-white", redeemed: "text-black dark:text-white", adjusted: "text-black dark:text-white", expired: "text-black/30" };
 
 export default function ClientLoyalty() {
   const { toast } = useToast();
@@ -43,8 +43,8 @@ export default function ClientLoyalty() {
   if (isLoading) return (
     <div className="flex items-center justify-center py-24" dir={dir}>
       <div className="text-center space-y-3">
-        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto animate-pulse">
-          <Star className="w-6 h-6 text-amber-400" />
+        <div className="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center mx-auto animate-pulse">
+          <Star className="w-6 h-6 text-black/70 dark:text-white/70" />
         </div>
         <p className="text-sm text-black/30 dark:text-white/30 font-sans">{L ? "جاري تحميل نقاطك..." : "Loading your points..."}</p>
       </div>
@@ -64,8 +64,8 @@ export default function ClientLoyalty() {
         <p className="text-black/50 dark:text-white/40 text-sm">{L ? "اكسب نقاطاً مع كل طلب واستردّها كخصومات" : "Earn points with every order and redeem them as discounts"}</p>
       </div>
       <div className="mt-16 flex flex-col items-center text-center">
-        <div className="w-24 h-24 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-6">
-          <Star className="w-10 h-10 text-amber-300" />
+        <div className="w-24 h-24 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center mb-6">
+          <Star className="w-10 h-10 text-black/70 dark:text-white/70" />
         </div>
         <h2 className="text-xl font-bold text-black dark:text-white mb-2">{L ? "برنامج الولاء قادم قريباً" : "Loyalty Program Coming Soon"}</h2>
         <p className="text-black/40 dark:text-white/30 text-sm max-w-xs leading-relaxed">
@@ -94,15 +94,15 @@ export default function ClientLoyalty() {
         <p className="text-black/50 dark:text-white/40 text-sm">{L ? "اكسب نقاطاً مع كل طلب واستردّها كخصومات" : "Earn points with every order and redeem them as discounts"}</p>
       </div>
 
-      <Card className="border-black/10 bg-gradient-to-br from-amber-50 to-orange-50" data-testid="card-loyalty-balance">
+      <Card className="border-black/10 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06]" data-testid="card-loyalty-balance">
         <CardContent className="p-6">
           <div className="text-center">
             <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                <Star className="w-8 h-8 text-amber-500 fill-amber-400" />
+              <div className="w-16 h-16 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
+                <Star className="w-8 h-8 text-black dark:text-white fill-amber-400" />
               </div>
             </div>
-            <div className="text-4xl font-bold text-amber-600 mb-1">{(account.points || 0).toLocaleString()}</div>
+            <div className="text-4xl font-bold text-black dark:text-white mb-1">{(account.points || 0).toLocaleString()}</div>
             <div className="text-black/50 text-sm mb-4">{L ? "نقطة متاحة" : "Available Points"}</div>
             <div className="text-xs text-black/40 mb-4">
               {L
@@ -111,7 +111,7 @@ export default function ClientLoyalty() {
               }
             </div>
             {config.isEnabled && account.points >= config.minRedeemPoints && (
-              <Button onClick={() => setRedeemDialog(true)} className="bg-amber-500 hover:bg-amber-600 text-white gap-2" data-testid="button-open-redeem">
+              <Button onClick={() => setRedeemDialog(true)} className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2" data-testid="button-open-redeem">
                 <Gift className="w-4 h-4" /> {L ? "استرداد النقاط" : "Redeem Points"}
               </Button>
             )}
@@ -127,15 +127,15 @@ export default function ClientLoyalty() {
       <div className="grid grid-cols-2 gap-4">
         <Card className="border-black/10">
           <CardContent className="p-4 text-center">
-            <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-1" />
-            <div className="text-xl font-bold text-green-600">{(account.totalEarned || 0).toLocaleString()}</div>
+            <TrendingUp className="w-5 h-5 text-black dark:text-white mx-auto mb-1" />
+            <div className="text-xl font-bold text-black dark:text-white">{(account.totalEarned || 0).toLocaleString()}</div>
             <div className="text-xs text-black/40">{L ? "إجمالي المكتسبة" : "Total Earned"}</div>
           </CardContent>
         </Card>
         <Card className="border-black/10">
           <CardContent className="p-4 text-center">
-            <Gift className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-            <div className="text-xl font-bold text-purple-600">{(account.totalRedeemed || 0).toLocaleString()}</div>
+            <Gift className="w-5 h-5 text-black dark:text-white mx-auto mb-1" />
+            <div className="text-xl font-bold text-black dark:text-white">{(account.totalRedeemed || 0).toLocaleString()}</div>
             <div className="text-xs text-black/40">{L ? "إجمالي المستردة" : "Total Redeemed"}</div>
           </CardContent>
         </Card>
@@ -146,14 +146,14 @@ export default function ClientLoyalty() {
         <CardContent>
           <div className="grid grid-cols-1 gap-3 text-sm">
             <div className="flex items-center gap-3 p-3 bg-black/5 rounded-xl">
-              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+              <CheckCircle className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
               <div>
                 <div className="font-medium">{L ? "إتمام الطلبات" : "Complete Orders"}</div>
                 <div className="text-xs text-black/40">{L ? `احصل على ${config.pointsPerSAR} نقطة لكل ريال تدفعه` : `Earn ${config.pointsPerSAR} point(s) per SAR spent`}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl">
-              <Star className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <div className="flex items-center gap-3 p-3 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl">
+              <Star className="w-5 h-5 text-black dark:text-white flex-shrink-0" />
               <div>
                 <div className="font-medium">{L ? "استرداد النقاط" : "Redeem Points"}</div>
                 <div className="text-xs text-black/40">{L ? `استرد ${config.minRedeemPoints} نقطة كحد أدنى · كل نقطة = ${config.sarPerPoint} ريال خصم` : `Redeem min ${config.minRedeemPoints} points · 1 point = ${config.sarPerPoint} SAR discount`}</div>
@@ -181,7 +181,7 @@ export default function ClientLoyalty() {
                       <div className="text-xs text-black/30">{new Date(tx.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
                     </div>
                   </div>
-                  <div className={`font-bold ${tx.points > 0 ? "text-green-600" : "text-red-500"}`}>
+                  <div className={`font-bold ${tx.points > 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                     {tx.points > 0 ? "+" : ""}{tx.points.toLocaleString()} {L ? "نقطة" : "pts"}
                   </div>
                 </div>
@@ -195,8 +195,8 @@ export default function ClientLoyalty() {
         <DialogContent className="sm:max-w-sm font-sans" dir={dir}>
           <DialogHeader><DialogTitle>{L ? "استرداد النقاط" : "Redeem Points"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="text-center bg-amber-50 rounded-xl p-4">
-              <div className="text-2xl font-bold text-amber-600">{(account.points || 0).toLocaleString()}</div>
+            <div className="text-center bg-black/[0.04] dark:bg-white/[0.06] rounded-xl p-4">
+              <div className="text-2xl font-bold text-black dark:text-white">{(account.points || 0).toLocaleString()}</div>
               <div className="text-xs text-black/40">{L ? "نقطة متاحة" : "Available Points"}</div>
             </div>
             <div>
@@ -204,14 +204,14 @@ export default function ClientLoyalty() {
               <Input type="number" value={redeemPoints} onChange={e => setRedeemPoints(e.target.value)} placeholder={L ? `الحد الأدنى: ${config.minRedeemPoints}` : `Min: ${config.minRedeemPoints}`} max={account.points} className="border-black/20" data-testid="input-redeem-points" />
             </div>
             {redeemPoints && Number(redeemPoints) >= config.minRedeemPoints && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
-                <div className="text-sm text-green-700">{L ? "ستحصل على خصم" : "You'll get a discount of"}</div>
-                <div className="text-2xl font-bold text-green-600">{discountValue} {L ? "ريال" : "SAR"}</div>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-center">
+                <div className="text-sm text-black dark:text-white">{L ? "ستحصل على خصم" : "You'll get a discount of"}</div>
+                <div className="text-2xl font-bold text-black dark:text-white">{discountValue} {L ? "ريال" : "SAR"}</div>
               </div>
             )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setRedeemDialog(false)} className="flex-1">{L ? "إلغاء" : "Cancel"}</Button>
-              <Button onClick={() => redeemMutation.mutate(Number(redeemPoints))} disabled={redeemMutation.isPending || !redeemPoints || Number(redeemPoints) < config.minRedeemPoints || Number(redeemPoints) > account.points} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white" data-testid="button-confirm-redeem">
+              <Button onClick={() => redeemMutation.mutate(Number(redeemPoints))} disabled={redeemMutation.isPending || !redeemPoints || Number(redeemPoints) < config.minRedeemPoints || Number(redeemPoints) > account.points} className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white" data-testid="button-confirm-redeem">
                 {redeemMutation.isPending ? (L ? "جاري المعالجة..." : "Processing...") : (L ? "استرداد" : "Redeem")}
               </Button>
             </div>

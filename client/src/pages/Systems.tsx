@@ -23,12 +23,12 @@ const fadeUp = {
 };
 
 const SEGMENTS = [
-  { key: "restaurant",  labelAr: "مطاعم ومقاهي",       icon: UtensilsCrossed, color: "from-orange-500 to-red-500",    bg: "bg-orange-50 dark:bg-orange-900/10",   text: "text-orange-600 dark:text-orange-400", border: "border-orange-200 dark:border-orange-800/40" },
-  { key: "ecommerce",   labelAr: "متاجر إلكترونية",     icon: ShoppingBag,     color: "from-blue-500 to-cyan-500",     bg: "bg-blue-50 dark:bg-blue-900/10",       text: "text-blue-600 dark:text-blue-400",   border: "border-blue-200 dark:border-blue-800/40" },
-  { key: "education",   labelAr: "منصات تعليمية",       icon: GraduationCap,   color: "from-violet-500 to-purple-500", bg: "bg-violet-50 dark:bg-violet-900/10",   text: "text-violet-600 dark:text-violet-400", border: "border-violet-200 dark:border-violet-800/40" },
+  { key: "restaurant",  labelAr: "مطاعم ومقاهي",       icon: UtensilsCrossed, color: "from-black dark:from-white to-black dark:to-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   text: "text-black dark:text-white dark:text-black/70 dark:text-white/70", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "ecommerce",   labelAr: "متاجر إلكترونية",     icon: ShoppingBag,     color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "education",   labelAr: "منصات تعليمية",       icon: GraduationCap,   color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   text: "text-black dark:text-white dark:text-black/70 dark:text-white/70", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "corporate",   labelAr: "شركات ومؤسسات",       icon: Building2,       color: "from-slate-600 to-gray-700",    bg: "bg-slate-50 dark:bg-slate-900/10",     text: "text-slate-600 dark:text-slate-400",  border: "border-slate-200 dark:border-slate-800/40" },
-  { key: "realestate",  labelAr: "عقارات",              icon: Home,            color: "from-teal-500 to-emerald-500",  bg: "bg-teal-50 dark:bg-teal-900/10",       text: "text-teal-600 dark:text-teal-400",   border: "border-teal-200 dark:border-teal-800/40" },
-  { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-rose-500 to-pink-500",     bg: "bg-rose-50 dark:bg-rose-900/10",       text: "text-rose-600 dark:text-rose-400",   border: "border-rose-200 dark:border-rose-800/40" },
+  { key: "realestate",  labelAr: "عقارات",              icon: Home,            color: "from-black dark:from-white to-black dark:to-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
 ];
 
 interface SystemCard {
@@ -294,16 +294,16 @@ const SYSTEMS: Record<string, SystemCard[]> = {
 
 const CUSTOM_SYSTEMS = [
   { icon: Globe,        title: "مواقع الشركات",       color: "from-slate-500 to-gray-600" },
-  { icon: ShoppingCart, title: "متاجر إلكترونية",      color: "from-blue-500 to-cyan-500" },
-  { icon: BookOpen,     title: "منصات تعليمية",        color: "from-violet-500 to-purple-500" },
-  { icon: Utensils,     title: "أنظمة المطاعم",        color: "from-orange-500 to-red-500" },
-  { icon: Home,         title: "مواقع عقارية",         color: "from-teal-500 to-emerald-500" },
-  { icon: Stethoscope,  title: "مواقع طبية",           color: "from-rose-500 to-pink-500" },
-  { icon: Code2,        title: "أنظمة ERP/CRM",       color: "from-indigo-500 to-blue-600" },
-  { icon: Bot,          title: "أنظمة بالذكاء الاصطناعي", color: "from-emerald-500 to-teal-500" },
-  { icon: Smartphone,   title: "تطبيقات الجوال",       color: "from-amber-500 to-orange-500" },
-  { icon: Database,     title: "لوحات تحكم وإدارة",   color: "from-cyan-500 to-sky-500" },
-  { icon: Users,        title: "بوابات الموظفين",      color: "from-purple-500 to-fuchsia-500" },
+  { icon: ShoppingCart, title: "متاجر إلكترونية",      color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: BookOpen,     title: "منصات تعليمية",        color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Utensils,     title: "أنظمة المطاعم",        color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Home,         title: "مواقع عقارية",         color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Stethoscope,  title: "مواقع طبية",           color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Code2,        title: "أنظمة ERP/CRM",       color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Bot,          title: "أنظمة بالذكاء الاصطناعي", color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Smartphone,   title: "تطبيقات الجوال",       color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Database,     title: "لوحات تحكم وإدارة",   color: "from-black dark:from-white to-black dark:to-white" },
+  { icon: Users,        title: "بوابات الموظفين",      color: "from-black dark:from-white to-black dark:to-white" },
   { icon: Star,         title: "وأي فكرة في بالك…",   color: "from-black to-gray-700" },
 ];
 
@@ -344,8 +344,8 @@ export default function Systems() {
       <section className="pt-36 pb-10 relative overflow-hidden">
         <PageGraphics variant="hero-light" />
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="absolute top-20 left-1/4 w-80 h-80 bg-violet-500/[0.04] rounded-full hidden md:block blur-3xl" />
-        <div className="absolute top-32 right-1/4 w-60 h-60 bg-teal-500/[0.04] rounded-full hidden md:block blur-3xl" />
+        <div className="absolute top-20 left-1/4 w-80 h-80 bg-black dark:bg-white/[0.04] rounded-full hidden md:block blur-3xl" />
+        <div className="absolute top-32 right-1/4 w-60 h-60 bg-black dark:bg-white/[0.04] rounded-full hidden md:block blur-3xl" />
 
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">

@@ -11,13 +11,13 @@ import { Link } from "wouter";
 function getStages(L: boolean) {
   return [
   { key: "new",             label: L ? "جديد" : "New",                 color: "bg-slate-100 dark:bg-slate-800",   border: "border-slate-300 dark:border-slate-600",   dot: "bg-slate-400" },
-  { key: "under_study",     label: L ? "قيد الدراسة" : "Under Study",  color: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-300 dark:border-amber-700",    dot: "bg-amber-400" },
-  { key: "pending_payment", label: L ? "انتظار الدفع" : "Pending Payment", color: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-300 dark:border-orange-700", dot: "bg-orange-400" },
-  { key: "in_progress",     label: L ? "قيد التنفيذ" : "In Progress",  color: "bg-blue-50 dark:bg-blue-900/30",   border: "border-blue-300 dark:border-blue-700",     dot: "bg-blue-500" },
-  { key: "testing",         label: L ? "اختبار" : "Testing",           color: "bg-purple-50 dark:bg-purple-900/30", border: "border-purple-300 dark:border-purple-700", dot: "bg-purple-500" },
-  { key: "review",          label: L ? "مراجعة" : "Review",            color: "bg-pink-50 dark:bg-pink-900/30",   border: "border-pink-300 dark:border-pink-700",     dot: "bg-pink-500" },
-  { key: "delivery",        label: L ? "تسليم" : "Delivery",           color: "bg-teal-50 dark:bg-teal-900/30",   border: "border-teal-300 dark:border-teal-700",     dot: "bg-teal-500" },
-  { key: "closed",          label: L ? "مغلق" : "Closed",              color: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-500" },
+  { key: "under_study",     label: L ? "قيد الدراسة" : "Under Study",  color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white",    dot: "bg-black/[0.08] dark:bg-white/[0.1]" },
+  { key: "pending_payment", label: L ? "انتظار الدفع" : "Pending Payment", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white", dot: "bg-black/[0.08] dark:bg-white/[0.1]" },
+  { key: "in_progress",     label: L ? "قيد التنفيذ" : "In Progress",  color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white",     dot: "bg-black dark:bg-white" },
+  { key: "testing",         label: L ? "اختبار" : "Testing",           color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white", dot: "bg-black dark:bg-white" },
+  { key: "review",          label: L ? "مراجعة" : "Review",            color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white",     dot: "bg-black dark:bg-white" },
+  { key: "delivery",        label: L ? "تسليم" : "Delivery",           color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",   border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white",     dot: "bg-black dark:bg-white" },
+  { key: "closed",          label: L ? "مغلق" : "Closed",              color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white", dot: "bg-black dark:bg-white" },
 ];
 }
 
@@ -83,7 +83,7 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
           <div className={`w-1.5 h-1.5 rounded-full ${currentStage.dot}`} />
           <span className="text-[10px] text-black/40 dark:text-white/40">{project.progress || 0}%</span>
         </div>
-        <Link href={`/projects/${project._id}`} className="text-[10px] text-blue-500 hover:underline">
+        <Link href={`/projects/${project._id}`} className="text-[10px] text-black dark:text-white hover:underline">
           {L ? "فتح" : "Open"}
         </Link>
       </div>

@@ -55,7 +55,7 @@ function Field({ label, required, hint, children }: { label: string; required?: 
   return (
     <div className="space-y-1.5">
       <label className="flex items-center gap-1 text-xs font-bold text-gray-600 dark:text-slate-400">
-        {required && <span className="text-red-400">*</span>}
+        {required && <span className="text-black/70 dark:text-white/70">*</span>}
         {label}
       </label>
       {children}
@@ -71,7 +71,7 @@ function TInput({ value, onChange, placeholder, type = "text", testId, dir }: an
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       data-testid={testId}
-      className="w-full h-11 px-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500 transition-all"
+      className="w-full h-11 px-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-black dark:border-white transition-all"
     />
   );
 }
@@ -245,7 +245,7 @@ export default function CartWizardPage() {
   if (isUserLoading || isCartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex items-center justify-center" dir={dir}>
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white" />
       </div>
     );
   }
@@ -255,15 +255,15 @@ export default function CartWizardPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex flex-col" dir={dir}>
       <Navigation />
-      <div className="h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-violet-500" />
+      <div className="h-1 bg-gradient-to-r from-black dark:from-white via-black/[0.08] dark:via-white/[0.1] to-black dark:to-white" />
 
       <div className="flex-1 max-w-xl mx-auto w-full px-4 pt-8 pb-24">
 
         {/* Header */}
         <div className="text-center mb-7">
-          <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-4 py-1.5 rounded-full mb-4">
-            <QiroxIcon className="w-4 h-4 text-blue-500" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-500">إتمام طلبك</span>
+          <div className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-4 py-1.5 rounded-full mb-4">
+            <QiroxIcon className="w-4 h-4 text-black dark:text-white" />
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-black dark:text-white">إتمام طلبك</span>
           </div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white">3 خطوات بسيطة فقط</h1>
           <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">سنبدأ مشروعك فور تأكيد الطلب والدفع</p>
@@ -281,16 +281,16 @@ export default function CartWizardPage() {
                   <div key={s.id} className="flex items-center flex-1">
                     <div className="flex flex-col items-center gap-1 flex-1">
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
-                        done ? "bg-green-500 border-green-500 text-white" :
-                        active ? "bg-blue-500 border-blue-500 text-white" :
+                        done ? "bg-black dark:bg-white border-black dark:border-white text-white" :
+                        active ? "bg-black dark:bg-white border-black dark:border-white text-white" :
                         "bg-white dark:bg-gray-900 border-gray-200 dark:border-slate-700 text-gray-300 dark:text-slate-600"
                       }`}>
                         {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                       </div>
-                      <span className={`text-[10px] font-bold ${active ? "text-blue-500" : done ? "text-green-500" : "text-gray-300 dark:text-slate-600"}`}>{s.title}</span>
+                      <span className={`text-[10px] font-bold ${active ? "text-black dark:text-white" : done ? "text-black dark:text-white" : "text-gray-300 dark:text-slate-600"}`}>{s.title}</span>
                     </div>
                     {i < STEP_CONFIG.length - 1 && (
-                      <div className={`h-0.5 flex-1 mx-1 mb-4 rounded-full transition-all ${done ? "bg-green-400" : "bg-gray-200 dark:bg-slate-700"}`} />
+                      <div className={`h-0.5 flex-1 mx-1 mb-4 rounded-full transition-all ${done ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-gray-200 dark:bg-slate-700"}`} />
                     )}
                   </div>
                 );
@@ -326,8 +326,8 @@ export default function CartWizardPage() {
             {/* Step header bar */}
             {activeStep && (
               <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.02]">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center shrink-0">
-                  <activeStep.icon className="w-4 h-4 text-blue-500" />
+                <div className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white flex items-center justify-center shrink-0">
+                  <activeStep.icon className="w-4 h-4 text-black dark:text-white" />
                 </div>
                 <div>
                   <p className="font-black text-gray-900 dark:text-white text-sm">{activeStep.title}</p>
@@ -342,8 +342,8 @@ export default function CartWizardPage() {
               {step === 0 && (
                 <div className="space-y-5">
                   <div className="text-center">
-                    <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-200 dark:border-blue-500/20">
-                      {authMode === "login" ? <LogIn className="w-6 h-6 text-blue-500" /> : <UserPlus className="w-6 h-6 text-blue-500" />}
+                    <div className="w-14 h-14 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                      {authMode === "login" ? <LogIn className="w-6 h-6 text-black dark:text-white" /> : <UserPlus className="w-6 h-6 text-black dark:text-white" />}
                     </div>
                     <h3 className="text-lg font-black text-gray-900 dark:text-white">
                       {authMode === "login" ? "سجّل الدخول للمتابعة" : "أنشئ حسابك مجاناً"}
@@ -373,7 +373,7 @@ export default function CartWizardPage() {
                     </div>
                   </Field>
 
-                  <Button onClick={handleAuth} disabled={authLoading} className="w-full h-12 rounded-xl font-black gap-2 bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-auth-submit">
+                  <Button onClick={handleAuth} disabled={authLoading} className="w-full h-12 rounded-xl font-black gap-2 bg-black dark:bg-white hover:bg-black dark:bg-white text-white" data-testid="button-auth-submit">
                     {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : authMode === "login" ? <><LogIn className="w-4 h-4" /> تسجيل الدخول والمتابعة</> : <><UserPlus className="w-4 h-4" /> إنشاء الحساب والمتابعة</>}
                   </Button>
                   <div className="text-center">
@@ -400,7 +400,7 @@ export default function CartWizardPage() {
                           type="tel" value={data.whatsapp} dir="ltr"
                           onChange={e => upd("whatsapp", e.target.value)}
                           placeholder="05xxxxxxxx" data-testid="input-whatsapp"
-                          className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                          className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-black dark:border-white transition-all"
                         />
                       </div>
                     </Field>
@@ -416,7 +416,7 @@ export default function CartWizardPage() {
                           data-testid={`sector-${s.value}`}
                           className={`h-10 rounded-xl border text-xs font-bold text-right px-3 transition-all ${
                             data.sector === s.value
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                              ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
                               : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-slate-400 hover:border-gray-300 hover:bg-gray-100"
                           }`}
                         >
@@ -435,7 +435,7 @@ export default function CartWizardPage() {
                         rows={5}
                         placeholder="مثال: أريد موقعاً إلكترونياً لمطعمي يتيح للزبائن رؤية قائمة الطعام وحجز الطاولات وطلب التوصيل..."
                         data-testid="textarea-project-idea"
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all resize-none leading-relaxed"
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-black dark:border-white transition-all resize-none leading-relaxed"
                       />
                       {/* AI help button */}
                       <button
@@ -443,14 +443,14 @@ export default function CartWizardPage() {
                         onClick={handleAIIdea}
                         disabled={aiLoading || (!data.businessName.trim() && !data.sector)}
                         data-testid="button-ai-idea"
-                        className="absolute left-2 bottom-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white text-[11px] font-bold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                        className="absolute left-2 bottom-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white text-[11px] font-bold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                       >
                         {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                         {aiLoading ? "جارٍ الكتابة..." : "✨ اكتب لي"}
                       </button>
                     </div>
                     {(!data.businessName.trim() || !data.sector) && (
-                      <p className="text-[10px] text-violet-500 flex items-center gap-1">
+                      <p className="text-[10px] text-black dark:text-white flex items-center gap-1">
                         <Lightbulb className="w-3 h-3" />
                         أدخل اسم المشروع واختر القطاع لتفعيل المساعد الذكي
                       </p>
@@ -465,7 +465,7 @@ export default function CartWizardPage() {
                         type="email" value={data.email} dir="ltr"
                         onChange={e => upd("email", e.target.value)}
                         placeholder="info@company.com"
-                        className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                        className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-black dark:border-white transition-all"
                       />
                     </div>
                   </Field>
@@ -475,9 +475,9 @@ export default function CartWizardPage() {
               {/* ── STEP 2: FILES (all optional) ───────────────── */}
               {step === 2 && (
                 <div className="space-y-5">
-                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/[0.08] border border-blue-200 dark:border-blue-500/20 rounded-xl px-4 py-3">
-                    <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
-                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">كل الملفات في هذه الخطوة <strong>اختيارية تماماً</strong> — يمكنك إرسالها لاحقاً عبر واتساب أو البريد الإلكتروني</p>
+                  <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white/[0.08] border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-4 py-3">
+                    <Sparkles className="w-4 h-4 text-black dark:text-white shrink-0" />
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium">كل الملفات في هذه الخطوة <strong>اختيارية تماماً</strong> — يمكنك إرسالها لاحقاً عبر واتساب أو البريد الإلكتروني</p>
                   </div>
 
                   {/* Logo */}
@@ -492,12 +492,12 @@ export default function CartWizardPage() {
                       }}
                     />
                     {data.logoFile ? (
-                      <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-500/[0.08] border border-green-200 dark:border-green-500/20 rounded-xl">
-                        <img src={data.logoFile} alt="logo" className="w-12 h-12 object-contain rounded-lg border border-green-200" />
+                      <div className="flex items-center gap-3 p-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white/[0.08] border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl">
+                        <img src={data.logoFile} alt="logo" className="w-12 h-12 object-contain rounded-lg border border-black/10 dark:border-white/10" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-green-700 dark:text-green-300">✓ تم رفع الشعار</p>
+                          <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">✓ تم رفع الشعار</p>
                         </div>
-                        <button type="button" onClick={() => upd("logoFile", "")} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <button type="button" onClick={() => upd("logoFile", "")} className="text-gray-400 hover:text-black dark:text-white transition-colors">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -505,10 +505,10 @@ export default function CartWizardPage() {
                       <button
                         type="button" onClick={() => logoRef.current?.click()} disabled={uploading}
                         data-testid="button-upload-logo"
-                        className="w-full h-24 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/[0.05] transition-all group"
+                        className="w-full h-24 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white/[0.05] transition-all group"
                       >
-                        {uploading ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <ImageIcon className="w-6 h-6 text-gray-300 group-hover:text-blue-400 transition-colors" />}
-                        <span className="text-xs text-gray-400 group-hover:text-blue-500 transition-colors font-medium">اضغط لرفع الشعار</span>
+                        {uploading ? <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" /> : <ImageIcon className="w-6 h-6 text-gray-300 group-hover:text-black/70 dark:text-white/70 transition-colors" />}
+                        <span className="text-xs text-gray-400 group-hover:text-black dark:text-white transition-colors font-medium">اضغط لرفع الشعار</span>
                       </button>
                     )}
                   </Field>
@@ -533,10 +533,10 @@ export default function CartWizardPage() {
                     <button
                       type="button" onClick={() => extraRef.current?.click()} disabled={uploadingExtra}
                       data-testid="button-upload-extra"
-                      className="w-full h-20 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/[0.05] transition-all group"
+                      className="w-full h-20 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white/[0.05] transition-all group"
                     >
-                      {uploadingExtra ? <Loader2 className="w-5 h-5 animate-spin text-violet-500" /> : <Upload className="w-5 h-5 text-gray-300 group-hover:text-violet-400 transition-colors" />}
-                      <span className="text-xs text-gray-400 group-hover:text-violet-500 transition-colors font-medium">
+                      {uploadingExtra ? <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" /> : <Upload className="w-5 h-5 text-gray-300 group-hover:text-black/70 dark:text-white/70 transition-colors" />}
+                      <span className="text-xs text-gray-400 group-hover:text-black dark:text-white transition-colors font-medium">
                         {data.extraFiles.length > 0 ? `${data.extraFiles.length} ملف — اضغط لإضافة المزيد` : "اضغط لرفع ملفات (اختياري)"}
                       </span>
                     </button>
@@ -546,7 +546,7 @@ export default function CartWizardPage() {
                           <div key={i} className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1.5">
                             <FileText className="w-3 h-3 text-gray-400" />
                             <span className="text-xs text-gray-600 dark:text-slate-400">ملف {i + 1}</span>
-                            <button type="button" onClick={() => upd("extraFiles", data.extraFiles.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 transition-colors ml-0.5">
+                            <button type="button" onClick={() => upd("extraFiles", data.extraFiles.filter((_, j) => j !== i))} className="text-gray-300 hover:text-black/70 dark:text-white/70 transition-colors ml-0.5">
                               <X className="w-3 h-3" />
                             </button>
                           </div>
@@ -567,8 +567,8 @@ export default function CartWizardPage() {
               {step === 3 && (
                 <div className="space-y-5">
                   <div className="text-center py-2">
-                    <div className="w-14 h-14 bg-green-50 dark:bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-green-200 dark:border-green-500/20">
-                      <Check className="w-7 h-7 text-green-500" />
+                    <div className="w-14 h-14 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                      <Check className="w-7 h-7 text-black dark:text-white" />
                     </div>
                     <h3 className="text-lg font-black text-gray-900 dark:text-white">جاهز للدفع!</h3>
                     <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">راجع ملخص طلبك ثم انتقل لاختيار طريقة الدفع</p>
@@ -593,7 +593,7 @@ export default function CartWizardPage() {
                       {data.logoFile && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500 dark:text-slate-500">الشعار</span>
-                          <span className="font-bold text-green-600">✓ تم الرفع</span>
+                          <span className="font-bold text-black dark:text-white">✓ تم الرفع</span>
                         </div>
                       )}
                       {data.extraFiles.length > 0 && (
@@ -615,15 +615,15 @@ export default function CartWizardPage() {
                         </div>
                         <div className="border-t border-gray-200 dark:border-white/[0.06] pt-3 flex justify-between items-center">
                           <span className="font-black text-gray-900 dark:text-white">الإجمالي</span>
-                          <span className="text-xl font-black text-blue-600">{total.toLocaleString()} ر.س</span>
+                          <span className="text-xl font-black text-black dark:text-white">{total.toLocaleString()} ر.س</span>
                         </div>
                       </>
                     )}
                   </div>
 
-                  <div className="bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200 dark:border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
-                    <Globe className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 dark:text-amber-300">بعد الدفع قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف خلال <strong>24 ساعة</strong> لاستكمال أي ملفات أو تفاصيل لازمة لبدء تنفيذ مشروعك</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white/[0.08] border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-4 py-3 flex items-start gap-2">
+                    <Globe className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">بعد الدفع قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف خلال <strong>24 ساعة</strong> لاستكمال أي ملفات أو تفاصيل لازمة لبدء تنفيذ مشروعك</p>
                   </div>
                 </div>
               )}
@@ -642,7 +642,7 @@ export default function CartWizardPage() {
                 <Button
                   onClick={() => setStep(s => (s + 1) as any)}
                   disabled={!canNext()}
-                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-black dark:bg-white hover:bg-black dark:bg-white text-white"
                   data-testid="button-wizard-next"
                 >
                   التالي
@@ -654,7 +654,7 @@ export default function CartWizardPage() {
                 <Button
                   onClick={handleFinish}
                   disabled={submitting}
-                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20"
+                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-black dark:bg-white hover:bg-black dark:bg-white text-white shadow-lg shadow-green-600/20"
                   data-testid="button-wizard-finish"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> انتقل للدفع</>}

@@ -21,10 +21,10 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
 function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
-  scheduled: { label: L ? "مجدول" : "Scheduled", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  live: { label: L ? "يبث الآن 🔴" : "Live Now 🔴", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  scheduled: { label: L ? "مجدول" : "Scheduled", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  live: { label: L ? "يبث الآن 🔴" : "Live Now 🔴", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
   completed: { label: L ? "منتهي" : "Completed", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
-  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
+  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
 };
 }
 
@@ -33,7 +33,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map(n => (
         <button key={n} type="button" onClick={() => onChange(n)}
-          className={`text-2xl transition-transform hover:scale-110 ${n <= value ? "text-amber-400" : "text-gray-300 dark:text-gray-600"}`}
+          className={`text-2xl transition-transform hover:scale-110 ${n <= value ? "text-black/70 dark:text-white/70" : "text-gray-300 dark:text-gray-600"}`}
           data-testid={`star-${n}`}>
           ★
         </button>
@@ -235,7 +235,7 @@ export default function AdminQMeetDetail() {
                 {(meeting.participantEmails || []).length} مشارك
               </span>
               {avgRating && (
-                <span className="flex items-center gap-1.5 text-amber-600">
+                <span className="flex items-center gap-1.5 text-black dark:text-white">
                   <Star className="w-4 h-4" />
                   {avgRating} / 5
                 </span>
@@ -260,7 +260,7 @@ export default function AdminQMeetDetail() {
               <button
                 onClick={() => { if (confirm(L ? "هل تريد حذف هذا الاجتماع نهائياً؟" : "Are you sure you want to permanently delete this meeting?")) deleteMeetingMutation.mutate(); }}
                 disabled={deleteMeetingMutation.isPending}
-                className="inline-flex items-center gap-2 border border-red-200 text-red-600 font-medium px-4 py-2 rounded-xl hover:bg-red-50 text-sm transition-colors"
+                className="inline-flex items-center gap-2 border border-black/10 dark:border-white/10 text-black dark:text-white font-medium px-4 py-2 rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] text-sm transition-colors"
                 data-testid="button-delete-meeting-main">
                 <Trash2 className="w-4 h-4" />
                 حذف الاجتماع
@@ -280,10 +280,10 @@ export default function AdminQMeetDetail() {
           <div className="flex gap-2 mt-4 flex-wrap">
             {meeting.status === "scheduled" && (
               <>
-                <Button size="sm" onClick={() => statusMutation.mutate("live")} className="gap-1 bg-green-600 hover:bg-green-700 text-white border-0">
+                <Button size="sm" onClick={() => statusMutation.mutate("live")} className="gap-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white border-0">
                   <Play className="w-3.5 h-3.5" /> بدء البث
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => statusMutation.mutate("cancelled")} className="gap-1 text-red-600 border-red-200 hover:bg-red-50">
+                <Button size="sm" variant="outline" onClick={() => statusMutation.mutate("cancelled")} className="gap-1 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]">
                   <XCircle className="w-3.5 h-3.5" /> إلغاء
                 </Button>
               </>
@@ -383,17 +383,17 @@ export default function AdminQMeetDetail() {
           )}
 
           {/* AI Summary */}
-          <Card className="border-0 shadow-sm border border-violet-100 dark:border-violet-900/40">
+          <Card className="border-0 shadow-sm border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2 text-violet-700 dark:text-violet-300">
+                <CardTitle className="text-base flex items-center gap-2 text-black dark:text-white dark:text-black/70 dark:text-white/70">
                   <Wand2 className="w-4 h-4" />
                   {L ? "ملخص الاجتماع بالذكاء الاصطناعي" : "AI Meeting Summary"}
                 </CardTitle>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"
+                  className="gap-1.5 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:text-black/70 dark:text-white/70 dark:hover:bg-black dark:bg-white"
                   disabled={aiSummaryLoading}
                   onClick={async () => {
                     setAiSummaryLoading(true);
@@ -478,10 +478,10 @@ export default function AdminQMeetDetail() {
           ) : feedbacks && feedbacks.length > 0 ? (
             <div className="space-y-3">
               <div className="text-center py-2">
-                <p className="text-3xl font-black text-amber-500">{avgRating}</p>
+                <p className="text-3xl font-black text-black dark:text-white">{avgRating}</p>
                 <div className="flex justify-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map(n => (
-                    <span key={n} className={`text-xl ${n <= Math.round(Number(avgRating)) ? "text-amber-400" : "text-gray-300"}`}>★</span>
+                    <span key={n} className={`text-xl ${n <= Math.round(Number(avgRating)) ? "text-black/70 dark:text-white/70" : "text-gray-300"}`}>★</span>
                   ))}
                 </div>
                 <p className="text-sm text-gray-400 mt-1">{feedbacks.length} تقييم</p>
@@ -497,7 +497,7 @@ export default function AdminQMeetDetail() {
                     </div>
                     <div className="flex">
                       {[1, 2, 3, 4, 5].map(n => (
-                        <span key={n} className={`text-sm ${n <= fb.rating ? "text-amber-400" : "text-gray-300"}`}>★</span>
+                        <span key={n} className={`text-sm ${n <= fb.rating ? "text-black/70 dark:text-white/70" : "text-gray-300"}`}>★</span>
                       ))}
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export default function AdminQMeetDetail() {
                     {reportActions.map((a, i) => (
                       <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-sm">
                         <span>• {a}</span>
-                        <button type="button" onClick={() => setReportActions(arr => arr.filter((_, j) => j !== i))} className="text-red-400 text-xs">✕</button>
+                        <button type="button" onClick={() => setReportActions(arr => arr.filter((_, j) => j !== i))} className="text-black/70 dark:text-white/70 text-xs">✕</button>
                       </div>
                     ))}
                   </div>
@@ -592,7 +592,7 @@ export default function AdminQMeetDetail() {
                     </div>
                     {isManagement && (
                       <button onClick={() => { if (confirm(L ? "حذف هذا التقرير؟" : "Delete this report?")) deleteReportMutation.mutate(r._id) }}
-                        className="text-red-400 hover:text-red-600 p-1" data-testid={`button-delete-report-${r._id}`}>
+                        className="text-black/70 dark:text-white/70 hover:text-black dark:text-white p-1" data-testid={`button-delete-report-${r._id}`}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -610,7 +610,7 @@ export default function AdminQMeetDetail() {
                       <ul className="space-y-1">
                         {r.actionItems.map((a: string, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
-                            <span className="text-green-500 mt-0.5">✓</span>
+                            <span className="text-black dark:text-white mt-0.5">✓</span>
                             {a}
                           </li>
                         ))}

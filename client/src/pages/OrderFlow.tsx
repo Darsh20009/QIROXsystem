@@ -46,15 +46,15 @@ function FileUploadField({ label, field, files, onUpload, onRemove, required }: 
   };
   const getIcon = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase() || '';
-    if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return <Image className="w-4 h-4 text-blue-500" />;
-    if (['mp4','mov','avi'].includes(ext)) return <Film className="w-4 h-4 text-purple-500" />;
-    return <FileText className="w-4 h-4 text-green-500" />;
+    if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return <Image className="w-4 h-4 text-black dark:text-white" />;
+    if (['mp4','mov','avi'].includes(ext)) return <Film className="w-4 h-4 text-black dark:text-white" />;
+    return <FileText className="w-4 h-4 text-black dark:text-white" />;
   };
   const fmtSize = (b: number) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
   return (
     <div>
       <PageGraphics variant="minimal" />
-      <Label className="text-sm mb-2 block text-black/60 font-semibold">{label}{required && <span className="text-red-400 mr-1">*</span>}</Label>
+      <Label className="text-sm mb-2 block text-black/60 font-semibold">{label}{required && <span className="text-black/70 dark:text-white/70 mr-1">*</span>}</Label>
       <div onClick={() => !uploading && inputRef.current?.click()}
         className="border-2 border-dashed border-black/[0.08] rounded-2xl p-5 text-center cursor-pointer hover:border-black/25 hover:bg-black/[0.01] transition-all group" data-testid={`upload-${field}`}>
         <input ref={inputRef} type="file" className="hidden" onChange={handleChange}
@@ -81,7 +81,7 @@ function FileUploadField({ label, field, files, onUpload, onRemove, required }: 
               {getIcon(f.filename)}
               <span className="text-xs text-black/60 flex-1 truncate">{f.filename}</span>
               <span className="text-[10px] text-black/25">{fmtSize(f.size)}</span>
-              <button onClick={() => onRemove(field, i)} className="text-red-400/60 hover:text-red-500 transition-colors" data-testid={`remove-file-${field}-${i}`}>
+              <button onClick={() => onRemove(field, i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-colors" data-testid={`remove-file-${field}-${i}`}>
                 <X className="w-3.5 h-3.5" />
               </button>
             </motion.div>
@@ -101,32 +101,32 @@ function FeatureIcon({ name }: { name: string }) {
 }
 
 const SECTOR_META: Record<string, { label: string; icon: any; color: string }> = {
-  restaurant:    { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-orange-400 to-red-500" },
-  food:          { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-orange-400 to-red-500" },
-  store:         { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
-  ecommerce:     { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
-  commerce:      { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
-  education:     { label: "تعليم وأكاديميات",  icon: GraduationCap,   color: "from-violet-400 to-purple-500" },
-  fitness:       { label: "لياقة وجيم",        icon: Dumbbell,        color: "from-green-400 to-emerald-500" },
-  health:        { label: "صحة ولياقة",        icon: Dumbbell,        color: "from-green-400 to-emerald-500" },
-  healthcare:    { label: "صحة وعيادات",       icon: Sparkles,        color: "from-rose-400 to-pink-500" },
-  realestate:    { label: "عقارات",            icon: Building2,       color: "from-teal-400 to-emerald-500" },
-  beauty:        { label: "تجميل وصالونات",   icon: Sparkles,        color: "from-pink-400 to-fuchsia-500" },
-  tech:          { label: "تقنية وبرمجة",     icon: Globe,           color: "from-blue-400 to-indigo-500" },
+  restaurant:    { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  food:          { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  store:         { label: "متاجر إلكترونية",   icon: Store,           color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  ecommerce:     { label: "متاجر إلكترونية",   icon: Store,           color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  commerce:      { label: "متاجر إلكترونية",   icon: Store,           color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  education:     { label: "تعليم وأكاديميات",  icon: GraduationCap,   color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  fitness:       { label: "لياقة وجيم",        icon: Dumbbell,        color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  health:        { label: "صحة ولياقة",        icon: Dumbbell,        color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  healthcare:    { label: "صحة وعيادات",       icon: Sparkles,        color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  realestate:    { label: "عقارات",            icon: Building2,       color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  beauty:        { label: "تجميل وصالونات",   icon: Sparkles,        color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  tech:          { label: "تقنية وبرمجة",     icon: Globe,           color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
   corporate:     { label: "شركات ومؤسسات",    icon: Building2,       color: "from-slate-400 to-gray-500" },
   institutional: { label: "مؤسسات وجمعيات",   icon: Building2,       color: "from-slate-400 to-gray-600" },
-  personal:      { label: "خدمات شخصية",      icon: Globe,           color: "from-purple-400 to-indigo-500" },
+  personal:      { label: "خدمات شخصية",      icon: Globe,           color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
   other:         { label: "شركات ومؤسسات",    icon: Globe,           color: "from-slate-400 to-gray-600" },
   general:       { label: "عام",               icon: Globe,           color: "from-slate-400 to-gray-600" },
 };
 
 const VISUAL_STYLES = [
-  { value: "luxury",  label: "فاخر وراقي",   desc: "أسود، ذهبي، رمادي داكن", icon: Crown,     color: "from-yellow-500 to-amber-600" },
-  { value: "modern",  label: "حديث ونظيف",   desc: "أبيض، رمادي، أزرق فاتح", icon: Sparkles,  color: "from-blue-400 to-cyan-500" },
-  { value: "bold",    label: "جريء وملفت",   desc: "ألوان زاهية وجريئة",     icon: Zap,       color: "from-orange-400 to-red-500" },
+  { value: "luxury",  label: "فاخر وراقي",   desc: "أسود، ذهبي، رمادي داكن", icon: Crown,     color: "from-black dark:from-white to-black dark:to-white" },
+  { value: "modern",  label: "حديث ونظيف",   desc: "أبيض، رمادي، أزرق فاتح", icon: Sparkles,  color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  { value: "bold",    label: "جريء وملفت",   desc: "ألوان زاهية وجريئة",     icon: Zap,       color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
   { value: "minimal", label: "مينيمال",      desc: "قليل الألوان، واضح",      icon: Layers,    color: "from-slate-400 to-gray-600" },
-  { value: "classic", label: "كلاسيكي",      desc: "بيج، بني، طابع تراثي",    icon: Star,      color: "from-amber-400 to-orange-500" },
-  { value: "custom",  label: "حسب هويتي",   desc: "ألواني وخطوطي الخاصة",   icon: Globe,     color: "from-violet-400 to-purple-500" },
+  { value: "classic", label: "كلاسيكي",      desc: "بيج، بني، طابع تراثي",    icon: Star,      color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
+  { value: "custom",  label: "حسب هويتي",   desc: "ألواني وخطوطي الخاصة",   icon: Globe,     color: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" },
 ];
 
 const TIER_VISUAL: Record<string, {
@@ -135,17 +135,17 @@ const TIER_VISUAL: Record<string, {
 }> = {
   lite: {
     label: "لايت", icon: Zap,
-    headerGrad: "from-teal-400 to-emerald-500",
-    cardGrad: "from-teal-50/80 to-white dark:from-teal-950/30 dark:to-gray-900",
+    headerGrad: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white",
+    cardGrad: "from-black/[0.04] dark:from-white/[0.06] to-white dark:from-black dark:from-white dark:to-gray-900",
     glow: "shadow-teal-200/50 dark:shadow-teal-900/50",
-    border: "border-teal-200/60 dark:border-teal-800/40",
+    border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white",
   },
   pro: {
     label: "برو", icon: Star,
-    headerGrad: "from-violet-500 to-purple-600",
-    cardGrad: "from-violet-50/80 to-white dark:from-violet-950/30 dark:to-gray-900",
+    headerGrad: "from-black dark:from-white to-black dark:to-white",
+    cardGrad: "from-black/[0.04] dark:from-white/[0.06] to-white dark:from-black dark:from-white dark:to-gray-900",
     glow: "shadow-violet-300/50 dark:shadow-violet-900/50",
-    border: "border-violet-300/70 dark:border-violet-700/50",
+    border: "border-black/15 dark:border-white/15 dark:border-black dark:border-white",
     badge: "الأكثر طلباً",
   },
   infinite: {
@@ -158,7 +158,7 @@ const TIER_VISUAL: Record<string, {
 };
 
 const BUNDLE_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
-const BUNDLE_COLORS: Record<string, string> = { lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600", infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500" };
+const BUNDLE_COLORS: Record<string, string> = { lite: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white", pro: "from-black dark:from-white to-black dark:to-white", infinite: "from-gray-700 to-black", custom: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" };
 
 const STEP_CONFIG = [
   { label: "الباقة",    labelEn: "Package",  icon: Crown },
@@ -549,8 +549,8 @@ export default function OrderFlow() {
       <Navigation />
       <div className="max-w-md mx-auto pt-32 px-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-8 h-8 text-amber-600" />
+          <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-black dark:text-white" />
           </div>
           <h2 className="text-2xl font-black mb-2 text-black dark:text-white">فعّل بريدك الإلكتروني</h2>
           <p className="text-black/50 dark:text-white/50 text-sm">أدخل الرمز المُرسل إلى <strong>{(user as any).email}</strong></p>
@@ -562,7 +562,7 @@ export default function OrderFlow() {
               className="w-12 h-13 text-center text-xl font-black border-2 rounded-2xl border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none bg-transparent text-black dark:text-white" />
           ))}
         </div>
-        {verifyError && <p className="text-red-500 text-sm text-center mb-3">{verifyError}</p>}
+        {verifyError && <p className="text-black dark:text-white text-sm text-center mb-3">{verifyError}</p>}
         {verifyMutation.isPending && <div className="flex justify-center mb-3"><Loader2 className="w-5 h-5 animate-spin" /></div>}
         <div className="text-center">
           {resendCountdown > 0
@@ -586,9 +586,9 @@ export default function OrderFlow() {
           <div className="relative inline-block mb-6">
             <motion.div
               animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -inset-3 bg-green-400/20 rounded-full blur-xl"
+              className="absolute -inset-3 bg-black/[0.08] dark:bg-white/[0.1] rounded-full blur-xl"
             />
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 relative z-10">
+            <div className="w-20 h-20 bg-gradient-to-br from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 relative z-10">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
@@ -605,9 +605,9 @@ export default function OrderFlow() {
           <p className="text-white font-black text-4xl relative z-10 flex items-baseline gap-2">{grandTotal.toLocaleString()} <SARIcon size={20} className="opacity-50 translate-y-0.5" /></p>
           {submittedOrder?.walletUsed ? (
             <div className="mt-3 flex items-center gap-2 relative z-10">
-              <div className="flex items-center gap-1.5 bg-violet-500/20 border border-violet-400/30 rounded-xl px-3 py-1.5">
-                <Wallet className="w-3.5 h-3.5 text-violet-300" />
-                <span className="text-violet-300 text-xs font-bold flex items-center gap-1">دُفع {submittedOrder.walletUsed.toLocaleString()} <SARIcon size={10} className="opacity-60" /> من المحفظة</span>
+              <div className="flex items-center gap-1.5 bg-black dark:bg-white border border-black/15 dark:border-white/15 rounded-xl px-3 py-1.5">
+                <Wallet className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
+                <span className="text-black/70 dark:text-white/70 text-xs font-bold flex items-center gap-1">دُفع {submittedOrder.walletUsed.toLocaleString()} <SARIcon size={10} className="opacity-60" /> من المحفظة</span>
               </div>
               {submittedOrder.walletUsed < grandTotal && (
                 <div className="text-white/40 text-xs flex items-center gap-1">المتبقي: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-70" /></div>
@@ -619,13 +619,13 @@ export default function OrderFlow() {
         {/* Wallet fully paid message */}
         {submittedOrder?.walletUsed && submittedOrder.walletUsed >= grandTotal - 0.01 ? (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-3xl p-5 mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shrink-0">
+            className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-3xl p-5 mb-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-2xl flex items-center justify-center shrink-0">
               <Wallet className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-black text-green-700 dark:text-green-400 text-sm">تم السداد بالكامل من المحفظة الإلكترونية</p>
-              <p className="text-green-600/70 dark:text-green-500/70 text-xs mt-0.5">لا يلزمك إجراء أي تحويل بنكي</p>
+              <p className="font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm">تم السداد بالكامل من المحفظة الإلكترونية</p>
+              <p className="text-black dark:text-white dark:text-black dark:text-white text-xs mt-0.5">لا يلزمك إجراء أي تحويل بنكي</p>
             </div>
           </motion.div>
         ) : (
@@ -633,12 +633,12 @@ export default function OrderFlow() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] p-6 mb-4 shadow-sm">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
               <BanknoteIcon className="w-4 h-4 text-white" />
             </div>
             <p className="font-black text-black dark:text-white">بيانات التحويل البنكي</p>
             {submittedOrder?.walletUsed ? (
-              <span className="mr-auto text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
+              <span className="mr-auto text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
             ) : null}
           </div>
           <div className="space-y-3 mb-4">
@@ -653,15 +653,15 @@ export default function OrderFlow() {
               <div className="flex items-center gap-2">
                 <span className="font-mono text-sm font-bold text-black dark:text-white" dir="ltr">{bank.iban}</span>
                 <button onClick={() => { navigator.clipboard.writeText(bank.iban); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2500); }}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copiedIban ? "bg-green-100 dark:bg-green-900/30 text-green-600" : "bg-black/[0.05] dark:bg-white/[0.05] text-black/40 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10"}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copiedIban ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white" : "bg-black/[0.05] dark:bg-white/[0.05] text-black/40 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10"}`}
                   data-testid="button-copy-iban">
                   {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-700/30 rounded-2xl p-3.5">
-            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+          <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3.5">
+            <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
               ⚠️ اكتب رقم طلبك <strong className="font-mono">{submittedOrder!.id}</strong> في خانة الملاحظات عند التحويل
             </p>
           </div>
@@ -673,7 +673,7 @@ export default function OrderFlow() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
               <Upload className="w-4 h-4 text-white" />
             </div>
             <p className="font-black text-black dark:text-white">ارفع إيصال التحويل</p>
@@ -688,9 +688,9 @@ export default function OrderFlow() {
             </div>
           ) : (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-3 bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-2xl px-4 py-4">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-sm text-green-700 dark:text-green-400 font-semibold">تم رفع الإيصال بنجاح</span>
+              className="flex items-center gap-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl px-4 py-4">
+              <CheckCircle className="w-5 h-5 text-black dark:text-white" />
+              <span className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold">تم رفع الإيصال بنجاح</span>
             </motion.div>
           )}
         </motion.div>
@@ -712,7 +712,7 @@ export default function OrderFlow() {
       <Navigation />
 
       {/* Top gradient accent */}
-      <div className="h-1 bg-gradient-to-r from-violet-500 via-teal-400 to-pink-500" />
+      <div className="h-1 bg-gradient-to-r from-black dark:from-white via-black/[0.08] dark:via-white/[0.1] to-black dark:to-white" />
 
       <div className="max-w-3xl mx-auto px-4 pt-16 pb-28">
         {/* Step indicator */}
@@ -724,7 +724,7 @@ export default function OrderFlow() {
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
             className="mb-6 flex items-center gap-3 bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl px-4 py-3 shadow-sm"
           >
-            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-violet-500 to-purple-600"} flex items-center justify-center shrink-0`}>
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-black dark:from-white to-black dark:to-white"} flex items-center justify-center shrink-0`}>
               {(() => { const Icon = TIER_VISUAL[selectedPlan]?.icon || Crown; return <Icon className="w-4 h-4 text-white" />; })()}
             </div>
             <div className="flex-1 min-w-0">
@@ -821,7 +821,7 @@ export default function OrderFlow() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                 {features.map((f: any) => (
                                   <div key={f.id} className={`flex items-center gap-2 text-xs ${v.isDark ? "text-white/50" : "text-black/55 dark:text-white/55"}`}>
-                                    <div className={`${v.isDark ? "text-white/40" : "text-emerald-500"}`}><FeatureIcon name={f.icon} /></div>
+                                    <div className={`${v.isDark ? "text-white/40" : "text-black dark:text-white"}`}><FeatureIcon name={f.icon} /></div>
                                     {f.nameAr || f.name}
                                   </div>
                                 ))}
@@ -899,7 +899,7 @@ export default function OrderFlow() {
                                 </p>
                               )}
                               {a.includedInPlans?.length > 0 && (
-                                <p className="text-[10px] text-green-600 mt-0.5">مجانية للبرو+</p>
+                                <p className="text-[10px] text-black dark:text-white mt-0.5">مجانية للبرو+</p>
                               )}
                             </div>
                           </div>
@@ -954,7 +954,7 @@ export default function OrderFlow() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="font-black text-black dark:text-white">{p.nameAr || p.name}</p>
-                                {hasBundles && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-700/40">{p.planBundles.length} باقة</span>}
+                                {hasBundles && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">{p.planBundles.length} باقة</span>}
                               </div>
                               {p.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 line-clamp-1">{p.descriptionAr}</p>}
                               <p className="font-black text-black dark:text-white mt-1 flex items-center gap-1">{p.price?.toLocaleString()} <SARIcon size={11} className="opacity-70" /></p>
@@ -976,9 +976,9 @@ export default function OrderFlow() {
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                                 className="border-t border-black/[0.06] dark:border-white/[0.06] px-4 pb-4 pt-3">
                                 <p className="text-xs font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                  <Crown className="w-3.5 h-3.5 text-violet-500" />
+                                  <Crown className="w-3.5 h-3.5 text-black dark:text-white" />
                                   {lang === "ar" ? "اختر الباقة المرفقة مع الجهاز" : "Select bundle included with device"}
-                                  {!selectedBundle && <span className="text-red-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">مطلوب</span>}
+                                  {!selectedBundle && <span className="text-black/70 dark:text-white/70 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">مطلوب</span>}
                                 </p>
                                 <div className="grid gap-2">
                                   {p.planBundles.map((bundle: any, bidx: number) => {
@@ -988,14 +988,14 @@ export default function OrderFlow() {
                                       <button key={bidx} onClick={() => setDeviceBundles(prev => ({ ...prev, [p.id]: bidx }))}
                                         data-testid={`bundle-option-${p.id}-${bidx}`}
                                         className={`flex items-center gap-3 border-2 rounded-2xl px-3 py-2.5 text-right transition-all ${isSelected ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/25 dark:hover:border-white/25"}`}>
-                                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${BUNDLE_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"} flex items-center justify-center shrink-0 shadow-sm`}>
+                                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${BUNDLE_COLORS[bundle.planTier] || "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white"} flex items-center justify-center shrink-0 shadow-sm`}>
                                           <BIcon className="w-4 h-4 text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0 text-right">
                                           <div className="flex items-center gap-2 justify-between">
                                             <p className="text-sm font-bold text-black dark:text-white truncate">{bundle.planNameAr}</p>
                                             <span className="text-xs font-black text-black dark:text-white shrink-0">
-                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : <span className="flex items-center gap-0.5">{(bundle.customPrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>}
+                                              {bundle.isFree ? <span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">مجانية</span> : <span className="flex items-center gap-0.5">{(bundle.customPrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>}
                                             </span>
                                           </div>
                                           {bundle.planDescAr && <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5 truncate">{bundle.planDescAr}</p>}
@@ -1053,7 +1053,7 @@ export default function OrderFlow() {
                       {/* Plan row */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-violet-500 to-purple-600"} flex items-center justify-center shrink-0`}>
+                          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-black dark:from-white to-black dark:to-white"} flex items-center justify-center shrink-0`}>
                             {(() => { const Icon = TIER_VISUAL[selectedPlan]?.icon || Crown; return <Icon className="w-3.5 h-3.5 text-white" />; })()}
                           </div>
                           <div>
@@ -1100,7 +1100,7 @@ export default function OrderFlow() {
                             )}
                             {bundle?.isFree && (
                               <div className="pr-10 mt-1">
-                                <span className="text-[10px] text-emerald-400 flex items-center gap-1"><Check className="w-3 h-3" /> {bundle.planNameAr} — مجانية مع الباقة</span>
+                                <span className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><Check className="w-3 h-3" /> {bundle.planNameAr} — مجانية مع الباقة</span>
                               </div>
                             )}
                           </div>
@@ -1112,8 +1112,8 @@ export default function OrderFlow() {
                       {/* Wallet discount */}
                       {useWallet && effectiveWalletAmt > 0 && (
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-violet-300 flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" /> {lang === "ar" ? "خصم المحفظة" : "Wallet Discount"}</span>
-                          <span className="text-sm font-bold text-violet-300 flex items-center gap-1">- {effectiveWalletAmt.toLocaleString()} <SARIcon size={10} /></span>
+                          <span className="text-sm text-black/70 dark:text-white/70 flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" /> {lang === "ar" ? "خصم المحفظة" : "Wallet Discount"}</span>
+                          <span className="text-sm font-bold text-black/70 dark:text-white/70 flex items-center gap-1">- {effectiveWalletAmt.toLocaleString()} <SARIcon size={10} /></span>
                         </div>
                       )}
                       <div className="flex justify-between items-center">
@@ -1158,7 +1158,7 @@ export default function OrderFlow() {
                         return (
                           <button key={opt} data-testid={`meeting-slot-${opt}`}
                             onClick={() => setMeetingSlots(p => isSel ? p.filter(v => v !== opt) : p.length < 3 ? [...p, opt] : p)}
-                            className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${isSel ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300" : "border-black/[0.08] dark:border-white/[0.08] text-black/50 dark:text-white/50 hover:border-violet-300"}`}>
+                            className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${isSel ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-black/[0.08] dark:border-white/[0.08] text-black/50 dark:text-white/50 hover:border-black/15 dark:border-white/15"}`}>
                             {opt}
                           </button>
                         );
@@ -1169,26 +1169,26 @@ export default function OrderFlow() {
 
                 {/* ── Wallet Option ── */}
                 {user && walletBalance > 0 && (
-                  <div className={`rounded-3xl border-2 p-5 transition-all cursor-pointer ${useWallet ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
+                  <div className={`rounded-3xl border-2 p-5 transition-all cursor-pointer ${useWallet ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
                     onClick={() => setUseWallet(v => !v)} data-testid="toggle-wallet">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${useWallet ? "bg-violet-500" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${useWallet ? "bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
                         <Wallet className={`w-5 h-5 ${useWallet ? "text-white" : "text-black/40 dark:text-white/40"}`} />
                       </div>
                       <div className="flex-1">
                         <p className="font-bold text-sm text-black dark:text-white">{lang === "ar" ? "استخدام رصيد المحفظة" : "Use Wallet Balance"}</p>
                         <p className="text-xs text-black/40 dark:text-white/40">{lang === "ar" ? `رصيدك: ${walletBalance.toLocaleString()} ر.س` : `Balance: ${walletBalance.toLocaleString()} SAR`}</p>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${useWallet ? "border-violet-500 bg-violet-500" : "border-black/20 dark:border-white/20"}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${useWallet ? "border-black dark:border-white bg-black dark:bg-white" : "border-black/20 dark:border-white/20"}`}>
                         {useWallet && <Check className="w-3 h-3 text-white" />}
                       </div>
                     </div>
                     {useWallet && (
-                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800/40">
-                        <Label className="text-xs text-violet-700 dark:text-violet-300 mb-2 block">{lang === "ar" ? `المبلغ من المحفظة (الحد الأقصى ${maxWalletUsable.toLocaleString()} ر.س)` : `Wallet Amount (max ${maxWalletUsable.toLocaleString()} SAR)`}</Label>
+                      <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                        <Label className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-2 block">{lang === "ar" ? `المبلغ من المحفظة (الحد الأقصى ${maxWalletUsable.toLocaleString()} ر.س)` : `Wallet Amount (max ${maxWalletUsable.toLocaleString()} SAR)`}</Label>
                         <Input type="number" min={0} max={maxWalletUsable} value={walletAmount}
                           onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                          className="rounded-xl h-10 text-sm border-violet-300 dark:border-violet-700"
+                          className="rounded-xl h-10 text-sm border-black/15 dark:border-white/15 dark:border-black dark:border-white"
                           onClick={e => e.stopPropagation()} data-testid="input-wallet-amount" />
                       </div>
                     )}
@@ -1198,9 +1198,9 @@ export default function OrderFlow() {
                 {/* ── Bank Transfer Details ── */}
                 {!fullyPaidByWallet && (
                   <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-                    <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-b border-black/[0.04] dark:border-white/[0.04]">
+                    <div className="px-5 py-4 bg-gradient-to-r from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border-b border-black/[0.04] dark:border-white/[0.04]">
                       <p className="text-xs font-black text-black/50 dark:text-white/50 uppercase tracking-wider flex items-center gap-1.5">
-                        <BanknoteIcon className="w-3.5 h-3.5 text-emerald-600" /> {lang === "ar" ? "التحويل البنكي" : "Bank Transfer"}
+                        <BanknoteIcon className="w-3.5 h-3.5 text-black dark:text-white" /> {lang === "ar" ? "التحويل البنكي" : "Bank Transfer"}
                       </p>
                     </div>
                     <div className="px-5 py-5 space-y-3">
@@ -1216,12 +1216,12 @@ export default function OrderFlow() {
                             <span className="text-sm font-bold text-black dark:text-white font-mono">{value}</span>
                             <button onClick={() => { navigator.clipboard.writeText(value); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2000); }}
                               className="text-black/30 hover:text-black dark:text-white/30 dark:hover:text-white transition-colors" data-testid="btn-copy-iban">
-                              {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                           </div>
                         </div>
                       ))}
-                      {bank.notes && <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 rounded-xl px-3 py-2">{bank.notes}</p>}
+                      {bank.notes && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl px-3 py-2">{bank.notes}</p>}
                     </div>
                   </div>
                 )}
@@ -1236,16 +1236,16 @@ export default function OrderFlow() {
                 )}
 
                 {bank.notes && fullyPaidByWallet && (
-                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
-                    <p className="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+                    <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-2">
                       <Check className="w-4 h-4 shrink-0" />
                       {lang === "ar" ? "سيُخصم المبلغ كاملاً من رصيد محفظتك." : "The full amount will be deducted from your wallet balance."}
                     </p>
                   </div>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
-                  <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+                  <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-start gap-2">
                     <Clock className="w-4 h-4 shrink-0 mt-0.5" />
                     {lang === "ar"
                       ? "سيتواصل معك فريق QIROX لتأكيد الطلب خلال 24 ساعة من استلام الدفع."
@@ -1282,7 +1282,7 @@ export default function OrderFlow() {
                 submitMutation.mutate();
               }}
               disabled={submitMutation.isPending}
-              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-60" data-testid="button-submit">
+              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-60" data-testid="button-submit">
               {submitMutation.isPending
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جاري الإرسال..." : "Submitting..."}</>
                 : lang === "ar" ? <>إرسال الطلب <ArrowLeft className="w-4 h-4" /></> : <>Submit Order <ArrowRight className="w-4 h-4" /></>}

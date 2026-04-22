@@ -27,88 +27,88 @@ import { useI18n } from "@/lib/i18n";
 // ─── All 62 Tool Definitions ─────────────────────────────────────────────────
 export const ALL_TOOLS = [
   // PDF Tools
-  { id: "img-to-pdf",     cat: "pdf",         icon: Image,          label: "صور → PDF",              desc: "حوّل صورة أو مجموعة صور إلى ملف PDF",         color: "from-blue-500 to-cyan-500",       badge: "" },
-  { id: "pdf-merge",      cat: "pdf",         icon: Layers,         label: "دمج PDF",                 desc: "ادمج أكثر من ملف PDF في ملف واحد",             color: "from-purple-500 to-pink-500",     badge: "" },
-  { id: "pdf-split",      cat: "pdf",         icon: Scissors,       label: "تقسيم PDF",               desc: "استخرج صفحات محددة من ملف PDF",                color: "from-orange-500 to-red-500",      badge: "" },
-  { id: "pdf-rotate",     cat: "pdf",         icon: RotateCw,       label: "تدوير PDF",               desc: "دوّر صفحات PDF بالزاوية التي تريدها",           color: "from-green-500 to-teal-500",      badge: "" },
-  { id: "pdf-watermark",  cat: "pdf",         icon: Type,           label: "ختم مائي PDF",            desc: "أضف ختماً مائياً على جميع صفحات PDF",           color: "from-amber-500 to-yellow-500",    badge: "" },
-  { id: "docx-to-pdf",    cat: "pdf",         icon: FileText,       label: "Word → PDF",              desc: "حوّل ملف Word إلى PDF بجودة عالية",             color: "from-indigo-500 to-blue-500",     badge: "" },
+  { id: "img-to-pdf",     cat: "pdf",         icon: Image,          label: "صور → PDF",              desc: "حوّل صورة أو مجموعة صور إلى ملف PDF",         color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "pdf-merge",      cat: "pdf",         icon: Layers,         label: "دمج PDF",                 desc: "ادمج أكثر من ملف PDF في ملف واحد",             color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "pdf-split",      cat: "pdf",         icon: Scissors,       label: "تقسيم PDF",               desc: "استخرج صفحات محددة من ملف PDF",                color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "pdf-rotate",     cat: "pdf",         icon: RotateCw,       label: "تدوير PDF",               desc: "دوّر صفحات PDF بالزاوية التي تريدها",           color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "pdf-watermark",  cat: "pdf",         icon: Type,           label: "ختم مائي PDF",            desc: "أضف ختماً مائياً على جميع صفحات PDF",           color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "docx-to-pdf",    cat: "pdf",         icon: FileText,       label: "Word → PDF",              desc: "حوّل ملف Word إلى PDF بجودة عالية",             color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
   // Tech Tools
-  { id: "html-publish",   cat: "tech",        icon: Globe,          label: "نشر HTML",                desc: "انشر صفحة HTML واحصل على رابط مباشر",          color: "from-cyan-500 to-blue-600",       badge: "مميز" },
-  { id: "url-shorten",    cat: "tech",        icon: Link2,          label: "اختصار الروابط",          desc: "قصّر أي رابط طويل واحصل على رابط قصير",        color: "from-pink-500 to-rose-500",       badge: "" },
-  { id: "base64",         cat: "tech",        icon: ArrowRightLeft, label: "محول Base64",             desc: "حوّل النصوص من وإلى تشفير Base64",             color: "from-violet-500 to-purple-600",   badge: "" },
-  { id: "password-gen",   cat: "tech",        icon: Key,            label: "منشئ كلمات المرور",       desc: "أنشئ كلمات مرور قوية وعشوائية",                color: "from-red-500 to-orange-500",      badge: "" },
-  { id: "uuid-gen",       cat: "tech",        icon: Shuffle,        label: "منشئ UUID",               desc: "أنشئ UUID فريداً بنقرة واحدة",                 color: "from-teal-500 to-green-500",      badge: "" },
-  { id: "json-csv",       cat: "tech",        icon: Hash,           label: "JSON ↔ CSV",              desc: "حوّل بياناتك بين JSON و CSV",                  color: "from-amber-500 to-orange-600",    badge: "" },
+  { id: "html-publish",   cat: "tech",        icon: Globe,          label: "نشر HTML",                desc: "انشر صفحة HTML واحصل على رابط مباشر",          color: "from-black dark:from-white to-black dark:to-white",       badge: "مميز" },
+  { id: "url-shorten",    cat: "tech",        icon: Link2,          label: "اختصار الروابط",          desc: "قصّر أي رابط طويل واحصل على رابط قصير",        color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "base64",         cat: "tech",        icon: ArrowRightLeft, label: "محول Base64",             desc: "حوّل النصوص من وإلى تشفير Base64",             color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "password-gen",   cat: "tech",        icon: Key,            label: "منشئ كلمات المرور",       desc: "أنشئ كلمات مرور قوية وعشوائية",                color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "uuid-gen",       cat: "tech",        icon: Shuffle,        label: "منشئ UUID",               desc: "أنشئ UUID فريداً بنقرة واحدة",                 color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "json-csv",       cat: "tech",        icon: Hash,           label: "JSON ↔ CSV",              desc: "حوّل بياناتك بين JSON و CSV",                  color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
   // Text Tools
-  { id: "word-counter",   cat: "text",        icon: AlignLeft,      label: "عداد الكلمات",            desc: "عدّ الكلمات والأحرف والأسطر في نصك",          color: "from-sky-500 to-blue-500",        badge: "" },
-  { id: "case-converter", cat: "text",        icon: Type,           label: "محوّل الحالة",            desc: "حوّل النص بين UPPER وlower وTitle وغيرها",    color: "from-fuchsia-500 to-purple-500",  badge: "" },
-  { id: "text-diff",      cat: "text",        icon: GitBranch,      label: "مقارنة النصوص",           desc: "قارن نصين واعرض الفروقات بين السطور",          color: "from-rose-500 to-pink-500",       badge: "" },
-  { id: "text-reverser",  cat: "text",        icon: FlipVertical,   label: "عاكس النص",               desc: "اعكس ترتيب الحروف أو الكلمات في نصك",         color: "from-orange-500 to-amber-500",    badge: "" },
-  { id: "line-sorter",    cat: "text",        icon: AlignJustify,   label: "مرتب الأسطر",             desc: "رتب الأسطر أبجدياً أو عكسياً أو عشوائياً",    color: "from-lime-500 to-green-500",      badge: "" },
-  { id: "remove-dupes",   cat: "text",        icon: Filter,         label: "إزالة المكررات",          desc: "احذف الأسطر المتكررة في نصك تلقائياً",        color: "from-teal-500 to-cyan-500",       badge: "" },
-  { id: "find-replace",   cat: "text",        icon: Replace,        label: "إيجاد واستبدال",          desc: "ابحث عن نص واستبدله في محتواك",               color: "from-violet-500 to-indigo-500",   badge: "" },
+  { id: "word-counter",   cat: "text",        icon: AlignLeft,      label: "عداد الكلمات",            desc: "عدّ الكلمات والأحرف والأسطر في نصك",          color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
+  { id: "case-converter", cat: "text",        icon: Type,           label: "محوّل الحالة",            desc: "حوّل النص بين UPPER وlower وTitle وغيرها",    color: "from-black dark:from-white to-black dark:to-white",  badge: "" },
+  { id: "text-diff",      cat: "text",        icon: GitBranch,      label: "مقارنة النصوص",           desc: "قارن نصين واعرض الفروقات بين السطور",          color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "text-reverser",  cat: "text",        icon: FlipVertical,   label: "عاكس النص",               desc: "اعكس ترتيب الحروف أو الكلمات في نصك",         color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "line-sorter",    cat: "text",        icon: AlignJustify,   label: "مرتب الأسطر",             desc: "رتب الأسطر أبجدياً أو عكسياً أو عشوائياً",    color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "remove-dupes",   cat: "text",        icon: Filter,         label: "إزالة المكررات",          desc: "احذف الأسطر المتكررة في نصك تلقائياً",        color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "find-replace",   cat: "text",        icon: Replace,        label: "إيجاد واستبدال",          desc: "ابحث عن نص واستبدله في محتواك",               color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
   { id: "lorem-ipsum",    cat: "text",        icon: FileCode,       label: "نص تجريبي",               desc: "اٍنشئ نصوص Lorem ipsum بضغطة واحدة",           color: "from-gray-500 to-slate-600",      badge: "" },
   // Math/Numbers
-  { id: "calc-percentage",cat: "math",        icon: Percent,        label: "حاسبة النسبة",            desc: "احسب النسب المئوية والزيادات والخصومات",       color: "from-blue-600 to-indigo-600",     badge: "" },
-  { id: "calc-bmi",       cat: "math",        icon: Activity,       label: "حاسبة BMI",               desc: "احسب مؤشر كتلة جسمك وصنفّ وزنك",             color: "from-green-600 to-emerald-500",   badge: "" },
-  { id: "unit-converter", cat: "math",        icon: Ruler,          label: "محوّل الوحدات",           desc: "حوّل بين الأوزان والأطوال والحرارة والمساحة",  color: "from-amber-600 to-orange-500",    badge: "" },
-  { id: "calc-age",       cat: "math",        icon: Calendar,       label: "حاسبة العمر",             desc: "احسب عمرك بالسنوات والأشهر والأيام",           color: "from-rose-500 to-red-600",        badge: "" },
-  { id: "roman-numerals", cat: "math",        icon: BookOpen,       label: "الأرقام الرومانية",       desc: "حوّل الأرقام إلى رومانية والعكس",              color: "from-amber-700 to-yellow-600",    badge: "" },
+  { id: "calc-percentage",cat: "math",        icon: Percent,        label: "حاسبة النسبة",            desc: "احسب النسب المئوية والزيادات والخصومات",       color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "calc-bmi",       cat: "math",        icon: Activity,       label: "حاسبة BMI",               desc: "احسب مؤشر كتلة جسمك وصنفّ وزنك",             color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "unit-converter", cat: "math",        icon: Ruler,          label: "محوّل الوحدات",           desc: "حوّل بين الأوزان والأطوال والحرارة والمساحة",  color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "calc-age",       cat: "math",        icon: Calendar,       label: "حاسبة العمر",             desc: "احسب عمرك بالسنوات والأشهر والأيام",           color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
+  { id: "roman-numerals", cat: "math",        icon: BookOpen,       label: "الأرقام الرومانية",       desc: "حوّل الأرقام إلى رومانية والعكس",              color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
   { id: "binary-hex",     cat: "math",        icon: Binary,         label: "محوّل الأنظمة العددية",   desc: "حوّل بين الثنائي والثماني والعشري والسادس عشر", color: "from-slate-600 to-gray-700",      badge: "" },
-  { id: "calc-discount",  cat: "math",        icon: Tag,            label: "حاسبة الخصم",             desc: "احسب السعر بعد الخصم ومقدار التوفير",          color: "from-pink-600 to-rose-500",       badge: "" },
-  { id: "arabic-num-words", cat: "math",      icon: Languages,      label: "الأرقام بالكلمات",        desc: "حوّل الأرقام إلى كلمات عربية",                color: "from-emerald-600 to-teal-600",    badge: "" },
+  { id: "calc-discount",  cat: "math",        icon: Tag,            label: "حاسبة الخصم",             desc: "احسب السعر بعد الخصم ومقدار التوفير",          color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "arabic-num-words", cat: "math",      icon: Languages,      label: "الأرقام بالكلمات",        desc: "حوّل الأرقام إلى كلمات عربية",                color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
   // Design & Colors
-  { id: "color-converter",cat: "design",      icon: Pipette,        label: "محوّل الألوان",           desc: "حوّل بين HEX وRGB وHSL بسهولة",               color: "from-pink-500 to-fuchsia-500",    badge: "" },
-  { id: "gradient-gen",   cat: "design",      icon: Palette,        label: "منشئ التدرج",             desc: "صمّم تدرجات CSS ملونة واحصل على كودها",        color: "from-purple-500 to-pink-500",     badge: "" },
+  { id: "color-converter",cat: "design",      icon: Pipette,        label: "محوّل الألوان",           desc: "حوّل بين HEX وRGB وHSL بسهولة",               color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "gradient-gen",   cat: "design",      icon: Palette,        label: "منشئ التدرج",             desc: "صمّم تدرجات CSS ملونة واحصل على كودها",        color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
   { id: "qr-gen",         cat: "design",      icon: QrCode,         label: "منشئ QR Code",            desc: "حوّل أي نص أو رابط إلى رمز QR",               color: "from-gray-700 to-gray-900",       badge: "" },
-  { id: "shadow-gen",     cat: "design",      icon: Layers3,        label: "منشئ الظل CSS",           desc: "صمّم ظلالاً جميلة للعناصر واحصل على الكود",   color: "from-slate-500 to-blue-600",      badge: "" },
-  { id: "border-radius",  cat: "design",      icon: SquareDashed,   label: "منشئ الحواف المدورة",     desc: "صمّم حواف مدورة باحترافية واحصل على CSS",      color: "from-cyan-600 to-teal-600",       badge: "" },
-  { id: "color-palette",  cat: "design",      icon: Paintbrush,     label: "لوحة الألوان",            desc: "أنشئ لوحة ألوان متناسقة من لون أساسي",         color: "from-orange-500 to-amber-500",    badge: "" },
-  { id: "contrast-checker",cat: "design",     icon: Sun,            label: "مدقق التباين",            desc: "تحقق من تباين الألوان ومعايير WCAG",           color: "from-yellow-600 to-amber-600",    badge: "" },
+  { id: "shadow-gen",     cat: "design",      icon: Layers3,        label: "منشئ الظل CSS",           desc: "صمّم ظلالاً جميلة للعناصر واحصل على الكود",   color: "from-slate-500 to-black dark:to-white",      badge: "" },
+  { id: "border-radius",  cat: "design",      icon: SquareDashed,   label: "منشئ الحواف المدورة",     desc: "صمّم حواف مدورة باحترافية واحصل على CSS",      color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "color-palette",  cat: "design",      icon: Paintbrush,     label: "لوحة الألوان",            desc: "أنشئ لوحة ألوان متناسقة من لون أساسي",         color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "contrast-checker",cat: "design",     icon: Sun,            label: "مدقق التباين",            desc: "تحقق من تباين الألوان ومعايير WCAG",           color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
   // Dev Tools
-  { id: "img-base64",     cat: "dev",         icon: Image,          label: "صورة → Base64",           desc: "حوّل الصور إلى Base64 والعكس",                 color: "from-blue-500 to-violet-500",     badge: "" },
-  { id: "jwt-decoder",    cat: "dev",         icon: Key,            label: "فكّ تشفير JWT",           desc: "فكّ تشفير رموز JWT واعرض البيانات",            color: "from-orange-600 to-red-600",      badge: "" },
-  { id: "json-format",    cat: "dev",         icon: Code,           label: "منسّق JSON",              desc: "نسّق وتحقق من صحة JSON بسهولة",               color: "from-green-500 to-emerald-600",   badge: "" },
-  { id: "regex-tester",   cat: "dev",         icon: Code2,          label: "مختبر Regex",             desc: "اختبر التعابير النمطية في نصوصك",              color: "from-red-500 to-rose-600",        badge: "" },
-  { id: "timestamp",      cat: "dev",         icon: Clock,          label: "محوّل Unix Timestamp",    desc: "حوّل بين التواريخ وUNIX timestamps",           color: "from-teal-600 to-cyan-600",       badge: "" },
-  { id: "url-encode",     cat: "dev",         icon: Link2,          label: "ترميز URL",               desc: "رمّز أو فكّ ترميز URLs والنصوص",               color: "from-violet-600 to-purple-600",   badge: "" },
-  { id: "html-entities",  cat: "dev",         icon: FileCode,       label: "HTML Entities",           desc: "رمّز أو فكّ ترميز HTML Entities",              color: "from-pink-600 to-fuchsia-600",    badge: "" },
-  { id: "markdown-html",  cat: "dev",         icon: FileText,       label: "Markdown → HTML",         desc: "حوّل Markdown إلى HTML مع معاينة مباشرة",      color: "from-sky-600 to-blue-600",        badge: "" },
+  { id: "img-base64",     cat: "dev",         icon: Image,          label: "صورة → Base64",           desc: "حوّل الصور إلى Base64 والعكس",                 color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "jwt-decoder",    cat: "dev",         icon: Key,            label: "فكّ تشفير JWT",           desc: "فكّ تشفير رموز JWT واعرض البيانات",            color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "json-format",    cat: "dev",         icon: Code,           label: "منسّق JSON",              desc: "نسّق وتحقق من صحة JSON بسهولة",               color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "regex-tester",   cat: "dev",         icon: Code2,          label: "مختبر Regex",             desc: "اختبر التعابير النمطية في نصوصك",              color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
+  { id: "timestamp",      cat: "dev",         icon: Clock,          label: "محوّل Unix Timestamp",    desc: "حوّل بين التواريخ وUNIX timestamps",           color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "url-encode",     cat: "dev",         icon: Link2,          label: "ترميز URL",               desc: "رمّز أو فكّ ترميز URLs والنصوص",               color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "html-entities",  cat: "dev",         icon: FileCode,       label: "HTML Entities",           desc: "رمّز أو فكّ ترميز HTML Entities",              color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "markdown-html",  cat: "dev",         icon: FileText,       label: "Markdown → HTML",         desc: "حوّل Markdown إلى HTML مع معاينة مباشرة",      color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
   { id: "hash-gen",       cat: "dev",         icon: Hash,           label: "منشئ الهاش",              desc: "احسب SHA-256 وSHA-512 لأي نص",                 color: "from-gray-600 to-slate-700",      badge: "" },
   // Productivity
-  { id: "pomodoro",       cat: "productivity",icon: Timer,          label: "مؤقت بومودورو",           desc: "ركّز عملك مع مؤقت 25 دقيقة + 5 دقائق راحة",   color: "from-red-500 to-orange-500",      badge: "" },
-  { id: "countdown",      cat: "productivity",icon: Hourglass,      label: "العد التنازلي",           desc: "حدد موعداً واحسب الوقت المتبقي",              color: "from-violet-500 to-indigo-500",   badge: "" },
-  { id: "world-clock",    cat: "productivity",icon: Globe2,         label: "ساعة العالم",             desc: "اعرض الوقت الحالي في كبرى مدن العالم",         color: "from-blue-500 to-cyan-500",       badge: "" },
-  { id: "invoice-gen",    cat: "productivity",icon: Receipt,        label: "منشئ الفاتورة",           desc: "أنشئ فاتورة احترافية وطبعها أو حفظها",         color: "from-emerald-500 to-green-600",   badge: "" },
-  { id: "notes",          cat: "productivity",icon: StickyNote,     label: "مفكرتي السريعة",          desc: "دوّن ملاحظاتك وتُحفظ تلقائياً",               color: "from-yellow-500 to-amber-500",    badge: "" },
-  { id: "password-strength",cat: "productivity",icon: ShieldCheck,  label: "محلل قوة المرور",         desc: "حلّل قوة كلمة مرورك واعرف كيف تقويها",         color: "from-indigo-500 to-blue-600",     badge: "" },
-  { id: "email-validator",cat: "productivity",icon: Mail,           label: "مدقق البريد",             desc: "تحقق من صحة عنوان البريد الإلكتروني",          color: "from-sky-500 to-blue-500",        badge: "" },
-  { id: "hashtag-gen",    cat: "productivity",icon: Hash,           label: "منشئ الهاشتاقات",         desc: "اٍنشئ هاشتاقات احترافية لمنشوراتك",           color: "from-pink-500 to-rose-500",       badge: "" },
+  { id: "pomodoro",       cat: "productivity",icon: Timer,          label: "مؤقت بومودورو",           desc: "ركّز عملك مع مؤقت 25 دقيقة + 5 دقائق راحة",   color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
+  { id: "countdown",      cat: "productivity",icon: Hourglass,      label: "العد التنازلي",           desc: "حدد موعداً واحسب الوقت المتبقي",              color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "world-clock",    cat: "productivity",icon: Globe2,         label: "ساعة العالم",             desc: "اعرض الوقت الحالي في كبرى مدن العالم",         color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "invoice-gen",    cat: "productivity",icon: Receipt,        label: "منشئ الفاتورة",           desc: "أنشئ فاتورة احترافية وطبعها أو حفظها",         color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "notes",          cat: "productivity",icon: StickyNote,     label: "مفكرتي السريعة",          desc: "دوّن ملاحظاتك وتُحفظ تلقائياً",               color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "password-strength",cat: "productivity",icon: ShieldCheck,  label: "محلل قوة المرور",         desc: "حلّل قوة كلمة مرورك واعرف كيف تقويها",         color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "email-validator",cat: "productivity",icon: Mail,           label: "مدقق البريد",             desc: "تحقق من صحة عنوان البريد الإلكتروني",          color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
+  { id: "hashtag-gen",    cat: "productivity",icon: Hash,           label: "منشئ الهاشتاقات",         desc: "اٍنشئ هاشتاقات احترافية لمنشوراتك",           color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
   // Images
-  { id: "img-compress",   cat: "images",      icon: Minimize2,      label: "ضغط الصور",               desc: "قلّل حجم صورك دون فقدان الجودة",               color: "from-orange-500 to-red-500",      badge: "" },
+  { id: "img-compress",   cat: "images",      icon: Minimize2,      label: "ضغط الصور",               desc: "قلّل حجم صورك دون فقدان الجودة",               color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
   { id: "img-grayscale",  cat: "images",      icon: MoveHorizontal, label: "الأبيض والأسود",           desc: "حوّل صورة ملونة إلى تدرج رمادي",              color: "from-gray-500 to-slate-600",      badge: "" },
-  { id: "img-resize",     cat: "images",      icon: Maximize2,      label: "تغيير حجم الصور",         desc: "غيّر أبعاد صورتك بدقة مع الحفاظ على النسبة",  color: "from-teal-500 to-green-500",      badge: "" },
+  { id: "img-resize",     cat: "images",      icon: Maximize2,      label: "تغيير حجم الصور",         desc: "غيّر أبعاد صورتك بدقة مع الحفاظ على النسبة",  color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
   // Arabic Tools
-  { id: "tashkeel-remover",cat: "arabic",     icon: Languages,      label: "إزالة التشكيل",           desc: "احذف الحركات والتشكيل من النص العربي",         color: "from-emerald-600 to-green-700",   badge: "" },
-  { id: "hijri-date",     cat: "arabic",      icon: Moon,           label: "التقويم الهجري",          desc: "حوّل بين التاريخ الميلادي والهجري",            color: "from-indigo-600 to-violet-600",   badge: "" },
-  { id: "text-to-morse",  cat: "arabic",      icon: Radio,          label: "نص إلى مورس",             desc: "حوّل النصوص إلى وفك ترميز مورس",              color: "from-amber-600 to-orange-600",    badge: "" },
-  { id: "typing-test",    cat: "arabic",      icon: Keyboard,       label: "اختبار سرعة الطباعة",     desc: "اختبر سرعتك ودقتك في الكتابة",                color: "from-blue-600 to-cyan-600",       badge: "" },
-  { id: "css-minify",     cat: "arabic",      icon: Code2,          label: "ضغط CSS",                 desc: "اضغط كود CSS وقلل حجمه تلقائياً",              color: "from-pink-600 to-purple-600",     badge: "" },
-  { id: "svg-to-png",     cat: "arabic",      icon: Wand2,          label: "SVG → PNG",               desc: "حوّل ملفات SVG إلى صور PNG",                  color: "from-violet-500 to-fuchsia-600",  badge: "" },
-  { id: "number-base",    cat: "arabic",      icon: Calculator,     label: "محوّل الأرقام",            desc: "حوّل الأرقام بين الأنظمة المختلفة",            color: "from-rose-600 to-red-600",        badge: "" },
+  { id: "tashkeel-remover",cat: "arabic",     icon: Languages,      label: "إزالة التشكيل",           desc: "احذف الحركات والتشكيل من النص العربي",         color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "hijri-date",     cat: "arabic",      icon: Moon,           label: "التقويم الهجري",          desc: "حوّل بين التاريخ الميلادي والهجري",            color: "from-black dark:from-white to-black dark:to-white",   badge: "" },
+  { id: "text-to-morse",  cat: "arabic",      icon: Radio,          label: "نص إلى مورس",             desc: "حوّل النصوص إلى وفك ترميز مورس",              color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
+  { id: "typing-test",    cat: "arabic",      icon: Keyboard,       label: "اختبار سرعة الطباعة",     desc: "اختبر سرعتك ودقتك في الكتابة",                color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
+  { id: "css-minify",     cat: "arabic",      icon: Code2,          label: "ضغط CSS",                 desc: "اضغط كود CSS وقلل حجمه تلقائياً",              color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "svg-to-png",     cat: "arabic",      icon: Wand2,          label: "SVG → PNG",               desc: "حوّل ملفات SVG إلى صور PNG",                  color: "from-black dark:from-white to-black dark:to-white",  badge: "" },
+  { id: "number-base",    cat: "arabic",      icon: Calculator,     label: "محوّل الأرقام",            desc: "حوّل الأرقام بين الأنظمة المختلفة",            color: "from-black dark:from-white to-black dark:to-white",        badge: "" },
 ];
 
 export const CATEGORIES = [
-  { id: "pdf",          label: "📄 أدوات PDF",            color: "from-blue-500 to-cyan-500"    },
-  { id: "tech",         label: "⚡ خدمات تقنية",           color: "from-pink-500 to-rose-500"    },
-  { id: "text",         label: "📝 أدوات النصوص",          color: "from-violet-500 to-purple-500" },
-  { id: "math",         label: "🔢 الأعداد والرياضيات",    color: "from-green-500 to-emerald-500"  },
-  { id: "design",       label: "🎨 التصميم والألوان",      color: "from-orange-500 to-amber-500" },
+  { id: "pdf",          label: "📄 أدوات PDF",            color: "from-black dark:from-white to-black dark:to-white"    },
+  { id: "tech",         label: "⚡ خدمات تقنية",           color: "from-black dark:from-white to-black dark:to-white"    },
+  { id: "text",         label: "📝 أدوات النصوص",          color: "from-black dark:from-white to-black dark:to-white" },
+  { id: "math",         label: "🔢 الأعداد والرياضيات",    color: "from-black dark:from-white to-black dark:to-white"  },
+  { id: "design",       label: "🎨 التصميم والألوان",      color: "from-black dark:from-white to-black dark:to-white" },
   { id: "dev",          label: "💻 أدوات المطورين",        color: "from-slate-500 to-gray-600"   },
-  { id: "productivity", label: "⏰ الإنتاجية",             color: "from-teal-500 to-cyan-500"    },
-  { id: "images",       label: "🖼️ معالجة الصور",          color: "from-red-500 to-orange-500"   },
-  { id: "arabic",       label: "🌙 أدوات عربية وأخرى",     color: "from-indigo-500 to-blue-600"  },
+  { id: "productivity", label: "⏰ الإنتاجية",             color: "from-black dark:from-white to-black dark:to-white"    },
+  { id: "images",       label: "🖼️ معالجة الصور",          color: "from-black dark:from-white to-black dark:to-white"   },
+  { id: "arabic",       label: "🌙 أدوات عربية وأخرى",     color: "from-black dark:from-white to-black dark:to-white"  },
 ];
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
   const copy = () => { navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 1800); };
   return (
     <button onClick={copy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-black/[0.04] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.08] transition-colors text-black/60 dark:text-white/60" data-testid="btn-copy">
-      {ok ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+      {ok ? <Check className="w-3 h-3 text-black dark:text-white" /> : <Copy className="w-3 h-3" />}
       {ok ? "تم النسخ!" : (label || "نسخ")}
     </button>
   );
@@ -175,12 +175,12 @@ function ImgToPdfPanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" multiple accept="image/*" className="hidden" onChange={e => setFiles(Array.from(e.target.files || []))} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-cyan-400 hover:bg-cyan-50/30 dark:hover:bg-cyan-900/10 transition-all" data-testid="dropzone-img-pdf">
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-img-pdf">
         <Image className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" />
         <p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار صور (PNG، JPEG)</p>
       </div>
-      {files.length > 0 && <div className="space-y-2">{files.map((f, i) => <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-sm"><Image className="w-4 h-4 text-blue-500 shrink-0" /><span className="flex-1 truncate text-black dark:text-white">{f.name}</span><button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div>}
-      <Button onClick={handle} disabled={!files.length || loading} className="w-full gap-2 bg-gradient-to-l from-blue-500 to-cyan-500 text-white" data-testid="btn-img-to-pdf">
+      {files.length > 0 && <div className="space-y-2">{files.map((f, i) => <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-sm"><Image className="w-4 h-4 text-black dark:text-white shrink-0" /><span className="flex-1 truncate text-black dark:text-white">{f.name}</span><button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-black dark:text-white"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div>}
+      <Button onClick={handle} disabled={!files.length || loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-img-to-pdf">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         {loading ? "جارٍ التحويل..." : `تحويل ${files.length || ""} صورة إلى PDF`}
       </Button>
@@ -214,12 +214,12 @@ function PdfMergePanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" multiple accept=".pdf" className="hidden" onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-all" data-testid="dropzone-merge">
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-merge">
         <Layers className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" />
         <p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لإضافة ملفات PDF</p>
       </div>
-      {files.length > 0 && <div className="space-y-2">{files.map((f, i) => <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-sm"><span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span><span className="flex-1 truncate text-black dark:text-white">{f.name}</span><button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div>}
-      <Button onClick={handle} disabled={files.length < 2 || loading} className="w-full gap-2 bg-gradient-to-l from-purple-500 to-pink-500 text-white" data-testid="btn-pdf-merge">
+      {files.length > 0 && <div className="space-y-2">{files.map((f, i) => <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-sm"><span className="w-5 h-5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span><span className="flex-1 truncate text-black dark:text-white">{f.name}</span><button onClick={() => setFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-black dark:text-white"><Trash2 className="w-3.5 h-3.5" /></button></div>)}</div>}
+      <Button onClick={handle} disabled={files.length < 2 || loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-pdf-merge">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         {loading ? "جارٍ الدمج..." : `دمج ${files.length} ملفات`}
       </Button>
@@ -259,11 +259,11 @@ function PdfSplitPanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-all" data-testid="dropzone-split">
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-split">
         {file ? <p className="text-sm font-medium text-black dark:text-white">{file.name}</p> : <><Scissors className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار ملف PDF</p></>}
       </div>
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">أرقام الصفحات (مثال: 1,3,5-8)</label><Input value={pages} onChange={e => setPages(e.target.value)} placeholder="1, 3, 5-8" data-testid="input-split-pages" /></div>
-      <Button onClick={handle} disabled={!file || !pages.trim() || loading} className="w-full gap-2 bg-gradient-to-l from-orange-500 to-red-500 text-white" data-testid="btn-pdf-split">
+      <Button onClick={handle} disabled={!file || !pages.trim() || loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-pdf-split">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         {loading ? "جارٍ التقسيم..." : "استخراج الصفحات"}
       </Button>
@@ -292,11 +292,11 @@ function PdfRotatePanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-green-400 hover:bg-green-50/30 dark:hover:bg-green-900/10 transition-all" data-testid="dropzone-rotate">
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-rotate">
         {file ? <p className="text-sm font-medium text-black dark:text-white">{file.name}</p> : <><RotateCw className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار ملف PDF</p></>}
       </div>
-      <div className="flex gap-3">{([90,180,270] as const).map(a => <button key={a} onClick={() => setAngle(a)} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${angle===a?"bg-green-500 text-white border-green-500":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`} data-testid={`btn-angle-${a}`}>{a}°</button>)}</div>
-      <Button onClick={handle} disabled={!file||loading} className="w-full gap-2 bg-gradient-to-l from-green-500 to-teal-500 text-white" data-testid="btn-pdf-rotate">
+      <div className="flex gap-3">{([90,180,270] as const).map(a => <button key={a} onClick={() => setAngle(a)} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${angle===a?"bg-black dark:bg-white text-white border-black dark:border-white":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`} data-testid={`btn-angle-${a}`}>{a}°</button>)}</div>
+      <Button onClick={handle} disabled={!file||loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-pdf-rotate">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         {loading ? "جارٍ التدوير..." : "تدوير وتنزيل"}
       </Button>
@@ -331,12 +331,12 @@ function PdfWatermarkPanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-all" data-testid="dropzone-watermark">
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-watermark">
         {file ? <p className="text-sm font-medium text-black dark:text-white">{file.name}</p> : <><Type className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار ملف PDF</p></>}
       </div>
       <Input value={text} onChange={e => setText(e.target.value)} placeholder="نص الختم المائي" data-testid="input-watermark-text" />
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">الشفافية: {Math.round(opacity*100)}%</label><input type="range" min={5} max={80} value={Math.round(opacity*100)} onChange={e => setOpacity(+e.target.value/100)} className="w-full accent-amber-500" /></div>
-      <Button onClick={handle} disabled={!file||!text.trim()||loading} className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-500 text-white" data-testid="btn-pdf-watermark">
+      <Button onClick={handle} disabled={!file||!text.trim()||loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-pdf-watermark">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         {loading ? "جارٍ الإضافة..." : "إضافة الختم وتنزيل"}
       </Button>
@@ -364,11 +364,11 @@ function DocxToPdfPanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept=".docx" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400">يتم تحويل الملف لـ HTML ثم يُفتح بنافذة طباعة — اختر «حفظ كـ PDF»</div>
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all" data-testid="dropzone-docx">
-        {file ? <><FileText className="w-8 h-8 text-indigo-500 mx-auto mb-2" /><p className="text-sm font-medium text-black dark:text-white">{file.name}</p></> : <><FileText className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار ملف Word (.docx)</p></>}
+      <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">يتم تحويل الملف لـ HTML ثم يُفتح بنافذة طباعة — اختر «حفظ كـ PDF»</div>
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-10 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-docx">
+        {file ? <><FileText className="w-8 h-8 text-black dark:text-white mx-auto mb-2" /><p className="text-sm font-medium text-black dark:text-white">{file.name}</p></> : <><FileText className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار ملف Word (.docx)</p></>}
       </div>
-      <Button onClick={handle} disabled={!file||loading} className="w-full gap-2 bg-gradient-to-l from-indigo-500 to-blue-500 text-white" data-testid="btn-docx-pdf">
+      <Button onClick={handle} disabled={!file||loading} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-docx-pdf">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
         {loading ? "جارٍ التحويل..." : "تحويل وعرض للطباعة"}
       </Button>
@@ -396,7 +396,7 @@ function HtmlPublishPanel() {
     <div className="space-y-5">
       <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="عنوان الصفحة (اختياري)" data-testid="input-html-title" />
       <Textarea value={html} onChange={e => setHtml(e.target.value)} placeholder={"<!DOCTYPE html>\n<html>\n<head><title>صفحتي</title></head>\n<body>\n  <h1>مرحباً!</h1>\n</body>\n</html>"} rows={8} className="font-mono text-xs" data-testid="textarea-html-content" />
-      <Button onClick={() => publishMutation.mutate()} disabled={!html.trim()||publishMutation.isPending} className="w-full gap-2 bg-gradient-to-l from-cyan-500 to-blue-600 text-white" data-testid="btn-html-publish">
+      <Button onClick={() => publishMutation.mutate()} disabled={!html.trim()||publishMutation.isPending} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-html-publish">
         {publishMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
         {publishMutation.isPending ? "جارٍ النشر..." : "نشر الصفحة"}
       </Button>
@@ -405,11 +405,11 @@ function HtmlPublishPanel() {
           <p className="text-xs font-semibold text-black/40 dark:text-white/40">صفحاتك المنشورة</p>
           {pages.map((p: any) => (
             <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-black/[0.07] dark:border-white/[0.07]">
-              <Globe className="w-4 h-4 text-cyan-500 shrink-0" />
+              <Globe className="w-4 h-4 text-black dark:text-white shrink-0" />
               <div className="flex-1 min-w-0"><p className="text-sm font-medium text-black dark:text-white truncate">{p.title}</p><p className="text-[10px] text-black/30 dark:text-white/30">{p.views} مشاهدة</p></div>
-              <button onClick={() => copy(p.url, p.id)} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/40 dark:text-white/40">{copied===p.id?<Check className="w-3.5 h-3.5 text-green-500"/>:<Copy className="w-3.5 h-3.5"/>}</button>
+              <button onClick={() => copy(p.url, p.id)} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/40 dark:text-white/40">{copied===p.id?<Check className="w-3.5 h-3.5 text-black dark:text-white"/>:<Copy className="w-3.5 h-3.5"/>}</button>
               <a href={p.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/40 dark:text-white/40"><ExternalLink className="w-3.5 h-3.5" /></a>
-              <button onClick={() => deleteMutation.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 dark:text-white/30 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => deleteMutation.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 dark:text-white/30 hover:text-black dark:text-white"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
@@ -438,7 +438,7 @@ function UrlShortenPanel() {
     <div className="space-y-4">
       <Input value={urlTitle} onChange={e => setUrlTitle(e.target.value)} placeholder="عنوان الرابط (اختياري)" data-testid="input-url-title" />
       <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://example.com/very/long/url" type="url" data-testid="input-url" />
-      <Button onClick={() => shortenMutation.mutate()} disabled={!url.trim()||shortenMutation.isPending} className="w-full gap-2 bg-gradient-to-l from-pink-500 to-rose-500 text-white" data-testid="btn-shorten">
+      <Button onClick={() => shortenMutation.mutate()} disabled={!url.trim()||shortenMutation.isPending} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-shorten">
         {shortenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
         {shortenMutation.isPending ? "جارٍ الاختصار..." : "اختصار الرابط"}
       </Button>
@@ -447,10 +447,10 @@ function UrlShortenPanel() {
           <p className="text-xs font-semibold text-black/40 dark:text-white/40">روابطك المختصرة</p>
           {links.map((l: any) => (
             <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl border border-black/[0.07] dark:border-white/[0.07]">
-              <Link2 className="w-4 h-4 text-pink-500 shrink-0" />
+              <Link2 className="w-4 h-4 text-black dark:text-white shrink-0" />
               <div className="flex-1 min-w-0"><p className="text-sm font-medium text-black dark:text-white">{l.title||"رابط"}</p><p className="text-[10px] text-black/30 dark:text-white/30 truncate">{l.shortUrl} · {l.clicks||0} نقرة</p></div>
-              <button onClick={() => copy(l.shortUrl, l.id)} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/40 dark:text-white/40">{copied===l.id?<Check className="w-3.5 h-3.5 text-green-500"/>:<Copy className="w-3.5 h-3.5"/>}</button>
-              <button onClick={() => deleteMutation.mutate(l.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 dark:text-white/30 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => copy(l.shortUrl, l.id)} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/40 dark:text-white/40">{copied===l.id?<Check className="w-3.5 h-3.5 text-black dark:text-white"/>:<Copy className="w-3.5 h-3.5"/>}</button>
+              <button onClick={() => deleteMutation.mutate(l.id)} className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 dark:text-white/30 hover:text-black dark:text-white"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
@@ -487,7 +487,7 @@ function PasswordGenPanel() {
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">الطول: {length} حرف</label><input type="range" min={8} max={64} value={length} onChange={e => setLength(+e.target.value)} className="w-full accent-red-500" /></div>
       <div className="grid grid-cols-2 gap-2">{Object.entries(opts).map(([k, v]) => <label key={k} className="flex items-center gap-2 p-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"><input type="checkbox" checked={v} onChange={e => setOpts(o => ({...o,[k]:e.target.checked}))} className="accent-red-500" /><span className="text-sm text-black dark:text-white">{k==="upper"?"أحرف كبيرة":k==="lower"?"أحرف صغيرة":k==="numbers"?"أرقام":"رموز خاصة"}</span></label>)}</div>
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">العدد: {count} كلمة مرور</label><input type="range" min={1} max={10} value={count} onChange={e => setCount(+e.target.value)} className="w-full accent-orange-500" /></div>
-      <Button onClick={generate} className="w-full gap-2 bg-gradient-to-l from-red-500 to-orange-500 text-white" data-testid="btn-gen-password"><Key className="w-4 h-4" />توليد كلمة المرور</Button>
+      <Button onClick={generate} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-gen-password"><Key className="w-4 h-4" />توليد كلمة المرور</Button>
       {password && <div className="mt-3"><div className="flex items-start gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-sm text-black dark:text-white break-all whitespace-pre-wrap">{password}</div><CopyBtn text={password} /></div></div>}
     </div>
   );
@@ -500,7 +500,7 @@ function UuidGenPanel() {
   return (
     <div className="space-y-4">
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">العدد: {count}</label><input type="range" min={1} max={20} value={count} onChange={e => setCount(+e.target.value)} className="w-full accent-teal-500" /></div>
-      <Button onClick={generate} className="w-full gap-2 bg-gradient-to-l from-teal-500 to-green-500 text-white" data-testid="btn-gen-uuid"><Shuffle className="w-4 h-4" />توليد {count} UUID</Button>
+      <Button onClick={generate} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-gen-uuid"><Shuffle className="w-4 h-4" />توليد {count} UUID</Button>
       {uuids.length > 0 && <div className="space-y-2"><div className="flex items-center justify-between"><p className="text-xs text-black/40 dark:text-white/40">النتائج</p><CopyBtn text={uuids.join("\n")} label="نسخ الكل" /></div>{uuids.map((u,i) => <div key={i} className="flex items-center gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-lg p-2.5 font-mono text-xs text-black dark:text-white">{u}</div><CopyBtn text={u} /></div>)}</div>}
     </div>
   );
@@ -530,8 +530,8 @@ function JsonCsvPanel() {
     <div className="space-y-4">
       <div className="flex gap-2 p-1 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl">{(["json-to-csv","csv-to-json"] as const).map(m => <button key={m} onClick={() => setMode(m)} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode===m?"bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm":"text-black/40 dark:text-white/40"}`}>{m==="json-to-csv"?"JSON → CSV":"CSV → JSON"}</button>)}</div>
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder={mode==="json-to-csv"?'[{"name":"أحمد","age":25}]':"name,age\nأحمد,25"} rows={6} className="font-mono text-xs" />
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <Button onClick={convert} disabled={!input.trim()} className="w-full gap-2 bg-gradient-to-l from-amber-500 to-orange-600 text-white"><Hash className="w-4 h-4" />تحويل</Button>
+      {error && <p className="text-xs text-black dark:text-white">{error}</p>}
+      <Button onClick={convert} disabled={!input.trim()} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white"><Hash className="w-4 h-4" />تحويل</Button>
       {result && <div className="flex items-start gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-xs text-black dark:text-white max-h-48 overflow-auto">{result}</div><CopyBtn text={result} /></div>}
     </div>
   );
@@ -555,7 +555,7 @@ function WordCounterPanel() {
     <div className="space-y-4">
       <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="أدخل نصك هنا..." rows={6} data-testid="textarea-word-counter" />
       <div className="grid grid-cols-3 gap-3">
-        {[["الكلمات",words,"text-blue-500"],["الأحرف",chars,"text-purple-500"],["بدون فراغ",charsNoSpace,"text-green-500"],["الأسطر",lines,"text-orange-500"],["الجمل",sentences,"text-pink-500"],["دقائق قراءة",readingTime,"text-cyan-500"]].map(([l,v,c]) => (
+        {[["الكلمات",words,"text-black dark:text-white"],["الأحرف",chars,"text-black dark:text-white"],["بدون فراغ",charsNoSpace,"text-black dark:text-white"],["الأسطر",lines,"text-black dark:text-white"],["الجمل",sentences,"text-black dark:text-white"],["دقائق قراءة",readingTime,"text-black dark:text-white"]].map(([l,v,c]) => (
           <div key={String(l)} className="text-center p-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]">
             <p className={`text-2xl font-black ${c}`}>{v}</p>
             <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{l}</p>
@@ -573,7 +573,7 @@ function CaseConverterPanel() {
   const toCamel = (s: string) => s.replace(/(?:^\w|[A-Z]|\b\w|\s+\w)/g, (m, i) => i === 0 ? m.toLowerCase() : m.toUpperCase()).replace(/\s+/g, "");
   const toSnake = (s: string) => s.toLowerCase().replace(/\s+/g, "_");
   const toKebab = (s: string) => s.toLowerCase().replace(/\s+/g, "-");
-  const btns = [["UPPERCASE","bg-blue-500 text-white",() => convert(s => s.toUpperCase())],["lowercase","bg-purple-500 text-white",() => convert(s => s.toLowerCase())],["Title Case","bg-green-500 text-white",() => convert(toTitle)],["Sentence case","bg-orange-500 text-white",() => convert(s => s.charAt(0).toUpperCase()+s.slice(1).toLowerCase())],["camelCase","bg-pink-500 text-white",() => convert(toCamel)],["snake_case","bg-cyan-500 text-white",() => convert(toSnake)],["kebab-case","bg-amber-500 text-white",() => convert(toKebab)]];
+  const btns = [["UPPERCASE","bg-black dark:bg-white text-white",() => convert(s => s.toUpperCase())],["lowercase","bg-black dark:bg-white text-white",() => convert(s => s.toLowerCase())],["Title Case","bg-black dark:bg-white text-white",() => convert(toTitle)],["Sentence case","bg-black dark:bg-white text-white",() => convert(s => s.charAt(0).toUpperCase()+s.slice(1).toLowerCase())],["camelCase","bg-black dark:bg-white text-white",() => convert(toCamel)],["snake_case","bg-black dark:bg-white text-white",() => convert(toSnake)],["kebab-case","bg-black dark:bg-white text-white",() => convert(toKebab)]];
   return (
     <div className="space-y-4">
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أدخل النص هنا..." rows={5} data-testid="textarea-case" />
@@ -606,10 +606,10 @@ function TextDiffPanel() {
       </div>
       {(text1 || text2) && (
         <div className="space-y-2">
-          <div className="flex items-center gap-3 text-xs"><span className="flex items-center gap-1 text-green-600 dark:text-green-400"><Plus className="w-3 h-3" />{adds} سطر مضاف</span><span className="flex items-center gap-1 text-red-500"><Minus className="w-3 h-3" />{dels} سطر محذوف</span></div>
+          <div className="flex items-center gap-3 text-xs"><span className="flex items-center gap-1 text-black dark:text-white dark:text-black/70 dark:text-white/70"><Plus className="w-3 h-3" />{adds} سطر مضاف</span><span className="flex items-center gap-1 text-black dark:text-white"><Minus className="w-3 h-3" />{dels} سطر محذوف</span></div>
           <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-xl overflow-hidden max-h-56 overflow-y-auto">
             {diff.map((d, i) => (
-              <div key={i} className={`px-3 py-1 text-xs font-mono ${d.type==="add"?"bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400":d.type==="del"?"bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400":"text-black/60 dark:text-white/60"}`}>
+              <div key={i} className={`px-3 py-1 text-xs font-mono ${d.type==="add"?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70":d.type==="del"?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70":"text-black/60 dark:text-white/60"}`}>
                 {d.type==="add"?"+ ":d.type==="del"?"- ":"  "}{d.line || " "}
               </div>
             ))}
@@ -645,12 +645,12 @@ function LineSorterPanel() {
     <div className="space-y-4">
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أدخل الأسطر هنا (كل سطر منفصل)..." rows={6} data-testid="textarea-sort" />
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={() => sort(l => [...l].sort())} className="py-2.5 rounded-xl text-xs font-semibold bg-lime-500 text-white hover:opacity-90 transition-opacity">أ → ي</button>
-        <button onClick={() => sort(l => [...l].sort().reverse())} className="py-2.5 rounded-xl text-xs font-semibold bg-emerald-500 text-white hover:opacity-90 transition-opacity">ي → أ</button>
-        <button onClick={() => sort(l => [...l].reverse())} className="py-2.5 rounded-xl text-xs font-semibold bg-teal-500 text-white hover:opacity-90 transition-opacity">عكس الترتيب</button>
-        <button onClick={() => sort(l => [...l].sort((a,b) => a.length - b.length))} className="py-2.5 rounded-xl text-xs font-semibold bg-cyan-500 text-white hover:opacity-90 transition-opacity">الأقصر أولاً</button>
-        <button onClick={() => sort(l => [...l].sort((a,b) => b.length - a.length))} className="py-2.5 rounded-xl text-xs font-semibold bg-sky-500 text-white hover:opacity-90 transition-opacity">الأطول أولاً</button>
-        <button onClick={() => sort(l => l.map(v => ({v, r: Math.random()})).sort((a,b) => a.r-b.r).map(o => o.v))} className="py-2.5 rounded-xl text-xs font-semibold bg-violet-500 text-white hover:opacity-90 transition-opacity">ترتيب عشوائي</button>
+        <button onClick={() => sort(l => [...l].sort())} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">أ → ي</button>
+        <button onClick={() => sort(l => [...l].sort().reverse())} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">ي → أ</button>
+        <button onClick={() => sort(l => [...l].reverse())} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">عكس الترتيب</button>
+        <button onClick={() => sort(l => [...l].sort((a,b) => a.length - b.length))} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">الأقصر أولاً</button>
+        <button onClick={() => sort(l => [...l].sort((a,b) => b.length - a.length))} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">الأطول أولاً</button>
+        <button onClick={() => sort(l => l.map(v => ({v, r: Math.random()})).sort((a,b) => a.r-b.r).map(o => o.v))} className="py-2.5 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white hover:opacity-90 transition-opacity">ترتيب عشوائي</button>
       </div>
       {input && <CopyBtn text={input} label="نسخ النتيجة" />}
     </div>
@@ -677,7 +677,7 @@ function RemoveDupesPanel() {
     <div className="space-y-4">
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أدخل النص (كل سطر منفصل)..." rows={6} data-testid="textarea-dupes" />
       <div className="flex gap-4">{[["caseSens","مراعاة الحالة",caseSens,setCaseSens],["trim","تجاهل المسافات",trimLines,setTrimLines]].map(([k,l,v,fn]) => <label key={String(k)} className="flex items-center gap-2 cursor-pointer text-sm text-black dark:text-white"><input type="checkbox" checked={v as boolean} onChange={e => (fn as any)(e.target.checked)} className="accent-teal-500" />{l as string}</label>)}</div>
-      {result.removed > 0 && <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-400">تم حذف <strong>{result.removed}</strong> سطر مكرر</div>}
+      {result.removed > 0 && <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">تم حذف <strong>{result.removed}</strong> سطر مكرر</div>}
       {result.text && <div className="flex items-start gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 text-sm font-mono text-black dark:text-white max-h-48 overflow-auto whitespace-pre-wrap">{result.text}</div><CopyBtn text={result.text} /></div>}
     </div>
   );
@@ -705,7 +705,7 @@ function FindReplacePanel() {
         {[["caseSens","مراعاة الحالة",caseSens,setCaseSens],["replaceAll","استبدال الكل",replaceAll,setReplaceAll]].map(([k,l,v,fn]) => <label key={String(k)} className="flex items-center gap-2 cursor-pointer text-sm text-black dark:text-white"><input type="checkbox" checked={v as boolean} onChange={e => (fn as any)(e.target.checked)} className="accent-violet-500" />{l as string}</label>)}
         {find && text && <span className="text-xs text-black/40 dark:text-white/40">{count} نتيجة</span>}
       </div>
-      <Button onClick={doReplace} disabled={!find||!text} className="w-full gap-2 bg-gradient-to-l from-violet-500 to-indigo-500 text-white" data-testid="btn-replace"><Replace className="w-4 h-4" />{replaceAll?"استبدال الكل":"استبدال الأول"}</Button>
+      <Button onClick={doReplace} disabled={!find||!text} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-replace"><Replace className="w-4 h-4" />{replaceAll?"استبدال الكل":"استبدال الأول"}</Button>
     </div>
   );
 }
@@ -748,12 +748,12 @@ function CalcPercentagePanel() {
   const modes = ["X% من Y","X هو كم % من Y","زيادة %","خصم %"];
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 flex-wrap">{modes.map((m,i) => <button key={i} onClick={() => setMode(i)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${mode===i?"bg-blue-600 text-white border-blue-600":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>{m}</button>)}</div>
+      <div className="flex gap-2 flex-wrap">{modes.map((m,i) => <button key={i} onClick={() => setMode(i)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${mode===i?"bg-black dark:bg-white text-white border-black dark:border-white":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>{m}</button>)}</div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{mode===1?"القيمة X":"النسبة %"}</label><Input type="number" value={a} onChange={e => setA(e.target.value)} placeholder="0" /></div>
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">القيمة Y</label><Input type="number" value={b} onChange={e => setB(e.target.value)} placeholder="0" /></div>
       </div>
-      {result && <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-center"><p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.split("—")[0]}</p><p className="text-xs text-blue-500/70 mt-1">{result.split("—")[1]}</p></div>}
+      {result && <div className="p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center"><p className="text-2xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{result.split("—")[0]}</p><p className="text-xs text-black dark:text-white mt-1">{result.split("—")[1]}</p></div>}
     </div>
   );
 }
@@ -765,7 +765,7 @@ function CalcBmiPanel() {
     const w = parseFloat(weight), h = parseFloat(height) / 100;
     if (!w || !h) return null;
     const b = w / (h * h);
-    const cat = b < 18.5 ? {l:"نقص في الوزن",c:"text-blue-500",bg:"bg-blue-50 dark:bg-blue-900/20"} : b < 25 ? {l:"وزن طبيعي",c:"text-green-500",bg:"bg-green-50 dark:bg-green-900/20"} : b < 30 ? {l:"زيادة في الوزن",c:"text-orange-500",bg:"bg-orange-50 dark:bg-orange-900/20"} : {l:"سمنة",c:"text-red-500",bg:"bg-red-50 dark:bg-red-900/20"};
+    const cat = b < 18.5 ? {l:"نقص في الوزن",c:"text-black dark:text-white",bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"} : b < 25 ? {l:"وزن طبيعي",c:"text-black dark:text-white",bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"} : b < 30 ? {l:"زيادة في الوزن",c:"text-black dark:text-white",bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"} : {l:"سمنة",c:"text-black dark:text-white",bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"};
     return { val: b.toFixed(1), ...cat };
   })();
   return (
@@ -781,7 +781,7 @@ function CalcBmiPanel() {
             <p className={`text-lg font-bold ${bmi.c} mt-2`}>{bmi.l}</p>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-1 text-xs text-center">
-            {[["نقص","<18.5","text-blue-500"],["طبيعي","18.5-24.9","text-green-500"],["زيادة","25-29.9","text-orange-500"],["سمنة","≥30","text-red-500"]].map(([l,r,c]) => <div key={String(l)} className="p-2 rounded-lg bg-white/50 dark:bg-black/20"><p className={`font-bold ${c}`}>{r}</p><p className="text-black/40 dark:text-white/40">{l}</p></div>)}
+            {[["نقص","<18.5","text-black dark:text-white"],["طبيعي","18.5-24.9","text-black dark:text-white"],["زيادة","25-29.9","text-black dark:text-white"],["سمنة","≥30","text-black dark:text-white"]].map(([l,r,c]) => <div key={String(l)} className="p-2 rounded-lg bg-white/50 dark:bg-black/20"><p className={`font-bold ${c}`}>{r}</p><p className="text-black/40 dark:text-white/40">{l}</p></div>)}
           </div>
         </div>
       )}
@@ -817,13 +817,13 @@ function UnitConverterPanel() {
   })();
   return (
     <div className="space-y-4">
-      <div className="flex gap-1.5 flex-wrap">{cats.map(c => <button key={c} onClick={() => {setCat(c);setFrom("");setTo("");}} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${cat===c?"bg-amber-600 text-white border-amber-600":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>{UNITS[c].label}</button>)}</div>
+      <div className="flex gap-1.5 flex-wrap">{cats.map(c => <button key={c} onClick={() => {setCat(c);setFrom("");setTo("");}} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${cat===c?"bg-black dark:bg-white text-white border-black dark:border-white":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>{UNITS[c].label}</button>)}</div>
       <Input type="number" value={val} onChange={e => setVal(e.target.value)} placeholder="أدخل القيمة..." />
       <div className="grid grid-cols-2 gap-3">
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">من</label><select value={from} onChange={e => setFrom(e.target.value)} className="w-full h-9 px-3 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm text-black dark:text-white"><option value="">اختر وحدة</option>{units.map(u => <option key={u.k} value={u.k}>{u.l}</option>)}</select></div>
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">إلى</label><select value={to} onChange={e => setTo(e.target.value)} className="w-full h-9 px-3 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm text-black dark:text-white"><option value="">اختر وحدة</option>{units.map(u => <option key={u.k} value={u.k}>{u.l}</option>)}</select></div>
       </div>
-      {result && <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-center"><p className="text-3xl font-black text-amber-600 dark:text-amber-400">{result}</p><p className="text-xs text-amber-500/70 mt-1">{val} {units.find(u=>u.k===from)?.l} = {result} {units.find(u=>u.k===to)?.l}</p></div>}
+      {result && <div className="p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center"><p className="text-3xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{result}</p><p className="text-xs text-black dark:text-white mt-1">{val} {units.find(u=>u.k===from)?.l} = {result} {units.find(u=>u.k===to)?.l}</p></div>}
     </div>
   );
 }
@@ -851,7 +851,7 @@ function CalcAgePanel() {
       {age && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["السنوات",age.years,"text-rose-500"],["الأشهر",age.months,"text-orange-500"],["الأيام",age.days,"text-amber-500"]].map(([l,v,c]) => <div key={String(l)} className="text-center p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]"><p className={`text-3xl font-black ${c}`}>{v}</p><p className="text-xs text-black/40 dark:text-white/40 mt-1">{l}</p></div>)}
+            {[["السنوات",age.years,"text-black dark:text-white"],["الأشهر",age.months,"text-black dark:text-white"],["الأيام",age.days,"text-black dark:text-white"]].map(([l,v,c]) => <div key={String(l)} className="text-center p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]"><p className={`text-3xl font-black ${c}`}>{v}</p><p className="text-xs text-black/40 dark:text-white/40 mt-1">{l}</p></div>)}
           </div>
           <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-sm text-black dark:text-white text-center">إجمالي الأيام: <strong>{age.totalDays.toLocaleString("ar")}</strong> يوم · عيد الميلاد القادم بعد <strong>{age.daysToNext}</strong> يوم</div>
         </div>
@@ -891,7 +891,7 @@ function RomanNumeralsPanel() {
     <div className="space-y-4">
       <div className="flex gap-2 p-1 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl">{(["to-roman","to-arabic"] as const).map(m => <button key={m} onClick={() => setMode(m)} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode===m?"bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm":"text-black/40 dark:text-white/40"}`}>{m==="to-roman"?"رقم → روماني":"روماني → رقم"}</button>)}</div>
       <Input value={input} onChange={e => setInput(e.target.value)} placeholder={mode==="to-roman"?"أدخل رقماً (1-3999)":"أدخل رقماً رومانياً (مثال: XLII)"} data-testid="input-roman" />
-      {result && <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-center"><p className="text-4xl font-black text-amber-700 dark:text-amber-400 font-serif">{result}</p></div>}
+      {result && <div className="p-5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center"><p className="text-4xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 font-serif">{result}</p></div>}
     </div>
   );
 }
@@ -906,7 +906,7 @@ function BinaryHexPanel() {
       <Input value={val} onChange={e => setVal(e.target.value)} placeholder={`أدخل رقماً ${base===2?"ثنائياً":base===8?"ثمانياً":base===16?"سادس عشر":"عشرياً"}...`} className="font-mono" data-testid="input-binary" />
       {decimal !== null && (
         <div className="space-y-2">
-          {[{l:"ثنائي (Binary)",v:decimal.toString(2),c:"text-blue-500"},{l:"ثماني (Octal)",v:decimal.toString(8),c:"text-green-500"},{l:"عشري (Decimal)",v:decimal.toString(10),c:"text-amber-500"},{l:"سادس عشر (Hex)",v:decimal.toString(16).toUpperCase(),c:"text-purple-500"}].map(({l,v,c}) => (
+          {[{l:"ثنائي (Binary)",v:decimal.toString(2),c:"text-black dark:text-white"},{l:"ثماني (Octal)",v:decimal.toString(8),c:"text-black dark:text-white"},{l:"عشري (Decimal)",v:decimal.toString(10),c:"text-black dark:text-white"},{l:"سادس عشر (Hex)",v:decimal.toString(16).toUpperCase(),c:"text-black dark:text-white"}].map(({l,v,c}) => (
             <div key={l} className="flex items-center gap-3 p-3 rounded-xl border border-black/[0.07] dark:border-white/[0.07]">
               <p className="text-xs text-black/40 dark:text-white/40 w-32 shrink-0">{l}</p>
               <p className={`flex-1 font-mono font-bold ${c}`}>{v}</p>
@@ -938,9 +938,9 @@ function CalcDiscountPanel() {
       {result && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            {l:"السعر النهائي", v:`${result.final.toFixed(2)}`, sar:true, c:"text-green-500", bg:"bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"},
-            {l:"توفيرك", v:`${result.savings.toFixed(2)}`, sar:true, c:"text-red-500", bg:"bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"},
-            {l:"الخصم", v:`${result.pct}%`, sar:false, c:"text-blue-500", bg:"bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"}
+            {l:"السعر النهائي", v:`${result.final.toFixed(2)}`, sar:true, c:"text-black dark:text-white", bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"},
+            {l:"توفيرك", v:`${result.savings.toFixed(2)}`, sar:true, c:"text-black dark:text-white", bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"},
+            {l:"الخصم", v:`${result.pct}%`, sar:false, c:"text-black dark:text-white", bg:"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"}
           ].map(({l,v,sar,c,bg}) => <div key={l} className={`p-4 rounded-2xl border text-center ${bg}`}><p className={`text-xl font-black ${c} flex items-center justify-center gap-1`}>{v}{sar && <SARIcon size={14} className="opacity-60" />}</p><p className="text-xs text-black/40 dark:text-white/40 mt-1">{l}</p></div>)}
         </div>
       )}
@@ -966,7 +966,7 @@ function ArabicNumWordsPanel() {
   return (
     <div className="space-y-4">
       <Input type="number" value={num} onChange={e => setNum(e.target.value)} placeholder="أدخل رقماً (حتى 999,999,999)" data-testid="input-num-words" />
-      {result && <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-center"><p className="text-xl font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">{result}</p><CopyBtn text={result} /></div>}
+      {result && <div className="p-5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center"><p className="text-xl font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">{result}</p><CopyBtn text={result} /></div>}
     </div>
   );
 }
@@ -1092,7 +1092,7 @@ function BorderRadiusPanel() {
         <div className="grid grid-cols-2 gap-3">{[["أعلى يسار",tl,setTl],["أعلى يمين",tr,setTr],["أسفل يمين",br,setBr],["أسفل يسار",bl,setBl]].map(([l,v,fn]) => <div key={String(l)}><div className="flex justify-between text-xs text-black/40 dark:text-white/40 mb-1"><span>{l as string}</span><span>{v as number}px</span></div><input type="range" min={0} max={100} value={v as number} onChange={e => (fn as any)(+e.target.value)} className="w-full accent-cyan-500" /></div>)}</div>
       )}
       <div className="flex items-center justify-center p-8 rounded-2xl bg-gray-100 dark:bg-gray-800 border border-black/[0.07] dark:border-white/[0.07]">
-        <div className="w-32 h-32 bg-gradient-to-br from-cyan-400 to-blue-600" style={{borderRadius:css}} />
+        <div className="w-32 h-32 bg-gradient-to-br from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white" style={{borderRadius:css}} />
       </div>
       <div className="flex items-center gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-xs text-black dark:text-white">border-radius: {css};</div><CopyBtn text={`border-radius: ${css};`} /></div>
     </div>
@@ -1155,7 +1155,7 @@ function ContrastCheckerPanel() {
         <p className="text-sm text-black/40 dark:text-white/40 mt-1">نسبة التباين</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        {[["AA نص كبير",aaLg],["AA نص صغير",aaSmall],["AAA نص كبير",aaaLg],["AAA نص صغير",aaaSmall]].map(([l,pass]) => <div key={String(l)} className={`p-3 rounded-xl border text-center text-sm font-semibold ${pass?"bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400":"bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500"}`}>{l as string}: {pass?"✓ ناجح":"✗ فاشل"}</div>)}
+        {[["AA نص كبير",aaLg],["AA نص صغير",aaSmall],["AAA نص كبير",aaaLg],["AAA نص صغير",aaaSmall]].map(([l,pass]) => <div key={String(l)} className={`p-3 rounded-xl border text-center text-sm font-semibold ${pass?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70":"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white text-black dark:text-white"}`}>{l as string}: {pass?"✓ ناجح":"✗ فاشل"}</div>)}
       </div>
     </div>
   );
@@ -1183,8 +1183,8 @@ function ImgBase64Panel() {
       {mode === "to-b64" ? (
         <>
           <input ref={ref} type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0]||null)} />
-          <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-blue-400 transition-all" data-testid="dropzone-img-b64">
-            {file ? <><Image className="w-8 h-8 text-blue-500 mx-auto mb-2" /><p className="text-sm text-black dark:text-white">{file.name}</p></> : <><Image className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
+          <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 transition-all" data-testid="dropzone-img-b64">
+            {file ? <><Image className="w-8 h-8 text-black dark:text-white mx-auto mb-2" /><p className="text-sm text-black dark:text-white">{file.name}</p></> : <><Image className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3" /><p className="text-sm text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
           </div>
           {result && <div className="space-y-2"><p className="text-xs text-black/40 dark:text-white/40">النتيجة ({(result.length/1024).toFixed(1)} KB)</p><div className="flex gap-2 items-start"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-[10px] text-black dark:text-white max-h-24 overflow-auto break-all">{result}</div><CopyBtn text={result} /></div></div>}
         </>
@@ -1218,13 +1218,13 @@ function JwtDecoderPanel() {
       <Textarea value={token} onChange={e => setToken(e.target.value)} placeholder="الصق JWT token هنا..." rows={3} className="font-mono text-xs" data-testid="textarea-jwt" />
       {decoded && !("error" in decoded) && (
         <div className="space-y-3">
-          {decoded.exp && <div className={`p-3 rounded-xl text-sm ${decoded.isExpired?"bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800":"bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800"}`}>{decoded.isExpired?"⚠️ Token منتهي الصلاحية":"✅ Token صالح"} · تنتهي: {decoded.exp.toLocaleString("ar")}</div>}
+          {decoded.exp && <div className={`p-3 rounded-xl text-sm ${decoded.isExpired?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white":"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white"}`}>{decoded.isExpired?"⚠️ Token منتهي الصلاحية":"✅ Token صالح"} · تنتهي: {decoded.exp.toLocaleString("ar")}</div>}
           {[["Header",decoded.header],["Payload",decoded.payload]].map(([l,v]) => (
             <div key={String(l)}><p className="text-xs font-semibold text-black/40 dark:text-white/40 mb-1">{l as string}</p><div className="flex items-start gap-2"><pre className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 text-xs font-mono text-black dark:text-white overflow-auto max-h-40">{JSON.stringify(v, null, 2)}</pre><CopyBtn text={JSON.stringify(v, null, 2)} /></div></div>
           ))}
         </div>
       )}
-      {decoded && "error" in decoded && <p className="text-sm text-red-500">{decoded.error}</p>}
+      {decoded && "error" in decoded && <p className="text-sm text-black dark:text-white">{decoded.error}</p>}
     </div>
   );
 }
@@ -1243,11 +1243,11 @@ function JsonFormatPanel() {
     <div className="space-y-4">
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder='{"name":"أحمد","age":25,"city":"الرياض"}' rows={5} className="font-mono text-xs" data-testid="textarea-json" />
       <div className="flex gap-2 items-center">
-        <Button onClick={() => format(false)} disabled={!input} className="flex-1 gap-2 bg-gradient-to-l from-green-500 to-emerald-600 text-white" data-testid="btn-format-json"><Code className="w-4 h-4" />تنسيق</Button>
+        <Button onClick={() => format(false)} disabled={!input} className="flex-1 gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-format-json"><Code className="w-4 h-4" />تنسيق</Button>
         <Button onClick={() => format(true)} disabled={!input} className="flex-1 gap-2 bg-black/80 dark:bg-white/80 text-white dark:text-black" data-testid="btn-minify-json"><Minimize2 className="w-4 h-4" />ضغط</Button>
         <select value={spaces} onChange={e => setSpaces(+e.target.value)} className="h-9 px-2 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm text-black dark:text-white"><option value={2}>2 مسافات</option><option value={4}>4 مسافات</option></select>
       </div>
-      {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800">{error}</p>}
+      {error && <p className="text-xs text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-2 rounded-lg border border-black/10 dark:border-white/10 dark:border-black dark:border-white">{error}</p>}
       {result && <div className="flex items-start gap-2"><pre className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-xs text-black dark:text-white overflow-auto max-h-56">{result}</pre><CopyBtn text={result} /></div>}
     </div>
   );
@@ -1288,12 +1288,12 @@ function RegexTesterPanel() {
       <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="النص الذي تريد البحث فيه..." rows={4} data-testid="textarea-regex" />
       {highlighted && (
         <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 text-sm font-mono leading-relaxed max-h-32 overflow-auto">
-          {highlighted.map((p,i) => p.match ? <mark key={i} className="bg-yellow-300 dark:bg-yellow-600 text-black px-0.5 rounded">{p.text}</mark> : <span key={i} className="text-black dark:text-white">{p.text}</span>)}
+          {highlighted.map((p,i) => p.match ? <mark key={i} className="bg-black/[0.08] dark:bg-white/[0.1] dark:bg-black dark:bg-white text-black px-0.5 rounded">{p.text}</mark> : <span key={i} className="text-black dark:text-white">{p.text}</span>)}
         </div>
       )}
-      <div className="flex items-center gap-3 text-sm"><span className={`font-bold ${matches.length>0?"text-green-500":"text-black/40 dark:text-white/40"}`}>{matches.length} تطابق</span></div>
+      <div className="flex items-center gap-3 text-sm"><span className={`font-bold ${matches.length>0?"text-black dark:text-white":"text-black/40 dark:text-white/40"}`}>{matches.length} تطابق</span></div>
       {matches.length > 0 && (
-        <div className="space-y-1 max-h-40 overflow-auto">{matches.map((m,i) => <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-xs font-mono"><span className="text-yellow-600 dark:text-yellow-400">#{i+1}</span><span className="flex-1 text-black dark:text-white">{m.match}</span><span className="text-black/30 dark:text-white/30">pos:{m.index}</span></div>)}</div>
+        <div className="space-y-1 max-h-40 overflow-auto">{matches.map((m,i) => <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-xs font-mono"><span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">#{i+1}</span><span className="flex-1 text-black dark:text-white">{m.match}</span><span className="text-black/30 dark:text-white/30">pos:{m.index}</span></div>)}</div>
       )}
     </div>
   );
@@ -1435,7 +1435,7 @@ function PomodoroPanel() {
         </div>
       </div>
       <div className="flex gap-3 justify-center">
-        <button onClick={() => setRunning(r => !r)} className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${mode==="work"?"bg-red-500 hover:bg-red-600":"bg-green-500 hover:bg-green-600"} text-white`} data-testid="btn-pomodoro-toggle">{running?<Pause className="w-6 h-6"/>:<Play className="w-6 h-6"/>}</button>
+        <button onClick={() => setRunning(r => !r)} className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all ${mode==="work"?"bg-black dark:bg-white hover:bg-black dark:bg-white":"bg-black dark:bg-white hover:bg-black dark:bg-white"} text-white`} data-testid="btn-pomodoro-toggle">{running?<Pause className="w-6 h-6"/>:<Play className="w-6 h-6"/>}</button>
         <button onClick={() => {setRunning(false);setSeconds(mode==="work"?WORK:BREAK);}} className="w-14 h-14 rounded-full flex items-center justify-center bg-black/[0.05] dark:bg-white/[0.05] hover:bg-black/10 dark:hover:bg-white/10 transition-all" data-testid="btn-pomodoro-reset"><Square className="w-5 h-5 text-black/60 dark:text-white/60"/></button>
       </div>
     </div>
@@ -1462,7 +1462,7 @@ function CountdownPanel() {
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">الموعد المستهدف</label><Input type="datetime-local" value={target} onChange={e => setTarget(e.target.value)} data-testid="input-countdown" /></div>
       {diff && (
         <div className="grid grid-cols-4 gap-3">
-          {[["أيام",diff.d,"text-violet-500"],["ساعات",diff.h,"text-blue-500"],["دقائق",diff.m,"text-green-500"],["ثواني",diff.s,"text-orange-500"]].map(([l,v,c]) => <div key={String(l)} className="text-center p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]"><p className={`text-4xl font-black font-mono ${c}`}>{String(v).padStart(2,"0")}</p><p className="text-xs text-black/40 dark:text-white/40 mt-1">{l}</p></div>)}
+          {[["أيام",diff.d,"text-black dark:text-white"],["ساعات",diff.h,"text-black dark:text-white"],["دقائق",diff.m,"text-black dark:text-white"],["ثواني",diff.s,"text-black dark:text-white"]].map(([l,v,c]) => <div key={String(l)} className="text-center p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]"><p className={`text-4xl font-black font-mono ${c}`}>{String(v).padStart(2,"0")}</p><p className="text-xs text-black/40 dark:text-white/40 mt-1">{l}</p></div>)}
         </div>
       )}
     </div>
@@ -1517,7 +1517,7 @@ function InvoiceGenPanel() {
             <Input className="col-span-6" value={item.desc} onChange={e=>setItems(it=>it.map((x,j)=>j===i?{...x,desc:e.target.value}:x))} placeholder="البيان" />
             <Input type="number" className="col-span-2" value={item.qty} onChange={e=>setItems(it=>it.map((x,j)=>j===i?{...x,qty:+e.target.value}:x))} min={1} />
             <Input type="number" className="col-span-3" value={item.price} onChange={e=>setItems(it=>it.map((x,j)=>j===i?{...x,price:+e.target.value}:x))} placeholder="السعر" />
-            <button onClick={()=>remItem(i)} className="col-span-1 text-red-400 hover:text-red-600 flex justify-center"><Trash2 className="w-4 h-4"/></button>
+            <button onClick={()=>remItem(i)} className="col-span-1 text-black/70 dark:text-white/70 hover:text-black dark:text-white flex justify-center"><Trash2 className="w-4 h-4"/></button>
           </div>
         ))}
         <button onClick={addItem} className="flex items-center gap-2 text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors"><Plus className="w-3 h-3"/>إضافة بند</button>
@@ -1526,7 +1526,7 @@ function InvoiceGenPanel() {
         <div className="flex justify-between text-black/60 dark:text-white/60"><span>المجموع</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={11} className="opacity-70" /></span></div>
         <div className="flex justify-between font-bold text-black dark:text-white text-base pt-1 border-t border-black/[0.07] dark:border-white/[0.07]"><span>الإجمالي</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={13} className="opacity-60" /></span></div>
       </div>
-      <Button onClick={print} className="w-full gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white" data-testid="btn-print-invoice"><Printer className="w-4 h-4"/>طباعة / حفظ PDF</Button>
+      <Button onClick={print} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-print-invoice"><Printer className="w-4 h-4"/>طباعة / حفظ PDF</Button>
     </div>
   );
 }
@@ -1542,15 +1542,15 @@ function NotesPanel() {
   return (
     <div className="flex gap-3" style={{height:"360px"}}>
       <div className="w-44 shrink-0 space-y-2 overflow-y-auto">
-        <button onClick={addNote} className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-bold transition-colors" data-testid="btn-add-note"><Plus className="w-3.5 h-3.5"/>ملاحظة جديدة</button>
-        {notes.map(n => <button key={n.id} onClick={() => setActive(n.id)} className={`w-full text-right p-2.5 rounded-xl text-xs transition-colors ${active===n.id?"bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700":"bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"}`}><p className="font-semibold text-black dark:text-white truncate">{n.title}</p><p className="text-black/30 dark:text-white/30 mt-0.5 truncate">{n.date}</p></button>)}
+        <button onClick={addNote} className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] hover:bg-black dark:bg-white text-black text-xs font-bold transition-colors" data-testid="btn-add-note"><Plus className="w-3.5 h-3.5"/>ملاحظة جديدة</button>
+        {notes.map(n => <button key={n.id} onClick={() => setActive(n.id)} className={`w-full text-right p-2.5 rounded-xl text-xs transition-colors ${active===n.id?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/15 dark:border-white/15 dark:border-black dark:border-white":"bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"}`}><p className="font-semibold text-black dark:text-white truncate">{n.title}</p><p className="text-black/30 dark:text-white/30 mt-0.5 truncate">{n.date}</p></button>)}
       </div>
       <div className="flex-1 flex flex-col gap-2">
         {curr ? (
           <>
             <div className="flex items-center gap-2">
               <Input value={curr.title} onChange={e => save(notes.map(n=>n.id===curr.id?{...n,title:e.target.value}:n))} className="flex-1 font-semibold" />
-              <button onClick={() => {save(notes.filter(n=>n.id!==active));setActive(notes.filter(n=>n.id!==active)[0]?.id||null);}} className="p-2 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4"/></button>
+              <button onClick={() => {save(notes.filter(n=>n.id!==active));setActive(notes.filter(n=>n.id!==active)[0]?.id||null);}} className="p-2 text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-colors"><Trash2 className="w-4 h-4"/></button>
             </div>
             <Textarea value={curr.content} onChange={e => save(notes.map(n=>n.id===curr.id?{...n,content:e.target.value,date:new Date().toLocaleString("ar-SA")}:n))} placeholder="اكتب ملاحظتك هنا..." className="flex-1 resize-none text-sm" />
           </>
@@ -1577,8 +1577,8 @@ function PasswordStrengthPanel() {
     ];
     score = checks.filter(c => c.ok).length;
     const level = score<=2?"ضعيف جداً":score<=3?"ضعيف":score<=4?"متوسط":score<=5?"جيد":"قوي جداً";
-    const color = score<=2?"bg-red-500":score<=3?"bg-orange-500":score<=4?"bg-yellow-500":score<=5?"bg-blue-500":"bg-green-500";
-    const textColor = score<=2?"text-red-500":score<=3?"text-orange-500":score<=4?"text-yellow-500":score<=5?"text-blue-500":"text-green-500";
+    const color = score<=2?"bg-black dark:bg-white":score<=3?"bg-black dark:bg-white":score<=4?"bg-black dark:bg-white":score<=5?"bg-black dark:bg-white":"bg-black dark:bg-white";
+    const textColor = score<=2?"text-black dark:text-white":score<=3?"text-black dark:text-white":score<=4?"text-black dark:text-white":score<=5?"text-black dark:text-white":"text-black dark:text-white";
     return { score, checks, level, color, textColor, pct: Math.round((score/7)*100) };
   })();
   return (
@@ -1593,7 +1593,7 @@ function PasswordStrengthPanel() {
             <div className="flex justify-between items-center text-sm"><span className="text-black/60 dark:text-white/60">قوة كلمة المرور</span><span className={`font-bold ${strength.textColor}`}>{strength.level}</span></div>
             <div className="h-2.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${strength.color}`} style={{width:`${strength.pct}%`}} /></div>
           </div>
-          <div className="space-y-1.5">{strength.checks.map(c => <div key={c.label} className={`flex items-center gap-2 text-xs ${c.ok?"text-green-600 dark:text-green-400":"text-black/40 dark:text-white/40"}`}><span>{c.ok?"✓":"○"}</span><span>{c.label}</span></div>)}</div>
+          <div className="space-y-1.5">{strength.checks.map(c => <div key={c.label} className={`flex items-center gap-2 text-xs ${c.ok?"text-black dark:text-white dark:text-black/70 dark:text-white/70":"text-black/40 dark:text-white/40"}`}><span>{c.ok?"✓":"○"}</span><span>{c.label}</span></div>)}</div>
         </>
       )}
     </div>
@@ -1624,10 +1624,10 @@ function EmailValidatorPanel() {
       <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="example@domain.com" type="email" data-testid="input-email-validate" />
       {result && (
         <>
-          <div className={`p-4 rounded-2xl text-center border ${result.valid?"bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800":"bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"}`}>
-            <p className={`text-2xl font-black ${result.valid?"text-green-600 dark:text-green-400":"text-red-500"}`}>{result.valid?"✓ بريد صحيح":"✗ بريد غير صحيح"}</p>
+          <div className={`p-4 rounded-2xl text-center border ${result.valid?"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white":"bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"}`}>
+            <p className={`text-2xl font-black ${result.valid?"text-black dark:text-white dark:text-black/70 dark:text-white/70":"text-black dark:text-white"}`}>{result.valid?"✓ بريد صحيح":"✗ بريد غير صحيح"}</p>
           </div>
-          <div className="space-y-1.5">{[["يحتوي على @",result.hasAt],["يحتوي على نقطة في الدومين",result.hasDot],["امتداد صحيح (.com, .sa...)",result.validTld],["لا يحتوي على مسافات",result.noSpaces],["الجزء المحلي غير فارغ",result.localPart],["طول الدومين كافٍ",result.domainLength]].map(([l,ok]) => <div key={String(l)} className={`flex items-center gap-2 text-xs ${ok?"text-green-600 dark:text-green-400":"text-red-500"}`}><span>{ok?"✓":"✗"}</span><span>{l as string}</span></div>)}</div>
+          <div className="space-y-1.5">{[["يحتوي على @",result.hasAt],["يحتوي على نقطة في الدومين",result.hasDot],["امتداد صحيح (.com, .sa...)",result.validTld],["لا يحتوي على مسافات",result.noSpaces],["الجزء المحلي غير فارغ",result.localPart],["طول الدومين كافٍ",result.domainLength]].map(([l,ok]) => <div key={String(l)} className={`flex items-center gap-2 text-xs ${ok?"text-black dark:text-white dark:text-black/70 dark:text-white/70":"text-black dark:text-white"}`}><span>{ok?"✓":"✗"}</span><span>{l as string}</span></div>)}</div>
         </>
       )}
     </div>
@@ -1658,10 +1658,10 @@ function HashtagGenPanel() {
     <div className="space-y-4">
       <div className="flex gap-2 p-1 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl">{(["ar","en"] as const).map(m => <button key={m} onClick={() => setLang(m)} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${lang===m?"bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm":"text-black/40 dark:text-white/40"}`}>{m==="ar"?"عربي":"English"}</button>)}</div>
       <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="الموضوع (مثال: تصميم جرافيك)" onKeyDown={e => e.key==="Enter"&&generate()} data-testid="input-hashtag-topic" />
-      <Button onClick={generate} disabled={!topic.trim()} className="w-full gap-2 bg-gradient-to-l from-pink-500 to-rose-500 text-white" data-testid="btn-gen-hashtags"><Hash className="w-4 h-4"/>توليد الهاشتاقات</Button>
+      <Button onClick={generate} disabled={!topic.trim()} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-gen-hashtags"><Hash className="w-4 h-4"/>توليد الهاشتاقات</Button>
       {tags.length > 0 && (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">{tags.map(t => <span key={t} onClick={() => navigator.clipboard.writeText(t)} className="px-2.5 py-1 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity border border-pink-200 dark:border-pink-800">{t}</span>)}</div>
+          <div className="flex flex-wrap gap-2">{tags.map(t => <span key={t} onClick={() => navigator.clipboard.writeText(t)} className="px-2.5 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity border border-black/10 dark:border-white/10 dark:border-black dark:border-white">{t}</span>)}</div>
           <div className="flex gap-2"><CopyBtn text={all} label="نسخ الكل" /></div>
         </div>
       )}
@@ -1702,15 +1702,15 @@ function ImgCompressPanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0]||null)} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 dark:hover:bg-orange-900/10 transition-all" data-testid="dropzone-compress">
-        {file ? <><Image className="w-8 h-8 text-orange-500 mx-auto mb-2"/><p className="text-sm font-medium text-black dark:text-white">{file.name}</p></> : <><Minimize2 className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3"/><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-compress">
+        {file ? <><Image className="w-8 h-8 text-black dark:text-white mx-auto mb-2"/><p className="text-sm font-medium text-black dark:text-white">{file.name}</p></> : <><Minimize2 className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3"/><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
       </div>
       {file && <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">الجودة: {quality}%</label><input type="range" min={10} max={100} value={quality} onChange={e => setQuality(+e.target.value)} className="w-full accent-orange-500" /></div>}
       {preview && (
         <div className="space-y-3">
-          <div className="flex gap-3"><div className="flex-1 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-center"><p className="text-xs text-black/40 dark:text-white/40">الأصل</p><p className="font-bold text-black dark:text-white">{(origSize/1024).toFixed(1)} KB</p></div><div className="flex-1 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-center"><p className="text-xs text-green-600 dark:text-green-400">بعد الضغط</p><p className="font-bold text-green-600 dark:text-green-400">{(newSize/1024).toFixed(1)} KB</p></div><div className="flex-1 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-center"><p className="text-xs text-blue-500">التوفير</p><p className="font-bold text-blue-600 dark:text-blue-400">{origSize>0?Math.round((1-newSize/origSize)*100):0}%</p></div></div>
+          <div className="flex gap-3"><div className="flex-1 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] text-center"><p className="text-xs text-black/40 dark:text-white/40">الأصل</p><p className="font-bold text-black dark:text-white">{(origSize/1024).toFixed(1)} KB</p></div><div className="flex-1 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-center"><p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">بعد الضغط</p><p className="font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{(newSize/1024).toFixed(1)} KB</p></div><div className="flex-1 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-center"><p className="text-xs text-black dark:text-white">التوفير</p><p className="font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{origSize>0?Math.round((1-newSize/origSize)*100):0}%</p></div></div>
           <img src={preview} alt="preview" className="w-full max-h-40 object-contain rounded-xl border border-black/10 dark:border-white/10" />
-          <Button onClick={download} className="w-full gap-2 bg-gradient-to-l from-orange-500 to-red-500 text-white" data-testid="btn-download-compressed"><Download className="w-4 h-4"/>تنزيل الصورة المضغوطة</Button>
+          <Button onClick={download} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-download-compressed"><Download className="w-4 h-4"/>تنزيل الصورة المضغوطة</Button>
         </div>
       )}
     </div>
@@ -1793,17 +1793,17 @@ function ImgResizePanel() {
   return (
     <div className="space-y-4">
       <input ref={ref} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && loadImg(e.target.files[0])} />
-      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 dark:hover:bg-teal-900/10 transition-all" data-testid="dropzone-resize">
-        {file ? <><Maximize2 className="w-8 h-8 text-teal-500 mx-auto mb-2"/><p className="text-sm font-medium text-black dark:text-white">{file.name} ({origW}×{origH}px)</p></> : <><Maximize2 className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3"/><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
+      <div onClick={() => ref.current?.click()} className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all" data-testid="dropzone-resize">
+        {file ? <><Maximize2 className="w-8 h-8 text-black dark:text-white mx-auto mb-2"/><p className="text-sm font-medium text-black dark:text-white">{file.name} ({origW}×{origH}px)</p></> : <><Maximize2 className="w-10 h-10 text-black/20 dark:text-white/20 mx-auto mb-3"/><p className="text-sm font-medium text-black/50 dark:text-white/50">اضغط لاختيار صورة</p></>}
       </div>
       {file && (
         <>
           <div className="flex items-center gap-3">
             <div className="flex-1"><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">العرض (px)</label><Input type="number" value={w} onChange={e => onW(e.target.value)} /></div>
-            <button onClick={() => setLocked(l=>!l)} className={`p-2 rounded-lg border mt-5 transition-colors ${locked?"bg-teal-500 text-white border-teal-500":"border-black/10 dark:border-white/10 text-black/40 dark:text-white/40"}`}><Lock className="w-4 h-4"/></button>
+            <button onClick={() => setLocked(l=>!l)} className={`p-2 rounded-lg border mt-5 transition-colors ${locked?"bg-black dark:bg-white text-white border-black dark:border-white":"border-black/10 dark:border-white/10 text-black/40 dark:text-white/40"}`}><Lock className="w-4 h-4"/></button>
             <div className="flex-1"><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">الارتفاع (px)</label><Input type="number" value={h} onChange={e => onH(e.target.value)} /></div>
           </div>
-          <Button onClick={resize} className="w-full gap-2 bg-gradient-to-l from-teal-500 to-green-500 text-white" data-testid="btn-resize"><Download className="w-4 h-4"/>تغيير الحجم وتنزيل</Button>
+          <Button onClick={resize} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-resize"><Download className="w-4 h-4"/>تغيير الحجم وتنزيل</Button>
         </>
       )}
     </div>
@@ -1821,7 +1821,7 @@ function TashkeelRemoverPanel() {
   return (
     <div className="space-y-4">
       <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أَدْخِلْ نَصّاً مُشَكَّلاً هُنَا..." rows={5} dir={dir} data-testid="textarea-tashkeel" />
-      {input && <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-600 dark:text-amber-400 text-center">تم إزالة {removed} حركة تشكيل</div>}
+      {input && <div className="p-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 text-center">تم إزالة {removed} حركة تشكيل</div>}
       <ResultBox value={result} label="النص بدون تشكيل:" />
     </div>
   );
@@ -1844,9 +1844,9 @@ function HijriDatePanel() {
     <div className="space-y-4">
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">التاريخ الميلادي</label><Input type="date" value={greg} onChange={e => setGreg(e.target.value)} data-testid="input-greg" /></div>
       <div className="space-y-3">
-        <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 text-center">
-          <p className="text-xs text-indigo-500 mb-2">التاريخ الهجري</p>
-          <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{hijri}</p>
+        <div className="p-5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center">
+          <p className="text-xs text-black dark:text-white mb-2">التاريخ الهجري</p>
+          <p className="text-2xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{hijri}</p>
         </div>
         <div className="p-4 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] text-center">
           <p className="text-xs text-black/40 dark:text-white/40 mb-1">التاريخ الميلادي بالعربية</p>
@@ -1891,7 +1891,7 @@ function TextToMorsePanel() {
       {result && (
         <div className="space-y-2">
           <div className="flex items-start gap-2"><div className="flex-1 bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl p-3 font-mono text-sm text-black dark:text-white break-all">{result}</div><CopyBtn text={result} /></div>
-          {mode==="to" && <button onClick={playMorse} className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:opacity-80 transition-opacity"><Volume2 className="w-4 h-4"/>تشغيل صوت المورس</button>}
+          {mode==="to" && <button onClick={playMorse} className="flex items-center gap-2 text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:opacity-80 transition-opacity"><Volume2 className="w-4 h-4"/>تشغيل صوت المورس</button>}
         </div>
       )}
     </div>
@@ -1920,18 +1920,18 @@ function TypingTestPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        {texts.map((_,i) => <button key={i} onClick={() => {setIdx(i);reset();}} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${idx===i?"bg-blue-600 text-white border-blue-600":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>نص {i+1}</button>)}
+        {texts.map((_,i) => <button key={i} onClick={() => {setIdx(i);reset();}} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${idx===i?"bg-black dark:bg-white text-white border-black dark:border-white":"border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}>نص {i+1}</button>)}
         <button onClick={reset} className="p-1.5 rounded-lg border border-black/10 dark:border-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"><RefreshCw className="w-4 h-4"/></button>
       </div>
       <div className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] text-sm leading-relaxed font-mono" dir="auto">
-        {target.split("").map((char,i) => <span key={i} className={i<typed.length?(typed[i]===char?"text-green-500":"text-red-500 underline"):i===typed.length?"bg-blue-500/20 text-black dark:text-white":"text-black/40 dark:text-white/40"}>{char}</span>)}
+        {target.split("").map((char,i) => <span key={i} className={i<typed.length?(typed[i]===char?"text-black dark:text-white":"text-black dark:text-white underline"):i===typed.length?"bg-black dark:bg-white text-black dark:text-white":"text-black/40 dark:text-white/40"}>{char}</span>)}
       </div>
       {!finished ? (
         <Textarea ref={ref} value={typed} onChange={e => { if(!started){setStarted(true);setStart(Date.now());} setTyped(e.target.value); }} placeholder="ابدأ الكتابة هنا..." rows={3} className="font-mono" dir="auto" data-testid="textarea-typing" />
       ) : (
-        <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-center space-y-2">
-          <p className="text-green-600 dark:text-green-400 font-bold text-lg">أحسنت! 🎉</p>
-          <div className="flex justify-center gap-6 text-sm"><span className="text-black dark:text-white"><strong className="text-2xl font-black text-blue-500">{wpm}</strong> WPM</span><span className="text-black dark:text-white"><strong className="text-2xl font-black text-green-500">{accuracy}%</strong> دقة</span><span className="text-black dark:text-white"><strong className="text-2xl font-black text-orange-500">{(elapsed/1000).toFixed(1)}</strong> ثانية</span></div>
+        <div className="p-4 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center space-y-2">
+          <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 font-bold text-lg">أحسنت! 🎉</p>
+          <div className="flex justify-center gap-6 text-sm"><span className="text-black dark:text-white"><strong className="text-2xl font-black text-black dark:text-white">{wpm}</strong> WPM</span><span className="text-black dark:text-white"><strong className="text-2xl font-black text-black dark:text-white">{accuracy}%</strong> دقة</span><span className="text-black dark:text-white"><strong className="text-2xl font-black text-black dark:text-white">{(elapsed/1000).toFixed(1)}</strong> ثانية</span></div>
           <button onClick={reset} className="mt-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-black/10 dark:border-white/10 text-sm text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors">محاولة مجدداً</button>
         </div>
       )}
@@ -1994,7 +1994,7 @@ function SvgToPngPanel() {
       <Textarea value={svg} onChange={e => setSvg(e.target.value)} rows={7} className="font-mono text-xs" data-testid="textarea-svg" />
       <div><label className="text-xs text-black/40 dark:text-white/40 mb-2 block">مقياس الإخراج: {scale}x</label><input type="range" min={1} max={4} step={0.5} value={scale} onChange={e => setScale(+e.target.value)} className="w-full accent-violet-500" /></div>
       {svg.includes("<svg") && <div className="flex justify-center p-4 bg-black/[0.03] dark:bg-white/[0.03] rounded-xl border border-black/[0.07] dark:border-white/[0.07]"><div dangerouslySetInnerHTML={{__html:svg}} className="max-w-full max-h-40 overflow-hidden" /></div>}
-      <Button onClick={convert} className="w-full gap-2 bg-gradient-to-l from-violet-500 to-fuchsia-600 text-white" data-testid="btn-svg-to-png"><Download className="w-4 h-4"/>تحويل وتنزيل PNG</Button>
+      <Button onClick={convert} className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white" data-testid="btn-svg-to-png"><Download className="w-4 h-4"/>تحويل وتنزيل PNG</Button>
     </div>
   );
 }
@@ -2019,7 +2019,7 @@ function NumberBasePanel() {
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">من النظام</label><select value={fromBase} onChange={e => setFromBase(+e.target.value)} className="w-full h-9 px-3 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm text-black dark:text-white">{bases.map(b=><option key={b.v} value={b.v}>{b.l}</option>)}</select></div>
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">إلى النظام</label><select value={toBase} onChange={e => setToBase(+e.target.value)} className="w-full h-9 px-3 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm text-black dark:text-white">{bases.map(b=><option key={b.v} value={b.v}>{b.l}</option>)}</select></div>
       </div>
-      {result && <div className="p-5 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-center"><p className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">{result}</p><div className="flex justify-center mt-2"><CopyBtn text={result} /></div></div>}
+      {result && <div className="p-5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-center"><p className="text-3xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 font-mono">{result}</p><div className="flex justify-center mt-2"><CopyBtn text={result} /></div></div>}
     </div>
   );
 }

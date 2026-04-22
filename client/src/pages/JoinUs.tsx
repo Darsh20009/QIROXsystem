@@ -30,10 +30,10 @@ const categoryIcons: Record<string, any> = {
 };
 
 const typeColors: Record<string, string> = {
-  "دوام كامل": "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
-  "عن بعد": "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  "دوام جزئي": "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-  "تدريب": "bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800",
+  "دوام كامل": "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+  "عن بعد": "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+  "دوام جزئي": "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white",
+  "تدريب": "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white",
 };
 
 function getPerks(L: boolean) {
@@ -261,8 +261,8 @@ export default function JoinUs() {
 
           {submitted ? (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-              <div className="w-16 h-16 bg-green-50 dark:bg-green-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-black dark:text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">{L ? "تم إرسال طلبك!" : "Application Submitted!"}</h3>
               <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">
@@ -280,7 +280,7 @@ export default function JoinUs() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-red-400">*</span></label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-black/70 dark:text-white/70">*</span></label>
                 <Input
                   value={form.fullName}
                   onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}
@@ -290,7 +290,7 @@ export default function JoinUs() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-red-400">*</span></label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-black/70 dark:text-white/70">*</span></label>
                 <Input
                   type="email"
                   value={form.email}

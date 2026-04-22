@@ -32,9 +32,9 @@ interface ServiceData {
 }
 
 function getFileIcon(type: string) {
-  if (type === "pdf") return <FileText className="w-5 h-5 text-red-500" />;
-  if (type === "video") return <Video className="w-5 h-5 text-blue-500" />;
-  if (type === "document") return <FileText className="w-5 h-5 text-green-500" />;
+  if (type === "pdf") return <FileText className="w-5 h-5 text-black dark:text-white" />;
+  if (type === "video") return <Video className="w-5 h-5 text-black dark:text-white" />;
+  if (type === "document") return <FileText className="w-5 h-5 text-black dark:text-white" />;
   return <File className="w-5 h-5 text-black/40 dark:text-white/40" />;
 }
 
@@ -137,7 +137,7 @@ export default function ServiceDetail() {
               {service.platformUrl && (
                 <motion.div variants={fadeUp} custom={3} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] p-5">
                   <p className="text-xs text-black/40 dark:text-white/40 mb-1">{lang === "ar" ? "المنصة" : "Platform"}</p>
-                  <a href={service.platformUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5" data-testid="link-platform-url">
+                  <a href={service.platformUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:underline flex items-center gap-1.5" data-testid="link-platform-url">
                     <Globe className="w-4 h-4" />
                     {lang === "ar" ? "زيارة المنصة" : "Visit Platform"}
                     <ExternalLink className="w-3 h-3" />
@@ -149,14 +149,14 @@ export default function ServiceDetail() {
             {service.features && service.features.length > 0 && (
               <motion.div variants={fadeUp} custom={4} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-6 mb-8">
                 <h2 className="text-lg font-bold text-black dark:text-white mb-4 flex items-center gap-2">
-                  <Check className="w-5 h-5 text-emerald-500" />
+                  <Check className="w-5 h-5 text-black dark:text-white" />
                   {lang === "ar" ? "المميزات" : "Features"}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" data-testid="section-features">
                   {service.features.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30">
-                      <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                        <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                      <div className="w-5 h-5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                       </div>
                       <span className="text-sm text-black/70 dark:text-white/70">{f}</span>
                     </div>
@@ -168,7 +168,7 @@ export default function ServiceDetail() {
             {videos.length > 0 && (
               <motion.div variants={fadeUp} custom={5} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-6 mb-8">
                 <h2 className="text-lg font-bold text-black dark:text-white mb-4 flex items-center gap-2">
-                  <Video className="w-5 h-5 text-blue-500" />
+                  <Video className="w-5 h-5 text-black dark:text-white" />
                   {lang === "ar" ? "فيديوهات الشرح" : "Tutorial Videos"}
                 </h2>
                 <div className="space-y-4" data-testid="section-videos">
@@ -184,7 +184,7 @@ export default function ServiceDetail() {
                       </video>
                       <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.02]">
                         <span className="text-sm text-black/60 dark:text-white/55 truncate">{file.name}</span>
-                        <a href={file.url} download={file.name} className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline shrink-0" data-testid={`link-download-video-${idx}`}>
+                        <a href={file.url} download={file.name} className="flex items-center gap-1.5 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:underline shrink-0" data-testid={`link-download-video-${idx}`}>
                           <Download className="w-3.5 h-3.5" />
                           {lang === "ar" ? "تحميل" : "Download"}
                         </a>
@@ -198,7 +198,7 @@ export default function ServiceDetail() {
             {documents.length > 0 && (
               <motion.div variants={fadeUp} custom={6} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-6 mb-8">
                 <h2 className="text-lg font-bold text-black dark:text-white mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-red-500" />
+                  <FileText className="w-5 h-5 text-black dark:text-white" />
                   {lang === "ar" ? "ملفات الشرح" : "Documentation Files"}
                 </h2>
                 <div className="space-y-2" data-testid="section-documents">
@@ -216,7 +216,7 @@ export default function ServiceDetail() {
                           <ExternalLink className="w-3.5 h-3.5" />
                           {lang === "ar" ? "فتح" : "Open"}
                         </a>
-                        <a href={file.url} download={file.name} className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline" data-testid={`link-download-doc-${idx}`}>
+                        <a href={file.url} download={file.name} className="flex items-center gap-1 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:underline" data-testid={`link-download-doc-${idx}`}>
                           <Download className="w-3.5 h-3.5" />
                           {lang === "ar" ? "تحميل" : "Download"}
                         </a>
@@ -230,7 +230,7 @@ export default function ServiceDetail() {
             {service.usageInstructions && (
               <motion.div variants={fadeUp} custom={7} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-6 mb-8">
                 <h2 className="text-lg font-bold text-black dark:text-white mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-violet-500" />
+                  <BookOpen className="w-5 h-5 text-black dark:text-white" />
                   {lang === "ar" ? "طريقة الاستخدام" : "Usage Instructions"}
                 </h2>
                 <div className="prose prose-sm max-w-none text-black/70 dark:text-white/65 whitespace-pre-line leading-relaxed" data-testid="text-usage-instructions">

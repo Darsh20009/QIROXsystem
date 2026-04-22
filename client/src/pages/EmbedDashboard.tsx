@@ -22,17 +22,17 @@ type EmbedData = {
 
 // ── Status helpers ─────────────────────────────────────────────────────────
 const ORDER_STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
-  pending:    { label: "قيد الانتظار", color: "bg-amber-100 text-amber-700 border-amber-200",   icon: Clock },
-  in_progress:{ label: "قيد التنفيذ", color: "bg-blue-100 text-blue-700 border-blue-200",      icon: AlertCircle },
-  completed:  { label: "مكتمل",       color: "bg-green-100 text-green-700 border-green-200",    icon: CheckCircle2 },
-  cancelled:  { label: "ملغي",         color: "bg-red-100 text-red-700 border-red-200",          icon: XCircle },
+  pending:    { label: "قيد الانتظار", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",   icon: Clock },
+  in_progress:{ label: "قيد التنفيذ", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",      icon: AlertCircle },
+  completed:  { label: "مكتمل",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",    icon: CheckCircle2 },
+  cancelled:  { label: "ملغي",         color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",          icon: XCircle },
 };
 
 const PROJECT_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  development:{ label: "قيد التطوير",  color: "bg-blue-100 text-blue-700 border-blue-200" },
-  review:     { label: "مراجعة",       color: "bg-amber-100 text-amber-700 border-amber-200" },
-  completed:  { label: "مكتمل",        color: "bg-green-100 text-green-700 border-green-200" },
-  staging:    { label: "التجربة",      color: "bg-purple-100 text-purple-700 border-purple-200" },
+  development:{ label: "قيد التطوير",  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  review:     { label: "مراجعة",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  completed:  { label: "مكتمل",        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+  staging:    { label: "التجربة",      color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
 };
 
 function StatusBadge({ status, map }: { status: string; map: Record<string, { label: string; color: string }> }) {
@@ -76,7 +76,7 @@ export default function EmbedDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-violet-600 mx-auto mb-3" />
+          <Loader2 className="w-10 h-10 animate-spin text-black dark:text-white mx-auto mb-3" />
           <p className="text-gray-500 text-sm font-medium">جارٍ تحميل لوحة التحكم…</p>
         </div>
       </div>
@@ -87,8 +87,8 @@ export default function EmbedDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-red-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-            <ShieldX className="w-8 h-8 text-red-500" />
+          <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <ShieldX className="w-8 h-8 text-black dark:text-white" />
           </div>
           <h2 className="text-lg font-black text-gray-900 mb-2">لا يمكن تحميل اللوحة</h2>
           <p className="text-sm text-gray-500 leading-relaxed">{error}</p>
@@ -105,7 +105,7 @@ export default function EmbedDashboard() {
       {/* Top bar */}
       <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+          <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center">
             <span className="text-white font-black text-xs">Q</span>
           </div>
           <div>
@@ -114,7 +114,7 @@ export default function EmbedDashboard() {
           </div>
         </div>
         {client?.subscriptionSegmentNameAr && (
-          <span className="text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-2.5 py-1 rounded-full">
             {client.subscriptionSegmentNameAr}
           </span>
         )}
@@ -124,9 +124,9 @@ export default function EmbedDashboard() {
         {/* Stats cards */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-3 gap-3">
           {[
-            { icon: Package,    color: "text-orange-600", bg: "bg-orange-100", val: stats.totalOrders,                                   label: "إجمالي الطلبات" },
-            { icon: FolderOpen, color: "text-blue-600",   bg: "bg-blue-100",   val: stats.activeProjects,                                 label: "مشاريع نشطة" },
-            { icon: Wallet,     color: "text-green-600",  bg: "bg-green-100",  val: fmtSAR(stats.walletBalance), label: "رصيد المحفظة" },
+            { icon: Package,    color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", val: stats.totalOrders,                                   label: "إجمالي الطلبات" },
+            { icon: FolderOpen, color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   val: stats.activeProjects,                                 label: "مشاريع نشطة" },
+            { icon: Wallet,     color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  val: fmtSAR(stats.walletBalance), label: "رصيد المحفظة" },
           ].map(({ icon: Icon, color, bg, val, label }) => (
             <div key={label} className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm">
               <div className={`w-8 h-8 ${bg} rounded-xl flex items-center justify-center mb-2`}>
@@ -143,7 +143,7 @@ export default function EmbedDashboard() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-              <Package className="w-4 h-4 text-orange-500" />
+              <Package className="w-4 h-4 text-black dark:text-white" />
               <p className="font-bold text-sm text-gray-900">آخر الطلبات</p>
             </div>
             <div className="divide-y divide-gray-50">
@@ -177,23 +177,23 @@ export default function EmbedDashboard() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-blue-500" />
+              <FolderOpen className="w-4 h-4 text-black dark:text-white" />
               <p className="font-bold text-sm text-gray-900">المشاريع الأخيرة</p>
             </div>
             <div className="divide-y divide-gray-50">
               {recentProjects.map(project => (
                 <div key={project.id} className="px-4 py-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                    <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FolderOpen className="w-3.5 h-3.5 text-blue-500" />
+                    <div className="w-7 h-7 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FolderOpen className="w-3.5 h-3.5 text-black dark:text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
                       {project.productionUrl ? (
-                        <a href={project.productionUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 hover:underline truncate block">
+                        <a href={project.productionUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-black dark:text-white hover:underline truncate block">
                           {project.productionUrl}
                         </a>
                       ) : project.stagingUrl ? (
-                        <a href={project.stagingUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-violet-600 hover:underline truncate block">
+                        <a href={project.stagingUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-black dark:text-white hover:underline truncate block">
                           {project.stagingUrl} (تجريبي)
                         </a>
                       ) : (
@@ -214,9 +214,9 @@ export default function EmbedDashboard() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-green-500" />
+              <Wallet className="w-4 h-4 text-black dark:text-white" />
               <p className="font-bold text-sm text-gray-900">حركات المحفظة</p>
-              <span className="ml-auto text-xs font-bold text-green-600">{fmtSAR(stats.walletBalance)}</span>
+              <span className="ml-auto text-xs font-bold text-black dark:text-white">{fmtSAR(stats.walletBalance)}</span>
             </div>
             <div className="divide-y divide-gray-50">
               {walletTransactions.map(txn => {
@@ -224,15 +224,15 @@ export default function EmbedDashboard() {
                 return (
                   <div key={txn.id} className="px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isCredit ? "bg-green-100" : "bg-red-50"}`}>
-                        {isCredit ? <ArrowDownLeft className="w-3.5 h-3.5 text-green-600" /> : <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />}
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isCredit ? "bg-black/[0.04] dark:bg-white/[0.06]" : "bg-black/[0.04] dark:bg-white/[0.06]"}`}>
+                        {isCredit ? <ArrowDownLeft className="w-3.5 h-3.5 text-black dark:text-white" /> : <ArrowUpRight className="w-3.5 h-3.5 text-black dark:text-white" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-gray-900 truncate">{txn.description || (isCredit ? "إيداع" : "خصم")}</p>
                         <p className="text-[10px] text-gray-400">{fmtDate(txn.createdAt)}</p>
                       </div>
                     </div>
-                    <span className={`text-sm font-black ${isCredit ? "text-green-600" : "text-red-500"}`}>
+                    <span className={`text-sm font-black ${isCredit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                       {isCredit ? "+" : "-"}{fmtSAR(Math.abs(txn.amount))}
                     </span>
                   </div>
@@ -252,7 +252,7 @@ export default function EmbedDashboard() {
 
         {/* Footer */}
         <div className="text-center py-2">
-          <p className="text-[10px] text-gray-300">مدعوم بـ <span className="font-bold text-violet-400">Qirox</span></p>
+          <p className="text-[10px] text-gray-300">مدعوم بـ <span className="font-bold text-black/70 dark:text-white/70">Qirox</span></p>
         </div>
       </div>
     </div>

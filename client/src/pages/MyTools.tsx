@@ -42,10 +42,10 @@ export default function MyTools() {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-600/10 dark:from-cyan-500/5 dark:to-blue-600/5 rounded-3xl blur-2xl -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black dark:from-white to-black dark:to-white dark:from-black dark:from-white dark:to-black dark:to-white rounded-3xl blur-2xl -z-10" />
           <div className="bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-900/80 dark:to-gray-900/60 backdrop-blur-sm border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-8">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <Zap className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -57,10 +57,10 @@ export default function MyTools() {
             {/* Stats */}
             <div className="grid grid-cols-4 gap-4 mb-6">
               {[
-                { label: L ? "إجمالي الأدوات" : "Total Tools", value: ALL_TOOLS.length, color: "text-cyan-500" },
-                { label: L ? "الفئات" : "Categories", value: CATEGORIES.length, color: "text-blue-500" },
-                { label: L ? "أدوات PDF" : "PDF Tools", value: ALL_TOOLS.filter(t=>t.cat==="pdf").length, color: "text-purple-500" },
-                { label: L ? "مجاناً 100%" : "100% Free", value: "✓", color: "text-green-500" },
+                { label: L ? "إجمالي الأدوات" : "Total Tools", value: ALL_TOOLS.length, color: "text-black dark:text-white" },
+                { label: L ? "الفئات" : "Categories", value: CATEGORIES.length, color: "text-black dark:text-white" },
+                { label: L ? "أدوات PDF" : "PDF Tools", value: ALL_TOOLS.filter(t=>t.cat==="pdf").length, color: "text-black dark:text-white" },
+                { label: L ? "مجاناً 100%" : "100% Free", value: "✓", color: "text-black dark:text-white" },
               ].map((s) => (
                 <div key={s.label} className="text-center p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
                   <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>

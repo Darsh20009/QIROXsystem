@@ -77,7 +77,7 @@ function ScopeChip({ scope, L }: { scope: string; L: boolean }) {
 function EventChip({ event, L }: { event: string; L: boolean }) {
   const e = WEBHOOK_EVENTS_DATA.find(x => x.id === event);
   return (
-    <span className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+    <span className="inline-flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-[10px] font-medium px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
       {e?.icon} {e ? (L ? e.ar : e.en) : event}
     </span>
   );
@@ -105,10 +105,10 @@ export default function MyApiKeys() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="bg-black rounded-3xl p-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-        <div className="absolute top-0 left-0 w-64 h-64 bg-violet-600/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 left-0 w-64 h-64 bg-black dark:bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="relative z-10 flex items-center gap-4">
           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-            <Code2 className="w-6 h-6 text-violet-400" />
+            <Code2 className="w-6 h-6 text-black/70 dark:text-white/70" />
           </div>
           <div>
             <h1 className="text-xl font-black text-white">{L ? "مركز المطوّرين" : "Developer Center"}</h1>
@@ -190,15 +190,15 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
       {/* Quick guide */}
       <div className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Terminal className="w-4 h-4 text-violet-500" />
+          <Terminal className="w-4 h-4 text-black dark:text-white" />
           <p className="font-bold text-sm">{L ? "كيفية الاستخدام" : "Usage Guide"}</p>
         </div>
-        <div className="bg-black rounded-xl p-3 font-mono text-xs text-green-400 overflow-x-auto space-y-1">
+        <div className="bg-black rounded-xl p-3 font-mono text-xs text-black/70 dark:text-white/70 overflow-x-auto space-y-1">
           <p className="text-white/30">{L ? "# أضف المفتاح في رأس الطلب" : "# Add the key in the request header"}</p>
           <p>Authorization: Bearer qrx_live_xxxxxxxxxx...</p>
           <p className="text-white/30 mt-2">{L ? "# المسارات المتاحة (GET)" : "# Available endpoints (GET)"}</p>
           {["/api/v1/me","/api/v1/orders","/api/v1/projects","/api/v1/invoices","/api/v1/stats","/api/v1/wallet","/api/v1/customers"].map(p => (
-            <p key={p} className="text-blue-400">{baseUrl}{p}</p>
+            <p key={p} className="text-black/70 dark:text-white/70">{baseUrl}{p}</p>
           ))}
         </div>
       </div>
@@ -208,8 +208,8 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
         <div className="flex gap-3">
           {[
             { val: keys.length, label: L ? "إجمالي" : "Total", color: "text-black dark:text-white" },
-            { val: keys.filter(k => k.isActive).length, label: L ? "نشط" : "Active", color: "text-green-600 dark:text-green-400" },
-            { val: keys.reduce((s, k) => s + k.requestCount, 0).toLocaleString(), label: L ? "طلب API" : "API Calls", color: "text-violet-600 dark:text-violet-400" },
+            { val: keys.filter(k => k.isActive).length, label: L ? "نشط" : "Active", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+            { val: keys.reduce((s, k) => s + k.requestCount, 0).toLocaleString(), label: L ? "طلب API" : "API Calls", color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
           ].map(({ val, label, color }) => (
             <div key={label} className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-center">
               <p className={`text-base font-black ${color}`}>{val}</p>
@@ -218,7 +218,7 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
           ))}
         </div>
         <Button onClick={() => setShowCreate(true)} data-testid="btn-create-key"
-          className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-9 text-sm">
+          className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-2 h-9 text-sm">
           <Plus className="w-4 h-4" /> {L ? "مفتاح جديد" : "New Key"}
         </Button>
       </div>
@@ -242,14 +242,14 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
               className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 transition-all ${key.isActive ? "border-black/[0.07] dark:border-white/[0.07]" : "border-black/[0.04] dark:border-white/[0.04] opacity-60"}`}>
               <div className="flex items-start gap-3 justify-between">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${key.isActive ? "bg-violet-100 dark:bg-violet-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
-                    <Key className={`w-4 h-4 ${key.isActive ? "text-violet-600 dark:text-violet-400" : "text-black/20 dark:text-white/20"}`} />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${key.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                    <Key className={`w-4 h-4 ${key.isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/20 dark:text-white/20"}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-bold text-sm">{key.name}</p>
-                      {key.projectName && <span className="text-[10px] bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded-full">{key.projectName}</span>}
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}>
+                      {key.projectName && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-1.5 py-0.5 rounded-full">{key.projectName}</span>}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}>
                         {key.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                       </span>
                     </div>
@@ -264,11 +264,11 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => toggleMutation.mutate({ id: key.id, isActive: !key.isActive })} data-testid={`btn-toggle-key-${key.id}`}
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${key.isActive ? "border-green-200 bg-green-50 hover:bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/30"}`}>
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${key.isActive ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:border-black dark:border-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/30"}`}>
                     {key.isActive ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
                   </button>
                   <button onClick={() => setDeleteTarget(key.id)} data-testid={`btn-delete-key-${key.id}`}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03]">
+                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.04] dark:bg-white/[0.06] hover:border-black/10 dark:border-white/10 hover:text-black dark:text-white text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03]">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -283,7 +283,7 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
         <DialogContent className="max-w-lg rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg flex items-center gap-2">
-              <Key className="w-5 h-5 text-violet-500" /> {L ? "إنشاء مفتاح API جديد" : "Create New API Key"}
+              <Key className="w-5 h-5 text-black dark:text-white" /> {L ? "إنشاء مفتاح API جديد" : "Create New API Key"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -302,13 +302,13 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                 {ALL_SCOPES.map(s => (
                   <button key={s.id} onClick={() => toggleScope(s.id)} data-testid={`scope-${s.id}`}
-                    className={`flex items-center gap-2 rounded-xl p-2.5 border text-right transition-all ${form.scopes.includes(s.id) ? "border-violet-300 bg-violet-50 dark:border-violet-700 dark:bg-violet-950/30" : "border-black/[0.08] bg-black/[0.02] dark:border-white/[0.08] dark:bg-white/[0.02]"}`}>
+                    className={`flex items-center gap-2 rounded-xl p-2.5 border text-right transition-all ${form.scopes.includes(s.id) ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:bg-black dark:bg-white" : "border-black/[0.08] bg-black/[0.02] dark:border-white/[0.08] dark:bg-white/[0.02]"}`}>
                     <span className="text-base">{s.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold ${form.scopes.includes(s.id) ? "text-violet-700 dark:text-violet-300" : "text-black/60 dark:text-white/60"}`}>{s.label}</p>
+                      <p className={`text-xs font-bold ${form.scopes.includes(s.id) ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/60 dark:text-white/60"}`}>{s.label}</p>
                       <p className="text-[10px] text-black/30 dark:text-white/30 leading-tight truncate">{s.desc}</p>
                     </div>
-                    {form.scopes.includes(s.id) && <Check className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 flex-shrink-0" />}
+                    {form.scopes.includes(s.id) && <Check className="w-3.5 h-3.5 text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -323,9 +323,9 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
                 <Input value={form.allowedOrigins} onChange={e => setForm(f => ({ ...f, allowedOrigins: e.target.value }))} placeholder="example.com, shop.com" className="rounded-xl" dir="ltr" data-testid="input-origins" />
               </div>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-amber-700 dark:text-amber-400 text-xs">{L ? "المفتاح يُعرض مرة واحدة فقط عند الإنشاء. احفظه فوراً." : "The key is shown only once upon creation. Save it immediately."}</p>
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-black dark:text-white flex-shrink-0 mt-0.5" />
+              <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs">{L ? "المفتاح يُعرض مرة واحدة فقط عند الإنشاء. احفظه فوراً." : "The key is shown only once upon creation. Save it immediately."}</p>
             </div>
             <Button onClick={() => {
               if (!form.name.trim()) { toast({ title: L ? "اسم المفتاح مطلوب" : "Key name required", variant: "destructive" }); return; }
@@ -345,21 +345,21 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
         <DialogContent className="max-w-md rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-green-500" /> {L ? "مفتاحك الجديد جاهز!" : "Your New Key is Ready!"}
+              <ShieldCheck className="w-5 h-5 text-black dark:text-white" /> {L ? "مفتاحك الجديد جاهز!" : "Your New Key is Ready!"}
             </DialogTitle>
           </DialogHeader>
           {newKey && (
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold">{L ? "انسخ المفتاح الآن — لن يُعرض مجدداً." : "Copy the key now — it will never be shown again."}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3 flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-black dark:text-white flex-shrink-0 mt-0.5" />
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs font-semibold">{L ? "انسخ المفتاح الآن — لن يُعرض مجدداً." : "Copy the key now — it will never be shown again."}</p>
               </div>
               <div className="bg-black rounded-2xl p-4">
                 <p className="text-[10px] text-white/30 mb-2 font-mono">API KEY</p>
-                <p className="font-mono text-green-400 text-sm break-all leading-relaxed" data-testid="text-raw-key">{newKey.rawKey}</p>
+                <p className="font-mono text-black/70 dark:text-white/70 text-sm break-all leading-relaxed" data-testid="text-raw-key">{newKey.rawKey}</p>
               </div>
               <Button onClick={() => copyKey(newKey.rawKey || "")} data-testid="btn-copy-key"
-                className={`w-full h-11 rounded-2xl gap-2 font-bold ${copied ? "bg-green-600 hover:bg-green-600 text-white" : "bg-black hover:bg-black/80 dark:bg-white dark:text-black text-white"}`}>
+                className={`w-full h-11 rounded-2xl gap-2 font-bold ${copied ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white" : "bg-black hover:bg-black/80 dark:bg-white dark:text-black text-white"}`}>
                 {copied ? <><Check className="w-4 h-4" /> {L ? "تم النسخ!" : "Copied!"}</> : <><Copy className="w-4 h-4" /> {L ? "انسخ المفتاح" : "Copy Key"}</>}
               </Button>
             </div>
@@ -371,12 +371,12 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="font-black text-lg text-red-600">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
+            <DialogTitle className="font-black text-lg text-black dark:text-white">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
           </DialogHeader>
           <p className="text-black/60 dark:text-white/60 text-sm">{L ? "سيُحذف المفتاح نهائياً." : "The key will be permanently deleted."}</p>
           <div className="flex gap-2 mt-2">
             <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending}
-              className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white gap-2" data-testid="btn-confirm-delete">
+              className="flex-1 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2" data-testid="btn-confirm-delete">
               {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               {L ? "حذف" : "Delete"}
             </Button>
@@ -443,11 +443,11 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
       {/* Info banner */}
-      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex gap-3">
-        <Radio className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+      <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 flex gap-3">
+        <Radio className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">{L ? "ما هي Webhooks؟" : "What are Webhooks?"}</p>
-          <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed">{L ? "Webhooks تُرسل إشعاراً تلقائياً لنظامك عند حدوث أحداث معينة في Qirox — مثل إنشاء طلب جديد أو دفع فاتورة. نظامك يستقبلها فوراً دون الحاجة لـ polling." : "Webhooks send an automatic notification to your system when specific events occur in Qirox — like a new order or invoice payment. Your system receives them instantly without polling."}</p>
+          <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1">{L ? "ما هي Webhooks؟" : "What are Webhooks?"}</p>
+          <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">{L ? "Webhooks تُرسل إشعاراً تلقائياً لنظامك عند حدوث أحداث معينة في Qirox — مثل إنشاء طلب جديد أو دفع فاتورة. نظامك يستقبلها فوراً دون الحاجة لـ polling." : "Webhooks send an automatic notification to your system when specific events occur in Qirox — like a new order or invoice payment. Your system receives them instantly without polling."}</p>
         </div>
       </div>
 
@@ -455,7 +455,7 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
       <div className="flex items-center justify-between">
         <p className="font-bold text-sm">{hooks.length} {L ? "Webhook مُسجّل" : "Webhooks registered"}</p>
         <Button onClick={() => setShowCreate(true)} data-testid="btn-create-webhook"
-          className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2 h-9 text-sm">
+          className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-2 h-9 text-sm">
           <Plus className="w-4 h-4" /> {L ? "Webhook جديد" : "New Webhook"}
         </Button>
       </div>
@@ -479,38 +479,38 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
               className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 transition-all ${hook.isActive ? "border-black/[0.07] dark:border-white/[0.07]" : "border-black/[0.04] dark:border-white/[0.04] opacity-60"}`}>
               <div className="flex items-start gap-3 justify-between">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${hook.isActive ? "bg-blue-100 dark:bg-blue-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
-                    <Webhook className={`w-4 h-4 ${hook.isActive ? "text-blue-600 dark:text-blue-400" : "text-black/20 dark:text-white/20"}`} />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${hook.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                    <Webhook className={`w-4 h-4 ${hook.isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/20 dark:text-white/20"}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-bold text-sm">{hook.label}</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${hook.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400"}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${hook.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400"}`}>
                         {hook.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                       </span>
                     </div>
                     <code className="text-xs text-black/40 dark:text-white/40 font-mono bg-black/[0.04] dark:bg-white/[0.04] px-2 py-0.5 rounded-lg block w-fit mb-2 truncate max-w-full">{hook.url}</code>
                     <div className="flex flex-wrap gap-1 mb-2">{hook.events.map(e => <EventChip key={e} event={e} L={L} />)}</div>
                     <div className="flex flex-wrap gap-3 text-[10px] text-black/30 dark:text-white/30">
-                      <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" />{hook.deliveryCount} {L ? "ناجح" : "delivered"}</span>
-                      {hook.failCount > 0 && <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-red-500" />{hook.failCount} {L ? "فشل" : "failed"}</span>}
+                      <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-black dark:text-white" />{hook.deliveryCount} {L ? "ناجح" : "delivered"}</span>
+                      {hook.failCount > 0 && <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-black dark:text-white" />{hook.failCount} {L ? "فشل" : "failed"}</span>}
                       {hook.lastDeliveredAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(hook.lastDeliveredAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
-                      {hook.lastError && <span className="text-red-400 truncate max-w-32">{hook.lastError}</span>}
+                      {hook.lastError && <span className="text-black/70 dark:text-white/70 truncate max-w-32">{hook.lastError}</span>}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => testWebhook(hook.id)} data-testid={`btn-test-webhook-${hook.id}`} disabled={testing === hook.id}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03] disabled:opacity-50"
+                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.04] dark:bg-white/[0.06] hover:border-black/10 dark:border-white/10 hover:text-black dark:text-white text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03] disabled:opacity-50"
                     title={L ? "اختبر الـ Webhook" : "Test Webhook"}>
                     {testing === hook.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                   </button>
                   <button onClick={() => toggleMutation.mutate({ id: hook.id, isActive: !hook.isActive })} data-testid={`btn-toggle-webhook-${hook.id}`}
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${hook.isActive ? "border-green-200 bg-green-50 hover:bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/30"}`}>
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${hook.isActive ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:border-black dark:border-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/30"}`}>
                     {hook.isActive ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
                   </button>
                   <button onClick={() => setDeleteTarget(hook.id)} data-testid={`btn-delete-webhook-${hook.id}`}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03]">
+                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.04] dark:bg-white/[0.06] hover:border-black/10 dark:border-white/10 hover:text-black dark:text-white text-black/25 transition-colors dark:border-white/[0.08] dark:bg-white/[0.03]">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -525,7 +525,7 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
         <DialogContent className="max-w-lg rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg flex items-center gap-2">
-              <Webhook className="w-5 h-5 text-blue-500" /> {L ? "إنشاء Webhook جديد" : "Create New Webhook"}
+              <Webhook className="w-5 h-5 text-black dark:text-white" /> {L ? "إنشاء Webhook جديد" : "Create New Webhook"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -542,7 +542,7 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
               <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                 {EVENTS.map(e => (
                   <button key={e.id} onClick={() => toggleEvent(e.id)} data-testid={`event-${e.id}`}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2 border text-right text-xs transition-all ${form.events.includes(e.id) ? "border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" : "border-black/[0.08] bg-black/[0.02] dark:border-white/[0.08] text-black/60 dark:text-white/60"}`}>
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 border text-right text-xs transition-all ${form.events.includes(e.id) ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-black/[0.08] bg-black/[0.02] dark:border-white/[0.08] text-black/60 dark:text-white/60"}`}>
                     <span>{e.icon}</span>
                     <span className="font-medium flex-1">{e.label}</span>
                     {form.events.includes(e.id) && <Check className="w-3 h-3 flex-shrink-0" />}
@@ -561,7 +561,7 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
               if (!form.events.length) { toast({ title: L ? "اختر حدثاً واحداً" : "Select at least one event", variant: "destructive" }); return; }
               createMutation.mutate(form);
             }} disabled={createMutation.isPending} data-testid="btn-confirm-create-webhook"
-              className="w-full h-11 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white gap-2 font-bold">
+              className="w-full h-11 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2 font-bold">
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Webhook className="w-4 h-4" />}
               {L ? "إنشاء الـ Webhook" : "Create Webhook"}
             </Button>
@@ -572,10 +572,10 @@ function WebhooksTab({ L, dir, toast }: { L: boolean; dir: string; toast: any })
       {/* Delete Confirm */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
-          <DialogHeader><DialogTitle className="font-black text-lg text-red-600">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black text-lg text-black dark:text-white">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle></DialogHeader>
           <p className="text-black/60 dark:text-white/60 text-sm">{L ? "سيُحذف الـ Webhook نهائياً." : "The webhook will be permanently deleted."}</p>
           <div className="flex gap-2 mt-2">
-            <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white gap-2" data-testid="btn-confirm-delete-webhook">
+            <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending} className="flex-1 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2" data-testid="btn-confirm-delete-webhook">
               {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} {L ? "حذف" : "Delete"}
             </Button>
             <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
@@ -631,17 +631,17 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
       {/* Explainer */}
-      <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-5">
+      <div className="bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-5">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-violet-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center flex-shrink-0">
             <MonitorSmartphone className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="font-black text-violet-900 dark:text-violet-200 mb-1">{L ? "لوحة تحكم Qirox في موقعك" : "Qirox Dashboard in Your Website"}</h3>
-            <p className="text-sm text-violet-700 dark:text-violet-400 leading-relaxed">{L ? "ضع لوحة تحكمك الكاملة داخل موقعك بسطر كود واحد. عملاؤك يتابعون طلباتهم ومشاريعهم وفواتيرهم مباشرةً في موقعك دون الدخول لـ Qirox." : "Embed your complete control panel inside your website with a single line of code. Your clients track their orders, projects, and invoices directly on your site."}</p>
+            <h3 className="font-black text-black dark:text-white dark:text-black/60 dark:text-white/60 mb-1">{L ? "لوحة تحكم Qirox في موقعك" : "Qirox Dashboard in Your Website"}</h3>
+            <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">{L ? "ضع لوحة تحكمك الكاملة داخل موقعك بسطر كود واحد. عملاؤك يتابعون طلباتهم ومشاريعهم وفواتيرهم مباشرةً في موقعك دون الدخول لـ Qirox." : "Embed your complete control panel inside your website with a single line of code. Your clients track their orders, projects, and invoices directly on your site."}</p>
             <div className="flex flex-wrap gap-2 mt-3">
               {[L ? "🔐 مصادقة آمنة" : "🔐 Secure auth", L ? "📱 متجاوب" : "📱 Responsive", L ? "🌙 دعم الوضع الداكن" : "🌙 Dark mode", L ? "🌐 عربي + إنجليزي" : "🌐 AR + EN"].map(f => (
-                <span key={f} className="text-[11px] bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 px-2.5 py-1 rounded-full font-medium">{f}</span>
+                <span key={f} className="text-[11px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2.5 py-1 rounded-full font-medium">{f}</span>
               ))}
             </div>
           </div>
@@ -651,9 +651,9 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
       {/* How it works */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { step: "1", icon: Key, color: "text-violet-600", bg: "bg-violet-100 dark:bg-violet-950/40", title: L ? "أنشئ رمز تضمين" : "Create Embed Token", desc: L ? "رمز آمن خاص بموقعك" : "Secure token for your site" },
-          { step: "2", icon: Code2, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-950/40", title: L ? "انسخ كود الـ Iframe" : "Copy Iframe Code", desc: L ? "سطر HTML واحد فقط" : "Just one HTML line" },
-          { step: "3", icon: Globe, color: "text-green-600", bg: "bg-green-100 dark:bg-green-950/40", title: L ? "الصقه في موقعك" : "Paste in Your Site", desc: L ? "اللوحة تظهر فوراً" : "Dashboard appears instantly" },
+          { step: "1", icon: Key, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", title: L ? "أنشئ رمز تضمين" : "Create Embed Token", desc: L ? "رمز آمن خاص بموقعك" : "Secure token for your site" },
+          { step: "2", icon: Code2, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", title: L ? "انسخ كود الـ Iframe" : "Copy Iframe Code", desc: L ? "سطر HTML واحد فقط" : "Just one HTML line" },
+          { step: "3", icon: Globe, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", title: L ? "الصقه في موقعك" : "Paste in Your Site", desc: L ? "اللوحة تظهر فوراً" : "Dashboard appears instantly" },
         ].map(({ step, icon: Icon, color, bg, title, desc }) => (
           <div key={step} className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-3 text-center">
             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
@@ -670,7 +670,7 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
       <div className="flex items-center justify-between">
         <p className="font-bold text-sm">{tokens.length} {L ? "رمز تضمين" : "embed tokens"}</p>
         <Button onClick={() => setShowCreate(true)} data-testid="btn-create-embed-token"
-          className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-9 text-sm">
+          className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-2 h-9 text-sm">
           <Plus className="w-4 h-4" /> {L ? "رمز جديد" : "New Token"}
         </Button>
       </div>
@@ -694,13 +694,13 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
               className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 transition-all ${token.isActive ? "border-black/[0.07] dark:border-white/[0.07]" : "border-black/[0.04] dark:border-white/[0.04] opacity-60"}`}>
               <div className="flex items-start gap-3 justify-between">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${token.isActive ? "bg-violet-100 dark:bg-violet-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
-                    <LayoutDashboard className={`w-4 h-4 ${token.isActive ? "text-violet-600 dark:text-violet-400" : "text-black/20 dark:text-white/20"}`} />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${token.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                    <LayoutDashboard className={`w-4 h-4 ${token.isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/20 dark:text-white/20"}`} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-bold text-sm">{token.label}</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${token.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${token.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
                         {token.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                       </span>
                     </div>
@@ -715,18 +715,18 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
                     </div>
                     {/* Iframe preview link */}
                     <a href={`${baseUrl}/embed?tokenId=${token.id}`} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 hover:underline mt-2 font-medium">
+                      className="inline-flex items-center gap-1 text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:underline mt-2 font-medium">
                       <ExternalLink className="w-3 h-3" /> {L ? "معاينة اللوحة" : "Preview Dashboard"}
                     </a>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => toggleMutation.mutate({ id: token.id, isActive: !token.isActive })} data-testid={`btn-toggle-embed-${token.id}`}
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${token.isActive ? "border-green-200 bg-green-50 hover:bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30"}`}>
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${token.isActive ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:border-black dark:border-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30"}`}>
                     {token.isActive ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
                   </button>
                   <button onClick={() => setDeleteTarget(token.id)} data-testid={`btn-delete-embed-${token.id}`}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-black/25 transition-colors">
+                    className="w-8 h-8 rounded-xl flex items-center justify-center border border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.04] dark:bg-white/[0.06] hover:border-black/10 dark:border-white/10 hover:text-black dark:text-white text-black/25 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -741,7 +741,7 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
         <DialogContent className="max-w-md rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg flex items-center gap-2">
-              <LayoutDashboard className="w-5 h-5 text-violet-500" /> {L ? "إنشاء رمز تضمين جديد" : "Create New Embed Token"}
+              <LayoutDashboard className="w-5 h-5 text-black dark:text-white" /> {L ? "إنشاء رمز تضمين جديد" : "Create New Embed Token"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -758,13 +758,13 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
               <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "تاريخ الانتهاء (اختياري)" : "Expiry Date (optional)"}</label>
               <Input type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} className="rounded-xl" dir="ltr" data-testid="input-embed-expires" />
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-amber-700 dark:text-amber-400 text-xs">{L ? "الرمز يُعرض مرة واحدة فقط. احفظه في متغيرات البيئة في موقعك." : "The token is shown once only. Save it in your site's environment variables."}</p>
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-black dark:text-white flex-shrink-0 mt-0.5" />
+              <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs">{L ? "الرمز يُعرض مرة واحدة فقط. احفظه في متغيرات البيئة في موقعك." : "The token is shown once only. Save it in your site's environment variables."}</p>
             </div>
             <Button onClick={() => createMutation.mutate({ label: form.label || undefined, allowedOrigins: form.allowedOrigins.split(",").map(s => s.trim()).filter(Boolean), expiresAt: form.expiresAt || null })}
               disabled={createMutation.isPending} data-testid="btn-confirm-create-embed"
-              className="w-full h-11 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white gap-2 font-bold">
+              className="w-full h-11 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2 font-bold">
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LayoutDashboard className="w-4 h-4" />}
               {L ? "إنشاء رمز التضمين" : "Create Embed Token"}
             </Button>
@@ -777,23 +777,23 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
         <DialogContent className="max-w-lg rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-green-500" /> {L ? "رمز التضمين جاهز!" : "Embed Token Ready!"}
+              <ShieldCheck className="w-5 h-5 text-black dark:text-white" /> {L ? "رمز التضمين جاهز!" : "Embed Token Ready!"}
             </DialogTitle>
           </DialogHeader>
           {newToken && (
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold">{L ? "انسخ الرمز الآن — لن يُعرض مجدداً. استخدمه في الكود أدناه." : "Copy the token now — it won't be shown again. Use it in the code below."}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3 flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-black dark:text-white flex-shrink-0 mt-0.5" />
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs font-semibold">{L ? "انسخ الرمز الآن — لن يُعرض مجدداً. استخدمه في الكود أدناه." : "Copy the token now — it won't be shown again. Use it in the code below."}</p>
               </div>
 
               {/* Raw token */}
               <div>
                 <p className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5">{L ? "الرمز السري" : "Secret Token"}</p>
                 <div className="bg-black rounded-xl p-3 flex items-center gap-2">
-                  <code className="text-green-400 font-mono text-xs flex-1 break-all" data-testid="text-raw-embed-token">{newToken.rawToken}</code>
+                  <code className="text-black/70 dark:text-white/70 font-mono text-xs flex-1 break-all" data-testid="text-raw-embed-token">{newToken.rawToken}</code>
                   <button onClick={() => copyText(newToken.rawToken!, "raw")} className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white/60">
-                    {copiedId === "raw" ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === "raw" ? <Check className="w-3.5 h-3.5 text-black/70 dark:text-white/70" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -802,10 +802,10 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
               <div>
                 <p className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5">{L ? "كود الـ Iframe — الصقه في موقعك" : "Iframe Code — Paste in your site"}</p>
                 <div className="bg-black rounded-xl p-3 relative">
-                  <pre className="text-blue-400 font-mono text-xs overflow-x-auto whitespace-pre-wrap" data-testid="text-iframe-code">{getIframeCode(newToken.rawToken || "")}</pre>
+                  <pre className="text-black/70 dark:text-white/70 font-mono text-xs overflow-x-auto whitespace-pre-wrap" data-testid="text-iframe-code">{getIframeCode(newToken.rawToken || "")}</pre>
                   <button onClick={() => copyText(getIframeCode(newToken.rawToken || ""), "iframe")}
                     className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white/60">
-                    {copiedId === "iframe" ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === "iframe" ? <Check className="w-3.5 h-3.5 text-black/70 dark:text-white/70" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -821,10 +821,10 @@ function EmbedTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) {
       {/* Delete Confirm */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
-          <DialogHeader><DialogTitle className="font-black text-lg text-red-600">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black text-lg text-black dark:text-white">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle></DialogHeader>
           <p className="text-black/60 dark:text-white/60 text-sm">{L ? "سيُبطل هذا الرمز نهائياً ولن يعمل الـ iframe بعد ذلك." : "This token will be permanently revoked and the iframe will stop working."}</p>
           <div className="flex gap-2 mt-2">
-            <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending} className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white gap-2" data-testid="btn-confirm-delete-embed">
+            <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending} className="flex-1 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2" data-testid="btn-confirm-delete-embed">
               {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} {L ? "إلغاء الرمز" : "Revoke"}
             </Button>
             <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>

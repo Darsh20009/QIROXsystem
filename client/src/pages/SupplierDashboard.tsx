@@ -20,10 +20,10 @@ export default function SupplierDashboard() {
   const [form, setForm] = useState({ title: "", description: "", price: "", category: "", attachmentUrl: "" });
 
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
-    pending: { label: L ? "قيد المراجعة" : "Pending", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" },
-    reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" },
-    accepted: { label: L ? "مقبول ✓" : "Accepted ✓", color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" },
-    rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800" },
+    pending: { label: L ? "قيد المراجعة" : "Pending", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    accepted: { label: L ? "مقبول ✓" : "Accepted ✓", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   };
 
   const { data: offers = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/supplier/offers"] });
@@ -62,9 +62,9 @@ export default function SupplierDashboard() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: L ? "إجمالي" : "Total", value: stats.total, color: "text-gray-900 dark:text-white" },
-          { label: L ? "قيد المراجعة" : "Pending", value: stats.pending, color: "text-amber-600 dark:text-amber-400" },
-          { label: L ? "مقبولة" : "Accepted", value: stats.accepted, color: "text-green-600 dark:text-green-400" },
-          { label: L ? "مرفوضة" : "Rejected", value: stats.rejected, color: "text-red-500 dark:text-red-400" },
+          { label: L ? "قيد المراجعة" : "Pending", value: stats.pending, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+          { label: L ? "مقبولة" : "Accepted", value: stats.accepted, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+          { label: L ? "مرفوضة" : "Rejected", value: stats.rejected, color: "text-black dark:text-white dark:text-black/70 dark:text-white/70" },
         ].map((s, i) => (
           <Card key={i} className="border-black/10 dark:border-white/10"><CardContent className="p-3 text-center"><div className={`text-2xl font-bold ${s.color}`}>{s.value}</div><div className="text-xs text-gray-400 dark:text-white/40">{s.label}</div></CardContent></Card>
         ))}
@@ -101,13 +101,13 @@ export default function SupplierDashboard() {
                         <div className="text-xs text-gray-400 dark:text-white/30">{new Date(offer.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
                       </div>
                       {offer.adminNote && (
-                        <div className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2 text-xs text-blue-700 dark:text-blue-400">
+                        <div className="mt-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-lg p-2 text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                           <strong>{L ? "ملاحظة الإدارة:" : "Admin Note:"}</strong> {offer.adminNote}
                         </div>
                       )}
                     </div>
                     {offer.status === "pending" && (
-                      <Button size="sm" variant="outline" className="border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0" onClick={() => { if (confirm(L ? "حذف هذا العرض؟" : "Delete this offer?")) deleteMutation.mutate(offer.id); }} data-testid={`button-delete-offer-${offer.id}`}>
+                      <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 dark:border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0" onClick={() => { if (confirm(L ? "حذف هذا العرض؟" : "Delete this offer?")) deleteMutation.mutate(offer.id); }} data-testid={`button-delete-offer-${offer.id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     )}

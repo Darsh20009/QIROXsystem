@@ -56,9 +56,9 @@ import ec06 from "@assets/Screenshot_2026-03-24_135305_1774349716342.png";
 const ECOMMERCE_SCREENSHOTS = [ec01,ec02,ec03,ec04,ec05,ec06];
 
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
-  lite:     { label: "لايت",    color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
-  pro:      { label: "برو",     color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", desc: "الباقة الاحترافية — للمشاريع المتوسطة والكبيرة" },
-  infinite: { label: "إنفينيت", color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200",  desc: "الباقة الكاملة — بلا حدود لأكبر المشاريع" },
+  lite:     { label: "لايت",    color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
+  pro:      { label: "برو",     color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10", desc: "الباقة الاحترافية — للمشاريع المتوسطة والكبيرة" },
+  infinite: { label: "إنفينيت", color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",  desc: "الباقة الكاملة — بلا حدود لأكبر المشاريع" },
   custom:   { label: "مخصص",   color: "text-gray-700",   bg: "bg-gray-50",   border: "border-gray-200",   desc: "باقة مخصصة حسب احتياجك" },
 };
 
@@ -85,12 +85,12 @@ interface PortalCredential {
 }
 
 const CAFE_PORTALS: PortalCredential[] = [
-  { role: "عميل التجربة",    username: "512345678",  password: "demo1234",    access: "السلة، الدفع، تتبع الطلبات، بطاقة الولاء",          icon: User,          color: "text-orange-700", bg: "bg-orange-50" },
-  { role: "كاشير",           username: "cashier",    password: "cashier123",  access: "الكاشير، الطلبات، الطاولات، الولاء، الحضور",        icon: CreditCard,    color: "text-emerald-700", bg: "bg-emerald-50" },
-  { role: "باريستا",         username: "barista",    password: "barista123",  access: "المطبخ، الطلبات، الحضور",                           icon: Coffee,        color: "text-amber-700", bg: "bg-amber-50" },
-  { role: "مدير فرع",        username: "manager",    password: "manager123",  access: "لوحة التحكم، المخزون، المحاسبة، الموظفين، التقارير", icon: LayoutDashboard, color: "text-violet-700", bg: "bg-violet-50" },
+  { role: "عميل التجربة",    username: "512345678",  password: "demo1234",    access: "السلة، الدفع، تتبع الطلبات، بطاقة الولاء",          icon: User,          color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+  { role: "كاشير",           username: "cashier",    password: "cashier123",  access: "الكاشير، الطلبات، الطاولات، الولاء، الحضور",        icon: CreditCard,    color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+  { role: "باريستا",         username: "barista",    password: "barista123",  access: "المطبخ، الطلبات، الحضور",                           icon: Coffee,        color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+  { role: "مدير فرع",        username: "manager",    password: "manager123",  access: "لوحة التحكم، المخزون، المحاسبة، الموظفين، التقارير", icon: LayoutDashboard, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
   { role: "مدير QIROX",      username: "qirox2026",  password: "123456",      access: "نفس صلاحيات المدير",                                icon: Settings,      color: "text-slate-700",  bg: "bg-slate-50" },
-  { role: "مسؤول النظام",    username: "qadmin",     password: "admin123",    access: "جميع الصفحات + إعدادات الفروع والنظام",              icon: ShieldCheck,   color: "text-red-700", bg: "bg-red-50" },
+  { role: "مسؤول النظام",    username: "qadmin",     password: "admin123",    access: "جميع الصفحات + إعدادات الفروع والنظام",              icon: ShieldCheck,   color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
 ];
 
 // ── Theme configs for page mock visuals ──────────────────────────────────
@@ -396,12 +396,12 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
         <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ backgroundColor: "#b45309" }}>
           <Coffee className="w-3 h-3 text-white" />
         </div>
-        <div className="h-1.5 w-16 rounded-full opacity-30 bg-amber-300" />
+        <div className="h-1.5 w-16 rounded-full opacity-30 bg-black/[0.08] dark:bg-white/[0.1]" />
         <div className="mr-auto flex gap-1.5">
-          {[1,2,3].map(n => <div key={n} className="h-1.5 rounded-full opacity-20 bg-amber-300" style={{ width: `${24 + n * 8}px` }} />)}
+          {[1,2,3].map(n => <div key={n} className="h-1.5 rounded-full opacity-20 bg-black/[0.08] dark:bg-white/[0.1]" style={{ width: `${24 + n * 8}px` }} />)}
         </div>
-        <div className="w-6 h-6 rounded-full bg-amber-600/60 flex items-center justify-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-300/80" />
+        <div className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
         </div>
       </div>
       {/* Hero */}
@@ -666,8 +666,8 @@ function PageCard({ page, baseUrl, index, onPreview }: {
       data-testid={`card-page-${index}`}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">
-          <Icon className="w-5 h-5 text-black/40 dark:text-white/40 group-hover:text-orange-600 transition-colors" />
+        <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0 group-hover:bg-black/[0.04] dark:bg-white/[0.06] group-hover:text-black dark:text-white transition-colors">
+          <Icon className="w-5 h-5 text-black/40 dark:text-white/40 group-hover:text-black dark:text-white transition-colors" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -682,11 +682,11 @@ function PageCard({ page, baseUrl, index, onPreview }: {
         <div className="flex flex-col gap-1.5 flex-shrink-0">
           <button
             onClick={() => onPreview(page)}
-            className="w-8 h-8 rounded-xl border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all group/btn"
+            className="w-8 h-8 rounded-xl border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center hover:bg-black/[0.04] dark:bg-white/[0.06] hover:border-black/10 dark:border-white/10 hover:text-black dark:text-white transition-all group/btn"
             title="معاينة"
             data-testid={`btn-preview-page-${index}`}
           >
-            <Eye className="w-3.5 h-3.5 text-black/30 group-hover/btn:text-orange-600" />
+            <Eye className="w-3.5 h-3.5 text-black/30 group-hover/btn:text-black dark:text-white" />
           </button>
           <a
             href={`${baseUrl}${page.path}`}
@@ -832,8 +832,8 @@ export default function TemplateDetail() {
               {/* Status pill */}
               {template.status === "active" && (
                 <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex items-center gap-1.5 bg-green-400/20 border border-green-400/30 text-green-300 text-xs font-bold px-3 py-1 rounded-full mb-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  className="inline-flex items-center gap-1.5 bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 text-xs font-bold px-3 py-1 rounded-full mb-5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" />
                   متاح الآن — تجربة حية
                 </motion.span>
               )}
@@ -924,15 +924,15 @@ export default function TemplateDetail() {
               <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه الكافيه والمطعم في منظومة واحدة — من إدارة القائمة والطلبات حتى المحاسبة والمخزون والموظفين.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FeatureHighlight icon={UtensilsCrossed} title="إدارة القائمة والطلبات" desc="قائمة رقمية تفاعلية مع تخصيص المنتجات والإضافات وإدارة الطلبات في الوقت الفعلي." color="bg-orange-500" />
-              <FeatureHighlight icon={QrCode} title="نظام الطاولات وQR" desc="يمسح العميل رمز QR على الطاولة فيطلب مباشرة بدون الحاجة لنادل — تحديث فوري للمطبخ." color="bg-amber-500" />
-              <FeatureHighlight icon={CreditCard} title="دفع متعدد القنوات" desc="بطاقة، نقداً، Apple Pay، بطاقة الولاء — مع دعم نظام Geidea وفوترة ZATCA." color="bg-emerald-600" />
-              <FeatureHighlight icon={ChefHat} title="شاشة المطبخ KDS" desc="عرض الطلبات للمطبخ بالترتيب مع تنبيه صوتي وتحديث الحالة بضغطة واحدة." color="bg-red-500" />
-              <FeatureHighlight icon={Heart} title="برنامج الولاء والنقاط" desc="مستويات عضوية (برونزي، فضي، ذهبي، بلاتيني) مع بطاقة رقمية وبرنامج إحالة." color="bg-pink-500" />
-              <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمخزون والحضور وتقارير قابلة للتصدير." color="bg-violet-600" />
-              <FeatureHighlight icon={Truck} title="إدارة التوصيل والسائقين" desc="تتبع طلبات التوصيل بالخريطة — تعيين السائقين وتتبع موقعهم في الوقت الفعلي." color="bg-sky-500" />
-              <FeatureHighlight icon={Calendar} title="حجز الطاولات المسبق" desc="العميل يحجز الطاولة بالتاريخ والوقت والعدد — بدون اتصال هاتفي." color="bg-teal-500" />
-              <FeatureHighlight icon={Users} title="إدارة الموظفين والرواتب" desc="شيفتات، حضور، إجازات، رواتب تلقائية — دارة كاملة للموارد البشرية." color="bg-indigo-500" />
+              <FeatureHighlight icon={UtensilsCrossed} title="إدارة القائمة والطلبات" desc="قائمة رقمية تفاعلية مع تخصيص المنتجات والإضافات وإدارة الطلبات في الوقت الفعلي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={QrCode} title="نظام الطاولات وQR" desc="يمسح العميل رمز QR على الطاولة فيطلب مباشرة بدون الحاجة لنادل — تحديث فوري للمطبخ." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={CreditCard} title="دفع متعدد القنوات" desc="بطاقة، نقداً، Apple Pay، بطاقة الولاء — مع دعم نظام Geidea وفوترة ZATCA." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={ChefHat} title="شاشة المطبخ KDS" desc="عرض الطلبات للمطبخ بالترتيب مع تنبيه صوتي وتحديث الحالة بضغطة واحدة." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Heart} title="برنامج الولاء والنقاط" desc="مستويات عضوية (برونزي، فضي، ذهبي، بلاتيني) مع بطاقة رقمية وبرنامج إحالة." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمخزون والحضور وتقارير قابلة للتصدير." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Truck} title="إدارة التوصيل والسائقين" desc="تتبع طلبات التوصيل بالخريطة — تعيين السائقين وتتبع موقعهم في الوقت الفعلي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Calendar} title="حجز الطاولات المسبق" desc="العميل يحجز الطاولة بالتاريخ والوقت والعدد — بدون اتصال هاتفي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Users} title="إدارة الموظفين والرواتب" desc="شيفتات، حضور، إجازات، رواتب تلقائية — دارة كاملة للموارد البشرية." color="bg-black dark:bg-white" />
             </div>
           </motion.section>
 
@@ -1124,7 +1124,7 @@ export default function TemplateDetail() {
                           className="text-black/20 hover:text-black/60 transition-colors mr-auto"
                           data-testid={`btn-copy-user-${i}`}
                         >
-                          {copiedField === `user-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === `user-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                       {/* Password */}
@@ -1136,7 +1136,7 @@ export default function TemplateDetail() {
                           className="text-black/20 hover:text-black/60 transition-colors mr-auto"
                           data-testid={`btn-copy-pass-${i}`}
                         >
-                          {copiedField === `pass-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === `pass-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
@@ -1154,10 +1154,10 @@ export default function TemplateDetail() {
             {/* Portal links */}
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "بوابة العملاء", path: "/auth", icon: User, color: "bg-orange-500" },
-                { label: "بوابة الموظفين", path: "/employee/login", icon: Users, color: "bg-emerald-600" },
-                { label: "بوابة المديرين", path: "/manager", icon: LayoutDashboard, color: "bg-violet-600" },
-                { label: "بوابة السائقين", path: "/driver/login", icon: Truck, color: "bg-sky-500" },
+                { label: "بوابة العملاء", path: "/auth", icon: User, color: "bg-black dark:bg-white" },
+                { label: "بوابة الموظفين", path: "/employee/login", icon: Users, color: "bg-black dark:bg-white" },
+                { label: "بوابة المديرين", path: "/manager", icon: LayoutDashboard, color: "bg-black dark:bg-white" },
+                { label: "بوابة السائقين", path: "/driver/login", icon: Truck, color: "bg-black dark:bg-white" },
               ].map((p, i) => (
                 <a
                   key={i}
@@ -1245,8 +1245,8 @@ export default function TemplateDetail() {
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: device.color + "20" }}>
                         <device.icon className="w-4.5 h-4.5" style={{ color: device.color }} />
                       </div>
-                      <span className="inline-flex items-center gap-1 bg-green-400/10 border border-green-400/20 text-green-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                        <span className="w-1 h-1 rounded-full bg-green-400" />
+                      <span className="inline-flex items-center gap-1 bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                        <span className="w-1 h-1 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                         100%
                       </span>
                     </div>
@@ -1269,7 +1269,7 @@ export default function TemplateDetail() {
 
               <div className="relative mt-6 pt-5 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <BadgeCheck className="w-4 h-4 text-green-400" />
+                  <BadgeCheck className="w-4 h-4 text-black/70 dark:text-white/70" />
                   <span className="text-xs text-white/40 font-medium">جميع الأجهزة مختبرة ومعتمدة من فريق قيروكس</span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1303,15 +1303,15 @@ export default function TemplateDetail() {
               <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه متجرك في منظومة واحدة — من عرض المنتجات والدفع حتى إدارة المخزون والموظفين والتقارير.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FeatureHighlight icon={CreditCard} title="٧ طرق دفع متكاملة" desc="بطاقة بكشف تلقائي + محاكاة 3DS، STC Pay، Apple Pay، تمارة (BNPL)، تابي (BNPL)، محفظة رقمية، تحويل بنكي." color="bg-violet-600" />
-              <FeatureHighlight icon={Monitor} title="نظام كاشير POS احترافي" desc="واجهة كاشير متكاملة مع إدارة الصندوق النقدي وتقارير المبيعات اليومية والتسوية الفورية." color="bg-indigo-600" />
-              <FeatureHighlight icon={Gift} title="برنامج الولاء والمحفظة" desc="مستويات عضوية (برونز / فضي / ذهبي) مع نقاط مكافأة ومحفظة رقمية مدمجة وبرنامج إحالة." color="bg-pink-500" />
-              <FeatureHighlight icon={ShoppingBag} title="إدارة المنتجات والمخزون" desc="كتالوج منتجات متعدد الفئات مع تتبع المخزون وتنبيهات النفاد وإدارة البيانات الجماعية." color="bg-emerald-600" />
-              <FeatureHighlight icon={Smartphone} title="تطبيق PWA جوال" desc="يُضاف تلقائياً لشاشة الجوال ويعمل offline — بدون نشر في App Store، متوافق مع iOS وAndroid." color="bg-sky-500" />
-              <FeatureHighlight icon={Globe} title="ثنائية اللغة عربي/إنجليزي" desc="واجهة مستخدم كاملة باللغتين مع دعم RTL/LTR — يتذكر النظام تفضيل المستخدم تلقائياً." color="bg-teal-500" />
-              <FeatureHighlight icon={ShieldCheck} title="RBAC — صلاحيات مخصصة" desc="نظام أدوار متقدم: مدير، كاشير، مستودع — كل دور بصلاحيات دقيقة يمكن تخصيصها." color="bg-red-500" />
-              <FeatureHighlight icon={Building2} title="فروع متعددة" desc="إدارة أكثر من فرع من لوحة تحكم واحدة — مخزون مستقل، موظفون، وتقارير لكل فرع." color="bg-amber-600" />
-              <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمبيعات والمخزون وسلوك العملاء قابلة للتصدير." color="bg-orange-500" />
+              <FeatureHighlight icon={CreditCard} title="٧ طرق دفع متكاملة" desc="بطاقة بكشف تلقائي + محاكاة 3DS، STC Pay، Apple Pay، تمارة (BNPL)، تابي (BNPL)، محفظة رقمية، تحويل بنكي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Monitor} title="نظام كاشير POS احترافي" desc="واجهة كاشير متكاملة مع إدارة الصندوق النقدي وتقارير المبيعات اليومية والتسوية الفورية." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Gift} title="برنامج الولاء والمحفظة" desc="مستويات عضوية (برونز / فضي / ذهبي) مع نقاط مكافأة ومحفظة رقمية مدمجة وبرنامج إحالة." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={ShoppingBag} title="إدارة المنتجات والمخزون" desc="كتالوج منتجات متعدد الفئات مع تتبع المخزون وتنبيهات النفاد وإدارة البيانات الجماعية." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Smartphone} title="تطبيق PWA جوال" desc="يُضاف تلقائياً لشاشة الجوال ويعمل offline — بدون نشر في App Store، متوافق مع iOS وAndroid." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Globe} title="ثنائية اللغة عربي/إنجليزي" desc="واجهة مستخدم كاملة باللغتين مع دعم RTL/LTR — يتذكر النظام تفضيل المستخدم تلقائياً." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={ShieldCheck} title="RBAC — صلاحيات مخصصة" desc="نظام أدوار متقدم: مدير، كاشير، مستودع — كل دور بصلاحيات دقيقة يمكن تخصيصها." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Building2} title="فروع متعددة" desc="إدارة أكثر من فرع من لوحة تحكم واحدة — مخزون مستقل، موظفون، وتقارير لكل فرع." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمبيعات والمخزون وسلوك العملاء قابلة للتصدير." color="bg-black dark:bg-white" />
             </div>
           </motion.section>
 
@@ -1503,7 +1503,7 @@ export default function TemplateDetail() {
                           className="text-black/20 hover:text-black/60 transition-colors mr-auto"
                           data-testid={`btn-ec-copy-user-${i}`}
                         >
-                          {copiedField === `ec-user-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === `ec-user-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                       <div className="bg-white rounded-xl px-3 py-2 flex items-center gap-2 border border-black/[0.06] min-w-[140px]">
@@ -1514,7 +1514,7 @@ export default function TemplateDetail() {
                           className="text-black/20 hover:text-black/60 transition-colors mr-auto"
                           data-testid={`btn-ec-copy-pass-${i}`}
                         >
-                          {copiedField === `ec-pass-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === `ec-pass-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
@@ -1528,10 +1528,10 @@ export default function TemplateDetail() {
             {/* Quick access links */}
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "الواجهة الرئيسية", path: "/", icon: Store, color: "bg-violet-600" },
-                { label: "تسجيل الدخول", path: "/login", icon: Lock, color: "bg-indigo-600" },
+                { label: "الواجهة الرئيسية", path: "/", icon: Store, color: "bg-black dark:bg-white" },
+                { label: "تسجيل الدخول", path: "/login", icon: Lock, color: "bg-black dark:bg-white" },
                 { label: "لوحة الإدارة", path: "/admin", icon: LayoutDashboard, color: "bg-slate-700" },
-                { label: "الكاشير POS", path: "/pos", icon: Monitor, color: "bg-cyan-600" },
+                { label: "الكاشير POS", path: "/pos", icon: Monitor, color: "bg-black dark:bg-white" },
               ].map((p, i) => (
                 <a
                   key={i}
@@ -1590,8 +1590,8 @@ export default function TemplateDetail() {
                     </div>
                     <p className="text-sm font-black text-white leading-tight mb-1">{method.label}</p>
                     <p className="text-[10px] text-white/40">{method.sub}</p>
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-green-400/10 border border-green-400/20 text-green-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                      <span className="w-1 h-1 rounded-full bg-green-400" />
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                      <span className="w-1 h-1 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                       مفعّل
                     </span>
                   </motion.div>
@@ -1600,7 +1600,7 @@ export default function TemplateDetail() {
 
               <div className="relative mt-6 pt-5 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <BadgeCheck className="w-4 h-4 text-green-400" />
+                  <BadgeCheck className="w-4 h-4 text-black/70 dark:text-white/70" />
                   <span className="text-xs text-white/40 font-medium">جميع طرق الدفع مختبرة ومفعّلة في بيئة الديمو</span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1702,8 +1702,8 @@ export default function TemplateDetail() {
             <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl p-6">
               <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-black dark:text-white">رابط الديمو الحي</p>
@@ -1773,7 +1773,7 @@ export default function TemplateDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {template.featuresAr.map((f, i) => (
                   <div key={i} className="flex items-center gap-3 py-1" data-testid={`feature-item-${i}`}>
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white flex-shrink-0" />
                     <span className="text-sm text-black/70 dark:text-white/70">{f}</span>
                   </div>
                 ))}

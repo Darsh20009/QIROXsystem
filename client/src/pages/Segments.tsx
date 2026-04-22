@@ -13,8 +13,8 @@ export default function Segments() {
         ? "محرك التجارة المتكامل للمطاعم، المتاجر، والبراندات العالمية."
         : "The complete commerce engine for restaurants, stores, and global brands.",
       icon: ShoppingCart,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
+      color: "text-black dark:text-white",
+      bg: "bg-black dark:bg-white",
     },
     {
       title: "Qirox Education Engine",
@@ -22,8 +22,8 @@ export default function Segments() {
         ? "نظام إدارة تعلم (LMS) جاهز مع تحكم كامل لتجربة تعليمية فريدة."
         : "Ready-to-deploy LMS with full control for a unique learning experience.",
       icon: GraduationCap,
-      color: "text-purple-500",
-      bg: "bg-purple-500/10",
+      color: "text-black dark:text-white",
+      bg: "bg-black dark:bg-white",
     },
     {
       title: "Qirox Corporate Engine",
@@ -31,8 +31,8 @@ export default function Segments() {
         ? "أنظمة داخلية متطورة (CRM, HR, ERP) مخصصة لاحتياجات الشركات."
         : "Advanced internal systems (CRM, HR, ERP) tailored for enterprise needs.",
       icon: Building2,
-      color: "text-green-500",
-      bg: "bg-green-500/10",
+      color: "text-black dark:text-white",
+      bg: "bg-black dark:bg-white",
     },
     {
       title: "Structured Architecture",
@@ -40,8 +40,8 @@ export default function Segments() {
         ? "نظام معياري، قابل للتكرار والتوسع بما يخدم رؤية Qirox."
         : "A modular, repeatable, and scalable system architecture serving the Qirox vision.",
       icon: LayoutGrid,
-      color: "text-orange-500",
-      bg: "bg-orange-500/10",
+      color: "text-black dark:text-white",
+      bg: "bg-black dark:bg-white",
     }
   ];
 

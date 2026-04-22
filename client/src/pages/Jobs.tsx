@@ -32,20 +32,20 @@ interface Job {
 }
 
 const typeLabels: Record<string, { ar: string; en: string; color: string }> = {
-  "full-time":  { ar: "دوام كامل",  en: "Full Time",   color: "bg-blue-500" },
-  "part-time":  { ar: "دوام جزئي",  en: "Part Time",   color: "bg-purple-500" },
-  "remote":     { ar: "عن بُعد",    en: "Remote",      color: "bg-green-500" },
-  "freelance":  { ar: "مستقل",      en: "Freelance",   color: "bg-orange-500" },
-  "internship": { ar: "تدريب",      en: "Internship",  color: "bg-pink-500" },
+  "full-time":  { ar: "دوام كامل",  en: "Full Time",   color: "bg-black dark:bg-white" },
+  "part-time":  { ar: "دوام جزئي",  en: "Part Time",   color: "bg-black dark:bg-white" },
+  "remote":     { ar: "عن بُعد",    en: "Remote",      color: "bg-black dark:bg-white" },
+  "freelance":  { ar: "مستقل",      en: "Freelance",   color: "bg-black dark:bg-white" },
+  "internship": { ar: "تدريب",      en: "Internship",  color: "bg-black dark:bg-white" },
 };
 
 const departments = [
-  { icon: Code2,     ar: "التطوير",        en: "Development",   color: "from-blue-500 to-cyan-500",     bg: "bg-blue-50 dark:bg-blue-950/30" },
-  { icon: Palette,   ar: "التصميم",        en: "Design",        color: "from-pink-500 to-rose-500",     bg: "bg-pink-50 dark:bg-pink-950/30" },
-  { icon: BarChart3, ar: "التسويق",        en: "Marketing",     color: "from-orange-500 to-amber-500",  bg: "bg-orange-50 dark:bg-orange-950/30" },
-  { icon: Headphones,ar: "خدمة العملاء",   en: "Support",       color: "from-green-500 to-emerald-500", bg: "bg-green-50 dark:bg-green-950/30" },
-  { icon: Shield,    ar: "العمليات",       en: "Operations",    color: "from-purple-500 to-violet-500", bg: "bg-purple-50 dark:bg-purple-950/30" },
-  { icon: Globe,     ar: "المبيعات",       en: "Sales",         color: "from-teal-500 to-sky-500",      bg: "bg-teal-50 dark:bg-teal-950/30" },
+  { icon: Code2,     ar: "التطوير",        en: "Development",   color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+  { icon: Palette,   ar: "التصميم",        en: "Design",        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+  { icon: BarChart3, ar: "التسويق",        en: "Marketing",     color: "from-black dark:from-white to-black dark:to-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+  { icon: Headphones,ar: "خدمة العملاء",   en: "Support",       color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+  { icon: Shield,    ar: "العمليات",       en: "Operations",    color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+  { icon: Globe,     ar: "المبيعات",       en: "Sales",         color: "from-black dark:from-white to-black dark:to-white",      bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
 ];
 
 const values = [
@@ -132,7 +132,7 @@ function JobCard({ job, index, lang, onOpen, onApply }: { job: Job; index: numbe
     >
       <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/40 hover:border-black/20 dark:hover:border-white/20">
         {/* Gradient bar top */}
-        <div className={`h-1 w-full bg-gradient-to-r ${typeMeta.color === "bg-blue-500" ? "from-blue-400 to-cyan-400" : typeMeta.color === "bg-green-500" ? "from-green-400 to-emerald-400" : typeMeta.color === "bg-purple-500" ? "from-purple-400 to-violet-400" : typeMeta.color === "bg-orange-500" ? "from-orange-400 to-amber-400" : typeMeta.color === "bg-pink-500" ? "from-pink-400 to-rose-400" : "from-gray-400 to-gray-500"}`} />
+        <div className={`h-1 w-full bg-gradient-to-r ${typeMeta.color === "bg-black dark:bg-white" ? "from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : typeMeta.color === "bg-black dark:bg-white" ? "from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : typeMeta.color === "bg-black dark:bg-white" ? "from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : typeMeta.color === "bg-black dark:bg-white" ? "from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : typeMeta.color === "bg-black dark:bg-white" ? "from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" : "from-gray-400 to-gray-500"}`} />
 
         {/* Hover glow */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
@@ -188,7 +188,7 @@ function JobCard({ job, index, lang, onOpen, onApply }: { job: Job; index: numbe
           <div className="flex items-center gap-3">
             <Button
               size="sm"
-              className={`flex-1 h-11 ${typeMeta.color === "bg-blue-500" ? "bg-blue-500 hover:bg-blue-600" : typeMeta.color === "bg-green-500" ? "bg-green-500 hover:bg-green-600" : typeMeta.color === "bg-purple-500" ? "bg-purple-500 hover:bg-purple-600" : typeMeta.color === "bg-orange-500" ? "bg-orange-500 hover:bg-orange-600" : typeMeta.color === "bg-pink-500" ? "bg-pink-500 hover:bg-pink-600" : "bg-black hover:bg-black/80"} text-white rounded-xl font-bold gap-2 shadow-lg shadow-${typeMeta.color.replace("bg-", "")}/30`}
+              className={`flex-1 h-11 ${typeMeta.color === "bg-black dark:bg-white" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : typeMeta.color === "bg-black dark:bg-white" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : typeMeta.color === "bg-black dark:bg-white" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : typeMeta.color === "bg-black dark:bg-white" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : typeMeta.color === "bg-black dark:bg-white" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : "bg-black hover:bg-black/80"} text-white rounded-xl font-bold gap-2 shadow-lg shadow-${typeMeta.color.replace("bg-", "")}/30`}
               onClick={onApply}
               data-testid={`button-apply-${job.id}`}
             >
@@ -327,7 +327,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
   });
 
   const typeMeta = typeLabels[job.type || ""] || { ar: "", en: "", color: "bg-black" };
-  const gradientColor = typeMeta.color === "bg-blue-500" ? "from-blue-500 to-cyan-500" : typeMeta.color === "bg-green-500" ? "from-green-500 to-emerald-500" : typeMeta.color === "bg-purple-500" ? "from-purple-500 to-violet-500" : typeMeta.color === "bg-orange-500" ? "from-orange-500 to-amber-500" : typeMeta.color === "bg-pink-500" ? "from-pink-500 to-rose-500" : "from-gray-800 to-black";
+  const gradientColor = typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : "from-gray-800 to-black";
 
   const stepTitles = lang === "ar"
     ? ["معلوماتك الشخصية", "السيرة الذاتية", "رسالة التقديم"]
@@ -481,7 +481,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
                       <p className="text-white/40 font-bold uppercase tracking-widest text-[10px] mb-2">{lang === "ar" ? "ملخص طلبك" : "Your Summary"}</p>
                       <div className="flex items-center gap-2 text-white/70"><User className="w-3 h-3" />{form.name}</div>
                       <div className="flex items-center gap-2 text-white/70"><Mail className="w-3 h-3" />{form.email}</div>
-                      {form.cvFileName && <div className="flex items-center gap-2 text-green-300"><CheckCircle2 className="w-3 h-3" />{form.cvFileName}</div>}
+                      {form.cvFileName && <div className="flex items-center gap-2 text-black/70 dark:text-white/70"><CheckCircle2 className="w-3 h-3" />{form.cvFileName}</div>}
                       {form.cvUrl && !form.cvFileName && <div className="flex items-center gap-2 text-white/70"><Link2 className="w-3 h-3" />{lang === "ar" ? "رابط CV مرفق" : "CV link attached"}</div>}
                     </div>
 
@@ -510,7 +510,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
 
 function JobDetailModal({ job, onClose, onApply, lang }: { job: Job; onClose: () => void; onApply: () => void; lang: string }) {
   const typeMeta = typeLabels[job.type || ""] || { ar: "", en: "", color: "bg-gray-500" };
-  const gradientColor = typeMeta.color === "bg-blue-500" ? "from-blue-500 to-cyan-500" : typeMeta.color === "bg-green-500" ? "from-green-500 to-emerald-500" : typeMeta.color === "bg-purple-500" ? "from-purple-500 to-violet-500" : typeMeta.color === "bg-orange-500" ? "from-orange-500 to-amber-500" : typeMeta.color === "bg-pink-500" ? "from-pink-500 to-rose-500" : "from-black to-gray-800";
+  const gradientColor = typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : typeMeta.color === "bg-black dark:bg-white" ? "from-black dark:from-white to-black dark:to-white" : "from-black to-gray-800";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div className="absolute inset-0 bg-black/70 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
@@ -553,7 +553,7 @@ function JobDetailModal({ job, onClose, onApply, lang }: { job: Job; onClose: ()
               <div className="space-y-2">
                 {job.requirements.split("\n").filter(Boolean).map((req, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                     <p className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{req}</p>
                   </div>
                 ))}
@@ -608,7 +608,7 @@ export default function Jobs() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="inline-flex items-center gap-2 border border-white/20 rounded-full px-5 py-2.5 mb-8 bg-white/5 backdrop-blur-sm"
             >
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <Sparkles className="w-4 h-4 text-black/70 dark:text-white/70" />
               <span className="text-sm font-medium text-white/70">
                 {lang === "ar" ? "نحن نبني المستقبل — انضم إلينا" : "We're building the future — Join us"}
               </span>
@@ -623,12 +623,12 @@ export default function Jobs() {
               {lang === "ar" ? (
                 <>
                   اصنع شيئاً<br />
-                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">يهمّ</span>
+                  <span className="bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] via-black/[0.08] dark:via-white/[0.1] to-black/[0.08] dark:to-white/[0.1] bg-clip-text text-transparent">يهمّ</span>
                 </>
               ) : (
                 <>
                   Build something<br />
-                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">that matters</span>
+                  <span className="bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] via-black/[0.08] dark:via-white/[0.1] to-black/[0.08] dark:to-white/[0.1] bg-clip-text text-transparent">that matters</span>
                 </>
               )}
             </motion.h1>
@@ -755,8 +755,8 @@ export default function Jobs() {
             <p className="text-[11px] font-bold text-black/30 dark:text-white/30 tracking-[4px] uppercase mb-3">{lang === "ar" ? "الفرص المتاحة" : "Open Roles"}</p>
             <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white mb-3">{lang === "ar" ? "ابحث عن دورك" : "Find your role"}</h2>
             {openJobs.length > 0 && (
-              <div className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-1.5 rounded-full text-sm font-bold">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <div className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-4 py-1.5 rounded-full text-sm font-bold">
+                <span className="w-2 h-2 bg-black dark:bg-white rounded-full animate-pulse" />
                 {openJobs.length} {lang === "ar" ? "وظيفة مفتوحة" : "open positions"}
               </div>
             )}

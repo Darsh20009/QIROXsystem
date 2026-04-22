@@ -125,12 +125,12 @@ export default function AdminQiroxSettings() {
   const totalDist = form.profitDistribution.reduce((s, d) => s + (d.percentage || 0), 0);
 
   const SECTIONS: { id: Section; label: string; icon: any; color: string }[] = [
-    { id: "company", label: L ? "معلومات الشركة" : "Company Info", icon: Building2, color: "text-blue-500" },
-    { id: "contact", label: L ? "التواصل والعنوان" : "Contact & Address", icon: Phone, color: "text-green-500" },
-    { id: "social", label: L ? "السوشيال ميديا" : "Social Media", icon: Globe, color: "text-purple-500" },
-    { id: "financial", label: L ? "التقييم المالي" : "Financial Valuation", icon: DollarSign, color: "text-amber-500" },
-    { id: "distribution", label: L ? "توزيع الأرباح" : "Profit Distribution", icon: BarChart3, color: "text-cyan-500" },
-    { id: "appdownload", label: L ? "تحميل التطبيق" : "App Downloads", icon: Smartphone, color: "text-violet-500" },
+    { id: "company", label: L ? "معلومات الشركة" : "Company Info", icon: Building2, color: "text-black dark:text-white" },
+    { id: "contact", label: L ? "التواصل والعنوان" : "Contact & Address", icon: Phone, color: "text-black dark:text-white" },
+    { id: "social", label: L ? "السوشيال ميديا" : "Social Media", icon: Globe, color: "text-black dark:text-white" },
+    { id: "financial", label: L ? "التقييم المالي" : "Financial Valuation", icon: DollarSign, color: "text-black dark:text-white" },
+    { id: "distribution", label: L ? "توزيع الأرباح" : "Profit Distribution", icon: BarChart3, color: "text-black dark:text-white" },
+    { id: "appdownload", label: L ? "تحميل التطبيق" : "App Downloads", icon: Smartphone, color: "text-black dark:text-white" },
   ];
 
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
@@ -141,11 +141,11 @@ export default function AdminQiroxSettings() {
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-bl from-blue-600/10 via-cyan-500/5 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
-          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/5 rounded-full blur-2xl" />
+        <div className="relative bg-gradient-to-bl from-black dark:from-white via-black dark:via-white to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-3xl" />
+          <div className="absolute -bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-2xl" />
           <div className="relative flex items-center gap-4 flex-wrap">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Settings2 className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -154,8 +154,8 @@ export default function AdminQiroxSettings() {
             </div>
             {dirty && (
               <div className="mr-auto flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">{L ? "يوجد تغييرات غير محفوظة" : "Unsaved changes"}</span>
+                <AlertCircle className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium">{L ? "يوجد تغييرات غير محفوظة" : "Unsaved changes"}</span>
               </div>
             )}
           </div>
@@ -184,7 +184,7 @@ export default function AdminQiroxSettings() {
           {/* Company Info */}
           {section === "company" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-500" /> {L ? "معلومات الشركة" : "Company Info"}</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-black dark:text-white" /> {L ? "معلومات الشركة" : "Company Info"}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="label-xs">{L ? "اسم الشركة (EN)" : "Company Name (EN)"}</label><Input value={form.companyName} onChange={e => set("companyName", e.target.value)} data-testid="input-company-name" /></div>
                 <div><label className="label-xs">{L ? "اسم الشركة (AR)" : "Company Name (AR)"}</label><Input value={form.companyNameAr} onChange={e => set("companyNameAr", e.target.value)} data-testid="input-company-name-ar" /></div>
@@ -206,7 +206,7 @@ export default function AdminQiroxSettings() {
           {/* Contact */}
           {section === "contact" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" /> {L ? "بيانات التواصل والعنوان" : "Contact & Address"}</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Phone className="w-4 h-4 text-black dark:text-white" /> {L ? "بيانات التواصل والعنوان" : "Contact & Address"}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="label-xs">{L ? "البريد الإلكتروني" : "Email"}</label><Input type="email" value={form.contactEmail} onChange={e => set("contactEmail", e.target.value)} dir="ltr" data-testid="input-email" /></div>
                 <div><label className="label-xs">{L ? "رقم الهاتف" : "Phone Number"}</label><Input value={form.contactPhone} onChange={e => set("contactPhone", e.target.value)} data-testid="input-phone" /></div>
@@ -221,17 +221,17 @@ export default function AdminQiroxSettings() {
           {/* Social */}
           {section === "social" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Globe className="w-4 h-4 text-purple-500" /> {L ? "منصات التواصل الاجتماعي" : "Social Media Platforms"}</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Globe className="w-4 h-4 text-black dark:text-white" /> {L ? "منصات التواصل الاجتماعي" : "Social Media Platforms"}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { k: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500" },
+                  { k: "instagram", label: "Instagram", icon: Instagram, color: "text-black dark:text-white" },
                   { k: "twitter", label: "X (Twitter)", icon: Twitter, color: "text-black dark:text-white" },
-                  { k: "linkedin", label: "LinkedIn", icon: Linkedin, color: "text-blue-700" },
-                  { k: "youtube", label: "YouTube", icon: Youtube, color: "text-red-600" },
-                  { k: "snapchat", label: "Snapchat", icon: Globe, color: "text-yellow-500" },
+                  { k: "linkedin", label: "LinkedIn", icon: Linkedin, color: "text-black dark:text-white" },
+                  { k: "youtube", label: "YouTube", icon: Youtube, color: "text-black dark:text-white" },
+                  { k: "snapchat", label: "Snapchat", icon: Globe, color: "text-black dark:text-white" },
                   { k: "tiktok", label: "TikTok", icon: Globe, color: "text-black dark:text-white" },
                   { k: "whatsapp", label: "WhatsApp", icon: SiWhatsapp, color: "text-[#25D366]" },
-                  { k: "linktree", label: "Linktree", icon: SiLinktree, color: "text-green-500" },
+                  { k: "linktree", label: "Linktree", icon: SiLinktree, color: "text-black dark:text-white" },
                 ].map(({ k, label, icon: Icon, color }) => (
                   <div key={k}>
                     <label className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40 mb-1"><Icon className={`w-3.5 h-3.5 ${color}`} />{label}</label>
@@ -245,9 +245,9 @@ export default function AdminQiroxSettings() {
           {/* Financial */}
           {section === "financial" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><DollarSign className="w-4 h-4 text-amber-500" /> {L ? "التقييم المالي للنظام" : "System Financial Valuation"}</h3>
-              <div className="bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-5">
-                <p className="text-xs text-amber-700 dark:text-amber-400 mb-3 font-medium">{L ? "القيمة الإجمالية لنظام كيروكس (بالعملة المحددة)" : "Total valuation of the Qirox system (in selected currency)"}</p>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><DollarSign className="w-4 h-4 text-black dark:text-white" /> {L ? "التقييم المالي للنظام" : "System Financial Valuation"}</h3>
+              <div className="bg-gradient-to-l from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-5">
+                <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-3 font-medium">{L ? "القيمة الإجمالية لنظام كيروكس (بالعملة المحددة)" : "Total valuation of the Qirox system (in selected currency)"}</p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
                     <label className="label-xs">{L ? "قيمة النظام" : "System Valuation"}</label>
@@ -258,7 +258,7 @@ export default function AdminQiroxSettings() {
                     <Input value={form.currency} onChange={e => set("currency", e.target.value)} data-testid="input-currency" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-black text-amber-600 dark:text-amber-400">
+                <div className="mt-3 text-2xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">
                   {form.systemValuation.toLocaleString(L ? "ar-SA" : "en-US")} {form.currency}
                 </div>
               </div>
@@ -269,16 +269,16 @@ export default function AdminQiroxSettings() {
           {section === "distribution" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-cyan-500" /> {L ? "قواعد توزيع الأرباح" : "Profit Distribution Rules"}</h3>
+                <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-black dark:text-white" /> {L ? "قواعد توزيع الأرباح" : "Profit Distribution Rules"}</h3>
                 <Button variant="outline" size="sm" className="gap-2" onClick={addDist} data-testid="btn-add-dist"><Plus className="w-3.5 h-3.5" /> {L ? "إضافة قاعدة" : "Add Rule"}</Button>
               </div>
 
               {/* Total indicator */}
-              <div className={`flex items-center gap-3 p-3 rounded-xl ${totalDist === 100 ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"} border`}>
-                {totalDist === 100 ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
+              <div className={`flex items-center gap-3 p-3 rounded-xl ${totalDist === 100 ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"} border`}>
+                {totalDist === 100 ? <CheckCircle2 className="w-4 h-4 text-black dark:text-white" /> : <AlertCircle className="w-4 h-4 text-black dark:text-white" />}
                 <span className="text-sm font-medium text-black dark:text-white">{L ? "الإجمالي:" : "Total:"} {totalDist}% {totalDist !== 100 && (L ? "(يجب أن يكون 100%)" : "(must be 100%)")}</span>
                 <div className="flex-1 h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-                  <div className={`h-full rounded-full ${totalDist === 100 ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${Math.min(totalDist, 100)}%` }} />
+                  <div className={`h-full rounded-full ${totalDist === 100 ? "bg-black dark:bg-white" : "bg-black dark:bg-white"}`} style={{ width: `${Math.min(totalDist, 100)}%` }} />
                 </div>
               </div>
 
@@ -294,7 +294,7 @@ export default function AdminQiroxSettings() {
                       </select>
                     </div>
                     <div><label className="label-xs">{L ? "النسبة %" : "Percentage %"}</label><Input type="number" min={0} max={100} value={d.percentage} onChange={e => setDist(i, "percentage", parseFloat(e.target.value) || 0)} /></div>
-                    <button onClick={() => removeDist(i)} className="h-10 w-9 flex items-center justify-center rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10" data-testid={`del-dist-${i}`}><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeDist(i)} className="h-10 w-9 flex items-center justify-center rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white text-black/30 hover:text-black dark:text-white transition-colors border border-black/10 dark:border-white/10" data-testid={`del-dist-${i}`}><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
                 {form.profitDistribution.length === 0 && (
@@ -308,13 +308,13 @@ export default function AdminQiroxSettings() {
                   <p className="text-xs font-semibold text-black/40 dark:text-white/40 uppercase tracking-wide">{L ? "التوزيع البصري" : "Visual Distribution"}</p>
                   <div className="h-6 rounded-xl overflow-hidden flex">
                     {form.profitDistribution.map((d, i) => {
-                      const colors = ["bg-cyan-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-amber-500", "bg-green-500"];
+                      const colors = ["bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white"];
                       return <div key={i} className={`${colors[i % colors.length]} h-full transition-all`} style={{ width: `${d.percentage}%` }} title={`${d.label}: ${d.percentage}%`} />;
                     })}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {form.profitDistribution.map((d, i) => {
-                      const colors = ["bg-cyan-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-amber-500", "bg-green-500"];
+                      const colors = ["bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white", "bg-black dark:bg-white"];
                       return <div key={i} className="flex items-center gap-1.5 text-xs text-black/50 dark:text-white/50"><span className={`w-3 h-3 rounded-sm ${colors[i % colors.length]}`} />{d.label}: {d.percentage}%</div>;
                     })}
                   </div>
@@ -337,7 +337,7 @@ export default function AdminQiroxSettings() {
           {section === "appdownload" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-6 bg-white dark:bg-gray-900">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-violet-500" />
+                <Smartphone className="w-4 h-4 text-black dark:text-white" />
                 <h3 className="font-bold text-black dark:text-white">{L ? "روابط تحميل التطبيق" : "App Download Links"}</h3>
               </div>
               <p className="text-xs text-black/40 dark:text-white/40">
@@ -380,10 +380,10 @@ export default function AdminQiroxSettings() {
                     </span>
                     <span className="font-semibold text-sm text-black dark:text-white">{p.label}</span>
                     {store[p.enabledKey] && store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">{L ? "نشط — يظهر في الرئيسية والفوتر" : "Active — shown in header & footer"}</span>
+                      <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-2 py-0.5 rounded-full font-medium">{L ? "نشط — يظهر في الرئيسية والفوتر" : "Active — shown in header & footer"}</span>
                     )}
                     {!store[p.enabledKey] && store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-medium">{L ? "قريباً — يظهر معطّلاً" : "Coming Soon — disabled button"}</span>
+                      <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-2 py-0.5 rounded-full font-medium">{L ? "قريباً — يظهر معطّلاً" : "Coming Soon — disabled button"}</span>
                     )}
                     {!store[p.urlKey] && (
                       <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.08] dark:border-white/[0.08] px-2 py-0.5 rounded-full font-medium">{L ? "مخفي — لا رابط" : "Hidden — no URL"}</span>
@@ -403,7 +403,7 @@ export default function AdminQiroxSettings() {
                   <label className="flex items-center gap-3 cursor-pointer select-none" data-testid={`toggle-${p.key}-enabled`}>
                     <div
                       onClick={() => setS(p.enabledKey, !store[p.enabledKey])}
-                      className={`relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 ${store[p.enabledKey] ? "bg-green-500" : "bg-black/15 dark:bg-white/15"}`}
+                      className={`relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 ${store[p.enabledKey] ? "bg-black dark:bg-white" : "bg-black/15 dark:bg-white/15"}`}
                     >
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${store[p.enabledKey] ? "right-0.5" : "left-0.5"}`} />
                     </div>
@@ -419,7 +419,7 @@ export default function AdminQiroxSettings() {
                   onClick={() => saveStoreMutation.mutate()}
                   disabled={!storeDirty || saveStoreMutation.isPending}
                   data-testid="btn-save-store"
-                  className="gap-2 bg-gradient-to-l from-violet-600 to-purple-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-500/20"
+                  className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-500/20"
                 >
                   {saveStoreMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                   {saveStoreMutation.isPending ? (L ? "جارٍ الحفظ..." : "Saving...") : (L ? "حفظ روابط التحميل" : "Save Download Links")}
@@ -432,7 +432,7 @@ export default function AdminQiroxSettings() {
         {/* Save Button — only for non-appdownload sections */}
         {section !== "appdownload" && (
         <div className="flex justify-end pb-8">
-          <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-blue-500/20" data-testid="btn-save-settings">
+          <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending} className="gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-blue-500/20" data-testid="btn-save-settings">
             {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             {saveMutation.isPending ? (L ? "جارٍ الحفظ..." : "Saving...") : (L ? "حفظ الإعدادات" : "Save Settings")}
           </Button>

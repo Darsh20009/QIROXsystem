@@ -23,12 +23,12 @@ interface Shipment {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; labelEn: string; color: string; icon: any; step: number }> = {
-  pending:          { label: "في الانتظار",       labelEn: "Pending",          color: "bg-yellow-100 text-yellow-700 border-yellow-200",   icon: Clock,       step: 0 },
-  processing:       { label: "قيد المعالجة",      labelEn: "Processing",       color: "bg-blue-100 text-blue-700 border-blue-200",          icon: RefreshCw,   step: 1 },
-  shipped:          { label: "تم الشحن",          labelEn: "Shipped",          color: "bg-purple-100 text-purple-700 border-purple-200",     icon: Truck,       step: 2 },
-  out_for_delivery: { label: "جاري التوصيل",      labelEn: "Out for Delivery", color: "bg-orange-100 text-orange-700 border-orange-200",    icon: MapPin,      step: 3 },
-  delivered:        { label: "تم التسليم",        labelEn: "Delivered",        color: "bg-green-100 text-green-700 border-green-200",        icon: CheckCircle, step: 4 },
-  cancelled:        { label: "ملغي",              labelEn: "Cancelled",        color: "bg-red-100 text-red-700 border-red-200",              icon: XCircle,     step: -1 },
+  pending:          { label: "في الانتظار",       labelEn: "Pending",          color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",   icon: Clock,       step: 0 },
+  processing:       { label: "قيد المعالجة",      labelEn: "Processing",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",          icon: RefreshCw,   step: 1 },
+  shipped:          { label: "تم الشحن",          labelEn: "Shipped",          color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",     icon: Truck,       step: 2 },
+  out_for_delivery: { label: "جاري التوصيل",      labelEn: "Out for Delivery", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",    icon: MapPin,      step: 3 },
+  delivered:        { label: "تم التسليم",        labelEn: "Delivered",        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",        icon: CheckCircle, step: 4 },
+  cancelled:        { label: "ملغي",              labelEn: "Cancelled",        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",              icon: XCircle,     step: -1 },
   returned:         { label: "مُعاد",             labelEn: "Returned",         color: "bg-gray-100 text-gray-600 border-gray-200",           icon: AlertCircle, step: -1 },
 };
 
@@ -51,8 +51,8 @@ export default function ClientShipments() {
   if (isLoading) return (
     <div className="flex items-center justify-center py-24" dir={dir}>
       <div className="text-center space-y-3">
-        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto animate-pulse">
-          <Package className="w-6 h-6 text-blue-400" />
+        <div className="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center mx-auto animate-pulse">
+          <Package className="w-6 h-6 text-black/70 dark:text-white/70" />
         </div>
         <p className="text-sm text-black/30 dark:text-white/30 font-sans">{L ? "جاري تحميل شحناتك..." : "Loading your shipments..."}</p>
       </div>
@@ -146,7 +146,7 @@ export default function ClientShipments() {
                             <p className="font-mono font-bold text-black dark:text-white">{shipment.trackingNumber}</p>
                             {shipment.courierUrl && (
                               <a href={shipment.courierUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-blue-500 hover:text-blue-600" data-testid={`link-tracking-${shipment.id}`}>
+                                className="text-black dark:text-white hover:text-black dark:text-white" data-testid={`link-tracking-${shipment.id}`}>
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
@@ -157,18 +157,18 @@ export default function ClientShipments() {
                     )}
 
                     {shipment.estimatedDelivery && shipment.status !== "delivered" && (
-                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/30">
-                        <p className="text-xs text-amber-600 dark:text-amber-400">{L ? "الوصول المتوقع" : "Expected Delivery"}</p>
-                        <p className="font-bold text-sm text-amber-700 dark:text-amber-300">
+                      <div className="p-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "الوصول المتوقع" : "Expected Delivery"}</p>
+                        <p className="font-bold text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">
                           {new Date(shipment.estimatedDelivery).toLocaleDateString(L ? "ar-SA" : "en-US", { month: "short", day: "numeric" })}
                         </p>
                       </div>
                     )}
 
                     {shipment.deliveredAt && (
-                      <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
-                        <p className="text-xs text-green-600 dark:text-green-400">{L ? "تاريخ التسليم" : "Delivered On"}</p>
-                        <p className="font-bold text-sm text-green-700 dark:text-green-300">
+                      <div className="p-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "تاريخ التسليم" : "Delivered On"}</p>
+                        <p className="font-bold text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">
                           {new Date(shipment.deliveredAt).toLocaleDateString(L ? "ar-SA" : "en-US", { month: "short", day: "numeric" })}
                         </p>
                       </div>

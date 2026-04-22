@@ -38,18 +38,18 @@ function getRoleLabels(L: boolean): Record<string, string> { return {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  manager: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  investor: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  developer: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  designer: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
-  accountant: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  sales: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  sales_manager: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  support: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  admin: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  investor: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  developer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  designer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  accountant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  sales: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  sales_manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  support: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   client: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   customer: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-  merchant: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  merchant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
 };
 
 const ROLE_LEVEL: Record<string, number> = {
@@ -138,11 +138,11 @@ export default function AdminPromotions() {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-bl from-purple-600/10 via-pink-500/5 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
-          <div className="absolute -top-10 -left-10 w-48 h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-8 right-12 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-full blur-2xl" />
+        <div className="relative bg-gradient-to-bl from-black dark:from-white via-black dark:via-white to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-7 overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-48 h-48 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-3xl" />
+          <div className="absolute -bottom-8 right-12 w-32 h-32 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-full blur-2xl" />
           <div className="relative flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center shadow-lg shadow-purple-500/30">
               <Crown className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -177,7 +177,7 @@ export default function AdminPromotions() {
             { id: "log" as Tab, label: L ? "سجل الترقيات" : "Promotions Log", icon: History },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-purple-500 text-purple-600 dark:text-purple-400" : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"}`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"}`}
               data-testid={`tab-${t.id}`}>
               <t.icon className="w-4 h-4" />{t.label}
             </button>
@@ -208,7 +208,7 @@ export default function AdminPromotions() {
                   <motion.div key={u.id || u._id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-4 p-4 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] hover:border-black/15 dark:hover:border-white/15 bg-white dark:bg-gray-900 transition-all"
                     data-testid={`user-row-${u.id || u._id}`}>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white flex items-center justify-center shrink-0 overflow-hidden">
                       {u.profilePhotoUrl ? <img src={u.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-lg">{u.fullName?.[0]?.toUpperCase()}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -224,7 +224,7 @@ export default function AdminPromotions() {
                         ))}
                       </div>
                       <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">{u.email}</p>
-                      {u.jobTitle && <p className="text-xs text-cyan-600 dark:text-cyan-400">{u.jobTitle}</p>}
+                      {u.jobTitle && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{u.jobTitle}</p>}
                     </div>
                     {canChangeRole(u) && (
                       <Button variant="outline" size="sm" onClick={() => openUser(u)} className="gap-2 shrink-0" data-testid={`btn-change-role-${u.id || u._id}`}>
@@ -248,8 +248,8 @@ export default function AdminPromotions() {
             ) : (
               logs.map(log => (
                 <div key={log.id} className="flex items-center gap-4 p-4 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900" data-testid={`log-${log.id}`}>
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${log.type === "promote" || log.type === "role_add" ? "bg-green-100 dark:bg-green-900/30" : "bg-amber-100 dark:bg-amber-900/30"}`}>
-                    {log.type === "promote" || log.type === "role_add" ? <ArrowUp className="w-4 h-4 text-green-600" /> : <ArrowDown className="w-4 h-4 text-amber-600" />}
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${log.type === "promote" || log.type === "role_add" ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"}`}>
+                    {log.type === "promote" || log.type === "role_add" ? <ArrowUp className="w-4 h-4 text-black dark:text-white" /> : <ArrowDown className="w-4 h-4 text-black dark:text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -274,7 +274,7 @@ export default function AdminPromotions() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-500" />
+              <Shield className="w-5 h-5 text-black dark:text-white" />
               {L ? "تغيير دور:" : "Change Role:"} {selected?.fullName}
             </DialogTitle>
           </DialogHeader>
@@ -291,7 +291,7 @@ export default function AdminPromotions() {
                 <div className="grid grid-cols-3 gap-2">
                   {availableRoles.map(r => (
                     <button key={r} onClick={() => setNewRole(r)}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${newRole === r ? "bg-purple-500 text-white border-purple-500" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${newRole === r ? "bg-black dark:bg-white text-white border-black dark:border-white" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
                       data-testid={`role-option-${r}`}>
                       {ROLE_LABELS[r]}
                     </button>
@@ -310,7 +310,7 @@ export default function AdminPromotions() {
                 <div className="grid grid-cols-3 gap-2">
                   {availableRoles.map(r => (
                     <button key={r} onClick={() => setAdditionalRoles(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r])}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1 ${additionalRoles.includes(r) ? "bg-cyan-500 text-white border-cyan-500" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1 ${additionalRoles.includes(r) ? "bg-black dark:bg-white text-white border-black dark:border-white" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}
                       data-testid={`add-role-${r}`}>
                       {additionalRoles.includes(r) && <CheckCheck className="w-3 h-3" />}
                       {ROLE_LABELS[r]}
@@ -326,7 +326,7 @@ export default function AdminPromotions() {
               <Button
                 onClick={() => promoteMutation.mutate()}
                 disabled={!newRole || newRole === selected.role || promoteMutation.isPending}
-                className="w-full gap-2 bg-gradient-to-l from-purple-600 to-pink-500 text-white"
+                className="w-full gap-2 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white"
                 data-testid="btn-confirm-promote"
               >
                 {promoteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}

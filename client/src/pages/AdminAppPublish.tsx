@@ -24,10 +24,10 @@ import JSZip from "jszip";
 type Platform = "android" | "windows" | "ios" | "harmony";
 
 const PLATFORMS: { id: Platform; label: string; labelEn: string; icon: any; color: string; bg: string; ext: string; desc: string }[] = [
-  { id: "android", label: "أندرويد", labelEn: "Android", icon: Smartphone, color: "text-green-600", bg: "bg-green-50 border-green-200", ext: "APK", desc: "Google Play — Trusted Web Activity" },
-  { id: "windows", label: "ويندوز", labelEn: "Windows", icon: Monitor, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", ext: "EXE", desc: "Electron — Windows Desktop App" },
+  { id: "android", label: "أندرويد", labelEn: "Android", icon: Smartphone, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "APK", desc: "Google Play — Trusted Web Activity" },
+  { id: "windows", label: "ويندوز", labelEn: "Windows", icon: Monitor, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "EXE", desc: "Electron — Windows Desktop App" },
   { id: "ios", label: "آيفون iOS", labelEn: "iOS", icon: Apple, color: "text-gray-700", bg: "bg-gray-50 border-gray-200", ext: "IPA", desc: "Capacitor — Apple App Store" },
-  { id: "harmony", label: "هارموني", labelEn: "HarmonyOS", icon: Cpu, color: "text-red-600", bg: "bg-red-50 border-red-200", ext: "HAP", desc: "DevEco Studio — Huawei App Gallery" },
+  { id: "harmony", label: "هارموني", labelEn: "HarmonyOS", icon: Cpu, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "HAP", desc: "DevEco Studio — Huawei App Gallery" },
 ];
 
 const PERMISSIONS = [
@@ -76,26 +76,26 @@ function StepCard({ n, title, desc, link, linkLabel }: any) {
       <div className="min-w-0">
         <p className="text-sm font-bold text-black">{title}</p>
         <p className="text-xs text-black/50 mt-0.5 leading-relaxed">{desc}</p>
-        {link && <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1.5 font-medium">{linkLabel || link} <ExternalLink className="w-3 h-3" /></a>}
+        {link && <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-black dark:text-white hover:text-black dark:text-white mt-1.5 font-medium">{linkLabel || link} <ExternalLink className="w-3 h-3" /></a>}
       </div>
     </div>
   );
 }
 function ReadinessItem({ done, label, note }: any) {
   return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border mb-2 ${done ? "border-emerald-100 bg-emerald-50" : "border-amber-100 bg-amber-50"}`}>
-      {done ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /> : <Circle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />}
+    <div className={`flex items-start gap-3 p-3 rounded-xl border mb-2 ${done ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]"}`}>
+      {done ? <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" /> : <Circle className="w-4 h-4 text-black/70 dark:text-white/70 shrink-0 mt-0.5" />}
       <div>
-        <p className={`text-xs font-bold ${done ? "text-emerald-700" : "text-amber-700"}`}>{label}</p>
+        <p className={`text-xs font-bold ${done ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{label}</p>
         {note && <p className="text-[10px] mt-0.5 text-black/40">{note}</p>}
       </div>
-      <span className={`mr-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${done ? "bg-emerald-100 text-emerald-600" : "bg-amber-100 text-amber-600"}`}>{done ? "✓ جاهز" : "مطلوب"}</span>
+      <span className={`mr-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${done ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white"}`}>{done ? "✓ جاهز" : "مطلوب"}</span>
     </div>
   );
 }
 function StoreBadge({ store, url }: any) {
   if (!url) return <span className="text-xs text-black/30">لم يُنشر بعد</span>;
-  return <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"><ExternalLink className="w-3 h-3" /> عرض في {store}</a>;
+  return <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-black dark:text-white hover:underline"><ExternalLink className="w-3 h-3" /> عرض في {store}</a>;
 }
 const FIELD = (label: string, value: string, onChange: (v: string) => void, props?: any) => (
   <div>
@@ -1599,7 +1599,7 @@ export default function AdminAppPublish() {
                     "GitHub Actions CI/CD",
                     "Network Security Config",
                     "Signing Configuration Guide",
-                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-green-500 shrink-0" />{i}</div>)}
+                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-black dark:text-white shrink-0" />{i}</div>)}
 
                   {selectedPlatform === "windows" && [
                     "Electron Main Process (main.js)",
@@ -1610,7 +1610,7 @@ export default function AdminAppPublish() {
                     "Context Menu (Arabic)",
                     "GitHub Actions CI/CD",
                     "MSIX Package Config",
-                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-blue-500 shrink-0" />{i}</div>)}
+                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-black dark:text-white shrink-0" />{i}</div>)}
 
                   {selectedPlatform === "ios" && [
                     "capacitor.config.json",
@@ -1632,7 +1632,7 @@ export default function AdminAppPublish() {
                     "Immersive Full-Screen UI",
                     "hvigorfile.ts (Build Tool)",
                     "String Resources (Arabic)",
-                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-red-500 shrink-0" />{i}</div>)}
+                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-black dark:text-white shrink-0" />{i}</div>)}
                 </div>
               </div>
             </div>
@@ -1695,7 +1695,7 @@ export default function AdminAppPublish() {
               {/* Info box */}
               <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
                 <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  <Info className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-bold text-black mb-1">{L ? "كيف يعمل؟" : "How does it work?"}</p>
                     <p className="text-[11px] text-black/50 leading-relaxed">
@@ -1710,7 +1710,7 @@ export default function AdminAppPublish() {
                 <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-[11px] font-black text-black/50 uppercase tracking-widest">{L ? "الحزم السابقة" : "Previous Packages"}</p>
-                    <button onClick={clearHistory} className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-1">
+                    <button onClick={clearHistory} className="text-[10px] text-black/70 dark:text-white/70 hover:text-black dark:text-white flex items-center gap-1">
                       <Trash2 className="w-3 h-3" /> {L ? "مسح" : "Clear"}
                     </button>
                   </div>
@@ -1761,11 +1761,11 @@ export default function AdminAppPublish() {
               <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">{L ? "إعدادات المتاجر" : "Store Settings"}</p>
               {readinessChecklist.slice(7).map((item, i) => <ReadinessItem key={i} {...item} />)}
               {!hasAndroid || !hasApple || !hasMs ? (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">
+                <div className="mt-3 p-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl text-xs text-black dark:text-white">
                   {L ? 'لإكمال الجاهزية، اضغط على "إعدادات المتاجر" أعلاه وأدخل البيانات.' : 'To complete readiness, click "Store Settings" above and enter your data.'}
                 </div>
               ) : (
-                <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-700 font-bold">
+                <div className="mt-3 p-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl text-xs text-black dark:text-white font-bold">
                   {L ? "🎉 التطبيق جاهز للنشر على جميع المتاجر!" : "🎉 The app is ready to publish on all stores!"}
                 </div>
               )}
@@ -1782,7 +1782,7 @@ export default function AdminAppPublish() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-green-500 flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-2xl bg-black dark:bg-white flex items-center justify-center shadow-sm">
                   <Smartphone className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1791,8 +1791,8 @@ export default function AdminAppPublish() {
                 </div>
               </div>
               {data.playStoreUrl
-                ? <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer"><Badge className="gap-1 bg-green-500 text-white text-xs"><CheckCircle2 className="w-3.5 h-3.5" /> منشور على Play Store</Badge></a>
-                : <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
+                ? <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer"><Badge className="gap-1 bg-black dark:bg-white text-white text-xs"><CheckCircle2 className="w-3.5 h-3.5" /> منشور على Play Store</Badge></a>
+                : <Badge variant="outline" className="text-xs text-black dark:text-white border-black/10 dark:border-white/10 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
               }
             </div>
 
@@ -1802,13 +1802,13 @@ export default function AdminAppPublish() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {/* Path A: PWABuilder */}
-                <div className="p-4 rounded-2xl border-2 border-green-200 bg-green-50">
+                <div className="p-4 rounded-2xl border-2 border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-lg bg-green-500 flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
-                    <span className="text-sm font-black text-green-800">المسار الأسرع — بدون كود</span>
-                    <Badge className="text-[9px] bg-green-500 text-white mr-auto">موصى به ✓</Badge>
+                    <div className="w-6 h-6 rounded-lg bg-black dark:bg-white flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-black dark:text-white">المسار الأسرع — بدون كود</span>
+                    <Badge className="text-[9px] bg-black dark:bg-white text-white mr-auto">موصى به ✓</Badge>
                   </div>
-                  <ol className="space-y-2 text-[11px] text-green-800">
+                  <ol className="space-y-2 text-[11px] text-black dark:text-white">
                     {[
                       { n: 1, t: "افتح PWABuilder في متصفحك", sub: "pwabuilder.com" },
                       { n: 2, t: "اكتب رابط موقعك واضغط Start", sub: siteUrl },
@@ -1816,16 +1816,16 @@ export default function AdminAppPublish() {
                       { n: 4, t: "الـ AAB جاهز للرفع على Play Console", sub: "لا تحتاج Android Studio أو Gradle" },
                     ].map(s => (
                       <li key={s.n} className="flex gap-2">
-                        <span className="w-5 h-5 rounded-full bg-green-200 flex items-center justify-center text-[9px] font-black text-green-700 shrink-0 mt-0.5">{s.n}</span>
+                        <span className="w-5 h-5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-[9px] font-black text-black dark:text-white shrink-0 mt-0.5">{s.n}</span>
                         <div>
                           <span className="font-bold">{s.t}</span>
-                          {s.sub && <p className="text-green-600/70 font-mono text-[10px] mt-0.5">{s.sub}</p>}
+                          {s.sub && <p className="text-black dark:text-white font-mono text-[10px] mt-0.5">{s.sub}</p>}
                         </div>
                       </li>
                     ))}
                   </ol>
                   <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-green-500 text-white text-xs font-black hover:bg-green-600 transition-colors">
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-black dark:bg-white text-white text-xs font-black hover:bg-black dark:bg-white transition-colors">
                     <ExternalLink className="w-3.5 h-3.5" /> فتح pwabuilder.com
                   </a>
                 </div>
@@ -1861,17 +1861,17 @@ export default function AdminAppPublish() {
             <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
               <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 2 — ادخل بيانات التطبيق (بعد الحصول على AAB)</p>
               {hasAndroid ? (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10">
+                  <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0" />
                   <div>
-                    <p className="text-xs font-bold text-green-700">تم ربط التطبيق بالسيرفر ✓</p>
-                    <p className="text-[10px] text-green-600 font-mono mt-0.5">{data.androidPackage}</p>
+                    <p className="text-xs font-bold text-black dark:text-white">تم ربط التطبيق بالسيرفر ✓</p>
+                    <p className="text-[10px] text-black dark:text-white font-mono mt-0.5">{data.androidPackage}</p>
                   </div>
-                  <button onClick={openSettings} className="text-[10px] text-green-700 underline mr-auto shrink-0">تعديل</button>
+                  <button onClick={openSettings} className="text-[10px] text-black dark:text-white underline mr-auto shrink-0">تعديل</button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-700 flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-[11px] text-black dark:text-white flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>بعد تنزيل AAB من PWABuilder، افتح ملف <strong>assetlinks.json</strong> داخل ZIP واحصل منه على الـ Package Name و SHA-256 Fingerprint وأدخلهما هنا.</span>
                   </div>
@@ -1901,7 +1901,7 @@ export default function AdminAppPublish() {
                 <div className="mt-3 p-2 rounded-lg bg-black/[0.02] border border-black/[0.05]">
                   <p className="text-[10px] text-black/40 mb-1">رابط assetlinks.json على السيرفر:</p>
                   <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer"
-                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-mono" dir="ltr">
+                    className="text-[11px] text-black dark:text-white hover:underline flex items-center gap-1 font-mono" dir="ltr">
                     {siteUrl}/.well-known/assetlinks.json <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -1933,15 +1933,15 @@ export default function AdminAppPublish() {
                       key={item.id}
                       onClick={() => item.done === undefined && togglePlayCheck(item.id)}
                       data-testid={`play-check-${item.id}`}
-                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-3 ${isDone ? "bg-green-50 border-green-200" : "bg-white border-black/[0.08] hover:border-black/[0.16]"}`}
+                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-3 ${isDone ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-white border-black/[0.08] hover:border-black/[0.16]"}`}
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isDone ? "bg-green-500 border-green-500" : "border-black/20"}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isDone ? "bg-black dark:bg-white border-black dark:border-white" : "border-black/20"}`}>
                         {isDone && <CheckCheck className="w-3 h-3 text-white" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-bold leading-tight ${isDone ? "text-green-800 line-through opacity-70" : "text-black"}`}>{item.label}</p>
+                        <p className={`text-[11px] font-bold leading-tight ${isDone ? "text-black dark:text-white line-through opacity-70" : "text-black"}`}>{item.label}</p>
                         <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
-                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-black dark:text-white hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
                         <span className="text-[9px] text-black/25 block mt-0.5">{item.group}</span>
                       </div>
                     </button>
@@ -1955,26 +1955,26 @@ export default function AdminAppPublish() {
               <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-4">متتبع الاختبار المغلق (Closed Testing)</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 {/* Testers */}
-                <div className={`p-4 rounded-xl border text-center ${testerCount >= 12 ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
-                  <div className={`text-3xl font-black mb-1 ${testerCount >= 12 ? "text-green-600" : "text-black"}`}>{testerCount}</div>
+                <div className={`p-4 rounded-xl border text-center ${testerCount >= 12 ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${testerCount >= 12 ? "text-black dark:text-white" : "text-black"}`}>{testerCount}</div>
                   <div className="text-[10px] font-bold text-black/50">/ 12 مختبر</div>
                   <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${Math.min(100, (testerCount / 12) * 100)}%` }} />
+                    <div className="h-full bg-black dark:bg-white rounded-full transition-all" style={{ width: `${Math.min(100, (testerCount / 12) * 100)}%` }} />
                   </div>
-                  {testerCount >= 12 && <p className="text-[9px] text-green-600 font-bold mt-1">✓ مكتمل</p>}
+                  {testerCount >= 12 && <p className="text-[9px] text-black dark:text-white font-bold mt-1">✓ مكتمل</p>}
                 </div>
                 {/* Days */}
-                <div className={`p-4 rounded-xl border text-center ${closedTestDays >= 14 ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
-                  <div className={`text-3xl font-black mb-1 ${closedTestDays >= 14 ? "text-green-600" : "text-black"}`}>{closedTestDays}</div>
+                <div className={`p-4 rounded-xl border text-center ${closedTestDays >= 14 ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${closedTestDays >= 14 ? "text-black dark:text-white" : "text-black"}`}>{closedTestDays}</div>
                   <div className="text-[10px] font-bold text-black/50">/ 14 يوم</div>
                   <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${Math.min(100, (closedTestDays / 14) * 100)}%` }} />
+                    <div className="h-full bg-black dark:bg-white rounded-full transition-all" style={{ width: `${Math.min(100, (closedTestDays / 14) * 100)}%` }} />
                   </div>
-                  {closedTestDays >= 14 && <p className="text-[9px] text-green-600 font-bold mt-1">✓ مكتمل</p>}
+                  {closedTestDays >= 14 && <p className="text-[9px] text-black dark:text-white font-bold mt-1">✓ مكتمل</p>}
                 </div>
                 {/* Overall */}
-                <div className={`p-4 rounded-xl border text-center ${closedTestDone ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
-                  <div className={`text-3xl font-black mb-1 ${closedTestDone ? "text-green-600" : "text-black/30"}`}>{closedTestDone ? "✓" : "⏳"}</div>
+                <div className={`p-4 rounded-xl border text-center ${closedTestDone ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${closedTestDone ? "text-black dark:text-white" : "text-black/30"}`}>{closedTestDone ? "✓" : "⏳"}</div>
                   <div className="text-[10px] font-bold text-black/50">الحالة الكلية</div>
                   <div className="text-[11px] mt-2 font-bold text-black/50">
                     {closedTestDone ? "جاهز للإنتاج! 🎉" : `${Math.max(0, 12 - testerCount)} مختبر + ${Math.max(0, 14 - closedTestDays)} يوم`}
@@ -1992,11 +1992,11 @@ export default function AdminAppPublish() {
                 </div>
               </div>
               {closedTestDone && (
-                <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 text-center">
-                  <p className="text-sm font-black text-green-700">🎉 شروط الاختبار مكتملة!</p>
-                  <p className="text-[11px] text-green-600 mt-1">يمكنك الآن التقديم على Production في Play Console</p>
+                <div className="mt-3 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-center">
+                  <p className="text-sm font-black text-black dark:text-white">🎉 شروط الاختبار مكتملة!</p>
+                  <p className="text-[11px] text-black dark:text-white mt-1">يمكنك الآن التقديم على Production في Play Console</p>
                   <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-green-700 underline">
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-black dark:text-white underline">
                     اذهب إلى Play Console <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -2012,10 +2012,10 @@ export default function AdminAppPublish() {
               <div className="p-4 rounded-2xl border border-black/[0.08] bg-white space-y-3">
                 <p className="text-xs font-black text-black/40">روابط مهمة</p>
                 {[
-                  { label: "Google Play Console", url: "https://play.google.com/console", color: "text-green-600" },
-                  { label: "PWABuilder (توليد AAB)", url: "https://www.pwabuilder.com", color: "text-blue-600" },
+                  { label: "Google Play Console", url: "https://play.google.com/console", color: "text-black dark:text-white" },
+                  { label: "PWABuilder (توليد AAB)", url: "https://www.pwabuilder.com", color: "text-black dark:text-white" },
                   { label: "سياسة الخصوصية", url: siteUrl + "/privacy", color: "text-black/60" },
-                  { label: "assetlinks.json على سيرفرك", url: siteUrl + "/.well-known/assetlinks.json", color: "text-purple-600" },
+                  { label: "assetlinks.json على سيرفرك", url: siteUrl + "/.well-known/assetlinks.json", color: "text-black dark:text-white" },
                 ].map(link => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
                     className={`flex items-center gap-2 text-xs font-semibold hover:underline ${link.color}`}>
@@ -2047,17 +2047,17 @@ export default function AdminAppPublish() {
               </div>
               {data.appStoreUrl
                 ? <a href={data.appStoreUrl} target="_blank" rel="noopener noreferrer"><Badge className="gap-1 bg-black text-white text-xs"><CheckCircle2 className="w-3.5 h-3.5" /> منشور على App Store</Badge></a>
-                : <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
+                : <Badge variant="outline" className="text-xs text-black dark:text-white border-black/10 dark:border-white/10 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
               }
             </div>
 
             {/* متطلبات مسبقة */}
-            <div className="p-4 rounded-2xl border-2 border-amber-200 bg-amber-50">
+            <div className="p-4 rounded-2xl border-2 border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-black text-amber-800 mb-1">المتطلبات المسبقة قبل البدء</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-amber-700">
+                  <p className="text-sm font-black text-black dark:text-white mb-1">المتطلبات المسبقة قبل البدء</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-black dark:text-white">
                     {[
                       { icon: "💻", t: "جهاز Mac", sub: "macOS 13+ (Ventura أو أحدث)" },
                       { icon: "🍎", t: "Apple Developer Account", sub: "اشتراك $99/سنة — developer.apple.com" },
@@ -2065,7 +2065,7 @@ export default function AdminAppPublish() {
                     ].map(r => (
                       <div key={r.t} className="flex items-start gap-1.5">
                         <span className="text-base leading-none mt-0.5">{r.icon}</span>
-                        <div><p className="font-bold">{r.t}</p><p className="text-amber-600/70">{r.sub}</p></div>
+                        <div><p className="font-bold">{r.t}</p><p className="text-black dark:text-white">{r.sub}</p></div>
                       </div>
                     ))}
                   </div>
@@ -2079,13 +2079,13 @@ export default function AdminAppPublish() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {/* Path A: PWABuilder */}
-                <div className="p-4 rounded-2xl border-2 border-blue-200 bg-blue-50">
+                <div className="p-4 rounded-2xl border-2 border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
-                    <span className="text-sm font-black text-blue-800">المسار الأسرع — PWABuilder</span>
-                    <Badge className="text-[9px] bg-blue-500 text-white mr-auto">موصى به ✓</Badge>
+                    <div className="w-6 h-6 rounded-lg bg-black dark:bg-white flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-black dark:text-white">المسار الأسرع — PWABuilder</span>
+                    <Badge className="text-[9px] bg-black dark:bg-white text-white mr-auto">موصى به ✓</Badge>
                   </div>
-                  <ol className="space-y-2 text-[11px] text-blue-800">
+                  <ol className="space-y-2 text-[11px] text-black dark:text-white">
                     {[
                       { n: 1, t: "افتح PWABuilder واكتب رابط موقعك", sub: "pwabuilder.com" },
                       { n: 2, t: 'اختر "iOS" ثم اضغط Download Package', sub: "ستحصل على ZIP يحتوي مشروع Capacitor جاهز" },
@@ -2094,16 +2094,16 @@ export default function AdminAppPublish() {
                       { n: 5, t: "اختر Team → Product → Archive", sub: "ثم Distribute App → App Store Connect" },
                     ].map(s => (
                       <li key={s.n} className="flex gap-2">
-                        <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-[9px] font-black text-blue-700 shrink-0 mt-0.5">{s.n}</span>
+                        <span className="w-5 h-5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-[9px] font-black text-black dark:text-white shrink-0 mt-0.5">{s.n}</span>
                         <div>
                           <span className="font-bold">{s.t}</span>
-                          {s.sub && <p className="text-blue-600/70 font-mono text-[10px] mt-0.5 break-all">{s.sub}</p>}
+                          {s.sub && <p className="text-black dark:text-white font-mono text-[10px] mt-0.5 break-all">{s.sub}</p>}
                         </div>
                       </li>
                     ))}
                   </ol>
                   <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-blue-500 text-white text-xs font-black hover:bg-blue-600 transition-colors">
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-black dark:bg-white text-white text-xs font-black hover:bg-black dark:bg-white transition-colors">
                     <ExternalLink className="w-3.5 h-3.5" /> فتح pwabuilder.com
                   </a>
                 </div>
@@ -2149,7 +2149,7 @@ export default function AdminAppPublish() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-700 flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-[11px] text-black dark:text-white flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>من Apple Developer Console احصل على <strong>Team ID</strong> (Account → Membership) و <strong>Bundle ID</strong> (Identifiers → App IDs) وأدخلهما هنا لتفعيل Apple Universal Links.</span>
                   </div>
@@ -2179,7 +2179,7 @@ export default function AdminAppPublish() {
                 <div className="mt-3 p-2 rounded-lg bg-black/[0.02] border border-black/[0.05]">
                   <p className="text-[10px] text-black/40 mb-1">رابط apple-app-site-association على السيرفر:</p>
                   <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer"
-                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-mono" dir="ltr">
+                    className="text-[11px] text-black dark:text-white hover:underline flex items-center gap-1 font-mono" dir="ltr">
                     {siteUrl}/.well-known/apple-app-site-association <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -2220,7 +2220,7 @@ export default function AdminAppPublish() {
                       <div className="flex-1 min-w-0">
                         <p className={`text-[11px] font-bold leading-tight ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
                         <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
-                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-black dark:text-white hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
                         <span className="text-[9px] text-black/25 block mt-0.5">{item.group}</span>
                       </div>
                     </button>
@@ -2246,17 +2246,17 @@ export default function AdminAppPublish() {
                   <div className="text-3xl font-black mb-1 text-black">{tfDays}</div>
                   <div className="text-[10px] font-bold text-black/50">يوم مضى</div>
                   <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${tfExpiry < 10 ? "bg-red-500" : "bg-blue-500"}`} style={{ width: `${Math.min(100, (tfDays / 90) * 100)}%` }} />
+                    <div className={`h-full rounded-full transition-all ${tfExpiry < 10 ? "bg-black dark:bg-white" : "bg-black dark:bg-white"}`} style={{ width: `${Math.min(100, (tfDays / 90) * 100)}%` }} />
                   </div>
                 </div>
                 {/* Expiry */}
-                <div className={`p-4 rounded-xl border text-center ${tfExpiry < 10 ? "bg-red-50 border-red-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
-                  <div className={`text-3xl font-black mb-1 ${tfExpiry < 10 ? "text-red-500" : "text-black"}`}>
+                <div className={`p-4 rounded-xl border text-center ${tfExpiry < 10 ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${tfExpiry < 10 ? "text-black dark:text-white" : "text-black"}`}>
                     {tfStart ? (tfExpiry > 0 ? tfExpiry : "✗") : "90"}
                   </div>
                   <div className="text-[10px] font-bold text-black/50">يوم متبقي (Build ينتهي بعد 90 يوم)</div>
-                  {tfExpiry < 10 && tfExpiry > 0 && <p className="text-[9px] text-red-500 font-bold mt-1">⚠ ارفع Build جديد قريباً</p>}
-                  {tfExpiry <= 0 && tfStart && <p className="text-[9px] text-red-600 font-bold mt-1">✗ انتهت صلاحية الـ Build</p>}
+                  {tfExpiry < 10 && tfExpiry > 0 && <p className="text-[9px] text-black dark:text-white font-bold mt-1">⚠ ارفع Build جديد قريباً</p>}
+                  {tfExpiry <= 0 && tfStart && <p className="text-[9px] text-black dark:text-white font-bold mt-1">✗ انتهت صلاحية الـ Build</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -2302,7 +2302,7 @@ export default function AdminAppPublish() {
               </div>
 
               {/* Architecture note */}
-              <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-[11px] text-blue-800 mb-4 flex items-start gap-2">
+              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-[11px] text-black dark:text-white mb-4 flex items-start gap-2">
                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold">كيف يعمل Apple Pay في تطبيقك؟ </span>
@@ -2332,7 +2332,7 @@ export default function AdminAppPublish() {
                       <div className="flex-1 min-w-0">
                         <p className={`text-[11px] font-bold ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
                         <p className="text-[10px] text-black/40 mt-0.5 leading-tight break-all">{item.sub}</p>
-                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.replace("https://", "")}</a>}
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-black dark:text-white hover:underline">{item.link.replace("https://", "")}</a>}
                         <span className="text-[9px] text-black/25 block mt-0.5">{item.phase}</span>
                       </div>
                     </button>
@@ -2420,7 +2420,7 @@ export default function AdminAppPublish() {
                       <div className="flex-1 min-w-0">
                         <p className={`text-[11px] font-bold ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
                         <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
-                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.replace("https://", "")}</a>}
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-black dark:text-white hover:underline">{item.link.replace("https://", "")}</a>}
                         <span className="text-[9px] text-black/25 block mt-0.5">{item.phase}</span>
                       </div>
                     </button>
@@ -2454,9 +2454,9 @@ export default function AdminAppPublish() {
                 {[
                   { label: "App Store Connect", url: "https://appstoreconnect.apple.com", color: "text-black" },
                   { label: "Apple Developer Portal", url: "https://developer.apple.com/account", color: "text-black" },
-                  { label: "Apple Pay Setup Guide", url: "https://developer.apple.com/apple-pay/implementation", color: "text-green-700" },
-                  { label: "PassKit Identifiers", url: "https://developer.apple.com/account/resources/identifiers/list/passTypeId", color: "text-purple-600" },
-                  { label: "PWABuilder (توليد iOS)", url: "https://www.pwabuilder.com", color: "text-blue-600" },
+                  { label: "Apple Pay Setup Guide", url: "https://developer.apple.com/apple-pay/implementation", color: "text-black dark:text-white" },
+                  { label: "PassKit Identifiers", url: "https://developer.apple.com/account/resources/identifiers/list/passTypeId", color: "text-black dark:text-white" },
+                  { label: "PWABuilder (توليد iOS)", url: "https://www.pwabuilder.com", color: "text-black dark:text-white" },
                   { label: "سياسة الخصوصية", url: siteUrl + "/privacy", color: "text-black/60" },
                 ].map(link => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
@@ -2477,9 +2477,9 @@ export default function AdminAppPublish() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center"><Cpu className="w-4 h-4 text-white" /></div>
+                <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center"><Cpu className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Huawei App Gallery</h2><p className="text-[10px] text-black/40">HarmonyOS NEXT</p></div>
-                {data.huaweiStoreUrl && <a href={data.huaweiStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-red-600 border-red-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
+                {data.huaweiStoreUrl && <a href={data.huaweiStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-black dark:text-white border-black/10 dark:border-white/10"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة HarmonyOS" desc='تبويب "مولّد الحزم" → اختر هارموني → توليد وتنزيل' />
               <StepCard n={2} title="فتح في DevEco Studio" desc="افتح المجلد المُستخرج من ZIP في DevEco Studio 4.0+" />
@@ -2501,9 +2501,9 @@ export default function AdminAppPublish() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center"><Globe className="w-4 h-4 text-white" /></div>
+                <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center"><Globe className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Microsoft Store</h2><p className="text-[10px] text-black/40">Electron + MSIX</p></div>
-                {data.msStoreUrl && <a href={data.msStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-blue-600 border-blue-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
+                {data.msStoreUrl && <a href={data.msStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-black dark:text-white border-black/10 dark:border-white/10"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة Windows" desc='تبويب "مولّد الحزم" → اختر ويندوز → توليد وتنزيل' />
               <StepCard n={2} title="تثبيت المتطلبات" desc="npm install (في المجلد المستخرج)" />
@@ -2514,7 +2514,7 @@ export default function AdminAppPublish() {
             <div>
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06] mb-4">
                 <p className="text-[10px] font-bold text-black/50 mb-2">browserconfig.xml:</p>
-                <a href={`${siteUrl}/browserconfig.xml`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                <a href={`${siteUrl}/browserconfig.xml`} target="_blank" rel="noopener noreferrer" className="text-xs text-black dark:text-white hover:underline flex items-center gap-1">
                   {siteUrl}/browserconfig.xml <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -2558,7 +2558,7 @@ export default function AdminAppPublish() {
               <CodeBlock title=".well-known/assetlinks.json" code={assetlinksJson} />
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06] text-[10px] text-black/50 space-y-1">
                 <p className="font-bold text-black/60">{L ? "يُستخدم لـ: Google Play · Huawei · Android Links" : "Used for: Google Play · Huawei · Android Links"}</p>
-                <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">
+                <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer" className="text-black dark:text-white hover:underline" dir="ltr">
                   {siteUrl}/.well-known/assetlinks.json
                 </a>
               </div>
@@ -2568,7 +2568,7 @@ export default function AdminAppPublish() {
               <CodeBlock title="apple-app-site-association" code={aasaJson} />
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06] text-[10px] text-black/50">
                 <p className="font-bold text-black/60 mb-1">{L ? "يُستخدم لـ: iOS Universal Links · App Store" : "Used for: iOS Universal Links · App Store"}</p>
-                <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">
+                <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer" className="text-black dark:text-white hover:underline" dir="ltr">
                   {siteUrl}/.well-known/apple-app-site-association
                 </a>
               </div>

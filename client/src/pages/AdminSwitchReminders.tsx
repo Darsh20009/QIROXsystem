@@ -28,9 +28,9 @@ type SwitchReminder = {
 };
 
 function getStatusMap(L: boolean) { return {
-  pending:        { label: L ? "جديد" : "New", color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500" },
-  contacted:      { label: L ? "تم التواصل" : "Contacted", color: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-500" },
-  converted:      { label: L ? "تحوّل لعميل" : "Converted", color: "bg-green-100 text-green-700 border-green-200", dot: "bg-green-500" },
+  pending:        { label: L ? "جديد" : "New", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black dark:bg-white" },
+  contacted:      { label: L ? "تم التواصل" : "Contacted", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black dark:bg-white" },
+  converted:      { label: L ? "تحوّل لعميل" : "Converted", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black dark:bg-white" },
   not_interested: { label: L ? "غير مهتم" : "Not Interested", color: "bg-gray-100 text-gray-600 border-gray-200", dot: "bg-gray-400" },
 };
 }
@@ -52,9 +52,9 @@ function daysUntil(dateStr: string) {
 }
 
 function urgencyColor(days: number) {
-  if (days <= 7) return "text-red-600 bg-red-50 border-red-200";
-  if (days <= 30) return "text-amber-600 bg-amber-50 border-amber-200";
-  return "text-green-600 bg-green-50 border-green-200";
+  if (days <= 7) return "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10";
+  if (days <= 30) return "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10";
+  return "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10";
 }
 
 export default function AdminSwitchReminders() {
@@ -130,7 +130,7 @@ export default function AdminSwitchReminders() {
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-              <Bell className="w-6 h-6 text-violet-400" />
+              <Bell className="w-6 h-6 text-black/70 dark:text-white/70" />
             </div>
             <div>
               <h1 className="text-xl font-black text-white">{L ? "تذكيرات التحويل" : "Switch Reminders"}</h1>
@@ -140,9 +140,9 @@ export default function AdminSwitchReminders() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { val: stats.total, label: L ? "إجمالي" : "Total", color: "text-white" },
-              { val: stats.pending, label: L ? "جديد" : "New", color: "text-amber-400" },
-              { val: stats.urgent, label: L ? "عاجل (30 يوم)" : "Urgent (30d)", color: "text-red-400" },
-              { val: stats.converted, label: L ? "تحوّل" : "Converted", color: "text-green-400" },
+              { val: stats.pending, label: L ? "جديد" : "New", color: "text-black/70 dark:text-white/70" },
+              { val: stats.urgent, label: L ? "عاجل (30 يوم)" : "Urgent (30d)", color: "text-black/70 dark:text-white/70" },
+              { val: stats.converted, label: L ? "تحوّل" : "Converted", color: "text-black/70 dark:text-white/70" },
             ].map(({ val, label, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl px-4 py-2 text-center min-w-[80px]">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -197,12 +197,12 @@ export default function AdminSwitchReminders() {
                 transition={{ delay: i * 0.03 }}
                 onClick={() => openDetail(r)}
                 data-testid={`card-reminder-${r.id}`}
-                className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${isUrgent ? "border-red-200 dark:border-red-800/50" : "border-black/[0.06] dark:border-white/[0.06]"}`}
+                className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${isUrgent ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "border-black/[0.06] dark:border-white/[0.06]"}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isUrgent ? "bg-red-100 dark:bg-red-950/30" : "bg-black/[0.04] dark:bg-white/[0.05]"}`}>
-                      <Bell className={`w-5 h-5 ${isUrgent ? "text-red-500" : "text-black/40 dark:text-white/40"}`} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isUrgent ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.05]"}`}>
+                      <Bell className={`w-5 h-5 ${isUrgent ? "text-black dark:text-white" : "text-black/40 dark:text-white/40"}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -257,12 +257,12 @@ export default function AdminSwitchReminders() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
                     <Phone className="w-4 h-4" />
-                    <a href={`tel:${selected.phone}`} className="hover:text-violet-600 transition-colors font-mono">{selected.phone}</a>
+                    <a href={`tel:${selected.phone}`} className="hover:text-black dark:text-white transition-colors font-mono">{selected.phone}</a>
                   </div>
                   {selected.email && (
                     <div className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
                       <Mail className="w-4 h-4" />
-                      <a href={`mailto:${selected.email}`} className="hover:text-violet-600 transition-colors">{selected.email}</a>
+                      <a href={`mailto:${selected.email}`} className="hover:text-black dark:text-white transition-colors">{selected.email}</a>
                     </div>
                   )}
                   <div className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
@@ -328,7 +328,7 @@ export default function AdminSwitchReminders() {
                   <Button
                     variant="ghost"
                     onClick={() => window.open(`https://wa.me/${selected.phone.replace(/\D/g, "")}`, "_blank")}
-                    className="rounded-xl gap-2 text-green-600 hover:bg-green-50 hover:text-green-700"
+                    className="rounded-xl gap-2 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white"
                     data-testid="btn-whatsapp"
                   >
                     {L ? "واتساب" : "WhatsApp"}
@@ -338,7 +338,7 @@ export default function AdminSwitchReminders() {
                     onClick={() => { if (confirm(L ? "حذف هذا التذكير؟" : "Delete this reminder?")) deleteMutation.mutate(selected.id); }}
                     disabled={deleteMutation.isPending}
                     data-testid="btn-delete-reminder"
-                    className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-xl text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

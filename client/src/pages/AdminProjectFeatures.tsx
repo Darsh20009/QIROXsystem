@@ -31,15 +31,15 @@ function getCategories(L: boolean) { return [
 ]; }
 function getPriorities(L: boolean) { return [
   { value: 'low', label: L ? 'منخفضة' : 'Low', color: 'bg-gray-100 text-gray-600' },
-  { value: 'medium', label: L ? 'متوسطة' : 'Medium', color: 'bg-blue-100 text-blue-700' },
-  { value: 'high', label: L ? 'عالية' : 'High', color: 'bg-amber-100 text-amber-700' },
-  { value: 'critical', label: L ? 'حرجة' : 'Critical', color: 'bg-red-100 text-red-700' },
+  { value: 'medium', label: L ? 'متوسطة' : 'Medium', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'high', label: L ? 'عالية' : 'High', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
+  { value: 'critical', label: L ? 'حرجة' : 'Critical', color: 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' },
 ]; }
 function getStatuses(L: boolean) { return [
   { value: 'pending', label: L ? 'قيد الانتظار' : 'Pending', icon: Clock, color: 'text-gray-500 bg-gray-100' },
-  { value: 'in_progress', label: L ? 'جارٍ التنفيذ' : 'In Progress', icon: Play, color: 'text-amber-600 bg-amber-100' },
-  { value: 'completed', label: L ? 'مكتملة' : 'Completed', icon: CheckCircle2, color: 'text-green-700 bg-green-100' },
-  { value: 'cancelled', label: L ? 'ملغاة' : 'Cancelled', icon: XCircle, color: 'text-red-600 bg-red-100' },
+  { value: 'in_progress', label: L ? 'جارٍ التنفيذ' : 'In Progress', icon: Play, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
+  { value: 'completed', label: L ? 'مكتملة' : 'Completed', icon: CheckCircle2, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
+  { value: 'cancelled', label: L ? 'ملغاة' : 'Cancelled', icon: XCircle, color: 'text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]' },
 ]; }
 
 
@@ -223,8 +223,8 @@ export default function AdminProjectFeatures() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-              <LayoutGrid className="w-4.5 h-4.5 text-violet-600" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white flex items-center justify-center">
+              <LayoutGrid className="w-4.5 h-4.5 text-black dark:text-white" />
             </div>
             <div>
               <h1 className="font-black text-base text-black dark:text-white">إدارة مميزات المشاريع</h1>
@@ -243,7 +243,7 @@ export default function AdminProjectFeatures() {
               const isSelected = pid === selectedProjectId;
               return (
                 <div key={pid} onClick={() => setSelectedProjectId(pid)} className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer border transition-all ${isSelected ? "bg-black text-white border-transparent" : "border-black/[0.06] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 bg-transparent"}`} data-testid={`project-card-${pid}`}>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${isSelected ? "bg-white/20 text-white" : "bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 text-violet-700"}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0 ${isSelected ? "bg-white/20 text-white" : "bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white text-black dark:text-white"}`}>
                     {(p.stagingUrl || "M")[0]?.toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -267,7 +267,7 @@ export default function AdminProjectFeatures() {
                 {features.length > 0 && (
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 max-w-[120px] h-1.5 bg-gray-100 dark:bg-white/[0.08] rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-black dark:bg-white rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-[10px] font-bold text-black/50 dark:text-white/30">{pct}% مكتمل ({completed}/{features.length})</span>
                   </div>
@@ -280,7 +280,7 @@ export default function AdminProjectFeatures() {
                 {sendEmailLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />} إرسال للعميل
               </Button>
               <Link href={`/project/${selectedProjectId}/workspace`}>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 rounded-lg" data-testid="button-open-workspace">
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-lg" data-testid="button-open-workspace">
                   <ArrowRight className="w-3.5 h-3.5" /> مساحة العمل
                 </Button>
               </Link>
@@ -326,7 +326,7 @@ export default function AdminProjectFeatures() {
                             </span>
                           )}
                           {f.completedAt && (
-                            <span className="text-[10px] text-green-600 dark:text-green-400">
+                            <span className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70">
                               ✓ {L ? "أنجزت" : "Completed"} {new Date(f.completedAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}
                             </span>
                           )}
@@ -336,8 +336,8 @@ export default function AdminProjectFeatures() {
                         <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-black/[0.05]" onClick={() => openEdit(f)} data-testid={`button-edit-feature-${f.id}`}>
                           <Pencil className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-red-50" onClick={() => deleteMutation.mutate(f.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-feature-${f.id}`}>
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => deleteMutation.mutate(f.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-feature-${f.id}`}>
+                          <Trash2 className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                         </Button>
                       </div>
                     </div>

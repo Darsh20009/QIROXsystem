@@ -154,13 +154,13 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
 
       {/* Status Toggle */}
-      <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+      <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-violet-900">{L ? "أداة الذكاء الاصطناعي للفواتير" : "Invoice AI Tool"}</p>
-            <p className="text-xs text-violet-700/70">{L ? "اكتب تفاصيل الفاتورة أو الصق نصاً ليتم تحسينه." : "Write invoice details or paste text to improve."}</p>
+            <p className="text-sm font-bold text-black dark:text-white">{L ? "أداة الذكاء الاصطناعي للفواتير" : "Invoice AI Tool"}</p>
+            <p className="text-xs text-black dark:text-white">{L ? "اكتب تفاصيل الفاتورة أو الصق نصاً ليتم تحسينه." : "Write invoice details or paste text to improve."}</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => setShowAi(v => !v)} className="border-violet-200 text-violet-700 gap-2" data-testid="button-toggle-invoice-ai">
+          <Button type="button" variant="outline" onClick={() => setShowAi(v => !v)} className="border-black/10 dark:border-white/10 text-black dark:text-white gap-2" data-testid="button-toggle-invoice-ai">
             <Wand2 className="w-4 h-4" /> {showAi ? (L ? "إخفاء" : "Hide") : (L ? "فتح الأداة" : "Open")}
           </Button>
         </div>
@@ -197,10 +197,10 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Order Quick Selector */}
-      <div className="bg-cyan-50 border border-cyan-200/60 rounded-xl p-3">
-        <Label className="text-xs text-cyan-700 font-bold mb-2 block">{L ? "🔗 اربط بطلب موجود (يُعبّئ المبلغ والعميل تلقائياً)" : "🔗 Link to existing order (auto-fills amount & client)"}</Label>
+      <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3">
+        <Label className="text-xs text-black dark:text-white font-bold mb-2 block">{L ? "🔗 اربط بطلب موجود (يُعبّئ المبلغ والعميل تلقائياً)" : "🔗 Link to existing order (auto-fills amount & client)"}</Label>
         <Select value={form.orderId || "none"} onValueChange={handleOrderSelect}>
-          <SelectTrigger className="h-9 text-sm border-cyan-200 bg-white">
+          <SelectTrigger className="h-9 text-sm border-black/10 dark:border-white/10 bg-white">
             <SelectValue placeholder={L ? "اختر طلباً..." : "Select an order..."} />
           </SelectTrigger>
           <SelectContent>
@@ -236,7 +236,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
             placeholder="1000"
             value={form.amount}
             onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
-            className={`h-9 text-sm border-black/[0.10] ${form.orderId ? "bg-cyan-50 border-cyan-300" : ""}`}
+            className={`h-9 text-sm border-black/[0.10] ${form.orderId ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/15 dark:border-white/15" : ""}`}
             dir="ltr"
           />
         </div>
@@ -259,7 +259,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
                 <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
-                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                  <button onClick={() => removeItem(i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white"><X className="w-3 h-3" /></button>
                 </div>
               </div>
             ))}
@@ -402,35 +402,35 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
           <div className="space-y-2 mb-3">
             {form.items.map((item, i) => (
               editingIdx === i ? (
-                <div key={i} className="bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
+                <div key={i} className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 space-y-2">
                   <div className="grid grid-cols-4 gap-2">
-                    <Input value={editBuf.name} onChange={e => setEditBuf(p => ({ ...p, name: e.target.value }))} placeholder={L ? "اسم البند" : "Name"} className="col-span-2 h-8 text-xs border-violet-300" />
-                    <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="h-8 text-xs border-violet-300" dir="ltr" />
-                    <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="h-8 text-xs border-violet-300" dir="ltr" />
+                    <Input value={editBuf.name} onChange={e => setEditBuf(p => ({ ...p, name: e.target.value }))} placeholder={L ? "اسم البند" : "Name"} className="col-span-2 h-8 text-xs border-black/15 dark:border-white/15" />
+                    <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
+                    <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-violet-600 font-bold px-1">
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
                       {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
                     </p>
                   )}
                   <div className="flex gap-2">
-                    <Button type="button" onClick={saveEdit} size="sm" className="bg-violet-600 hover:bg-violet-700 text-white h-7 text-xs px-3 gap-1" disabled={!editBuf.name || !editBuf.unitPrice}>
+                    <Button type="button" onClick={saveEdit} size="sm" className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white h-7 text-xs px-3 gap-1" disabled={!editBuf.name || !editBuf.unitPrice}>
                       <CheckCircle className="w-3 h-3" /> {L ? "حفظ" : "Save"}
                     </Button>
-                    <Button type="button" onClick={() => setEditingIdx(null)} size="sm" variant="outline" className="h-7 text-xs px-3 border-violet-200">
+                    <Button type="button" onClick={() => setEditingIdx(null)} size="sm" variant="outline" className="h-7 text-xs px-3 border-black/10 dark:border-white/10">
                       <X className="w-3 h-3" /> {L ? "إلغاء" : "Cancel"}
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-violet-50/60 rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-violet-200 transition-all">
+                <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-black/10 dark:border-white/10 transition-all">
                   <span className="text-xs text-black font-medium flex-1">{item.name} <span className="text-black/40 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span></span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
-                    <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-violet-500 hover:text-violet-700 transition-all p-1 rounded-lg hover:bg-violet-100">
+                    <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-black dark:text-white hover:text-black dark:text-white transition-all p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 rounded-lg hover:bg-red-50">
+                    <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-all p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -559,9 +559,9 @@ export default function AdminInvoices() {
   });
 
   const statusColor = (s: string) => {
-    if (s === "paid") return "bg-green-50 text-green-700 border-green-200";
-    if (s === "cancelled") return "bg-red-50 text-red-700 border-red-200";
-    return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    if (s === "paid") return "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10";
+    if (s === "cancelled") return "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10";
+    return "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10";
   };
 
   const statusLabel = (s: string) => L ? ({ paid: "مدفوع", unpaid: "غير مدفوع", cancelled: "ملغي" }[s] || s) : ({ paid: "Paid", unpaid: "Unpaid", cancelled: "Cancelled" }[s] || s);
@@ -672,7 +672,7 @@ export default function AdminInvoices() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => setEditingInvoice(inv)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors text-xs font-semibold"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-xs font-semibold"
                             data-testid={`button-edit-invoice-${inv.id}`}
                           >
                             <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
@@ -680,7 +680,7 @@ export default function AdminInvoices() {
                           <button
                             onClick={() => duplicateMutation.mutate(inv.id)}
                             disabled={duplicateMutation.isPending}
-                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-700 hover:bg-cyan-100 transition-colors text-xs font-semibold"
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-xs font-semibold"
                             title={L ? "نسخ" : "Copy"}
                             data-testid={`button-duplicate-invoice-${inv.id}`}
                           >
@@ -697,7 +697,7 @@ export default function AdminInvoices() {
                           <button
                             onClick={() => sendEmailMutation.mutate(inv.id)}
                             disabled={sendEmailMutation.isPending}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-black/40 hover:text-blue-600 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/40 hover:text-black dark:text-white transition-colors"
                             title={L ? "إرسال بالبريد" : "Send by Email"}
                             data-testid={`button-email-${inv.id}`}
                           >
@@ -707,7 +707,7 @@ export default function AdminInvoices() {
                             <button
                               onClick={() => markPaidMutation.mutate(inv.id)}
                               disabled={markPaidMutation.isPending}
-                              className="p-1.5 rounded-lg hover:bg-green-50 text-black/40 hover:text-green-600 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/40 hover:text-black dark:text-white transition-colors"
                               title={L ? "تحديد كمدفوع" : "Mark as Paid"}
                               data-testid={`button-paid-${inv.id}`}
                             >
@@ -717,7 +717,7 @@ export default function AdminInvoices() {
                           <button
                             onClick={() => deleteMutation.mutate(inv.id)}
                             disabled={deleteMutation.isPending}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-black/40 hover:text-red-500 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/40 hover:text-black dark:text-white transition-colors"
                             title={L ? "حذف" : "Delete"}
                             data-testid={`button-delete-invoice-${inv.id}`}
                           >

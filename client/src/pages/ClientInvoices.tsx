@@ -9,9 +9,9 @@ import { FileText, Download, CheckCircle, Clock, XCircle, Receipt } from "lucide
 
 function getStatusInfo(status: string, L: boolean) {
   return {
-    paid:      { label: L ? "مدفوعة" : "Paid",       color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
-    unpaid:    { label: L ? "غير مدفوعة" : "Unpaid", color: "bg-amber-100 text-amber-700 border-amber-200",  icon: Clock },
-    cancelled: { label: L ? "ملغاة" : "Cancelled",   color: "bg-red-100 text-red-700 border-red-200",        icon: XCircle },
+    paid:      { label: L ? "مدفوعة" : "Paid",       color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",  icon: CheckCircle },
+    unpaid:    { label: L ? "غير مدفوعة" : "Unpaid", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",  icon: Clock },
+    cancelled: { label: L ? "ملغاة" : "Cancelled",   color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",        icon: XCircle },
   }[status] || { label: status, color: "bg-black/10 text-black/60 border-black/10", icon: FileText };
 }
 
@@ -41,16 +41,16 @@ export default function ClientInvoices() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="border-green-200 bg-green-50/50">
+        <Card className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-700">{totalPaid.toLocaleString()}</div>
-            <div className="text-xs text-green-600 mt-1">{L ? "إجمالي المدفوع (ريال)" : "Total Paid (SAR)"}</div>
+            <div className="text-2xl font-bold text-black dark:text-white">{totalPaid.toLocaleString()}</div>
+            <div className="text-xs text-black dark:text-white mt-1">{L ? "إجمالي المدفوع (ريال)" : "Total Paid (SAR)"}</div>
           </CardContent>
         </Card>
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-amber-700">{totalUnpaid.toLocaleString()}</div>
-            <div className="text-xs text-amber-600 mt-1">{L ? "مستحق الدفع (ريال)" : "Pending Payment (SAR)"}</div>
+            <div className="text-2xl font-bold text-black dark:text-white">{totalUnpaid.toLocaleString()}</div>
+            <div className="text-xs text-black dark:text-white mt-1">{L ? "مستحق الدفع (ريال)" : "Pending Payment (SAR)"}</div>
           </CardContent>
         </Card>
       </div>

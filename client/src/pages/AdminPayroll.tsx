@@ -32,7 +32,7 @@ interface PayrollRecord {
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700", approved: "bg-blue-100 text-blue-700", paid: "bg-green-100 text-green-700",
+  pending: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", approved: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", paid: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
 };
 function getStatusLabels(L: boolean): Record<string, string> { return { pending: L ? "معلق" : "Pending", approved: L ? "معتمد" : "Approved", paid: L ? "مدفوع" : "Paid" }; }
 
@@ -179,13 +179,13 @@ export default function AdminPayroll() {
                     <p className="text-[10px] text-black/30 dark:text-white/30">{L ? "الأساسي" : "Basic"}</p>
                     <p className="font-bold text-sm text-black dark:text-white">{rec.baseSalary.toFixed(0)}</p>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
-                    <p className="text-[10px] text-green-600">{L ? "مكافآت" : "Bonuses"}</p>
-                    <p className="font-bold text-sm text-green-700">{rec.bonuses}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-lg p-2">
+                    <p className="text-[10px] text-black dark:text-white">{L ? "مكافآت" : "Bonuses"}</p>
+                    <p className="font-bold text-sm text-black dark:text-white">{rec.bonuses}</p>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
-                    <p className="text-[10px] text-red-500">{L ? "خصومات" : "Deductions"}</p>
-                    <p className="font-bold text-sm text-red-600">{rec.deductions}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-lg p-2">
+                    <p className="text-[10px] text-black dark:text-white">{L ? "خصومات" : "Deductions"}</p>
+                    <p className="font-bold text-sm text-black dark:text-white">{rec.deductions}</p>
                   </div>
                 </div>
 
@@ -199,13 +199,13 @@ export default function AdminPayroll() {
                     {L ? "حفظ" : "Save"}
                   </Button>
                   {rec.status !== "paid" && (
-                    <Button size="sm" className="h-8 text-xs bg-green-600 text-white gap-1"
+                    <Button size="sm" className="h-8 text-xs bg-black dark:bg-white text-white gap-1"
                       onClick={() => updateMutation.mutate({ id: rec.id, data: { status: "paid" } })}>
                       <CheckCircle className="w-3 h-3" /> {L ? "تأكيد الدفع" : "Confirm Payment"}
                     </Button>
                   )}
                   {rec.status === "paid" && rec.paidAt && (
-                    <span className="text-[11px] text-green-600 flex items-center gap-1">
+                    <span className="text-[11px] text-black dark:text-white flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" /> {L ? "دُفع" : "Paid"} {new Date(rec.paidAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                     </span>
                   )}

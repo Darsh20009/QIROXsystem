@@ -40,8 +40,8 @@ const SECTOR_COLORS = ["#000","#374151","#6b7280","#9ca3af","#d1d5db","#e5e7eb",
 
 function GrowthBadge({ pct }: { pct: number }) {
   if (pct === 0) return <span className="text-xs text-black/30 flex items-center gap-0.5"><Minus className="w-3 h-3" />0%</span>;
-  if (pct > 0) return <span className="text-xs text-green-600 flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" />{pct}%</span>;
-  return <span className="text-xs text-red-500 flex items-center gap-0.5"><ArrowDownRight className="w-3 h-3" />{Math.abs(pct)}%</span>;
+  if (pct > 0) return <span className="text-xs text-black dark:text-white flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" />{pct}%</span>;
+  return <span className="text-xs text-black dark:text-white flex items-center gap-0.5"><ArrowDownRight className="w-3 h-3" />{Math.abs(pct)}%</span>;
 }
 
 export default function AdminAnalytics() {
@@ -168,10 +168,10 @@ export default function AdminAnalytics() {
       {/* ── KPI Stats Row 1: Overall ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: L ? "إجمالي الإيرادات" : "Total Revenue", value: `${(stats.totalRevenue || 0).toLocaleString()}`, unit: "ر.س", icon: DollarSign, color: "text-green-500", bg: "bg-green-50 dark:bg-green-900/20" },
-          { label: L ? "إجمالي العملاء" : "Total Clients", value: stats.totalUsers || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: L ? "إجمالي الطلبات" : "Total Orders", value: stats.totalOrders || 0, icon: ShoppingCart, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
-          { label: L ? "طلبات معلقة" : "Pending Orders", value: stats.pendingOrders || 0, icon: Clock, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20" },
+          { label: L ? "إجمالي الإيرادات" : "Total Revenue", value: `${(stats.totalRevenue || 0).toLocaleString()}`, unit: "ر.س", icon: DollarSign, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+          { label: L ? "إجمالي العملاء" : "Total Clients", value: stats.totalUsers || 0, icon: Users, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+          { label: L ? "إجمالي الطلبات" : "Total Orders", value: stats.totalOrders || 0, icon: ShoppingCart, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+          { label: L ? "طلبات معلقة" : "Pending Orders", value: stats.pendingOrders || 0, icon: Clock, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
         ].map((s, i) => (
           <Card key={i} className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardContent className="pt-4 pb-4">
@@ -419,12 +419,12 @@ export default function AdminAnalytics() {
                 <p className="text-xl font-black text-black dark:text-white" data-testid="text-qmeet-total">{qmeet.totalMeetings}</p>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "إجمالي الاجتماعات" : "Total Meetings"}</p>
               </div>
-              <div className="text-center rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3">
-                <p className="text-xl font-black text-blue-600 dark:text-blue-400" data-testid="text-qmeet-month">{qmeet.thisMonthMeetings}</p>
+              <div className="text-center rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-3">
+                <p className="text-xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70" data-testid="text-qmeet-month">{qmeet.thisMonthMeetings}</p>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "هذا الشهر" : "This Month"}</p>
               </div>
-              <div className="text-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3">
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400" data-testid="text-qmeet-active">{qmeet.activeMeetings}</p>
+              <div className="text-center rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-3">
+                <p className="text-xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70" data-testid="text-qmeet-active">{qmeet.activeMeetings}</p>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "نشطة الآن" : "Active Now"}</p>
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function AdminAnalytics() {
         <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-              <Target className="w-4 h-4 text-emerald-500" />
+              <Target className="w-4 h-4 text-black dark:text-white" />
               معدل التحويل
             </CardTitle>
           </CardHeader>
@@ -477,9 +477,9 @@ export default function AdminAnalytics() {
                   <span className="font-bold text-black dark:text-white">{stats.totalUsers || 0}</span>
                 </div>
                 <div className={`text-[10px] px-2 py-1 rounded-full font-bold text-center ${
-                  (data?.conversionRate || 0) >= 60 ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" :
-                  (data?.conversionRate || 0) >= 30 ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
-                  "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                  (data?.conversionRate || 0) >= 60 ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" :
+                  (data?.conversionRate || 0) >= 30 ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" :
+                  "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
                 }`}>
                   {(data?.conversionRate || 0) >= 60 ? (L ? "ممتاز 🎉" : "Excellent 🎉") : (data?.conversionRate || 0) >= 30 ? (L ? "متوسط" : "Average") : (L ? "يحتاج تحسين" : "Needs Improvement")}
                 </div>
@@ -492,7 +492,7 @@ export default function AdminAnalytics() {
         <Card className="md:col-span-2 border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-              <Flame className="w-4 h-4 text-orange-500" />
+              <Flame className="w-4 h-4 text-black dark:text-white" />
               خريطة حرارة الصفحات (الأكثر زيارة)
             </CardTitle>
           </CardHeader>
@@ -501,7 +501,7 @@ export default function AdminAnalytics() {
               {(data?.pageHeatmap || []).slice(0, 7).map((p: any, i: number) => {
                 const max = (data?.pageHeatmap?.[0]?.visits || 1);
                 const pct = Math.round((p.visits / max) * 100);
-                const heat = pct >= 80 ? "bg-red-400" : pct >= 60 ? "bg-orange-400" : pct >= 40 ? "bg-amber-400" : pct >= 20 ? "bg-yellow-300" : "bg-gray-200 dark:bg-gray-700";
+                const heat = pct >= 80 ? "bg-black/[0.08] dark:bg-white/[0.1]" : pct >= 60 ? "bg-black/[0.08] dark:bg-white/[0.1]" : pct >= 40 ? "bg-black/[0.08] dark:bg-white/[0.1]" : pct >= 20 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-gray-200 dark:bg-gray-700";
                 return (
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-[10px] text-black/40 dark:text-white/40 w-4 text-center font-bold">{i + 1}</span>
@@ -524,7 +524,7 @@ export default function AdminAnalytics() {
           <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-500" />
+                <FileText className="w-4 h-4 text-black dark:text-white" />
                 {L ? "إحصائيات العقود الإلكترونية" : "Digital Contract Stats"}
               </CardTitle>
             </CardHeader>
@@ -532,9 +532,9 @@ export default function AdminAnalytics() {
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: L ? "إجمالي العقود" : "Total Contracts",    value: contractStats.total,       color: "text-black dark:text-white",   bg: "bg-black/5 dark:bg-white/5" },
-                  { label: L ? "بانتظار التوقيع" : "Awaiting Sign",    value: contractStats.pending,     color: "text-amber-600",               bg: "bg-amber-50 dark:bg-amber-900/20" },
-                  { label: L ? "موقّعة" : "Signed",                     value: contractStats.signed,      color: "text-green-600",               bg: "bg-green-50 dark:bg-green-900/20" },
-                  { label: L ? "موثّقة بـ OTP" : "OTP Verified",       value: contractStats.otpVerified, color: "text-blue-600",                bg: "bg-blue-50 dark:bg-blue-900/20" },
+                  { label: L ? "بانتظار التوقيع" : "Awaiting Sign",    value: contractStats.pending,     color: "text-black dark:text-white",               bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                  { label: L ? "موقّعة" : "Signed",                     value: contractStats.signed,      color: "text-black dark:text-white",               bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                  { label: L ? "موثّقة بـ OTP" : "OTP Verified",       value: contractStats.otpVerified, color: "text-black dark:text-white",                bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
                 ].map((s, i) => (
                   <div key={i} className={`rounded-xl p-3 text-center ${s.bg}`}>
                     <div className={`text-xl font-black ${s.color}`}>{s.value}</div>
@@ -545,18 +545,18 @@ export default function AdminAnalytics() {
               {contractStats.total > 0 && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-green-500" /> {L ? "نسبة التوقيع" : "Signing Rate"}</span>
+                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-black dark:text-white" /> {L ? "نسبة التوقيع" : "Signing Rate"}</span>
                     <span className="font-bold text-black dark:text-white">{Math.round((contractStats.signed / contractStats.total) * 100)}%</span>
                   </div>
                   <div className="h-1.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round((contractStats.signed / contractStats.total) * 100)}%` }} />
+                    <div className="h-full bg-black dark:bg-white rounded-full" style={{ width: `${Math.round((contractStats.signed / contractStats.total) * 100)}%` }} />
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-blue-500" /> {L ? "نسبة توثيق OTP" : "OTP Verification Rate"}</span>
+                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-black dark:text-white" /> {L ? "نسبة توثيق OTP" : "OTP Verification Rate"}</span>
                     <span className="font-bold text-black dark:text-white">{contractStats.signed > 0 ? Math.round((contractStats.otpVerified / contractStats.signed) * 100) : 0}%</span>
                   </div>
                   <div className="h-1.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${contractStats.signed > 0 ? Math.round((contractStats.otpVerified / contractStats.signed) * 100) : 0}%` }} />
+                    <div className="h-full bg-black dark:bg-white rounded-full" style={{ width: `${contractStats.signed > 0 ? Math.round((contractStats.otpVerified / contractStats.signed) * 100) : 0}%` }} />
                   </div>
                 </div>
               )}
@@ -589,7 +589,7 @@ export default function AdminAnalytics() {
         <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-purple-500" />
+              <UserCheck className="w-4 h-4 text-black dark:text-white" />
               {L ? "أداء الفريق" : "Team Performance"}
             </CardTitle>
           </CardHeader>
@@ -609,14 +609,14 @@ export default function AdminAnalytics() {
                       <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><ListChecks className="w-3 h-3" /> {emp.tasksCompleted}/{emp.tasksAssigned}</span>
                       <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> {emp.ordersHandled}</span>
                       <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><Clock className="w-3 h-3" /> {emp.attendanceDays} {L ? "يوم" : "d"}</span>
-                      <span className={`font-black text-xs ${emp.completionRate >= 80 ? "text-green-600" : emp.completionRate >= 50 ? "text-amber-600" : "text-black/50 dark:text-white/50"}`}>
+                      <span className={`font-black text-xs ${emp.completionRate >= 80 ? "text-black dark:text-white" : emp.completionRate >= 50 ? "text-black dark:text-white" : "text-black/50 dark:text-white/50"}`}>
                         {emp.completionRate}%
                       </span>
                     </div>
                   </div>
                   <div className="h-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${emp.completionRate >= 80 ? "bg-green-500" : emp.completionRate >= 50 ? "bg-amber-400" : "bg-gray-300 dark:bg-gray-600"}`}
+                      className={`h-full rounded-full transition-all ${emp.completionRate >= 80 ? "bg-black dark:bg-white" : emp.completionRate >= 50 ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-gray-300 dark:bg-gray-600"}`}
                       style={{ width: `${emp.completionRate}%` }}
                     />
                   </div>
@@ -643,7 +643,7 @@ export default function AdminAnalytics() {
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-500" />
+            <Activity className="w-4 h-4 text-black dark:text-white" />
             {L ? "مقارنة الإيرادات" : "Revenue Comparison"}: {new Date().getFullYear()} {L ? "مقابل" : "vs"} {new Date().getFullYear() - 1}
           </CardTitle>
         </CardHeader>

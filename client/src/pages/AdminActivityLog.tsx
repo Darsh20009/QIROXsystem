@@ -99,7 +99,7 @@ export default function AdminActivityLog() {
             <p className="text-xs text-black/35 dark:text-white/35">
               {L ? `${filtered.length} سجل` : `${filtered.length} entries`}
               {hasActiveFilters && (
-                <Badge variant="outline" className="mr-2 text-[10px] border-amber-300 text-amber-600 bg-amber-50">
+                <Badge variant="outline" className="mr-2 text-[10px] border-black/15 dark:border-white/15 text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]">
                   {L ? "فلتر نشط" : "Filtered"}
                 </Badge>
               )}
@@ -110,12 +110,12 @@ export default function AdminActivityLog() {
           <Button
             onClick={() => setShowFilters(v => !v)}
             variant="outline" size="sm"
-            className={`gap-2 border-black/10 dark:border-white/10 dark:text-white ${hasActiveFilters ? "bg-amber-50 border-amber-300 text-amber-700" : ""}`}
+            className={`gap-2 border-black/10 dark:border-white/10 dark:text-white ${hasActiveFilters ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/15 dark:border-white/15 text-black dark:text-white" : ""}`}
             data-testid="button-toggle-filters"
           >
             <Filter className="w-4 h-4" />
             {L ? "فلتر" : "Filter"}
-            {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+            {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
           </Button>
           <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 border-black/10 dark:border-white/10 dark:text-white">
             <Download className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function AdminActivityLog() {
                   />
                 </div>
                 {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-red-500 hover:text-red-600 hover:bg-red-50" data-testid="button-clear-filters">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" data-testid="button-clear-filters">
                     <X className="w-3.5 h-3.5" /> {L ? "مسح" : "Clear"}
                   </Button>
                 )}
@@ -181,7 +181,7 @@ export default function AdminActivityLog() {
           <Activity className="w-10 h-10 text-black/10 dark:text-white/10 mx-auto mb-3" />
           <p className="text-black/30 dark:text-white/30">{L ? "لا يوجد نشاط مسجل بعد" : "No activity logged yet"}</p>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-2 text-amber-600">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-2 text-black dark:text-white">
               {L ? "مسح الفلتر" : "Clear filter"}
             </Button>
           )}

@@ -23,10 +23,10 @@ import { useI18n } from "@/lib/i18n";
 function getTierLabels(L: boolean): Record<string, string> { return L ? { lite: "لايت", pro: "برو", infinite: "إنفنيت" } : { lite: "Lite", pro: "Pro", infinite: "Infinite" }; }
 function getPeriodLabels(L: boolean): Record<string, string> { return L ? { monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي" } : { monthly: "Monthly", sixmonth: "Semi-annual", annual: "Annual" }; }
 function getAddonStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
-  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700" },
-  active: { label: L ? "نشط" : "Active", color: "bg-green-100 text-green-700" },
+  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  active: { label: L ? "نشط" : "Active", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
   expired: { label: L ? "منتهي" : "Expired", color: "bg-gray-100 text-gray-500" },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-600" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
 };
 }
 
@@ -161,8 +161,8 @@ export default function AdminModConfig() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-          <Settings2 className="w-5 h-5 text-violet-600" />
+        <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+          <Settings2 className="w-5 h-5 text-black dark:text-white" />
         </div>
         <div>
           <h1 className="text-xl font-black text-black dark:text-white">{L ? "إعدادات حصص التعديل" : "Modification Quota Settings"}</h1>
@@ -177,7 +177,7 @@ export default function AdminModConfig() {
           <TabsTrigger value="addons">
             {L ? "طلبات الإضافة" : "Addon Requests"}
             {addons.filter((a: any) => a.status === 'pending').length > 0 && (
-              <span className="mr-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="mr-1 bg-black dark:bg-white text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                 {addons.filter((a: any) => a.status === 'pending').length}
               </span>
             )}
@@ -221,7 +221,7 @@ export default function AdminModConfig() {
                             </TableCell>
                             <TableCell className="text-sm font-medium">{PERIOD_LABELS[period]}</TableCell>
                             <TableCell>
-                              <span className="font-bold text-violet-700 dark:text-violet-400">{cfg.modificationsPerPeriod}</span>
+                              <span className="font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{cfg.modificationsPerPeriod}</span>
                             </TableCell>
                             <TableCell>
                               <span className="text-sm">{cfg.quotaMonths} {L ? (cfg.quotaMonths === 1 ? "شهر" : "أشهر") : "mo"}</span>
@@ -239,7 +239,7 @@ export default function AdminModConfig() {
                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditPlan(cfg)} data-testid={`button-edit-plan-${cfg.id}`}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => deletePlanMutation.mutate(cfg.id)} data-testid={`button-delete-plan-${cfg.id}`}>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-black dark:text-white hover:text-black dark:text-white" onClick={() => deletePlanMutation.mutate(cfg.id)} data-testid={`button-delete-plan-${cfg.id}`}>
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
@@ -293,7 +293,7 @@ export default function AdminModConfig() {
                           <TableCell className="font-bold text-sm">{tp.nameAr}</TableCell>
                           <TableCell className="text-xs text-black/50 dark:text-white/40 max-w-[160px] truncate">{tp.description || "—"}</TableCell>
                           <TableCell>
-                            <span className="font-black text-green-600 dark:text-green-400 flex items-center gap-1">{tp.price} <SARIcon size={11} className="opacity-60" /></span>
+                            <span className="font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">{tp.price} <SARIcon size={11} className="opacity-60" /></span>
                           </TableCell>
                           <TableCell>
                             <Switch
@@ -307,7 +307,7 @@ export default function AdminModConfig() {
                               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditPrice(tp)} data-testid={`button-edit-mod-type-${tp.id}`}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-600" onClick={() => deletePriceMutation.mutate(tp.id)} data-testid={`button-delete-mod-type-${tp.id}`}>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-black dark:text-white hover:text-black dark:text-white" onClick={() => deletePriceMutation.mutate(tp.id)} data-testid={`button-delete-mod-type-${tp.id}`}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
@@ -359,7 +359,7 @@ export default function AdminModConfig() {
                               <p className="text-sm">{a.order?.businessName || a.order?.serviceType || "—"}</p>
                               <p className="text-xs text-black/40 dark:text-white/30">{TIER_LABELS[a.order?.planTier] || ""} — {PERIOD_LABELS[a.order?.planPeriod] || ""}</p>
                             </TableCell>
-                            <TableCell className="font-bold text-green-600 flex items-center gap-1">1,000 <SARIcon size={11} className="opacity-60" /></TableCell>
+                            <TableCell className="font-bold text-black dark:text-white flex items-center gap-1">1,000 <SARIcon size={11} className="opacity-60" /></TableCell>
                             <TableCell>
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
                             </TableCell>
@@ -485,9 +485,9 @@ export default function AdminModConfig() {
                 <p className="text-xs text-black/50 dark:text-white/40">{addonDialogOpen.client?.email}</p>
                 <p className="text-xs">{L ? "الطلب:" : "Order:"} <strong>{addonDialogOpen.order?.businessName || addonDialogOpen.order?.serviceType}</strong></p>
                 <p className="text-xs">{L ? "الخطة:" : "Plan:"} <strong>{TIER_LABELS[addonDialogOpen.order?.planTier]} — {PERIOD_LABELS[addonDialogOpen.order?.planPeriod]}</strong></p>
-                <p className="text-xs">{L ? "المبلغ:" : "Amount:"} <strong className="text-green-600">1,000 {L ? "ريال" : "SAR"}</strong></p>
+                <p className="text-xs">{L ? "المبلغ:" : "Amount:"} <strong className="text-black dark:text-white">1,000 {L ? "ريال" : "SAR"}</strong></p>
                 {addonDialogOpen.paymentProofUrl && (
-                  <a href={addonDialogOpen.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">{L ? "عرض إثبات الدفع" : "View Payment Proof"}</a>
+                  <a href={addonDialogOpen.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-black dark:text-white underline">{L ? "عرض إثبات الدفع" : "View Payment Proof"}</a>
                 )}
               </div>
               <div>
@@ -495,10 +495,10 @@ export default function AdminModConfig() {
                 <Input value={addonNotes} onChange={e => setAddonNotes(e.target.value)} placeholder={L ? "اختياري..." : "Optional..."} data-testid="input-addon-notes" />
               </div>
               <div className="flex gap-2">
-                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-1.5 text-xs" onClick={() => approveAddonMutation.mutate({ id: addonDialogOpen.id, status: 'active', adminNotes: addonNotes })} disabled={approveAddonMutation.isPending} data-testid="button-approve-addon">
+                <Button className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-1.5 text-xs" onClick={() => approveAddonMutation.mutate({ id: addonDialogOpen.id, status: 'active', adminNotes: addonNotes })} disabled={approveAddonMutation.isPending} data-testid="button-approve-addon">
                   <CheckCircle2 className="w-4 h-4" /> {L ? "قبول وتفعيل" : "Accept & Activate"}
                 </Button>
-                <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50 font-bold gap-1.5 text-xs" onClick={() => approveAddonMutation.mutate({ id: addonDialogOpen.id, status: 'rejected', adminNotes: addonNotes })} disabled={approveAddonMutation.isPending} data-testid="button-reject-addon">
+                <Button variant="outline" className="flex-1 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] font-bold gap-1.5 text-xs" onClick={() => approveAddonMutation.mutate({ id: addonDialogOpen.id, status: 'rejected', adminNotes: addonNotes })} disabled={approveAddonMutation.isPending} data-testid="button-reject-addon">
                   <XCircle className="w-4 h-4" /> {L ? "رفض" : "Reject"}
                 </Button>
               </div>

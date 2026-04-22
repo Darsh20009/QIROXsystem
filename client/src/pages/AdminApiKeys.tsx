@@ -32,12 +32,12 @@ type ApiKey = {
 };
 
 const SCOPE_COLORS: Record<string, string> = {
-  orders:    "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
-  projects:  "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400",
-  invoices:  "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400",
-  stats:     "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
-  wallet:    "bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-400",
-  customers: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-400",
+  orders:    "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  projects:  "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  invoices:  "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  stats:     "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  wallet:    "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+  customers: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
 };
 const SCOPE_LABELS: Record<string, string> = {
   orders: "طلبات", projects: "مشاريع", invoices: "فواتير",
@@ -108,7 +108,7 @@ export default function AdminApiKeys() {
         <div className="relative z-10 flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-              <Key className="w-6 h-6 text-violet-400" />
+              <Key className="w-6 h-6 text-black/70 dark:text-white/70" />
             </div>
             <div>
               <h1 className="text-xl font-black text-white">{L ? "إدارة مفاتيح API" : "API Keys Management"}</h1>
@@ -118,9 +118,9 @@ export default function AdminApiKeys() {
           <div className="grid grid-cols-4 gap-3">
             {[
               { val: stats.total, label: L ? "إجمالي" : "Total", color: "text-white" },
-              { val: stats.active, label: L ? "نشط" : "Active", color: "text-green-400" },
-              { val: stats.clients, label: L ? "عميل" : "Clients", color: "text-blue-400" },
-              { val: stats.totalRequests.toLocaleString(L ? "ar" : "en"), label: L ? "طلب API" : "API Requests", color: "text-violet-400" },
+              { val: stats.active, label: L ? "نشط" : "Active", color: "text-black/70 dark:text-white/70" },
+              { val: stats.clients, label: L ? "عميل" : "Clients", color: "text-black/70 dark:text-white/70" },
+              { val: stats.totalRequests.toLocaleString(L ? "ar" : "en"), label: L ? "طلب API" : "API Requests", color: "text-black/70 dark:text-white/70" },
             ].map(({ val, label, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl px-4 py-2 text-center">
                 <p className={`text-xl font-black ${color}`}>{val}</p>
@@ -166,14 +166,14 @@ export default function AdminApiKeys() {
               data-testid={`card-key-${key.id || key._id}`}
               className={`bg-white dark:bg-gray-900 border rounded-2xl p-4 cursor-pointer hover:shadow-sm transition-all ${key.isActive ? "border-black/[0.06] dark:border-white/[0.06]" : "border-black/[0.04] dark:border-white/[0.04] opacity-60"}`}>
               <div className="flex items-center gap-4">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${key.isActive ? "bg-violet-100 dark:bg-violet-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
-                  <Key className={`w-4 h-4 ${key.isActive ? "text-violet-600 dark:text-violet-400" : "text-black/20 dark:text-white/20"}`} />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${key.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                  <Key className={`w-4 h-4 ${key.isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/20 dark:text-white/20"}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-bold text-sm text-black dark:text-white">{key.name}</p>
-                    {key.projectName && <span className="text-[10px] bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">{key.projectName}</span>}
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700"}`}>
+                    {key.projectName && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10 dark:border-black dark:border-white">{key.projectName}</span>}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700"}`}>
                       {key.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                     </span>
                   </div>
@@ -205,7 +205,7 @@ export default function AdminApiKeys() {
             <>
               <DialogHeader>
                 <DialogTitle className="text-right font-black text-lg flex items-center gap-2">
-                  <Key className="w-5 h-5 text-violet-500" /> {L ? "تفاصيل المفتاح" : "Key Details"}
+                  <Key className="w-5 h-5 text-black dark:text-white" /> {L ? "تفاصيل المفتاح" : "Key Details"}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
@@ -213,7 +213,7 @@ export default function AdminApiKeys() {
                 <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl p-4 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-black dark:text-white">{selected.name}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${selected.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${selected.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
                       {selected.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                     </span>
                   </div>
@@ -254,7 +254,7 @@ export default function AdminApiKeys() {
                     onClick={() => { toggleMutation.mutate({ id: selected.id || selected._id, isActive: !selected.isActive }); setSelected(null); }}
                     disabled={toggleMutation.isPending}
                     data-testid="btn-toggle-key"
-                    className={`flex-1 rounded-xl gap-2 ${selected.isActive ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"}`}
+                    className={`flex-1 rounded-xl gap-2 ${selected.isActive ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-black dark:bg-white hover:bg-black dark:bg-white text-white"}`}
                   >
                     {selected.isActive ? <><PowerOff className="w-4 h-4" /> {L ? "تعطيل المفتاح" : "Disable Key"}</> : <><Power className="w-4 h-4" /> {L ? "تفعيل المفتاح" : "Enable Key"}</>}
                   </Button>
@@ -263,7 +263,7 @@ export default function AdminApiKeys() {
                     onClick={() => { if (confirm(L ? "حذف هذا المفتاح نهائياً؟" : "Permanently delete this key?")) deleteMutation.mutate(selected.id || selected._id); }}
                     disabled={deleteMutation.isPending}
                     data-testid="btn-delete-key"
-                    className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-xl text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

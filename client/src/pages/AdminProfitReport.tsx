@@ -9,24 +9,24 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 
 function getCategoryLabels(L: boolean): Record<string, { label: string; color: string }> { return {
-  hosting: { label: L ? "استضافة" : "Hosting", color: "bg-blue-50 text-blue-700" },
-  domain: { label: L ? "دومين" : "Domain", color: "bg-purple-50 text-purple-700" },
-  freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-orange-50 text-orange-700" },
-  license: { label: L ? "ترخيص" : "License", color: "bg-amber-50 text-amber-700" },
-  ads: { label: L ? "إعلانات" : "Ads", color: "bg-pink-50 text-pink-700" },
-  design: { label: L ? "تصميم" : "Design", color: "bg-violet-50 text-violet-700" },
-  salary: { label: L ? "راتب" : "Salary", color: "bg-teal-50 text-teal-700" },
-  commission: { label: L ? "عمولة" : "Commission", color: "bg-cyan-50 text-cyan-700" },
+  hosting: { label: L ? "استضافة" : "Hosting", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  domain: { label: L ? "دومين" : "Domain", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  license: { label: L ? "ترخيص" : "License", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  ads: { label: L ? "إعلانات" : "Ads", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  design: { label: L ? "تصميم" : "Design", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  salary: { label: L ? "راتب" : "Salary", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  commission: { label: L ? "عمولة" : "Commission", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
   other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
 };
 }
 
 function getStatusLabels(L: boolean): Record<string, { label: string; color: string }> { return {
-  pending: { label: L ? "قيد المراجعة" : "Pending", color: "text-amber-600 bg-amber-50 border-amber-100" },
-  approved: { label: L ? "موافق عليه" : "Approved", color: "text-blue-600 bg-blue-50 border-blue-100" },
-  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
-  completed: { label: L ? "مكتمل" : "Completed", color: "text-green-600 bg-green-50 border-green-100" },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-600 bg-red-50 border-red-100" },
+  pending: { label: L ? "قيد المراجعة" : "Pending", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  approved: { label: L ? "موافق عليه" : "Approved", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  completed: { label: L ? "مكتمل" : "Completed", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
 };
 }
 
@@ -90,7 +90,7 @@ export default function AdminProfitReport() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-xl font-black text-black flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center">
+            <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center">
               <TrendingUp className="w-4.5 h-4.5 text-white" />
             </div>
             {L ? "تقرير التكاليف والأرباح" : "Cost & Profit Report"}
@@ -107,29 +107,29 @@ export default function AdminProfitReport() {
         <>
           {/* Totals */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-blue-500" />
-                <p className="text-[11px] text-blue-500 font-bold">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <TrendingUp className="w-4 h-4 text-black dark:text-white" />
+                <p className="text-[11px] text-black dark:text-white font-bold">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
               </div>
-              <p className="text-2xl font-black text-blue-700">{totals.revenue.toLocaleString()}</p>
-              <p className="text-[10px] text-blue-400 flex items-center gap-1"><SARIcon size={10} /> {L ? "من" : "from"} {orders.length} {L ? "طلب" : "orders"}</p>
+              <p className="text-2xl font-black text-black dark:text-white">{totals.revenue.toLocaleString()}</p>
+              <p className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><SARIcon size={10} /> {L ? "من" : "from"} {orders.length} {L ? "طلب" : "orders"}</p>
             </div>
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingDown className="w-4 h-4 text-red-500" />
-                <p className="text-[11px] text-red-500 font-bold">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
+                <TrendingDown className="w-4 h-4 text-black dark:text-white" />
+                <p className="text-[11px] text-black dark:text-white font-bold">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
               </div>
-              <p className="text-2xl font-black text-red-700">{totals.expenses.toLocaleString()}</p>
-              <p className="text-[10px] text-red-400 flex items-center gap-1"><SARIcon size={10} /> {L ? "مصروف" : "expenses"}</p>
+              <p className="text-2xl font-black text-black dark:text-white">{totals.expenses.toLocaleString()}</p>
+              <p className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><SARIcon size={10} /> {L ? "مصروف" : "expenses"}</p>
             </div>
-            <div className={`border rounded-2xl p-5 ${totals.netProfit >= 0 ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
+            <div className={`border rounded-2xl p-5 ${totals.netProfit >= 0 ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10"}`}>
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className={`w-4 h-4 ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`} />
-                <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+                <DollarSign className={`w-4 h-4 ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`} />
+                <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
               </div>
-              <p className={`text-2xl font-black ${totals.netProfit >= 0 ? "text-green-700" : "text-orange-700"}`}>{totals.netProfit.toLocaleString()}</p>
-              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-green-500" : "text-orange-500"}`}><SARIcon size={10} /> {L ? "صافي" : "net"}</p>
+              <p className={`text-2xl font-black ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{totals.netProfit.toLocaleString()}</p>
+              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}><SARIcon size={10} /> {L ? "صافي" : "net"}</p>
             </div>
             <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -194,12 +194,12 @@ export default function AdminProfitReport() {
                 <span>{L ? "صافي الربح" : "Net Profit"} {overallMargin}%</span>
               </div>
               <div className="h-4 bg-black/[0.04] rounded-full overflow-hidden flex">
-                <div className="h-full bg-red-400 transition-all" style={{ width: `${Math.min((totals.expenses / totals.revenue) * 100, 100)}%` }} />
-                <div className="h-full bg-green-400 flex-1" />
+                <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] transition-all" style={{ width: `${Math.min((totals.expenses / totals.revenue) * 100, 100)}%` }} />
+                <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] flex-1" />
               </div>
               <div className="flex gap-4 mt-2 text-[10px]">
-                <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />{L ? "تكاليف" : "Expenses"}</span>
-                <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
+                <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "تكاليف" : "Expenses"}</span>
+                <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
               </div>
             </div>
           )}
@@ -268,7 +268,7 @@ export default function AdminProfitReport() {
                             {order.serviceType && <span className="text-[9px] text-black/30">{order.serviceType}</span>}
                           </div>
                           <div className="flex items-center gap-3 mt-1">
-                            <MiniBar value={order.revenue} max={maxRevenue} color="bg-blue-400" />
+                            <MiniBar value={order.revenue} max={maxRevenue} color="bg-black/[0.08] dark:bg-white/[0.1]" />
                             <span className="text-[10px] text-black/30">#{order.orderId?.slice(-8)}</span>
                             {order.expenseCount > 0 && (
                               <span className="text-[10px] text-black/30">{order.expenseCount} {L ? "مصروف" : "expenses"}</span>
@@ -278,18 +278,18 @@ export default function AdminProfitReport() {
                         <div className="flex items-center gap-4 text-left flex-shrink-0">
                           <div className="text-left">
                             <p className="text-[10px] text-black/30">{L ? "إيراد" : "Revenue"}</p>
-                            <p className="text-xs font-bold text-blue-600">{order.revenue.toLocaleString()}</p>
+                            <p className="text-xs font-bold text-black dark:text-white">{order.revenue.toLocaleString()}</p>
                           </div>
                           <div className="text-left">
                             <p className="text-[10px] text-black/30">{L ? "تكاليف" : "Expenses"}</p>
-                            <p className="text-xs font-bold text-red-500">{order.totalExpenses.toLocaleString()}</p>
+                            <p className="text-xs font-bold text-black dark:text-white">{order.totalExpenses.toLocaleString()}</p>
                           </div>
                           <div className="text-left">
                             <p className="text-[10px] text-black/30">{L ? "صافي" : "Net"}</p>
-                            <p className={`text-xs font-black ${isProfit ? "text-green-600" : "text-orange-600"}`}>{order.netProfit.toLocaleString()}</p>
+                            <p className={`text-xs font-black ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{order.netProfit.toLocaleString()}</p>
                           </div>
                           <div className="w-12 text-left">
-                            <p className={`text-xs font-bold ${isProfit ? "text-green-600" : "text-orange-600"}`}>{order.margin}%</p>
+                            <p className={`text-xs font-bold ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{order.margin}%</p>
                           </div>
                           {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-black/25 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-black/25 flex-shrink-0" />}
                         </div>
@@ -304,13 +304,13 @@ export default function AdminProfitReport() {
                               <div key={i} className="flex items-center gap-3">
                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
                                 <p className="text-xs text-black/50 flex-1">{e.description}</p>
-                                <p className="text-xs font-bold text-red-500 flex items-center gap-1">{Number(e.amount).toLocaleString()} <SARIcon size={10} /></p>
+                                <p className="text-xs font-bold text-black dark:text-white flex items-center gap-1">{Number(e.amount).toLocaleString()} <SARIcon size={10} /></p>
                               </div>
                             );
                           })}
                           <div className="pt-1.5 mt-1.5 border-t border-black/[0.06] flex justify-between">
                             <p className="text-[10px] text-black/30">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
-                            <p className="text-xs font-black text-red-600 flex items-center gap-1">{order.totalExpenses.toLocaleString()} <SARIcon size={10} /></p>
+                            <p className="text-xs font-black text-black dark:text-white flex items-center gap-1">{order.totalExpenses.toLocaleString()} <SARIcon size={10} /></p>
                           </div>
                         </div>
                       )}

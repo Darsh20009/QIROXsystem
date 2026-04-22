@@ -63,19 +63,19 @@ const emptyBundle: PlanBundle = {
 
 const TIER_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
 const TIER_COLORS: Record<string, string> = {
-  lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600",
-  infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500",
+  lite: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white", pro: "from-black dark:from-white to-black dark:to-white",
+  infinite: "from-gray-700 to-black", custom: "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white",
 };
 function getTierLabels(L: boolean): Record<string, string> { return { lite: L ? "لايت" : "Lite", pro: L ? "برو" : "Pro", infinite: L ? "إنفينتي" : "Infinite", custom: L ? "مخصص" : "Custom" }; }
 
 function getCategoryLabels(L: boolean): Record<string, { label: string; color: string }> {
   return {
-    device:   { label: L ? "جهاز / معدات" : "Device / Equipment",  color: "bg-blue-50 text-blue-700 border-blue-200" },
-    hosting:  { label: L ? "استضافة" : "Hosting",                  color: "bg-purple-50 text-purple-700 border-purple-200" },
-    domain:   { label: L ? "دومين" : "Domain",                     color: "bg-green-50 text-green-700 border-green-200" },
-    email:    { label: L ? "بريد إلكتروني" : "Email",              color: "bg-orange-50 text-orange-700 border-orange-200" },
-    gift:     { label: L ? "هدية" : "Gift",                        color: "bg-pink-50 text-pink-700 border-pink-200" },
-    software: { label: L ? "برمجيات" : "Software",                 color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    device:   { label: L ? "جهاز / معدات" : "Device / Equipment",  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    hosting:  { label: L ? "استضافة" : "Hosting",                  color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    domain:   { label: L ? "دومين" : "Domain",                     color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    email:    { label: L ? "بريد إلكتروني" : "Email",              color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    gift:     { label: L ? "هدية" : "Gift",                        color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    software: { label: L ? "برمجيات" : "Software",                 color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
     other:    { label: L ? "أخرى" : "Other",                       color: "bg-gray-50 text-gray-600 border-gray-200" },
   };
 }
@@ -337,7 +337,7 @@ export default function AdminProducts() {
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-20 text-center" data-testid="products-error-state">
-          <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
+          <AlertCircle className="w-12 h-12 text-black/70 dark:text-white/70 mb-3" />
           <p className="text-sm font-medium text-black/60 dark:text-white/60 mb-1">{L ? "حدث خطأ أثناء تحميل المنتجات" : "Failed to load products"}</p>
           <p className="text-xs text-black/30 dark:text-white/30 mb-4">{L ? "تأكد من اتصالك بالإنترنت وحاول مرة أخرى" : "Check your connection and try again"}</p>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => refetch()} data-testid="button-retry-products">
@@ -378,12 +378,12 @@ export default function AdminProducts() {
                     </div>
                   )}
                   {(p as any).linkedPlanSlug && (
-                    <div className="absolute bottom-2 left-2 bg-cyan-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <div className="absolute bottom-2 left-2 bg-black dark:bg-white text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5" />{L ? "باقة" : "Bundle"}
                     </div>
                   )}
                   {shipCount > 0 && (
-                    <div className="absolute bottom-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <div className="absolute bottom-2 right-2 bg-black dark:bg-white text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <Truck className="w-2.5 h-2.5" />{shipCount} شركة شحن
                     </div>
                   )}
@@ -422,7 +422,7 @@ export default function AdminProducts() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="w-8 h-8 text-red-400 hover:text-red-600"
+                        className="w-8 h-8 text-black/70 dark:text-white/70 hover:text-black dark:text-white"
                         onClick={() => { if (confirm(L ? "هل أنت متأكد من الحذف؟" : "Are you sure you want to delete?")) deleteMutation.mutate(p.id); }}
                         data-testid={`button-delete-${p.id}`}
                       >
@@ -456,13 +456,13 @@ export default function AdminProducts() {
               <TabsTrigger value="bundles" className="text-xs gap-1">
                 <Crown className="w-3 h-3" />{L ? "الباقات" : "Bundles"}
                 {form.planBundles.length > 0 && (
-                  <span className="bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.planBundles.length}</span>
+                  <span className="bg-black dark:bg-white text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.planBundles.length}</span>
                 )}
               </TabsTrigger>
               <TabsTrigger value="shipping" className="text-xs gap-1">
                 <Truck className="w-3 h-3" />{L ? "الشحن" : "Shipping"}
                 {form.shippingProviders.length > 0 && (
-                  <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.shippingProviders.length}</span>
+                  <span className="bg-black dark:bg-white text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.shippingProviders.length}</span>
                 )}
               </TabsTrigger>
               <TabsTrigger value="advanced" className="text-xs gap-1"><Sparkles className="w-3 h-3" />{L ? "متقدم" : "Advanced"}</TabsTrigger>
@@ -525,15 +525,15 @@ export default function AdminProducts() {
 
             {/* ── TAB: PLAN BUNDLES ── */}
             <TabsContent value="bundles" className="space-y-4">
-              <div className="flex items-start justify-between gap-3 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-2xl border border-violet-200/60 dark:border-violet-700/30">
+              <div className="flex items-start justify-between gap-3 p-4 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                 <div>
-                  <p className="text-sm font-bold text-violet-800 dark:text-violet-300 flex items-center gap-2">
+                  <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-2">
                     <Crown className="w-4 h-4" />
                     باقات مرفقة بهذا المنتج
                   </p>
-                  <p className="text-[11px] text-violet-600 dark:text-violet-400 mt-0.5">{L ? "عند شراء المنتج، يختار العميل إحدى الباقات المرفقة ويتم تسعيرها مع المنتج" : "When purchasing, the client selects an attached bundle which is priced with the product"}</p>
+                  <p className="text-[11px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5">{L ? "عند شراء المنتج، يختار العميل إحدى الباقات المرفقة ويتم تسعيرها مع المنتج" : "When purchasing, the client selects an attached bundle which is priced with the product"}</p>
                 </div>
-                <Button size="sm" variant="outline" className="border-violet-300 dark:border-violet-600 text-violet-700 dark:text-violet-300 text-xs shrink-0"
+                <Button size="sm" variant="outline" className="border-black/15 dark:border-white/15 dark:border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs shrink-0"
                   onClick={() => setForm(f => ({ ...f, planBundles: [...f.planBundles, { ...emptyBundle }] }))}
                   data-testid="btn-add-bundle">
                   <Plus className="w-3.5 h-3.5 ml-1" /> إضافة باقة
@@ -555,13 +555,13 @@ export default function AdminProducts() {
                       <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                         className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl overflow-hidden"
                         data-testid={`bundle-card-${idx}`}>
-                        <div className={`h-1 bg-gradient-to-r ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"}`} />
+                        <div className={`h-1 bg-gradient-to-r ${TIER_COLORS[bundle.planTier] || "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white"}`} />
                         <div className="p-4 space-y-3">
 
                           {/* Header row */}
                           <div className="flex items-center gap-2 justify-between">
                             <div className="flex items-center gap-2">
-                              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"} flex items-center justify-center`}>
+                              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_COLORS[bundle.planTier] || "from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white"} flex items-center justify-center`}>
                                 <TierIcon className="w-4 h-4 text-white" />
                               </div>
                               <span className="text-sm font-bold text-black dark:text-white">
@@ -569,14 +569,14 @@ export default function AdminProducts() {
                               </span>
                             </div>
                             <button onClick={() => setForm(f => ({ ...f, planBundles: f.planBundles.filter((_, i) => i !== idx) }))}
-                              className="text-red-400 hover:text-red-600 transition-colors" data-testid={`btn-remove-bundle-${idx}`}>
+                              className="text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-colors" data-testid={`btn-remove-bundle-${idx}`}>
                               <X className="w-4 h-4" />
                             </button>
                           </div>
 
                           {/* ── Plan Picker from System ── */}
-                          <div className="rounded-xl border border-violet-200 dark:border-violet-700/50 bg-violet-50/60 dark:bg-violet-900/15 p-3 space-y-2">
-                            <p className="text-[10px] font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 uppercase tracking-wide">
+                          <div className="rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-3 space-y-2">
+                            <p className="text-[10px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1.5 uppercase tracking-wide">
                               <Crown className="w-3 h-3" /> اختر من باقات النظام (يملأ التفاصيل تلقائياً)
                             </p>
                             <Select
@@ -627,7 +627,7 @@ export default function AdminProducts() {
                               </SelectContent>
                             </Select>
                             {linkedPlan && (
-                              <p className="text-[10px] text-violet-600 dark:text-violet-400 flex items-center gap-1">
+                              <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">
                                 <CheckSquare className="w-3 h-3" />
                                 تم ملء التفاصيل من باقة "{linkedPlan.nameAr || linkedPlan.name}" — يمكنك تعديلها أدناه
                               </p>
@@ -661,7 +661,7 @@ export default function AdminProducts() {
                           <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
                             <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03]">
                               <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-green-500" />
+                                <DollarSign className="w-4 h-4 text-black dark:text-white" />
                                 <div>
                                   <p className="text-xs font-bold text-black/70 dark:text-white/70">{L ? "الباقة مجانية عند شراء الجهاز" : "Bundle is free with device purchase"}</p>
                                   <p className="text-[10px] text-black/35 dark:text-white/35">{L ? 'سيظهر للعميل "مجاناً" عند اختيار هذه الباقة' : 'Client will see "Free" when selecting this bundle'}</p>
@@ -683,7 +683,7 @@ export default function AdminProducts() {
                                   if (origPrice > 0 && bundleNumPrice < origPrice) {
                                     const saving = origPrice - bundleNumPrice;
                                     return (
-                                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                                      <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1 flex items-center gap-1">
                                         <Sparkles className="w-3 h-3" />
                                         السعر الأصلي للباقة {origPrice.toLocaleString()} ر.س — توفير {saving.toLocaleString()} ر.س
                                       </p>
@@ -720,13 +720,13 @@ export default function AdminProducts() {
             {/* ── TAB: SHIPPING ── */}
             <TabsContent value="shipping" className="space-y-4">
               {/* Requires shipping toggle */}
-              <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200/60 dark:border-amber-700/30">
+              <div className="flex items-center justify-between p-4 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                 <div>
-                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                  <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-2">
                     <Truck className="w-4 h-4" />
                     هذا المنتج يحتاج شحن
                   </p>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">{L ? "سيُطلب من العميل عنوان توصيل عند الطلب" : "Client will be asked for a delivery address when ordering"}</p>
+                  <p className="text-[11px] text-black dark:text-white dark:text-black dark:text-white mt-0.5">{L ? "سيُطلب من العميل عنوان توصيل عند الطلب" : "Client will be asked for a delivery address when ordering"}</p>
                 </div>
                 <Switch checked={form.requiresShipping} onCheckedChange={v => setForm(f => ({ ...f, requiresShipping: v }))} data-testid="switch-requires-shipping" />
               </div>
@@ -769,10 +769,10 @@ export default function AdminProducts() {
                             <div className="flex items-center gap-3">
                               <div className="text-right hidden sm:block">
                                 <div className="flex items-center gap-2 text-[10px] text-black/40 dark:text-white/40">
-                                  <MapPin className="w-3 h-3 text-blue-400" />
+                                  <MapPin className="w-3 h-3 text-black/70 dark:text-white/70" />
                                   <span className="flex items-center gap-0.5">{company.basePrice} <SARIcon size={9} className="opacity-60" /></span>
                                   <span className="text-black/20 dark:text-white/20">|</span>
-                                  <Globe className="w-3 h-3 text-amber-400" />
+                                  <Globe className="w-3 h-3 text-black/70 dark:text-white/70" />
                                   <span className="flex items-center gap-0.5">{company.outsideCityPrice} <SARIcon size={9} className="opacity-60" /></span>
                                 </div>
                                 <p className="text-[9px] text-black/25 dark:text-white/25 flex items-center gap-1 mt-0.5 justify-end">
@@ -795,7 +795,7 @@ export default function AdminProducts() {
                               className="mt-3 grid grid-cols-2 gap-2 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]"
                             >
                               <div>
-                                <label className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1 block">
+                                <label className="text-[10px] font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 flex items-center gap-1 block">
                                   <MapPin className="w-2.5 h-2.5" /> سعر مخصص داخل الرياض (<SARIcon size={8} className="opacity-60" />)
                                 </label>
                                 <Input
@@ -808,7 +808,7 @@ export default function AdminProducts() {
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1 block">
+                                <label className="text-[10px] font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 flex items-center gap-1 block">
                                   <Globe className="w-2.5 h-2.5" /> سعر مخصص خارج الرياض (<SARIcon size={8} className="opacity-60" />)
                                 </label>
                                 <Input
@@ -837,14 +837,14 @@ export default function AdminProducts() {
 
               {/* Summary */}
               {form.shippingProviders.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200/60 dark:border-green-700/30">
-                  <p className="text-[11px] font-bold text-green-700 dark:text-green-400 w-full flex items-center gap-1.5 mb-1">
+                <div className="flex flex-wrap gap-2 p-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                  <p className="text-[11px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 w-full flex items-center gap-1.5 mb-1">
                     <Truck className="w-3.5 h-3.5" /> شركات الشحن المرتبطة:
                   </p>
                   {form.shippingProviders.map(sp => {
                     const c = shippingCompanies?.find(x => x.id === sp.companyId);
                     return (
-                      <span key={sp.companyId} className="text-[10px] bg-white dark:bg-[#222] border border-green-200 dark:border-green-700/40 px-2 py-0.5 rounded-full text-green-700 dark:text-green-400 font-medium flex items-center gap-1">
+                      <span key={sp.companyId} className="text-[10px] bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-2 py-0.5 rounded-full text-black dark:text-white dark:text-black/70 dark:text-white/70 font-medium flex items-center gap-1">
                         {c?.logo} {sp.nameAr}
                       </span>
                     );
@@ -861,7 +861,7 @@ export default function AdminProducts() {
               </div>
               <div>
                 <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 flex items-center gap-1.5 block">
-                  <Sparkles className="w-3 h-3 text-cyan-500" /> ربط بباقة نظام (اختياري)
+                  <Sparkles className="w-3 h-3 text-black dark:text-white" /> ربط بباقة نظام (اختياري)
                 </label>
                 <Select value={form.linkedPlanSlug || "none"} onValueChange={v => setForm(f => ({ ...f, linkedPlanSlug: v === "none" ? "" : v }))}>
                   <SelectTrigger data-testid="select-linked-plan"><SelectValue placeholder={L ? "لا توجد باقة مرتبطة" : "No linked plan"} /></SelectTrigger>
@@ -875,7 +875,7 @@ export default function AdminProducts() {
                   </SelectContent>
                 </Select>
                 {form.linkedPlanSlug && (
-                  <p className="text-[10px] text-cyan-600 mt-1 flex items-center gap-1">
+                  <p className="text-[10px] text-black dark:text-white mt-1 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />{L ? "سيظهر للعميل أن هذا المنتج يشمل باقة نظام" : "Client will see that this product includes a system plan"}
                   </p>
                 )}

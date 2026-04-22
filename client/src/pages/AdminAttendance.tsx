@@ -18,10 +18,10 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  admin: "bg-red-50 text-red-700", manager: "bg-purple-50 text-purple-700",
-  developer: "bg-blue-50 text-blue-700", designer: "bg-pink-50 text-pink-700",
-  support: "bg-teal-50 text-teal-700", accountant: "bg-green-50 text-green-700",
-  sales: "bg-orange-50 text-orange-700", sales_manager: "bg-amber-50 text-amber-700",
+  admin: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+  developer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", designer: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+  support: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", accountant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+  sales: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", sales_manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
 };
 
 function timeSince(date: string | Date) {
@@ -42,9 +42,9 @@ function formatTime(date: string | Date) {
 
 function AvatarInitial({ name, role }: { name: string; role: string }) {
   const colors: Record<string, string> = {
-    admin: "bg-red-600", manager: "bg-purple-600", developer: "bg-blue-600",
-    designer: "bg-pink-600", support: "bg-teal-600", accountant: "bg-green-600",
-    sales: "bg-orange-600", sales_manager: "bg-amber-600", merchant: "bg-cyan-600",
+    admin: "bg-black dark:bg-white", manager: "bg-black dark:bg-white", developer: "bg-black dark:bg-white",
+    designer: "bg-black dark:bg-white", support: "bg-black dark:bg-white", accountant: "bg-black dark:bg-white",
+    sales: "bg-black dark:bg-white", sales_manager: "bg-black dark:bg-white", merchant: "bg-black dark:bg-white",
   };
   return (
     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${colors[role] || "bg-gray-500"}`}>
@@ -94,9 +94,9 @@ export default function AdminAttendance() {
   const absentToday = filtered.filter((d: any) => !d.todayAttendance);
 
   const statsCards = [
-    { label: "حاضر الآن", count: presentToday.length, color: "bg-green-50 text-green-700 border-green-100", dot: "bg-green-500" },
-    { label: "انصرف اليوم", count: checkedOutToday.length, color: "bg-blue-50 text-blue-700 border-blue-100", dot: "bg-blue-400" },
-    { label: "غائب اليوم", count: absentToday.length, color: "bg-red-50 text-red-700 border-red-100", dot: "bg-red-400" },
+    { label: "حاضر الآن", count: presentToday.length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black dark:bg-white" },
+    { label: "انصرف اليوم", count: checkedOutToday.length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black/[0.08] dark:bg-white/[0.1]" },
+    { label: "غائب اليوم", count: absentToday.length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10", dot: "bg-black/[0.08] dark:bg-white/[0.1]" },
     { label: "إجمالي الفريق", count: filtered.length, color: "bg-black/[0.03] text-black/60 border-black/[0.06]", dot: "bg-black/30" },
   ];
 
@@ -117,10 +117,10 @@ export default function AdminAttendance() {
   }
 
   const activityLabels: Record<string, { label: string; color: string; icon: any }> = {
-    active: { label: "نشط", color: "text-green-600 bg-green-50 border-green-100", icon: Activity },
-    idle: { label: "خامل", color: "text-yellow-600 bg-yellow-50 border-yellow-100", icon: Clock },
-    inactive: { label: "غير نشط", color: "text-red-500 bg-red-50 border-red-100", icon: AlertCircle },
-    "checked-out": { label: "انصرف", color: "text-blue-600 bg-blue-50 border-blue-100", icon: LogOut },
+    active: { label: "نشط", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Activity },
+    idle: { label: "خامل", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
+    inactive: { label: "غير نشط", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
+    "checked-out": { label: "انصرف", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: LogOut },
     absent: { label: "غائب", color: "text-black/40 bg-black/[0.03] border-black/[0.06]", icon: XCircle },
   };
 
@@ -195,7 +195,7 @@ export default function AdminAttendance() {
           {presentToday.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-pulse" />
                 <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "حاضرون الآن" : "Present Now"} ({presentToday.length})</p>
               </div>
               <div className="grid gap-3">
@@ -212,7 +212,7 @@ export default function AdminAttendance() {
                       <div className="flex items-start gap-3">
                         <div className="relative">
                           <AvatarInitial name={d.user.fullName} role={d.user.role} />
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-black dark:bg-white border-2 border-white" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -237,7 +237,7 @@ export default function AdminAttendance() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={e => e.stopPropagation()}
-                                className="text-[11px] text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                                className="text-[11px] text-black dark:text-white hover:text-black dark:text-white flex items-center gap-1"
                               >
                                 <MapPin className="w-3 h-3" />{L ? "عرض الموقع" : "View Location"}
                               </a>
@@ -249,7 +249,7 @@ export default function AdminAttendance() {
                         </div>
                         <div className="text-left">
                           {att.locationHistory?.length > 0 && (
-                            <div className="flex items-center gap-1 text-[10px] text-blue-500 mb-1">
+                            <div className="flex items-center gap-1 text-[10px] text-black dark:text-white mb-1">
                               <Navigation className="w-2.5 h-2.5" />
                               {att.locationHistory.length} {L ? "نقطة" : "points"}
                             </div>
@@ -270,7 +270,7 @@ export default function AdminAttendance() {
           {checkedOutToday.length > 0 && viewMode === "today" && (
             <div>
               <div className="flex items-center gap-2 mb-2 mt-4">
-                <div className="w-2 h-2 rounded-full bg-blue-400" />
+                <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                 <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "انصرفوا اليوم" : "Checked Out Today"} ({checkedOutToday.length})</p>
               </div>
               <div className="grid gap-2">
@@ -291,7 +291,7 @@ export default function AdminAttendance() {
                             <span className="text-[10px] text-black/30 flex items-center gap-0.5">
                               <LogOut className="w-2.5 h-2.5" />{formatTime(att.checkOut, L)}
                             </span>
-                            <span className="text-[10px] font-semibold text-blue-600">
+                            <span className="text-[10px] font-semibold text-black dark:text-white">
                               {att.workHours?.toFixed(1)} {L ? "ساعة" : "hrs"}
                             </span>
                           </div>
@@ -311,7 +311,7 @@ export default function AdminAttendance() {
           {absentToday.length > 0 && viewMode === "today" && (
             <div>
               <div className="flex items-center gap-2 mb-2 mt-4">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
+                <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                 <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "غائبون" : "Absent"} ({absentToday.length})</p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -352,7 +352,7 @@ export default function AdminAttendance() {
                       {(d.recentRecords || []).slice(0, 7).map((rec: any, i: number) => (
                         <div key={i}
                           onClick={() => setSelectedRecord({ ...d, att: rec })}
-                          className={`flex-1 min-w-[60px] text-center p-2 rounded-xl cursor-pointer transition-colors ${rec.checkOut ? "bg-green-50 hover:bg-green-100" : rec.checkIn ? "bg-yellow-50 hover:bg-yellow-100" : "bg-black/[0.02] hover:bg-black/[0.04]"}`}>
+                          className={`flex-1 min-w-[60px] text-center p-2 rounded-xl cursor-pointer transition-colors ${rec.checkOut ? "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06]" : rec.checkIn ? "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06]" : "bg-black/[0.02] hover:bg-black/[0.04]"}`}>
                           <p className="text-[9px] text-black/40">{new Date(rec.checkIn || rec.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short" })}</p>
                           <p className="text-xs font-bold text-black/70">{rec.workHours ? `${rec.workHours.toFixed(1)}${L ? "س" : "h"}` : "--"}</p>
                         </div>
@@ -391,9 +391,9 @@ export default function AdminAttendance() {
                   <p className="font-bold text-sm">{selectedRecord.att.checkOut ? formatTime(selectedRecord.att.checkOut, L) : (L ? "لم يُسجّل" : "Not recorded")}</p>
                 </div>
                 {selectedRecord.att.workHours && (
-                  <div className="bg-green-50 rounded-xl p-3">
-                    <p className="text-[10px] text-green-600 mb-1">{L ? "ساعات العمل" : "Work Hours"}</p>
-                    <p className="font-bold text-sm text-green-700">{selectedRecord.att.workHours.toFixed(2)} {L ? "ساعة" : "hours"}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] rounded-xl p-3">
+                    <p className="text-[10px] text-black dark:text-white mb-1">{L ? "ساعات العمل" : "Work Hours"}</p>
+                    <p className="font-bold text-sm text-black dark:text-white">{selectedRecord.att.workHours.toFixed(2)} {L ? "ساعة" : "hours"}</p>
                   </div>
                 )}
                 {selectedRecord.att.ipAddress && (
@@ -405,15 +405,15 @@ export default function AdminAttendance() {
               </div>
 
               {selectedRecord.att.checkInNotes && (
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                  <p className="text-[10px] text-blue-600 font-bold mb-1">{L ? "ملاحظات الحضور" : "Check-in Notes"}</p>
-                  <p className="text-sm text-blue-800">{selectedRecord.att.checkInNotes}</p>
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3">
+                  <p className="text-[10px] text-black dark:text-white font-bold mb-1">{L ? "ملاحظات الحضور" : "Check-in Notes"}</p>
+                  <p className="text-sm text-black dark:text-white">{selectedRecord.att.checkInNotes}</p>
                 </div>
               )}
               {selectedRecord.att.achievements && (
-                <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                  <p className="text-[10px] text-green-600 font-bold mb-1">{L ? "الإنجازات" : "Achievements"}</p>
-                  <p className="text-sm text-green-800">{selectedRecord.att.achievements}</p>
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3">
+                  <p className="text-[10px] text-black dark:text-white font-bold mb-1">{L ? "الإنجازات" : "Achievements"}</p>
+                  <p className="text-sm text-black dark:text-white">{selectedRecord.att.achievements}</p>
                 </div>
               )}
 
@@ -430,7 +430,7 @@ export default function AdminAttendance() {
                         href={`https://maps.google.com/?q=${loc.lat},${loc.lng}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[11px] text-blue-500 hover:text-blue-700 py-0.5"
+                        className="flex items-center gap-2 text-[11px] text-black dark:text-white hover:text-black dark:text-white py-0.5"
                       >
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span className="font-mono">{loc.lat?.toFixed(5)}, {loc.lng?.toFixed(5)}</span>
@@ -449,7 +449,7 @@ export default function AdminAttendance() {
                     href={`https://maps.google.com/?q=${loc.lat},${loc.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    className="flex items-center gap-2 text-xs text-black dark:text-white hover:text-black dark:text-white font-medium"
                   >
                     <Navigation className="w-3.5 h-3.5" />
                     {L ? "فتح آخر موقع في خرائط جوجل" : "Open Last Location in Google Maps"}

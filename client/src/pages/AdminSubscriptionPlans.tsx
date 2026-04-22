@@ -88,13 +88,13 @@ export default function AdminSubscriptionPlans() {
   };
 
   const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-    active: { label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-    expired: { label: L ? "منتهي" : "Expired", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+    active: { label: L ? "نشط" : "Active", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    expired: { label: L ? "منتهي" : "Expired", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
     none: { label: L ? "بدون اشتراك" : "No Subscription", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
-    pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-    reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
-    approved: { label: L ? "مقبول" : "Approved", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+    pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
+    reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: RefreshCcw },
+    approved: { label: L ? "مقبول" : "Approved", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
   };
   const [segmentDialog, setSegmentDialog] = useState(false);
   const [editingSegment, setEditingSegment] = useState<Partial<SegmentPricing>>(emptySegment);
@@ -256,9 +256,9 @@ export default function AdminSubscriptionPlans() {
               </div>
             </div>
             {pendingReqs > 0 && (
-              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                <span className="text-sm font-bold text-amber-700">{pendingReqs} طلب جديد بانتظار المراجعة</span>
+              <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2">
+                <AlertCircle className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-sm font-bold text-black dark:text-white">{pendingReqs} طلب جديد بانتظار المراجعة</span>
               </div>
             )}
           </div>
@@ -274,7 +274,7 @@ export default function AdminSubscriptionPlans() {
             <TabsTrigger value="subscriptions" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2 relative">
               <Users className="w-3.5 h-3.5" /> اشتراكات العملاء
               {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-black rounded-full flex items-center justify-center">
                   {subscriptions.filter(s => s.needsRenewal).length}
                 </span>
               )}
@@ -282,7 +282,7 @@ export default function AdminSubscriptionPlans() {
             <TabsTrigger value="requests" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 relative gap-2">
               <Layers className="w-3.5 h-3.5" /> طلبات الخدمات الفرعية
               {pendingReqs > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-black rounded-full flex items-center justify-center">
                   {pendingReqs}
                 </span>
               )}
@@ -339,7 +339,7 @@ export default function AdminSubscriptionPlans() {
                               <button onClick={() => openEditSegment(seg)} className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-edit-segment-${seg.id}`}>
                                 <Pencil className="w-3.5 h-3.5 text-white" />
                               </button>
-                              <button onClick={() => { if (confirm(L ? "حذف هذا القطاع؟" : "Delete this sector?")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
+                              <button onClick={() => { if (confirm(L ? "حذف هذا القطاع؟" : "Delete this sector?")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-black dark:bg-white rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
                                 <Trash2 className="w-3.5 h-3.5 text-white" />
                               </button>
                             </>
@@ -377,15 +377,15 @@ export default function AdminSubscriptionPlans() {
             {/* Urgency banner */}
             {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
               <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-                className="mb-5 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-4.5 h-4.5 text-red-600" />
+                className="mb-5 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-4.5 h-4.5 text-black dark:text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-black text-red-800 text-sm">
+                  <p className="font-black text-black dark:text-white text-sm">
                     {subscriptions.filter(s => s.needsRenewal).length} عميل يحتاج التجديد الآن
                   </p>
-                  <p className="text-red-600 text-xs mt-0.5">{L ? "اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً" : "These clients' subscriptions are at 10% of their duration — contact them immediately"}</p>
+                  <p className="text-black dark:text-white text-xs mt-0.5">{L ? "اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً" : "These clients' subscriptions are at 10% of their duration — contact them immediately"}</p>
                 </div>
               </motion.div>
             )}
@@ -422,20 +422,20 @@ export default function AdminSubscriptionPlans() {
                   const expiresAt = sub.subscriptionExpiresAt ? new Date(sub.subscriptionExpiresAt) : null;
                   const pct = sub.percentRemaining ?? 0;
                   const progressColor = sub.subscriptionStatus === "expired" ? "bg-gray-400"
-                    : pct <= 10 ? "bg-red-500"
-                    : pct <= 25 ? "bg-amber-500"
-                    : pct <= 50 ? "bg-yellow-400"
-                    : "bg-green-500";
-                  const cardBorder = sub.needsRenewal ? "border-red-200 bg-red-50/30" : "border-black/[0.06] bg-white";
+                    : pct <= 10 ? "bg-black dark:bg-white"
+                    : pct <= 25 ? "bg-black dark:bg-white"
+                    : pct <= 50 ? "bg-black/[0.08] dark:bg-white/[0.1]"
+                    : "bg-black dark:bg-white";
+                  const cardBorder = sub.needsRenewal ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.06] bg-white";
                   return (
                     <motion.div key={sub.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                       <div className={`rounded-2xl border p-4 transition-all hover:shadow-sm ${cardBorder}`} data-testid={`sub-card-${sub.id}`}>
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                           {/* Left: client info */}
                           <div className="flex items-start gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${sub.needsRenewal ? "bg-red-100" : "bg-black/[0.04]"}`}>
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${sub.needsRenewal ? "bg-black/[0.04] dark:bg-white/[0.06]" : "bg-black/[0.04]"}`}>
                               {sub.needsRenewal
-                                ? <Bell className="w-4 h-4 text-red-600 animate-pulse" />
+                                ? <Bell className="w-4 h-4 text-black dark:text-white animate-pulse" />
                                 : <StatusIcon className={`w-4 h-4 ${st.color}`} />}
                             </div>
                             <div className="min-w-0">
@@ -445,7 +445,7 @@ export default function AdminSubscriptionPlans() {
                                   <StatusIcon className="w-2.5 h-2.5" /> {st.label}
                                 </Badge>
                                 {sub.needsRenewal && (
-                                  <span className="text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full animate-pulse">
+                                  <span className="text-[10px] font-black bg-black dark:bg-white text-white px-2 py-0.5 rounded-full animate-pulse">
                                     يحتاج مراسلة!
                                   </span>
                                 )}
@@ -462,7 +462,7 @@ export default function AdminSubscriptionPlans() {
                           <div className="flex flex-col items-end gap-2 flex-shrink-0">
                             {sub.remainingDays !== null && sub.subscriptionStatus === "active" && (
                               <div className="text-left">
-                                <p className={`text-xl font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-black"}`}>
+                                <p className={`text-xl font-black ${pct <= 10 ? "text-black dark:text-white" : pct <= 25 ? "text-black dark:text-white" : "text-black"}`}>
                                   {sub.remainingDays}
                                 </p>
                                 <p className="text-[10px] text-black/40 text-center">{L ? "يوم متبقي" : "days left"}</p>
@@ -470,7 +470,7 @@ export default function AdminSubscriptionPlans() {
                             )}
                             <div className="flex gap-1.5">
                               <Button size="sm" onClick={() => { setRenewTarget(sub); setRenewFrom("expiry"); setRenewDialog(true); }}
-                                className={`h-7 px-3 text-[11px] rounded-lg gap-1 font-bold ${sub.needsRenewal ? "bg-red-600 hover:bg-red-700 text-white" : "bg-black text-white hover:bg-black/80"}`}
+                                className={`h-7 px-3 text-[11px] rounded-lg gap-1 font-bold ${sub.needsRenewal ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white" : "bg-black text-white hover:bg-black/80"}`}
                                 data-testid={`btn-quick-renew-${sub.id}`}>
                                 <Zap className="w-3 h-3" /> تجديد سريع
                               </Button>
@@ -488,7 +488,7 @@ export default function AdminSubscriptionPlans() {
                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-[10px] text-black/30">{L ? "المدة المتبقية" : "Time remaining"}</span>
-                              <span className={`text-[10px] font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-green-600"}`}>
+                              <span className={`text-[10px] font-black ${pct <= 10 ? "text-black dark:text-white" : pct <= 25 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                                 {pct}%
                               </span>
                             </div>
@@ -570,13 +570,13 @@ export default function AdminSubscriptionPlans() {
         <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg text-right flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
+              <Zap className="w-5 h-5 text-black dark:text-white" />
               تجديد سريع — {renewTarget?.fullName}
             </DialogTitle>
           </DialogHeader>
           {renewTarget && (
             <div className="space-y-4">
-              <div className={`rounded-2xl p-3 border ${renewTarget.needsRenewal ? "bg-red-50 border-red-200" : "bg-black/[0.02] border-black/[0.06]"}`}>
+              <div className={`rounded-2xl p-3 border ${renewTarget.needsRenewal ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.06]"}`}>
                 <p className="text-xs text-black/50 mb-1">{L ? "الخطة الحالية" : "Current Plan"}</p>
                 <p className="font-bold text-sm text-black">{renewTarget.subscriptionSegmentNameAr || "—"} · {periodLabels[renewTarget.subscriptionPeriod] || renewTarget.subscriptionPeriod}</p>
                 {renewTarget.subscriptionExpiresAt && (

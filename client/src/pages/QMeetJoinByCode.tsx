@@ -194,8 +194,8 @@ export default function QMeetJoinByCode() {
   };
 
   const statusColors: Record<string, string> = {
-    scheduled: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    live: "bg-green-500/20 text-green-300 border-green-500/30",
+    scheduled: "bg-black dark:bg-white text-black/70 dark:text-white/70 border-black dark:border-white",
+    live: "bg-black dark:bg-white text-black/70 dark:text-white/70 border-black dark:border-white",
     completed: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   };
   const statusLabels: Record<string, string> = { scheduled: L ? "مجدول" : "Scheduled", live: L ? "مباشر الآن" : "Live Now", completed: L ? "انتهى" : "Ended" };
@@ -270,29 +270,29 @@ export default function QMeetJoinByCode() {
 
             <div className="space-y-2.5 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
               <div className="flex items-center gap-3 text-white/60 text-sm">
-                <Users className="w-4 h-4 shrink-0 text-blue-400" />
+                <Users className="w-4 h-4 shrink-0 text-black/70 dark:text-white/70" />
                 <span>{L ? "المضيف:" : "Host:"} <span className="text-white/90 font-medium">{meetingInfo.hostName}</span></span>
               </div>
               <div className="flex items-center gap-3 text-white/60 text-sm">
-                <Calendar className="w-4 h-4 shrink-0 text-blue-400" />
+                <Calendar className="w-4 h-4 shrink-0 text-black/70 dark:text-white/70" />
                 <span>{new Date(meetingInfo.scheduledAt).toLocaleString(L ? "ar-SA" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
               <div className="flex items-center gap-3 text-white/60 text-sm">
-                <Timer className="w-4 h-4 shrink-0 text-blue-400" />
+                <Timer className="w-4 h-4 shrink-0 text-black/70 dark:text-white/70" />
                 <span>{L ? "المدة:" : "Duration:"} <span className="text-white/80">{meetingInfo.durationMinutes} {L ? "دقيقة" : "min"}</span></span>
               </div>
             </div>
 
             <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
-              <Shield className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-amber-300/90 text-xs leading-relaxed">
+              <Shield className="w-4 h-4 text-black/70 dark:text-white/70 mt-0.5 shrink-0" />
+              <p className="text-black/70 dark:text-white/70 text-xs leading-relaxed">
                 {L ? "الاجتماع محمي — سيُشعَر المضيف بطلبك ويقرر قبوله أو رفضه." : "This meeting is protected — the host will be notified and will decide to accept or reject your request."}
               </p>
             </div>
 
             {!user && (
               <div>
-                <label className="text-white/60 text-xs font-medium block mb-1.5">{L ? "اسمك" : "Your Name"} <span className="text-red-400">*</span></label>
+                <label className="text-white/60 text-xs font-medium block mb-1.5">{L ? "اسمك" : "Your Name"} <span className="text-black/70 dark:text-white/70">*</span></label>
                 <Input
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
@@ -332,18 +332,18 @@ export default function QMeetJoinByCode() {
           <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             {/* Header bar */}
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(245,158,11,0.08)" }}>
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-amber-300 text-xs font-semibold">{L ? "صالة الانتظار" : "Waiting Room"}</span>
+              <div className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" />
+              <span className="text-black/70 dark:text-white/70 text-xs font-semibold">{L ? "صالة الانتظار" : "Waiting Room"}</span>
               <span className={`${L ? "mr-auto" : "ml-auto"} text-white/30 text-xs font-mono`}>{formatWaitTime(waitSeconds, L)}</span>
             </div>
 
             <div className="p-8 space-y-7 text-center">
               {/* Animated rings */}
               <div className="relative w-24 h-24 mx-auto">
-                <div className="absolute inset-0 rounded-full border-2 border-amber-500/30 animate-ping" style={{ animationDuration: "2s" }} />
-                <div className="absolute inset-2 rounded-full border-2 border-amber-500/40 animate-ping" style={{ animationDuration: "2.4s", animationDelay: "0.4s" }} />
+                <div className="absolute inset-0 rounded-full border-2 border-black dark:border-white animate-ping" style={{ animationDuration: "2s" }} />
+                <div className="absolute inset-2 rounded-full border-2 border-black dark:border-white animate-ping" style={{ animationDuration: "2.4s", animationDelay: "0.4s" }} />
                 <div className="absolute inset-4 rounded-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)", border: "2px solid rgba(245,158,11,0.4)" }}>
-                  <Clock className="w-8 h-8 text-amber-400" />
+                  <Clock className="w-8 h-8 text-black/70 dark:text-white/70" />
                 </div>
               </div>
 
@@ -361,8 +361,8 @@ export default function QMeetJoinByCode() {
                   <p className="text-white font-semibold text-sm truncate">{meetingInfo.title}</p>
                   <p className="text-white/40 text-xs mt-1">{L ? "المضيف:" : "Host:"} {meetingInfo.hostName}</p>
                   <div className="mt-2 flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-amber-400/80 text-xs">{L ? "في انتظار الموافقة..." : "Waiting for approval..."}</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" />
+                    <span className="text-black/70 dark:text-white/70 text-xs">{L ? "في انتظار الموافقة..." : "Waiting for approval..."}</span>
                   </div>
                 </div>
               )}
@@ -377,7 +377,7 @@ export default function QMeetJoinByCode() {
               <div className="flex gap-2 justify-center">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-amber-500"
+                    className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white"
                     style={{ animation: `bounce 1.2s infinite`, animationDelay: `${i * 0.2}s` }}
                   />
                 ))}
@@ -390,13 +390,13 @@ export default function QMeetJoinByCode() {
         {step === "approved" && (
           <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(22,163,74,0.1)" }}>
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-green-300 text-xs font-semibold">{L ? "تمت الموافقة على انضمامك" : "Your join request was approved"}</span>
+              <CheckCircle2 className="w-4 h-4 text-black/70 dark:text-white/70" />
+              <span className="text-black/70 dark:text-white/70 text-xs font-semibold">{L ? "تمت الموافقة على انضمامك" : "Your join request was approved"}</span>
             </div>
             <div className="p-8 space-y-6 text-center">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
                 style={{ background: "rgba(22,163,74,0.15)", border: "2px solid rgba(74,222,128,0.4)" }}>
-                <CheckCircle2 className="w-10 h-10 text-green-400" />
+                <CheckCircle2 className="w-10 h-10 text-black/70 dark:text-white/70" />
               </div>
               <div>
                 <h2 className="text-white text-xl font-bold mb-1">{L ? "مرحباً بك!" : "Welcome!"}</h2>
@@ -423,13 +423,13 @@ export default function QMeetJoinByCode() {
         {step === "rejected" && (
           <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(239,68,68,0.1)" }}>
-              <XCircle className="w-4 h-4 text-red-400" />
-              <span className="text-red-300 text-xs font-semibold">{L ? "تم رفض الطلب" : "Request Rejected"}</span>
+              <XCircle className="w-4 h-4 text-black/70 dark:text-white/70" />
+              <span className="text-black/70 dark:text-white/70 text-xs font-semibold">{L ? "تم رفض الطلب" : "Request Rejected"}</span>
             </div>
             <div className="p-8 space-y-6 text-center">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
                 style={{ background: "rgba(239,68,68,0.12)", border: "2px solid rgba(248,113,113,0.4)" }}>
-                <XCircle className="w-10 h-10 text-red-400" />
+                <XCircle className="w-10 h-10 text-black/70 dark:text-white/70" />
               </div>
               <div>
                 <h2 className="text-white text-xl font-bold mb-1">{L ? "لم تُقبَل" : "Not Accepted"}</h2>

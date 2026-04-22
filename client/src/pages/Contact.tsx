@@ -133,8 +133,8 @@ export default function Contact() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="text-center py-8"
                 >
-                  <div className="w-16 h-16 bg-green-50 dark:bg-green-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                  <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-8 h-8 text-black dark:text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-black dark:text-white mb-2">{T.successTitle}</h3>
                   <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed">{T.successDesc}</p>
@@ -152,7 +152,7 @@ export default function Contact() {
                   <h2 className="text-xl font-bold font-heading text-black dark:text-white mb-8">{T.sendMsg}</h2>
                   <form className="space-y-5" onSubmit={handleSubmit}>
                     <div>
-                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.name} <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.name} <span className="text-black/70 dark:text-white/70">*</span></label>
                       <Input
                         name="name"
                         value={form.name}
@@ -163,7 +163,7 @@ export default function Contact() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.email} <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.email} <span className="text-black/70 dark:text-white/70">*</span></label>
                       <Input
                         name="email"
                         type="email"
@@ -175,7 +175,7 @@ export default function Contact() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.phone} <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.phone} <span className="text-black/70 dark:text-white/70">*</span></label>
                       <Input
                         name="phone"
                         type="tel"
@@ -199,7 +199,7 @@ export default function Contact() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.message} <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.message} <span className="text-black/70 dark:text-white/70">*</span></label>
                       <Textarea
                         name="message"
                         value={form.message}

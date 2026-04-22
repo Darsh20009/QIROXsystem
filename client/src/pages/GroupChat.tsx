@@ -25,9 +25,9 @@ const ROLE_LABELS: Record<string, string> = {
   support: "دعم", sales: "مبيعات", sales_manager: "مدير مبيعات", accountant: "محاسب", merchant: "تاجر",
 };
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-black text-white", manager: "bg-slate-700 text-white", developer: "bg-violet-600 text-white",
-  designer: "bg-pink-600 text-white", support: "bg-emerald-600 text-white", sales: "bg-orange-600 text-white",
-  sales_manager: "bg-red-600 text-white", accountant: "bg-teal-600 text-white",
+  admin: "bg-black text-white", manager: "bg-slate-700 text-white", developer: "bg-black dark:bg-white text-white",
+  designer: "bg-black dark:bg-white text-white", support: "bg-black dark:bg-white text-white", sales: "bg-black dark:bg-white text-white",
+  sales_manager: "bg-black dark:bg-white text-white", accountant: "bg-black dark:bg-white text-white",
 };
 
 function timeAgo(d: string, _L?: boolean) {
@@ -308,7 +308,7 @@ export default function GroupChat() {
                           {isMe && (
                             <button
                               onClick={() => deleteMsg.mutate(msgId)}
-                              className="absolute -top-2 -left-2 w-5 h-5 bg-red-500 text-white rounded-full items-center justify-center hidden group-hover:flex text-[10px]"
+                              className="absolute -top-2 -left-2 w-5 h-5 bg-black dark:bg-white text-white rounded-full items-center justify-center hidden group-hover:flex text-[10px]"
                             >
                               <Trash2 className="w-2.5 h-2.5" />
                             </button>
@@ -445,13 +445,13 @@ export default function GroupChat() {
                           <span className="text-sm font-medium truncate block">{m.fullName || m.username || (L ? "عضو" : "Member")}</span>
                           {m.role && <span className="text-[10px] text-black/40 dark:text-white/40">{ROLE_LABELS[m.role] || m.role}</span>}
                         </div>
-                        {isGroupAdmin && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" title={L ? "مشرف المجموعة" : "Group Admin"} />}
+                        {isGroupAdmin && <Crown className="w-3.5 h-3.5 text-black dark:text-white shrink-0" title={L ? "مشرف المجموعة" : "Group Admin"} />}
                         {amGroupAdmin && !isSelf && (
                           <div className="flex gap-1">
                             <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => promoteAdmin.mutate({ userId: memberId, action: isGroupAdmin ? "demote" : "promote" })}>
-                              {isGroupAdmin ? <Crown className="w-3 h-3 text-yellow-500" /> : <Crown className="w-3 h-3 text-black/30 dark:text-white/30" />}
+                              {isGroupAdmin ? <Crown className="w-3 h-3 text-black dark:text-white" /> : <Crown className="w-3 h-3 text-black/30 dark:text-white/30" />}
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-red-500" onClick={() => { if (confirm(L ? "إزالة العضو؟" : "Remove member?")) removeMember.mutate(memberId); }}>
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-black dark:text-white" onClick={() => { if (confirm(L ? "إزالة العضو؟" : "Remove member?")) removeMember.mutate(memberId); }}>
                               <UserMinus className="w-3 h-3" />
                             </Button>
                           </div>
@@ -467,11 +467,11 @@ export default function GroupChat() {
                     <UserPlus className="w-4 h-4" /> {L ? "إضافة أعضاء" : "Add Members"}
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="w-full gap-2 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => { if (confirm(L ? "مغادرة المجموعة؟" : "Leave group?")) leaveGroup.mutate(); }}>
+                <Button variant="outline" size="sm" className="w-full gap-2 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => { if (confirm(L ? "مغادرة المجموعة؟" : "Leave group?")) leaveGroup.mutate(); }}>
                   <LogOut className="w-4 h-4" /> {L ? "مغادرة المجموعة" : "Leave Group"}
                 </Button>
                 {amGroupAdmin && (
-                  <Button variant="outline" size="sm" className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50" onClick={() => { if (confirm(L ? "حذف المجموعة نهائياً؟" : "Delete group permanently?")) deleteGroup.mutate(); }}>
+                  <Button variant="outline" size="sm" className="w-full gap-2 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => { if (confirm(L ? "حذف المجموعة نهائياً؟" : "Delete group permanently?")) deleteGroup.mutate(); }}>
                     <Trash2 className="w-4 h-4" /> {L ? "حذف المجموعة" : "Delete Group"}
                   </Button>
                 )}

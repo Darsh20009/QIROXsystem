@@ -145,7 +145,7 @@ export default function ForgotPassword() {
   const currentStepIdx = steps.findIndex(s => s.key === step);
 
   const pwStrength = newPassword.length === 0 ? 0 : newPassword.length < 6 ? 1 : newPassword.length < 10 ? 2 : 3;
-  const pwStrengthColors = ["", "bg-red-400", "bg-yellow-400", "bg-green-500"];
+  const pwStrengthColors = ["", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black dark:bg-white"];
   const pwStrengthLabels = ["", "ضعيفة", "متوسطة", "قوية"];
 
   return (
@@ -215,14 +215,14 @@ export default function ForgotPassword() {
                         placeholder="your@email.com"
                         value={email}
                         onChange={e => { setEmail(e.target.value); setEmailError(""); }}
-                        className={`w-full h-12 pr-10 pl-4 rounded-xl border text-sm outline-none transition-colors ${emailError ? "border-red-400 bg-red-50" : "border-black/[0.08] bg-black/[0.02] focus:border-black/25"}`}
+                        className={`w-full h-12 pr-10 pl-4 rounded-xl border text-sm outline-none transition-colors ${emailError ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.08] bg-black/[0.02] focus:border-black/25"}`}
                         dir="ltr"
                         required
                         data-testid="input-forgot-email"
                       />
                     </div>
                     {emailError && (
-                      <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" /> {emailError}
                       </p>
                     )}
@@ -346,7 +346,7 @@ export default function ForgotPassword() {
                             <div key={level} className={`h-1 flex-1 rounded-full transition-all ${pwStrength >= level ? pwStrengthColors[pwStrength] : "bg-black/[0.06]"}`} />
                           ))}
                         </div>
-                        <p className={`text-[10px] ${pwStrength === 1 ? "text-red-500" : pwStrength === 2 ? "text-yellow-600" : "text-green-600"}`}>
+                        <p className={`text-[10px] ${pwStrength === 1 ? "text-black dark:text-white" : pwStrength === 2 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                           قوة كلمة المرور: {pwStrengthLabels[pwStrength]}
                         </p>
                       </div>
@@ -364,9 +364,9 @@ export default function ForgotPassword() {
                         onChange={e => setConfirmPassword(e.target.value)}
                         className={`w-full h-12 pr-10 pl-10 border rounded-xl text-sm outline-none transition-colors ${
                           confirmPassword && newPassword !== confirmPassword
-                            ? "border-red-400 bg-red-50 focus:border-red-400"
+                            ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] focus:border-black/15 dark:border-white/15"
                             : confirmPassword && newPassword === confirmPassword
-                            ? "border-green-400 bg-green-50 focus:border-green-400"
+                            ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] focus:border-black/15 dark:border-white/15"
                             : "border-black/[0.08] bg-black/[0.02] focus:border-black/25"
                         }`}
                         required
@@ -377,12 +377,12 @@ export default function ForgotPassword() {
                       </button>
                     </div>
                     {confirmPassword && newPassword !== confirmPassword && (
-                      <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" /> كلمتا المرور غير متطابقتين
                       </p>
                     )}
                     {confirmPassword && newPassword === confirmPassword && newPassword.length >= 6 && (
-                      <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> كلمتا المرور متطابقتان
                       </p>
                     )}
@@ -406,7 +406,7 @@ export default function ForgotPassword() {
             {/* ── STEP: DONE ── */}
             {step === "done" && (
               <motion.div key="done" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="text-center">
-                <div className="w-20 h-20 bg-green-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/25">
+                <div className="w-20 h-20 bg-black dark:bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/25">
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-2xl font-black font-heading text-black mb-2">تم بنجاح!</h2>
@@ -430,13 +430,13 @@ export default function ForgotPassword() {
                 <div key={s.key} className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all text-[10px] font-bold ${
                     i === currentStepIdx ? "bg-black text-white shadow-md" :
-                    i < currentStepIdx ? "bg-green-500 text-white" :
+                    i < currentStepIdx ? "bg-black dark:bg-white text-white" :
                     "bg-black/[0.06] text-black/30"
                   }`}>
                     {i < currentStepIdx ? "✓" : i + 1}
                   </div>
                   {i < steps.length - 1 && (
-                    <div className={`w-8 h-px transition-all ${i < currentStepIdx ? "bg-green-400" : "bg-black/[0.08]"}`} />
+                    <div className={`w-8 h-px transition-all ${i < currentStepIdx ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08]"}`} />
                   )}
                 </div>
               ))}

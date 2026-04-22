@@ -27,15 +27,15 @@ interface Ticket {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-yellow-100 text-yellow-700", in_review: "bg-blue-100 text-blue-700",
-  resolved: "bg-green-100 text-green-700", closed: "bg-gray-100 text-gray-500",
+  open: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", in_review: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+  resolved: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", closed: "bg-gray-100 text-gray-500",
 };
 function getStatusLabels(L: boolean): Record<string, string> { return {
   open: L ? "مفتوحة" : "Open", in_review: L ? "قيد المراجعة" : "Under Review", resolved: L ? "تم الحل" : "Resolved", closed: L ? "مغلقة" : "Closed",
 };
 }
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-gray-100 text-gray-500", medium: "bg-yellow-100 text-yellow-700", high: "bg-red-100 text-red-700",
+  low: "bg-gray-100 text-gray-500", medium: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", high: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
 };
 function getPriorityLabels(L: boolean): Record<string, string> { return { low: L ? "منخفض" : "Low", medium: L ? "متوسط" : "Medium", high: L ? "عالي" : "High" }; }
 function getCatLabels(L: boolean): Record<string, string> { return {
@@ -158,12 +158,12 @@ export default function AdminSupportTickets() {
                 <p className="text-sm text-black/60 dark:text-white/60 mb-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3">{ticket.body}</p>
 
                 {ticket.adminReply && (
-                  <div className="mb-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl p-3">
+                  <div className="mb-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                      <span className="text-xs font-bold text-green-700 dark:text-green-400">{L ? "ردك على التذكرة" : "Your reply to this ticket"}</span>
+                      <CheckCircle className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "ردك على التذكرة" : "Your reply to this ticket"}</span>
                     </div>
-                    <p className="text-sm text-green-800 dark:text-green-300">{ticket.adminReply}</p>
+                    <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">{ticket.adminReply}</p>
                   </div>
                 )}
 

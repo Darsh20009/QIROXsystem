@@ -87,9 +87,9 @@ export default function Partners() {
       {hasDbPartners && (
         <section className="pb-10 container mx-auto px-4" data-testid="section-partners-featured">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 mb-3">
-              <span className="w-2 h-2 rounded-full bg-cyan-500" />
-              <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-400">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white mb-3">
+              <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />
+              <span className="text-xs font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70">
                 {lang === "ar" ? "شركاء موثّقون" : "Verified Partners"}
               </span>
             </div>
@@ -110,7 +110,7 @@ export default function Partners() {
                   <div className="h-full rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.06] hover:-translate-y-1">
 
                     {/* Top colored accent */}
-                    <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="h-1 bg-gradient-to-r from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] opacity-0 group-hover:opacity-100 transition-opacity" />
 
                     <div className="p-6">
                       <div className="flex items-start gap-4 mb-4">
@@ -128,7 +128,7 @@ export default function Partners() {
                         <div className="flex-1 min-w-0">
                           {partner.websiteUrl ? (
                             <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
-                              className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors leading-tight block"
+                              className="font-bold text-black dark:text-white hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors leading-tight block"
                               data-testid={`link-partner-name-${partner.id}`}>
                               {name}
                             </a>
@@ -143,7 +143,7 @@ export default function Partners() {
                               </span>
                             )}
                             {partner.relatedService && (
-                              <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                              <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                                 <Layers className="w-2.5 h-2.5" />
                                 {partner.relatedService}
                               </span>
@@ -174,7 +174,7 @@ export default function Partners() {
                           </p>
                           {features.map((f, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs text-black/60 dark:text-white/60">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
                               {f}
                             </div>
                           ))}

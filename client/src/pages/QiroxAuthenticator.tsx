@@ -123,11 +123,11 @@ export default function QiroxAuthenticator() {
         className="w-full max-w-sm"
       >
         {error ? (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-8 text-center">
-            <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-            <p className="text-red-300 font-bold text-sm mb-2">{error}</p>
+          <div className="bg-black dark:bg-white border border-black dark:border-white rounded-3xl p-8 text-center">
+            <AlertTriangle className="w-10 h-10 text-black/70 dark:text-white/70 mx-auto mb-3" />
+            <p className="text-black/70 dark:text-white/70 font-bold text-sm mb-2">{error}</p>
             {error.includes("مفعّل") && (
-              <p className="text-red-400/60 text-xs mb-5">{L ? "يجب تفعيل المصادق الثنائي أولاً من إعدادات الأمان" : "You must activate 2FA first from security settings"}</p>
+              <p className="text-black/70 dark:text-white/70 text-xs mb-5">{L ? "يجب تفعيل المصادق الثنائي أولاً من إعدادات الأمان" : "You must activate 2FA first from security settings"}</p>
             )}
             {error.includes("مفعّل") ? (
               <Link href="/security/2fa">
@@ -163,7 +163,7 @@ export default function QiroxAuthenticator() {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
                     transition={{ duration: 0.25 }}
-                    className={`text-3xl font-black tabular-nums ${secondsLeft <= 5 ? "text-red-400" : secondsLeft <= 8 ? "text-amber-400" : "text-white"}`}
+                    className={`text-3xl font-black tabular-nums ${secondsLeft <= 5 ? "text-black/70 dark:text-white/70" : secondsLeft <= 8 ? "text-black/70 dark:text-white/70" : "text-white"}`}
                   >
                     {loading ? "–" : secondsLeft}
                   </motion.span>
@@ -184,7 +184,7 @@ export default function QiroxAuthenticator() {
                     loading
                       ? "bg-white/[0.04] border-white/[0.06] text-white/20"
                       : secondsLeft <= 5
-                      ? "bg-red-500/10 border-red-500/20 text-red-300"
+                      ? "bg-black dark:bg-white border-black dark:border-white text-black/70 dark:text-white/70"
                       : "bg-white/[0.08] border-white/[0.12] text-white"
                   } ${i === 2 ? "mr-2" : ""}`}
                 >
@@ -200,7 +200,7 @@ export default function QiroxAuthenticator() {
               className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/[0.1] text-white text-sm font-semibold transition-all disabled:opacity-40"
               data-testid="button-copy-auth-code"
             >
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-black/70 dark:text-white/70" /> : <Copy className="w-4 h-4" />}
               {copied ? (L ? "تم النسخ" : "Copied") : (L ? "نسخ الرمز" : "Copy Code")}
             </button>
 

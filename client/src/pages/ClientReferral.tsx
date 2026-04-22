@@ -46,7 +46,7 @@ export default function ClientReferral() {
     rewarded: L ? "تمت المكافأة" : "Rewarded",
     expired: L ? "منتهي" : "Expired",
   };
-  const statusColor: Record<string, string> = { pending: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20", rewarded: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20", expired: "text-black/40 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03]" };
+  const statusColor: Record<string, string> = { pending: "text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", rewarded: "text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", expired: "text-black/40 dark:text-white/40 bg-black/[0.03] dark:bg-white/[0.03]" };
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 space-y-5" dir={dir}>
@@ -59,9 +59,9 @@ export default function ClientReferral() {
       </div>
 
       {/* How it works */}
-      <div className="rounded-xl border border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-900/20 p-3 flex gap-2">
-        <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+      <div className="rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-3 flex gap-2">
+        <Info className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
           {L
             ? <>عندما يسجّل شخص باستخدام كودك، تحصل على <strong>50 ريال</strong> رصيداً في محفظتك تلقائياً.</>
             : <>When someone registers using your code, you automatically get <strong>50 SAR</strong> credit in your wallet.</>
@@ -72,7 +72,7 @@ export default function ClientReferral() {
       {/* Your code */}
       <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Star className="w-4 h-4 text-amber-500" />
+          <Star className="w-4 h-4 text-black dark:text-white" />
           <span className="text-sm font-bold text-black dark:text-white">{L ? "كود الإحالة الخاص بك" : "Your Referral Code"}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export default function ClientReferral() {
             {data?.code || (L ? "جارٍ التوليد..." : "Generating...")}
           </code>
           <Button size="icon" variant="outline" onClick={copyCode} data-testid="button-copy-referral-code">
-            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-2">
@@ -88,8 +88,8 @@ export default function ClientReferral() {
             <p className="text-2xl font-black text-black dark:text-white">{data?.referrals?.length || 0}</p>
             <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "إجمالي الإحالات" : "Total Referrals"}</p>
           </div>
-          <div className="text-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3">
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{data?.creditsEarned || 0}</p>
+          <div className="text-center rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white p-3">
+            <p className="text-2xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{data?.creditsEarned || 0}</p>
             <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "ريال مكتسب" : "SAR Earned"}</p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function ClientReferral() {
                 <p className="text-[10px] text-black/30 dark:text-white/30">{new Date(r.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">{r.creditAmount} <SARIcon size={9} className="opacity-70" /></span>
+                <span className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-0.5">{r.creditAmount} <SARIcon size={9} className="opacity-70" /></span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusColor[r.status] || ""}`}>{statusLabel[r.status] || r.status}</span>
               </div>
             </div>

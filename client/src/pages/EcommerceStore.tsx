@@ -16,17 +16,17 @@ import { useI18n } from "@/lib/i18n";
 const STORE_URL = "https://e-commerce.qiroxstudio.online";
 
 const QUICK_LINKS = [
-  { label: "الواجهة الرئيسية", path: "/", icon: Store, color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" },
-  { label: "المنتجات", path: "/products", icon: ShoppingBag, color: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" },
-  { label: "سلة التسوق", path: "/cart", icon: ShoppingCart, color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" },
-  { label: "لوحة الإدارة", path: "/admin", icon: LayoutDashboard, color: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400" },
-  { label: "الكاشير POS", path: "/pos", icon: Monitor, color: "bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400" },
-  { label: "الطلبات", path: "/orders", icon: Package, color: "bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20 dark:text-cyan-400" },
-  { label: "الموظفين", path: "/admin/staff", icon: Users, color: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400" },
-  { label: "المخزون", path: "/admin/inventory", icon: Truck, color: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400" },
-  { label: "البانرات", path: "/admin/banners", icon: Tag, color: "bg-pink-50 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400" },
-  { label: "الفروع", path: "/admin/branches", icon: Building2, color: "bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400" },
-  { label: "الفواتير", path: "/profile/invoices", icon: Receipt, color: "bg-lime-50 text-lime-600 dark:bg-lime-900/20 dark:text-lime-400" },
+  { label: "الواجهة الرئيسية", path: "/", icon: Store, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "المنتجات", path: "/products", icon: ShoppingBag, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "سلة التسوق", path: "/cart", icon: ShoppingCart, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "لوحة الإدارة", path: "/admin", icon: LayoutDashboard, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "الكاشير POS", path: "/pos", icon: Monitor, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "الطلبات", path: "/orders", icon: Package, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "الموظفين", path: "/admin/staff", icon: Users, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "المخزون", path: "/admin/inventory", icon: Truck, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "البانرات", path: "/admin/banners", icon: Tag, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "الفروع", path: "/admin/branches", icon: Building2, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+  { label: "الفواتير", path: "/profile/invoices", icon: Receipt, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
   { label: "الإعدادات", path: "/admin/roles", icon: Settings, color: "bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
 ];
 
@@ -73,7 +73,7 @@ function CopyBtn({ text }: { text: string }) {
       className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-black/8 dark:hover:bg-white/8 transition-colors text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white flex-shrink-0"
       data-testid={`copy-${text}`}
     >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? <Check className="w-3.5 h-3.5 text-black dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
 }
@@ -100,9 +100,9 @@ export default function EcommerceStore() {
   }
 
   const BADGE_COLORS: Record<string, string> = {
-    success: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    success3ds: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    fail: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    success: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+    success3ds: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
+    fail: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   };
 
   return (
@@ -288,9 +288,9 @@ export default function EcommerceStore() {
                   {!showCards && (
                     <div className="space-y-1.5">
                       {[
-                        { label: "بطاقة بنكية / STC Pay / Apple Pay", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
-                        { label: "تمارة / تابي (تقسيط)", color: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400" },
-                        { label: "محفظة Qirox / تحويل بنكي", color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
+                        { label: "بطاقة بنكية / STC Pay / Apple Pay", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+                        { label: "تمارة / تابي (تقسيط)", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+                        { label: "محفظة Qirox / تحويل بنكي", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
                       ].map(m => (
                         <div key={m.label} className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-lg ${m.color}`}>{m.label}</div>
                       ))}

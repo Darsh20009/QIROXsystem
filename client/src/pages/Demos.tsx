@@ -16,21 +16,21 @@ import { useI18n } from "@/lib/i18n";
 
 function getCategoryMeta(L: boolean): Record<string, { label: string; icon: any; color: string; bg: string; border: string }> {
   return {
-    restaurant:  { label: L ? "مطاعم ومقاهي" : "Restaurants & Cafes",    icon: UtensilsCrossed, color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
-    ecommerce:   { label: L ? "متاجر إلكترونية" : "E-Commerce",  icon: ShoppingBag,     color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200" },
-    education:   { label: L ? "منصات تعليمية" : "Education Platforms",    icon: GraduationCap,   color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
+    restaurant:  { label: L ? "مطاعم ومقاهي" : "Restaurants & Cafes",    icon: UtensilsCrossed, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10" },
+    ecommerce:   { label: L ? "متاجر إلكترونية" : "E-Commerce",  icon: ShoppingBag,     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
+    education:   { label: L ? "منصات تعليمية" : "Education Platforms",    icon: GraduationCap,   color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10" },
     corporate:   { label: L ? "شركات ومؤسسات" : "Corporate",    icon: Building2,       color: "text-slate-700",  bg: "bg-slate-50",  border: "border-slate-200" },
-    realestate:  { label: L ? "عقارات" : "Real Estate",           icon: Home,            color: "text-teal-700",   bg: "bg-teal-50",   border: "border-teal-200" },
-    healthcare:  { label: L ? "صحة وعيادات" : "Healthcare",      icon: Heart,           color: "text-rose-700",   bg: "bg-rose-50",   border: "border-rose-200" },
+    realestate:  { label: L ? "عقارات" : "Real Estate",           icon: Home,            color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
+    healthcare:  { label: L ? "صحة وعيادات" : "Healthcare",      icon: Heart,           color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
     general:     { label: L ? "عام" : "General",              icon: Globe,           color: "text-gray-700",   bg: "bg-gray-50",   border: "border-gray-200" },
   };
 }
 
 function getTierMeta(L: boolean): Record<string, { label: string; color: string; bg: string }> {
   return {
-    lite:     { label: L ? "لايت" : "Lite",    color: "text-blue-700",   bg: "bg-blue-50" },
-    pro:      { label: L ? "برو" : "Pro",     color: "text-violet-700", bg: "bg-violet-50" },
-    infinite: { label: L ? "إنفينيت" : "Infinite", color: "text-amber-700",  bg: "bg-amber-50" },
+    lite:     { label: L ? "لايت" : "Lite",    color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+    pro:      { label: L ? "برو" : "Pro",     color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+    infinite: { label: L ? "إنفينيت" : "Infinite", color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
     custom:   { label: L ? "مخصص" : "Custom",   color: "text-gray-700",   bg: "bg-gray-50" },
   };
 }
@@ -69,10 +69,10 @@ function TemplateCard({ template, index }: { template: SectorTemplate; index: nu
             {/* Status + Demo badges */}
             <div className="absolute top-4 left-4 flex items-center gap-1.5">
               {template.status === "active" && (
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">{L ? "متاح" : "Available"}</span>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10">{L ? "متاح" : "Available"}</span>
               )}
               {template.status === "coming_soon" && (
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200">{L ? "قريباً" : "Coming Soon"}</span>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10">{L ? "قريباً" : "Coming Soon"}</span>
               )}
               {template.demoUrl && template.status === "active" && (
                 <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/20 text-white border border-white/20 flex items-center gap-1">
@@ -174,24 +174,24 @@ export default function Demos() {
       {/* Hero */}
       <div className="relative overflow-hidden bg-black pt-28 pb-20">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-black dark:bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-black dark:bg-white rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-2 mb-6">
-            <Sparkles className="w-4 h-4 text-violet-400" />
+            <Sparkles className="w-4 h-4 text-black/70 dark:text-white/70" />
             <span className="text-white/70 text-sm font-medium">{L ? "نماذج جاهزة ومجربة" : "Ready & Tested Templates"}</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-white mb-4 leading-tight">
             {L ? <>اكتشف نماذج<br /></> : <>Discover<br /></>}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">{L ? "مشاريع Qirox" : "Qirox Projects"}</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]">{L ? "مشاريع Qirox" : "Qirox Projects"}</span>
           </h1>
           <p className="text-white/50 text-lg max-w-2xl mx-auto mb-8">
             {L ? "جرّب الأنظمة قبل الشراء — استعرض المميزات الكاملة لكل نظام واعرف كيف يناسب مشروعك" : "Try the systems before you buy — explore full features of each system and see how it fits your project"}
           </p>
           <div className="flex items-center justify-center gap-6 text-sm text-white/40 flex-wrap">
-            <span className="flex items-center gap-2"><Globe className="w-4 h-4 text-green-400" />{withDemo} {L ? "نموذج حي" : "live demos"}</span>
-            <span className="flex items-center gap-2"><Package className="w-4 h-4 text-blue-400" />{activeTemplates.length} {L ? "قالب" : "templates"}</span>
-            <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-violet-400" />{L ? "تجربة مجانية" : "Free trial"}</span>
+            <span className="flex items-center gap-2"><Globe className="w-4 h-4 text-black/70 dark:text-white/70" />{withDemo} {L ? "نموذج حي" : "live demos"}</span>
+            <span className="flex items-center gap-2"><Package className="w-4 h-4 text-black/70 dark:text-white/70" />{activeTemplates.length} {L ? "قالب" : "templates"}</span>
+            <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-black/70 dark:text-white/70" />{L ? "تجربة مجانية" : "Free trial"}</span>
           </div>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function Demos() {
       {/* CTA */}
       <div className="bg-black py-20 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <Sparkles className="w-10 h-10 text-violet-400 mx-auto mb-4" />
+          <Sparkles className="w-10 h-10 text-black/70 dark:text-white/70 mx-auto mb-4" />
           <h2 className="text-3xl font-black text-white mb-3">{L ? "لم تجد ما تبحث عنه؟" : "Didn't find what you're looking for?"}</h2>
           <p className="text-white/40 mb-8">{L ? "نبني أنظمة مخصصة بالكامل حسب احتياج مشروعك" : "We build fully custom systems tailored to your project needs"}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

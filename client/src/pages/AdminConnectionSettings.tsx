@@ -16,7 +16,7 @@ import { useI18n } from "@/lib/i18n";
 const fade = (d = 0) => ({ initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay: d } });
 
 function StatusDot({ state }: { state: string }) {
-  const color = state === "connected" ? "bg-green-500" : state === "connecting" ? "bg-amber-400 animate-pulse" : "bg-red-500";
+  const color = state === "connected" ? "bg-black dark:bg-white" : state === "connecting" ? "bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" : "bg-black dark:bg-white";
   return <span className={`inline-block w-2.5 h-2.5 rounded-full ${color} mr-1.5`} />;
 }
 
@@ -31,7 +31,7 @@ function ConnCard({ label, info }: { label: string; info: { uri: string; state: 
       </div>
       <Badge
         variant="outline"
-        className={info.state === "connected" ? "border-green-500 text-green-600" : info.state === "connecting" ? "border-amber-400 text-amber-600" : "border-red-400 text-red-500"}
+        className={info.state === "connected" ? "border-black dark:border-white text-black dark:text-white" : info.state === "connecting" ? "border-black/15 dark:border-white/15 text-black dark:text-white" : "border-black/15 dark:border-white/15 text-black dark:text-white"}
       >
         {info.state === "connected" ? "متصل / Connected" : info.state === "connecting" ? "يتصل..." : "منقطع / Disconnected"}
       </Badge>
@@ -138,7 +138,7 @@ export default function AdminConnectionSettings() {
         <motion.div {...fade(0.05)}>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2"><Database className="w-4 h-4 text-blue-500" />{L ? "حالة الاتصالات الحالية" : "Current Connection Status"}</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Database className="w-4 h-4 text-black dark:text-white" />{L ? "حالة الاتصالات الحالية" : "Current Connection Status"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <ConnCard label={L ? "قاعدة البيانات الرئيسية" : "Primary Database"} info={status.primary} />
@@ -165,24 +165,24 @@ export default function AdminConnectionSettings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {env && (
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
-                    <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1">{L ? "متغير البيئة (MONGODB_URI)" : "Environment Variable (MONGODB_URI)"}</p>
-                    <p className="text-xs font-mono text-blue-600 dark:text-blue-400">{env.mainDbUri || (L ? "غير محدد" : "Not set")}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">{L ? "متغير البيئة (MONGODB_URI)" : "Environment Variable (MONGODB_URI)"}</p>
+                    <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">{env.mainDbUri || (L ? "غير محدد" : "Not set")}</p>
                   </div>
                 )}
                 {settings?.mainDbUri && (
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-xl p-3">
-                    <p className="text-xs text-green-700 dark:text-green-300 font-semibold mb-1">{L ? "الاتصال النشط (مُخصص)" : "Active Connection (custom)"}</p>
-                    <p className="text-xs font-mono text-green-600 dark:text-green-400">{settings.mainDbUri}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">{L ? "الاتصال النشط (مُخصص)" : "Active Connection (custom)"}</p>
+                    <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">{settings.mainDbUri}</p>
                   </div>
                 )}
                 {settings?.prevMainDbUri && (
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex gap-2">
-                    <Archive className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 flex gap-2">
+                    <Archive className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold mb-1">{L ? "قاعدة البيانات القديمة (أرشيف)" : "Old Database (Archive)"}</p>
-                      <p className="text-xs font-mono text-amber-600 dark:text-amber-400">{settings.prevMainDbUri}</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{L ? "البيانات القديمة لا تزال متاحة للقراءة والنقل." : "Old data is still available for reading and migration."}</p>
+                      <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">{L ? "قاعدة البيانات القديمة (أرشيف)" : "Old Database (Archive)"}</p>
+                      <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">{settings.prevMainDbUri}</p>
+                      <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1">{L ? "البيانات القديمة لا تزال متاحة للقراءة والنقل." : "Old data is still available for reading and migration."}</p>
                     </div>
                   </div>
                 )}
@@ -228,17 +228,17 @@ export default function AdminConnectionSettings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {settings?.qmeetDbUri && (
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-xl p-3">
-                    <p className="text-xs text-green-700 dark:text-green-300 font-semibold mb-1">{L ? "الاتصال النشط (مُخصص)" : "Active Connection (custom)"}</p>
-                    <p className="text-xs font-mono text-green-600 dark:text-green-400">{settings.qmeetDbUri}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">{L ? "الاتصال النشط (مُخصص)" : "Active Connection (custom)"}</p>
+                    <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">{settings.qmeetDbUri}</p>
                   </div>
                 )}
                 {settings?.prevQmeetDbUri && (
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex gap-2">
-                    <Archive className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 flex gap-2">
+                    <Archive className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold">{L ? "أرشيف الاجتماعات القديمة" : "Old Meetings Archive"}</p>
-                      <p className="text-xs font-mono text-amber-600 dark:text-amber-400 mt-1">{settings.prevQmeetDbUri}</p>
+                      <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold">{L ? "أرشيف الاجتماعات القديمة" : "Old Meetings Archive"}</p>
+                      <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1">{settings.prevQmeetDbUri}</p>
                     </div>
                   </div>
                 )}
@@ -280,22 +280,22 @@ export default function AdminConnectionSettings() {
           <TabsContent value="email" className="mt-4 space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Mail className="w-4 h-4 text-blue-500" />{L ? "إعدادات خدمة البريد (SMTP2GO)" : "Email Service Settings (SMTP2GO)"}</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Mail className="w-4 h-4 text-black dark:text-white" />{L ? "إعدادات خدمة البريد (SMTP2GO)" : "Email Service Settings (SMTP2GO)"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {env && (
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
-                    <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1">{L ? "من متغيرات البيئة" : "From Environment Variables"}</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mb-1">{L ? "من متغيرات البيئة" : "From Environment Variables"}</p>
                     <div className="space-y-1">
-                      <p className="text-xs font-mono text-blue-600 dark:text-blue-400">API Key: {env.smtp2goApiKey || (L ? "غير محدد" : "Not set")}</p>
-                      <p className="text-xs font-mono text-blue-600 dark:text-blue-400">Sender: {env.smtp2goSender || (L ? "غير محدد" : "Not set")}</p>
+                      <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">API Key: {env.smtp2goApiKey || (L ? "غير محدد" : "Not set")}</p>
+                      <p className="text-xs font-mono text-black dark:text-white dark:text-black/70 dark:text-white/70">Sender: {env.smtp2goSender || (L ? "غير محدد" : "Not set")}</p>
                     </div>
                   </div>
                 )}
                 {settings?.smtp2goApiKeySet && (
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-xl p-3 flex gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-green-700 dark:text-green-300">{L ? "يوجد مفتاح API مُخصص محفوظ" : "A custom API key is saved"} <span className="font-mono">({settings.smtp2goApiKey})</span></p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 flex gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+                    <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "يوجد مفتاح API مُخصص محفوظ" : "A custom API key is saved"} <span className="font-mono">({settings.smtp2goApiKey})</span></p>
                   </div>
                 )}
                 <div className="space-y-3">
@@ -396,13 +396,13 @@ export default function AdminConnectionSettings() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Archive className="w-4 h-4 text-amber-500" />
+                <Archive className="w-4 h-4 text-black dark:text-white" />
                 {L ? "نقل سجلات من قاعدة البيانات القديمة" : "Migrate Records from Old Database"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3">
+                <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">
                   {L ? "يمكنك البحث في قاعدة البيانات القديمة ونقل سجلات محددة إلى الجديدة. السجل المنقول سيُضاف في الجديدة دون حذفه من القديمة." : "You can search the old database and migrate specific records to the new one. Migrated records are added to the new database without being deleted from the old."}
                 </p>
               </div>

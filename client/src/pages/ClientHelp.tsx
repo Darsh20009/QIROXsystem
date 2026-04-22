@@ -106,8 +106,8 @@ export default function ClientHelp() {
           <Link key={link.url} href={link.url} data-testid={`link-help-${link.url.replace(/\//g, "-")}`}>
             <Card className="border-black/[0.06] dark:border-white/[0.06] shadow-none rounded-2xl dark:bg-gray-900 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer h-full">
               <CardContent className="pt-5 pb-5 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center shrink-0">
-                  <link.icon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center shrink-0">
+                  <link.icon className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-black dark:text-white">{ar ? link.title : link.titleEn}</p>
@@ -126,9 +126,9 @@ export default function ClientHelp() {
             {ar ? "تواصل معنا" : "Contact Us"}
           </h2>
           {sent ? (
-            <Card className="border-green-200 dark:border-green-800 shadow-none rounded-2xl dark:bg-gray-900">
+            <Card className="border-black/10 dark:border-white/10 dark:border-black dark:border-white shadow-none rounded-2xl dark:bg-gray-900">
               <CardContent className="pt-8 pb-8 text-center">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <CheckCircle className="w-12 h-12 text-black dark:text-white mx-auto mb-3" />
                 <p className="font-bold text-black dark:text-white mb-1">{ar ? "تم إرسال رسالتك بنجاح!" : "Message sent successfully!"}</p>
                 <p className="text-sm text-black/40 dark:text-white/40 mb-4">{ar ? "سنرد عليك في أقرب وقت" : "We'll get back to you soon"}</p>
                 <Button variant="outline" onClick={() => setSent(false)} className="dark:text-white dark:border-white/10" data-testid="button-send-another">

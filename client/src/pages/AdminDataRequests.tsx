@@ -23,17 +23,17 @@ import { useI18n } from "@/lib/i18n";
 
 /* ── helpers ──────────────────────────────────────────── */
 function getStatusMeta(L: boolean): Record<string, { label: string; color: string; bg: string; border: string; icon: any }> { return {
-  pending:         { label: L ? "بانتظار العميل" : "Awaiting Client",  color: "text-amber-700",  bg: "bg-amber-50",    border: "border-amber-200",  icon: Clock3 },
-  submitted:       { label: L ? "أُرسل من العميل" : "Submitted by Client", color: "text-blue-700",   bg: "bg-blue-50",     border: "border-blue-200",   icon: CheckCircle2 },
-  approved:        { label: L ? "مقبول ✓" : "Approved ✓",         color: "text-emerald-700",bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
-  revision_needed: { label: L ? "تحتاج مراجعة" : "Needs Revision",   color: "text-red-700",    bg: "bg-red-50",      border: "border-red-200",    icon: RotateCcw },
+  pending:         { label: L ? "بانتظار العميل" : "Awaiting Client",  color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",    border: "border-black/10 dark:border-white/10",  icon: Clock3 },
+  submitted:       { label: L ? "أُرسل من العميل" : "Submitted by Client", color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",     border: "border-black/10 dark:border-white/10",   icon: CheckCircle2 },
+  approved:        { label: L ? "مقبول ✓" : "Approved ✓",         color: "text-black dark:text-white",bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",icon: CheckCircle2 },
+  revision_needed: { label: L ? "تحتاج مراجعة" : "Needs Revision",   color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",      border: "border-black/10 dark:border-white/10",    icon: RotateCcw },
 };
 }
 function getPriorityMeta(L: boolean): Record<string, { label: string; color: string }> { return {
   low:    { label: L ? "منخفضة" : "Low",    color: "text-slate-500" },
-  normal: { label: L ? "عادية" : "Normal",  color: "text-blue-600" },
-  high:   { label: L ? "عالية" : "High",    color: "text-amber-600" },
-  urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-red-600" },
+  normal: { label: L ? "عادية" : "Normal",  color: "text-black dark:text-white" },
+  high:   { label: L ? "عالية" : "High",    color: "text-black dark:text-white" },
+  urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-black dark:text-white" },
 };
 }
 
@@ -80,7 +80,7 @@ function CreateDataRequestDialog({ onClose, onCreated }: { onClose: () => void; 
       <DialogContent className="max-w-2xl max-h-[92vh]" dir={dir}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -178,7 +178,7 @@ function CreateDataRequestDialog({ onClose, onCreated }: { onClose: () => void; 
                         </SelectContent>
                       </Select>
                       <button onClick={() => removeItem(i)}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 text-gray-400 transition-all"
+                        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white hover:text-black dark:text-white text-gray-400 transition-all"
                         data-testid={`button-dr-remove-item-${i}`}>
                         <X className="w-4 h-4" />
                       </button>
@@ -209,7 +209,7 @@ function CreateDataRequestDialog({ onClose, onCreated }: { onClose: () => void; 
 
         <div className="flex gap-3 pt-2">
           <Button variant="outline" className="rounded-xl h-11" onClick={onClose}>{L ? "إلغاء" : "Cancel"}</Button>
-          <Button className="flex-1 bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black h-11 rounded-xl gap-2"
+          <Button className="flex-1 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white font-black h-11 rounded-xl gap-2"
             onClick={() => mutation.mutate()}
             disabled={!canSubmit || mutation.isPending}
             data-testid="button-dr-create">
@@ -278,7 +278,7 @@ function ViewResponseDialog({ req, onClose, onUpdated }: { req: any; onClose: ()
                       {item.value ? (
                         item.value.startsWith("/uploads/") || item.value.startsWith("http") ? (
                           <a href={item.value} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-sm font-medium hover:underline">
+                            className="flex items-center gap-2 text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-medium hover:underline">
                             <Paperclip className="w-4 h-4" /> {L ? "فتح الملف المرفق" : "Open Attachment"}
                           </a>
                         ) : (
@@ -290,9 +290,9 @@ function ViewResponseDialog({ req, onClose, onUpdated }: { req: any; onClose: ()
                     </div>
                   ))}
                   {req.response?.notes && (
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4">
-                      <p className="text-xs font-bold text-blue-500 mb-1">{L ? "ملاحظات العميل" : "Client Notes"}</p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">{req.response.notes}</p>
+                    <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+                      <p className="text-xs font-bold text-black dark:text-white mb-1">{L ? "ملاحظات العميل" : "Client Notes"}</p>
+                      <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">{req.response.notes}</p>
                     </div>
                   )}
                 </div>
@@ -315,12 +315,12 @@ function ViewResponseDialog({ req, onClose, onUpdated }: { req: any; onClose: ()
             {/* Action buttons */}
             {(req.status === "submitted") && (
               <div className="grid grid-cols-2 gap-3">
-                <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-11 rounded-xl gap-2"
+                <Button className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold h-11 rounded-xl gap-2"
                   onClick={() => updateMutation.mutate("approved")} disabled={updateMutation.isPending}
                   data-testid="button-dr-approve">
                   <CheckCircle2 className="w-4 h-4" /> {L ? "قبول" : "Approve"}
                 </Button>
-                <Button className="bg-amber-500 hover:bg-amber-600 text-white font-bold h-11 rounded-xl gap-2"
+                <Button className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold h-11 rounded-xl gap-2"
                   onClick={() => updateMutation.mutate("revision_needed")} disabled={updateMutation.isPending}
                   data-testid="button-dr-revise">
                   <RotateCcw className="w-4 h-4" /> {L ? "يحتاج مراجعة" : "Needs Revision"}
@@ -384,7 +384,7 @@ export default function AdminDataRequests() {
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25">
+              <div className="w-12 h-12 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25">
                 <ClipboardList className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -393,7 +393,7 @@ export default function AdminDataRequests() {
               </div>
             </div>
             <Button
-              className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black h-10 px-5 rounded-xl gap-2 shadow-lg shadow-cyan-500/25"
+              className="bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white font-black h-10 px-5 rounded-xl gap-2 shadow-lg shadow-cyan-500/25"
               onClick={() => setCreating(true)}
               data-testid="button-create-dr">
               <Plus className="w-4 h-4" /> {L ? "طلب جديد" : "New Request"}
@@ -404,8 +404,8 @@ export default function AdminDataRequests() {
           <div className="grid grid-cols-3 gap-4 mt-6">
             {[
               { label: L ? "إجمالي الطلبات" : "Total Requests", value: requests.length, color: "text-gray-900 dark:text-white" },
-              { label: L ? "بانتظار العميل" : "Awaiting Client",  value: pendingCount,    color: "text-amber-600" },
-              { label: L ? "بانتظار مراجعتك" : "Awaiting Review",value: submittedCount,  color: "text-blue-600"  },
+              { label: L ? "بانتظار العميل" : "Awaiting Client",  value: pendingCount,    color: "text-black dark:text-white" },
+              { label: L ? "بانتظار مراجعتك" : "Awaiting Review",value: submittedCount,  color: "text-black dark:text-white"  },
             ].map(s => (
               <div key={s.label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 text-center">
                 <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
@@ -441,7 +441,7 @@ export default function AdminDataRequests() {
         {/* List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800">
@@ -495,7 +495,7 @@ export default function AdminDataRequests() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {req.status === "submitted" && (
-                          <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg animate-pulse">{L ? "جديد" : "New"}</span>
+                          <span className="bg-black dark:bg-white text-white text-[10px] font-black px-2 py-1 rounded-lg animate-pulse">{L ? "جديد" : "New"}</span>
                         )}
                         <Eye className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                       </div>

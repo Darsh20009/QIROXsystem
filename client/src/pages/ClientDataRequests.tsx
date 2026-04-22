@@ -19,16 +19,16 @@ import {
 
 /* ── helpers ─────────────────────────────────────────── */
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
-  pending:          { label: "في الانتظار",    color: "text-amber-700",  bg: "bg-amber-50",    border: "border-amber-200", icon: Clock3 },
-  submitted:        { label: "تم الإرسال",     color: "text-blue-700",   bg: "bg-blue-50",     border: "border-blue-200",  icon: CheckCircle2 },
-  approved:         { label: "مقبول ✓",        color: "text-emerald-700",bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
-  revision_needed:  { label: "تحتاج مراجعة",  color: "text-red-700",    bg: "bg-red-50",      border: "border-red-200",   icon: RotateCcw },
+  pending:          { label: "في الانتظار",    color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",    border: "border-black/10 dark:border-white/10", icon: Clock3 },
+  submitted:        { label: "تم الإرسال",     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",     border: "border-black/10 dark:border-white/10",  icon: CheckCircle2 },
+  approved:         { label: "مقبول ✓",        color: "text-black dark:text-white",bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",icon: CheckCircle2 },
+  revision_needed:  { label: "تحتاج مراجعة",  color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",      border: "border-black/10 dark:border-white/10",   icon: RotateCcw },
 };
 const PRIORITY_META: Record<string, { label: string; color: string }> = {
   low:    { label: "منخفضة",    color: "text-slate-500" },
-  normal: { label: "عادية",     color: "text-blue-600" },
-  high:   { label: "عالية ⚠️", color: "text-amber-600" },
-  urgent: { label: "عاجل 🔴",  color: "text-red-600" },
+  normal: { label: "عادية",     color: "text-black dark:text-white" },
+  high:   { label: "عالية ⚠️", color: "text-black dark:text-white" },
+  urgent: { label: "عاجل 🔴",  color: "text-black dark:text-white" },
 };
 const TYPE_ICONS: Record<string, any> = { file: Paperclip, image: ImageIcon, text: Type, link: Link2 };
 
@@ -42,16 +42,16 @@ function fmt(date: string, ar = true) {
     const { lang, dir } = useI18n();
     const L = lang === "ar";
     const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
-      pending:         { label: L ? "في الانتظار" : "Pending",          color: "text-amber-700",  bg: "bg-amber-50",    border: "border-amber-200", icon: Clock3 },
-      submitted:       { label: L ? "تم الإرسال" : "Submitted",         color: "text-blue-700",   bg: "bg-blue-50",     border: "border-blue-200",  icon: CheckCircle2 },
-      approved:        { label: L ? "مقبول ✓" : "Approved ✓",           color: "text-emerald-700",bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
-      revision_needed: { label: L ? "تحتاج مراجعة" : "Revision Needed", color: "text-red-700",    bg: "bg-red-50",      border: "border-red-200",   icon: RotateCcw },
+      pending:         { label: L ? "في الانتظار" : "Pending",          color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",    border: "border-black/10 dark:border-white/10", icon: Clock3 },
+      submitted:       { label: L ? "تم الإرسال" : "Submitted",         color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",     border: "border-black/10 dark:border-white/10",  icon: CheckCircle2 },
+      approved:        { label: L ? "مقبول ✓" : "Approved ✓",           color: "text-black dark:text-white",bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",icon: CheckCircle2 },
+      revision_needed: { label: L ? "تحتاج مراجعة" : "Revision Needed", color: "text-black dark:text-white",    bg: "bg-black/[0.04] dark:bg-white/[0.06]",      border: "border-black/10 dark:border-white/10",   icon: RotateCcw },
     };
     const PRIORITY_META: Record<string, { label: string; color: string }> = {
       low:    { label: L ? "منخفضة" : "Low",        color: "text-slate-500" },
-      normal: { label: L ? "عادية" : "Normal",       color: "text-blue-600" },
-      high:   { label: L ? "عالية ⚠️" : "High ⚠️",  color: "text-amber-600" },
-      urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-red-600" },
+      normal: { label: L ? "عادية" : "Normal",       color: "text-black dark:text-white" },
+      high:   { label: L ? "عالية ⚠️" : "High ⚠️",  color: "text-black dark:text-white" },
+      urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-black dark:text-white" },
     };
   const [activeId, setActiveId] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "submitted" | "all">("pending");
@@ -76,7 +76,7 @@ function fmt(date: string, ar = true) {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25">
+            <div className="w-12 h-12 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25">
               <ClipboardList className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -84,7 +84,7 @@ function fmt(date: string, ar = true) {
               <p className="text-sm text-gray-500 dark:text-gray-400">{L ? "ملفات ومعلومات يحتاجها فريق العمل منك" : "Files and information the team needs from you"}</p>
             </div>
             {pendingCount > 0 && (
-              <div className="mr-auto bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full animate-pulse">
+              <div className="mr-auto bg-black dark:bg-white text-white text-xs font-black px-3 py-1.5 rounded-full animate-pulse">
                 {pendingCount} {L ? "بانتظارك" : "pending"}
               </div>
             )}
@@ -104,7 +104,7 @@ function fmt(date: string, ar = true) {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
               data-testid={`tab-${t.key}`}>
               {t.label}
-              {t.badge > 0 && <span className="bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{t.badge}</span>}
+              {t.badge > 0 && <span className="bg-black dark:bg-white text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{t.badge}</span>}
             </button>
           ))}
         </div>
@@ -112,7 +112,7 @@ function fmt(date: string, ar = true) {
         {/* Content */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white" />
           </div>
         ) : filtered.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -158,11 +158,11 @@ function RequestCard({ req, index, onOpen, statusMeta, priorityMeta, L }: { req:
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
       transition={{ delay: index * 0.05 }}
-      className={`bg-white dark:bg-gray-900 border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group ${isPending ? "border-amber-200 dark:border-amber-800/50" : "border-gray-200 dark:border-gray-800"}`}
+      className={`bg-white dark:bg-gray-900 border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group ${isPending ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "border-gray-200 dark:border-gray-800"}`}
       onClick={onOpen}
       data-testid={`card-data-request-${req.id}`}>
 
-      {isPending && <div className="h-1 bg-gradient-to-l from-amber-400 to-orange-400" />}
+      {isPending && <div className="h-1 bg-gradient-to-l from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1]" />}
 
       <div className="p-5">
         <div className="flex items-start gap-4">
@@ -285,19 +285,19 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
 
             {/* Description */}
             {req.description && (
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 flex gap-3">
-                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">{req.description}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 flex gap-3">
+                <Info className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+                <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">{req.description}</p>
               </div>
             )}
 
             {/* Admin note (for revision_needed) */}
             {req.status === "revision_needed" && req.adminNote && (
-              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 flex gap-3">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 flex gap-3">
+                <AlertCircle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-1">{L ? "ملاحظة الفريق" : "Team Note"}</p>
-                  <p className="text-sm text-red-700 dark:text-red-300">{req.adminNote}</p>
+                  <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1">{L ? "ملاحظة الفريق" : "Team Note"}</p>
+                  <p className="text-sm text-black dark:text-white dark:text-black/70 dark:text-white/70">{req.adminNote}</p>
                 </div>
               </div>
             )}
@@ -319,7 +319,7 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
                           <TypeIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                         </div>
                         <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{item.label}</p>
-                        {item.required && <span className="text-[10px] text-red-500 font-bold bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded-md">{L ? "مطلوب" : "Required"}</span>}
+                        {item.required && <span className="text-[10px] text-black dark:text-white font-bold bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white px-1.5 py-0.5 rounded-md">{L ? "مطلوب" : "Required"}</span>}
                       </div>
 
                       {item.hint && <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{item.hint}</p>}
@@ -329,7 +329,7 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
                           {existingVal ? (
                             existingVal.startsWith("/uploads/") || existingVal.startsWith("http") ? (
                               <a href={existingVal} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-sm font-medium hover:underline">
+                                className="flex items-center gap-2 text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-medium hover:underline">
                                 <Paperclip className="w-4 h-4" /> {L ? "عرض الملف المرفق" : "View Attached File"}
                               </a>
                             ) : (
@@ -352,13 +352,13 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
                         <div>
                           {val ? (
                             <div className="flex items-center gap-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0" />
                               <a href={val} target="_blank" rel="noopener noreferrer"
-                                className="text-cyan-600 dark:text-cyan-400 text-sm font-medium hover:underline flex-1 truncate">
+                                className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-medium hover:underline flex-1 truncate">
                                 {L ? "تم الرفع — عرض الملف" : "Uploaded — View File"}
                               </a>
                               <button onClick={() => setResponses(p => ({ ...p, [key]: "" }))}
-                                className="w-6 h-6 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all">
+                                className="w-6 h-6 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex items-center justify-center text-gray-400 hover:text-black dark:text-white transition-all">
                                 <X className="w-3 h-3" />
                               </button>
                             </div>
@@ -366,14 +366,14 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
                             <button
                               onClick={() => { setUploadingFor(key); fileInputRef.current?.click(); }}
                               disabled={!!uploading}
-                              className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-5 text-center hover:border-cyan-400 dark:hover:border-cyan-600 transition-all group"
+                              className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-5 text-center hover:border-black/15 dark:border-white/15 dark:hover:border-black dark:border-white transition-all group"
                               data-testid={`button-dr-upload-${key}`}>
                               {uploading === key ? (
-                                <Loader2 className="w-6 h-6 mx-auto text-cyan-500 animate-spin" />
+                                <Loader2 className="w-6 h-6 mx-auto text-black dark:text-white animate-spin" />
                               ) : (
                                 <>
-                                  <Upload className="w-6 h-6 mx-auto mb-1.5 text-gray-300 dark:text-gray-600 group-hover:text-cyan-500 transition-colors" />
-                                  <p className="text-xs text-gray-400 dark:text-gray-500 group-hover:text-cyan-500 transition-colors">
+                                  <Upload className="w-6 h-6 mx-auto mb-1.5 text-gray-300 dark:text-gray-600 group-hover:text-black dark:text-white transition-colors" />
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 group-hover:text-black dark:text-white transition-colors">
                                     {item.accept ? (L ? `يُقبل: ${item.accept}` : `Accepts: ${item.accept}`) : (L ? "اضغط لرفع الملف" : "Click to upload file")}
                                   </p>
                                 </>
@@ -420,7 +420,7 @@ function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any;
           </Button>
           {!isReadonly && (
             <Button
-              className="flex-1 bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black h-11 rounded-xl gap-2 shadow-lg shadow-cyan-500/25"
+              className="flex-1 bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white font-black h-11 rounded-xl gap-2 shadow-lg shadow-cyan-500/25"
               onClick={() => submitMutation.mutate()}
               disabled={!canSubmit || submitMutation.isPending}
               data-testid="button-dr-submit">

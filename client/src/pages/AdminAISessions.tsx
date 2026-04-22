@@ -67,8 +67,8 @@ export default function AdminAISessions() {
     <div className="space-y-6" dir={L ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -80,7 +80,7 @@ export default function AdminAISessions() {
           </div>
         </div>
         {unreadCount > 0 && (
-          <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 border-0">
+          <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0">
             {unreadCount} {L ? "غير مقروء" : "unread"}
           </Badge>
         )}
@@ -113,13 +113,13 @@ export default function AdminAISessions() {
           {sessions.map((session) => (
             <Card
               key={session._id}
-              className={`transition-all border ${!session.read ? "border-violet-200 dark:border-violet-800 bg-violet-50/30 dark:bg-violet-950/10" : "border-gray-100 dark:border-gray-800"}`}
+              className={`transition-all border ${!session.read ? "border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-gray-100 dark:border-gray-800"}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${!session.read ? "bg-violet-100 dark:bg-violet-900/40" : "bg-gray-100 dark:bg-gray-800"}`}>
-                      <MessageSquare className={`w-4 h-4 ${!session.read ? "text-violet-600 dark:text-violet-400" : "text-gray-400"}`} />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${!session.read ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-gray-100 dark:bg-gray-800"}`}>
+                      <MessageSquare className={`w-4 h-4 ${!session.read ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-gray-400"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -127,7 +127,7 @@ export default function AdminAISessions() {
                           {session.title}
                         </p>
                         {!session.read && (
-                          <span className="w-2 h-2 rounded-full bg-violet-500 shrink-0" />
+                          <span className="w-2 h-2 rounded-full bg-black dark:bg-white shrink-0" />
                         )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
@@ -142,7 +142,7 @@ export default function AdminAISessions() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="shrink-0 text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                      className="shrink-0 text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:text-black/70 dark:text-white/70 dark:hover:bg-black dark:bg-white"
                       onClick={() => markRead.mutate(session._id)}
                     >
                       <CheckCheck className="w-4 h-4" />

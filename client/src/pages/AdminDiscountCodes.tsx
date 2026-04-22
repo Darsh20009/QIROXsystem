@@ -186,11 +186,11 @@ export default function AdminDiscountCodes() {
                     {code.code}
                     <Copy className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
                   </button>
-                  <Badge className={`text-xs border ${code.isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                  <Badge className={`text-xs border ${code.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" : "bg-gray-50 text-gray-600 border-gray-200"}`}>
                     {code.isActive ? (L ? "نشط" : "Active") : (L ? "متوقف" : "Inactive")}
                   </Badge>
                   {code.showOnHome && (
-                    <Badge className="text-xs border bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge className="text-xs border bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10">
                       <Home className="w-3 h-3 ml-1" />{L ? "رئيسية" : "Home"}
                     </Badge>
                   )}
@@ -214,7 +214,7 @@ export default function AdminDiscountCodes() {
                 <Button size="sm" variant="outline" onClick={() => openEdit(code)} className="rounded-xl h-8 w-8 p-0" data-testid={`button-edit-code-${code.id || code._id}`}>
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(code.id || code._id)} className="rounded-xl h-8 w-8 p-0 text-red-500 border-red-200" data-testid={`button-delete-code-${code.id || code._id}`}>
+                <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(code.id || code._id)} className="rounded-xl h-8 w-8 p-0 text-black dark:text-white border-black/10 dark:border-white/10" data-testid={`button-delete-code-${code.id || code._id}`}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
