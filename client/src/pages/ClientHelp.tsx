@@ -13,7 +13,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { Link } from "wouter";
-import { AIPanel } from "@/components/QiroxAI";
 
 const FAQ_ITEMS = [
   {
@@ -120,17 +119,8 @@ export default function ClientHelp() {
         ))}
       </div>
 
-      {/* ─── QIROX AI Panel ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-lg font-black text-black dark:text-white mb-4">
-            {ar ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}
-          </h2>
-          <p className="text-xs text-black/40 dark:text-white/40 mb-4">
-            {ar ? "اسأل المساعد أي سؤال وسيجيبك فوراً" : "Ask the assistant any question and get an instant answer"}
-          </p>
-          <AIPanel className="h-[420px]" />
-        </div>
+      {/* ─── Contact form (QIROX AI is available globally via floating assistant) ─── */}
+      <div className="grid grid-cols-1 gap-6">
         <div>
           <h2 className="text-lg font-black text-black dark:text-white mb-4" data-testid="text-contact-title">
             {ar ? "تواصل معنا" : "Contact Us"}

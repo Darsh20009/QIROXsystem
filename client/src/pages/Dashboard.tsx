@@ -28,10 +28,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ModificationRequest, Order } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
-import { AIPanel } from "@/components/QiroxAI";
 import { ClientHeroVisual } from "@/components/ClientHeroVisual";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
-import { WelcomeAssistant } from "@/components/WelcomeAssistant";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
@@ -1992,7 +1990,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" dir={dir}>
-      <WelcomeAssistant />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
       <div className="bg-black dark:bg-black overflow-hidden relative">
@@ -3030,24 +3027,10 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* ─── Right column: Notifications + What's New + AI ─── */}
+          {/* ─── Right column: Notifications + What's New ─── */}
           <div className="xl:col-span-1 flex flex-col gap-4">
-            {/* Notifications */}
             <NotificationsWidget />
-
-            {/* What's New */}
             <WhatsNewWidget />
-
-            {/* QIROX AI */}
-            <div className="sticky top-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
-                </div>
-                <h2 className="font-bold text-black dark:text-white text-sm">{L ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}</h2>
-              </div>
-              <AIPanel className="h-[520px]" />
-            </div>
           </div>
 
           {/* Bank Transfer Proof Upload Banner */}

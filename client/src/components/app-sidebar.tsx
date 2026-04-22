@@ -112,7 +112,6 @@ export function AppSidebar() {
     // Employee — tools (الأدوات)
     { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
     { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools" },
-    { title: ar ? "AI Studio" : "AI Studio", icon: Bot, url: "/ai-studio", group: "employee", section: "tools", allowedRoles: STAFF_ROLES },
     { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "tools" },
     // Employee — account (حسابي)
     { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "account" },
@@ -127,7 +126,6 @@ export function AppSidebar() {
     // Admin — main
     { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
-    { title: ar ? "AI Studio" : "AI Studio", icon: Sparkles, url: "/ai-studio", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
     { title: ar ? "جلسات الذكاء الاصطناعي" : "AI Sessions", icon: Bot, url: "/admin/ai-sessions", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     // Admin — products & services (core catalog)
     { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
