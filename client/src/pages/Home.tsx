@@ -1,2987 +1,387 @@
+import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
 import SARIcon from "@/components/SARIcon";
-import { useTemplates } from "@/hooks/use-templates";
-import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { motion } from "framer-motion";
-import { Link } from "wouter";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/lib/i18n";
+import { useTemplates } from "@/hooks/use-templates";
 import type { Partner } from "@shared/schema";
-
-import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
-import qiroxNoBgLogo from "@assets/qirox_without_background_1771716363944.png";
-import paymobLogo from "@assets/download_1774503289938.png";
-import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
-import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
-import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
-import tuwaiqLogo from "@assets/Screenshot_2026-02-20_030415_1771717262310.png";
-import blackRoseLogo from "@assets/Screenshot_2026-01-28_010045_1771717287296.png";
-import qodratakLogo from "@assets/Screenshot_2026-01-28_125929_1771717287296.png";
-import subwayLogo from "@assets/Screenshot_2026-01-28_130014_1771717301779.png";
-import maestroLogo from "@assets/Screenshot_2026-01-28_130058_1771717301779.png";
-import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
+import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
 import {
-  ArrowLeft, Globe, ArrowUpRight,
-  BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Users, Heart, ShoppingCart, Coffee, Layers,
-  Sparkles, Shield, Zap,
-  UtensilsCrossed, Store, Building2, ChevronLeft, ChevronRight,
-  Headphones, Palette,
-  QrCode, MonitorSmartphone, Star, Award,
-  Package, ShoppingBag, CreditCard, BarChart3,
-  Smartphone, Check,
-  Utensils, Bell, Clock, Wifi, Receipt, Truck,
-  Tag, Filter, RefreshCw, TrendingUp,
-  Lock, Cloud, Cpu, Globe2, MessageSquare,
-  Copy, X, Flame, Timer, ChevronDown, AppWindow, Download,
-  Share2, PlusSquare
+  ArrowRight, ArrowLeft, ArrowUpRight, Sparkles, Zap, Shield, Cpu,
+  Globe2, Layers, Smartphone, ShoppingBag, Building2, GraduationCap,
+  Heart, Coffee, Briefcase, Check, MessageSquare, Mail, Database,
+  Send, Search, Bot, ChevronRight,
 } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
 
-const sectorIcons: Record<string, any> = {
-  BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Globe
-};
-
-const staticPartners = [
-  { name: "QahwaCup", nameAr: "قهوة كوب", logo: qahwaCupLogo },
-  { name: "Gen M&Z", nameAr: "Gen M&Z", logo: genMZLogo },
-  { name: "Be Fluent", nameAr: "Be Fluent", logo: beFluentLogo },
-  { name: "جمعية طويق", nameAr: "جمعية طويق", logo: tuwaiqLogo },
-  { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه", logo: blackRoseLogo },
-  { name: "Qodratak", nameAr: "قدراتك", logo: qodratakLogo },
-  { name: "Subway", nameAr: "صبواي", logo: subwayLogo },
-  { name: "Maestro", nameAr: "مايسترو", logo: maestroLogo },
-  { name: "InstaPay", nameAr: "إنستاباي", logo: instapayLogo },
+/* ─── Constants ───────────────────────────────────────────────── */
+const SECTORS = [
+  { icon: ShoppingBag,    arName: "متاجر إلكترونية",  enName: "E-Commerce" },
+  { icon: Coffee,         arName: "مطاعم ومقاهي",    enName: "Restaurants & Cafes" },
+  { icon: GraduationCap,  arName: "منصات تعليمية",   enName: "Education Platforms" },
+  { icon: Building2,      arName: "شركات ومؤسسات",  enName: "Corporate" },
+  { icon: Heart,          arName: "صحة وعيادات",     enName: "Healthcare" },
+  { icon: Briefcase,      arName: "خدمات احترافية",  enName: "Professional Services" },
 ];
 
-const isMobileDevice = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const PILLARS = [
+  { icon: Zap,      ar: { t: "سرعة فائقة",       d: "نسلّم في أيام، لا أشهر" },         en: { t: "Lightning Fast",  d: "Delivered in days, not months" } },
+  { icon: Shield,   ar: { t: "أمان مؤسسي",       d: "بنية تحتية محصّنة وحماية كاملة" },  en: { t: "Enterprise Grade", d: "Hardened infra & full security" } },
+  { icon: Cpu,      ar: { t: "ذكاء اصطناعي",     d: "QIROX AI ينفّذ مهامك فعلياً" },     en: { t: "AI-Native",       d: "QIROX AI actually executes your work" } },
+  { icon: Sparkles, ar: { t: "تجربة لا تُضاهى", d: "تصميم نظيف يخدم أعمالك" },          en: { t: "Unmatched UX",    d: "Clean design that serves your business" } },
+];
 
-const fadeUp = isMobileDevice
-  ? { hidden: { opacity: 1, y: 0 }, visible: () => ({ opacity: 1, y: 0, transition: { duration: 0 } }) }
-  : {
-      hidden: { opacity: 0, y: 30 },
-      visible: (i: number) => ({
-        opacity: 1, y: 0,
-        transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }
-      })
-    };
+const PRICING_HIGHLIGHTS = [
+  { icon: Mail,         ar: "بريد رسمي", en: "Branded Email",     priceAr: "600 / سنة",    priceEn: "600 / yr",      noteAr: "5 صناديق + إدارة من النظام", noteEn: "5 mailboxes + in-app mgmt" },
+  { icon: Database,     ar: "قاعدة بيانات", en: "Database",       priceAr: "300 / شهر",    priceEn: "300 / mo",      noteAr: "10GB MongoDB أو PostgreSQL",   noteEn: "10GB MongoDB or PostgreSQL" },
+  { icon: MessageSquare,ar: "رسائل SMS", en: "SMS",                priceAr: "300 / شهر",    priceEn: "300 / mo",      noteAr: "1500 رسالة شهرياً",           noteEn: "1,500 messages / month" },
+  { icon: Send,         ar: "إرسال بريد", en: "Email Sending",     priceAr: "100 / شهر",    priceEn: "100 / mo",      noteAr: "1000 رسالة شهرياً",           noteEn: "1,000 messages / month" },
+  { icon: Search,       ar: "تحسين SEO", en: "SEO Boost",          priceAr: "300 / شهر",    priceEn: "300 / mo",      noteAr: "تحسين كامل لمحركات البحث",   noteEn: "Full search engine optimization" },
+  { icon: Bot,          ar: "ذكاء اصطناعي", en: "AI Add-On",      priceAr: "من 150",       priceEn: "from 150",      noteAr: "3 فئات: A1 / A2 / A3",        noteEn: "3 tiers: A1 / A2 / A3" },
+];
 
-const stagger = isMobileDevice
-  ? { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0 } } }
-  : { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+const TABS = [
+  { id: "systems",  ar: "الأنظمة",   en: "Systems" },
+  { id: "pricing",  ar: "الأسعار",   en: "Pricing" },
+  { id: "process",  ar: "كيف نعمل",  en: "How We Work" },
+  { id: "partners", ar: "شركاؤنا",   en: "Partners" },
+];
 
-const mobileMotionProps = isMobileDevice ? { initial: { opacity: 1 }, animate: { opacity: 1 } } : {};
+const PROCESS_STEPS = [
+  { ar: { t: "احكِ لنا فكرتك",   d: "تواصل عبر الموقع أو واتساب — QIROX AI يستوعب احتياجك في دقائق" }, en: { t: "Tell us your idea",   d: "Reach out — QIROX AI captures your needs in minutes" } },
+  { ar: { t: "اختر الباقة",      d: "أسعار شفافة ومفصّلة بدون مفاجآت" },                                en: { t: "Pick a plan",         d: "Transparent prices, no surprises" } },
+  { ar: { t: "نبني ونسلّم",      d: "فريق تقني + ذكاء اصطناعي يبني نظامك بسرعة قياسية" },                en: { t: "We build & ship",     d: "Tech team + AI deliver at record speed" } },
+  { ar: { t: "ندعمك للأبد",      d: "صيانة، تحديثات، ودعم فعّال 24/7" },                                en: { t: "We support forever",  d: "Maintenance, updates, real 24/7 support" } },
+];
 
+const fade = (i = 0) => ({
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.2 },
+  transition: { duration: 0.5, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
+});
+
+/* ─── Page ────────────────────────────────────────────────────── */
 export default function Home() {
-  const { data: templates } = useTemplates();
-  const { t, lang, dir } = useI18n();
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [bannerIdx, setBannerIdx] = useState(0);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+  const { lang, dir } = useI18n();
+  const ar = lang === "ar";
+  const [tab, setTab] = useState<typeof TABS[number]["id"]>("systems");
 
-  const { data: discountCodes } = useQuery<any[]>({
-    queryKey: ["/api/discount-codes/public"],
-  });
+  const { data: templates = [] } = useTemplates();
+  const { data: apiPartners = [] } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
 
-  const { data: publicSettings } = useQuery<{ instagram?: string; twitter?: string; linkedin?: string; snapchat?: string; youtube?: string; tiktok?: string; whatsapp?: string }>({
-    queryKey: ["/api/public/settings"],
-    staleTime: 10 * 60 * 1000,
-  });
+  const Arrow = ar ? ArrowLeft : ArrowRight;
 
-  const { data: appDownloads } = useQuery<{
-    playStore: { url: string; enabled: boolean };
-    appStore:  { url: string; enabled: boolean };
-    msStore:   { url: string; enabled: boolean };
-  }>({
-    queryKey: ["/api/app-downloads"],
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const SOCIAL_ITEMS = [
-    { key: "instagram", icon: <SiInstagram className="w-5 h-5" />, url: publicSettings?.instagram, label: "Instagram" },
-    { key: "twitter",   icon: <SiX className="w-5 h-5" />,          url: publicSettings?.twitter,   label: "X / Twitter" },
-    { key: "linkedin",  icon: <SiLinkedin className="w-5 h-5" />,  url: publicSettings?.linkedin,  label: "LinkedIn" },
-    { key: "tiktok",    icon: <SiTiktok className="w-5 h-5" />,    url: publicSettings?.tiktok,    label: "TikTok" },
-    { key: "snapchat",  icon: <SiSnapchat className="w-5 h-5" />,  url: publicSettings?.snapchat,  label: "Snapchat" },
-    { key: "youtube",   icon: <SiYoutube className="w-5 h-5" />,   url: publicSettings?.youtube,   label: "YouTube" },
-    { key: "whatsapp",  icon: <SiWhatsapp className="w-5 h-5" />,  url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
-  ].filter(s => !!s.url);
-
-  const [activeCarouselIdx, setActiveCarouselIdx] = useState(0);
-  const [showPaymobModal, setShowPaymobModal] = useState(false);
-  const [showPaypalModal, setShowPaypalModal] = useState(false);
-
-  const currentCode = discountCodes && discountCodes.length > 0
-    ? discountCodes[bannerIdx % discountCodes.length]
-    : null;
-
-  useEffect(() => {
-    if (!currentCode?.expiresAt) { setTimeLeft(null); return; }
-    const calc = () => {
-      const diff = new Date(currentCode.expiresAt).getTime() - Date.now();
-      if (diff <= 0) { setTimeLeft({ d: 0, h: 0, m: 0, s: 0 }); return; }
-      setTimeLeft({ d: Math.floor(diff / 86400000), h: Math.floor((diff % 86400000) / 3600000), m: Math.floor((diff % 3600000) / 60000), s: Math.floor((diff % 60000) / 1000) });
-    };
-    calc();
-    const iv = setInterval(calc, 1000);
-    return () => clearInterval(iv);
-  }, [currentCode]);
-
-  function copyCode(code: string) {
-    navigator.clipboard?.writeText(code).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
-  const scrollCarousel = useCallback((direction: "left" | "right") => {
-    if (!carouselRef.current) return;
-    const el = carouselRef.current;
-    const card = el.querySelector("[data-carousel-card]") as HTMLElement | null;
-    const step = card ? card.offsetWidth + 20 : 300;
-    const scrollAmount = direction === "right" ? step : -step;
-    el.scrollBy({ left: scrollAmount, behavior: "smooth" });
-  }, []);
-
-  useEffect(() => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const card = el.querySelector("[data-carousel-card]") as HTMLElement | null;
-      const step = card ? card.offsetWidth + 20 : 300;
-      const idx = Math.round(Math.abs(el.scrollLeft) / step);
-      setActiveCarouselIdx(idx);
-    };
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const cafeFeatures = lang === "ar" ? [
-    { icon: QrCode,           title: "قائمة QR تفاعلية",  desc: "يطلب العميل من هاتفه مباشرة بدون تماس" },
-    { icon: MonitorSmartphone, title: "شاشة المطبخ KDS",   desc: "الطلبات تصل للمطبخ فورياً وتلقائياً" },
-    { icon: Receipt,           title: "نقطة بيع POS",       desc: "كاشير ذكي متكامل مع الفواتير الضريبية" },
-    { icon: Star,              title: "برنامج الولاء",       desc: "نقاط ومكافآت تعيد العملاء مراراً" },
-    { icon: Truck,             title: "تتبع التوصيل",        desc: "العميل يتابع طلبه لحظة بلحظة" },
-    { icon: Bell,              title: "إشعارات فورية",       desc: "تنبيهات مباشرة للعملاء والموظفين" },
-    { icon: BarChart3,         title: "تقارير المبيعات",     desc: "تحليلات يومية لأفضل المنتجات" },
-    { icon: Wifi,              title: "طلب عبر واتساب",      desc: "استقبال الطلبات من واتساب مباشرة" },
-  ] : [
-    { icon: QrCode,           title: "Interactive QR Menu",   desc: "Customers order from their phone without contact" },
-    { icon: MonitorSmartphone, title: "Kitchen Display KDS",   desc: "Orders reach the kitchen instantly and automatically" },
-    { icon: Receipt,           title: "POS System",            desc: "Smart cashier integrated with tax invoices" },
-    { icon: Star,              title: "Loyalty Program",       desc: "Points & rewards that bring customers back" },
-    { icon: Truck,             title: "Delivery Tracking",     desc: "Customers track their order in real time" },
-    { icon: Bell,              title: "Instant Notifications", desc: "Direct alerts for customers and staff" },
-    { icon: BarChart3,         title: "Sales Reports",         desc: "Daily analytics for top products" },
-    { icon: Wifi,              title: "WhatsApp Orders",       desc: "Receive orders directly via WhatsApp" },
-  ];
-
-  const storeFeatures = lang === "ar" ? [
-    { icon: ShoppingBag, title: "متجر احترافي",       desc: "واجهة فاخرة تعكس هوية علامتك" },
-    { icon: Package,     title: "إدارة المنتجات",      desc: "ألوان، مقاسات، SKU، صور متعددة" },
-    { icon: CreditCard,  title: "Apple Pay & STC Pay", desc: "دفع إلكتروني سريع وآمن" },
-    { icon: Filter,      title: "فلترة ذكية",          desc: "العميل يجد ما يريد بسهولة تامة" },
-    { icon: Tag,         title: "كوبونات وعروض",        desc: "خصومات مخصصة تزيد المبيعات" },
-    { icon: TrendingUp,  title: "تقارير تفصيلية",      desc: "أفضل المنتجات والفئات العمرية" },
-    { icon: RefreshCw,   title: "مخزون ذكي",           desc: "تنبيه تلقائي عند نفاد المخزون" },
-    { icon: Truck,       title: "شركات الشحن",          desc: "ربط مع أرامكس، DHL، سمسا وغيرها" },
-  ] : [
-    { icon: ShoppingBag, title: "Professional Store",  desc: "Luxurious interface that reflects your brand identity" },
-    { icon: Package,     title: "Product Management",  desc: "Colors, sizes, SKU, multiple images" },
-    { icon: CreditCard,  title: "Apple Pay & STC Pay", desc: "Fast and secure online payment" },
-    { icon: Filter,      title: "Smart Filters",       desc: "Customers find what they need easily" },
-    { icon: Tag,         title: "Coupons & Offers",    desc: "Custom discounts that boost sales" },
-    { icon: TrendingUp,  title: "Detailed Reports",    desc: "Top products and customer analytics" },
-    { icon: RefreshCw,   title: "Smart Inventory",     desc: "Automatic alerts when stock runs low" },
-    { icon: Truck,       title: "Shipping Companies",  desc: "Integrated with Aramex, DHL, SMSA and more" },
-  ];
+  const visibleTemplates = useMemo(
+    () => (templates as any[]).filter((t) => t?.status !== "draft").slice(0, 8),
+    [templates]
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
+    <div className="min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white" dir={dir}>
       <Navigation />
 
-      {/* ── Creative Discount Banner ── */}
-      <AnimatePresence>
-        {currentCode && !bannerDismissed && (
-          <motion.div
-            key={bannerIdx}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="w-full relative overflow-hidden z-40"
-            style={{ background: currentCode.bannerColor || "#111" }}
-            data-testid="discount-banner"
-          >
-            {/* Animated shimmer overlay */}
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: "linear", repeatDelay: 2 }}
-              style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%)" }}
-            />
-
-            {/* Ticker / Marquee strip for multiple codes */}
-            {discountCodes && discountCodes.length > 1 && (
-              <div className="overflow-hidden border-b border-white/10 py-1">
-                <motion.div
-                  className="flex items-center gap-6 whitespace-nowrap"
-                  animate={{ x: ["0%", "-50%"] }}
-                  transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                >
-                  {[...discountCodes, ...discountCodes].map((c: any, i: number) => (
-                    <span key={i} className="flex items-center gap-2 text-[10px] font-bold text-white/60 px-3">
-                      <Tag className="w-2.5 h-2.5 text-white/40" />
-                      <span className="font-black tracking-widest text-white">{c.code}</span>
-                      <span>—</span>
-                      <span className="flex items-center gap-0.5">{c.bannerTextAr || c.descriptionAr || <><span>خصم {c.value}</span>{c.type === "percentage" ? "%" : <SARIcon size={9} className="opacity-70" />}</>}</span>
-                    </span>
-                  ))}
-                </motion.div>
-              </div>
-            )}
-
-            {/* Main banner content */}
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4" dir={dir}>
-
-              {/* Flame + discount badge */}
-              <motion.div
-                animate={{ scale: [1, 1.08, 1], rotate: [-2, 2, -2] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="flex-shrink-0 hidden sm:flex items-center justify-center w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-sm"
-              >
-                <Flame className="w-6 h-6 text-orange-300" />
-              </motion.div>
-
-              {/* Discount value big badge */}
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <span className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-none">
-                    {currentCode.value}{currentCode.type === "percentage" ? "%" : <SARIcon size={18} className="opacity-90 mr-0.5" />}
-                  </span>
-                  <span className="block text-[9px] font-bold text-white/60 uppercase tracking-widest mt-0.5">
-                    {lang === "ar" ? (currentCode.type === "percentage" ? "خصم" : "توفير") : (currentCode.type === "percentage" ? "OFF" : "SAVE")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="w-px h-10 bg-white/20 flex-shrink-0 hidden sm:block" />
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-bold text-xs sm:text-sm leading-tight truncate">
-                  {currentCode.bannerTextAr || currentCode.descriptionAr || "عرض حصري لعملاء QIROX Studio"}
-                </p>
-                {currentCode.minOrderAmount > 0 && (
-                  <p className="text-white/50 text-[10px] mt-0.5 flex items-center gap-1">{lang === "ar" ? <>عند طلب بقيمة {currentCode.minOrderAmount} <SARIcon size={9} className="opacity-60" /> أو أكثر</> : `On orders of ${currentCode.minOrderAmount} SAR or more`}</p>
-                )}
-              </div>
-
-              {/* Code pill — click to copy */}
-              <motion.button
-                whileTap={{ scale: 0.94 }}
-                onClick={() => copyCode(currentCode.code)}
-                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.18] hover:bg-white/[0.28] border border-white/25 backdrop-blur-sm transition-all cursor-pointer"
-                data-testid="button-copy-code"
-                title="انسخ الكود"
-              >
-                <span className="text-white font-black tracking-widest text-xs sm:text-sm">{currentCode.code}</span>
-                <AnimatePresence mode="wait">
-                  {copied ? (
-                    <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                      <Check className="w-3.5 h-3.5 text-emerald-300" />
-                    </motion.div>
-                  ) : (
-                    <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                      <Copy className="w-3.5 h-3.5 text-white/60" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-
-              {/* Countdown */}
-              {timeLeft && (
-                <div className="flex-shrink-0 hidden md:flex items-center gap-1.5 bg-white/[0.12] border border-white/20 rounded-xl px-3 py-2">
-                  <Timer className="w-3 h-3 text-white/50 flex-shrink-0" />
-                  {(lang === "ar"
-                    ? [{ v: timeLeft.d, l: "ي" }, { v: timeLeft.h, l: "س" }, { v: timeLeft.m, l: "د" }, { v: timeLeft.s, l: "ث" }]
-                    : [{ v: timeLeft.d, l: "d" }, { v: timeLeft.h, l: "h" }, { v: timeLeft.m, l: "m" }, { v: timeLeft.s, l: "s" }]
-                  ).map(({ v, l }, i) => (
-                    <span key={i} className="flex items-center gap-0.5 text-white font-black text-xs tabular-nums">
-                      <motion.span
-                        key={v}
-                        initial={{ y: -6, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >{String(v).padStart(2, "0")}</motion.span>
-                      <span className="text-white/40 text-[9px]">{l}</span>
-                      {i < 3 && <span className="text-white/30 text-[9px] mx-0.5">:</span>}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Navigation dots (multiple codes) */}
-              {discountCodes && discountCodes.length > 1 && (
-                <div className="flex-shrink-0 flex items-center gap-1">
-                  {discountCodes.map((_: any, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setBannerIdx(i)}
-                      className={`rounded-full transition-all duration-300 ${i === bannerIdx % discountCodes.length ? "w-4 h-2 bg-white" : "w-2 h-2 bg-white/30 hover:bg-white/50"}`}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Dismiss */}
-              <button
-                onClick={() => setBannerDismissed(true)}
-                className="flex-shrink-0 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                data-testid="button-dismiss-banner"
-              >
-                <X className="w-3.5 h-3.5 text-white/60" />
-              </button>
+      {/* ═══ HERO ═══ */}
+      <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
+        {/* subtle dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
+          <motion.div {...fade(0)} className="flex flex-col items-center text-center">
+            <img src={qiroxLogo} alt="QIROX" className="h-14 md:h-16 w-auto mb-6 dark:invert" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
+              {ar ? "QIROX Studio · شريكك التقني" : "QIROX Studio · Your tech partner"}
+            </div>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
+              {ar ? "نحوّل الأفكار" : "We turn ideas"}
+              <br />
+              <span className="text-black/40 dark:text-white/40">{ar ? "إلى تقنية حقيقية" : "into real technology"}</span>
+            </h1>
+            <p className="text-base md:text-lg text-black/60 dark:text-white/60 max-w-2xl mb-10 leading-relaxed">
+              {ar
+                ? "التقنية بقت سهلة. نحوّل أي فكرة إلى موقع أو نظام احترافي بمميزات لا توجد في السوق وبأسعار شفافة."
+                : "Tech is simple now. We turn any idea into a professional site or system with features unmatched in the market — and transparent pricing."}
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link href="/cart">
+                <Button size="lg" className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-start">
+                  {ar ? "ابدأ مشروعك" : "Start your project"}
+                  <Arrow className="w-4 h-4" />
+                </Button>
+              </Link>
+              <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
+                <Button size="lg" variant="outline" className="border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-whatsapp">
+                  <SiWhatsapp className="w-4 h-4" />
+                  {ar ? "تواصل واتساب" : "WhatsApp us"}
+                </Button>
+              </a>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* HERO */}
-      <section className="relative overflow-hidden w-full min-h-[92vh] flex items-center" data-testid="section-hero">
-        {/* Dark background — system dark navy */}
-        <div className="absolute inset-0 bg-[#060b14]" />
-        {/* Subtle top fade */}
-        <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
-        {/* Dot grid pattern — neutral white */}
-        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "36px 36px" }} />
-        {/* Very subtle white glow — bottom center */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-white/[0.02] blur-[120px] pointer-events-none" />
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-24 sm:pt-28 lg:pt-36 pb-14 sm:pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center max-w-6xl mx-auto">
-
-            {/* ── Content Column ── */}
-            <div className={lang === "ar" ? "text-center lg:text-right order-1" : "text-center lg:text-left order-1"} dir={dir}>
-
-              {/* Top badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.05 }}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.05] mb-7"
-              >
-                <span className="w-2 h-2 rounded-full bg-white/50 animate-pulse" />
-                <span className="text-white/55 text-xs tracking-wide">{lang === "ar" ? "منصة الأنظمة الرقمية المتكاملة" : "Integrated Digital Systems Platform"}</span>
-              </motion.div>
-
-              {/* Headline */}
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.65, delay: 0.1 }}
-              >
-                <h1 dir="ltr" className="text-[clamp(2.2rem,8vw,5.5rem)] font-black font-heading text-white leading-[1.05] mb-1 tracking-tight">
-                  Build Systems.
-                </h1>
-                <h1 dir="ltr" className="text-[clamp(2.2rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-6 sm:mb-8 tracking-tight" style={{ color: "rgba(255,255,255,0.2)" }}>
-                  .Stay Human
-                </h1>
-              </motion.div>
-
-              {/* Subtitle */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.25 }}
-                className="text-sm sm:text-lg text-white/45 mb-7 sm:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
-                dir={dir}
-              >
-                {t("home.hero.subtitleFull")}
-              </motion.p>
-
-              {/* CTA Buttons */}
-              <motion.div
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.32 }}
-                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 mb-7 sm:mb-11"
-                dir="ltr"
-              >
-                <Link href="/contact">
-                  <Button
-                    size="lg"
-                    className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-white text-gray-950 hover:bg-white/90 shadow-lg shadow-black/20 no-default-hover-elevate no-default-active-elevate border-0"
-                    data-testid="button-start-project"
-                  >
-                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                    {t("home.startProject")}
-                  </Button>
-                </Link>
-                <Link href="/prices">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full font-semibold border-white/12 text-white/65 bg-white/[0.05] hover:bg-white/[0.1] hover:text-white/90 hover:border-white/20"
-                    data-testid="button-explore-solutions"
-                  >
-                    {lang === "ar" ? "عرض الأسعار" : "View Pricing"}
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Inline stats */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.42 }}
-                className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6"
-                dir={dir}
-              >
-                {[
-                  { value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients" },
-                  { value: "6+", label: lang === "ar" ? "قطاعات" : "Sectors" },
-                  { value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating" },
-                  { value: "2", label: lang === "ar" ? "مدينة" : "Cities" },
-                ].map((stat, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    {i > 0 && <div className="w-px h-7 bg-white/10" />}
-                    <div>
-                      <div className="text-lg sm:text-xl font-black text-white font-heading leading-none">{stat.value}</div>
-                      <div className="text-[11px] text-white/30 mt-0.5">{stat.label}</div>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-
-              {/* ── Mobile Feature Pills ── */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.55 }}
-                className="flex lg:hidden flex-wrap justify-center gap-2 mt-6"
-                dir={dir}
-              >
-                {[
-                  { icon: BarChart3, label: lang === "ar" ? "تقارير فورية" : "Live Reports" },
-                  { icon: CreditCard, label: lang === "ar" ? "مدفوعات متكاملة" : "Payments" },
-                  { icon: Smartphone, label: lang === "ar" ? "تطبيق جوال" : "Mobile App" },
-                  { icon: Shield, label: lang === "ar" ? "أمان عالي" : "High Security" },
-                  { icon: Zap, label: lang === "ar" ? "سريع وموثوق" : "Fast & Reliable" },
-                  { icon: MessageSquare, label: lang === "ar" ? "دعم فوري" : "Live Support" },
-                ].map(({ icon: Icon, label }, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.05] backdrop-blur-sm">
-                    <Icon className="w-3 h-3 text-white/50" />
-                    <span className="text-[11px] text-white/55 font-medium">{label}</span>
-                  </div>
-                ))}
-              </motion.div>
-
-            </div>
-
-            {/* ── Visual Column (Desktop) ── */}
-            <motion.div
-              initial={{ opacity: 0, x: lang === "ar" ? -40 : 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="hidden lg:flex items-center justify-center order-2 relative"
-              dir="ltr"
-            >
-              <div className="relative w-full max-w-[480px] h-[360px]">
-
-                {/* ── Browser / Dashboard Mockup ── */}
-                <div className="absolute top-0 left-0 w-[320px] rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.55)] border border-white/[0.07]">
-                  {/* Browser chrome bar */}
-                  <div className="bg-[#1a1a2e] px-4 py-2.5 flex items-center gap-3">
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
-                    </div>
-                    {/* URL bar */}
-                    <div className="flex-1 bg-white/[0.06] rounded-md px-3 py-1 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400/60 flex-shrink-0" />
-                      <span className="text-[9px] text-white/30 font-mono tracking-wide">dashboard.qiroxstudio.online</span>
-                    </div>
-                  </div>
-
-                  {/* Dashboard content */}
-                  <div className="bg-[#0d1117] p-4">
-                    {/* KPI row */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-white/[0.04] rounded-xl border border-white/[0.05] p-3">
-                        <div className="text-[9px] text-white/30 mb-1">{lang === "ar" ? "المشاريع" : "Projects"}</div>
-                        <div className="text-lg font-black text-white font-heading">27</div>
-                        <div className="text-[8px] text-emerald-400 mt-0.5">7%+</div>
-                      </div>
-                      <div className="bg-white/[0.04] rounded-xl border border-white/[0.05] p-3">
-                        <div className="text-[9px] text-white/30 mb-1">{lang === "ar" ? "الطلبات" : "Orders"}</div>
-                        <div className="text-lg font-black text-white font-heading">384</div>
-                        <div className="text-[8px] text-emerald-400 mt-0.5">18%+</div>
-                      </div>
-                    </div>
-
-                    {/* Chart */}
-                    <div className="bg-white/[0.03] rounded-xl border border-white/[0.04] p-3 mb-3">
-                      <div className="text-[9px] text-white/25 mb-2">{lang === "ar" ? "الإيرادات الشهرية" : "Monthly Revenue"}</div>
-                      {/* Bar chart */}
-                      <div className="h-14 flex items-end gap-0.5 mb-1.5">
-                        {[35, 55, 42, 70, 48, 80, 62, 75, 50, 88, 65, 95].map((h, i) => (
-                          <div key={i} className="flex-1 rounded-t-[2px]"
-                            style={{ height: `${h}%`, background: i === 11 ? "rgba(139,92,246,0.85)" : "rgba(139,92,246,0.2)" }} />
-                        ))}
-                      </div>
-                      {/* Line chart */}
-                      <svg className="w-full h-8 overflow-visible" viewBox="0 0 120 24">
-                        <polyline points="0,20 10,16 20,18 30,12 40,15 50,8 60,11 70,6 80,9 90,3 100,5 110,1 120,0"
-                          fill="none" stroke="rgba(52,211,153,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <polyline points="0,20 10,16 20,18 30,12 40,15 50,8 60,11 70,6 80,9 90,3 100,5 110,1 120,0"
-                          fill="rgba(52,211,153,0.06)" stroke="none" />
-                      </svg>
-                    </div>
-
-                    {/* Bottom items list */}
-                    <div className="space-y-1.5">
-                      {[
-                        { dot: "bg-violet-400", name: lang === "ar" ? "طلبات الوارد" : "Incoming", val: "82%" },
-                        { dot: "bg-sky-400",    name: lang === "ar" ? "متكامل الشحن" : "Shipping", val: "64%" },
-                      ].map((row, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className={`w-1.5 h-1.5 rounded-full ${row.dot} flex-shrink-0`} />
-                          <span className="text-[9px] text-white/35 flex-1">{row.name}</span>
-                          <div className="flex-1 bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-                            <div className={`h-full rounded-full ${row.dot} opacity-50`} style={{ width: row.val }} />
-                          </div>
-                          <span className="text-[8px] text-white/25 w-6 text-right">{row.val}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+          {/* Pillars row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-16 md:mt-20">
+            {PILLARS.map((p, i) => (
+              <motion.div key={i} {...fade(i)} className="rounded-2xl border border-black/10 dark:border-white/10 p-5 bg-black/[0.02] dark:bg-white/[0.03]">
+                <div className="w-10 h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center mb-3">
+                  <p.icon className="w-5 h-5" />
                 </div>
-
-                {/* ── Phone Mockup (overlapping right) ── */}
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute top-10 right-0 w-[120px] h-[220px] rounded-[22px] border border-white/[0.12] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.65)]"
-                  style={{ background: "linear-gradient(160deg, #1c1c2e, #0f0f1a)" }}
-                >
-                  {/* Phone top notch */}
-                  <div className="flex items-center justify-between px-3 pt-2 pb-1.5 border-b border-white/[0.05]">
-                    <span className="text-white/25 text-[6px] font-medium">9:41</span>
-                    <div className="w-8 h-1.5 rounded-full bg-white/10" />
-                    <div className="w-2 h-2 rounded-full border border-white/20" />
-                  </div>
-                  {/* App header */}
-                  <div className="px-2.5 py-2 border-b border-white/[0.05]">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img src={qiroxNoBgLogo} alt="QIROX" className="w-5 h-5 object-contain" />
-                      </div>
-                      <div>
-                        <div className="text-[7.5px] font-bold text-white leading-tight">QIROX</div>
-                        <div className="text-[5.5px] text-emerald-400/80">{lang === "ar" ? "نشط" : "Active"}</div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Stats */}
-                  <div className="px-2.5 py-2 space-y-2">
-                    <div className="bg-violet-500/10 rounded-xl border border-violet-500/15 p-2">
-                      <div className="text-[6px] text-white/30 mb-0.5">{lang === "ar" ? "إجمالي الواردات" : "Total Revenue"}</div>
-                      <div className="text-base font-black text-white font-heading leading-none">12.4k</div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
-                        <span className="text-[6px] text-emerald-400">+18%</span>
-                      </div>
-                    </div>
-                    {/* Notification items */}
-                    {[
-                      { icon: "✅", title: lang === "ar" ? "طلب جديد #384" : "New Order #384", sub: lang === "ar" ? "منذ دقيقتين" : "2 min ago" },
-                      { icon: "🚀", title: lang === "ar" ? "مشروع محدّث" : "Project Updated", sub: lang === "ar" ? "منذ 5 دقائق" : "5 min ago" },
-                    ].map((n, i) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span className="text-[10px] mt-0.5">{n.icon}</span>
-                        <div>
-                          <div className="text-[6.5px] font-semibold text-white/80 leading-tight">{n.title}</div>
-                          <div className="text-[5.5px] text-white/30">{n.sub}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Bottom nav */}
-                  <div className="absolute bottom-0 left-0 right-0 border-t border-white/[0.06] bg-black/40 py-2 px-3 flex justify-around">
-                    {[BarChart3, Package, Bell, User].map((Icon, i) => (
-                      <Icon key={i} className={`w-3.5 h-3.5 ${i === 0 ? "text-violet-400" : "text-white/25"}`} />
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* ── Floating badge: New order ── */}
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -bottom-6 left-4 rounded-2xl border border-white/[0.09] bg-[#0d1117]/95 backdrop-blur-sm px-4 py-3 shadow-2xl shadow-black/60 min-w-[180px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-bold text-white">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
-                      <div className="text-[9px] text-white/35">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "Gold Coffee — 3 items"}</div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* ── Floating badge: AI ── */}
-                <motion.div
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  className="absolute -top-4 right-28 rounded-full border border-violet-500/30 bg-violet-500/10 backdrop-blur-sm px-3 py-1.5 shadow-lg"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-violet-400" />
-                    <span className="text-[10px] font-bold text-violet-300">AI Ready</span>
-                  </div>
-                </motion.div>
-
-              </div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ── Hero → Stats Transition ── */}
-      <div className="h-16 bg-gradient-to-b from-[#060b14] to-white dark:to-gray-950 relative z-10" />
-
-      {/* STATS */}
-      <section className="py-12 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), icon: Layers },
-              { value: "6+", label: t("home.stats.sectorsCount"), icon: Globe2 },
-              { value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients", icon: Users },
-              { value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating", icon: Star },
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
-                data-testid={`stat-card-${idx}`}
-              >
-                <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-[#fafafa] dark:bg-gray-900/60 p-5 sm:p-7 h-full flex flex-col items-center text-center hover:shadow-lg hover:shadow-black/[0.05] transition-all duration-300">
-                  <div className="w-10 h-10 rounded-2xl bg-black/[0.05] dark:bg-white/[0.05] flex items-center justify-center mb-4">
-                    <stat.icon className="w-5 h-5 text-black/50 dark:text-white/50" />
-                  </div>
-                  <div className="text-3xl sm:text-4xl md:text-5xl font-black mb-1.5 font-heading text-black dark:text-white">
-                    {stat.value}
-                  </div>
-                  <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm leading-snug" dir={dir}>{stat.label}</div>
-                </div>
+                <div className="font-bold text-sm md:text-base mb-1">{ar ? p.ar.t : p.en.t}</div>
+                <div className="text-xs md:text-sm text-black/55 dark:text-white/55">{ar ? p.ar.d : p.en.d}</div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Trusted By Bar ── */}
-      <section className="py-10 bg-white dark:bg-gray-950 border-b border-black/[0.04] dark:border-white/[0.04]" data-testid="section-trust-bar">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10"
-          >
-            <p className="text-[11px] tracking-[0.28em] uppercase text-black/30 dark:text-white/30 font-semibold whitespace-nowrap shrink-0" dir={dir}>
-              {lang === "ar" ? "يثقون بنا" : "Trusted By"}
+      {/* ═══ TABS ═══ */}
+      <section className="border-y border-black/10 dark:border-white/10 sticky top-16 z-30 bg-white/90 dark:bg-black/90 backdrop-blur">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mx-2 px-2 py-2">
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setTab(t.id);
+                    document.getElementById(`tab-${t.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className={`shrink-0 px-4 md:px-5 h-10 rounded-full text-sm font-bold transition-all ${
+                    active
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "text-black/60 dark:text-white/60 hover:bg-black/[0.05] dark:hover:bg-white/[0.06]"
+                  }`}
+                  data-testid={`tab-${t.id}`}
+                >
+                  {ar ? t.ar : t.en}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ SYSTEMS ═══ */}
+      <section id="tab-systems" className="py-20 md:py-24">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+          <motion.div {...fade(0)} className="mb-12 text-center">
+            <h2 className="text-3xl md:text-5xl font-black mb-4">{ar ? "تعرّف على الأنظمة" : "Meet the systems"}</h2>
+            <p className="text-black/55 dark:text-white/55 max-w-2xl mx-auto">
+              {ar ? "جاهزة، قابلة للتخصيص، ومبنية لتلائم نشاطك من اليوم الأول." : "Ready, customizable, and built to fit your business from day one."}
             </p>
-            <div className="w-px h-8 bg-black/[0.06] dark:bg-white/[0.06] hidden sm:block shrink-0" />
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-8">
-              {staticPartners.slice(0, 7).map((partner, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-center gap-2 grayscale opacity-40 hover:grayscale-0 hover:opacity-80 transition-all duration-300"
-                >
-                  <img src={partner.logo} alt={partner.name} className="h-7 w-auto max-w-[80px] object-contain" />
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* SERVICES GRID */}
-      <section className="py-20 md:py-28 relative" data-testid="section-services">
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
-                <Zap className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
-              </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
-                {t("home.services.title")}{" "}
-                <span className="text-gray-400 dark:text-gray-500">{t("home.services.titleHighlight")}</span>
-              </motion.h2>
-              <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 max-w-xl mx-auto text-base">
-                {t("home.services.subtitle")}
-              </motion.p>
-            </div>
-
-            {/* Bento Grid — 4 Segments */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
-              {[
-                {
-                  icon: UtensilsCrossed,
-                  title: t("home.services.restaurants.title"),
-                  desc: t("home.services.restaurants.desc"),
-                  features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
-                  badge: lang === "ar" ? "🍽️ مطاعم وكافيهات" : "🍽️ Restaurants & Cafes",
-                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
-                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
-                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
-                  accentShadow: "hover:shadow-black/[0.06]",
-                  accentIcon: "bg-black",
-                  accentIconText: "text-black/60 dark:text-white/60",
-                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
-                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
-                  phone: {
-                    emoji: "🍽️", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
-                    items: [
-                      { icon: "☕", name: lang === "ar" ? "لاتيه" : "Latte", sub: "22 SAR" },
-                      { icon: "🧁", name: lang === "ar" ? "كيك" : "Cake", sub: "15 SAR" },
-                      { icon: "🥪", name: lang === "ar" ? "ساندويش" : "Sandwich", sub: "30 SAR" },
-                    ],
-                  },
-                },
-                {
-                  icon: Store,
-                  title: t("home.services.stores.title"),
-                  desc: t("home.services.stores.desc"),
-                  features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
-                  badge: lang === "ar" ? "🛍️ متاجر إلكترونية" : "🛍️ E-Commerce Stores",
-                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
-                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
-                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
-                  accentShadow: "hover:shadow-black/[0.06]",
-                  accentIcon: "bg-black",
-                  accentIconText: "text-black/60 dark:text-white/60",
-                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
-                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
-                  phone: {
-                    emoji: "🛍️", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
-                    items: [
-                      { icon: "👜", name: lang === "ar" ? "حقيبة" : "Bag", sub: "249 SAR" },
-                      { icon: "⌚", name: lang === "ar" ? "ساعة" : "Watch", sub: "599 SAR" },
-                      { icon: "👟", name: lang === "ar" ? "حذاء" : "Shoes", sub: "349 SAR" },
-                    ],
-                  },
-                },
-                {
-                  icon: GraduationCap,
-                  title: t("home.services.education.title"),
-                  desc: t("home.services.education.desc"),
-                  features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
-                  badge: lang === "ar" ? "📚 تعليم وأكاديميات" : "📚 Education & Academies",
-                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
-                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
-                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
-                  accentShadow: "hover:shadow-black/[0.06]",
-                  accentIcon: "bg-black",
-                  accentIconText: "text-black/60 dark:text-white/60",
-                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
-                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
-                  phone: {
-                    emoji: "📚", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
-                    items: [
-                      { icon: "🎓", name: lang === "ar" ? "كورس برمجة" : "Dev Course", sub: lang === "ar" ? "12 درس" : "12 lessons" },
-                      { icon: "📖", name: lang === "ar" ? "لغة إنجليزية" : "English", sub: lang === "ar" ? "8 درس" : "8 lessons" },
-                      { icon: "🎨", name: lang === "ar" ? "تصميم" : "Design", sub: lang === "ar" ? "10 درس" : "10 lessons" },
-                    ],
-                  },
-                },
-                {
-                  icon: Building2,
-                  title: t("home.services.enterprise.title"),
-                  desc: t("home.services.enterprise.desc"),
-                  features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
-                  badge: lang === "ar" ? "🏢 شركات ومؤسسات" : "🏢 Corporates & Enterprises",
-                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
-                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
-                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
-                  accentShadow: "hover:shadow-black/[0.06]",
-                  accentIcon: "bg-black",
-                  accentIconText: "text-black/60 dark:text-white/60",
-                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
-                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
-                  phone: {
-                    emoji: "🏢", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
-                    items: [
-                      { icon: "📊", name: lang === "ar" ? "لوحة تحكم" : "Dashboard", sub: lang === "ar" ? "+18% نمو" : "+18% growth" },
-                      { icon: "👥", name: lang === "ar" ? "الموظفون" : "Team", sub: "24 " + (lang === "ar" ? "موظف" : "members") },
-                      { icon: "💰", name: lang === "ar" ? "الإيرادات" : "Revenue", sub: "12.4k SAR" },
-                    ],
-                  },
-                },
-              ].map((seg, idx) => (
-                <motion.div key={idx} variants={fadeUp} custom={idx}>
-                  <div
-                    className={`relative rounded-[28px] border bg-gradient-to-br ${seg.gradient} ${seg.accentBorder} p-6 sm:p-8 h-full group transition-all duration-500 hover:shadow-2xl ${seg.accentShadow} overflow-hidden`}
-                    data-testid={`service-path-${idx}`}
-                    dir={dir}
-                  >
-                    {/* Top accent line */}
-                    <div className={`absolute top-0 ${dir === "rtl" ? "right-0" : "left-0"} w-16 h-[3px] rounded-b-full bg-gradient-to-r ${seg.gradientStripe}`} />
-
-                    {/* Header row */}
-                    <div className="flex items-start justify-between mb-5">
-                      <span className={`text-[11px] px-3 py-1.5 rounded-full font-semibold ${seg.accentBadge} backdrop-blur-sm`}>
-                        {seg.badge}
-                      </span>
-                      <Link href="/systems">
-                        <div className={`w-8 h-8 rounded-full border ${seg.accentBorder} bg-white/60 dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 cursor-pointer`}>
-                          <ArrowUpRight className={`w-4 h-4 ${seg.accentIconText}`} />
-                        </div>
-                      </Link>
-                    </div>
-
-                    {/* Content + Phone side by side */}
-                    <div className="flex items-end gap-4 mb-6">
-                      {/* Left: text */}
-                      <div className="flex-1 min-w-0">
-                        <div className={`w-12 h-12 rounded-2xl ${seg.accentIcon} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                          <seg.icon className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-2 leading-tight">{seg.title}</h3>
-                        <p className="text-sm text-black/45 dark:text-white/40 leading-relaxed">{seg.desc}</p>
-                      </div>
-
-                      {/* Right: floating phone mockup */}
-                      <div className="flex-shrink-0 hidden sm:block" dir="ltr">
-                        <div className="relative w-[88px] h-[152px] rounded-[16px] border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden shadow-2xl shadow-black/[0.12] dark:shadow-black/50 group-hover:-translate-y-1 transition-transform duration-500">
-                          {/* Status bar */}
-                          <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
-                            <span className="text-black/30 dark:text-white/30 text-[5px] font-medium">9:41</span>
-                            <div className="w-5 h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
-                          </div>
-                          {/* App header */}
-                          <div className="px-2 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.05]">
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px]">{seg.phone.emoji}</span>
-                              <div>
-                                <div className="text-[6px] font-bold text-black dark:text-white leading-tight truncate max-w-[52px]">{seg.badge.split(" ").slice(1).join(" ")}</div>
-                                <div className={`text-[5px] px-1 py-px rounded-full font-semibold inline-block ${seg.phone.badge}`}>QIROX</div>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Items */}
-                          <div className="px-1.5 py-1 space-y-1">
-                            {seg.phone.items.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[9px]">{item.icon}</span>
-                                  <div>
-                                    <div className="text-[5.5px] font-semibold text-black dark:text-white leading-none truncate max-w-[34px]">{item.name}</div>
-                                    <div className="text-[4.5px] text-black/40 dark:text-white/40">{item.sub}</div>
-                                  </div>
-                                </div>
-                                <div className={`w-3 h-3 rounded-full ${seg.phone.bar} flex items-center justify-center flex-shrink-0`}>
-                                  <span className="text-white text-[6px] font-bold">+</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          {/* CTA bar */}
-                          <div className="absolute bottom-0 left-0 right-0 p-1.5">
-                            <div className={`${seg.phone.bar} rounded-[8px] py-1 text-center`}>
-                              <span className="text-white text-[5.5px] font-bold">{lang === "ar" ? "افتح التطبيق" : "Open App"}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Feature tags */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {seg.features.map((f, i) => (
-                        <span key={i} className={`text-[10px] px-3 py-1 rounded-full border font-medium ${seg.accentTag}`}>
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CAFE SYSTEM DEEP DIVE */}
-      <section className="py-20 md:py-28 bg-black relative overflow-hidden" data-testid="section-cafe">
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-16" dir={dir}>
-              <div>
-                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] mb-5">
-                  <UtensilsCrossed className="w-3.5 h-3.5 text-white/50" />
-                  <span className="text-white/50 text-xs tracking-wider uppercase">{lang === "ar" ? "نظام الكافيهات والمطاعم" : "Restaurants & Cafes System"}</span>
-                </motion.div>
-                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
-                  {lang === "ar" ? <>كل ما يحتاجه<br /><span className="text-white/30">مطعمك أو مقهاك</span></> : <>Everything your<br /><span className="text-white/30">restaurant or cafe needs</span></>}
-                </motion.h2>
-                <motion.p variants={fadeUp} custom={2} className="text-white/40 max-w-lg text-base leading-relaxed">
-                  {lang === "ar" ? "من القائمة الرقمية إلى شاشة المطبخ إلى تقارير المبيعات — منظومة متكاملة تعمل بانسجام تام" : "From digital menu to kitchen display to sales reports — a complete integrated system"}
-                </motion.p>
+          {/* Sector chips */}
+          <motion.div {...fade(1)} className="flex flex-wrap justify-center gap-2 md:gap-3 mb-12">
+            {SECTORS.map((s, i) => (
+              <div key={i} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 dark:border-white/10 text-xs md:text-sm font-medium">
+                <s.icon className="w-3.5 h-3.5" />
+                {ar ? s.arName : s.enName}
               </div>
-              {/* Cafe Phone Mockup */}
-              <motion.div variants={fadeUp} custom={3} className="flex flex-col items-center md:items-end gap-5 mt-4 md:mt-0" dir="ltr">
-                <div className="relative">
-                  <div className="w-48 h-[330px] rounded-[28px] border border-white/20 bg-[#0a0a0a] relative overflow-hidden shadow-2xl shadow-black/80">
-                    <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                      <span className="text-white/40 text-[8px] font-medium">9:41</span>
-                      <div className="w-12 h-4 rounded-full bg-black border border-white/10" />
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-1.5 rounded-sm bg-white/30" />
-                        <div className="w-1 h-2.5 rounded-sm bg-white/15" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-4 pb-2 border-b border-white/[0.06]">
-                      <div>
-                        <div className="text-white text-[11px] font-bold">☕ قهوة كوب</div>
-                        <div className="text-white/30 text-[8px]">القائمة الرقمية</div>
-                      </div>
-                      <div className="w-7 h-7 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                        <Bell className="w-3.5 h-3.5 text-orange-400" />
-                      </div>
-                    </div>
-                    <div className="px-3 py-2">
-                      <div className="rounded-lg bg-white/[0.05] border border-white/[0.06] px-3 py-1.5 flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full border border-white/20" />
-                        <span className="text-white/25 text-[8px]">{lang === "ar" ? "ابحث عن منتج..." : "Search..."}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 px-3 mb-2">
-                      {(lang === "ar" ? ["الكل", "قهوة", "عصير"] : ["All", "Coffee", "Juice"]).map((cat, i) => (
-                        <div key={i} className={`text-[7px] px-2.5 py-1 rounded-full font-medium ${i === 0 ? "bg-orange-500 text-white" : "bg-white/[0.06] text-white/40"}`}>{cat}</div>
-                      ))}
-                    </div>
-                    {[
-                      { name: lang === "ar" ? "لاتيه ذهبي" : "Golden Latte", price: "22", emoji: "☕" },
-                      { name: lang === "ar" ? "كابتشينو" : "Cappuccino", price: "18", emoji: "🫖" },
-                      { name: lang === "ar" ? "فريبيه" : "Frappé", price: "25", emoji: "🧋" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center text-sm">{item.emoji}</div>
-                          <div>
-                            <div className="text-white text-[9px] font-medium">{item.name}</div>
-                            <div className="text-white/35 text-[7px]">{item.price} {lang === "ar" ? "ر.س" : "SAR"}</div>
-                          </div>
-                        </div>
-                        <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
-                          <span className="text-white text-[9px] font-bold">+</span>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <div className="bg-orange-500 rounded-xl py-2 flex items-center justify-between px-3">
-                        <span className="text-white text-[8px] font-bold">3 {lang === "ar" ? "منتجات" : "items"}</span>
-                        <span className="text-white text-[8px] font-bold">{lang === "ar" ? "عرض الطلب ←" : "View Order →"}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <motion.div
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-4 -left-8 rounded-xl border border-white/[0.1] bg-[#0c0c0c]/95 backdrop-blur-sm p-2.5 shadow-xl min-w-[140px]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-3 h-3 text-emerald-400" />
-                      </div>
-                      <div>
-                        <div className="text-[9px] font-bold text-white">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
-                        <div className="text-[7px] text-white/40 mt-0.5">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "3 items"}</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    animate={{ y: [0, 5, 0] }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-                    className="absolute -bottom-3 -right-6 rounded-xl border border-white/[0.1] bg-[#0c0c0c]/95 backdrop-blur-sm px-3 py-2 shadow-xl"
-                  >
-                    <div className="text-[7px] text-white/40 mb-0.5">{lang === "ar" ? "المطبخ" : "Kitchen"}</div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                      <span className="text-[9px] text-white font-bold">4 {lang === "ar" ? "طلبات نشطة" : "active"}</span>
-                    </div>
-                  </motion.div>
-                </div>
-                <Link href="/order">
-                  <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-gray-100 font-bold gap-2" data-testid="button-cafe-cta">
-                    {lang === "ar" ? "ابدأ مشروعك" : "Start Your Project"}
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {cafeFeatures.map((feature, idx) => {
-                const iconColors = [
-                  "text-orange-400 bg-orange-500/15",
-                  "text-sky-400 bg-sky-500/15",
-                  "text-emerald-400 bg-emerald-500/15",
-                  "text-yellow-400 bg-yellow-500/15",
-                  "text-violet-400 bg-violet-500/15",
-                  "text-pink-400 bg-pink-500/15",
-                  "text-cyan-400 bg-cyan-500/15",
-                  "text-green-400 bg-green-500/15",
-                ];
-                const [iconText, iconBg] = iconColors[idx % iconColors.length].split(" ");
-                return (
-                  <motion.div key={idx} variants={fadeUp} custom={idx}>
-                    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 h-full group hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300" data-testid={`cafe-feature-${idx}`}>
-                      <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                        <feature.icon className={`w-5 h-5 ${iconText}`} />
-                      </div>
-                      <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
-                      <p className="text-xs text-white/35 leading-relaxed">{feature.desc}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+            ))}
           </motion.div>
-        </div>
-      </section>
 
-      {/* STORE / E-COMMERCE DEEP DIVE */}
-      <section className="py-20 md:py-28 bg-[#fafafa] dark:bg-gray-900/30 relative" data-testid="section-store">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-16" dir={dir}>
-              <div>
-                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 mb-5">
-                  <ShoppingBag className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                  <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "نظام المتاجر الإلكترونية" : "E-Commerce Store System"}</span>
-                </motion.div>
-                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
-                  {lang === "ar" ? <>متجرك الاحترافي<br /><span className="text-gray-400 dark:text-gray-500">بكل ما تحتاج</span></> : <>Your professional store<br /><span className="text-gray-400 dark:text-gray-500">with everything you need</span></>}
-                </motion.h2>
-                <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 max-w-lg text-base leading-relaxed">
-                  {lang === "ar" ? "من إدارة المنتجات والمخزون إلى Apple Pay وتقارير المبيعات — كل شيء في مكان واحد" : "From product management to Apple Pay and sales reports — everything in one place"}
-                </motion.p>
-              </div>
-              {/* Store Phone Mockup */}
-              <motion.div variants={fadeUp} custom={3} className="flex flex-col items-center md:items-end gap-5 mt-4 md:mt-0" dir="ltr">
-                <div className="relative">
-                  <div className="w-48 h-[330px] rounded-[28px] border border-black/10 bg-white relative overflow-hidden shadow-2xl shadow-black/15">
-                    <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-white">
-                      <span className="text-black/40 text-[8px] font-medium">9:41</span>
-                      <div className="w-12 h-4 rounded-full bg-gray-200" />
-                      <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center">
-                        <ShoppingCart className="w-2.5 h-2.5 text-blue-500" />
-                      </div>
-                    </div>
-                    <div className="px-3 pb-2">
-                      <div className="rounded-lg bg-gray-100 px-3 py-1.5 flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full border border-black/20" />
-                        <span className="text-black/30 text-[8px]">{lang === "ar" ? "ابحث في المتجر..." : "Search products..."}</span>
-                      </div>
-                    </div>
-                    <div className="mx-3 mb-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5">
-                      <div className="text-white text-[8px] font-bold">{lang === "ar" ? "تخفيضات الصيف 🎉" : "Summer Sale 🎉"}</div>
-                      <div className="text-white/70 text-[7px]">{lang === "ar" ? "حتى 50% على المنتجات" : "Up to 50% off"}</div>
-                    </div>
-                    <div className="px-3 grid grid-cols-2 gap-2">
-                      {[
-                        { name: lang === "ar" ? "حقيبة جلد" : "Bag", price: "249", emoji: "👜", bg: "bg-amber-50" },
-                        { name: lang === "ar" ? "ساعة ذكية" : "Watch", price: "599", emoji: "⌚", bg: "bg-blue-50" },
-                        { name: lang === "ar" ? "نظارات" : "Glasses", price: "129", emoji: "🕶️", bg: "bg-gray-50" },
-                        { name: lang === "ar" ? "حذاء رياضي" : "Shoes", price: "349", emoji: "👟", bg: "bg-rose-50" },
-                      ].map((p, i) => (
-                        <div key={i} className={`${p.bg} rounded-xl p-2`}>
-                          <div className="text-lg text-center mb-1">{p.emoji}</div>
-                          <div className="text-[8px] font-bold text-black leading-tight">{p.name}</div>
-                          <div className="text-[7px] text-black/50">{p.price} {lang === "ar" ? "ر" : "SAR"}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <div className="bg-black rounded-xl py-2 flex items-center justify-center gap-1.5">
-                        <SiApple className="w-3 h-3 text-white" />
-                        <span className="text-white text-[9px] font-bold">Pay</span>
-                      </div>
-                    </div>
-                  </div>
-                  <motion.div
-                    animate={{ y: [0, -6, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-4 -left-10 rounded-xl border border-black/[0.08] bg-white shadow-xl p-2.5 min-w-[144px]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-3 h-3 text-emerald-600" />
-                      </div>
-                      <div>
-                        <div className="text-[9px] font-bold text-black">{lang === "ar" ? "تم الدفع ✓" : "Payment Done ✓"}</div>
-                        <div className="text-[7px] text-black/40 mt-0.5">Apple Pay</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    animate={{ y: [0, 5, 0] }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute -bottom-3 -right-8 rounded-xl border border-black/[0.08] bg-white shadow-xl px-3 py-2"
-                  >
-                    <div className="text-[7px] text-black/40 mb-0.5">{lang === "ar" ? "المخزون" : "Inventory"}</div>
-                    <div className="text-[9px] font-bold text-black">1,240 {lang === "ar" ? "منتج" : "items"}</div>
-                  </motion.div>
-                </div>
-                <Link href="/order">
-                  <Button className="h-12 px-8 rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 font-bold gap-2" data-testid="button-store-cta">
-                    {lang === "ar" ? "أنشئ متجرك" : "Create Your Store"}
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {storeFeatures.map((feature, idx) => {
-                const iconConfig = [
-                  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10" },
-                  { text: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
-                  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
-                  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
-                  { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-500/10" },
-                  { text: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
-                  { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
-                  { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10" },
-                ][idx % 8];
-                return (
-                  <motion.div key={idx} variants={fadeUp} custom={idx}>
-                    <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 h-full group hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1] transition-all duration-300" data-testid={`store-feature-${idx}`}>
-                      <div className={`w-11 h-11 rounded-xl ${iconConfig.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300`}>
-                        <feature.icon className={`w-5 h-5 ${iconConfig.text}`} />
-                      </div>
-                      <h3 className="text-sm font-bold text-black dark:text-white mb-2">{feature.title}</h3>
-                      <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{feature.desc}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* MOBILE APP SECTION — App Store + Play Store */}
-      <section className="py-20 md:py-28 relative overflow-hidden" data-testid="section-mobile-app">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="max-w-5xl mx-auto">
-              <div className="rounded-[24px] sm:rounded-[32px] bg-gradient-to-br from-gray-950 via-gray-900 to-black p-6 sm:p-10 md:p-16 relative overflow-hidden border border-white/[0.05]">
-                <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/[0.02] -translate-y-1/2 translate-x-1/4" />
-                <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full bg-white/[0.015] translate-y-1/2 -translate-x-1/4" />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
-                  <div dir={dir}>
-                    <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] mb-6">
-                      <Smartphone className="w-3.5 h-3.5 text-white/50" />
-                      <span className="text-white/50 text-xs tracking-wider uppercase">{lang === "ar" ? "تطبيقات الجوال" : "Mobile Apps"}</span>
-                    </motion.div>
-                    <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-white mb-4">
-                      {lang === "ar"
-                        ? <>وصول عملاءك<br /><span className="text-white/40">من App Store وPlay Store</span></>
-                        : <>Your customers on<br /><span className="text-white/40">App Store & Play Store</span></>}
-                    </motion.h2>
-                    <motion.p variants={fadeUp} custom={2} className="text-white/40 text-base leading-relaxed mb-8">
-                      {lang === "ar"
-                        ? "احصل على تطبيق جوال احترافي منشور على متجر Apple و Google Play بأسلوب يعكس هوية علامتك التجارية"
-                        : "Get a professional mobile app published on Apple and Google Play that reflects your brand identity"}
-                    </motion.p>
-
-                    <motion.div variants={fadeUp} custom={3} className="space-y-3 mb-8">
-                      {(lang === "ar" ? [
-                        "تطبيق iOS و Android بنفس الكود",
-                        "نشر على App Store و Google Play",
-                        "إشعارات فورية Push Notifications",
-                        "يعمل بدون إنترنت (Offline Mode)",
-                      ] : [
-                        "iOS & Android from one codebase",
-                        "Published on App Store & Google Play",
-                        "Push Notifications",
-                        "Works offline (Offline Mode)",
-                      ]).map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm text-white/60">
-                          <div className="w-5 h-5 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-white/70" />
-                          </div>
-                          {item}
-                        </div>
-                      ))}
-                    </motion.div>
-
-                    <motion.div variants={fadeUp} custom={4} className="space-y-6">
-                      <Link href="/prices">
-                        <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-gray-100 font-bold gap-2" data-testid="button-mobile-app-cta">
-                          {lang === "ar" ? <span className="flex items-center gap-1">يُضاف بـ 1,500 <SARIcon size={13} className="opacity-70" /> فقط</span> : "Add for only 1,500 SAR"}
-                          <ArrowLeft className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </motion.div>
-                  </div>
-
-                  <motion.div variants={fadeUp} custom={2} className="grid grid-cols-2 gap-4">
-                    {/* Apple App Store — creative card */}
-                    <div className="rounded-2xl border border-white/[0.1] bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-5 group hover:from-white/[0.11] hover:border-white/[0.18] transition-all duration-300 relative overflow-hidden" data-testid="mobile-feature-0">
-                      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/[0.04] blur-xl pointer-events-none" />
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.07)] group-hover:shadow-[0_0_28px_rgba(255,255,255,0.13)] transition-all">
-                          <SiApple className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/40 bg-white/[0.07] border border-white/[0.08] px-2 py-0.5 rounded-full">iOS</span>
-                      </div>
-                      <p className="text-sm font-bold text-white mb-1">App Store</p>
-                      <p className="text-[11px] text-white/35 leading-relaxed">{lang === "ar" ? "نشر على متجر Apple الرسمي" : "Published on Apple's official store"}</p>
-                    </div>
-
-                    {/* Google Play Store — creative card */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#01875f]/10 via-[#4285f4]/8 to-[#fbbc04]/8 p-5 group hover:from-[#01875f]/16 hover:via-[#4285f4]/14 hover:to-[#fbbc04]/12 hover:border-white/[0.14] transition-all duration-300 relative overflow-hidden" data-testid="mobile-feature-1">
-                      <div className="absolute -bottom-5 -left-5 w-20 h-20 rounded-full bg-[#4285f4]/10 blur-xl pointer-events-none" />
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(66,133,244,0.12)] group-hover:shadow-[0_0_28px_rgba(66,133,244,0.22)] transition-all">
-                          <SiGoogleplay className="w-5 h-5 text-[#4285f4]" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/40 bg-white/[0.07] border border-white/[0.08] px-2 py-0.5 rounded-full">Android</span>
-                      </div>
-                      <p className="text-sm font-bold text-white mb-1">Play Store</p>
-                      <p className="text-[11px] text-white/35 leading-relaxed">{lang === "ar" ? "نشر على Google Play الرسمي" : "Published on Google Play"}</p>
-                    </div>
-
-                    {/* Push Notifications */}
-                    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 group hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300" data-testid="mobile-feature-2">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/[0.07] flex items-center justify-center">
-                          <Bell className="w-4 h-4 text-white/60" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/30 bg-white/[0.05] px-2 py-0.5 rounded-full">Push</span>
-                      </div>
-                      <p className="text-xs font-bold text-white mb-1">{lang === "ar" ? "إشعارات ذكية" : "Smart Notifications"}</p>
-                      <p className="text-[11px] text-white/30 leading-relaxed">{lang === "ar" ? "تواصل مع عملائك لحظياً" : "Reach your customers instantly"}</p>
-                    </div>
-
-                    {/* Native Experience */}
-                    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 group hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300" data-testid="mobile-feature-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/[0.07] flex items-center justify-center">
-                          <Smartphone className="w-4 h-4 text-white/60" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/30 bg-white/[0.05] px-2 py-0.5 rounded-full">Native</span>
-                      </div>
-                      <p className="text-xs font-bold text-white mb-1">{lang === "ar" ? "تجربة أصلية" : "Native Experience"}</p>
-                      <p className="text-[11px] text-white/30 leading-relaxed">{lang === "ar" ? "سرعة وسلاسة مثل التطبيقات الأصلية" : "Speed and smoothness like native apps"}</p>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* APP DOWNLOADS SECTION */}
-      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-downloads">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={stagger}
-          >
-            <div className="text-center mb-14" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.04] mb-5">
-                <Download className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "تحميل الأنظمة" : "Download Our Apps"}</span>
-              </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
-                {lang === "ar" ? <>حمّل نظامك<br /><span className="text-black/30 dark:text-white/30">على جميع الأجهزة</span></> : <>Download Your System<br /><span className="text-black/30 dark:text-white/30">on All Devices</span></>}
-              </motion.h2>
-              <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-base max-w-xl mx-auto leading-relaxed">
-                {lang === "ar"
-                  ? "أنظمة QIROX متاحة على متجر آبل، جوجل بلاي، ومتجر مايكروسوفت. حمّل تطبيقك الآن أو انتظر الإطلاق قريباً."
-                  : "QIROX systems are available on App Store, Google Play, and Microsoft Store. Download your app now or wait for the upcoming launch."}
-              </motion.p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[
-                {
-                  key: "appStore",
-                  icon: <SiApple className="w-8 h-8" />,
-                  iconColor: "text-white",
-                  iconBg: "bg-black dark:bg-white/10",
-                  gradientFrom: "from-gray-900",
-                  gradientTo: "to-gray-700",
-                  platform: lang === "ar" ? "آبل" : "Apple",
-                  name: "App Store",
-                  desc: lang === "ar" ? "لأجهزة iPhone و iPad" : "For iPhone & iPad",
-                  badge: "iOS",
-                  badgeColor: "bg-white/10 text-white/60",
-                  available: appDownloads?.appStore.enabled && !!appDownloads?.appStore.url,
-                  url: appDownloads?.appStore.url,
-                  dark: true,
-                },
-                {
-                  key: "playStore",
-                  icon: <SiGoogleplay className="w-7 h-7" />,
-                  iconColor: "text-white",
-                  iconBg: "bg-[#01875f]",
-                  gradientFrom: "from-[#0d2d1c]",
-                  gradientTo: "to-[#0a4a2a]",
-                  platform: lang === "ar" ? "جوجل" : "Google",
-                  name: "Play Store",
-                  desc: lang === "ar" ? "لأجهزة Android" : "For Android devices",
-                  badge: "Android",
-                  badgeColor: "bg-[#01875f]/20 text-[#4ade80]",
-                  available: appDownloads?.playStore.enabled && !!appDownloads?.playStore.url,
-                  url: appDownloads?.playStore.url,
-                  dark: true,
-                },
-                {
-                  key: "msStore",
-                  icon: <AppWindow className="w-7 h-7" />,
-                  iconColor: "text-white",
-                  iconBg: "bg-[#0078d4]",
-                  gradientFrom: "from-[#0a1929]",
-                  gradientTo: "to-[#0c2a4a]",
-                  platform: lang === "ar" ? "مايكروسوفت" : "Microsoft",
-                  name: "Microsoft Store",
-                  desc: lang === "ar" ? "لأجهزة Windows" : "For Windows devices",
-                  badge: "Windows",
-                  badgeColor: "bg-[#0078d4]/20 text-[#60a5fa]",
-                  available: appDownloads?.msStore.enabled && !!appDownloads?.msStore.url,
-                  url: appDownloads?.msStore.url,
-                  dark: true,
-                },
-              ].map((store, i) => (
-                <motion.div key={store.key} variants={fadeUp} custom={i + 3}>
-                  <div
-                    className={`rounded-3xl bg-gradient-to-br ${store.gradientFrom} ${store.gradientTo} border border-white/[0.07] p-7 flex flex-col h-full relative overflow-hidden group`}
-                    data-testid={`download-card-${store.key}`}
-                  >
-                    <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/[0.02] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                    <div className="flex items-start justify-between mb-6">
-                      <div className={`w-14 h-14 rounded-2xl ${store.iconBg} flex items-center justify-center shadow-lg`}>
-                        <span className={store.iconColor}>{store.icon}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/[0.08] ${store.badgeColor}`}>
-                        {store.badge}
-                      </span>
-                    </div>
-
-                    <div className="flex-1" dir={dir}>
-                      <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">{store.platform}</p>
-                      <h3 className="text-lg font-bold text-white mb-1">{store.name}</h3>
-                      <p className="text-[13px] text-white/40 mb-6">{store.desc}</p>
-                    </div>
-
-                    {store.available ? (
-                      <a
-                        href={store.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid={`button-download-${store.key}`}
-                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 text-white text-sm font-bold transition-all duration-200 group-hover:shadow-lg"
-                      >
-                        <Download className="w-4 h-4" />
-                        {lang === "ar" ? "تحميل الآن" : "Download Now"}
-                      </a>
-                    ) : store.key === "appStore" ? (
-                      <div className="rounded-xl bg-white/[0.06] border border-white/[0.08] p-4 space-y-3" dir={lang === "ar" ? "rtl" : "ltr"} data-testid="ios-install-guide">
-                        <p className="text-[11px] text-white/50 font-semibold uppercase tracking-wider">
-                          {lang === "ar" ? "ثبّت كتطبيق على iPhone" : "Install as iPhone App"}
-                        </p>
-
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-black flex items-center justify-center">1</span>
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <Share2 className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-[12px] text-white/80 leading-snug">
-                              {lang === "ar"
-                                ? <>اضغط زر <strong className="text-blue-300">المشاركة</strong> ⬆ في الشريط السفلي</>
-                                : <>Tap the <strong className="text-blue-300">Share</strong> ⬆ button at the bottom</>}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-300 text-[11px] font-black flex items-center justify-center">2</span>
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <PlusSquare className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-[12px] text-white/80 leading-snug">
-                              {lang === "ar"
-                                ? <>اختر <strong className="text-green-300">إضافة إلى الشاشة الرئيسية</strong></>
-                                : <>Select <strong className="text-green-300">Add to Home Screen</strong></>}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-300 text-[11px] font-black flex items-center justify-center">3</span>
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <Bell className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-[12px] text-white/80 leading-snug">
-                              {lang === "ar"
-                                ? <>اضغط <strong className="text-yellow-300">إضافة</strong> — ستصلك جميع الإشعارات!</>
-                                : <>Tap <strong className="text-yellow-300">Add</strong> — you'll receive all notifications!</>}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-white/[0.07] flex items-center gap-2">
-                          <Bell className="w-3 h-3 text-yellow-400 flex-shrink-0" />
-                          <p className="text-[11px] text-white/40 leading-snug">
-                            {lang === "ar"
-                              ? "ستصلك إشعارات العقود والفواتير والتحديثات فوراً"
-                              : "Get instant contract, invoice & update notifications"}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] cursor-default">
-                        <Clock className="w-3.5 h-3.5 text-white/25" />
-                        <span className="text-white/30 text-sm font-medium">{lang === "ar" ? "قريباً يتوفر" : "Coming Soon"}</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* SYSTEMS CAROUSEL */}
-      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-carousel">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-3" dir={dir}>
-                <motion.div variants={fadeUp} custom={0}>
-                  <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
-                  <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
-                    {t("home.carousel.title")}{" "}
-                    <span className="text-gray-400 dark:text-gray-500">{t("home.carousel.titleHighlight")}</span>
-                  </h2>
-                  <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed mb-8">
-                    {t("home.carousel.desc")}
-                  </p>
-                  <div className="flex gap-2">
-                    {templates?.slice(0, 5).map((_, idx) => (
+          {/* Templates grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            {visibleTemplates.length === 0
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="aspect-[4/5] rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] animate-pulse" />
+                ))
+              : visibleTemplates.map((tpl: any, i: number) => (
+                  <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
+                    <Link href={`/templates/${tpl.slug || tpl._id}`}>
                       <div
-                        key={idx}
-                        className={`rounded-full transition-all duration-300 ${
-                          idx === activeCarouselIdx
-                            ? "w-6 h-2 bg-black dark:bg-white"
-                            : "w-2 h-2 bg-black/10 dark:bg-white/10"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-
-              <div className="lg:col-span-9 relative min-w-0">
-                <div className="flex items-center gap-3 mb-4 justify-end">
-                  <button
-                    onClick={() => scrollCarousel("right")}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
-                    data-testid="button-carousel-prev"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => scrollCarousel("left")}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
-                    data-testid="button-carousel-next"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div
-                  ref={carouselRef}
-                  dir={dir}
-                  className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                >
-                  {templates?.map((template, idx) => {
-                    const Icon = sectorIcons[template.icon || "Globe"] || Globe;
-                    return (
-                      <Link key={template.id} href="/systems" className="flex-shrink-0 block w-[260px] sm:w-[300px] snap-start" data-carousel-card>
-                        <div
-                          className="w-full h-full bg-white dark:bg-gray-900/60 rounded-[24px] p-6 sm:p-8 cursor-pointer group border border-black/[0.04] dark:border-white/[0.04] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-xl hover:shadow-black/[0.04]"
-                          data-testid={`carousel-card-${template.slug}`}
-                        >
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] mb-6">
-                            <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
-                          </div>
-                          <h3 className="text-lg font-bold text-black dark:text-white mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
-                          <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
-                            {lang === "ar" ? template.descriptionAr : (template.description || template.descriptionAr)}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium max-w-[130px] truncate block">
-                              {template.category}
-                            </span>
-                            <div className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white group-hover:text-white transition-colors">
-                              <ArrowUpRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-white dark:group-hover:text-black transition-colors" />
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-
-      {/* PAYMOB PARTNERSHIP SECTION */}
-      <section className="py-14 md:py-20 relative" data-testid="section-paymob-partnership">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            custom={0}
-            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
-            style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
-          >
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a 0%, #1d90f5 50%, #0f172a 100%)" }} />
-
-            <div className="px-6 sm:px-10 md:px-14 py-10 md:py-14">
-              <div className="flex flex-col items-center text-center mb-10 md:mb-12">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
-                  <Shield className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
-                    {lang === "ar" ? "إعلان رسمي — شراكة استراتيجية" : "Official Announcement — Strategic Partnership"}
-                  </span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-black dark:text-white tracking-tight mb-3">
-                  {lang === "ar" ? "Qirox تعتمد Paymob بوابةً رسمية للدفع" : "Qirox Adopts Paymob as Official Payment Gateway"}
-                </h2>
-                <p className="text-black/40 dark:text-white/40 text-sm sm:text-base max-w-xl leading-relaxed">
-                  {lang === "ar"
-                    ? "في إطار توسّع Qirox وتعزيز منظومتها الرقمية، أبرمت الشركة اتفاقية شراكة رسمية مع Paymob لتوفير بوابة دفع آمنة ومتوافقة لجميع عملائها."
-                    : "As part of Qirox's expansion and digital ecosystem enhancement, the company has signed an official partnership agreement with Paymob to provide a secure, compliant payment gateway for all its clients."}
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-10 md:mb-12">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black flex items-center justify-center p-4 shadow-sm">
-                    <img src={qiroxNoBgLogo} alt="Qirox" className="w-full h-full object-contain" style={{ filter: "invert(1) brightness(1.1)" }} />
-                  </div>
-                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Qirox Studio</span>
-                </div>
-                <div className="flex flex-row sm:flex-col items-center gap-2">
-                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
-                  <div className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center bg-white dark:bg-gray-900 shadow-sm">
-                    <span className="text-black/30 dark:text-white/30 text-xs font-bold">×</span>
-                  </div>
-                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
-                </div>
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white flex items-center justify-center p-4 shadow-sm">
-                    <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
-                  </div>
-                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Paymob</span>
-                </div>
-              </div>
-
-              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-10" />
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6" dir={dir}>
-                {(lang === "ar"
-                  ? [
-                      { icon: CreditCard, label: "Visa & Mastercard" },
-                      { icon: Shield,     label: "تشفير SSL معتمد" },
-                      { icon: Zap,        label: "تسوية فورية" },
-                      { icon: Globe2,     label: "محافظ رقمية" },
-                      { icon: Clock,      label: "دعم على مدار الساعة" },
-                    ]
-                  : [
-                      { icon: CreditCard, label: "Visa & Mastercard" },
-                      { icon: Shield,     label: "SSL Encryption" },
-                      { icon: Zap,        label: "Instant Settlement" },
-                      { icon: Globe2,     label: "Digital Wallets" },
-                      { icon: Clock,      label: "24/7 Support" },
-                    ]
-                ).map(({ icon: Icon, label }, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 text-center p-3 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
-                    <div className="w-8 h-8 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center">
-                      <Icon className="w-4 h-4 text-black/40 dark:text-white/40" />
-                    </div>
-                    <span className="text-[11px] font-medium text-black/50 dark:text-white/50 leading-tight">{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="px-6 sm:px-10 md:px-14 pb-10 md:pb-12 flex flex-col items-center gap-4">
-              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-2" />
-              <p className="text-sm text-black/50 dark:text-white/50 text-center max-w-md">
-                {lang === "ar"
-                  ? "هل تريد تفعيل بوابة Paymob على نظامك الخاص؟ ابدأ الآن وأكمل عملية التسجيل في دقائق."
-                  : "Want to activate Paymob gateway on your own system? Start now and complete registration in minutes."}
-              </p>
-              <Button
-                onClick={() => setShowPaymobModal(true)}
-                className="rounded-xl px-6 py-2.5 font-semibold"
-                style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }}
-                data-testid="btn-paymob-learn-more"
-              >
-                {lang === "ar" ? "تعرف أكثر — ابدأ التفعيل" : "Learn More — Start Activation"}
-              </Button>
-            </div>
-
-            <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-black/[0.05] dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
-              <span className="text-[11px] text-black/30 dark:text-white/30 tracking-wide">
-                {lang === "ar" ? "اتفاقية شراكة رسمية — مارس 2026" : "Official Partnership Agreement — March 2026"}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
-                  {lang === "ar" ? "نشط ومفعّل" : "Active & Live"}
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* PAYPAL SECTION */}
-      <section className="py-10 md:py-14 relative" data-testid="section-paypal">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            custom={0}
-            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
-            style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
-          >
-            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #003087 0%, #009cde 50%, #012169 100%)" }} />
-            <div className="px-6 sm:px-10 md:px-14 py-8 md:py-10 flex flex-col md:flex-row items-center gap-8 md:gap-14" dir={dir}>
-              {/* Logo + title */}
-              <div className="flex flex-col items-center gap-3 shrink-0">
-                <div className="w-20 h-20 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-[#003087] flex items-center justify-center p-4 shadow-sm">
-                  <svg viewBox="0 0 124 33" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-                    <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/>
-                    <path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/>
-                    <path d="M55 11h-3.4c-.4 0-.7.2-.9.5L46.5 18l-1.9-6.2c-.1-.5-.6-.8-1-.8H40.3c-.5 0-.8.5-.6.9l3.5 10.3-3.3 4.7c-.3.5 0 1.1.6 1.1h3.4c.4 0 .7-.2.9-.5l10.6-15.4c.3-.4 0-1.1-.4-1.1z" fill="#fff"/>
-                    <path d="M67.9 4.8h-6.6c-.5 0-.9.3-1 .8L57.7 21.9c-.1.4.2.7.6.7h3.5c.3 0 .6-.2.7-.6l.7-4.6c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3-.9-1.1-2.5-1.6-4.8-1.6h.7zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.9.7.3.4.4 1 .2 1.6z" fill="#009cde"/>
-                    <path d="M90.6 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#009cde"/>
-                    <path d="M96.6 5.3l-2.7 17.3c-.1.4.2.7.6.7h2.8c.5 0 .9-.3 1-.8l2.6-16.4c.1-.4-.2-.7-.6-.7h-3.1c-.3 0-.6.2-.6.5v-.6z" fill="#009cde"/>
-                  </svg>
-                </div>
-                <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">PayPal</span>
-              </div>
-
-              {/* Text content */}
-              <div className="flex-1 text-center md:text-start">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-3">
-                  <Globe2 className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
-                    {lang === "ar" ? "دفع دولي" : "International Payments"}
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold font-heading text-black dark:text-white tracking-tight mb-2">
-                  {lang === "ar" ? "قبول المدفوعات الدولية عبر PayPal" : "Accept International Payments via PayPal"}
-                </h3>
-                <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed mb-5 max-w-xl">
-                  {lang === "ar"
-                    ? "تدعم منصة Qirox التكامل مع PayPal لتمكين العملاء من استقبال مدفوعات آمنة من أكثر من 200 دولة حول العالم، مع حماية المشتري المدمجة وتحويل العملات التلقائي."
-                    : "Qirox supports PayPal integration, enabling clients to receive secure payments from 200+ countries worldwide, with built-in buyer protection and automatic currency conversion."}
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-5">
-                  {(lang === "ar"
-                    ? ["200+ دولة", "حماية المشتري", "تحويل عملات تلقائي", "الدفع بالقسط (Pay Later)", "تكامل API سهل"]
-                    : ["200+ Countries", "Buyer Protection", "Auto Currency Conversion", "Pay Later", "Easy API Integration"]
-                  ).map((tag, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/40">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="shrink-0 flex flex-col items-center gap-3">
-                <Button
-                  onClick={() => setShowPaypalModal(true)}
-                  className="rounded-xl px-5 py-2.5 font-semibold whitespace-nowrap"
-                  style={{ background: "linear-gradient(135deg, #003087, #009cde)", color: "#fff" }}
-                  data-testid="btn-paypal-learn-more"
-                >
-                  {lang === "ar" ? "تعرف أكثر" : "Learn More"}
-                </Button>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {lang === "ar" ? "مدعوم ومتاح" : "Supported & Available"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* WHY QIROX */}
-      <section className="py-20 md:py-28 relative" data-testid="section-why">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={stagger}
-          >
-            <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/60 mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
-              </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
-                {t("home.why.title")}{" "}
-                <span className="text-gray-400 dark:text-gray-500">QIROX</span>
-                {lang === "ar" ? "؟" : "?"}
-              </motion.h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto mb-10">
-              {[
-                { icon: Layers,     title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc") },
-                { icon: Palette,    title: t("home.why.design.title"),   desc: t("home.why.design.desc") },
-                { icon: Headphones, title: t("home.why.support.title"),  desc: t("home.why.support.desc") },
-                { icon: Shield,     title: t("home.why.security.title"), desc: t("home.why.security.desc") },
-              ].map((item, idx) => (
-                <motion.div key={idx} variants={fadeUp} custom={idx}>
-                  <div
-                    className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 sm:p-8 h-full transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1]"
-                    data-testid={`why-card-${idx}`}
-                    dir={dir}
-                  >
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 bg-black/[0.04] dark:bg-white/[0.04]">
-                      <item.icon className="w-5 h-5 text-black/60 dark:text-white/60" />
-                    </div>
-                    <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title}</h3>
-                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">{item.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div variants={fadeUp} custom={4} className="max-w-6xl mx-auto">
-              {/* Why Phone Mockup + Trust Features row */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                {/* Phone mockup — security & analytics */}
-                <div className="flex justify-center md:justify-start" dir="ltr">
-                  <div className="relative w-36 h-64 rounded-[24px] border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-gray-900 overflow-hidden shadow-xl shadow-black/[0.07] dark:shadow-black/50">
-                    <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
-                      <span className="text-black/30 dark:text-white/30 text-[6px]">9:41</span>
-                      <div className="w-8 h-2.5 rounded-full bg-black/10 dark:bg-white/10" />
-                      <div className="w-2 h-2 rounded-full border border-black/20 dark:border-white/20" />
-                    </div>
-                    <div className="px-3 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.05]">
-                      <div className="text-[9px] font-bold text-black dark:text-white">QIROX Analytics</div>
-                      <div className="text-[6px] text-black/40 dark:text-white/40">{lang === "ar" ? "لوحة الأداء" : "Performance"}</div>
-                    </div>
-                    <div className="px-3 py-2 space-y-2">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[7px] text-black/50 dark:text-white/50">{lang === "ar" ? "وقت التشغيل" : "Uptime"}</span>
-                          <span className="text-[7px] font-bold text-emerald-600 dark:text-emerald-400">99.9%</span>
-                        </div>
-                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
-                          <div className="h-full w-[99%] rounded-full bg-emerald-500" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[7px] text-black/50 dark:text-white/50">SSL</span>
-                          <span className="text-[7px] font-bold text-blue-600 dark:text-blue-400">{lang === "ar" ? "محمي" : "Secured"}</span>
-                        </div>
-                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
-                          <div className="h-full w-full rounded-full bg-blue-500" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[7px] text-black/50 dark:text-white/50">{lang === "ar" ? "نسخ احتياطي" : "Backup"}</span>
-                          <span className="text-[7px] font-bold text-violet-600 dark:text-violet-400">{lang === "ar" ? "يومي" : "Daily"}</span>
-                        </div>
-                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
-                          <div className="h-full w-[90%] rounded-full bg-violet-500" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="px-3">
-                      <div className="h-12 flex items-end gap-0.5">
-                        {[40, 65, 50, 80, 60, 90, 75, 95, 70, 100].map((h, i) => (
-                          <div key={i} className="flex-1 rounded-t-sm" style={{
-                            height: `${h}%`,
-                            background: i === 9 ? "rgb(139,92,246)" : "rgba(139,92,246,0.2)"
-                          }} />
-                        ))}
-                      </div>
-                      <div className="text-[6px] text-black/30 dark:text-white/30 mt-1">{lang === "ar" ? "أداء آخر 10 أيام" : "Last 10 days"}</div>
-                    </div>
-                    <div className="absolute bottom-2 left-3 right-3">
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[7px] font-semibold text-emerald-700 dark:text-emerald-400">{lang === "ar" ? "النظام يعمل بشكل مثالي" : "All systems operational"}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Trust features — 3 columns */}
-                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { icon: Cloud, title: "استضافة سحابية آمنة", desc: "AWS / DigitalOcean — بمعدل uptime 99.9%" },
-                    { icon: Lock, title: "حماية متقدمة للبيانات", desc: "SSL، تشفير كامل، نسخ احتياطي يومي" },
-                    { icon: Globe2, title: "متعدد اللغات RTL/LTR", desc: "يدعم العربية والإنجليزية بشكل كامل" },
-                  ].map((item, i) => (
-                    <div key={i} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/40 p-6 flex items-start gap-4" data-testid={`trust-feature-${i}`}>
-                      <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
-                        <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
-                      </div>
-                      <div dir={dir}>
-                        <p className="text-sm font-bold text-black dark:text-white mb-1">{item.title}</p>
-                        <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* PATHFINDER */}
-      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-pathfinder">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeUp}
-            custom={0}
-            className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 overflow-hidden"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="p-6 sm:p-10 md:p-14 flex flex-col justify-center" dir={dir}>
-                <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
-                <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
-                  {t("home.pathfinder.title")}
-                </h2>
-                <p className="text-black/40 dark:text-white/40 text-base leading-relaxed mb-8 max-w-md">
-                  {t("home.pathfinder.desc")}
-                </p>
-                <div>
-                  <Link href="/contact">
-                    <Button
-                      size="lg"
-                      className="h-13 px-8 text-base rounded-full gap-2 font-semibold bg-black text-white hover:bg-gray-900"
-                      data-testid="button-pathfinder-cta"
-                    >
-                      {t("home.pathfinder.cta")}
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="p-6 sm:p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] dark:border-white/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06] dark:rtl:border-white/[0.06]" dir={dir}>
-                <h3 className="text-black/40 dark:text-white/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
-                <div className="space-y-1">
-                  {[
-                    { href: "/systems", labelKey: "home.pathfinder.systems" as const },
-                    { href: "/prices", labelKey: "home.pathfinder.packages" as const },
-                    { href: "/about", labelKey: "home.pathfinder.aboutPlatform" as const },
-                    { href: "/contact", labelKey: "home.pathfinder.contact" as const },
-                  ].map((link) => (
-                    <Link key={link.href} href={link.href}>
-                      <div
-                        className="flex items-center justify-between py-4 px-4 rounded-xl text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all cursor-pointer group"
-                        data-testid={`pathfinder-link-${link.href.replace("/", "")}`}
+                        className="group aspect-[4/5] rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] overflow-hidden cursor-pointer hover-elevate active-elevate-2"
+                        data-testid={`card-template-${tpl._id || i}`}
                       >
-                        <span className="text-base font-medium">{t(link.labelKey)}</span>
-                        <ArrowLeft className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="h-3/4 bg-gradient-to-br from-black/[0.04] to-black/[0.08] dark:from-white/[0.04] dark:to-white/[0.1] flex items-center justify-center overflow-hidden">
+                          {tpl.coverImage ? (
+                            <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          ) : (
+                            <Layers className="w-10 h-10 text-black/20 dark:text-white/20" />
+                          )}
+                        </div>
+                        <div className="p-3 md:p-4">
+                          <div className="font-bold text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
+                          <div className="text-[11px] text-black/45 dark:text-white/45 mt-0.5 truncate">{tpl.category || tpl.sector || ""}</div>
+                        </div>
                       </div>
                     </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+                  </motion.div>
+                ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link href="/systems">
+              <Button variant="outline" className="border-black/15 dark:border-white/15 rounded-xl h-11 px-6 font-bold gap-2" data-testid="button-view-all-systems">
+                {ar ? "عرض كل الأنظمة" : "View all systems"}
+                <Arrow className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* PARTNERS MARQUEE */}
-      <PartnersMarquee lang={lang} dir={dir} />
-
-      {/* INTEGRATION PARTNERS */}
-      <IntegrationPartnersMarquee lang={lang} dir={dir} />
-
-      {/* FINAL CTA */}
-      <section className="py-20 md:py-28 relative" data-testid="section-spotlight">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-          >
-            <div className="rounded-[24px] sm:rounded-[32px] p-7 sm:p-12 md:p-20 text-center relative overflow-hidden bg-black">
-              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-              <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-white/[0.01] -translate-y-1/2" />
-              <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full bg-white/[0.015] translate-y-1/2" />
-
-              {/* Floating phone mockups — left */}
-              <div className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-10 pointer-events-none" dir="ltr">
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-28 h-48 rounded-[20px] border border-white/[0.12] bg-white/[0.05] backdrop-blur-sm overflow-hidden"
-                >
-                  <div className="px-2.5 pt-2 pb-1.5">
-                    <div className="w-8 h-1.5 rounded-full bg-white/10 mx-auto mb-2" />
-                    <div className="text-[7px] font-bold text-white/70">☕ قهوة كوب</div>
-                    <div className="text-[5px] text-white/30 mb-1.5">طلب جديد #384</div>
-                    <div className="space-y-1">
-                      {["لاتيه ذهبي", "كابتشينو", "فريبيه"].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="text-[6px] text-white/50">{item}</span>
-                          <span className="text-[6px] text-white/30">×1</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 bg-orange-500/30 rounded-lg py-1 text-center">
-                      <span className="text-[6px] text-orange-300 font-bold">65 ر.س</span>
-                    </div>
-                  </div>
-                  <div className="h-14 flex items-end gap-0.5 px-2 pb-2">
-                    {[30, 55, 40, 70, 50, 80, 65, 90].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%`, background: i === 7 ? "rgba(251,146,60,0.8)" : "rgba(251,146,60,0.2)" }} />
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-              {/* Floating phone mockups — right */}
-              <div className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-10 pointer-events-none" dir="ltr">
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="w-28 h-48 rounded-[20px] border border-white/[0.12] bg-white/[0.05] backdrop-blur-sm overflow-hidden"
-                >
-                  <div className="px-2.5 pt-2 pb-1.5">
-                    <div className="w-8 h-1.5 rounded-full bg-white/10 mx-auto mb-2" />
-                    <div className="text-[7px] font-bold text-white/70">🛍️ {lang === "ar" ? "المتجر" : "Store"}</div>
-                    <div className="text-[5px] text-white/30 mb-1.5">Apple Pay ✓</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {["👜", "⌚", "🕶️", "👟"].map((e, i) => (
-                        <div key={i} className="bg-white/[0.06] rounded-lg p-1.5 text-center text-sm">{e}</div>
-                      ))}
-                    </div>
-                    <div className="mt-2 bg-blue-500/30 rounded-lg py-1 text-center">
-                      <span className="text-[6px] text-blue-300 font-bold">{lang === "ar" ? "1,240 منتج" : "1,240 items"}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[6px] text-white/40">{lang === "ar" ? "متصل" : "Online"}</span>
-                  </div>
-                </motion.div>
-              </div>
-
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] mb-8">
-                  <Sparkles className="w-3.5 h-3.5 text-white/40" />
-                  <span className="text-white/40 text-xs tracking-wider">ابدأ رحلتك الرقمية اليوم</span>
-                </div>
-
-                <h2 className="text-3xl md:text-6xl font-bold font-heading text-white mb-6" dir={dir}>
-                  {t("home.spotlight.title")}
-                </h2>
-                <p className="text-white/50 text-lg max-w-2xl mx-auto mb-10" dir={dir}>
-                  {t("home.spotlight.desc")}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/contact">
-                    <Button
-                      size="lg"
-                      className="h-14 px-10 text-base rounded-full gap-2 font-bold bg-white text-black hover:bg-gray-100 shadow-xl shadow-white/10"
-                      data-testid="button-cta-start"
-                    >
-                      {t("home.spotlight.cta")}
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/prices">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-14 px-10 text-base border-white/15 text-white/70 rounded-full font-semibold bg-transparent hover:bg-white/10"
-                      data-testid="button-cta-prices"
-                    >
-                      {t("home.spotlight.prices")}
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="mt-14 flex flex-wrap items-center justify-center gap-6 text-sm text-white/20">
-                  <span>www.qiroxstudio.online</span>
-                  <span className="w-1 h-1 rounded-full bg-white/10" />
-                  <span>{t("home.spotlight.riyadh")}</span>
-                  <span className="w-1 h-1 rounded-full bg-white/10" />
-                  <span>{t("home.spotlight.cairo")}</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {SOCIAL_ITEMS.length > 0 && (
-        <section className="py-16 relative" data-testid="section-social">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-8" dir={dir}>
-              {lang === "ar" ? "تابعنا على منصات التواصل" : "Follow Us"}
+      {/* ═══ PRICING ═══ */}
+      <section id="tab-pricing" className="py-20 md:py-24 bg-black/[0.02] dark:bg-white/[0.02] border-y border-black/10 dark:border-white/10">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+          <motion.div {...fade(0)} className="mb-12 text-center">
+            <h2 className="text-3xl md:text-5xl font-black mb-4">{ar ? "أسعار شفافة" : "Transparent pricing"}</h2>
+            <p className="text-black/55 dark:text-white/55 max-w-2xl mx-auto">
+              {ar ? "كتالوج رسمي، بدون مفاجآت. أنت تختار ما تحتاج، نحن ننفّذ." : "Official catalog, zero surprises. You pick, we deliver."}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {SOCIAL_ITEMS.map(s => (
-                <a
-                  key={s.key}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  data-testid={`home-social-${s.key}`}
-                  className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center text-black/35 dark:text-white/35 hover:text-white dark:hover:text-black transition-all duration-200 hover:scale-105"
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {PRICING_HIGHLIGHTS.map((p, i) => (
+              <motion.div key={i} {...fade(i)}
+                className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black p-5 hover-elevate"
+                data-testid={`card-addon-${i}`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl border border-black/15 dark:border-white/15 flex items-center justify-center">
+                    <p.icon className="w-5 h-5" />
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-baseline gap-1 justify-end">
+                      <span className="font-black text-lg">{ar ? p.priceAr : p.priceEn}</span>
+                      <SARIcon className="w-3.5 h-3.5 text-black/45 dark:text-white/45" />
+                    </div>
+                  </div>
+                </div>
+                <div className="font-bold text-base mb-1">{ar ? p.ar : p.en}</div>
+                <div className="text-xs text-black/50 dark:text-white/50">{ar ? p.noteAr : p.noteEn}</div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link href="/prices">
+              <Button className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-view-pricing">
+                {ar ? "عرض كل الباقات والإضافات" : "See all plans & add-ons"}
+                <Arrow className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PROCESS ═══ */}
+      <section id="tab-process" className="py-20 md:py-24">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+          <motion.div {...fade(0)} className="mb-12 text-center">
+            <h2 className="text-3xl md:text-5xl font-black mb-4">{ar ? "كيف نعمل" : "How we work"}</h2>
+            <p className="text-black/55 dark:text-white/55 max-w-2xl mx-auto">
+              {ar ? "أربع خطوات بسيطة من الفكرة إلى الإطلاق." : "Four simple steps from idea to launch."}
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            {PROCESS_STEPS.map((s, i) => (
+              <motion.div key={i} {...fade(i)}
+                className="rounded-2xl border border-black/10 dark:border-white/10 p-6 bg-black/[0.02] dark:bg-white/[0.03] relative"
+              >
+                <div className="absolute top-4 right-4 text-5xl font-black text-black/[0.06] dark:text-white/[0.06] leading-none">
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center mb-4 font-black text-sm">
+                  {i + 1}
+                </div>
+                <div className="font-bold text-base mb-2">{ar ? s.ar.t : s.en.t}</div>
+                <div className="text-xs md:text-sm text-black/55 dark:text-white/55">{ar ? s.ar.d : s.en.d}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PARTNERS ═══ */}
+      <section id="tab-partners" className="py-20 md:py-24 border-t border-black/10 dark:border-white/10">
+        <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+          <motion.div {...fade(0)} className="mb-10 text-center">
+            <h2 className="text-2xl md:text-4xl font-black mb-3">{ar ? "شركاء يثقون بنا" : "Partners who trust us"}</h2>
+            <p className="text-sm text-black/55 dark:text-white/55">
+              {ar ? "علامات بنينا معها قصص نجاح حقيقية." : "Brands we've built real success stories with."}
+            </p>
+          </motion.div>
+
+          {apiPartners.length === 0 ? (
+            <div className="text-center text-black/30 dark:text-white/30 text-sm py-8">
+              {ar ? "قريباً" : "Coming soon"}
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+              {apiPartners.map((p: any) => (
+                <div
+                  key={p.id || p._id}
+                  className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                  data-testid={`logo-partner-${p.id || p._id}`}
                 >
-                  {s.icon}
-                </a>
+                  {p.websiteUrl ? (
+                    <a href={p.websiteUrl} target="_blank" rel="noreferrer" title={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)}>
+                      <img src={p.logoUrl} alt={p.name} className="h-12 md:h-14 w-auto object-contain max-w-[140px]" />
+                    </a>
+                  ) : (
+                    <img src={p.logoUrl} alt={p.name} className="h-12 md:h-14 w-auto object-contain max-w-[140px]" />
+                  )}
+                </div>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
-      <InstallPrompt />
+      {/* ═══ CTA ═══ */}
+      <section className="py-20 md:py-28 bg-black text-white dark:bg-white dark:text-black">
+        <div className="container mx-auto px-5 md:px-8 max-w-4xl text-center">
+          <motion.div {...fade(0)}>
+            <img src={qiroxLogo} alt="QIROX" className="h-12 w-auto mx-auto mb-6 invert dark:invert-0" />
+            <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight">
+              {ar ? "جاهز تبدأ؟" : "Ready to start?"}
+            </h2>
+            <p className="text-white/60 dark:text-black/60 mb-10 max-w-xl mx-auto">
+              {ar
+                ? "احكِ لنا فكرتك — QIROX AI يساعدك تختار الباقة الأنسب وفريقنا يبدأ التنفيذ فوراً."
+                : "Tell us your idea — QIROX AI helps you pick the right plan and our team starts immediately."}
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link href="/cart">
+                <Button size="lg" className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-start">
+                  {ar ? "ابدأ الآن" : "Get started"}
+                  <Arrow className="w-4 h-4" />
+                </Button>
+              </Link>
+              <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
+                <Button size="lg" variant="outline" className="bg-transparent border-white/25 text-white hover:bg-white/10 dark:border-black/25 dark:text-black dark:hover:bg-black/10 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-whatsapp">
+                  <SiWhatsapp className="w-4 h-4" />
+                  {ar ? "تحدث معنا" : "Talk to us"}
+                </Button>
+              </a>
+            </div>
+
+            {/* Social */}
+            <div className="flex items-center justify-center gap-4 mt-12 text-white/50 dark:text-black/50">
+              <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer" aria-label="Instagram" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-instagram"><SiInstagram className="w-5 h-5" /></a>
+              <a href="https://x.com/qiroxsa" target="_blank" rel="noreferrer" aria-label="X" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-x"><SiX className="w-5 h-5" /></a>
+              <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-linkedin"><SiLinkedin className="w-5 h-5" /></a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       <Footer />
-
-
-      {/* PAYMOB MODAL */}
-      <Dialog open={showPaymobModal} onOpenChange={setShowPaymobModal}>
-        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
-          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a, #1d90f5, #0f172a)" }} />
-          <div className="px-6 pt-6 pb-2">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.07] flex items-center justify-center p-2 shadow-sm">
-                  <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
-                </div>
-                <DialogTitle className="text-lg font-bold text-black dark:text-white">
-                  {lang === "ar" ? "Qirox × Paymob — بوابة الدفع الرسمية" : "Qirox × Paymob — Official Payment Gateway"}
-                </DialogTitle>
-              </div>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                {lang === "ar" ? "الرسوم والسياسات والميزات الرئيسية" : "Fees, policies, and key features"}
-              </p>
-            </DialogHeader>
-          </div>
-          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "جدول الرسوم" : "Fee Schedule"}
-              </h4>
-              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
-                <table className="w-full text-sm" dir={dir}>
-                  <thead>
-                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                    {(lang === "ar" ? [
-                      ["رسوم الإعداد", "مجانية"],
-                      ["اشتراك شهري", "0 ريال"],
-                      ["Visa / Mastercard", "2.9% + 1 ريال"],
-                      ["المحافظ الرقمية (Vodafone / OPay)", "2.5%"],
-                      ["تحويل بنكي (ACH)", "1%"],
-                      ["فوري / Fawry", "2%"],
-                      ["تسوية الأرباح", "الاثنين والأربعاء"],
-                    ] : [
-                      ["Setup Fee", "Free"],
-                      ["Monthly Subscription", "0 SAR"],
-                      ["Visa / Mastercard", "2.9% + 1 SAR"],
-                      ["Digital Wallets (Vodafone / OPay)", "2.5%"],
-                      ["Bank Transfer (ACH)", "1%"],
-                      ["Fawry", "2%"],
-                      ["Settlement Period", "Mon & Wed"],
-                    ]).map(([label, val], i) => (
-                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "أبرز نقاط السياسة" : "Policy Highlights"}
-              </h4>
-              <div className="space-y-2">
-                {(lang === "ar" ? [
-                  { icon: Shield,     text: "متوافق مع معيار PCI-DSS المستوى الأول" },
-                  { icon: Lock,       text: "تشفير SSL 256-bit على جميع المعاملات" },
-                  { icon: Zap,        text: "تسوية الأرباح كل الاثنين والأربعاء" },
-                  { icon: Clock,      text: "دعم فني على مدار الساعة 7 أيام" },
-                  { icon: CreditCard, text: "لا حد أدنى للحجم الشهري من المبيعات" },
-                  { icon: Globe2,     text: "دعم 15+ وسيلة دفع محلية ودولية" },
-                ] : [
-                  { icon: Shield,     text: "PCI-DSS Level 1 Compliant" },
-                  { icon: Lock,       text: "256-bit SSL Encryption on all transactions" },
-                  { icon: Zap,        text: "Settlement every Monday & Wednesday" },
-                  { icon: Clock,      text: "24/7 technical support, 7 days a week" },
-                  { icon: CreditCard, text: "No minimum monthly sales volume" },
-                  { icon: Globe2,     text: "15+ local and international payment methods" },
-                ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-blue-500" />
-                    </div>
-                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <a href="https://paymob.com/ar/accept/developer" target="_blank" rel="noopener noreferrer" className="flex-1" data-testid="btn-paymob-pdf">
-                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
-                  <Download className="w-4 h-4" />
-                  {lang === "ar" ? "تحميل ملف السياسة PDF" : "Download Policy PDF"}
-                </Button>
-              </a>
-              <Link href="/paymob-onboarding" className="flex-1" onClick={() => setShowPaymobModal(false)}>
-                <Button className="w-full rounded-xl gap-2 font-semibold text-sm" style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }} data-testid="btn-paymob-start-activation">
-                  <Zap className="w-4 h-4" />
-                  {lang === "ar" ? "ابدأ التفعيل الآن" : "Start Activation Now"}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* PAYPAL MODAL */}
-      <Dialog open={showPaypalModal} onOpenChange={setShowPaypalModal}>
-        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
-          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #003087, #009cde, #003087)" }} />
-          <div className="px-6 pt-6 pb-2">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-xl bg-[#003087] flex items-center justify-center p-2 shadow-sm">
-                  <svg viewBox="0 0 124 33" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-                    <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/><path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/><path d="M55 11h-3.4c-.4 0-.7.2-.9.5L46.5 18l-1.9-6.2c-.1-.5-.6-.8-1-.8H40.3c-.5 0-.8.5-.6.9l3.5 10.3-3.3 4.7c-.3.5 0 1.1.6 1.1h3.4c.4 0 .7-.2.9-.5l10.6-15.4c.3-.4 0-1.1-.4-1.1z" fill="#fff"/>
-                  </svg>
-                </div>
-                <DialogTitle className="text-lg font-bold text-black dark:text-white">
-                  {lang === "ar" ? "PayPal — المدفوعات الدولية" : "PayPal — International Payments"}
-                </DialogTitle>
-              </div>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                {lang === "ar" ? "قبول المدفوعات من أكثر من 200 دولة عبر PayPal" : "Accept payments from 200+ countries via PayPal"}
-              </p>
-            </DialogHeader>
-          </div>
-          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "المميزات الرئيسية" : "Key Features"}
-              </h4>
-              <div className="space-y-2">
-                {(lang === "ar" ? [
-                  { icon: Globe2,     text: "قبول المدفوعات من 200+ دولة حول العالم" },
-                  { icon: Shield,     text: "حماية المشتري والبائع المدمجة من PayPal" },
-                  { icon: CreditCard, text: "تحويل العملات تلقائياً إلى ريال سعودي" },
-                  { icon: Zap,        text: "خيار الشراء الآن والدفع لاحقاً (Pay Later)" },
-                  { icon: Lock,       text: "معاملات مشفرة بالكامل وآمنة" },
-                  { icon: Smartphone, text: "تكامل API احترافي مع منظومة Qirox" },
-                ] : [
-                  { icon: Globe2,     text: "Accept payments from 200+ countries worldwide" },
-                  { icon: Shield,     text: "Built-in PayPal Buyer & Seller Protection" },
-                  { icon: CreditCard, text: "Automatic currency conversion to local currency" },
-                  { icon: Zap,        text: "Buy Now, Pay Later option" },
-                  { icon: Lock,       text: "Fully encrypted and secure transactions" },
-                  { icon: Smartphone, text: "Professional API integration with Qirox platform" },
-                ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-[#009cde]" />
-                    </div>
-                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "نظرة سريعة على الرسوم" : "Quick Fee Overview"}
-              </h4>
-              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
-                <table className="w-full text-sm" dir={dir}>
-                  <thead>
-                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع المعاملة" : "Transaction Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "الرسوم" : "Fee"}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                    {(lang === "ar" ? [
-                      ["مدفوعات محلية", "2.9% + ثابت"],
-                      ["مدفوعات دولية", "4.4% + ثابت"],
-                      ["استلام من تجار موثوقين", "مجانية"],
-                      ["تحويل العملات", "2.5% فوق سعر السوق"],
-                    ] : [
-                      ["Domestic Payments", "2.9% + fixed fee"],
-                      ["International Payments", "4.4% + fixed fee"],
-                      ["Receiving from merchants", "Free"],
-                      ["Currency Conversion", "2.5% above market rate"],
-                    ]).map(([label, val], i) => (
-                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <a href="https://www.paypal.com/sa/webapps/mpp/merchant" target="_blank" rel="noopener noreferrer" className="flex-1" data-testid="btn-paypal-website">
-                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
-                  <Globe className="w-4 h-4" />
-                  {lang === "ar" ? "زيارة موقع PayPal" : "Visit PayPal Website"}
-                </Button>
-              </a>
-              <Link href="/checkout" className="flex-1" onClick={() => setShowPaypalModal(false)}>
-                <Button className="w-full rounded-xl gap-2 font-semibold text-sm" style={{ background: "linear-gradient(135deg, #003087, #009cde)", color: "#fff" }} data-testid="btn-paypal-start">
-                  <Zap className="w-4 h-4" />
-                  {lang === "ar" ? "ابدأ مشروعك الآن" : "Start Your Project Now"}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <InstallPrompt />
     </div>
-  );
-}
-
-// Shows letter avatar instantly; favicon fades in on top when loaded
-function CompanyLogo({ domain, name }: { domain: string; name: string }) {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const initial = name.charAt(0).toUpperCase();
-  const palette = [
-    "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
-    "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
-    "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
-    "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300",
-    "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
-    "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300",
-    "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300",
-  ];
-  const colorClass = palette[name.charCodeAt(0) % palette.length];
-
-  return (
-    <span className="relative w-6 h-6 shrink-0">
-      {/* Letter avatar — always visible immediately */}
-      <span className={`absolute inset-0 rounded-md flex items-center justify-center text-[11px] font-black ${colorClass}`}>
-        {initial}
-      </span>
-      {/* Favicon overlays smoothly once loaded */}
-      <img
-        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-        alt=""
-        width={24}
-        height={24}
-        className={`absolute inset-0 w-full h-full object-contain rounded-md transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-        onLoad={() => setImgLoaded(true)}
-        onError={() => {/* letter stays visible */}}
-      />
-    </span>
-  );
-}
-
-function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
-  const L = lang === "ar";
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [pingStyle, setPingStyle] = useState<React.CSSProperties>({});
-
-  // Measure content and set animation only after DOM is painted
-  useEffect(() => {
-    const measure = () => {
-      const wrap = wrapRef.current;
-      const track = trackRef.current;
-      if (!wrap || !track) return;
-      const offset = track.scrollWidth - wrap.clientWidth;
-      if (offset > 0) {
-        const dur = Math.max(Math.round(offset / 40), 20);
-        setPingStyle({
-          "--ping-offset": `-${offset}px`,
-          animation: `marquee-pingpong ${dur}s ease-in-out infinite alternate`,
-        } as React.CSSProperties);
-      } else {
-        setPingStyle({});
-      }
-    };
-    const t = setTimeout(measure, 60);
-    const ro = new ResizeObserver(measure);
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => { clearTimeout(t); ro.disconnect(); };
-  }, []);
-
-  const categories = [
-    {
-      key: "bigtech",
-      label: L ? "تقنية" : "Big Tech",
-      color: "bg-blue-600",
-      companies: [
-        { name: "Microsoft", domain: "microsoft.com" },
-        { name: "Google", domain: "google.com" },
-        { name: "Apple", domain: "apple.com" },
-        { name: "Amazon", domain: "amazon.com" },
-        { name: "Meta", domain: "meta.com" },
-        { name: "IBM", domain: "ibm.com" },
-        { name: "Oracle", domain: "oracle.com" },
-        { name: "Salesforce", domain: "salesforce.com" },
-        { name: "SAP", domain: "sap.com" },
-        { name: "Adobe", domain: "adobe.com" },
-        { name: "ServiceNow", domain: "servicenow.com" },
-        { name: "Cisco", domain: "cisco.com" },
-      ],
-    },
-    {
-      key: "ai",
-      label: L ? "ذكاء اصطناعي" : "AI",
-      color: "bg-emerald-500",
-      companies: [
-        { name: "NVIDIA", domain: "nvidia.com" },
-        { name: "OpenAI", domain: "openai.com" },
-        { name: "Anthropic", domain: "anthropic.com" },
-        { name: "Mistral AI", domain: "mistral.ai" },
-        { name: "Hugging Face", domain: "huggingface.co" },
-        { name: "Cohere", domain: "cohere.com" },
-        { name: "Stability AI", domain: "stability.ai" },
-        { name: "Perplexity", domain: "perplexity.ai" },
-        { name: "DeepMind", domain: "deepmind.com" },
-        { name: "xAI", domain: "x.ai" },
-      ],
-    },
-    {
-      key: "cloud",
-      label: L ? "السحابة" : "Cloud",
-      color: "bg-sky-500",
-      companies: [
-        { name: "AWS", domain: "aws.amazon.com" },
-        { name: "Azure", domain: "azure.microsoft.com" },
-        { name: "Google Cloud", domain: "cloud.google.com" },
-        { name: "Cloudflare", domain: "cloudflare.com" },
-        { name: "DigitalOcean", domain: "digitalocean.com" },
-        { name: "Alibaba Cloud", domain: "alibabacloud.com" },
-        { name: "Vultr", domain: "vultr.com" },
-        { name: "Supabase", domain: "supabase.com" },
-        { name: "Vercel", domain: "vercel.com" },
-        { name: "Netlify", domain: "netlify.com" },
-        { name: "Render", domain: "render.com" },
-        { name: "Railway", domain: "railway.app" },
-        { name: "Hetzner", domain: "hetzner.com" },
-      ],
-    },
-    {
-      key: "payment",
-      label: L ? "الدفع" : "Payment",
-      color: "bg-violet-500",
-      companies: [
-        { name: "Stripe", domain: "stripe.com" },
-        { name: "PayPal", domain: "paypal.com" },
-        { name: "Visa", domain: "visa.com" },
-        { name: "Mastercard", domain: "mastercard.com" },
-        { name: "Apple Pay", domain: "apple.com" },
-        { name: "Google Pay", domain: "pay.google.com" },
-        { name: "Adyen", domain: "adyen.com" },
-        { name: "Worldpay", domain: "worldpay.com" },
-        { name: "Square", domain: "squareup.com" },
-        { name: "Checkout.com", domain: "checkout.com" },
-        { name: "Klarna", domain: "klarna.com" },
-        { name: "Tabby", domain: "tabby.ai" },
-        { name: "Tamara", domain: "tamara.co" },
-        { name: "HyperPay", domain: "hyperpay.com" },
-        { name: "OPay", domain: "opayweb.com" },
-        { name: "KNET", domain: "knet.com.kw" },
-        { name: "Benefit", domain: "benefit.bh" },
-        { name: "Fawry", domain: "fawry.com" },
-        { name: "Ziina", domain: "ziina.com" },
-      ],
-    },
-    {
-      key: "devtools",
-      label: L ? "أدوات التطوير" : "Dev Tools",
-      color: "bg-gray-600",
-      companies: [
-        { name: "GitHub", domain: "github.com" },
-        { name: "GitLab", domain: "gitlab.com" },
-        { name: "Jira", domain: "atlassian.com" },
-        { name: "Figma", domain: "figma.com" },
-        { name: "Notion", domain: "notion.so" },
-        { name: "Slack", domain: "slack.com" },
-        { name: "Docker", domain: "docker.com" },
-        { name: "Kubernetes", domain: "kubernetes.io" },
-        { name: "HashiCorp", domain: "hashicorp.com" },
-        { name: "CircleCI", domain: "circleci.com" },
-        { name: "Bitbucket", domain: "bitbucket.org" },
-        { name: "Linear", domain: "linear.app" },
-      ],
-    },
-    {
-      key: "monitoring",
-      label: L ? "المراقبة" : "Monitoring",
-      color: "bg-orange-400",
-      companies: [
-        { name: "New Relic", domain: "newrelic.com" },
-        { name: "Datadog", domain: "datadoghq.com" },
-        { name: "Grafana", domain: "grafana.com" },
-        { name: "Splunk", domain: "splunk.com" },
-        { name: "PagerDuty", domain: "pagerduty.com" },
-        { name: "Elastic", domain: "elastic.co" },
-        { name: "Dynatrace", domain: "dynatrace.com" },
-        { name: "Sentry", domain: "sentry.io" },
-        { name: "Prometheus", domain: "prometheus.io" },
-        { name: "Zabbix", domain: "zabbix.com" },
-      ],
-    },
-    {
-      key: "database",
-      label: L ? "قواعد البيانات" : "Databases",
-      color: "bg-cyan-600",
-      companies: [
-        { name: "MongoDB", domain: "mongodb.com" },
-        { name: "Redis", domain: "redis.io" },
-        { name: "PostgreSQL", domain: "postgresql.org" },
-        { name: "Neo4j", domain: "neo4j.com" },
-        { name: "Snowflake", domain: "snowflake.com" },
-        { name: "Databricks", domain: "databricks.com" },
-        { name: "Confluent", domain: "confluent.io" },
-        { name: "PlanetScale", domain: "planetscale.com" },
-        { name: "CockroachDB", domain: "cockroachlabs.com" },
-        { name: "Neon", domain: "neon.tech" },
-        { name: "Cassandra", domain: "cassandra.apache.org" },
-      ],
-    },
-    {
-      key: "communication",
-      label: L ? "التواصل" : "Communication",
-      color: "bg-green-500",
-      companies: [
-        { name: "Twilio", domain: "twilio.com" },
-        { name: "SendGrid", domain: "sendgrid.com" },
-        { name: "Mailchimp", domain: "mailchimp.com" },
-        { name: "Vonage", domain: "vonage.com" },
-        { name: "OneSignal", domain: "onesignal.com" },
-        { name: "Pusher", domain: "pusher.com" },
-        { name: "Firebase", domain: "firebase.google.com" },
-        { name: "Intercom", domain: "intercom.com" },
-        { name: "Zendesk", domain: "zendesk.com" },
-        { name: "Freshdesk", domain: "freshdesk.com" },
-        { name: "Brevo", domain: "brevo.com" },
-        { name: "Resend", domain: "resend.com" },
-      ],
-    },
-    {
-      key: "ecommerce",
-      label: L ? "التجارة الإلكترونية" : "E-Commerce",
-      color: "bg-rose-500",
-      companies: [
-        { name: "Shopify", domain: "shopify.com" },
-        { name: "WooCommerce", domain: "woocommerce.com" },
-        { name: "Magento", domain: "magento.com" },
-        { name: "BigCommerce", domain: "bigcommerce.com" },
-        { name: "Salla", domain: "salla.com" },
-        { name: "Zid", domain: "zid.sa" },
-        { name: "Wix", domain: "wix.com" },
-        { name: "Squarespace", domain: "squarespace.com" },
-        { name: "PrestaShop", domain: "prestashop.com" },
-        { name: "Noon", domain: "noon.com" },
-      ],
-    },
-    {
-      key: "erp",
-      label: "ERP",
-      color: "bg-indigo-500",
-      companies: [
-        { name: "SAP ERP", domain: "sap.com" },
-        { name: "Oracle ERP", domain: "oracle.com" },
-        { name: "Microsoft D365", domain: "microsoft.com" },
-        { name: "NetSuite", domain: "netsuite.com" },
-        { name: "Odoo", domain: "odoo.com" },
-        { name: "Epicor", domain: "epicor.com" },
-        { name: "Infor", domain: "infor.com" },
-        { name: "Acumatica", domain: "acumatica.com" },
-        { name: "IFS", domain: "ifs.com" },
-        { name: "Unit4", domain: "unit4.com" },
-        { name: "Ramco", domain: "ramco.com" },
-      ],
-    },
-    {
-      key: "accounting",
-      label: L ? "المحاسبة" : "Accounting",
-      color: "bg-teal-500",
-      companies: [
-        { name: "QuickBooks", domain: "quickbooks.intuit.com" },
-        { name: "Xero", domain: "xero.com" },
-        { name: "Sage", domain: "sage.com" },
-        { name: "FreshBooks", domain: "freshbooks.com" },
-        { name: "Wave", domain: "waveapps.com" },
-        { name: "Zoho Books", domain: "zoho.com" },
-        { name: "Tally", domain: "tallysolutions.com" },
-        { name: "KashFlow", domain: "kashflow.com" },
-        { name: "MenaITech", domain: "menaitech.com" },
-      ],
-    },
-    {
-      key: "hr",
-      label: "HR",
-      color: "bg-pink-500",
-      companies: [
-        { name: "Workday", domain: "workday.com" },
-        { name: "SAP SuccessFactors", domain: "successfactors.com" },
-        { name: "BambooHR", domain: "bamboohr.com" },
-        { name: "ADP", domain: "adp.com" },
-        { name: "Gusto", domain: "gusto.com" },
-        { name: "Rippling", domain: "rippling.com" },
-        { name: "Oracle HCM", domain: "oracle.com" },
-        { name: "Zoho People", domain: "zoho.com" },
-        { name: "HiBob", domain: "hibob.com" },
-        { name: "Factorial", domain: "factorialhr.com" },
-      ],
-    },
-    {
-      key: "food",
-      label: L ? "الطعام" : "Food",
-      color: "bg-orange-500",
-      companies: [
-        { name: "Talabat", domain: "talabat.com" },
-        { name: "Wolt", domain: "wolt.com" },
-        { name: "Uber Eats", domain: "ubereats.com" },
-        { name: "DoorDash", domain: "doordash.com" },
-        { name: "Glovo", domain: "glovoapp.com" },
-        { name: "Zomato", domain: "zomato.com" },
-        { name: "Deliveroo", domain: "deliveroo.com" },
-        { name: "HungerStation", domain: "hungerstation.com" },
-        { name: "Jahez", domain: "jahez.net" },
-        { name: "Cari", domain: "cari.com.sa" },
-        { name: "Grab", domain: "grab.com" },
-      ],
-    },
-    {
-      key: "delivery",
-      label: L ? "التوصيل" : "Delivery",
-      color: "bg-blue-500",
-      companies: [
-        { name: "FedEx", domain: "fedex.com" },
-        { name: "DHL", domain: "dhl.com" },
-        { name: "UPS", domain: "ups.com" },
-        { name: "Aramex", domain: "aramex.com" },
-        { name: "SMSA", domain: "smsaexpress.com" },
-        { name: "Naqel", domain: "naqel.com.sa" },
-        { name: "iMile", domain: "imile.me" },
-        { name: "Fetchr", domain: "fetchr.us" },
-        { name: "Lalamove", domain: "lalamove.com" },
-        { name: "Bosta", domain: "bosta.co" },
-        { name: "J&T Express", domain: "jtexpress.com" },
-      ],
-    },
-    {
-      key: "hardware",
-      label: L ? "الأجهزة" : "Hardware",
-      color: "bg-slate-500",
-      companies: [
-        { name: "Ingenico", domain: "ingenico.com" },
-        { name: "Verifone", domain: "verifone.com" },
-        { name: "NCR", domain: "ncr.com" },
-        { name: "Sunmi", domain: "sunmi.com" },
-        { name: "PAX", domain: "pax.com" },
-        { name: "Posiflex", domain: "posiflex.com" },
-        { name: "Elo Touch", domain: "elotouch.com" },
-        { name: "Zebra", domain: "zebra.com" },
-        { name: "Honeywell", domain: "honeywell.com" },
-        { name: "Telpo", domain: "telpo.com" },
-        { name: "Datalogic", domain: "datalogic.com" },
-      ],
-    },
-    {
-      key: "reservations",
-      label: L ? "الحجوزات" : "Reservations",
-      color: "bg-amber-500",
-      companies: [
-        { name: "OpenTable", domain: "opentable.com" },
-        { name: "Booking.com", domain: "booking.com" },
-        { name: "Airbnb", domain: "airbnb.com" },
-        { name: "Expedia", domain: "expedia.com" },
-        { name: "TripAdvisor", domain: "tripadvisor.com" },
-        { name: "Resy", domain: "resy.com" },
-        { name: "Quandoo", domain: "quandoo.com" },
-        { name: "SevenRooms", domain: "sevenrooms.com" },
-        { name: "Google Reserve", domain: "google.com" },
-      ],
-    },
-    {
-      key: "security",
-      label: L ? "الأمان" : "Security",
-      color: "bg-red-500",
-      companies: [
-        { name: "CrowdStrike", domain: "crowdstrike.com" },
-        { name: "Palo Alto", domain: "paloaltonetworks.com" },
-        { name: "Cisco Security", domain: "cisco.com" },
-        { name: "Fortinet", domain: "fortinet.com" },
-        { name: "Check Point", domain: "checkpoint.com" },
-        { name: "Sophos", domain: "sophos.com" },
-        { name: "SentinelOne", domain: "sentinelone.com" },
-        { name: "Trend Micro", domain: "trendmicro.com" },
-        { name: "Cloudflare", domain: "cloudflare.com" },
-        { name: "Varonis", domain: "varonis.com" },
-      ],
-    },
-  ];
-
-  // Flatten all companies into one single list
-  const allCompanies = categories.flatMap(cat => cat.companies);
-
-  return (
-    <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-integration-partners">
-      {/* Header */}
-      <div className="container mx-auto px-4 mb-10 text-center">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
-          {L ? "شركاء التكامل" : "Integration Partners"}
-        </p>
-        <p className="text-sm text-black/35 dark:text-white/30" dir={dir}>
-          {L
-            ? "منظومة متكاملة من الشركاء في الدفع والتوصيل والمحاسبة وأكثر"
-            : "A complete ecosystem of partners across payments, delivery, accounting, and more"}
-        </p>
-      </div>
-
-      {/* Single ping-pong strip */}
-      <div className="relative" data-testid="integration-single-strip">
-        {/* Edge fades */}
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-
-        {/* Overflow wrapper — dir=ltr forces left-to-right layout in RTL pages */}
-        <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
-          <div
-            ref={trackRef}
-            className="flex"
-            style={{ width: "max-content", ...pingStyle }}
-          >
-            {allCompanies.map((company, ci) => (
-              <a
-                key={`${company.name}-${ci}`}
-                href={`https://${company.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
-                data-testid={`integration-chip-all-${ci}`}
-              >
-                <CompanyLogo domain={company.domain} name={company.name} />
-                <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
-                  {company.name}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── PartnerLogoAvatar ─────────────────────────────────────── */
-function PartnerLogoAvatar({ name, logo, size = "sm" }: { name: string; logo: string; size?: "sm" | "lg" }) {
-  const [failed, setFailed] = useState(false);
-  const letter = (name || "?").trim()[0]?.toUpperCase() || "?";
-  const colors = [
-    "bg-blue-500","bg-emerald-500","bg-violet-500","bg-orange-500",
-    "bg-pink-500","bg-cyan-500","bg-amber-500","bg-rose-500",
-    "bg-teal-500","bg-indigo-500","bg-lime-500","bg-sky-500",
-  ];
-  const color = colors[letter.charCodeAt(0) % colors.length];
-  const dim = size === "lg"
-    ? "w-16 h-16 text-2xl rounded-xl flex-shrink-0"
-    : "w-8 h-8 text-xs rounded-lg flex-shrink-0";
-
-  if (failed || !logo) {
-    return (
-      <div className={`${dim} ${color} flex items-center justify-center text-white font-bold`}>
-        {letter}
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={logo}
-      alt={name}
-      loading="eager"
-      className={`${dim} object-contain bg-white p-0.5`}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-/* ─── PartnersMarquee ───────────────────────────────────────── */
-function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
-  const L = lang === "ar";
-  const { data: apiPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [pingStyle, setPingStyle] = useState<React.CSSProperties>({});
-  const [selected, setSelected] = useState<{
-    name: string; nameAr?: string; logo: string; url?: string;
-    category?: string; description?: string; descriptionAr?: string;
-    features?: string[]; featuresAr?: string[];
-  } | null>(null);
-
-  const allPartners = useMemo(() => {
-    const fromApi = (apiPartners || []).map(p => ({
-      name: p.name,
-      nameAr: p.nameAr,
-      logo: p.logoUrl,
-      url: p.websiteUrl,
-      category: p.category,
-      description: (p as any).description,
-      descriptionAr: (p as any).descriptionAr,
-      features: (p as any).features,
-      featuresAr: (p as any).featuresAr,
-    }));
-    const fromStatic = staticPartners.map(p => ({
-      name: p.name,
-      nameAr: p.nameAr,
-      logo: p.logo,
-      url: undefined as string | undefined,
-      category: undefined as string | undefined,
-      description: undefined as string | undefined,
-      descriptionAr: undefined as string | undefined,
-      features: undefined as string[] | undefined,
-      featuresAr: undefined as string[] | undefined,
-    }));
-    const apiNames = new Set(fromApi.map(p => p.name));
-    return [...fromApi, ...fromStatic.filter(s => !apiNames.has(s.name))];
-  }, [apiPartners]);
-
-  useEffect(() => {
-    const measure = () => {
-      const wrap = wrapRef.current;
-      const track = trackRef.current;
-      if (!wrap || !track) return;
-      const offset = track.scrollWidth - wrap.clientWidth;
-      if (offset > 0) {
-        const dur = Math.max(Math.round(offset / 35), 12);
-        setPingStyle({
-          "--ping-offset": `-${offset}px`,
-          "--ping-duration": `${dur}s`,
-          animation: `marquee-pingpong ${dur}s ease-in-out infinite alternate`,
-        } as React.CSSProperties);
-      } else {
-        setPingStyle({});
-      }
-    };
-    // Small delay so the DOM has painted the chips before measuring
-    const t = setTimeout(measure, 60);
-    const ro = new ResizeObserver(measure);
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => { clearTimeout(t); ro.disconnect(); };
-  }, [allPartners]);
-
-  if (allPartners.length === 0) return null;
-
-  const displayName = (p: typeof allPartners[0]) => L ? (p.nameAr || p.name) : p.name;
-  const displayDesc = (p: typeof allPartners[0]) =>
-    L ? (p.descriptionAr || p.description || "") : (p.description || "");
-  const displayFeatures = (p: typeof allPartners[0]) =>
-    L ? (p.featuresAr?.length ? p.featuresAr : p.features || []) : (p.features || []);
-
-  return (
-    <section className="py-16 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-partners">
-      <div className="container mx-auto px-4 mb-10 text-center">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold" dir={dir}>
-          {L ? "يثقون بنا" : "Trusted By"}
-        </p>
-      </div>
-
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-
-        <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
-          <div
-            ref={trackRef}
-            className="flex"
-            style={{ width: "max-content", ...pingStyle }}
-          >
-            {allPartners.map((partner, i) => (
-              <button
-                key={`${partner.name}-${i}`}
-                onClick={() => setSelected(partner)}
-                className="group/chip flex items-center gap-2.5 mx-2 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.07] shadow-sm hover:shadow-md hover:border-black/20 dark:hover:border-white/20 hover:scale-[1.03] transition-all duration-200 shrink-0"
-                data-testid={`partner-chip-${i}`}
-              >
-                <PartnerLogoAvatar name={partner.name} logo={partner.logo} />
-                <span className="text-[13px] font-medium text-black/70 dark:text-white/70 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
-                  {displayName(partner)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Partner details dialog */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        {selected && (
-          <DialogContent
-            className="w-[calc(100vw-2rem)] max-w-md max-h-[85dvh] flex flex-col p-0 gap-0 overflow-hidden"
-            dir={dir}
-          >
-            {/* Sticky header */}
-            <DialogHeader className="px-5 pt-5 pb-3 border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
-              <div className="flex items-center gap-3">
-                <PartnerLogoAvatar name={selected.name} logo={selected.logo} size="lg" />
-                <div className="text-start min-w-0">
-                  <DialogTitle className="text-base font-bold leading-tight truncate">
-                    {L ? (selected.nameAr || selected.name) : selected.name}
-                  </DialogTitle>
-                  {selected.nameAr && selected.nameAr !== selected.name && (
-                    <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">
-                      {L ? selected.name : selected.nameAr}
-                    </p>
-                  )}
-                  {selected.category && (
-                    <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 font-medium">
-                      {selected.category}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </DialogHeader>
-
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {displayDesc(selected) && (
-                <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
-                  {displayDesc(selected)}
-                </p>
-              )}
-
-              {displayFeatures(selected).length > 0 && (
-                <ul className="space-y-2">
-                  {displayFeatures(selected).map((f: string, fi: number) => (
-                    <li key={fi} className="flex items-start gap-2 text-sm text-black/60 dark:text-white/55">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {selected.url && (
-                <a
-                  href={selected.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all"
-                >
-                  <Globe className="w-4 h-4 shrink-0" />
-                  {selected.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                </a>
-              )}
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
-    </section>
   );
 }
