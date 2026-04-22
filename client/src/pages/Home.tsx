@@ -114,9 +114,10 @@ export default function Home() {
                 : "Tech is simple now. We turn any idea into a professional site or system with features unmatched in the market — and transparent pricing."}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <Link href="/cart">
+              <Link href="/start">
                 <Button size="lg" className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-start">
-                  {ar ? "ابدأ مشروعك" : "Start your project"}
+                  <Sparkles className="w-4 h-4" />
+                  {ar ? "ابدأ بالذكاء الاصطناعي" : "Start with AI"}
                   <Arrow className="w-4 h-4" />
                 </Button>
               </Link>
@@ -127,6 +128,9 @@ export default function Home() {
                 </Button>
               </a>
             </div>
+            <Link href="/cart" className="mt-4 text-xs text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white transition" data-testid="link-hero-manual">
+              {ar ? "أو تصفح الباقات يدوياً" : "or browse plans manually"}
+            </Link>
           </motion.div>
 
           {/* Pillars row */}
@@ -356,9 +360,10 @@ export default function Home() {
                 : "Tell us your idea — QIROX AI helps you pick the right plan and our team starts immediately."}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <Link href="/cart">
+              <Link href="/start">
                 <Button size="lg" className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-start">
-                  {ar ? "ابدأ الآن" : "Get started"}
+                  <Sparkles className="w-4 h-4" />
+                  {ar ? "ابدأ الآن مع QIROX AI" : "Get started with QIROX AI"}
                   <Arrow className="w-4 h-4" />
                 </Button>
               </Link>

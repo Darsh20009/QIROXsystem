@@ -65,6 +65,7 @@ const AdminCountries = lazy(() => import("@/pages/AdminCountries"));
 const Devices = lazy(() => import("@/pages/Devices"));
 const Cart = lazy(() => import("@/pages/Cart"));
 const CartWizardPage = lazy(() => import("@/pages/CartWizardPage"));
+const QuickStart = lazy(() => import("@/pages/QuickStart"));
 const Checkout = lazy(() => import("@/pages/Checkout"));
 const InternalGate = lazy(() => import("@/pages/InternalGate"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
@@ -166,7 +167,7 @@ const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
 const AdminQuotations = lazy(() => import("@/pages/AdminQuotations"));
 const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
 const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start"];
 
 
 function PublicRouter() {
@@ -190,6 +191,8 @@ function PublicRouter() {
         <Route path="/register" component={Login} />
         <Route path="/employee/register-secret" component={Login} />
         <Route path="/order" component={OrderFlow} />
+        <Route path="/start" component={QuickStart} />
+        <Route path="/quick-start" component={QuickStart} />
         <Route path="/internal-gate" component={InternalGate} />
         <Route path="/devices" component={Devices} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -323,6 +326,8 @@ function AdminRouter() {
         <Route path="/employee/abandoned-carts" component={AdminAbandonedCarts} />
         <Route path="/cart" component={Cart} />
         <Route path="/cart-wizard" component={CartWizardPage} />
+        <Route path="/start" component={QuickStart} />
+        <Route path="/quick-start" component={QuickStart} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/inbox" component={Inbox} />
         <Route path="/groups/:id" component={GroupChat} />
