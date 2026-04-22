@@ -298,28 +298,29 @@ export function AppSidebar() {
   const clientItems = menuItems.filter(i => i.group === "client" || i.group === "public");
   const supplierItems = menuItems.filter(i => i.group === "supplier");
 
+  const NEUTRAL = "text-black/40 dark:text-white/40";
   const SECTION_LABELS: Record<string, { ar: string; en: string; accent: string }> = {
-    main:          { ar: "",                    en: "",                       accent: "" },
-    shopping:      { ar: "التسوق",              en: "Shopping",               accent: "text-cyan-600 dark:text-cyan-400" },
-    services:      { ar: "خدماتي",             en: "My Services",            accent: "text-[#06b6d4] dark:text-cyan-400" },
-    clients:       { ar: "العملاء",             en: "Clients",                accent: "text-blue-600 dark:text-blue-400" },
-    work:          { ar: "المشاريع والعمل",       en: "Projects & Work",        accent: "text-[#06b6d4] dark:text-cyan-400" },
-    communication: { ar: "التواصل",              en: "Communication",          accent: "text-green-600 dark:text-green-400" },
-    account:       { ar: "حسابي",               en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
-    finance:       { ar: "المالية",             en: "Finance",                accent: "text-amber-600 dark:text-amber-400" },
-    sales:         { ar: "المبيعات",            en: "Sales",                  accent: "text-pink-600 dark:text-pink-400" },
-    tools:         { ar: "الأدوات",             en: "Tools",                  accent: "text-blue-600 dark:text-blue-400" },
-    personal:      { ar: "حسابي",               en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
-    investor:      { ar: "الاستثمار",           en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
-    operations:    { ar: "المنتجات والخدمات",    en: "Products & Services",    accent: "text-[#06b6d4] dark:text-cyan-400" },
-    clients_ops:   { ar: "عمليات العملاء",       en: "Client Operations",      accent: "text-violet-600 dark:text-violet-400" },
-    team:          { ar: "الفريق والدعم",         en: "Team & Support",         accent: "text-indigo-600 dark:text-indigo-400" },
-    settings:      { ar: "الإعدادات والمحتوى",   en: "Settings & Content",     accent: "text-gray-600 dark:text-gray-400" },
-    content:       { ar: "المحتوى",              en: "Content",                accent: "text-orange-600 dark:text-orange-400" },
-    devtools:      { ar: "النظام والمطور",        en: "System & Dev",           accent: "text-rose-600 dark:text-rose-400" },
-    monitoring:    { ar: "المراقبة",             en: "Monitoring",             accent: "text-teal-600 dark:text-teal-400" },
-    investors:     { ar: "الاستثمار",            en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
-    stores:        { ar: "المتاجر الإلكترونية",  en: "E-Commerce Stores",      accent: "text-violet-600 dark:text-violet-400" },
+    main:          { ar: "",                    en: "",                       accent: NEUTRAL },
+    shopping:      { ar: "التسوق",              en: "Shopping",               accent: NEUTRAL },
+    services:      { ar: "خدماتي",             en: "My Services",            accent: NEUTRAL },
+    clients:       { ar: "العملاء",             en: "Clients",                accent: NEUTRAL },
+    work:          { ar: "المشاريع والعمل",       en: "Projects & Work",        accent: NEUTRAL },
+    communication: { ar: "التواصل",              en: "Communication",          accent: NEUTRAL },
+    account:       { ar: "حسابي",               en: "My Account",             accent: NEUTRAL },
+    finance:       { ar: "المالية",             en: "Finance",                accent: NEUTRAL },
+    sales:         { ar: "المبيعات",            en: "Sales",                  accent: NEUTRAL },
+    tools:         { ar: "الأدوات",             en: "Tools",                  accent: NEUTRAL },
+    personal:      { ar: "حسابي",               en: "My Account",             accent: NEUTRAL },
+    investor:      { ar: "الاستثمار",           en: "Investment",             accent: NEUTRAL },
+    operations:    { ar: "المنتجات والخدمات",    en: "Products & Services",    accent: NEUTRAL },
+    clients_ops:   { ar: "عمليات العملاء",       en: "Client Operations",      accent: NEUTRAL },
+    team:          { ar: "الفريق والدعم",         en: "Team & Support",         accent: NEUTRAL },
+    settings:      { ar: "الإعدادات والمحتوى",   en: "Settings & Content",     accent: NEUTRAL },
+    content:       { ar: "المحتوى",              en: "Content",                accent: NEUTRAL },
+    devtools:      { ar: "النظام والمطور",        en: "System & Dev",           accent: NEUTRAL },
+    monitoring:    { ar: "المراقبة",             en: "Monitoring",             accent: NEUTRAL },
+    investors:     { ar: "الاستثمار",            en: "Investment",             accent: NEUTRAL },
+    stores:        { ar: "المتاجر الإلكترونية",  en: "E-Commerce Stores",      accent: NEUTRAL },
   };
 
   function renderNavItem(item: NavItem) {
@@ -339,14 +340,14 @@ export function AppSidebar() {
                 <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"}`} />
               </div>
               {badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-black text-white dark:bg-white dark:text-black text-[7px] font-bold rounded-full flex items-center justify-center">
                   {badge > 9 ? "9+" : badge}
                 </span>
               )}
             </div>
             <span className={`text-sm flex-1 truncate ${isActive ? "font-bold text-black dark:text-white" : "font-medium text-black/55 dark:text-white/50"}`}>{item.title}</span>
             {badge > 0 && (
-              <span className="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{badge}</span>
+              <span className="text-[9px] bg-black/[0.06] dark:bg-white/[0.1] text-black dark:text-white px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{badge}</span>
             )}
           </Link>
         </SidebarMenuButton>
@@ -501,8 +502,7 @@ export function AppSidebar() {
                   rel="noopener noreferrer"
                   title={label}
                   data-testid={`sidebar-social-${key}`}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors"
-                  style={{ color: theme === "dark" ? darkColor : color }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white transition-colors"
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </a>
@@ -520,7 +520,7 @@ export function AppSidebar() {
             data-testid="sidebar-theme-toggle"
           >
             {theme === "dark"
-              ? <><Sun className="w-3.5 h-3.5 text-yellow-400" /><span>{ar ? "نهاري" : "Light"}</span></>
+              ? <><Sun className="w-3.5 h-3.5" /><span>{ar ? "نهاري" : "Light"}</span></>
               : <><Moon className="w-3.5 h-3.5" /><span>{ar ? "ليلي" : "Dark"}</span></>}
           </button>
           <button
@@ -549,7 +549,7 @@ export function AppSidebar() {
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
               data-testid="sidebar-logout"
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-800/30 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] border border-black/[0.08] dark:border-white/[0.1] transition-colors disabled:opacity-50"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>{ar ? "تسجيل خروج" : "Sign out"}</span>
