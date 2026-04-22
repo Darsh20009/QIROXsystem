@@ -43,13 +43,13 @@ const typeLabels: Record<string, string> = {
   service: "خدمة برمجية", product: "منتج", domain: "دومين", email: "بريد أعمال", hosting: "استضافة", gift: "هدية", plan: "باقة نظام",
 };
 const typeColors: Record<string, string> = {
-  service: "bg-violet-50 text-violet-600 border-violet-200",
-  product: "bg-blue-50 text-blue-600 border-blue-200",
-  domain: "bg-emerald-50 text-emerald-600 border-emerald-200",
-  email: "bg-amber-50 text-amber-600 border-amber-200",
-  hosting: "bg-indigo-50 text-indigo-600 border-indigo-200",
-  gift: "bg-pink-50 text-pink-600 border-pink-200",
-  plan: "bg-cyan-50 text-cyan-600 border-cyan-200",
+  service: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  product: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  domain: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  email: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  hosting: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  gift: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  plan: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
 };
 
 const PHYSICAL_TYPES = ["product", "gift", "device"];
@@ -476,8 +476,8 @@ export default function Cart() {
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
           <div className="relative inline-block mb-5">
             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -inset-3 bg-green-400/20 rounded-full blur-xl" />
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 relative z-10">
+              className="absolute -inset-3 bg-black/[0.08] dark:bg-white/[0.1] rounded-full blur-xl" />
+            <div className="w-20 h-20 bg-gradient-to-br from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30 relative z-10">
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
@@ -520,14 +520,14 @@ export default function Cart() {
         {/* Wallet paid badge (if partially or fully paid by wallet) */}
         {savedWalletUsed > 0 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-            className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
+            className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-3xl p-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shrink-0">
                 <Wallet className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-black text-emerald-800 text-sm">تم الدفع من المحفظة الإلكترونية</p>
-                <p className="text-emerald-600 text-xs mt-0.5">
+                <p className="font-black text-black dark:text-white text-sm">تم الدفع من المحفظة الإلكترونية</p>
+                <p className="text-black dark:text-white text-xs mt-0.5">
                   مبلغ <span className="font-black inline-flex items-center gap-0.5">{savedWalletUsed.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span> تم خصمه من رصيدك
                   {savedWalletUsed >= savedTotal - 0.01 ? " — تم سداد الطلب بالكامل ✓" : ""}
                 </p>
@@ -540,7 +540,7 @@ export default function Cart() {
         {savedWalletUsed < savedTotal - 0.01 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="relative rounded-3xl overflow-hidden">
-            <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 p-6 text-white relative">
+            <div className="bg-gradient-to-br from-black dark:from-white via-black dark:via-white to-black dark:to-white p-6 text-white relative">
               <div className="absolute inset-0 opacity-10"
                 style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
               <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
@@ -574,7 +574,7 @@ export default function Cart() {
                   <span className="text-white font-mono font-bold text-sm truncate" dir="ltr">{BANK.iban}</span>
                   <button
                     onClick={() => { navigator.clipboard.writeText(BANK.iban); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2500); }}
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${copiedIban ? "bg-green-400 text-white" : "bg-white/20 hover:bg-white/30 text-white"}`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${copiedIban ? "bg-black/[0.08] dark:bg-white/[0.1] text-white" : "bg-white/20 hover:bg-white/30 text-white"}`}
                     data-testid="button-copy-iban">
                     {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
@@ -587,8 +587,8 @@ export default function Cart() {
                 )}
               </div>
               {savedOrderId && (
-                <div className="mt-4 bg-amber-400/20 border border-amber-300/30 rounded-2xl p-3 relative z-10">
-                  <p className="text-amber-200 text-xs leading-relaxed">
+                <div className="mt-4 bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 rounded-2xl p-3 relative z-10">
+                  <p className="text-black/60 dark:text-white/60 text-xs leading-relaxed">
                     ⚠️ اكتب رقم طلبك <span className="font-mono font-bold">{savedOrderId}</span> في خانة الملاحظات عند التحويل
                   </p>
                 </div>
@@ -602,7 +602,7 @@ export default function Cart() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-9 h-9 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
                 <Upload className="w-4 h-4 text-white" />
               </div>
               <p className="font-black text-black">ارفع إيصال التحويل</p>
@@ -621,11 +621,11 @@ export default function Cart() {
               </div>
             ) : (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-3 bg-green-50 border border-green-200/50 rounded-2xl px-4 py-4">
-                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                className="flex items-center gap-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl px-4 py-4">
+                <CheckCircle className="w-5 h-5 text-black dark:text-white shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-green-700 font-semibold">تم رفع الإيصال بنجاح</p>
-                  <p className="text-xs text-green-600/60 truncate">{proofFile.filename}</p>
+                  <p className="text-sm text-black dark:text-white font-semibold">تم رفع الإيصال بنجاح</p>
+                  <p className="text-xs text-black dark:text-white truncate">{proofFile.filename}</p>
                 </div>
               </motion.div>
             )}
@@ -662,7 +662,7 @@ export default function Cart() {
               <h1 className="text-base font-black text-black dark:text-white flex items-center gap-2">
                 {hasPlan ? (L ? "مشروع جديد" : "New Project") : (L ? "سلة التسوق" : "Shopping Cart")}
                 {hasPlan ? (
-                  <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold rounded-full">مشروع</span>
+                  <span className="px-2 py-0.5 bg-black dark:bg-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-[10px] font-bold rounded-full">مشروع</span>
                 ) : items.length > 0 ? (
                   <span className="w-5 h-5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">{items.length}</span>
                 ) : null}
@@ -675,7 +675,7 @@ export default function Cart() {
             </div>
           </div>
           {items.length > 0 && (
-            <Button variant="ghost" className="text-red-400 hover:text-red-600 text-xs gap-1.5 h-8" onClick={() => clearMutation.mutate()} disabled={clearMutation.isPending} data-testid="button-clear-cart">
+            <Button variant="ghost" className="text-black/70 dark:text-white/70 hover:text-black dark:text-white text-xs gap-1.5 h-8" onClick={() => clearMutation.mutate()} disabled={clearMutation.isPending} data-testid="button-clear-cart">
               <Trash2 className="w-3.5 h-3.5" />
               {L ? "إفراغ السلة" : "Clear Cart"}
             </Button>
@@ -742,18 +742,18 @@ export default function Cart() {
                         <p className="font-bold text-sm text-black dark:text-white leading-tight">{item.nameAr || item.name}</p>
                         <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 ${colorCls}`}>{typeLabels[item.type] || item.type}</span>
                         {item.type === 'plan' && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse inline-block" />
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black dark:bg-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse inline-block" />
                             الباقة الأساسية للمشروع
                           </span>
                         )}
                         {item.type === 'plan' && item.config && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {item.config.segmentLabel && (
-                              <span className="text-[9px] bg-cyan-50 border border-cyan-100 px-1.5 py-0.5 rounded text-cyan-600 font-medium">{item.config.segmentLabel}</span>
+                              <span className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded text-black dark:text-white font-medium">{item.config.segmentLabel}</span>
                             )}
                             {item.config.periodLabel && (
-                              <span className="text-[9px] bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded text-blue-600 font-medium">{item.config.periodLabel}</span>
+                              <span className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded text-black dark:text-white font-medium">{item.config.periodLabel}</span>
                             )}
                             {item.config.tierLabel && (
                               <span className="text-[9px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 font-medium">{item.config.tierLabel}</span>
@@ -803,7 +803,7 @@ export default function Cart() {
                         <button
                           onClick={() => item.id && removeMutation.mutate(item.id)}
                           disabled={removeMutation.isPending}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl text-black/20 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                          className="w-8 h-8 flex items-center justify-center rounded-xl text-black/20 dark:text-slate-600 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-all"
                           data-testid={`button-remove-${item.id}`}>
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -823,10 +823,10 @@ export default function Cart() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { key: 'db',     icon: Database, label: "MongoDB Atlas",  sub: "من 0/شهر",      sarSub: true, color: "text-green-600 bg-green-50" },
-                  { key: 'aws',    icon: Cloud,    label: "Amazon EC2",     sub: "من 30/شهر",     sarSub: true, color: "text-orange-500 bg-orange-50" },
-                  { key: 'domain', icon: Globe,    label: "تسجيل دومين",   sub: "من 45/سنة",     sarSub: true, color: "text-blue-600 bg-blue-50" },
-                  { key: 'email',  icon: Mail,     label: "بريد أعمال",    sub: "من 35/شهر",     sarSub: true, color: "text-violet-600 bg-violet-50" },
+                  { key: 'db',     icon: Database, label: "MongoDB Atlas",  sub: "من 0/شهر",      sarSub: true, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+                  { key: 'aws',    icon: Cloud,    label: "Amazon EC2",     sub: "من 30/شهر",     sarSub: true, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+                  { key: 'domain', icon: Globe,    label: "تسجيل دومين",   sub: "من 45/سنة",     sarSub: true, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+                  { key: 'email',  icon: Mail,     label: "بريد أعمال",    sub: "من 35/شهر",     sarSub: true, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
                 ].map(a => {
                   const Icon = a.icon;
                   return (
@@ -846,16 +846,16 @@ export default function Cart() {
                 })}
                 {extraAddons.map((ea: any) => {
                   const catColors: Record<string, string> = {
-                    feature: "text-blue-600 bg-blue-50", hosting: "text-green-600 bg-green-50",
-                    design: "text-pink-600 bg-pink-50", support: "text-amber-600 bg-amber-50",
-                    integration: "text-purple-600 bg-purple-50", app: "text-indigo-600 bg-indigo-50",
-                    marketing: "text-orange-600 bg-orange-50",
+                    feature: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]", hosting: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]",
+                    design: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]", support: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]",
+                    integration: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]", app: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]",
+                    marketing: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]",
                   };
                   const color = catColors[ea.category] || "text-gray-600 bg-gray-50";
                   const already = items.some(i => i.name === ea.nameAr || i.nameAr === ea.nameAr);
                   return (
                     <button key={ea.id} onClick={() => !already && setExtraAddonConfirm(ea)}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all text-right bg-white ${already ? "border-green-300 bg-green-50/30 opacity-70 cursor-default" : "border-black/[0.07] hover:border-black/20 hover:shadow-sm"}`}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all text-right bg-white ${already ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] opacity-70 cursor-default" : "border-black/[0.07] hover:border-black/20 hover:shadow-sm"}`}
                       data-testid={`button-extra-addon-${ea.id}`}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
                         <Package className="w-5 h-5" />
@@ -865,7 +865,7 @@ export default function Cart() {
                         <p className="text-[10px] text-black/40 dark:text-slate-500 mt-0.5">{ea.price.toLocaleString()} {ea.currency}</p>
                       </div>
                       {already
-                        ? <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        ? <CheckCircle className="w-3.5 h-3.5 text-black dark:text-white flex-shrink-0" />
                         : <Plus className="w-3.5 h-3.5 text-black/20 dark:text-slate-600 mr-auto flex-shrink-0" />}
                     </button>
                   );
@@ -897,7 +897,7 @@ export default function Cart() {
             <div className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-2xl overflow-hidden sticky top-[72px] shadow-sm">
               <div className="bg-gradient-to-br from-gray-950 via-gray-900 to-black px-5 py-5 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
-                <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl" />
+                <div className="absolute top-0 left-0 w-32 h-32 bg-black dark:bg-white rounded-full blur-2xl" />
                 <div className="relative z-10">
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">ملخص الطلب</p>
                   <p className="text-3xl font-black text-white flex items-center gap-1">{fmt(total)} <SARIcon size={18} className="opacity-40" /></p>
@@ -924,7 +924,7 @@ export default function Cart() {
                     <span className="flex items-center gap-1">{subtotal.toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>
                   </div>
                   {discount > 0 && (
-                    <div className="flex justify-between text-green-600 font-medium">
+                    <div className="flex justify-between text-black dark:text-white font-medium">
                       <span>خصم الكوبون</span>
                       <span className="flex items-center gap-1">- {discount.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span>
                     </div>
@@ -951,7 +951,7 @@ export default function Cart() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
+                  <div className="flex items-center gap-2 text-xs text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2 rounded-xl border border-black/10 dark:border-white/10">
                     <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                     كوبون «{cart.couponCode}» مطبّق — خصم {discount.toLocaleString()} <SARIcon size={9} className="opacity-70 inline" />
                   </div>
@@ -959,12 +959,12 @@ export default function Cart() {
 
                 {/* Package guard warning */}
                 {needsPlanWarning && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex gap-3 items-start">
-                    <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] p-4 flex gap-3 items-start">
+                    <Lock className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-amber-800">الإضافات تحتاج باقة</p>
-                      <p className="text-xs text-amber-700 mt-0.5">الدومين والبريد والاستضافة لا تُباع منفردة — يجب أن تكون مرتبطة بباقة مشروع.</p>
-                      <Link href="/pricing" className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-amber-800 underline">
+                      <p className="text-sm font-bold text-black dark:text-white">الإضافات تحتاج باقة</p>
+                      <p className="text-xs text-black dark:text-white mt-0.5">الدومين والبريد والاستضافة لا تُباع منفردة — يجب أن تكون مرتبطة بباقة مشروع.</p>
+                      <Link href="/pricing" className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-black dark:text-white underline">
                         اختر باقة الآن <ArrowLeft className="w-3 h-3" />
                       </Link>
                     </div>
@@ -973,7 +973,7 @@ export default function Cart() {
 
                 {/* Checkout button */}
                 <Button
-                  className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-l from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={items.length === 0 || needsPlanWarning}
                   onClick={() => { if (hasPlan) { navigate("/cart-wizard"); } else { setPreCheckoutOpen(true); setPreCheckoutStep(1); } }}
                   data-testid="button-checkout">
@@ -1006,7 +1006,7 @@ export default function Cart() {
               <p className="text-lg font-black leading-tight flex items-center gap-1">{fmt(total)} <SARIcon size={11} className="opacity-40" /></p>
             </div>
             <Button
-              className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
+              className="bg-gradient-to-l from-black dark:from-white to-black dark:to-white text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
               onClick={() => { if (hasPlan) { navigate("/cart-wizard"); } else { setPreCheckoutOpen(true); setPreCheckoutStep(1); } }}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
@@ -1024,7 +1024,7 @@ export default function Cart() {
           {/* Gradient Header */}
           <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden rounded-2xl">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
-            <div className="absolute -top-8 -left-8 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
+            <div className="absolute -top-8 -left-8 w-40 h-40 bg-black dark:bg-white rounded-full blur-3xl" />
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
@@ -1052,12 +1052,12 @@ export default function Cart() {
                   {Array.from({ length: totalSteps }).map((_, i) => (
                     <div key={i} className="flex items-center gap-2 flex-1">
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black border-2 transition-all ${i + 1 <= preCheckoutStep
-                        ? "bg-cyan-400 border-cyan-400 text-gray-900"
+                        ? "bg-black/[0.08] dark:bg-white/[0.1] border-black/15 dark:border-white/15 text-gray-900"
                         : "bg-white/10 border-white/20 text-white/40"}`}>
                         {i + 1 < preCheckoutStep ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
                       </div>
                       {i < totalSteps - 1 && (
-                        <div className={`flex-1 h-0.5 rounded-full transition-all ${i + 1 < preCheckoutStep ? "bg-cyan-400" : "bg-white/10"}`} />
+                        <div className={`flex-1 h-0.5 rounded-full transition-all ${i + 1 < preCheckoutStep ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-white/10"}`} />
                       )}
                     </div>
                   ))}
@@ -1069,7 +1069,7 @@ export default function Cart() {
                     return (
                       <div key={i} className="flex items-center gap-2">
                         <div className="flex items-center gap-1.5">
-                          <div className="w-5 h-5 rounded-full bg-cyan-400 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] flex items-center justify-center">
                             <Icon className="w-2.5 h-2.5 text-gray-900" />
                           </div>
                           <span className="text-[11px] text-white/70 font-medium">{s.label}</span>
@@ -1093,8 +1093,8 @@ export default function Cart() {
                   {hasPlan && (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 bg-cyan-500/10 rounded-xl flex items-center justify-center border border-cyan-500/20">
-                          <MapPin className="w-4 h-4 text-cyan-400" />
+                        <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center border border-black dark:border-white">
+                          <MapPin className="w-4 h-4 text-black/70 dark:text-white/70" />
                         </div>
                         <div>
                           <p className="font-black text-sm text-black dark:text-white">معلومات التواصل والعنوان</p>
@@ -1104,13 +1104,13 @@ export default function Cart() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">الاسم الكامل <span className="text-red-400">*</span></Label>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">الاسم الكامل <span className="text-black/70 dark:text-white/70">*</span></Label>
                           <Input value={contact.name} onChange={e => setContact(p => ({ ...p, name: e.target.value }))}
                             placeholder="اسمك الكامل أو اسم الشركة" className="h-11 rounded-xl text-sm"
                             data-testid="input-contact-name" />
                         </div>
                         <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">رقم الواتساب <span className="text-red-400">*</span></Label>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">رقم الواتساب <span className="text-black/70 dark:text-white/70">*</span></Label>
                           <Input value={contact.phone} onChange={e => setContact(p => ({ ...p, phone: e.target.value }))}
                             placeholder="05xxxxxxxx" className="h-11 rounded-xl text-sm" dir="ltr"
                             data-testid="input-contact-phone" />
@@ -1197,8 +1197,8 @@ export default function Cart() {
                                 isSelected ? prev.filter(x => x !== (addon._id || addon.id || addon.nameAr)) : [...prev, addon._id || addon.id || addon.nameAr]
                               )}
                               data-testid={`toggle-addon-${addon._id || addon.id}`}
-                              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-right transition-all ${isSelected ? "border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20" : "border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/20"}`}>
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-cyan-500 bg-cyan-500" : "border-black/20 dark:border-white/20"}`}>
+                              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-right transition-all ${isSelected ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/20"}`}>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-black dark:border-white bg-black dark:bg-white" : "border-black/20 dark:border-white/20"}`}>
                                 {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1228,7 +1228,7 @@ export default function Cart() {
                             <FileText className="w-4 h-4 text-black/30 shrink-0" />
                             <span className="text-xs text-black/60 flex-1 truncate">{f.filename}</span>
                             <button onClick={() => setDocsFiles(prev => prev.filter((_, j) => j !== i))}
-                              className="w-6 h-6 rounded-lg hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-black/25 transition-all">
+                              className="w-6 h-6 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white flex items-center justify-center text-black/25 transition-all">
                               <X className="w-3 h-3" />
                             </button>
                           </div>
@@ -1238,14 +1238,14 @@ export default function Cart() {
 
                     <button
                       onClick={() => docsInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-cyan-400 hover:bg-cyan-50/50 transition-all group relative overflow-hidden"
+                      className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] transition-all group relative overflow-hidden"
                       data-testid="button-upload-docs">
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/0 to-blue-50/0 group-hover:from-cyan-50/60 group-hover:to-blue-50/30 transition-all" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] group-hover:from-black/[0.04] dark:from-white/[0.06] group-hover:to-black/[0.04] dark:to-white/[0.06] transition-all" />
                       <div className="relative z-10">
-                        <div className="w-12 h-12 bg-gray-100 group-hover:bg-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-all">
-                          <Upload className="w-6 h-6 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                        <div className="w-12 h-12 bg-gray-100 group-hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center mx-auto mb-3 transition-all">
+                          <Upload className="w-6 h-6 text-gray-400 group-hover:text-black dark:text-white transition-colors" />
                         </div>
-                        <p className="text-sm font-bold text-gray-500 group-hover:text-cyan-600 transition-colors">اسحب الملفات هنا أو اضغط للرفع</p>
+                        <p className="text-sm font-bold text-gray-500 group-hover:text-black dark:text-white transition-colors">اسحب الملفات هنا أو اضغط للرفع</p>
                         <p className="text-[11px] text-gray-400 mt-1">PNG، JPG، PDF، AI، SVG — حتى 10 ملفات</p>
                       </div>
                       <input ref={docsInputRef} type="file" className="hidden" multiple accept="image/*,.pdf,.ai,.svg,.eps"
@@ -1264,9 +1264,9 @@ export default function Cart() {
               {/* Step 2: Shipping (only if physical products) */}
               {hasPhysical && preCheckoutStep === 2 && (
                 <>
-                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-200/50 rounded-xl px-4 py-3 mb-2">
-                    <Package className="w-4 h-4 text-blue-600 shrink-0" />
-                    <p className="text-xs text-blue-700">يوجد في طلبك منتجات فيزيائية تحتاج إلى عنوان شحن</p>
+                  <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 mb-2">
+                    <Package className="w-4 h-4 text-black dark:text-white shrink-0" />
+                    <p className="text-xs text-black dark:text-white">يوجد في طلبك منتجات فيزيائية تحتاج إلى عنوان شحن</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -1305,26 +1305,26 @@ export default function Cart() {
                     <p className="text-2xl font-black flex items-center gap-1">{fmt(total)} <SARIcon size={16} className="opacity-40" /></p>
                     {effectiveWalletAmount > 0 && (
                       <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                        <span className="text-emerald-400">من المحفظة</span>
-                        <span className="font-black text-emerald-300 flex items-center gap-0.5">- {fmt(effectiveWalletAmount)} <SARIcon size={9} className="opacity-70" /></span>
+                        <span className="text-black/70 dark:text-white/70">من المحفظة</span>
+                        <span className="font-black text-black/70 dark:text-white/70 flex items-center gap-0.5">- {fmt(effectiveWalletAmount)} <SARIcon size={9} className="opacity-70" /></span>
                       </div>
                     )}
                     {effectiveWalletAmount > 0 && !fullyPaidByWallet && (
                       <div className="flex items-center justify-between text-xs mt-1">
-                        <span className="text-amber-300">يتبقى بنكي</span>
-                        <span className="font-black text-amber-200 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={9} className="opacity-70" /></span>
+                        <span className="text-black/70 dark:text-white/70">يتبقى بنكي</span>
+                        <span className="font-black text-black/60 dark:text-white/60 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={9} className="opacity-70" /></span>
                       </div>
                     )}
                     {fullyPaidByWallet && (
                       <div className="flex items-center justify-between text-xs mt-1">
-                        <span className="text-green-400">الحالة</span>
-                        <span className="font-black text-green-300">مسدّد بالكامل ✓</span>
+                        <span className="text-black/70 dark:text-white/70">الحالة</span>
+                        <span className="font-black text-black/70 dark:text-white/70">مسدّد بالكامل ✓</span>
                       </div>
                     )}
                   </div>
 
                   {/* Qirox Pay Card — always visible */}
-                  <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-cyan-400 shadow-lg shadow-cyan-100" : walletBalance === 0 ? "border-black/[0.06] opacity-80" : "border-black/[0.07]"}`}
+                  <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-black/15 dark:border-white/15 shadow-lg shadow-cyan-100" : walletBalance === 0 ? "border-black/[0.06] opacity-80" : "border-black/[0.07]"}`}
                     style={useWallet && walletBalance > 0 ? { background: "linear-gradient(135deg,#f0fdff,#ecfeff)" } : { background: "white" }}>
                     <button
                       className="w-full flex items-center gap-3 p-4"
@@ -1340,23 +1340,23 @@ export default function Cart() {
                       <div className="w-12 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all overflow-hidden"
                         style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
                         <span className="text-[8px] font-black tracking-wider">
-                          <span className="text-cyan-400">Q</span><span className="text-white">PAY</span>
+                          <span className="text-black/70 dark:text-white/70">Q</span><span className="text-white">PAY</span>
                         </span>
                       </div>
                       <div className="flex-1 text-right">
                         <p className="font-bold text-sm text-black">الدفع بـ Qirox Pay</p>
                         {walletBalance > 0 ? (
-                          <p className={`text-xs mt-0.5 ${useWallet ? "text-cyan-600" : "text-black/40"}`}>
-                            رصيدك المتاح: <span className="font-black text-cyan-700 inline-flex items-center gap-0.5">{walletBalance.toLocaleString()} <SARIcon size={9} className="opacity-80" /></span>
+                          <p className={`text-xs mt-0.5 ${useWallet ? "text-black dark:text-white" : "text-black/40"}`}>
+                            رصيدك المتاح: <span className="font-black text-black dark:text-white inline-flex items-center gap-0.5">{walletBalance.toLocaleString()} <SARIcon size={9} className="opacity-80" /></span>
                           </p>
                         ) : (
                           <p className="text-xs mt-0.5 text-black/30">رصيدك صفر —{" "}
-                            <Link href="/wallet" className="text-cyan-600 underline font-semibold hover:text-cyan-700">اشحن محفظتك</Link>
+                            <Link href="/wallet" className="text-black dark:text-white underline font-semibold hover:text-black dark:text-white">اشحن محفظتك</Link>
                           </p>
                         )}
                       </div>
                       {walletBalance > 0 && (
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-cyan-500 bg-cyan-500" : "border-black/20"}`}>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-black dark:border-white bg-black dark:bg-white" : "border-black/20"}`}>
                           {useWallet && <CheckCircle2 className="w-4 h-4 text-white" />}
                         </div>
                       )}
@@ -1366,15 +1366,15 @@ export default function Cart() {
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                           <div className="px-4 pb-4 space-y-3">
                             <div>
-                              <Label className="text-xs font-bold text-cyan-700/70 uppercase tracking-wider mb-1.5 block">المبلغ المراد استخدامه من Qirox Pay</Label>
+                              <Label className="text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-1.5 block">المبلغ المراد استخدامه من Qirox Pay</Label>
                               <div className="flex items-center gap-3">
                                 <input type="number" value={walletAmount} min={0} max={maxWalletUsable} step={0.01}
                                   onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                                  className="flex-1 h-10 rounded-xl border border-cyan-200 bg-white px-3 text-sm font-mono text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                                  className="flex-1 h-10 rounded-xl border border-black/10 dark:border-white/10 bg-white px-3 text-sm font-mono text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-black/15 dark:ring-white/15"
                                   data-testid="input-wallet-amount" />
                                 <SARIcon size={12} className="opacity-70 shrink-0" />
                                 <button onClick={() => setWalletAmount(maxWalletUsable)}
-                                  className="text-xs font-bold text-cyan-600 bg-cyan-100 hover:bg-cyan-200 px-3 py-2 rounded-xl transition-all shrink-0"
+                                  className="text-xs font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2 rounded-xl transition-all shrink-0"
                                   data-testid="button-use-all-wallet">كل الرصيد</button>
                               </div>
                             </div>
@@ -1391,14 +1391,14 @@ export default function Cart() {
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setPaymentOption("bank")}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "bank" ? "border-blue-500 bg-blue-50" : "border-black/[0.07] bg-white"}`}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "bank" ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] bg-white"}`}
                           data-testid="button-payment-bank">
-                          <BanknoteIcon className={`w-5 h-5 ${paymentOption === "bank" ? "text-blue-600" : "text-black/30"}`} />
-                          <p className={`font-bold text-[10px] text-center ${paymentOption === "bank" ? "text-blue-700" : "text-black/60"}`}>تحويل بنكي</p>
+                          <BanknoteIcon className={`w-5 h-5 ${paymentOption === "bank" ? "text-black dark:text-white" : "text-black/30"}`} />
+                          <p className={`font-bold text-[10px] text-center ${paymentOption === "bank" ? "text-black dark:text-white" : "text-black/60"}`}>تحويل بنكي</p>
                         </button>
                         <button
                           onClick={() => setPaymentOption("paypal")}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "paypal" ? "border-yellow-400 bg-yellow-50" : "border-black/[0.07] bg-white"}`}
+                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "paypal" ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] bg-white"}`}
                           data-testid="button-payment-paypal">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M19.554 7.324C19.64 6.738 19.64 6.119 19.554 5.533C19.202 3.219 17.288 1.5 14.934 1.5H6.854C6.306 1.5 5.842 1.895 5.758 2.436L2.862 20.547C2.806 20.9 3.077 21.22 3.434 21.22H7.498L8.546 15.013L8.518 15.188C8.602 14.647 9.066 14.252 9.614 14.252H11.692C15.564 14.252 18.606 12.712 19.526 8.162C19.554 8.023 19.568 7.884 19.554 7.324Z" fill={paymentOption === "paypal" ? "#003087" : "#999"}/>
@@ -1412,8 +1412,8 @@ export default function Cart() {
                       {paymentOption === "bank" && (
                         <div className="rounded-2xl border border-black/[0.07] bg-white overflow-hidden">
                           <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                              <BanknoteIcon className="w-5 h-5 text-blue-600" />
+                            <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center shrink-0">
+                              <BanknoteIcon className="w-5 h-5 text-black dark:text-white" />
                             </div>
                             <div className="flex-1">
                               <p className="font-bold text-sm text-black">بيانات التحويل البنكي</p>
@@ -1435,7 +1435,7 @@ export default function Cart() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-black/40 text-xs">المبلغ المطلوب</span>
-                              <span className="font-black text-sm text-blue-700 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={10} className="opacity-60" /></span>
+                              <span className="font-black text-sm text-black dark:text-white flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={10} className="opacity-60" /></span>
                             </div>
                           </div>
                         </div>
@@ -1444,9 +1444,9 @@ export default function Cart() {
 
                       {/* PayPal checkout button */}
                       {paymentOption === "paypal" && (
-                        <div className="rounded-2xl border border-yellow-200 bg-white overflow-hidden">
-                          <div className="flex items-center gap-3 p-4 border-b border-yellow-100">
-                            <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
+                        <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white overflow-hidden">
+                          <div className="flex items-center gap-3 p-4 border-b border-black/10 dark:border-white/10">
+                            <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center shrink-0">
                               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                                 <path d="M19.554 7.324C19.64 6.738 19.64 6.119 19.554 5.533C19.202 3.219 17.288 1.5 14.934 1.5H6.854C6.306 1.5 5.842 1.895 5.758 2.436L2.862 20.547C2.806 20.9 3.077 21.22 3.434 21.22H7.498L8.546 15.013L8.518 15.188C8.602 14.647 9.066 14.252 9.614 14.252H11.692C15.564 14.252 18.606 12.712 19.526 8.162C19.554 8.023 19.568 7.884 19.554 7.324Z" fill="#003087"/>
                                 <path d="M9.222 8.5C9.306 7.959 9.77 7.564 10.318 7.564H15.742C16.388 7.564 16.978 7.606 17.526 7.69C17.694 7.718 17.862 7.746 18.03 7.788C18.198 7.83 18.352 7.872 18.506 7.928C18.59 7.956 18.66 7.984 18.73 8.012C19.008 8.124 19.258 8.278 19.468 8.46C19.638 7.42 19.468 6.724 18.926 6.098C18.33 5.416 17.232 5.116 15.826 5.116H10.402C9.854 5.116 9.376 5.511 9.292 6.052L7.032 19.994C6.976 20.347 7.247 20.667 7.604 20.667H10.934L11.998 14.1L9.222 8.5Z" fill="#009cde"/>
@@ -1517,12 +1517,12 @@ export default function Cart() {
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               ) : paymentOption === "paypal" && !fullyPaidByWallet ? (
-                <div className="flex-1 rounded-xl border-2 border-dashed border-yellow-300 bg-yellow-50 h-12 flex items-center justify-center">
+                <div className="flex-1 rounded-xl border-2 border-dashed border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] h-12 flex items-center justify-center">
                   <span className="text-xs text-[#003087] font-bold">اضغط زر PayPal أعلاه للدفع</span>
                 </div>
               ) : (
                 <Button
-                  className="flex-1 bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
+                  className="flex-1 bg-gradient-to-l from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
                   onClick={async () => {
                     if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
                       setWalletPinInput("");
@@ -1553,8 +1553,8 @@ export default function Cart() {
         <DialogContent className="w-[95vw] max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center">
-                <Package className="w-4 h-4 text-indigo-600" />
+              <div className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                <Package className="w-4 h-4 text-black dark:text-white" />
               </div>
               {extraAddonConfirm?.nameAr}
             </DialogTitle>
@@ -1595,8 +1595,8 @@ export default function Cart() {
         <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
-                <Database className="w-4 h-4 text-green-600" />
+              <div className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                <Database className="w-4 h-4 text-black dark:text-white" />
               </div>
               MongoDB Atlas
             </DialogTitle>
@@ -1631,8 +1631,8 @@ export default function Cart() {
         <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Cloud className="w-4 h-4 text-orange-500" />
+              <div className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                <Cloud className="w-4 h-4 text-black dark:text-white" />
               </div>
               Amazon AWS EC2
             </DialogTitle>
@@ -1667,8 +1667,8 @@ export default function Cart() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Globe className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                <Globe className="w-4 h-4 text-black dark:text-white" />
               </div>
               تسجيل دومين
             </DialogTitle>
@@ -1719,8 +1719,8 @@ export default function Cart() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center">
-                <Mail className="w-4 h-4 text-violet-600" />
+              <div className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                <Mail className="w-4 h-4 text-black dark:text-white" />
               </div>
               بريد الأعمال
             </DialogTitle>
@@ -1750,7 +1750,7 @@ export default function Cart() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <Lock className="w-4 h-4 text-cyan-500" />
+              <Lock className="w-4 h-4 text-black dark:text-white" />
               تأكيد الدفع بـ Qirox Pay
             </DialogTitle>
           </DialogHeader>
@@ -1768,14 +1768,14 @@ export default function Cart() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-1 mb-0.5">
-                      <span className="text-cyan-400 font-black text-lg tracking-widest">QIROX</span>
+                      <span className="text-black/70 dark:text-white/70 font-black text-lg tracking-widest">QIROX</span>
                       <span className="text-white font-black text-lg tracking-widest">PAY</span>
                     </div>
                     <p className="text-white/40 text-[8px] tracking-wider uppercase">Virtual Payment Card</p>
                   </div>
-                  <div className="w-8 h-5 rounded bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center opacity-90">
-                    <div className="w-6 h-4 rounded border border-yellow-600/30 grid grid-cols-2 gap-px p-0.5">
-                      {[...Array(4)].map((_, i) => <div key={i} className="bg-yellow-600/30 rounded-sm" />)}
+                  <div className="w-8 h-5 rounded bg-gradient-to-br from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white flex items-center justify-center opacity-90">
+                    <div className="w-6 h-4 rounded border border-black dark:border-white grid grid-cols-2 gap-px p-0.5">
+                      {[...Array(4)].map((_, i) => <div key={i} className="bg-black dark:bg-white rounded-sm" />)}
                     </div>
                   </div>
                 </div>
@@ -1791,14 +1791,14 @@ export default function Cart() {
                   </div>
                   <div className="text-left">
                     <p className="text-white/40 text-[8px] uppercase tracking-wider mb-0.5">Amount</p>
-                    <p className="text-cyan-400 font-black text-sm flex items-center gap-0.5">{effectiveWalletAmount.toLocaleString()} <SARIcon size={9} className="opacity-40" /></p>
+                    <p className="text-black/70 dark:text-white/70 font-black text-sm flex items-center gap-0.5">{effectiveWalletAmount.toLocaleString()} <SARIcon size={9} className="opacity-40" /></p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30 p-3">
-              <p className="text-xs text-cyan-700 dark:text-cyan-300 text-center">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white p-3">
+              <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 text-center">
                 سيتم خصم <span className="font-black inline-flex items-center gap-0.5">{effectiveWalletAmount.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span> من رصيد Qirox Pay
               </p>
             </div>
@@ -1837,7 +1837,7 @@ export default function Cart() {
               className="text-xs text-white gap-1.5 flex-1"
               style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-confirm-wallet-pin">
-              {checkoutMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5 text-cyan-400" />}
+              {checkoutMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
               تأكيد الدفع
             </Button>
           </DialogFooter>

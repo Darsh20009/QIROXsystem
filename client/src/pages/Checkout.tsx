@@ -64,16 +64,16 @@ function StepBar({ step, projectMode = false }: { step: Step; projectMode?: bool
           <div key={s.id} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                done ? "bg-green-500 border-green-500 text-white"
-                  : active ? "bg-blue-600 border-blue-600 text-white"
+                done ? "bg-black dark:bg-white border-black dark:border-white text-white"
+                  : active ? "bg-black dark:bg-white border-black dark:border-white text-white"
                   : "bg-white border-black/10 text-black/30"
               }`}>
                 {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
               </div>
-              <span className={`text-[10px] font-bold whitespace-nowrap ${active ? "text-blue-600" : done ? "text-green-600" : "text-black/30"}`}>{s.label}</span>
+              <span className={`text-[10px] font-bold whitespace-nowrap ${active ? "text-black dark:text-white" : done ? "text-black dark:text-white" : "text-black/30"}`}>{s.label}</span>
             </div>
             {i < STEP_LABELS.length - 1 && (
-              <div className={`w-16 h-0.5 mb-4 mx-1 rounded-full ${done ? "bg-green-400" : "bg-black/10"}`} />
+              <div className={`w-16 h-0.5 mb-4 mx-1 rounded-full ${done ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/10"}`} />
             )}
           </div>
         );
@@ -520,14 +520,14 @@ export default function Checkout() {
           <Navigation />
           <div className="flex-1 flex items-center justify-center px-4 py-12">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-black/[0.06] dark:border-white/[0.06] p-8 text-center">
-              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <Lock className="w-7 h-7 text-blue-600" />
+              <div className="w-14 h-14 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <Lock className="w-7 h-7 text-black dark:text-white" />
               </div>
               <h2 className="text-xl font-black text-black dark:text-white mb-1">تحقق من بريدك</h2>
               <p className="text-sm text-black/50 dark:text-white/50 mb-6">أرسلنا رمزاً من 6 أرقام إلى<br /><strong className="text-black/70 dark:text-white/70">{pendingVerifyEmail}</strong></p>
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <Input value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" dir="ltr" className="text-center text-2xl tracking-[0.5em] font-mono h-14 border-black/[0.1] dark:border-white/[0.1]" maxLength={6} data-testid="input-otp-code" />
-                {otpError && <p className="text-xs text-red-500">{otpError}</p>}
+                {otpError && <p className="text-xs text-black dark:text-white">{otpError}</p>}
                 <Button type="submit" className="w-full h-12 rounded-xl font-bold" disabled={otpCode.length !== 6 || otpLoading} data-testid="button-verify-otp">
                   {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "تحقق وتابع"}
                 </Button>
@@ -563,9 +563,9 @@ export default function Checkout() {
 
             <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-black/[0.06] dark:border-white/[0.06] p-6">
               {authError && (
-                <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                  <p className="text-xs text-red-600 dark:text-red-400">{authError}</p>
+                <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-3 mb-4">
+                  <AlertCircle className="w-4 h-4 text-black dark:text-white shrink-0" />
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{authError}</p>
                 </div>
               )}
 
@@ -650,8 +650,8 @@ export default function Checkout() {
             <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
               <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-6 space-y-6">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 mb-3">
-                    <MapPin className="w-6 h-6 text-blue-600" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] mb-3">
+                    <MapPin className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <h2 className="text-2xl font-black text-black">{isProjectCheckout ? (L ? "بيانات التواصل" : "Contact Details") : (L ? "عنوان الاستلام" : "Delivery Address")}</h2>
                   <p className="text-black/40 text-sm mt-1">
@@ -675,9 +675,9 @@ export default function Checkout() {
                 </div>
 
                 {isProjectCheckout ? (
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-                    <MessageCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                    <p className="text-sm text-blue-700 leading-relaxed">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4 flex items-start gap-3">
+                    <MessageCircle className="w-5 h-5 text-black dark:text-white shrink-0 mt-0.5" />
+                    <p className="text-sm text-black dark:text-white leading-relaxed">
                       لا تحتاج لرفع كل الملفات الآن. بعد تأكيد الطلب قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف لاستكمال أي ملفات أو تفاصيل ناقصة.
                     </p>
                   </div>
@@ -697,7 +697,7 @@ export default function Checkout() {
                         <div className="absolute z-20 right-0 left-0 top-full mt-1 bg-white border border-black/10 rounded-2xl shadow-xl overflow-auto max-h-48">
                           {SAUDI_CITIES.map(c => (
                             <button key={c} onClick={() => { setAddr(p => ({ ...p, city: c })); setCityOpen(false); }}
-                              className={`w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${addr.city === c ? "font-bold text-blue-600" : "text-black"}`}>
+                              className={`w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${addr.city === c ? "font-bold text-black dark:text-white" : "text-black"}`}>
                               {c}
                             </button>
                           ))}
@@ -761,7 +761,7 @@ export default function Checkout() {
                       <Truck className="w-4 h-4 text-black/40" />
                       <span className="text-xs font-black text-black/40 uppercase tracking-wider">طريقة التوصيل</span>
                       {!selectedShippingCompanyId && (
-                        <span className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">مطلوب</span>
+                        <span className="text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 px-2 py-0.5 rounded-full">مطلوب</span>
                       )}
                     </div>
                     {activeShippingCos.length === 0 ? (
@@ -780,27 +780,27 @@ export default function Checkout() {
                               data-testid={`shipping-company-${coId}`}
                               className={`w-full text-right px-5 py-4 flex items-center gap-3 transition-all ${
                                 isSelected
-                                  ? "bg-blue-50 border-r-4 border-blue-500"
+                                  ? "bg-black/[0.04] dark:bg-white/[0.06] border-r-4 border-black dark:border-white"
                                   : "hover:bg-gray-50"
                               }`}>
-                              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 border ${isSelected ? "border-blue-200 bg-blue-100" : "border-black/[0.06] bg-gray-50"}`}>
+                              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 border ${isSelected ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.06] bg-gray-50"}`}>
                                 {co.logo || "🚚"}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`font-bold text-sm ${isSelected ? "text-blue-700" : "text-black"}`}>{co.nameAr || co.name}</p>
+                                <p className={`font-bold text-sm ${isSelected ? "text-black dark:text-white" : "text-black"}`}>{co.nameAr || co.name}</p>
                                 <p className="text-[11px] text-black/40 mt-0.5 flex items-center gap-1">
                                   <Clock className="w-3 h-3" />{co.estimatedDays || "2-4 أيام عمل"}
                                 </p>
                               </div>
                               <div className="text-left shrink-0">
                                 {(co.basePrice || 0) === 0 ? (
-                                  <p className="font-black text-emerald-600 text-sm">مجاني</p>
+                                  <p className="font-black text-black dark:text-white text-sm">مجاني</p>
                                 ) : (
-                                  <p className={`font-black text-sm flex items-center gap-1 ${isSelected ? "text-blue-700" : "text-black"}`}>
+                                  <p className={`font-black text-sm flex items-center gap-1 ${isSelected ? "text-black dark:text-white" : "text-black"}`}>
                                     {(co.basePrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-60" />
                                   </p>
                                 )}
-                                {isSelected && <Check className="w-4 h-4 text-blue-500 mr-auto mt-0.5" />}
+                                {isSelected && <Check className="w-4 h-4 text-black dark:text-white mr-auto mt-0.5" />}
                               </div>
                             </button>
                           );
@@ -813,7 +813,7 @@ export default function Checkout() {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!canProceedStep1}
-                  className="w-full h-13 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base gap-2 shadow-lg shadow-blue-600/20"
+                  className="w-full h-13 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-black text-base gap-2 shadow-lg shadow-blue-600/20"
                   data-testid="button-next-payment"
                 >
                   {L ? "التالي: طريقة الدفع" : "Next: Payment Method"}
@@ -849,8 +849,8 @@ export default function Checkout() {
                     ))}
                     {discount > 0 && (
                       <div className="px-5 py-3 flex justify-between items-center">
-                        <span className="text-sm text-green-600 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> كوبون خصم</span>
-                        <span className="text-sm font-bold text-green-600 flex items-center gap-1">
+                        <span className="text-sm text-black dark:text-white flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> كوبون خصم</span>
+                        <span className="text-sm font-bold text-black dark:text-white flex items-center gap-1">
                           -{discount.toLocaleString()} <SARIcon size={10} />
                         </span>
                       </div>
@@ -863,7 +863,7 @@ export default function Checkout() {
                         </span>
                         <span className="text-sm font-bold text-black flex items-center gap-1">
                           {shippingFee === 0
-                            ? <span className="text-emerald-600">مجاني</span>
+                            ? <span className="text-black dark:text-white">مجاني</span>
                             : <>{shippingFee.toLocaleString()} <SARIcon size={10} /></>
                           }
                         </span>
@@ -895,7 +895,7 @@ export default function Checkout() {
                   </div>
                 )}
                 {(couponApplied || discount > 0) && (
-                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-sm text-green-700">
+                  <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-black dark:text-white">
                     <Check className="w-4 h-4 shrink-0" />
                     كوبون «{cart?.couponCode}» مطبّق — وفّرت {discount.toLocaleString()} ر.س
                   </div>
@@ -912,29 +912,29 @@ export default function Checkout() {
                     {walletBalance > 0 && (
                       <button
                         onClick={() => setPayMethod("wallet")}
-                        className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "wallet" ? "border-blue-600 bg-blue-50" : "border-black/[0.07] hover:border-black/20"}`}
+                        className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "wallet" ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] hover:border-black/20"}`}
                         data-testid="button-pay-wallet"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "wallet" ? "bg-blue-600" : "bg-black/[0.05]"}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "wallet" ? "bg-black dark:bg-white" : "bg-black/[0.05]"}`}>
                             <Wallet className={`w-5 h-5 ${payMethod === "wallet" ? "text-white" : "text-black/40"}`} />
                           </div>
                           <div className="flex-1">
                             <p className="font-bold text-sm text-black">الدفع من الرصيد</p>
                             <p className="text-xs text-black/40">رصيدك: {walletBalance.toLocaleString()} ر.س</p>
                           </div>
-                          {payMethod === "wallet" && <Check className="w-5 h-5 text-blue-600 shrink-0" />}
+                          {payMethod === "wallet" && <Check className="w-5 h-5 text-black dark:text-white shrink-0" />}
                         </div>
                         {payMethod === "wallet" && walletBalance < total && (
-                          <div className="mt-3 pt-3 border-t border-blue-100">
-                            <p className="text-xs text-orange-600 flex items-center gap-1">
+                          <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10">
+                            <p className="text-xs text-black dark:text-white flex items-center gap-1">
                               <AlertCircle className="w-3.5 h-3.5" />
                               رصيدك غير كافٍ. سيتم خصم {walletBalance.toLocaleString()} ر.س والباقي {(total - walletBalance).toLocaleString()} ر.س بطريقة أخرى
                             </p>
                           </div>
                         )}
                         {payMethod === "wallet" && (
-                          <div className="mt-3 pt-3 border-t border-blue-100 space-y-2">
+                          <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 space-y-2">
                             <Label className="text-xs font-bold text-black/50 flex items-center gap-1"><Lock className="w-3 h-3" /> رمز المحفظة</Label>
                             <div className="relative">
                               <Input
@@ -958,18 +958,18 @@ export default function Checkout() {
                     {cardData?.cardActive && (
                       <button
                         onClick={() => setPayMethod("card")}
-                        className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "card" ? "border-blue-600 bg-blue-50" : "border-black/[0.07] hover:border-black/20"}`}
+                        className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "card" ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] hover:border-black/20"}`}
                         data-testid="button-pay-card"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "card" ? "bg-blue-600" : "bg-black/[0.05]"}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "card" ? "bg-black dark:bg-white" : "bg-black/[0.05]"}`}>
                             <CreditCard className={`w-5 h-5 ${payMethod === "card" ? "text-white" : "text-black/40"}`} />
                           </div>
                           <div className="flex-1">
                             <p className="font-bold text-sm text-black">بطاقة Qirox</p>
                             <p className="text-xs text-black/40">بطاقتك الرقمية</p>
                           </div>
-                          {payMethod === "card" && <Check className="w-5 h-5 text-blue-600 shrink-0" />}
+                          {payMethod === "card" && <Check className="w-5 h-5 text-black dark:text-white shrink-0" />}
                         </div>
                         {payMethod === "card" && (
                           <div className="mt-4 space-y-3" onClick={e => e.stopPropagation()}>
@@ -998,22 +998,22 @@ export default function Checkout() {
                     {/* Bank Transfer */}
                     <button
                       onClick={() => setPayMethod("bank")}
-                      className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "bank" ? "border-blue-600 bg-blue-50" : "border-black/[0.07] hover:border-black/20"}`}
+                      className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "bank" ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] hover:border-black/20"}`}
                       data-testid="button-pay-bank"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "bank" ? "bg-blue-600" : "bg-black/[0.05]"}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "bank" ? "bg-black dark:bg-white" : "bg-black/[0.05]"}`}>
                           <Building2 className={`w-5 h-5 ${payMethod === "bank" ? "text-white" : "text-black/40"}`} />
                         </div>
                         <div className="flex-1">
                           <p className="font-bold text-sm text-black">تحويل بنكي</p>
                           <p className="text-xs text-black/40">{BANK.bankName}</p>
                         </div>
-                        {payMethod === "bank" && <Check className="w-5 h-5 text-blue-600 shrink-0" />}
+                        {payMethod === "bank" && <Check className="w-5 h-5 text-black dark:text-white shrink-0" />}
                       </div>
                       {payMethod === "bank" && (
-                        <div className="mt-4 pt-4 border-t border-blue-100 space-y-3" onClick={e => e.stopPropagation()}>
-                          <div className="bg-white rounded-xl border border-blue-200 p-3 space-y-2">
+                        <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 space-y-3" onClick={e => e.stopPropagation()}>
+                          <div className="bg-white rounded-xl border border-black/10 dark:border-white/10 p-3 space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-xs text-black/40">البنك</span>
                               <span className="text-xs font-bold text-black">{BANK.bankName}</span>
@@ -1031,7 +1031,7 @@ export default function Checkout() {
                                   className="shrink-0 p-1.5 rounded-lg bg-black/[0.05] hover:bg-black/10 transition-colors"
                                   data-testid="button-copy-iban"
                                 >
-                                  {copiedIban ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-black/40" />}
+                                  {copiedIban ? <Check className="w-3 h-3 text-black dark:text-white" /> : <Copy className="w-3 h-3 text-black/40" />}
                                 </button>
                               </div>
                             </div>
@@ -1054,7 +1054,7 @@ export default function Checkout() {
                   <Button
                     onClick={() => submitMutation.mutate()}
                     disabled={!canProceedStep2 || submitMutation.isPending}
-                    className="flex-[2] h-12 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-black gap-2 shadow-lg shadow-green-600/20"
+                    className="flex-[2] h-12 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-black gap-2 shadow-lg shadow-green-600/20"
                     data-testid="button-confirm-order"
                   >
                     {submitMutation.isPending
@@ -1073,8 +1073,8 @@ export default function Checkout() {
               {/* ── Success Banner ── */}
               {orderPayMethod === "bank" ? (
                 <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-6 text-center space-y-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 border-4 border-amber-100">
-                    <Clock className="w-8 h-8 text-amber-500" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border-4 border-black/10 dark:border-white/10">
+                    <Clock className="w-8 h-8 text-black dark:text-white" />
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-black mb-1">في انتظار تأكيد التحويل</h2>
@@ -1086,9 +1086,9 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-right space-y-2">
-                    <p className="text-sm font-bold text-amber-800">تعليمات التحويل:</p>
-                    <div className="space-y-1 text-xs text-amber-700">
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4 text-right space-y-2">
+                    <p className="text-sm font-bold text-black dark:text-white">تعليمات التحويل:</p>
+                    <div className="space-y-1 text-xs text-black dark:text-white">
                       <p>1. حوّل مبلغ <strong>{orderTotal.toLocaleString()} ر.س</strong> إلى حساب {BANK.bankName}</p>
                       <p>2. IBAN: <span dir="ltr" className="font-mono">{BANK.iban}</span></p>
                       <p>3. ارفع إيصال التحويل هنا للتحقق السريع</p>
@@ -1106,15 +1106,15 @@ export default function Checkout() {
                           onChange={e => { if (e.target.files?.[0]) handleProofUpload(e.target.files[0]); }} />
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-4">
-                        <FileText className="w-5 h-5 text-green-600 shrink-0" />
-                        <span className="text-sm text-green-700 flex-1 truncate">{proofFile.filename}</span>
-                        <button onClick={() => setProofFile(null)} className="text-green-400 hover:text-green-700"><X className="w-4 h-4" /></button>
+                      <div className="flex items-center gap-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4">
+                        <FileText className="w-5 h-5 text-black dark:text-white shrink-0" />
+                        <span className="text-sm text-black dark:text-white flex-1 truncate">{proofFile.filename}</span>
+                        <button onClick={() => setProofFile(null)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white"><X className="w-4 h-4" /></button>
                       </div>
                     )}
                     {proofFile && (
                       <Button onClick={() => proofMutation.mutate()} disabled={proofMutation.isPending || proofMutation.isSuccess}
-                        className="w-full h-11 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold gap-2" data-testid="button-submit-proof">
+                        className="w-full h-11 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-2" data-testid="button-submit-proof">
                         {proofMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : proofMutation.isSuccess ? <><Check className="w-4 h-4" /> تم رفع الإيصال</> : <><Upload className="w-4 h-4" /> إرسال الإيصال</>}
                       </Button>
                     )}
@@ -1123,8 +1123,8 @@ export default function Checkout() {
               ) : (
                 <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-6 text-center space-y-4">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 12 }}
-                    className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 border-4 border-green-100">
-                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                    className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border-4 border-black/10 dark:border-white/10">
+                    <CheckCircle2 className="w-10 h-10 text-black dark:text-white" />
                   </motion.div>
                   <div>
                     <h2 className="text-xl font-black text-black mb-1">🎉 تم الدفع بنجاح!</h2>
@@ -1136,16 +1136,16 @@ export default function Checkout() {
                       </div>
                     )}
                   </div>
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3">
-                    <p className="text-sm text-blue-700">ستتلقى تأكيداً على بريدك الإلكتروني وإشعارات تلقائية بتطور طلبك.</p>
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-3">
+                    <p className="text-sm text-black dark:text-white">ستتلقى تأكيداً على بريدك الإلكتروني وإشعارات تلقائية بتطور طلبك.</p>
                   </div>
                 </div>
               )}
 
               {/* ── Navigate to Project Details Setup Page ── */}
               {!detailsSaved && (
-                <div className="bg-white rounded-3xl shadow-sm border-2 border-violet-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-5">
+                <div className="bg-white rounded-3xl shadow-sm border-2 border-black/10 dark:border-white/10 overflow-hidden">
+                  <div className="bg-gradient-to-r from-black dark:from-white to-black dark:to-white px-6 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
                         <ClipboardList className="w-5 h-5 text-white" />
@@ -1160,7 +1160,7 @@ export default function Checkout() {
                   <div className="px-5 py-4">
                     <Button
                       onClick={() => orderId && navigate(`/order-setup/${orderId}`)}
-                      className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black gap-2"
+                      className="w-full h-12 rounded-2xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-black gap-2"
                       data-testid="btn-setup-project-details"
                     >
                       <ClipboardList className="w-5 h-5" />

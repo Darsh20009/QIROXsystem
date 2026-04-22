@@ -99,15 +99,15 @@ function QiroxPayCard({ card, showNumber, onToggle }: {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-cyan-400 font-black text-xl tracking-widest">QIROX</span>
+              <span className="text-black/70 dark:text-white/70 font-black text-xl tracking-widest">QIROX</span>
               <span className="text-white font-black text-xl tracking-widest">PAY</span>
             </div>
             <p className="text-white/40 text-[9px] tracking-wider uppercase">Virtual Payment Card</p>
           </div>
           {/* Chip */}
-          <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center opacity-90">
-            <div className="w-8 h-5 rounded border border-yellow-600/30 grid grid-cols-2 gap-px p-0.5">
-              {[...Array(4)].map((_, i) => <div key={i} className="bg-yellow-600/30 rounded-sm" />)}
+          <div className="w-10 h-7 rounded bg-gradient-to-br from-black/[0.08] dark:from-white/[0.1] to-black dark:to-white flex items-center justify-center opacity-90">
+            <div className="w-8 h-5 rounded border border-black dark:border-white grid grid-cols-2 gap-px p-0.5">
+              {[...Array(4)].map((_, i) => <div key={i} className="bg-black dark:bg-white rounded-sm" />)}
             </div>
           </div>
         </div>
@@ -135,7 +135,7 @@ function QiroxPayCard({ card, showNumber, onToggle }: {
           </div>
           <div className="text-right">
             <p className="text-white/40 text-[9px] uppercase tracking-wider mb-0.5">Balance</p>
-            <p className="text-cyan-400 font-black text-base flex items-center gap-1">{fmt(card.balance)} <SARIcon size={11} className="opacity-40" /></p>
+            <p className="text-black/70 dark:text-white/70 font-black text-base flex items-center gap-1">{fmt(card.balance)} <SARIcon size={11} className="opacity-40" /></p>
           </div>
         </div>
       </div>
@@ -354,7 +354,7 @@ export default function ClientWallet() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
-              <CreditCard className="w-4.5 h-4.5 text-cyan-400" />
+              <CreditCard className="w-4.5 h-4.5 text-black/70 dark:text-white/70" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-black dark:text-white">Qirox Pay</h1>
@@ -391,7 +391,7 @@ export default function ClientWallet() {
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-10 text-center space-y-4">
                 <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
-                  <CreditCard className="w-8 h-8 text-cyan-400" />
+                  <CreditCard className="w-8 h-8 text-black/70 dark:text-white/70" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-black dark:text-white">احصل على بطاقة Qirox Pay</h2>
@@ -400,7 +400,7 @@ export default function ClientWallet() {
                 <Button onClick={() => initCardMutation.mutate()} disabled={initCardMutation.isPending}
                   className="gap-2 text-white" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
                   data-testid="button-init-card">
-                  {initCardMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4 text-cyan-400" />}
+                  {initCardMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4 text-black/70 dark:text-white/70" />}
                   إنشاء بطاقتي الآن
                 </Button>
               </div>
@@ -421,7 +421,7 @@ export default function ClientWallet() {
                       className="bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3 flex flex-col items-center gap-1.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
-                        <Icon className="w-4 h-4 text-cyan-400" />
+                        <Icon className="w-4 h-4 text-black/70 dark:text-white/70" />
                       </div>
                       <span className="text-[10px] font-semibold text-black/60 dark:text-white/60 text-center">{label}</span>
                     </button>
@@ -430,16 +430,16 @@ export default function ClientWallet() {
 
                 {/* PIN activation notice */}
                 {!cardData.hasPin && (
-                  <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-300/60 dark:border-amber-700/40 p-4 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl border border-black/15 dark:border-white/15 dark:border-black dark:border-white p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-black dark:text-white flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">{L ? "البطاقة تحتاج تفعيل" : "Card Needs Activation"}</p>
-                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                      <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "البطاقة تحتاج تفعيل" : "Card Needs Activation"}</p>
+                      <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5 leading-relaxed">
                         لاستخدام البطاقة في الدفع أو السماح للآخرين بالدفع منها، يجب تعيين كلمة مرور الدفع أولاً.
                       </p>
                       <button
                         onClick={() => setPinModal(true)}
-                        className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300 underline"
+                        className="mt-2 text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 underline"
                         data-testid="button-activate-card"
                       >
                         اضغط هنا لتعيين كلمة المرور وتفعيل البطاقة ←
@@ -470,12 +470,12 @@ export default function ClientWallet() {
                 </div>
 
                 {/* How to share */}
-                <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 rounded-2xl border border-cyan-200/50 dark:border-cyan-800/30 p-5">
+                <div className="bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white p-5">
                   <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <ShieldCheck className="w-5 h-5 text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold text-cyan-900 dark:text-cyan-300">كيف يعمل الدفع الخارجي؟</p>
-                      <p className="text-xs text-cyan-700 dark:text-cyan-400 mt-1 leading-relaxed">
+                      <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">كيف يعمل الدفع الخارجي؟</p>
+                      <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1 leading-relaxed">
                         يمكنك مشاركة رقم بطاقتك مع أي شخص ليدفع بها داخل منظومة Qirox.
                         عند محاولة الدفع، ستصلك رسالة بريد إلكتروني تحتوي على رمز OTP يجب أن تشاركه مع الدافع.
                         هذا يضمن أنك توافق على كل عملية دفع.
@@ -527,10 +527,10 @@ export default function ClientWallet() {
                   <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                     {txs.map((tx) => (
                       <div key={tx.id} className="px-5 py-4 flex items-center gap-4" data-testid={`wallet-tx-${tx.id}`}>
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === 'credit' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-rose-50 dark:bg-rose-900/20'}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === 'credit' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white'}`}>
                           {tx.type === 'credit'
-                            ? <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
-                            : <ArrowUpRight className="w-4 h-4 text-rose-500" />}
+                            ? <ArrowDownLeft className="w-4 h-4 text-black dark:text-white" />
+                            : <ArrowUpRight className="w-4 h-4 text-black dark:text-white" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-black dark:text-white truncate">{tx.description}</p>
@@ -543,7 +543,7 @@ export default function ClientWallet() {
                           </div>
                         </div>
                         <div className="text-left flex-shrink-0">
-                          <p className={`text-base font-black ${tx.type === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          <p className={`text-base font-black ${tx.type === 'credit' ? 'text-black dark:text-white dark:text-black/70 dark:text-white/70' : 'text-black dark:text-white dark:text-black/70 dark:text-white/70'}`}>
                             {tx.type === 'credit' ? '+' : '-'}{fmt(tx.amount)}
                           </p>
                           <SARIcon size={9} className="opacity-30 mt-0.5" />
@@ -572,7 +572,7 @@ export default function ClientWallet() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-black text-[#003087] dark:text-[#FFC439]">شحن فوري عبر PayPal</p>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">فوري</span>
+                  <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 font-bold px-2 py-0.5 rounded-full">فوري</span>
                 </div>
                 <p className="text-xs text-black/50 dark:text-white/40 mt-0.5">ادفع ببطاقتك أو حسابك في PayPal — يُضاف الرصيد تلقائياً</p>
               </div>
@@ -583,7 +583,7 @@ export default function ClientWallet() {
             <Button onClick={() => setTopupModal(true)} className="w-full gap-2 text-white py-6"
               style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-new-topup">
-              <Building2 className="w-4 h-4 text-cyan-400" />
+              <Building2 className="w-4 h-4 text-black/70 dark:text-white/70" />
               شحن بتحويل بنكي (يحتاج موافقة)
             </Button>
 
@@ -606,21 +606,21 @@ export default function ClientWallet() {
                   {(topupHistory || []).map(req => (
                     <div key={req.id} className="px-5 py-4" data-testid={`topup-req-${req.id}`}>
                       <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${req.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-900/20' : req.status === 'rejected' ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-                          {req.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            : req.status === 'rejected' ? <XCircle className="w-4 h-4 text-rose-500" />
-                              : <RefreshCw className="w-4 h-4 text-amber-500" />}
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${req.status === 'approved' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : req.status === 'rejected' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white'}`}>
+                          {req.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />
+                            : req.status === 'rejected' ? <XCircle className="w-4 h-4 text-black dark:text-white" />
+                              : <RefreshCw className="w-4 h-4 text-black dark:text-white" />}
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-bold text-black dark:text-white flex items-center gap-1">{fmt(req.amount)} <SARIcon size={11} className="opacity-70" /></p>
                           <p className="text-xs text-black/40 dark:text-white/40">{req.bankName || "تحويل بنكي"} · {req.bankRef || "—"}</p>
                         </div>
-                        <Badge className={`text-[10px] border-0 ${req.status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : req.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                        <Badge className={`text-[10px] border-0 ${req.status === 'approved' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70' : req.status === 'rejected' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70'}`}>
                           {req.status === 'approved' ? 'مُعتمد' : req.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
                         </Badge>
                       </div>
                       {req.rejectionReason && (
-                        <p className="text-xs text-rose-600 dark:text-rose-400 mr-11">السبب: {req.rejectionReason}</p>
+                        <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mr-11">السبب: {req.rejectionReason}</p>
                       )}
                       <p className="text-[11px] text-black/25 dark:text-white/25 mr-11">
                         {new Date(req.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
@@ -639,13 +639,13 @@ export default function ClientWallet() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <Lock className="w-4 h-4 text-cyan-500" />
+              <Lock className="w-4 h-4 text-black dark:text-white" />
               {cardData?.hasPin ? "تغيير كلمة مرور الدفع" : "تعيين كلمة مرور الدفع"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30 p-3">
-              <p className="text-xs text-cyan-700 dark:text-cyan-400 leading-relaxed">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white p-3">
+              <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
                 كلمة مرور الدفع تُستخدم لتأكيد عمليات الدفع ببطاقتك. اختر كلمة مرور قوية (4–32 حرفاً).
               </p>
             </div>
@@ -666,7 +666,7 @@ export default function ClientWallet() {
               <Input type="password" placeholder="أعد كتابة كلمة المرور" value={pinForm.confirmPin}
                 onChange={e => setPinForm(f => ({ ...f, confirmPin: e.target.value }))} data-testid="input-confirm-pin" />
               {pinForm.confirmPin && pinForm.newPin !== pinForm.confirmPin && (
-                <p className="text-xs text-red-500 mt-1">كلمتا المرور غير متطابقتين</p>
+                <p className="text-xs text-black dark:text-white mt-1">كلمتا المرور غير متطابقتين</p>
               )}
             </div>
           </div>
@@ -684,7 +684,7 @@ export default function ClientWallet() {
               }
               className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-confirm-pin">
-              {setPinMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-cyan-400" />}
+              {setPinMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
               حفظ كلمة المرور
             </Button>
           </DialogFooter>
@@ -712,7 +712,7 @@ export default function ClientWallet() {
             </div>
             <div>
               <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">
-                المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-red-400">*</span>
+                المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-black/70 dark:text-white/70">*</span>
               </Label>
               <Input
                 type="number" min="1" placeholder="مثال: 200"
@@ -733,7 +733,7 @@ export default function ClientWallet() {
                 "يُضاف الرصيد فوراً بدون انتظار",
               ].map((txt, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white flex-shrink-0" />
                   <p className="text-xs text-black/50 dark:text-white/40">{txt}</p>
                 </div>
               ))}
@@ -759,45 +759,45 @@ export default function ClientWallet() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-cyan-500" />
+              <Building2 className="w-4 h-4 text-black dark:text-white" />
               طلب شحن رصيد
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 rounded-xl border border-cyan-200/40 dark:border-cyan-800/30 p-4 text-sm">
-              <p className="font-bold text-cyan-900 dark:text-cyan-300 mb-2">بيانات الحساب البنكي:</p>
-              <div className="space-y-1.5 text-cyan-700 dark:text-cyan-400 text-xs">
+            <div className="bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white p-4 text-sm">
+              <p className="font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-2">بيانات الحساب البنكي:</p>
+              <div className="space-y-1.5 text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs">
                 {bankSettings?.bankName && <p>🏦 البنك: {bankSettings.bankName}</p>}
                 {bankSettings?.beneficiaryName && <p>👤 اسم المستفيد: {bankSettings.beneficiaryName}</p>}
                 {bankSettings?.iban && (
                   <div className="flex items-center gap-2">
                     <p dir="ltr" className="font-mono tracking-wide">📋 IBAN: {bankSettings.iban}</p>
                     <button onClick={() => { navigator.clipboard.writeText(bankSettings.iban); toast({ title: "تم نسخ الـ IBAN" }); }}
-                      className="text-cyan-500 hover:text-cyan-700 transition-colors" title="نسخ">
+                      className="text-black dark:text-white hover:text-black dark:text-white transition-colors" title="نسخ">
                       <Copy className="w-3 h-3" />
                     </button>
                   </div>
                 )}
                 {bankSettings?.accountNumber && <p>🔢 رقم الحساب: {bankSettings.accountNumber}</p>}
                 {bankSettings?.swiftCode && <p>🌐 SWIFT: {bankSettings.swiftCode}</p>}
-                {bankSettings?.notes && <p className="text-cyan-600/70 dark:text-cyan-400/70 mt-1 border-t border-cyan-200/30 pt-1">{bankSettings.notes}</p>}
+                {bankSettings?.notes && <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1 border-t border-black/10 dark:border-white/10 pt-1">{bankSettings.notes}</p>}
                 {!bankSettings?.iban && !bankSettings?.bankName && (
                   <p className="text-black/40 dark:text-white/40">جارٍ تحميل بيانات الحساب...</p>
                 )}
               </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-red-400">*</span></Label>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-black/70 dark:text-white/70">*</span></Label>
               <Input type="number" min="1" placeholder="مثال: 500" value={topupForm.amount}
                 onChange={e => setTopupForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-topup-amount" />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">اسم البنك <span className="text-red-400">*</span></Label>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">اسم البنك <span className="text-black/70 dark:text-white/70">*</span></Label>
               <Input placeholder="مثال: بنك الراجحي" value={topupForm.bankName}
                 onChange={e => setTopupForm(f => ({ ...f, bankName: e.target.value }))} data-testid="input-topup-bank" />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">رقم الحوالة / المرجع <span className="text-red-400">*</span></Label>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">رقم الحوالة / المرجع <span className="text-black/70 dark:text-white/70">*</span></Label>
               <Input placeholder="رقم العملية أو المرجع البنكي" value={topupForm.bankRef}
                 onChange={e => setTopupForm(f => ({ ...f, bankRef: e.target.value }))} data-testid="input-topup-ref" />
             </div>
@@ -813,7 +813,7 @@ export default function ClientWallet() {
               disabled={topupMutation.isPending || !topupForm.amount || !topupForm.bankName || !topupForm.bankRef}
               className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-confirm-topup">
-              {topupMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-cyan-400" />}
+              {topupMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
               إرسال الطلب
             </Button>
           </DialogFooter>
@@ -825,7 +825,7 @@ export default function ClientWallet() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-cyan-500" />
+              <CreditCard className="w-4 h-4 text-black dark:text-white" />
               {shareStep === "form" ? "الدفع ببطاقة Qirox Pay" : "إدخال رمز OTP"}
             </DialogTitle>
           </DialogHeader>
@@ -854,7 +854,7 @@ export default function ClientWallet() {
                   disabled={requestOtpMutation.isPending || !shareForm.cardNumber || !shareForm.amount}
                   className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
                   data-testid="button-request-otp">
-                  {requestOtpMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-cyan-400" />}
+                  {requestOtpMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
                   طلب OTP
                 </Button>
               </DialogFooter>
@@ -862,9 +862,9 @@ export default function ClientWallet() {
           ) : (
             <div className="space-y-4 py-2">
               {shareResult && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800/30 p-4">
-                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">تم إرسال رمز OTP!</p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white p-4">
+                  <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">تم إرسال رمز OTP!</p>
+                  <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-1">
                     تم إرسال رمز التأكيد إلى بريد صاحب البطاقة ({shareResult.maskedEmail}).
                     اطلب منه مشاركة الرمز معك.
                   </p>
@@ -882,7 +882,7 @@ export default function ClientWallet() {
                   disabled={verifyOtpMutation.isPending || shareOtp.length !== 6}
                   className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
                   data-testid="button-verify-otp">
-                  {verifyOtpMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
+                  {verifyOtpMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
                   تأكيد الدفع
                 </Button>
               </DialogFooter>

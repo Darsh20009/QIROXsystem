@@ -41,8 +41,8 @@ function roleLabel(r: string, L?: boolean) {
   return L !== false ? (m[r] || r) : (mEn[r] || r);
 }
 function statusInfo(status: string) {
-  if (status === 'waiting') return { label: "في الانتظار", color: "bg-amber-100 text-amber-700", dot: "bg-amber-500" };
-  if (status === 'active') return { label: "نشط", color: "bg-green-100 text-green-700", dot: "bg-green-500" };
+  if (status === 'waiting') return { label: "في الانتظار", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", dot: "bg-black dark:bg-white" };
+  if (status === 'active') return { label: "نشط", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", dot: "bg-black dark:bg-white" };
   return { label: "مغلق", color: "bg-gray-100 text-gray-500", dot: "bg-gray-400" };
 }
 
@@ -92,13 +92,13 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
     return (
       <div className="flex flex-col items-center my-2">
         <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center flex-shrink-0">
             <MessageSquare className="w-3 h-3 text-white" />
           </div>
-          <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400">{msg.autoSender || "QIROX Studio"}</span>
+          <span className="text-[10px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{msg.autoSender || "QIROX Studio"}</span>
         </div>
-        <div className="max-w-[85%] bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40 border border-violet-200/60 dark:border-violet-700/40 rounded-2xl px-4 py-3 text-center">
-          <p className="text-sm text-violet-800 dark:text-violet-200 leading-relaxed">{msg.body}</p>
+        <div className="max-w-[85%] bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl px-4 py-3 text-center">
+          <p className="text-sm text-black dark:text-white dark:text-black/60 dark:text-white/60 leading-relaxed">{msg.body}</p>
         </div>
         <span className="text-[9px] text-black/25 dark:text-white/25 mt-1">{timeAgo(msg.createdAt)}</span>
       </div>
@@ -109,7 +109,7 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   return (
     <div className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""}`}>
       {!isMe && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white text-xs font-black flex-shrink-0">
           {nm[0]?.toUpperCase()}
         </div>
       )}
@@ -243,10 +243,10 @@ function ChatInput({ onSend, disabled, placeholder, onTyping }: {
     <div className="flex items-end gap-2 p-3 border-t border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
       <input ref={fileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }} />
       {recording ? (
-        <div className="flex-1 flex items-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5 border border-red-200 dark:border-red-800/30">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-sm font-bold text-red-600">{Math.floor(recTime / 60)}:{String(recTime % 60).padStart(2, "0")}</span>
-          <span className="text-xs text-red-500">{L ? "جارٍ التسجيل..." : "Recording..."}</span>
+        <div className="flex-1 flex items-center gap-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl px-4 py-2.5 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+          <div className="w-2 h-2 rounded-full bg-black dark:bg-white animate-pulse" />
+          <span className="text-sm font-bold text-black dark:text-white">{Math.floor(recTime / 60)}:{String(recTime % 60).padStart(2, "0")}</span>
+          <span className="text-xs text-black dark:text-white">{L ? "جارٍ التسجيل..." : "Recording..."}</span>
         </div>
       ) : (
         <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder || (L ? "اكتب رسالتك..." : "Write your message...")} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
@@ -254,7 +254,7 @@ function ChatInput({ onSend, disabled, placeholder, onTyping }: {
       <Button size="icon" variant="ghost" className="h-10 w-10 text-black/40 dark:text-white/40 hover:text-black hover:bg-black/[0.05] rounded-xl" onClick={() => fileRef.current?.click()} disabled={uploading || recording} data-testid="button-attach-file">
         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
       </Button>
-      <Button size="icon" variant="ghost" className={`h-10 w-10 rounded-xl ${recording ? "text-red-500 hover:bg-red-50" : "text-black/40 dark:text-white/40 hover:text-black"}`} onClick={recording ? stopRec : startRec} disabled={disabled} data-testid="button-voice-record">
+      <Button size="icon" variant="ghost" className={`h-10 w-10 rounded-xl ${recording ? "text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" : "text-black/40 dark:text-white/40 hover:text-black"}`} onClick={recording ? stopRec : startRec} disabled={disabled} data-testid="button-voice-record">
         {recording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
       </Button>
       <Button size="icon" className="h-10 w-10 bg-black text-white hover:bg-black/80 rounded-xl flex-shrink-0" onClick={submit} disabled={disabled || !text.trim()} data-testid="button-send-cs-message">
@@ -397,8 +397,8 @@ function ClientView({ user }: { user: any }) {
     return (
       <div className="flex-1 flex items-center justify-center p-6" dir={dir}>
         <div className="max-w-sm w-full text-center space-y-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-            <Headphones className="w-8 h-8 text-violet-600" />
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white flex items-center justify-center">
+            <Headphones className="w-8 h-8 text-black dark:text-white" />
           </div>
           <div>
             <h2 className="text-xl font-black text-black dark:text-white mb-2">{L ? "خدمة العملاء" : "Customer Service"}</h2>
@@ -425,7 +425,7 @@ function ClientView({ user }: { user: any }) {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
         <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-black">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white font-black">
             {session.status === 'waiting' ? <Clock className="w-5 h-5" /> : agentName[0]?.toUpperCase()}
           </div>
           <div className={`absolute bottom-0 left-0 w-2.5 h-2.5 rounded-full border-2 border-white ${si.dot}`} />
@@ -436,7 +436,7 @@ function ClientView({ user }: { user: any }) {
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${si.color}`}>{si.label}</span>
         {session.status === 'active' && (
-          <Button size="sm" variant="ghost" className="h-7 text-[10px] text-red-500 hover:text-red-600 hover:bg-red-50 gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-session">
+          <Button size="sm" variant="ghost" className="h-7 text-[10px] text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-session">
             <XCircle className="w-3.5 h-3.5" /> {L ? "إنهاء" : "End"}
           </Button>
         )}
@@ -451,26 +451,26 @@ function ClientView({ user }: { user: any }) {
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             {waitingElapsed >= 180 ? (
               <>
-                <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
                   <span className="text-2xl">😔</span>
                 </div>
-                <p className="text-sm font-bold text-red-500">{L ? "عذراً، الفريق مشغول حالياً" : "Sorry, the team is currently busy"}</p>
+                <p className="text-sm font-bold text-black dark:text-white">{L ? "عذراً، الفريق مشغول حالياً" : "Sorry, the team is currently busy"}</p>
                 <p className="text-xs text-black/40 dark:text-white/30 text-center max-w-xs">
                   {L ? "يرجى التواصل في وقت لاحق أو أرسل رسالتك وسنرد عليك في أقرب وقت ممكن" : "Please try again later or send your message and we'll reply as soon as possible"}
                 </p>
               </>
             ) : waitingElapsed >= 120 ? (
               <>
-                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
                   <span className="text-xl">⏳</span>
                 </div>
-                <p className="text-sm font-bold text-amber-600">{L ? "جاري التواصل مع الفريق..." : "Contacting the team..."}</p>
+                <p className="text-sm font-bold text-black dark:text-white">{L ? "جاري التواصل مع الفريق..." : "Contacting the team..."}</p>
                 <p className="text-xs text-black/40 dark:text-white/30 text-center">{L ? "يتم تنبيه أحد المشرفين، يُرجى الانتظار" : "Notifying a supervisor, please wait"}</p>
               </>
             ) : (
               <>
-                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-amber-600 animate-pulse" />
+                <div className="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-black dark:text-white animate-pulse" />
                 </div>
                 <p className="text-sm font-bold text-black/60 dark:text-white/60">{L ? "جاري التوصيل لأقرب موظف..." : "Connecting to the nearest agent..."}</p>
                 <p className="text-xs text-black/40 dark:text-white/30 text-center">{L ? "سيتم تعيين موظف خدمة العملاء قريباً" : "A customer service agent will be assigned soon"}</p>
@@ -522,7 +522,7 @@ function ClientView({ user }: { user: any }) {
             <p className="text-sm text-black/50 dark:text-white/40">{L ? "قيّم جودة الخدمة التي تلقيتها" : "Rate the quality of service you received"}</p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map(i => (
-                <button key={i} onClick={() => setRatingVal(i)} className={`w-10 h-10 rounded-full transition-all ${i <= ratingVal ? "text-amber-500 scale-110" : "text-black/20 dark:text-white/20 hover:text-amber-400"}`} data-testid={`button-rating-${i}`}>
+                <button key={i} onClick={() => setRatingVal(i)} className={`w-10 h-10 rounded-full transition-all ${i <= ratingVal ? "text-black dark:text-white scale-110" : "text-black/20 dark:text-white/20 hover:text-black/70 dark:text-white/70"}`} data-testid={`button-rating-${i}`}>
                   <Star className="w-8 h-8" fill={i <= ratingVal ? "currentColor" : "none"} />
                 </button>
               ))}
@@ -692,7 +692,7 @@ function AgentView({ user }: { user: any }) {
         <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07]">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-sm text-black dark:text-white">{L ? "المحادثات" : "Conversations"}</h2>
-            {waitingCount > 0 && <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{waitingCount} {L ? "في الانتظار" : "waiting"}</span>}
+            {waitingCount > 0 && <span className="bg-black dark:bg-white text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{waitingCount} {L ? "في الانتظار" : "waiting"}</span>}
           </div>
           <div className="flex gap-1">
             {["waiting", "active", "closed"].map(s => (
@@ -717,9 +717,9 @@ function AgentView({ user }: { user: any }) {
                   <div key={s.id} onClick={() => { setSelectedId(s.id); setShowSessions(false); }} className={`rounded-xl p-3 cursor-pointer transition-all border ${isSelected ? "bg-black text-white border-transparent" : "bg-transparent border-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:border-black/[0.06] dark:hover:border-white/[0.06]"}`} data-testid={`session-item-${s.id}`}>
                     <div className="flex items-center gap-2">
                       <div className="relative">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${isSelected ? "bg-white/20 text-white" : "bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 text-violet-700 dark:text-violet-300"}`}>{cName[0]?.toUpperCase()}</div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${isSelected ? "bg-white/20 text-white" : "bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>{cName[0]?.toUpperCase()}</div>
                         {s.isUrgent && s.status === 'waiting' && (
-                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center text-[7px] text-white font-black border border-white dark:border-gray-900">!</span>
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-black dark:bg-white flex items-center justify-center text-[7px] text-white font-black border border-white dark:border-gray-900">!</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -727,7 +727,7 @@ function AgentView({ user }: { user: any }) {
                           <div className="flex items-center gap-1 min-w-0">
                             <p className={`text-xs font-bold truncate ${isSelected ? "text-white" : "text-black dark:text-white"}`}>{cName}</p>
                             {s.isUrgent && s.status === 'waiting' && (
-                              <span className="shrink-0 text-[8px] font-black px-1 py-0.5 rounded bg-red-500/15 text-red-500 border border-red-500/20">{L ? "عاجل" : "Urgent"}</span>
+                              <span className="shrink-0 text-[8px] font-black px-1 py-0.5 rounded bg-black dark:bg-white text-black dark:text-white border border-black dark:border-white">{L ? "عاجل" : "Urgent"}</span>
                             )}
                           </div>
                           <span className={`text-[9px] shrink-0 ${isSelected ? "text-white/50" : "text-black/30 dark:text-white/30"}`}>{timeAgo(s.lastMessageAt || s.createdAt, L)}</span>
@@ -736,7 +736,7 @@ function AgentView({ user }: { user: any }) {
                       </div>
                     </div>
                     {s.status === 'waiting' && (
-                      <Button size="sm" className={`w-full mt-2 h-6 text-[10px] gap-1 text-white ${s.isUrgent ? "bg-red-500 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-600"}`} onClick={e => { e.stopPropagation(); assignMutation.mutate(s.id); }} disabled={assignMutation.isPending} data-testid={`button-claim-${s.id}`}>
+                      <Button size="sm" className={`w-full mt-2 h-6 text-[10px] gap-1 text-white ${s.isUrgent ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`} onClick={e => { e.stopPropagation(); assignMutation.mutate(s.id); }} disabled={assignMutation.isPending} data-testid={`button-claim-${s.id}`}>
                         <PhoneCall className="w-3 h-3" /> {s.isUrgent ? "🚨 استلام عاجل" : "استلام"}
                       </Button>
                     )}
@@ -761,7 +761,7 @@ function AgentView({ user }: { user: any }) {
             >
               <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60" />
             </button>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white text-sm font-black flex-shrink-0">
               {(selected.client?.fullName || selected.client?.username || "؟")[0]?.toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -778,7 +778,7 @@ function AgentView({ user }: { user: any }) {
                 </Button>
               )}
               {selected.status !== 'closed' && (
-                <Button size="sm" variant="ghost" className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-cs">
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-cs">
                   <XCircle className="w-3.5 h-3.5" /> {L ? "إغلاق" : "Close"}
                 </Button>
               )}
@@ -857,7 +857,7 @@ function AgentView({ user }: { user: any }) {
                       <p className="text-[10px] font-bold text-black dark:text-white truncate">{o.businessName || o.serviceType}</p>
                       <div className="flex items-center justify-between mt-0.5">
                         <span className="text-[9px] text-black/40 dark:text-white/30">{o.planTier || "—"}</span>
-                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-green-100 text-green-700" : o.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{o.status === 'approved' ? (L ? "موافق" : "Approved") : o.status === 'pending' ? (L ? "انتظار" : "Pending") : o.status}</span>
+                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : o.status === 'pending' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-100 text-gray-500"}`}>{o.status === 'approved' ? (L ? "موافق" : "Approved") : o.status === 'pending' ? (L ? "انتظار" : "Pending") : o.status}</span>
                       </div>
                     </div>
                   ))}
@@ -886,7 +886,7 @@ function AgentView({ user }: { user: any }) {
                   {(clientData?.modRequests || []).slice(0, 3).map((m: any) => (
                     <div key={m._id || m.id} className="bg-white dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-black/[0.05] dark:border-white/[0.05]" data-testid={`client-mod-${m._id || m.id}`}>
                       <p className="text-[10px] font-bold text-black dark:text-white truncate">{m.title}</p>
-                      <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${m.status === 'completed' ? "bg-green-100 text-green-700" : m.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{m.status}</span>
+                      <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${m.status === 'completed' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : m.status === 'pending' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-100 text-gray-500"}`}>{m.status}</span>
                     </div>
                   ))}
                   {!clientData?.modRequests?.length && <p className="text-[10px] text-black/30 dark:text-white/20">{L ? "لا توجد تعديلات" : "No modifications"}</p>}
@@ -970,8 +970,8 @@ export default function CSChat() {
     <div className="flex flex-col flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950" dir={dir}>
       {/* Page title bar */}
       <div className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-gray-900 border-b border-black/[0.07] dark:border-white/[0.07] flex-shrink-0">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-          <Headphones className="w-4 h-4 text-violet-600" />
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white flex items-center justify-center">
+          <Headphones className="w-4 h-4 text-black dark:text-white" />
         </div>
         <div>
           <h1 className="font-black text-sm text-black dark:text-white">
@@ -983,7 +983,7 @@ export default function CSChat() {
         </div>
         {isAgent && (
           <div className="mr-auto flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <div className="w-2 h-2 rounded-full bg-black dark:bg-white" />
             <span className="text-[10px] text-black/50 dark:text-white/30">متصل</span>
           </div>
         )}

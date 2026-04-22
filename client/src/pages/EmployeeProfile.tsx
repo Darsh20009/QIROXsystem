@@ -195,9 +195,9 @@ export default function EmployeeProfile() {
   });
 
   const ITEM_TYPE_CONFIG = {
-    template: { label: "نموذج", icon: FileText, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-700" },
-    file:     { label: "ملف",   icon: Link2,    color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-200 dark:border-purple-700" },
-    video:    { label: "فيديو", icon: Video,    color: "text-red-500", bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-700" },
+    template: { label: "نموذج", icon: FileText, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    file:     { label: "ملف",   icon: Link2,    color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    video:    { label: "فيديو", icon: Video,    color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white", border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   };
 
   const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -307,9 +307,9 @@ export default function EmployeeProfile() {
       {/* Vacation Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: L ? "إجمالي أيام الإجازة" : "Total Leave Days", value: profile?.vacationDays || 21, color: "text-blue-500", icon: Umbrella },
-          { label: L ? "إجازات مستخدمة" : "Used Leave", value: profile?.vacationUsed || 0, color: "text-yellow-500", icon: Umbrella },
-          { label: L ? "إجازات متبقية" : "Remaining Leave", value: (profile?.vacationDays || 21) - (profile?.vacationUsed || 0), color: "text-green-500", icon: Umbrella },
+          { label: L ? "إجمالي أيام الإجازة" : "Total Leave Days", value: profile?.vacationDays || 21, color: "text-black dark:text-white", icon: Umbrella },
+          { label: L ? "إجازات مستخدمة" : "Used Leave", value: profile?.vacationUsed || 0, color: "text-black dark:text-white", icon: Umbrella },
+          { label: L ? "إجازات متبقية" : "Remaining Leave", value: (profile?.vacationDays || 21) - (profile?.vacationUsed || 0), color: "text-black dark:text-white", icon: Umbrella },
         ].map((s, i) => (
           <Card key={i} className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardContent className="pt-4 pb-3 text-center">
@@ -355,7 +355,7 @@ export default function EmployeeProfile() {
               {(form.skills || []).map(skill => (
                 <Badge key={skill} className="bg-black/[0.06] dark:bg-white/[0.06] text-black dark:text-white gap-1.5 pr-1.5">
                   {skill}
-                  <button onClick={() => removeSkill(skill)} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                  <button onClick={() => removeSkill(skill)} className="hover:text-black dark:text-white"><X className="w-3 h-3" /></button>
                 </Badge>
               ))}
             </div>
@@ -487,7 +487,7 @@ export default function EmployeeProfile() {
                       </a>
                       <button onClick={() => deleteItemMutation.mutate(item._id)}
                         disabled={deleteItemMutation.isPending}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors text-black/30 dark:text-white/30"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white hover:text-black dark:text-white transition-colors text-black/30 dark:text-white/30"
                         data-testid={`btn-delete-${item._id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -539,7 +539,7 @@ export default function EmployeeProfile() {
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900 overflow-hidden">
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <IdCard className="w-4 h-4 text-violet-500" />
+            <IdCard className="w-4 h-4 text-black dark:text-white" />
             {L ? "بطاقة الهوية الوظيفية" : "Employee ID Card"}
           </CardTitle>
           {qrLoginUrl && (
@@ -547,7 +547,7 @@ export default function EmployeeProfile() {
               size="sm"
               variant="ghost"
               onClick={() => setCardFlipped(f => !f)}
-              className="h-7 gap-1.5 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+              className="h-7 gap-1.5 text-xs text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
               data-testid="button-flip-card"
             >
               <RotateCw className="w-3 h-3" />
@@ -750,7 +750,7 @@ export default function EmployeeProfile() {
                   disabled={generateQrMutation.isPending}
                   variant="outline"
                   size="sm"
-                  className="flex-1 gap-1.5 text-xs border-violet-200 text-violet-700 hover:bg-violet-50"
+                  className="flex-1 gap-1.5 text-xs border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                   data-testid="button-regenerate-qr"
                 >
                   {generateQrMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
@@ -821,7 +821,7 @@ export default function EmployeeProfile() {
                 <div key={r.id} className="flex items-center justify-between text-sm border-b border-black/[0.04] dark:border-white/[0.04] pb-2 last:border-0">
                   <span className="text-black/50 dark:text-white/50">{MONTHS[(r.month || 1) - 1]} {r.year}</span>
                   <span className="font-bold text-black dark:text-white flex items-center gap-0.5">{r.netSalary.toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
-                  <Badge className={r.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                  <Badge className={r.status === "paid" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white"}>
                     {r.status === "paid" ? (L ? "مدفوع" : "Paid") : (L ? "معلق" : "Pending")}
                   </Badge>
                 </div>

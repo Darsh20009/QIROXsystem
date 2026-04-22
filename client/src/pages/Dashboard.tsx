@@ -32,27 +32,27 @@ import { ClientHeroVisual } from "@/components/ClientHeroVisual";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-  approved: { label: "تمت الموافقة", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: CheckCircle2 },
-  in_progress: { label: "قيد التنفيذ", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200", icon: Activity },
-  completed: { label: "مكتمل", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-  rejected: { label: "مرفوض", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+  pending: { label: "قيد المراجعة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
+  approved: { label: "تمت الموافقة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+  in_progress: { label: "قيد التنفيذ", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Activity },
+  completed: { label: "مكتمل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+  rejected: { label: "مرفوض", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
   cancelled: { label: "ملغي", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: AlertCircle },
 };
 
 const modStatusMap: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "قيد الانتظار", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-  in_review: { label: "قيد المراجعة", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-  in_progress: { label: "قيد التنفيذ", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200" },
-  completed: { label: "مكتمل", color: "text-green-700", bg: "bg-green-50 border-green-200" },
-  rejected: { label: "مرفوض", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+  pending: { label: "قيد الانتظار", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  in_review: { label: "قيد المراجعة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  in_progress: { label: "قيد التنفيذ", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  completed: { label: "مكتمل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  rejected: { label: "مرفوض", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
 };
 
 const priorityMap: Record<string, { label: string; color: string; bg: string }> = {
   low: { label: "منخفض", color: "text-gray-600", bg: "bg-gray-50 border-gray-200" },
-  medium: { label: "متوسط", color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
-  high: { label: "عالي", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
-  urgent: { label: "عاجل", color: "text-red-600", bg: "bg-red-50 border-red-200" },
+  medium: { label: "متوسط", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  high: { label: "عالي", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  urgent: { label: "عاجل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
 };
 
 function getGreeting(lang = "ar") {
@@ -77,7 +77,7 @@ function StatCard({ icon: Icon, label, value, trend, color }: { icon: any; label
               <Icon className="w-5 h-5" />
             </div>
             {trend && (
-              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+              <span className="text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full flex items-center gap-0.5">
                 <TrendingUp className="w-2.5 h-2.5" />
                 {trend}
               </span>
@@ -106,11 +106,11 @@ interface AdminStats {
 }
 
 const adminOrderStatusMap: Record<string, { label: string; color: string; bg: string }> = {
-  pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-  approved: { label: "تمت الموافقة", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-  in_progress: { label: "قيد التنفيذ", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200" },
-  completed: { label: "مكتمل", color: "text-green-700", bg: "bg-green-50 border-green-200" },
-  rejected: { label: "مرفوض", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+  pending: { label: "قيد المراجعة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  approved: { label: "تمت الموافقة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  in_progress: { label: "قيد التنفيذ", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  completed: { label: "مكتمل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  rejected: { label: "مرفوض", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
   cancelled: { label: "ملغي", color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
 };
 
@@ -168,7 +168,7 @@ function AdminCredentialsCard() {
                 data-testid={`button-copy-${c.key}`}
               >
                 {copied === c.key
-                  ? <Check className="w-3 h-3 text-green-600" />
+                  ? <Check className="w-3 h-3 text-black dark:text-white" />
                   : <Copy className="w-3 h-3 text-black/35 dark:text-white/35" />
                 }
               </button>
@@ -181,16 +181,16 @@ function AdminCredentialsCard() {
 }
 
 const adminSections = [
-  { label: "الطلبات", desc: "إدارة طلبات العملاء", href: "/admin/orders", icon: ShoppingBag, accent: "bg-blue-50", iconColor: "text-blue-600", badge: "totalOrders" },
-  { label: "العملاء", desc: "قائمة العملاء المسجلين", href: "/admin/customers", icon: Users, accent: "bg-violet-50", iconColor: "text-violet-600", badge: "totalClients" },
+  { label: "الطلبات", desc: "إدارة طلبات العملاء", href: "/admin/orders", icon: ShoppingBag, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: "totalOrders" },
+  { label: "العملاء", desc: "قائمة العملاء المسجلين", href: "/admin/customers", icon: Users, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: "totalClients" },
   { label: "الموظفون", desc: "فريق العمل والصلاحيات", href: "/admin/employees", icon: UserCog, accent: "bg-slate-50", iconColor: "text-slate-600", badge: "totalEmployees" },
-  { label: "الخدمات", desc: "الخدمات والباقات المعروضة", href: "/admin/services", icon: Settings, accent: "bg-orange-50", iconColor: "text-orange-600", badge: null },
-  { label: "الأنظمة الجاهزة", desc: "قوالب القطاعات المختلفة", href: "/admin/templates", icon: LayoutGrid, accent: "bg-emerald-50", iconColor: "text-emerald-600", badge: null },
-  { label: "المالية", desc: "الإيرادات والمدفوعات", href: "/admin/finance", icon: DollarSign, accent: "bg-green-50", iconColor: "text-green-600", badge: null },
-  { label: "طلبات التعديل", desc: "تعديلات المشاريع القائمة", href: "/admin/mod-requests", icon: Wrench, accent: "bg-amber-50", iconColor: "text-amber-600", badge: null },
-  { label: "الشركاء", desc: "شركاء النجاح والتعاون", href: "/admin/partners", icon: Handshake, accent: "bg-indigo-50", iconColor: "text-indigo-600", badge: null },
-  { label: "الأخبار", desc: "المقالات والتحديثات", href: "/admin/news", icon: Newspaper, accent: "bg-rose-50", iconColor: "text-rose-600", badge: null },
-  { label: "الوظائف", desc: "فرص العمل والتقديمات", href: "/admin/jobs", icon: Briefcase, accent: "bg-red-50", iconColor: "text-red-600", badge: null },
+  { label: "الخدمات", desc: "الخدمات والباقات المعروضة", href: "/admin/services", icon: Settings, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "الأنظمة الجاهزة", desc: "قوالب القطاعات المختلفة", href: "/admin/templates", icon: LayoutGrid, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "المالية", desc: "الإيرادات والمدفوعات", href: "/admin/finance", icon: DollarSign, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "طلبات التعديل", desc: "تعديلات المشاريع القائمة", href: "/admin/mod-requests", icon: Wrench, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "الشركاء", desc: "شركاء النجاح والتعاون", href: "/admin/partners", icon: Handshake, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "الأخبار", desc: "المقالات والتحديثات", href: "/admin/news", icon: Newspaper, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
+  { label: "الوظائف", desc: "فرص العمل والتقديمات", href: "/admin/jobs", icon: Briefcase, accent: "bg-black/[0.04] dark:bg-white/[0.06]", iconColor: "text-black dark:text-white", badge: null },
 ];
 
 function AdminEmailPanel() {
@@ -347,10 +347,10 @@ function AdminDashboard({ user }: { user: any }) {
   }
 
   const statItems = [
-    { label: "الطلبات", value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: "text-blue-600 bg-blue-50" },
-    { label: "المشاريع", value: stats?.activeProjects ?? 0, icon: Activity, color: "text-indigo-600 bg-indigo-50" },
-    { label: "الإيرادات", value: (stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-green-600 bg-green-50" },
-    { label: "العملاء", value: stats?.totalClients ?? 0, icon: Users, color: "text-violet-600 bg-violet-50" },
+    { label: "الطلبات", value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+    { label: "المشاريع", value: stats?.activeProjects ?? 0, icon: Activity, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+    { label: "الإيرادات", value: (stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+    { label: "العملاء", value: stats?.totalClients ?? 0, icon: Users, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
     { label: "الموظفون", value: stats?.totalEmployees ?? 0, icon: UserCog, color: "text-slate-600 bg-slate-50" },
   ];
 
@@ -499,12 +499,12 @@ const employeeRoleLabels: Record<string, string> = {
 };
 
 const orderStatusColors: Record<string, { bg: string; text: string; label: string }> = {
-  pending: { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", label: "قيد المراجعة" },
-  approved: { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", label: "موافق عليه" },
-  in_progress: { bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700", label: "قيد التنفيذ" },
-  completed: { bg: "bg-green-50 border-green-200", text: "text-green-700", label: "مكتمل" },
-  cancelled: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "ملغي" },
-  rejected: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "مرفوض" },
+  pending: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "قيد المراجعة" },
+  approved: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "موافق عليه" },
+  in_progress: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "قيد التنفيذ" },
+  completed: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "مكتمل" },
+  cancelled: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "ملغي" },
+  rejected: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "مرفوض" },
 };
 
 function EmployeeDashboard({ user }: { user: any }) {
@@ -702,10 +702,10 @@ function EmployeeDashboard({ user }: { user: any }) {
   const filteredOrders = filterStatus === "all" ? displayOrders : displayOrders.filter((o: any) => o.status === filterStatus);
 
   const stats = [
-    { label: "إجمالي الطلبات", value: allOrders.length, color: "bg-blue-50 text-blue-600", icon: FileText },
-    { label: "معين لي", value: myOrders.length, color: "bg-violet-50 text-violet-600", icon: UserCog },
-    { label: "قيد التنفيذ", value: allOrders.filter((o: any) => o.status === "in_progress").length, color: "bg-indigo-50 text-indigo-600", icon: Activity },
-    { label: "مكتملة", value: allOrders.filter((o: any) => o.status === "completed").length, color: "bg-green-50 text-green-600", icon: CheckCircle2 },
+    { label: "إجمالي الطلبات", value: allOrders.length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", icon: FileText },
+    { label: "معين لي", value: myOrders.length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", icon: UserCog },
+    { label: "قيد التنفيذ", value: allOrders.filter((o: any) => o.status === "in_progress").length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", icon: Activity },
+    { label: "مكتملة", value: allOrders.filter((o: any) => o.status === "completed").length, color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", icon: CheckCircle2 },
   ];
 
   const booleanFields = [
@@ -729,10 +729,10 @@ function EmployeeDashboard({ user }: { user: any }) {
   ];
 
   const fileCategories = [
-    { key: "logo",          label: "الشعار",           color: "bg-violet-500" },
-    { key: "brandIdentity", label: "الهوية البصرية",   color: "bg-blue-500" },
-    { key: "content",       label: "المحتوى والصور",   color: "bg-emerald-500" },
-    { key: "paymentProof",  label: "إثبات الدفع",      color: "bg-amber-500" },
+    { key: "logo",          label: "الشعار",           color: "bg-black dark:bg-white" },
+    { key: "brandIdentity", label: "الهوية البصرية",   color: "bg-black dark:bg-white" },
+    { key: "content",       label: "المحتوى والصور",   color: "bg-black dark:bg-white" },
+    { key: "paymentProof",  label: "إثبات الدفع",      color: "bg-black dark:bg-white" },
   ];
 
   return (
@@ -754,13 +754,13 @@ function EmployeeDashboard({ user }: { user: any }) {
                   <LogIn className="w-3.5 h-3.5 ml-1.5" />تسجيل حضور
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-xs h-8 px-4" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
+                <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] text-xs h-8 px-4" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
                   <LogOut className="w-3.5 h-3.5 ml-1.5" />تسجيل انصراف
                 </Button>
               )}
               {attendanceStatus && !attendanceStatus.checkOut && (
                 <div className="px-3 py-1 text-[10px] font-bold text-black/40 dark:text-white/40 flex items-center gap-1.5">
-                  <Timer className="w-3 h-3 text-green-500 animate-pulse" />
+                  <Timer className="w-3 h-3 text-black dark:text-white animate-pulse" />
                   {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
@@ -788,23 +788,23 @@ function EmployeeDashboard({ user }: { user: any }) {
 
         {/* ── Employee Workflow Guide ─────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-          className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-5">
+          className="bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-black text-blue-900 dark:text-blue-100">دليل تدفق العمل</p>
-              <p className="text-[11px] text-blue-600 dark:text-blue-400">لكل طلب جديد — اتبع هذه الخطوات بالترتيب</p>
+              <p className="text-sm font-black text-black dark:text-white dark:text-black/60 dark:text-white/60">دليل تدفق العمل</p>
+              <p className="text-[11px] text-black dark:text-white dark:text-black/70 dark:text-white/70">لكل طلب جديد — اتبع هذه الخطوات بالترتيب</p>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {[
-              { step: "١", title: "مراجعة الطلب", desc: "تحقق من البيانات والمرفقات", color: "bg-blue-500" },
-              { step: "٢", title: "تواصل مع العميل", desc: "واتساب خلال 24 ساعة", color: "bg-indigo-500" },
-              { step: "٣", title: "رفع الطلب", desc: "غيّر الحالة إلى موافق", color: "bg-violet-500" },
-              { step: "٤", title: "إنشاء القائمة", desc: "استخدم الذكاء الاصطناعي", color: "bg-purple-500" },
-              { step: "٥", title: "التنفيذ والتسليم", desc: "حدّث التقدم دورياً", color: "bg-pink-500" },
+              { step: "١", title: "مراجعة الطلب", desc: "تحقق من البيانات والمرفقات", color: "bg-black dark:bg-white" },
+              { step: "٢", title: "تواصل مع العميل", desc: "واتساب خلال 24 ساعة", color: "bg-black dark:bg-white" },
+              { step: "٣", title: "رفع الطلب", desc: "غيّر الحالة إلى موافق", color: "bg-black dark:bg-white" },
+              { step: "٤", title: "إنشاء القائمة", desc: "استخدم الذكاء الاصطناعي", color: "bg-black dark:bg-white" },
+              { step: "٥", title: "التنفيذ والتسليم", desc: "حدّث التقدم دورياً", color: "bg-black dark:bg-white" },
             ].map((s, i) => (
               <div key={i} className="bg-white dark:bg-white/[0.05] rounded-xl p-3 flex flex-col gap-1.5">
                 <div className={`w-6 h-6 ${s.color} rounded-lg text-white text-[10px] font-black flex items-center justify-center`}>{s.step}</div>
@@ -815,12 +815,12 @@ function EmployeeDashboard({ user }: { user: any }) {
           </div>
           {/* New orders needing attention */}
           {allOrders.filter((o: any) => o.status === "pending").length > 0 && (
-            <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+            <div className="mt-4 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-2 h-2 bg-black dark:bg-white rounded-full animate-pulse" />
+              <p className="text-sm font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">
                 {allOrders.filter((o: any) => o.status === "pending").length} طلب جديد ينتظر المراجعة
               </p>
-              <button onClick={() => setFilterStatus("pending")} className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 transition-colors underline font-medium mr-auto">
+              <button onClick={() => setFilterStatus("pending")} className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:text-black dark:text-white transition-colors underline font-medium mr-auto">
                 عرضها →
               </button>
             </div>
@@ -867,14 +867,14 @@ function EmployeeDashboard({ user }: { user: any }) {
                       onClick={() => openOrder(order)}
                       data-testid={`employee-order-row-${order.id}`}>
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${order.status === 'completed' ? 'bg-green-50' : order.status === 'in_progress' ? 'bg-blue-50' : 'bg-amber-50'}`}>
-                          <FileText className={`w-3.5 h-3.5 ${order.status === 'completed' ? 'text-green-500' : order.status === 'in_progress' ? 'text-blue-500' : 'text-amber-500'}`} />
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${order.status === 'completed' ? 'bg-black/[0.04] dark:bg-white/[0.06]' : order.status === 'in_progress' ? 'bg-black/[0.04] dark:bg-white/[0.06]' : 'bg-black/[0.04] dark:bg-white/[0.06]'}`}>
+                          <FileText className={`w-3.5 h-3.5 ${order.status === 'completed' ? 'text-black dark:text-white' : order.status === 'in_progress' ? 'text-black dark:text-white' : 'text-black dark:text-white'}`} />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <p className="text-xs font-bold text-black dark:text-white">طلب #{order.id?.toString().slice(-6)}</p>
-                            {isMyOrder && <span className="text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">معين لي</span>}
-                            {hasSpecs && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">مكتمل المواصفات</span>}
+                            {isMyOrder && <span className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white px-1.5 py-0.5 rounded font-bold">معين لي</span>}
+                            {hasSpecs && <span className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white px-1.5 py-0.5 rounded font-bold">مكتمل المواصفات</span>}
                           </div>
                           <div className="flex items-center gap-2">
                             <p className="text-[10px] text-black/50 dark:text-white/50 font-medium">{clientName}</p>
@@ -1007,18 +1007,18 @@ function EmployeeDashboard({ user }: { user: any }) {
                       </div>
 
                       {/* AI Checklist Generator */}
-                      <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-100 dark:border-violet-900/40 rounded-xl p-4">
+                      <div className="bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-xs font-black text-violet-900 dark:text-violet-100 flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5 text-violet-500" /> قائمة مهام المشروع (ذكاء اصطناعي)
+                            <p className="text-xs font-black text-black dark:text-white dark:text-black/60 dark:text-white/60 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" /> قائمة مهام المشروع (ذكاء اصطناعي)
                             </p>
-                            <p className="text-[10px] text-violet-600 dark:text-violet-400 mt-0.5">اضغط لإنشاء قائمة مهام تفصيلية للمشروع</p>
+                            <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5">اضغط لإنشاء قائمة مهام تفصيلية للمشروع</p>
                           </div>
                           <button
                             onClick={() => generateAIChecklist(selectedOrder)}
                             disabled={aiChecklistLoading === (selectedOrder.id || selectedOrder._id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-bold rounded-lg transition-all disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-[11px] font-bold rounded-lg transition-all disabled:opacity-50"
                             data-testid="button-generate-ai-checklist"
                           >
                             {aiChecklistLoading === (selectedOrder.id || selectedOrder._id)
@@ -1031,7 +1031,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                           <div className="space-y-1.5 mt-2">
                             {aiChecklists[selectedOrder.id || selectedOrder._id].map((task, i) => (
                               <div key={i} className="flex items-start gap-2 bg-white dark:bg-white/[0.05] rounded-lg px-3 py-2">
-                                <div className="w-4 h-4 rounded-md border-2 border-violet-300 dark:border-violet-600 flex-shrink-0 mt-0.5" />
+                                <div className="w-4 h-4 rounded-md border-2 border-black/15 dark:border-white/15 dark:border-black dark:border-white flex-shrink-0 mt-0.5" />
                                 <p className="text-[11px] text-gray-700 dark:text-slate-300 leading-relaxed">{task}</p>
                               </div>
                             ))}
@@ -1097,7 +1097,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                           </div>
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-black/50 dark:text-white/50">حالة الدفعة الأولى</p>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white'}`}>
                               {selectedOrder.isDepositPaid ? "مدفوع" : "لم يُدفع"}
                             </span>
                           </div>
@@ -1471,11 +1471,11 @@ function EmployeeDashboard({ user }: { user: any }) {
         <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
-              <LogIn className="w-4 h-4 text-green-600" />تسجيل الحضور
+              <LogIn className="w-4 h-4 text-black dark:text-white" />تسجيل الحضور
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-700">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
               ما الذي تخطط للعمل عليه اليوم؟
             </div>
             <Textarea
@@ -1490,7 +1490,7 @@ function EmployeeDashboard({ user }: { user: any }) {
               <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setShowCheckInDialog(false)}>
                 إلغاء
               </Button>
-              <Button size="sm" className="flex-1 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={submitCheckIn} disabled={checkInMutation.isPending} data-testid="button-submit-check-in">
+              <Button size="sm" className="flex-1 text-xs bg-black dark:bg-white hover:bg-black dark:bg-white text-white" onClick={submitCheckIn} disabled={checkInMutation.isPending} data-testid="button-submit-check-in">
                 {checkInMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogIn className="w-3.5 h-3.5 ml-1" />}
                 تسجيل الحضور
               </Button>
@@ -1504,11 +1504,11 @@ function EmployeeDashboard({ user }: { user: any }) {
         <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-red-500" />تسجيل الانصراف
+              <LogOut className="w-4 h-4 text-black dark:text-white" />تسجيل الانصراف
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3 text-xs text-black dark:text-white">
               ماذا أنجزت اليوم؟ سيظهر هذا في تقرير الإدارة
             </div>
             <Textarea
@@ -1523,7 +1523,7 @@ function EmployeeDashboard({ user }: { user: any }) {
               <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setShowCheckOutDialog(false)}>
                 إلغاء
               </Button>
-              <Button size="sm" className="flex-1 text-xs border-red-200 text-red-600 hover:bg-red-50" variant="outline" onClick={submitCheckOut} disabled={checkOutMutation.isPending} data-testid="button-submit-check-out">
+              <Button size="sm" className="flex-1 text-xs border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" variant="outline" onClick={submitCheckOut} disabled={checkOutMutation.isPending} data-testid="button-submit-check-out">
                 {checkOutMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5 ml-1" />}
                 تسجيل الانصراف
               </Button>
@@ -1563,9 +1563,9 @@ function ProjectTasksMini({ projectId, lang }: { projectId: string; lang: string
           <div key={task.id} className="flex items-center gap-2" data-testid={`task-mini-${task.id}`}>
             <div className={`w-3 h-3 rounded-full flex-shrink-0 border-2 ${
               task.status === "done"
-                ? "bg-green-500 border-green-500"
+                ? "bg-black dark:bg-white border-black dark:border-white"
                 : task.status === "in_progress"
-                ? "bg-blue-500 border-blue-500"
+                ? "bg-black dark:bg-white border-black dark:border-white"
                 : "bg-transparent border-black/20 dark:border-white/20"
             }`} />
             <p className={`text-[11px] flex-1 truncate leading-tight ${
@@ -1576,7 +1576,7 @@ function ProjectTasksMini({ projectId, lang }: { projectId: string; lang: string
               {task.title}
             </p>
             {task.status === "in_progress" && (
-              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-[9px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 {L ? "جارٍ" : "Active"}
               </span>
             )}
@@ -1599,27 +1599,27 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   const statusMap = {
-    pending: { label: L ? "قيد المراجعة" : "Under Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-    approved: { label: L ? "تمت الموافقة" : "Approved", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: CheckCircle2 },
-    in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200", icon: Activity },
-    completed: { label: L ? "مكتمل" : "Completed", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+    pending: { label: L ? "قيد المراجعة" : "Under Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
+    approved: { label: L ? "تمت الموافقة" : "Approved", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Activity },
+    completed: { label: L ? "مكتمل" : "Completed", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
     cancelled: { label: L ? "ملغي" : "Cancelled", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: AlertCircle },
   } as Record<string, { label: string; color: string; bg: string; icon: any }>;
 
   const modStatusMap = {
-    pending: { label: L ? "قيد الانتظار" : "Pending", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-    in_review: { label: L ? "قيد المراجعة" : "In Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-    in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200" },
-    completed: { label: L ? "مكتمل" : "Completed", color: "text-green-700", bg: "bg-green-50 border-green-200" },
-    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+    pending: { label: L ? "قيد الانتظار" : "Pending", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    in_review: { label: L ? "قيد المراجعة" : "In Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    completed: { label: L ? "مكتمل" : "Completed", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
   } as Record<string, { label: string; color: string; bg: string }>;
 
   const priorityMap = {
     low: { label: L ? "منخفض" : "Low", color: "text-gray-600", bg: "bg-gray-50 border-gray-200" },
-    medium: { label: L ? "متوسط" : "Medium", color: "text-blue-600", bg: "bg-blue-50 border-blue-200" },
-    high: { label: L ? "عالي" : "High", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
-    urgent: { label: L ? "عاجل" : "Urgent", color: "text-red-600", bg: "bg-red-50 border-red-200" },
+    medium: { label: L ? "متوسط" : "Medium", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    high: { label: L ? "عالي" : "High", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+    urgent: { label: L ? "عاجل" : "Urgent", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
   } as Record<string, { label: string; color: string; bg: string }>;
 
   // Redirect to email verification if account is not verified
@@ -2084,15 +2084,15 @@ export default function Dashboard() {
         {/* Phone Verification Banner */}
         {phoneUnverified && (
           <Link href="/phone-verify">
-            <div className="mb-5 bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-amber-100 transition-all" data-testid="banner-phone-verify">
-              <div className="w-10 h-10 bg-amber-200 rounded-xl flex items-center justify-center shrink-0">
-                <Phone className="w-5 h-5 text-amber-700" />
+            <div className="mb-5 bg-black/[0.04] dark:bg-white/[0.06] border-2 border-black/10 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-black/[0.04] dark:bg-white/[0.06] transition-all" data-testid="banner-phone-verify">
+              <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5 text-black dark:text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-amber-900 text-sm">{L ? "رقم جوالك غير موثّق" : "Phone number not verified"}</p>
-                <p className="text-amber-700 text-xs mt-0.5">{L ? "وثّق رقمك عبر تيليجرام أو اتصال — يُحسّن أمان حسابك" : "Verify via Telegram or call for account security"}</p>
+                <p className="font-bold text-black dark:text-white text-sm">{L ? "رقم جوالك غير موثّق" : "Phone number not verified"}</p>
+                <p className="text-black dark:text-white text-xs mt-0.5">{L ? "وثّق رقمك عبر تيليجرام أو اتصال — يُحسّن أمان حسابك" : "Verify via Telegram or call for account security"}</p>
               </div>
-              <div className="bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0">
+              <div className="bg-black dark:bg-white text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0">
                 {L ? "توثيق الآن" : "Verify Now"}
               </div>
             </div>
@@ -2102,10 +2102,10 @@ export default function Dashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: L ? "إجمالي الطلبات" : "Total Orders", value: orders?.length || 0, icon: FileText, color: "from-blue-500 to-blue-600", bg: "bg-blue-50", text: "text-blue-600" },
-            { label: L ? "مشاريع نشطة" : "Active Projects", value: activeProjects.length, icon: Activity, color: "from-violet-500 to-indigo-600", bg: "bg-violet-50", text: "text-violet-600" },
-            { label: L ? "قيد الانتظار" : "Pending", value: pendingOrders.length, icon: Clock, color: "from-amber-500 to-orange-500", bg: "bg-amber-50", text: "text-amber-600" },
-            { label: L ? "مكتملة" : "Completed", value: completedOrders.length, icon: CheckCircle2, color: "from-green-500 to-emerald-600", bg: "bg-green-50", text: "text-green-600" },
+            { label: L ? "إجمالي الطلبات" : "Total Orders", value: orders?.length || 0, icon: FileText, color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", text: "text-black dark:text-white" },
+            { label: L ? "مشاريع نشطة" : "Active Projects", value: activeProjects.length, icon: Activity, color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", text: "text-black dark:text-white" },
+            { label: L ? "قيد الانتظار" : "Pending", value: pendingOrders.length, icon: Clock, color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", text: "text-black dark:text-white" },
+            { label: L ? "مكتملة" : "Completed", value: completedOrders.length, icon: CheckCircle2, color: "from-black dark:from-white to-black dark:to-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", text: "text-black dark:text-white" },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 hover:shadow-md transition-all duration-300">
@@ -2164,7 +2164,7 @@ export default function Dashboard() {
             <div className="relative grid grid-cols-2 gap-3">
               <div className="bg-white/[0.06] rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                   <p className="text-white/40 text-[10px]">{L ? "مدين" : "Debit"}</p>
                 </div>
                 <p className="text-white font-black text-lg">{walletData?.totalDebit != null ? Number(walletData.totalDebit).toLocaleString() : "—"}</p>
@@ -2172,7 +2172,7 @@ export default function Dashboard() {
               </div>
               <div className="bg-white/[0.06] rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1]" />
                   <p className="text-white/40 text-[10px]">{L ? "دائن" : "Credit"}</p>
                 </div>
                 <p className="text-white font-black text-lg">{walletData?.totalCredit != null ? Number(walletData.totalCredit).toLocaleString() : "—"}</p>
@@ -2181,9 +2181,9 @@ export default function Dashboard() {
             </div>
 
             {walletData?.outstanding > 0 && (
-              <div className="relative bg-amber-500/20 border border-amber-400/30 rounded-xl px-3 py-2 flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                <p className="text-amber-300 text-[10px] font-medium">{L ? "يوجد رصيد مستحق، يرجى التواصل مع الفريق" : "Outstanding balance, please contact the team"}</p>
+              <div className="relative bg-black dark:bg-white border border-black/15 dark:border-white/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-black/70 dark:text-white/70 flex-shrink-0" />
+                <p className="text-black/70 dark:text-white/70 text-[10px] font-medium">{L ? "يوجد رصيد مستحق، يرجى التواصل مع الفريق" : "Outstanding balance, please contact the team"}</p>
               </div>
             )}
 
@@ -2214,7 +2214,7 @@ export default function Dashboard() {
                   <ShoppingCart className="w-5 h-5 text-white dark:text-black" />
                 </div>
                 {(cartData?.items?.length ?? 0) > 0 && (
-                  <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-black dark:bg-white text-white text-[9px] font-black rounded-full flex items-center justify-center">
                     {cartData?.items?.length}
                   </span>
                 )}
@@ -2275,7 +2275,7 @@ export default function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+              <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center">
                 <Video className="w-4 h-4 text-white" />
               </div>
               <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
@@ -2286,14 +2286,14 @@ export default function Dashboard() {
                 <button
                   onClick={() => instantMeetMutation.mutate()}
                   disabled={instantMeetMutation.isPending}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-700/50 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-3 py-1.5 rounded-xl transition-colors disabled:opacity-60"
                   data-testid="button-quick-meeting-dashboard"
                 >
                   {instantMeetMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                   {L ? "اجتماع سريع" : "Quick Meeting"}
                 </button>
               )}
-              <button onClick={() => setLocation("/meet/join")} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="button-join-by-code-dashboard">
+              <button onClick={() => setLocation("/meet/join")} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-3 py-1.5 rounded-xl transition-colors" data-testid="button-join-by-code-dashboard">
                 <KeyRound className="w-3.5 h-3.5" />
                 {L ? "انضم بكود" : "Join by Code"}
               </button>
@@ -2307,15 +2307,15 @@ export default function Dashboard() {
                 const dateStr = scheduledDate.toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" });
                 const timeStr = scheduledDate.toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
                 return (
-                  <div key={m._id} data-testid={`card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-700" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
+                  <div key={m._id} data-testid={`card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
                     {isLive && (
-                      <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-100 dark:bg-violet-900/60 dark:text-violet-300 px-2 py-0.5 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+                      <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
                         {L ? "مباشر الآن" : "Live"}
                       </span>
                     )}
                     <div className="flex items-start gap-3 mb-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-violet-600" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-black dark:bg-white" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
                         <Video className={`w-4 h-4 ${isLive ? "text-white" : "text-black/50 dark:text-white/50"}`} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -2327,7 +2327,7 @@ export default function Dashboard() {
                       <Calendar className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
                       <span className="text-[11px] text-black/50 dark:text-white/50">{dateStr} — {timeStr}</span>
                     </div>
-                    <Button size="sm" onClick={() => window.open(m.meetingLink, '_blank')} className={`w-full rounded-xl h-8 text-xs font-bold gap-1.5 ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black text-white hover:bg-black/80"}`} data-testid={`button-join-meeting-${m._id}`}>
+                    <Button size="sm" onClick={() => window.open(m.meetingLink, '_blank')} className={`w-full rounded-xl h-8 text-xs font-bold gap-1.5 ${isLive ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white" : "bg-black text-white hover:bg-black/80"}`} data-testid={`button-join-meeting-${m._id}`}>
                       <Video className="w-3 h-3" />
                       {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
                     </Button>
@@ -2377,29 +2377,29 @@ export default function Dashboard() {
           const isDanger = daysLeft <= 7;
           return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-8">
-              <div className={`rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 border ${isDanger ? "bg-red-50 border-red-200" : isWarning ? "bg-amber-50 border-amber-200" : "bg-gradient-to-l from-black/[0.03] to-transparent border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900"}`}>
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-red-100" : isWarning ? "bg-amber-100" : "bg-black"}`}>
-                  <Crown className={`w-5 h-5 ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-white"}`} />
+              <div className={`rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 border ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-gradient-to-l from-black/[0.03] to-transparent border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900"}`}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06]" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06]" : "bg-black"}`}>
+                  <Crown className={`w-5 h-5 ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-white"}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className={`font-black text-sm ${isDanger ? "text-red-700" : isWarning ? "text-amber-700" : "text-black dark:text-white"}`}>
+                    <p className={`font-black text-sm ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                       {L ? `اشتراكك في ${(user as any).subscriptionSegmentNameAr || "قيروكس"}` : `Your ${(user as any).subscriptionSegmentNameEn || "QIROX"} Subscription`}
                     </p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60"}`}>{L ? "نشط" : "Active"}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60"}`}>{L ? "نشط" : "Active"}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-2 bg-black/[0.06] rounded-full overflow-hidden max-w-xs">
                       <motion.div
-                        className={`h-full rounded-full ${isDanger ? "bg-red-500" : isWarning ? "bg-amber-500" : "bg-black"}`}
+                        className={`h-full rounded-full ${isDanger ? "bg-black dark:bg-white" : isWarning ? "bg-black dark:bg-white" : "bg-black"}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ duration: 1.2, ease: "easeOut" }}
                       />
                     </div>
-                    <p className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{pct}%</p>
+                    <p className={`text-xs font-black ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{pct}%</p>
                   </div>
-                  <p className={`text-[11px] mt-1 ${isDanger ? "text-red-600 font-bold" : isWarning ? "text-amber-600 font-bold" : "text-black/40 dark:text-white/40"}`}>
+                  <p className={`text-[11px] mt-1 ${isDanger ? "text-black dark:text-white font-bold" : isWarning ? "text-black dark:text-white font-bold" : "text-black/40 dark:text-white/40"}`}>
                     {isDanger
                       ? (L ? `⚠️ ينتهي خلال ${daysLeft} أيام فقط!` : `⚠️ Expires in ${daysLeft} days only!`)
                       : isWarning
@@ -2411,8 +2411,8 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="text-center flex-shrink-0">
-                  <p className={`text-3xl font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{daysLeft}</p>
-                  <p className={`text-[10px] ${isDanger ? "text-red-500" : isWarning ? "text-amber-500" : "text-black/30 dark:text-white/30"}`}>{L ? "يوم متبقي" : "days left"}</p>
+                  <p className={`text-3xl font-black ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{daysLeft}</p>
+                  <p className={`text-[10px] ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black/30 dark:text-white/30"}`}>{L ? "يوم متبقي" : "days left"}</p>
                 </div>
               </div>
             </motion.div>
@@ -2525,7 +2525,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2 mb-3">
                             <div className="flex-1 h-1.5 bg-black/[0.05] dark:bg-white/[0.06] rounded-full overflow-hidden">
                               <motion.div
-                                className="h-full bg-indigo-500 rounded-full"
+                                className="h-full bg-black dark:bg-white rounded-full"
                                 initial={{ width: 0 }}
                                 animate={{ width: order.status === 'in_progress' ? '60%' : '35%' }}
                                 transition={{ duration: 1.2, ease: "easeOut" }}
@@ -2663,8 +2663,8 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2 gap-y-2 flex-wrap mb-4">
                             {daysLeft !== null && (
                               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold ${
-                                daysLeft < 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
-                                daysLeft < 7 ? "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" :
+                                daysLeft < 0 ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" :
+                                daysLeft < 7 ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" :
                                 "bg-black/[0.03] dark:bg-white/[0.04] text-black/50 dark:text-white/50"
                               }`}>
                                 <Calendar className="w-3 h-3" />
@@ -2682,28 +2682,28 @@ export default function Dashboard() {
                           {/* Usage Guide — shown when project has a guide attached */}
                           {(project as any).usageGuide?.description && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                              className="mt-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-xl p-4"
+                              className="mt-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl p-4"
                               data-testid={`usage-guide-${project.id}`}>
                               <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-6 h-6 bg-black dark:bg-white rounded-lg flex items-center justify-center flex-shrink-0">
                                   <FileText className="w-3.5 h-3.5 text-white" />
                                 </div>
-                                <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                                <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">
                                   {(project as any).usageGuide.title || (L ? "شرح استخدام النظام" : "System Usage Guide")}
                                 </p>
                               </div>
-                              <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed whitespace-pre-line">
+                              <p className="text-[11px] text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed whitespace-pre-line">
                                 {(project as any).usageGuide.description}
                               </p>
                               {((project as any).usageGuide.files || []).length > 0 && (
                                 <div className="mt-3 space-y-1.5">
-                                  <p className="text-[9px] font-bold text-blue-600/60 dark:text-blue-400/60 uppercase tracking-widest">{L ? "ملفات مرفقة" : "Attached Files"}</p>
+                                  <p className="text-[9px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-widest">{L ? "ملفات مرفقة" : "Attached Files"}</p>
                                   {((project as any).usageGuide.files as string[]).map((fileUrl, fi) => {
                                     const fileName = fileUrl.split('/').pop() || `ملف ${fi + 1}`;
                                     const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileUrl);
                                     return (
                                       <a key={fi} href={fileUrl} target="_blank" rel="noopener noreferrer" data-testid={`guide-file-${project.id}-${fi}`}
-                                        className="flex items-center gap-2 text-[11px] text-blue-700 dark:text-blue-400 hover:underline">
+                                        className="flex items-center gap-2 text-[11px] text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:underline">
                                         <span className="text-sm">{isImage ? "🖼️" : "📎"}</span>
                                         <span className="truncate max-w-xs">{decodeURIComponent(fileName)}</span>
                                       </a>
@@ -2730,7 +2730,7 @@ export default function Dashboard() {
                               </Button>
                             </Link>
                             <Link href={`/project/${project.id}/workspace`}>
-                              <Button size="sm" variant="outline" className="h-8 px-3 text-[11px] rounded-xl border-violet-200 dark:border-violet-800/40 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 gap-1.5" data-testid={`button-project-workspace-${project.id}`}>
+                              <Button size="sm" variant="outline" className="h-8 px-3 text-[11px] rounded-xl border-black/10 dark:border-white/10 dark:border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white gap-1.5" data-testid={`button-project-workspace-${project.id}`}>
                                 <LayoutGrid className="w-3 h-3" /> {L ? "المميزات" : "Features"}
                               </Button>
                             </Link>
@@ -2755,10 +2755,10 @@ export default function Dashboard() {
             {/* Quick Actions */}
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { icon: ShoppingBag, label: L ? "اختر باقة" : "Choose a Plan", desc: L ? "تصفح الباقات والأنظمة" : "Browse plans and systems", href: "/prices", color: "from-violet-500 to-indigo-600" },
-                { icon: Package, label: L ? "الأجهزة" : "Devices", desc: L ? "منتجات وبنية تحتية" : "Products and infrastructure", href: "/devices", color: "from-blue-500 to-blue-600" },
-                { icon: Wrench, label: L ? "طلب تعديل" : "Request Edit", desc: L ? "تعديل على مشروع حالي" : "Edit an existing project", action: () => setModDialogOpen(true), color: "from-amber-500 to-orange-500" },
-                { icon: Headphones, label: L ? "خدمة العملاء" : "Customer Service", desc: L ? "تواصل مع فريق الدعم" : "Contact our support team", href: "/cs-chat", color: "from-emerald-500 to-teal-600" },
+                { icon: ShoppingBag, label: L ? "اختر باقة" : "Choose a Plan", desc: L ? "تصفح الباقات والأنظمة" : "Browse plans and systems", href: "/prices", color: "from-black dark:from-white to-black dark:to-white" },
+                { icon: Package, label: L ? "الأجهزة" : "Devices", desc: L ? "منتجات وبنية تحتية" : "Products and infrastructure", href: "/devices", color: "from-black dark:from-white to-black dark:to-white" },
+                { icon: Wrench, label: L ? "طلب تعديل" : "Request Edit", desc: L ? "تعديل على مشروع حالي" : "Edit an existing project", action: () => setModDialogOpen(true), color: "from-black dark:from-white to-black dark:to-white" },
+                { icon: Headphones, label: L ? "خدمة العملاء" : "Customer Service", desc: L ? "تواصل مع فريق الدعم" : "Contact our support team", href: "/cs-chat", color: "from-black dark:from-white to-black dark:to-white" },
               ].map((action, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.05 }}>
                   {action.href ? (
@@ -2791,13 +2791,13 @@ export default function Dashboard() {
                 {/* Section header */}
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-black dark:text-white flex items-center gap-2 text-sm">
-                    <div className="w-6 h-6 bg-gradient-to-br from-violet-600 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <div className="w-6 h-6 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-lg flex items-center justify-center shadow-sm">
                       <Server className="w-3.5 h-3.5 text-white" />
                     </div>
                     {L ? "لوحة مشروعي المربوط" : "My Linked Project Dashboard"}
                   </h2>
                   <Link href="/my-api-keys">
-                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 flex items-center gap-1 transition-colors" data-testid="link-manage-api-keys">
+                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 flex items-center gap-1 transition-colors" data-testid="link-manage-api-keys">
                       {L ? "إدارة المفاتيح" : "Manage Keys"} <ArrowUpRight className="w-3 h-3" />
                     </button>
                   </Link>
@@ -2812,8 +2812,8 @@ export default function Dashboard() {
                         onClick={() => setInlineProjectKeyId(k.id)}
                         className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${
                           inlineProjectKeyId === k.id
-                            ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                            : "bg-white dark:bg-gray-900 text-black/50 dark:text-white/50 border-black/[0.08] dark:border-white/[0.08] hover:border-violet-300 dark:hover:border-violet-700"
+                            ? "bg-black dark:bg-white text-white border-black dark:border-white shadow-sm"
+                            : "bg-white dark:bg-gray-900 text-black/50 dark:text-white/50 border-black/[0.08] dark:border-white/[0.08] hover:border-black/15 dark:border-white/15 dark:hover:border-black dark:border-white"
                         }`}>
                         <Server className="w-3 h-3" /> {k.projectName}
                       </button>
@@ -2836,10 +2836,10 @@ export default function Dashboard() {
                     <div className="rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 shadow-sm">
 
                       {/* Project header — gradient banner */}
-                      <div className="relative bg-gradient-to-l from-violet-700 via-violet-600 to-purple-600 p-5 overflow-hidden">
+                      <div className="relative bg-gradient-to-l from-black dark:from-white via-black dark:via-white to-black dark:to-white p-5 overflow-hidden">
                         <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
                         <div className="absolute -top-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                        <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-purple-400/20 rounded-full blur-xl" />
+                        <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-black/[0.08] dark:bg-white/[0.1] rounded-full blur-xl" />
 
                         <div className="relative z-10 flex items-start justify-between gap-3 flex-wrap">
                           <div className="flex items-center gap-3">
@@ -2852,7 +2852,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${activeKey?.isActive ? "bg-green-500/20 text-green-200 border-green-400/30" : "bg-white/10 text-white/50 border-white/20"}`}>
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${activeKey?.isActive ? "bg-black dark:bg-white text-black/60 dark:text-white/60 border-black/15 dark:border-white/15" : "bg-white/10 text-white/50 border-white/20"}`}>
                               {activeKey?.isActive ? (L ? "● نشط" : "● Active") : (L ? "○ معطّل" : "○ Disabled")}
                             </span>
                             <button
@@ -2882,7 +2882,7 @@ export default function Dashboard() {
                         {loading ? (
                           <div className="flex items-center justify-center py-10">
                             <div className="text-center">
-                              <Loader2 className="w-7 h-7 animate-spin text-violet-500 mx-auto mb-2" />
+                              <Loader2 className="w-7 h-7 animate-spin text-black dark:text-white mx-auto mb-2" />
                               <p className="text-xs text-black/30 dark:text-white/30">{L ? "جارٍ تحميل بيانات المشروع…" : "Loading project data…"}</p>
                             </div>
                           </div>
@@ -2891,10 +2891,10 @@ export default function Dashboard() {
                             {/* Stats row */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                               {[
-                                { label: L ? "الطلبات" : "Orders",     value: preview.stats?.totalOrders   ?? 0, icon: Package,  from: "from-blue-500",   to: "to-blue-600",   light: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
-                                { label: L ? "المشاريع" : "Projects",  value: preview.stats?.activeProjects ?? 0, icon: Layers,   from: "from-violet-500", to: "to-violet-600", light: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400" },
-                                { label: L ? "الفواتير" : "Invoices",  value: preview.stats?.totalInvoices  ?? 0, icon: FileText, from: "from-amber-500",  to: "to-amber-600",  light: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
-                                { label: L ? "الإيرادات" : "Revenue",  value: `${(preview.stats?.totalRevenue ?? 0).toLocaleString()}`,  icon: TrendingUp, from: "from-green-500",  to: "to-green-600",  light: "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400", unit: "ر.س" },
+                                { label: L ? "الطلبات" : "Orders",     value: preview.stats?.totalOrders   ?? 0, icon: Package,  from: "from-black dark:from-white",   to: "to-black dark:to-white",   light: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+                                { label: L ? "المشاريع" : "Projects",  value: preview.stats?.activeProjects ?? 0, icon: Layers,   from: "from-black dark:from-white", to: "to-black dark:to-white", light: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+                                { label: L ? "الفواتير" : "Invoices",  value: preview.stats?.totalInvoices  ?? 0, icon: FileText, from: "from-black dark:from-white",  to: "to-black dark:to-white",  light: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" },
+                                { label: L ? "الإيرادات" : "Revenue",  value: `${(preview.stats?.totalRevenue ?? 0).toLocaleString()}`,  icon: TrendingUp, from: "from-black dark:from-white",  to: "to-black dark:to-white",  light: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", unit: "ر.س" },
                               ].map(({ label, value, icon: Icon, light, unit }, idx) => (
                                 <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
                                   className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-xl p-3">
@@ -3042,30 +3042,30 @@ export default function Dashboard() {
             if (pendingProofOrders.length === 0) return null;
             return (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="col-span-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl p-4 mb-2" dir={dir}>
+                className="col-span-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 mb-2" dir={dir}>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 bg-black dark:bg-white rounded-lg flex items-center justify-center shrink-0">
                     <Upload className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-amber-800 dark:text-amber-300">{L ? "طلبات تنتظر سند التحويل" : "Orders Awaiting Transfer Proof"}</p>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-500">{L ? "يرجى رفع إيصال التحويل البنكي لإتمام طلبك" : "Please upload your bank transfer receipt"}</p>
+                    <p className="text-sm font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "طلبات تنتظر سند التحويل" : "Orders Awaiting Transfer Proof"}</p>
+                    <p className="text-[10px] text-black dark:text-white dark:text-black dark:text-white">{L ? "يرجى رفع إيصال التحويل البنكي لإتمام طلبك" : "Please upload your bank transfer receipt"}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {pendingProofOrders.map((o: any) => (
-                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-amber-100 dark:border-amber-800/30">
+                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                       <div>
                         <p className="text-xs font-bold text-black dark:text-white">طلب #{String(o.id)?.slice(-6)}</p>
                         <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">{o.totalAmount ? <><span>{Number(o.totalAmount).toLocaleString()}</span> <SARIcon size={8} className="opacity-50" /></> : ''} <span>· تحويل بنكي</span></p>
                       </div>
                       <div className="flex items-center gap-2">
                         {uploadProofMutation.isPending && uploadingProofOrderId === String(o.id)
-                          ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          ? <Loader2 className="w-4 h-4 animate-spin text-black dark:text-white" />
                           : (
                             <button
                               onClick={() => { setUploadingProofOrderId(String(o.id)); proofFileRef.current?.click(); }}
-                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white hover:bg-black dark:bg-white transition-colors"
                               data-testid={`button-upload-proof-${o.id}`}
                             >
                               <Upload className="w-3 h-3" />
@@ -3103,33 +3103,33 @@ export default function Dashboard() {
             if (rejectedOrders.length === 0) return null;
             return (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="col-span-full bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-700/30 rounded-2xl p-4 mb-2" dir={dir}>
+                className="col-span-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4 mb-2" dir={dir}>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 bg-black dark:bg-white rounded-lg flex items-center justify-center shrink-0">
                     <XCircle className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-red-800 dark:text-red-300">{L ? "تم رفض إيصال التحويل" : "Transfer Proof Rejected"}</p>
-                    <p className="text-[10px] text-red-600 dark:text-red-500">{L ? "يرجى رفع إيصال تحويل صحيح" : "Please upload a valid bank transfer receipt"}</p>
+                    <p className="text-sm font-black text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "تم رفض إيصال التحويل" : "Transfer Proof Rejected"}</p>
+                    <p className="text-[10px] text-black dark:text-white dark:text-black dark:text-white">{L ? "يرجى رفع إيصال تحويل صحيح" : "Please upload a valid bank transfer receipt"}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {rejectedOrders.map((o: any) => (
-                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-red-100 dark:border-red-800/30">
+                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                       <div>
                         <p className="text-xs font-bold text-black dark:text-white">طلب #{String(o.id)?.slice(-6)}</p>
                         {o.paymentRejectionReason && (
-                          <p className="text-[10px] text-red-500 mt-0.5">{o.paymentRejectionReason}</p>
+                          <p className="text-[10px] text-black dark:text-white mt-0.5">{o.paymentRejectionReason}</p>
                         )}
                         <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">{o.totalAmount ? <><span>{Number(o.totalAmount).toLocaleString()}</span> <SARIcon size={8} className="opacity-50" /></> : ''}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {uploadProofMutation.isPending && uploadingProofOrderId === String(o.id)
-                          ? <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                          ? <Loader2 className="w-4 h-4 animate-spin text-black dark:text-white" />
                           : (
                             <button
                               onClick={() => { setUploadingProofOrderId(String(o.id)); proofFileRef.current?.click(); }}
-                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-black dark:bg-white text-white hover:bg-black dark:bg-white transition-colors"
                               data-testid={`button-reupload-proof-${o.id}`}
                             >
                               <Upload className="w-3 h-3" />
@@ -3162,17 +3162,17 @@ export default function Dashboard() {
                   const PHASE_KEYS = ["new", "under_study", "in_progress", "testing", "delivery"];
                   const PHASE_COLORS = [
                     "bg-slate-200 dark:bg-slate-700",
-                    "bg-blue-200 dark:bg-blue-900",
-                    "bg-violet-200 dark:bg-violet-900",
-                    "bg-amber-200 dark:bg-amber-900",
-                    "bg-green-200 dark:bg-green-900",
+                    "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+                    "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+                    "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
+                    "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",
                   ];
                   const PHASE_ACTIVE = [
                     "bg-slate-500",
-                    "bg-blue-500",
-                    "bg-violet-500",
-                    "bg-amber-500",
-                    "bg-green-500",
+                    "bg-black dark:bg-white",
+                    "bg-black dark:bg-white",
+                    "bg-black dark:bg-white",
+                    "bg-black dark:bg-white",
                   ];
                   return (
                     <div className="space-y-4 min-w-[400px]">
@@ -3270,13 +3270,13 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               {order.paymentStatus === "rejected" && order.paymentMethod === "bank_transfer" && (
-                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30 flex items-center gap-1">
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white flex items-center gap-1">
                                   <XCircle className="w-2.5 h-2.5" />
                                   {L ? "رُفع الإيصال" : "Proof Rejected"}
                                 </span>
                               )}
                               {order.paymentStatus === "approved" && order.paymentMethod === "bank_transfer" && (
-                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-green-100 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30">
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white">
                                   {L ? "تحويل مقبول" : "Transfer OK"}
                                 </span>
                               )}
@@ -3337,7 +3337,7 @@ export default function Dashboard() {
                       )}
                       {['pending', 'in_review'].includes(req.status) && (
                         <div className="mt-2 flex justify-end">
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-500 hover:text-red-600 hover:bg-red-50 px-2 gap-1" onClick={() => cancelModMutation.mutate(String(req.id))} disabled={cancelModMutation.isPending} data-testid={`button-cancel-mod-${req.id}`}>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-black dark:text-white hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] px-2 gap-1" onClick={() => cancelModMutation.mutate(String(req.id))} disabled={cancelModMutation.isPending} data-testid={`button-cancel-mod-${req.id}`}>
                             <XCircle className="w-3 h-3" /> {L ? "إلغاء الطلب" : "Cancel Request"}
                           </Button>
                         </div>
@@ -3387,12 +3387,12 @@ export default function Dashboard() {
               <motion.div key={plan.id || plan.slug} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 + i * 0.05 }}>
                 <div className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : "border-black/[0.06] dark:border-white/[0.08]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
                   {plan.isPopular && <div className="bg-black px-4 py-1.5 flex items-center gap-2"><Check className="w-3 h-3 text-white" /><span className="text-white text-[10px] font-bold">{L ? "الأكثر طلباً" : "Most Popular"}</span></div>}
-                  {plan.offerLabel && !plan.isPopular && <div className="bg-emerald-500 px-4 py-1.5 flex items-center gap-2"><Package className="w-3 h-3 text-white" /><span className="text-white text-[10px] font-bold">{plan.offerLabel}</span></div>}
+                  {plan.offerLabel && !plan.isPopular && <div className="bg-black dark:bg-white px-4 py-1.5 flex items-center gap-2"><Package className="w-3 h-3 text-white" /><span className="text-white text-[10px] font-bold">{plan.offerLabel}</span></div>}
                   <div className="p-5">
                     <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.name || plan.nameAr)}</h3>
                     <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2 mb-3">{L ? plan.descriptionAr : (plan.description || plan.descriptionAr)}</p>
                     <div className="mb-4">
-                      {plan.originalPrice && (<div className="flex items-center gap-2 mb-1"><span className="text-xs text-black/25 dark:text-white/25 line-through flex items-center gap-0.5">{plan.originalPrice.toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>{discount > 0 && <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>}</div>)}
+                      {plan.originalPrice && (<div className="flex items-center gap-2 mb-1"><span className="text-xs text-black/25 dark:text-white/25 line-through flex items-center gap-0.5">{plan.originalPrice.toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>{discount > 0 && <span className="text-[9px] font-bold bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white px-1.5 py-0.5 rounded-full">-{discount}%</span>}</div>)}
                       <div className="flex items-baseline gap-1"><span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span><span className="text-xs text-black/35 dark:text-white/35 flex items-center gap-0.5"><SARIcon size={10} className="opacity-50" /> {billingLabel}</span></div>
                     </div>
                     <div className="space-y-1.5 mb-4">
@@ -3447,35 +3447,35 @@ export default function Dashboard() {
                     const pct = Math.max(0, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
                     const isDanger = daysLeft <= 7, isWarning = daysLeft <= 30;
                     return (
-                      <div className={`rounded-2xl p-5 border ${isDanger ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/40" : isWarning ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`} data-testid="subscription-detail-card">
+                      <div className={`rounded-2xl p-5 border ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`} data-testid="subscription-detail-card">
                         <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-red-100 dark:bg-red-900/30" : isWarning ? "bg-amber-100 dark:bg-amber-900/30" : "bg-black"}`}>
-                            <Crown className={`w-5 h-5 ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-white"}`} />
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black"}`}>
+                            <Crown className={`w-5 h-5 ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-white"}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-2">
-                              <p className={`font-black text-base ${isDanger ? "text-red-700 dark:text-red-400" : isWarning ? "text-amber-700 dark:text-amber-400" : "text-black dark:text-white"}`}>
+                              <p className={`font-black text-base ${isDanger ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : isWarning ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white"}`}>
                                 {L ? `اشتراكك في ${(user as any).subscriptionSegmentNameAr || "Qirox"}` : `Your ${(user as any).subscriptionSegmentNameEn || "QIROX"} Subscription`}
                               </p>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>
                                 {L ? "نشط" : "Active"}
                               </span>
-                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${countdownStarted ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400" : "bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"}`}>
+                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${countdownStarted ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white dark:bg-black dark:bg-white dark:border-black dark:border-white dark:text-black/70 dark:text-white/70" : "bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"}`}>
                                 {countdownStarted ? (L ? "⏱️ العد بدأ" : "⏱️ Countdown started") : (L ? "⏳ العد لم يبدأ بعد" : "⏳ Countdown not started")}
                               </span>
                             </div>
                             {/* Progress bar */}
                             <div className="flex items-center gap-3 mb-2">
                               <div className="flex-1 h-2.5 bg-black/[0.06] dark:bg-white/[0.08] rounded-full overflow-hidden">
-                                <motion.div className={`h-full rounded-full ${isDanger ? "bg-red-500" : isWarning ? "bg-amber-500" : "bg-black dark:bg-white"}`}
+                                <motion.div className={`h-full rounded-full ${isDanger ? "bg-black dark:bg-white" : isWarning ? "bg-black dark:bg-white" : "bg-black dark:bg-white"}`}
                                   initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.4, ease: "easeOut" }} />
                               </div>
-                              <span className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{pct}%</span>
+                              <span className={`text-xs font-black ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{pct}%</span>
                             </div>
                             {/* Days */}
                             <div className="flex items-center gap-4 flex-wrap">
                               <div className="text-center">
-                                <p className={`text-3xl font-black leading-none ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{daysLeft}</p>
+                                <p className={`text-3xl font-black leading-none ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{daysLeft}</p>
                                 <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">{L ? "يوم متبقي" : "days left"}</p>
                               </div>
                               <div className="text-center">
@@ -3501,7 +3501,7 @@ export default function Dashboard() {
                             <Button
                               size="sm"
                               onClick={() => setUpgradeDialogOpen(true)}
-                              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl gap-2"
+                              className="w-full bg-gradient-to-r from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white font-bold rounded-xl gap-2"
                               data-testid="button-upgrade-plan"
                             >
                               <TrendingUp className="w-4 h-4" />
@@ -3516,7 +3516,7 @@ export default function Dashboard() {
                   {/* "Continue your journey" — explore other sectors */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-4 h-4 text-violet-500" />
+                      <Sparkles className="w-4 h-4 text-black dark:text-white" />
                       <p className="font-bold text-sm text-black dark:text-white">{L ? "أكمل مسيرتك مع Qirox" : "Continue your journey with Qirox"}</p>
                     </div>
                     <p className="text-xs text-black/40 dark:text-white/40 mb-4">{L ? "اكتشف باقي القطاعات وابدأ مشروعاً جديداً في مجال آخر" : "Discover other sectors and start a new project in a different field"}</p>
@@ -3630,16 +3630,16 @@ export default function Dashboard() {
           {/* Creative gradient header */}
           <div className="relative bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0e7490] px-6 pt-6 pb-8 overflow-hidden">
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-[-30px] right-[-30px] w-32 h-32 rounded-full bg-cyan-400 blur-2xl" />
-              <div className="absolute bottom-[-20px] left-[-20px] w-24 h-24 rounded-full bg-blue-500 blur-2xl" />
+              <div className="absolute top-[-30px] right-[-30px] w-32 h-32 rounded-full bg-black/[0.08] dark:bg-white/[0.1] blur-2xl" />
+              <div className="absolute bottom-[-20px] left-[-20px] w-24 h-24 rounded-full bg-black dark:bg-white blur-2xl" />
             </div>
             <div className="relative flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center">
-                    <Wrench className="w-4 h-4 text-cyan-300" />
+                  <div className="w-8 h-8 rounded-xl bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 flex items-center justify-center">
+                    <Wrench className="w-4 h-4 text-black/70 dark:text-white/70" />
                   </div>
-                  <span className="text-[10px] font-bold text-cyan-400 tracking-widest uppercase">{L ? "طلب جديد" : "New Request"}</span>
+                  <span className="text-[10px] font-bold text-black/70 dark:text-white/70 tracking-widest uppercase">{L ? "طلب جديد" : "New Request"}</span>
                 </div>
                 <h2 className="text-lg font-black text-white leading-tight">{L ? "طلب تعديل" : "Modification Request"}</h2>
                 <p className="text-xs text-white/50 mt-0.5">{L ? "أخبرنا بالتعديل المطلوب وسنتواصل معك" : "Tell us what needs to be changed"}</p>
@@ -3647,57 +3647,57 @@ export default function Dashboard() {
               {/* Circular quota badge in header */}
               {modQuota?.hasOrders && bestQuota && !isLifetimePlan && !bestQuota.hasUnlimitedAddon && (
                 <div className="shrink-0 flex flex-col items-center">
-                  <div className={`relative w-14 h-14 rounded-full border-[3px] flex items-center justify-center ${quotaExceeded ? "border-red-400/60 bg-red-500/10" : "border-cyan-400/50 bg-cyan-400/10"}`}>
+                  <div className={`relative w-14 h-14 rounded-full border-[3px] flex items-center justify-center ${quotaExceeded ? "border-black/15 dark:border-white/15 bg-black dark:bg-white" : "border-black/15 dark:border-white/15 bg-black/[0.08] dark:bg-white/[0.1]"}`}>
                     <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
                       <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="3"
-                        className={quotaExceeded ? "text-red-500/20" : "text-cyan-400/20"} />
+                        className={quotaExceeded ? "text-black dark:text-white" : "text-black/70 dark:text-white/70"} />
                       <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="3"
                         strokeLinecap="round"
-                        className={quotaExceeded ? "text-red-400" : "text-cyan-400"}
+                        className={quotaExceeded ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}
                         strokeDasharray={`${2 * Math.PI * 24}`}
                         strokeDashoffset={`${2 * Math.PI * 24 * (1 - (bestQuota.remainingThisPeriod / bestQuota.modificationsPerPeriod))}`}
                         style={{ transition: "stroke-dashoffset 0.6s ease" }} />
                     </svg>
-                    <span className={`text-base font-black ${quotaExceeded ? "text-red-300" : "text-cyan-300"}`}>{bestQuota.remainingThisPeriod}</span>
+                    <span className={`text-base font-black ${quotaExceeded ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`}>{bestQuota.remainingThisPeriod}</span>
                   </div>
                   <span className="text-[9px] text-white/40 mt-1 font-medium">{L ? "متبقي" : "left"}</span>
                 </div>
               )}
               {isLifetimePlan && (
-                <div className="shrink-0 w-14 h-14 rounded-full bg-violet-400/10 border-[3px] border-violet-400/50 flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-violet-300" />
+                <div className="shrink-0 w-14 h-14 rounded-full bg-black/[0.08] dark:bg-white/[0.1] border-[3px] border-black/15 dark:border-white/15 flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-black/70 dark:text-white/70" />
                 </div>
               )}
               {bestQuota?.hasUnlimitedAddon && (
-                <div className="shrink-0 w-14 h-14 rounded-full bg-emerald-400/10 border-[3px] border-emerald-400/50 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-emerald-300" />
+                <div className="shrink-0 w-14 h-14 rounded-full bg-black/[0.08] dark:bg-white/[0.1] border-[3px] border-black/15 dark:border-white/15 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-black/70 dark:text-white/70" />
                 </div>
               )}
             </div>
 
             {/* Status strip inside header */}
             {modQuota && !modQuota.hasOrders && (
-              <div className="relative mt-4 rounded-xl bg-red-500/20 border border-red-400/30 px-3 py-2 flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-red-300 shrink-0" />
-                <p className="text-[11px] font-bold text-red-200">{L ? "لا يوجد لديك طلب نشط لإرسال طلبات التعديل" : "You need an active order to submit modification requests"}</p>
+              <div className="relative mt-4 rounded-xl bg-black dark:bg-white border border-black/15 dark:border-white/15 px-3 py-2 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />
+                <p className="text-[11px] font-bold text-black/60 dark:text-white/60">{L ? "لا يوجد لديك طلب نشط لإرسال طلبات التعديل" : "You need an active order to submit modification requests"}</p>
               </div>
             )}
             {modQuota?.hasOrders && bestQuota?.hasUnlimitedAddon && (
-              <div className="relative mt-4 rounded-xl bg-emerald-500/20 border border-emerald-400/30 px-3 py-2 flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                <p className="text-[11px] font-bold text-emerald-200">{L ? `تعديلات غير محدودة — الإضافة نشطة حتى ${new Date(bestQuota.periodEnd || "").toLocaleDateString("ar-SA")}` : `Unlimited modifications active until ${new Date(bestQuota.periodEnd || "").toLocaleDateString("en-US")}`}</p>
+              <div className="relative mt-4 rounded-xl bg-black dark:bg-white border border-black/15 dark:border-white/15 px-3 py-2 flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />
+                <p className="text-[11px] font-bold text-black/60 dark:text-white/60">{L ? `تعديلات غير محدودة — الإضافة نشطة حتى ${new Date(bestQuota.periodEnd || "").toLocaleDateString("ar-SA")}` : `Unlimited modifications active until ${new Date(bestQuota.periodEnd || "").toLocaleDateString("en-US")}`}</p>
               </div>
             )}
             {isLifetimePlan && (
-              <div className="relative mt-4 rounded-xl bg-violet-500/20 border border-violet-400/30 px-3 py-2 flex items-center gap-2">
-                <Crown className="w-3.5 h-3.5 text-violet-300 shrink-0" />
-                <p className="text-[11px] font-bold text-violet-200">{L ? "باقة مدى الحياة — التعديل مدفوع حسب النوع المختار" : "Lifetime plan — modifications charged per type"}</p>
+              <div className="relative mt-4 rounded-xl bg-black dark:bg-white border border-black/15 dark:border-white/15 px-3 py-2 flex items-center gap-2">
+                <Crown className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />
+                <p className="text-[11px] font-bold text-black/60 dark:text-white/60">{L ? "باقة مدى الحياة — التعديل مدفوع حسب النوع المختار" : "Lifetime plan — modifications charged per type"}</p>
               </div>
             )}
             {modQuota?.hasOrders && bestQuota && !isLifetimePlan && !bestQuota.hasUnlimitedAddon && quotaExceeded && (
-              <div className="relative mt-4 rounded-xl bg-red-500/20 border border-red-400/30 px-3 py-2 flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-red-300 shrink-0" />
-                <p className="text-[11px] font-bold text-red-200">{L ? "لقد استنفدت حصتك لهذه الفترة" : "You have exhausted your quota for this period"}</p>
+              <div className="relative mt-4 rounded-xl bg-black dark:bg-white border border-black/15 dark:border-white/15 px-3 py-2 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />
+                <p className="text-[11px] font-bold text-black/60 dark:text-white/60">{L ? "لقد استنفدت حصتك لهذه الفترة" : "You have exhausted your quota for this period"}</p>
               </div>
             )}
           </div>
@@ -3752,9 +3752,9 @@ export default function Dashboard() {
               <div className="grid grid-cols-4 gap-2" data-testid="select-mod-priority">
                 {[
                   { value: "low", labelAr: "منخفض", labelEn: "Low", color: "border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-400", active: "bg-gray-100 border-gray-400 text-gray-800 dark:bg-gray-700 dark:border-gray-400 dark:text-white font-bold" },
-                  { value: "medium", labelAr: "متوسط", labelEn: "Med", color: "border-blue-200 text-blue-600 dark:border-blue-700 dark:text-blue-400", active: "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/50 dark:border-blue-400 dark:text-blue-200 font-bold" },
-                  { value: "high", labelAr: "عالي", labelEn: "High", color: "border-amber-200 text-amber-600 dark:border-amber-700 dark:text-amber-400", active: "bg-amber-100 border-amber-500 text-amber-800 dark:bg-amber-900/50 dark:border-amber-400 dark:text-amber-200 font-bold" },
-                  { value: "urgent", labelAr: "عاجل", labelEn: "Urgent", color: "border-red-200 text-red-500 dark:border-red-700 dark:text-red-400", active: "bg-red-100 border-red-500 text-red-800 dark:bg-red-900/50 dark:border-red-400 dark:text-red-200 font-bold" },
+                  { value: "medium", labelAr: "متوسط", labelEn: "Med", color: "border-black/10 dark:border-white/10 text-black dark:text-white dark:border-black dark:border-white dark:text-black/70 dark:text-white/70", active: "bg-black/[0.04] dark:bg-white/[0.06] border-black dark:border-white text-black dark:text-white dark:bg-black dark:bg-white dark:border-black/15 dark:border-white/15 dark:text-black/60 dark:text-white/60 font-bold" },
+                  { value: "high", labelAr: "عالي", labelEn: "High", color: "border-black/10 dark:border-white/10 text-black dark:text-white dark:border-black dark:border-white dark:text-black/70 dark:text-white/70", active: "bg-black/[0.04] dark:bg-white/[0.06] border-black dark:border-white text-black dark:text-white dark:bg-black dark:bg-white dark:border-black/15 dark:border-white/15 dark:text-black/60 dark:text-white/60 font-bold" },
+                  { value: "urgent", labelAr: "عاجل", labelEn: "Urgent", color: "border-black/10 dark:border-white/10 text-black dark:text-white dark:border-black dark:border-white dark:text-black/70 dark:text-white/70", active: "bg-black/[0.04] dark:bg-white/[0.06] border-black dark:border-white text-black dark:text-white dark:bg-black dark:bg-white dark:border-black/15 dark:border-white/15 dark:text-black/60 dark:text-white/60 font-bold" },
                 ].map((p) => (
                   <button
                     key={p.value}
@@ -3785,12 +3785,12 @@ export default function Dashboard() {
 
             {/* Unlimited addon upsell */}
             {bestQuota?.canPurchaseAddon && !bestQuota?.hasUnlimitedAddon && !isLifetimePlan && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-gradient-to-l from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-3 flex items-center justify-between gap-3">
+              <div className="rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-gradient-to-l from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white p-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300">{L ? "تعديلات غير محدودة لهذا الشهر" : "Unlimited modifications this month"}</p>
-                  <p className="text-[10px] text-amber-700/60 dark:text-amber-400/60 mt-0.5">{L ? "1,000 ريال — للباقات النصف سنوية والسنوية" : "1,000 SAR — semi-annual & annual plans"}</p>
+                  <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "تعديلات غير محدودة لهذا الشهر" : "Unlimited modifications this month"}</p>
+                  <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5">{L ? "1,000 ريال — للباقات النصف سنوية والسنوية" : "1,000 SAR — semi-annual & annual plans"}</p>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 text-[11px] border-amber-400 text-amber-700 hover:bg-amber-100 shrink-0 gap-1 rounded-lg" onClick={() => setModDialogOpen(false)} data-testid="button-buy-unlimited-addon">
+                <Button size="sm" variant="outline" className="h-7 text-[11px] border-black/15 dark:border-white/15 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] shrink-0 gap-1 rounded-lg" onClick={() => setModDialogOpen(false)} data-testid="button-buy-unlimited-addon">
                   <Sparkles className="w-3 h-3" /> {L ? "اشتراك" : "Subscribe"}
                 </Button>
               </div>
@@ -3941,7 +3941,7 @@ export default function Dashboard() {
                         {clientOrderSpecs.paidAmount && (
                           <div className="bg-white/10 rounded-xl p-3">
                             <p className="text-[9px] text-white/40 mb-1">المدفوع حالياً</p>
-                            <p className="text-xs font-bold text-green-400 flex items-center gap-1">{Number(clientOrderSpecs.paidAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p>
+                            <p className="text-xs font-bold text-black/70 dark:text-white/70 flex items-center gap-1">{Number(clientOrderSpecs.paidAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p>
                           </div>
                         )}
                         {clientOrderSpecs.startDate && (
@@ -3953,7 +3953,7 @@ export default function Dashboard() {
                         {clientOrderSpecs.deadline && (
                           <div className="bg-white/10 rounded-xl p-3">
                             <p className="text-[9px] text-white/40 mb-1">تاريخ التسليم</p>
-                            <p className="text-xs font-bold text-amber-400">{new Date(clientOrderSpecs.deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <p className="text-xs font-bold text-black/70 dark:text-white/70">{new Date(clientOrderSpecs.deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                           </div>
                         )}
                       </div>
@@ -3976,8 +3976,8 @@ export default function Dashboard() {
                         ].filter(Boolean).map((tech: string, i: number) => (
                           <span key={i} className="text-[10px] bg-black text-white px-2.5 py-1 rounded-full font-medium">{tech}</span>
                         ))}
-                        {clientOrderSpecs.sslEnabled && <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-medium">SSL ✓</span>}
-                        {clientOrderSpecs.cdnEnabled && <span className="text-[10px] bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full font-medium">CDN ✓</span>}
+                        {clientOrderSpecs.sslEnabled && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-2.5 py-1 rounded-full font-medium">SSL ✓</span>}
+                        {clientOrderSpecs.cdnEnabled && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-2.5 py-1 rounded-full font-medium">CDN ✓</span>}
                       </div>
                     </div>
                   )}
@@ -4077,17 +4077,17 @@ export default function Dashboard() {
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
-              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center">
+                <Zap className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               {L ? "تم إنشاء الاجتماع السريع" : "Quick Meeting Created"}
             </DialogTitle>
           </DialogHeader>
           {instantMeetResult && (
             <div className="space-y-4 pt-2">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-2xl p-4">
-                <p className="text-green-700 dark:text-green-300 text-sm font-semibold">{instantMeetResult.title}</p>
-                <p className="text-green-600/70 dark:text-green-400/60 text-xs mt-1">{L ? "الاجتماع مباشر الآن" : "Meeting is live now"} · {instantMeetResult.durationMinutes} {L ? "دقيقة" : "min"}</p>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-4">
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-sm font-semibold">{instantMeetResult.title}</p>
+                <p className="text-black dark:text-white dark:text-black/70 dark:text-white/70 text-xs mt-1">{L ? "الاجتماع مباشر الآن" : "Meeting is live now"} · {instantMeetResult.durationMinutes} {L ? "دقيقة" : "min"}</p>
               </div>
 
               <div>
@@ -4099,7 +4099,7 @@ export default function Dashboard() {
                     className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                     data-testid="button-copy-dashboard-instant-code"
                   >
-                    {instantCopied === "code" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                    {instantCopied === "code" ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
                   </button>
                 </div>
               </div>
@@ -4115,7 +4115,7 @@ export default function Dashboard() {
                     className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
                     data-testid="button-copy-dashboard-instant-link"
                   >
-                    {instantCopied === "link" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                    {instantCopied === "link" ? <Check className="w-4 h-4 text-black dark:text-white" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
                   </button>
                 </div>
               </div>
@@ -4123,7 +4123,7 @@ export default function Dashboard() {
               <div className="flex gap-3 pt-1">
                 <Button
                   onClick={() => { setLocation(instantMeetResult.meetingLink); setInstantMeetResult(null); }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-bold gap-2"
                   data-testid="button-enter-dashboard-instant-meeting"
                 >
                   <Video className="w-4 h-4" />
@@ -4148,7 +4148,7 @@ export default function Dashboard() {
         <DialogContent className="max-w-lg rounded-2xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-3 font-black">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center">
                 <TrendingUp className="w-4.5 h-4.5 text-white" />
               </div>
               {L ? "ترقية الباقة" : "Upgrade Plan"}
@@ -4157,7 +4157,7 @@ export default function Dashboard() {
 
           {isLoadingUpgradeOptions ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
             </div>
           ) : upgradeOptions?.error || !upgradeOptions ? (
             <div className="py-8 text-center text-black/40 dark:text-white/40 text-sm">
@@ -4165,8 +4165,8 @@ export default function Dashboard() {
             </div>
           ) : !upgradeOptions.canUpgrade ? (
             <div className="py-8 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+              <div className="w-16 h-16 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-8 h-8 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
               </div>
               <p className="font-black text-black dark:text-white">{L ? "أنت على أعلى باقة!" : "You're on the highest plan!"}</p>
               <p className="text-xs text-black/40 dark:text-white/40 mt-1">{L ? "اشتراكك السنوي يوفر لك أفضل قيمة" : "Your annual plan gives you the best value"}</p>
@@ -4177,10 +4177,10 @@ export default function Dashboard() {
               <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06]">
                 <p className="text-[11px] text-black/40 dark:text-white/40 mb-1">{L ? "باقتك الحالية" : "Current Plan"}</p>
                 <div className="flex items-center gap-3">
-                  <Crown className="w-4 h-4 text-amber-500" />
+                  <Crown className="w-4 h-4 text-black dark:text-white" />
                   <div>
                     <p className="text-sm font-black text-black dark:text-white">{upgradeOptions.currentPlan.segmentNameAr} — {upgradeOptions.currentPlan.periodLabel}</p>
-                    <p className="text-xs text-black/40 dark:text-white/40">{upgradeOptions.currentPlan.remainingDays} {L ? "يوم متبقٍ" : "days remaining"} · {L ? "رصيدك المحتسب:" : "Your credit:"} <span className="font-bold text-violet-600">{upgradeOptions.currentPlan.proratedCredit.toLocaleString()} {L ? "ر.س" : "SAR"}</span></p>
+                    <p className="text-xs text-black/40 dark:text-white/40">{upgradeOptions.currentPlan.remainingDays} {L ? "يوم متبقٍ" : "days remaining"} · {L ? "رصيدك المحتسب:" : "Your credit:"} <span className="font-bold text-black dark:text-white">{upgradeOptions.currentPlan.proratedCredit.toLocaleString()} {L ? "ر.س" : "SAR"}</span></p>
                   </div>
                 </div>
               </div>
@@ -4192,21 +4192,21 @@ export default function Dashboard() {
                   <button
                     key={opt.targetPeriod}
                     onClick={() => setSelectedUpgradePeriod(opt.targetPeriod)}
-                    className={`w-full text-right rounded-xl border p-4 transition-all ${selectedUpgradePeriod === opt.targetPeriod ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 bg-white dark:bg-gray-900"}`}
+                    className={`w-full text-right rounded-xl border p-4 transition-all ${selectedUpgradePeriod === opt.targetPeriod ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 bg-white dark:bg-gray-900"}`}
                     data-testid={`button-select-upgrade-${opt.targetPeriod}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedUpgradePeriod === opt.targetPeriod ? "border-violet-500" : "border-black/20 dark:border-white/20"}`}>
-                          {selectedUpgradePeriod === opt.targetPeriod && <div className="w-2 h-2 rounded-full bg-violet-500" />}
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedUpgradePeriod === opt.targetPeriod ? "border-black dark:border-white" : "border-black/20 dark:border-white/20"}`}>
+                          {selectedUpgradePeriod === opt.targetPeriod && <div className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
                         </div>
                         <div>
-                          <p className={`text-sm font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-violet-700 dark:text-violet-300" : "text-black dark:text-white"}`}>{opt.label}</p>
+                          <p className={`text-sm font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white"}`}>{opt.label}</p>
                           <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "السعر الكامل:" : "Full price:"} {opt.fullPrice.toLocaleString()} {L ? "ر.س" : "SAR"} · {L ? "خصم رصيدك:" : "Credit deducted:"} {opt.proratedCredit.toLocaleString()} {L ? "ر.س" : "SAR"}</p>
                         </div>
                       </div>
                       <div className="text-left">
-                        <p className={`text-xl font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-violet-700 dark:text-violet-300" : "text-black dark:text-white"}`}>{opt.amountToPay.toLocaleString()}</p>
+                        <p className={`text-xl font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white"}`}>{opt.amountToPay.toLocaleString()}</p>
                         <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "ر.س فقط" : "SAR only"}</p>
                       </div>
                     </div>
@@ -4226,11 +4226,11 @@ export default function Dashboard() {
                       <button
                         key={m.key}
                         onClick={() => setUpgradePayMethod(m.key)}
-                        className={`p-3 rounded-xl border text-center transition-all ${upgradePayMethod === m.key ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
+                        className={`p-3 rounded-xl border text-center transition-all ${upgradePayMethod === m.key ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
                         data-testid={`button-pay-method-upgrade-${m.key}`}
                       >
                         <span className="text-lg block mb-0.5">{m.icon}</span>
-                        <span className={`text-[11px] font-bold ${upgradePayMethod === m.key ? "text-violet-700 dark:text-violet-300" : "text-black/60 dark:text-white/60"}`}>{m.label}</span>
+                        <span className={`text-[11px] font-bold ${upgradePayMethod === m.key ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black/60 dark:text-white/60"}`}>{m.label}</span>
                       </button>
                     ))}
                   </div>
@@ -4266,7 +4266,7 @@ export default function Dashboard() {
                   <Button
                     onClick={handleSubmitUpgrade}
                     disabled={upgradeRequestMutation.isPending || (upgradePayMethod === "bank_transfer" && !upgradeProofUrl.trim())}
-                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl gap-2"
+                    className="w-full bg-gradient-to-r from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white font-bold rounded-xl gap-2"
                     data-testid="button-submit-upgrade"
                   >
                     {upgradeRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
@@ -4284,7 +4284,7 @@ export default function Dashboard() {
         <SheetContent side="left" className="w-full sm:max-w-xl p-0" dir={dir}>
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
             <SheetTitle className="text-right font-black text-lg flex items-center gap-2">
-              <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+              <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center">
                 <Server className="w-4 h-4 text-white" />
               </div>
               {linkedProjectPreview?.key?.projectName || (L ? "تفاصيل المشروع" : "Project Details")}
@@ -4306,10 +4306,10 @@ export default function Dashboard() {
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: L ? "إجمالي الطلبات" : "Total Orders", value: linkedProjectPreview.stats?.totalOrders ?? 0, icon: Package, color: "text-blue-600 bg-blue-50 dark:bg-blue-950/30" },
-                      { label: L ? "مشاريع نشطة" : "Active Projects", value: linkedProjectPreview.stats?.activeProjects ?? 0, icon: Activity, color: "text-violet-600 bg-violet-50 dark:bg-violet-950/30" },
-                      { label: L ? "إجمالي الفواتير" : "Total Invoices", value: linkedProjectPreview.stats?.totalInvoices ?? 0, icon: FileText, color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30" },
-                      { label: L ? "الإيرادات المحصّلة" : "Revenue Collected", value: (linkedProjectPreview.stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-green-600 bg-green-50 dark:bg-green-950/30" },
+                      { label: L ? "إجمالي الطلبات" : "Total Orders", value: linkedProjectPreview.stats?.totalOrders ?? 0, icon: Package, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                      { label: L ? "مشاريع نشطة" : "Active Projects", value: linkedProjectPreview.stats?.activeProjects ?? 0, icon: Activity, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                      { label: L ? "إجمالي الفواتير" : "Total Invoices", value: linkedProjectPreview.stats?.totalInvoices ?? 0, icon: FileText, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
+                      { label: L ? "الإيرادات المحصّلة" : "Revenue Collected", value: (linkedProjectPreview.stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" },
                     ].map(({ label, value, icon: Icon, color, unit }: any) => (
                       <div key={label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-2xl p-4">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2.5 ${color}`}>
@@ -4375,7 +4375,7 @@ export default function Dashboard() {
                                   <p className="text-[10px] text-black/40 dark:text-white/40">{st.label}</p>
                                 </div>
                                 {project.deliveredAt && (
-                                  <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 px-2 py-0.5 rounded-full font-bold border border-green-200 dark:border-green-800">
+                                  <span className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-bold border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                                     {L ? "مسلَّم" : "Delivered"}
                                   </span>
                                 )}
@@ -4410,8 +4410,8 @@ export default function Dashboard() {
                         {linkedProjectPreview.recentInvoices.map((inv: any) => (
                           <div key={inv.id} data-testid={`linked-invoice-${inv.id}`}
                             className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-xl px-4 py-3 flex items-center gap-3">
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border ${inv.status === 'paid' ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800'}`}>
-                              <CreditCard className={`w-3.5 h-3.5 ${inv.status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`} />
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border ${inv.status === 'paid' ? 'bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white' : 'bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white'}`}>
+                              <CreditCard className={`w-3.5 h-3.5 ${inv.status === 'paid' ? 'text-black dark:text-white dark:text-black/70 dark:text-white/70' : 'text-black dark:text-white dark:text-black/70 dark:text-white/70'}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-black dark:text-white truncate">
@@ -4443,7 +4443,7 @@ export default function Dashboard() {
                           stats: "📊 الإحصائيات", wallet: "💳 المحفظة", customers: "👥 العملاء",
                         };
                         return (
-                          <span key={s} className="text-xs bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 px-3 py-1 rounded-full font-medium">
+                          <span key={s} className="text-xs bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-3 py-1 rounded-full font-medium">
                             {scopeLabels[s] || s}
                           </span>
                         );

@@ -24,21 +24,21 @@ import {
 import type { SectorTemplate, PricingPlan, FeatureDetail, TemplateFile } from "@shared/schema";
 
 const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; bg: string }> = {
-  restaurant:    { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
-  food:          { labelAr: "مطاعم وكافيهات",  icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
-  store:         { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
-  ecommerce:     { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
-  commerce:      { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
-  education:     { labelAr: "تعليم وأكاديميات", icon: GraduationCap,   color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
-  fitness:       { labelAr: "لياقة وجيم",       icon: Dumbbell,        color: "text-green-600",  bg: "bg-green-50 border-green-200" },
-  health:        { labelAr: "صحة ولياقة",       icon: Dumbbell,        color: "text-green-600",  bg: "bg-green-50 border-green-200" },
-  healthcare:    { labelAr: "صحة وعيادات",      icon: Heart,           color: "text-rose-600",   bg: "bg-rose-50 border-rose-200" },
-  tech:          { labelAr: "تقنية وبرمجة",     icon: Globe,           color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
-  beauty:        { labelAr: "تجميل وصالونات",  icon: Sparkles,        color: "text-pink-600",   bg: "bg-pink-50 border-pink-200" },
+  restaurant:    { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  food:          { labelAr: "مطاعم وكافيهات",  icon: UtensilsCrossed, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  store:         { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  ecommerce:     { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  commerce:      { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  education:     { labelAr: "تعليم وأكاديميات", icon: GraduationCap,   color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  fitness:       { labelAr: "لياقة وجيم",       icon: Dumbbell,        color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  health:        { labelAr: "صحة ولياقة",       icon: Dumbbell,        color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  healthcare:    { labelAr: "صحة وعيادات",      icon: Heart,           color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  tech:          { labelAr: "تقنية وبرمجة",     icon: Globe,           color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  beauty:        { labelAr: "تجميل وصالونات",  icon: Sparkles,        color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
   corporate:     { labelAr: "شركات ومؤسسات",    icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
   institutional: { labelAr: "مؤسسات وجمعيات",   icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
-  personal:      { labelAr: "خدمات شخصية",      icon: User,            color: "text-purple-600", bg: "bg-purple-50 border-purple-200" },
-  realestate:    { labelAr: "عقارات",           icon: Home,            color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
+  personal:      { labelAr: "خدمات شخصية",      icon: User,            color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  realestate:    { labelAr: "عقارات",           icon: Home,            color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
 };
 
 const IconMap: Record<string, any> = {
@@ -175,8 +175,8 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       </div>
 
       {/* Usage Guide Section */}
-      <div className="border border-black/[0.08] dark:border-white/[0.08] rounded-xl p-4 space-y-3 bg-violet-50/40 dark:bg-violet-900/10">
-        <p className="text-xs font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5"><BookOpenCheck className="w-3.5 h-3.5" /> شرح وطريقة الاستخدام</p>
+      <div className="border border-black/[0.08] dark:border-white/[0.08] rounded-xl p-4 space-y-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white">
+        <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1.5"><BookOpenCheck className="w-3.5 h-3.5" /> شرح وطريقة الاستخدام</p>
         <div>
           <label className="text-xs font-medium text-black/50 block mb-1 flex items-center gap-1.5"><Video className="w-3 h-3" /> رابط فيديو الشرح (YouTube)</label>
           <Input value={formData.howToUseVideoUrl} onChange={e => setFormData(f => ({...f, howToUseVideoUrl: e.target.value}))} placeholder="https://youtube.com/watch?v=..." dir="ltr" data-testid="input-how-to-use-video" />
@@ -198,8 +198,8 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
               <div key={i} className="flex items-center gap-2" data-testid={`template-file-${i}`}>
                 <Input value={tf.nameAr} onChange={e => updateTemplateFile(i, "nameAr", e.target.value)} placeholder="اسم الملف (مثل: دليل الاستخدام)" className="h-8 text-xs flex-1" />
                 <Input value={tf.url} onChange={e => updateTemplateFile(i, "url", e.target.value)} placeholder="https://..." dir="ltr" className="h-8 text-xs flex-1" />
-                <button type="button" onClick={() => removeTemplateFile(i)} className="w-7 h-7 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center shrink-0">
-                  <X className="w-3 h-3 text-red-600" />
+                <button type="button" onClick={() => removeTemplateFile(i)} className="w-7 h-7 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-lg flex items-center justify-center shrink-0">
+                  <X className="w-3 h-3 text-black dark:text-white" />
                 </button>
               </div>
             ))}
@@ -221,8 +221,8 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {featuresDetails.map((fd, i) => (
             <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06] relative" data-testid={`feature-detail-${i}`}>
-              <button type="button" onClick={() => removeFeatureDetail(i)} className="absolute top-2 left-2 w-5 h-5 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center">
-                <X className="w-3 h-3 text-red-600" />
+              <button type="button" onClick={() => removeFeatureDetail(i)} className="absolute top-2 left-2 w-5 h-5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center">
+                <X className="w-3 h-3 text-black dark:text-white" />
               </button>
               <div className="grid grid-cols-3 gap-2 mb-2">
                 <Input value={fd.icon} onChange={e => updateFeatureDetail(i, "icon", e.target.value)} placeholder="✨" className="h-8 text-center text-lg" title="Emoji أو رمز" />
@@ -406,7 +406,7 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
           </div>
         </div>
         {formData.monthlyPrice && formData.annualPrice && (
-          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+          <p className="text-[11px] text-black dark:text-white flex items-center gap-1">
             <Check className="w-3 h-3" />
             السنوي يوفّر {Math.round(((Number(formData.monthlyPrice)*12 - Number(formData.annualPrice)) / (Number(formData.monthlyPrice)*12)) * 100)}% مقارنةً بالشهري
           </p>
@@ -558,8 +558,8 @@ export default function AdminTemplates() {
               .sort((a: any, b: any) => (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[a.tier ?? ""] ?? 9) - (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[b.tier ?? ""] ?? 9)) ?? [];
 
             const TIER_PILL: Record<string, string> = {
-              lite:     "bg-teal-50 text-teal-700 border-teal-200",
-              pro:      "bg-violet-50 text-violet-700 border-violet-200",
+              lite:     "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+              pro:      "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
               infinite: "bg-black text-white border-black",
               custom:   "bg-gray-100 text-gray-700 border-gray-300",
             };
@@ -627,7 +627,7 @@ export default function AdminTemplates() {
                             </Badge>
                           )}
                           {savePct > 0 && (
-                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] font-black">
+                            <Badge className="bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 text-[10px] font-black">
                               وفّر {savePct}%
                             </Badge>
                           )}
@@ -682,7 +682,7 @@ export default function AdminTemplates() {
                           <Button variant="outline" size="sm" className="flex-1 text-xs h-8 dark:border-white/[0.08] dark:text-white/70" onClick={() => openEditPlan(plan)} data-testid={`button-edit-plan-${plan.slug}`}>
                             <Pencil className="w-3 h-3 ml-1" /> تعديل
                           </Button>
-                          <Button variant="outline" size="sm" className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:border-white/[0.08]" onClick={() => deletePlanMutation.mutate(plan.id)} disabled={deletePlanMutation.isPending} data-testid={`button-delete-plan-${plan.slug}`}>
+                          <Button variant="outline" size="sm" className="h-8 w-8 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white dark:border-white/[0.08]" onClick={() => deletePlanMutation.mutate(plan.id)} disabled={deletePlanMutation.isPending} data-testid={`button-delete-plan-${plan.slug}`}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -726,14 +726,14 @@ export default function AdminTemplates() {
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <h3 className="font-semibold text-black dark:text-white text-sm truncate">{template.nameAr}</h3>
                           <Badge variant="secondary" className="text-[10px]">{template.category}</Badge>
-                          <Badge className={`text-[10px] ${template.status === "active" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : template.status === "coming_soon" ? "bg-yellow-100 text-yellow-700" : "bg-black/[0.05] text-black/40"}`}>
+                          <Badge className={`text-[10px] ${template.status === "active" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : template.status === "coming_soon" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.05] text-black/40"}`}>
                             {template.status === "active" ? "نشط" : template.status === "coming_soon" ? "قريباً" : "مؤرشف"}
                           </Badge>
                         </div>
                         <div className="text-xs text-black/30 dark:text-white/30 flex items-center gap-2">
                           <span>{template.priceMin?.toLocaleString()} - {template.priceMax?.toLocaleString()} {template.currency} · {template.estimatedDuration}</span>
                           {template.demoUrl && (
-                            <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:text-blue-700 font-medium" data-testid={`link-demo-${template.slug}`}>
+                            <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-black dark:text-white hover:text-black dark:text-white font-medium" data-testid={`link-demo-${template.slug}`}>
                               <ExternalLink className="w-3 h-3" /> ديمو
                             </a>
                           )}
@@ -743,7 +743,7 @@ export default function AdminTemplates() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingTemplate(template); setTemplateDialog(true); }} data-testid={`button-edit-${template.slug}`}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => deleteMutation.mutate(template.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-${template.slug}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-black dark:text-white hover:text-black dark:text-white" onClick={() => deleteMutation.mutate(template.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-${template.slug}`}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

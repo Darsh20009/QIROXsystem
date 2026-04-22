@@ -56,13 +56,13 @@ function getRoleGradient(role?: string) {
   const map: Record<string, string> = {
     admin:         "from-gray-800 to-black",
     manager:       "from-slate-700 to-slate-900",
-    developer:     "from-violet-500 to-indigo-600",
-    designer:      "from-pink-500 to-rose-600",
-    client:        "from-blue-500 to-cyan-600",
-    support:       "from-emerald-500 to-green-600",
-    sales:         "from-orange-500 to-amber-600",
-    sales_manager: "from-red-500 to-orange-600",
-    accountant:    "from-teal-500 to-cyan-600",
+    developer:     "from-black dark:from-white to-black dark:to-white",
+    designer:      "from-black dark:from-white to-black dark:to-white",
+    client:        "from-black dark:from-white to-black dark:to-white",
+    support:       "from-black dark:from-white to-black dark:to-white",
+    sales:         "from-black dark:from-white to-black dark:to-white",
+    sales_manager: "from-black dark:from-white to-black dark:to-white",
+    accountant:    "from-black dark:from-white to-black dark:to-white",
   };
   return map[role || ""] || "from-gray-500 to-gray-700";
 }
@@ -86,7 +86,7 @@ function Avatar({ name, role, online, size = "md", profilePhotoUrl, avatarConfig
         size={avatarSize as any}
       />
       {online !== undefined && (
-        <div className={`absolute bottom-0 left-0 ${dotSz} rounded-full border-white dark:border-gray-900 ${online ? "bg-emerald-400" : "bg-gray-300 dark:bg-gray-600"}`} />
+        <div className={`absolute bottom-0 left-0 ${dotSz} rounded-full border-white dark:border-gray-900 ${online ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-gray-300 dark:bg-gray-600"}`} />
       )}
     </div>
   );
@@ -165,7 +165,7 @@ function ReadReceipt({ read }: { read: boolean }) {
   if (read) {
     return (
       <span title="Seen" className="flex items-center">
-        <CheckCheck className="w-3.5 h-3.5 text-sky-300" />
+        <CheckCheck className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
       </span>
     );
   }
@@ -196,7 +196,7 @@ function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boole
 
       <div className={`max-w-[72%] sm:max-w-[60%] rounded-2xl overflow-hidden shadow-sm ${
         isMe
-          ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-tr-sm"
+          ? "bg-gradient-to-br from-black dark:from-white to-black dark:to-white text-white rounded-tr-sm"
           : "bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] text-gray-900 dark:text-gray-100 rounded-tl-sm"
       }`}>
         {/* Image */}
@@ -215,8 +215,8 @@ function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boole
         {hasAttachment && attachType === "file" && (
           <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer"
             className={`flex items-center gap-2.5 px-3.5 py-3 hover:opacity-80 transition-opacity ${isMe ? "text-white" : "text-gray-800 dark:text-gray-200"}`}>
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-violet-100 dark:bg-violet-900/30"}`}>
-              <FileText className={`w-4 h-4 ${isMe ? "text-white" : "text-violet-600 dark:text-violet-400"}`} />
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"}`}>
+              <FileText className={`w-4 h-4 ${isMe ? "text-white" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold truncate max-w-[160px]">{msg.attachmentName || (true ? "ملف" : "File")}</p>
@@ -244,7 +244,7 @@ function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boole
       {hovered && onDelete && (
         <button
           onClick={() => onDelete(msgId)}
-          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-600 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
           title="Delete"
           data-testid={`button-delete-message-${msgId}`}
         >
@@ -648,21 +648,21 @@ export default function Inbox() {
                 {isTypingRemote ? (L ? "يكتب..." : "typing...") : isVoiceRemote ? (L ? "يسجل صوتاً..." : "recording...") : onlineUsers.has(activeContact.id) ? (L ? "متصل الآن" : "Online") : roleLabel(activeContact.role, L)}
               </p>
             </div>
-            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
           </>
         ) : (
           <>
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center relative shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center relative shadow-sm">
               <MessageSquare className="w-4 h-4 text-white" />
               {totalUnread > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                   {totalUnread > 9 ? "9+" : totalUnread}
                 </span>
               )}
             </div>
             <h1 className="font-black text-gray-900 dark:text-white text-sm flex-1">{L ? "صندوق الرسائل" : "Inbox"}</h1>
-            <div className={`flex items-center gap-1 text-[10px] ${connected ? "text-emerald-500" : "text-red-400"}`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+            <div className={`flex items-center gap-1 text-[10px] ${connected ? "text-black dark:text-white" : "text-black/70 dark:text-white/70"}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
               {connected ? (L ? "متصل" : "Online") : "..."}
             </div>
           </>
@@ -682,16 +682,16 @@ export default function Inbox() {
           {/* Desktop Header */}
           <div className="hidden md:flex items-center justify-between px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm relative">
+              <div className="w-8 h-8 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center shadow-sm relative">
                 <MessageSquare className="w-4 h-4 text-white" />
                 {totalUnread > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{totalUnread > 9 ? "9+" : totalUnread}</span>
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center">{totalUnread > 9 ? "9+" : totalUnread}</span>
                 )}
               </div>
               <div>
                 <h1 className="font-black text-sm text-gray-900 dark:text-white">{L ? "الرسائل" : "Messages"}</h1>
                 <div className="flex items-center gap-1">
-                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
                   <p className="text-[10px] text-gray-400">{connected ? (L ? "متصل" : "Connected") : (L ? "جاري الاتصال..." : "Connecting...")}</p>
                 </div>
               </div>
@@ -706,7 +706,7 @@ export default function Inbox() {
                 placeholder={L ? "بحث في المحادثات..." : "Search conversations..."}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-8 text-xs pr-8 bg-gray-50 dark:bg-gray-800 border-transparent focus:border-violet-300 dark:focus:border-violet-700"
+                className="h-8 text-xs pr-8 bg-gray-50 dark:bg-gray-800 border-transparent focus:border-black/15 dark:border-white/15 dark:focus:border-black dark:border-white"
                 data-testid="input-search-contacts"
               />
             </div>
@@ -738,7 +738,7 @@ export default function Inbox() {
                     const u = clients.find((c: any) => c.id === e.target.value);
                     if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: "client" }); setNewClientId(""); }
                   }}
-                  className="w-full h-8 text-xs border border-violet-200 dark:border-violet-800 rounded-lg px-2 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+                  className="w-full h-8 text-xs border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-lg px-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
                   data-testid="select-new-client-contact"
                 >
                   <option value="">{L ? "+ رسالة لعميل" : "+ Message a client"}</option>
@@ -775,7 +775,7 @@ export default function Inbox() {
                       onClick={() => openChat(c)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-all duration-150 ${
                         isActive
-                          ? "bg-violet-50 dark:bg-violet-900/20 border-r-2 border-violet-500"
+                          ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-r-2 border-black dark:border-white"
                           : "hover:bg-gray-50 dark:hover:bg-gray-800/60 border-r-2 border-transparent"
                       }`}
                       data-testid={`contact-${c.id}`}
@@ -783,13 +783,13 @@ export default function Inbox() {
                       <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" profilePhotoUrl={c.profilePhotoUrl} avatarConfig={c.avatarConfig} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
-                          <p className={`text-xs font-bold truncate ${isActive ? "text-violet-700 dark:text-violet-300" : "text-gray-800 dark:text-gray-100"}`}>{c.fullName}</p>
+                          <p className={`text-xs font-bold truncate ${isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-gray-800 dark:text-gray-100"}`}>{c.fullName}</p>
                           <span className="text-[9px] text-gray-400 flex-shrink-0 mr-1">{timeAgo(c.lastAt, L)}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{c.lastMsg}</p>
                           {c.unread > 0 && (
-                            <span className="w-4 h-4 bg-violet-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center flex-shrink-0 mr-1">
+                            <span className="w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center flex-shrink-0 mr-1">
                               {c.unread > 9 ? "9+" : c.unread}
                             </span>
                           )}
@@ -813,8 +813,8 @@ export default function Inbox() {
             /* Empty state */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center px-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-sm">
-                  <MessageSquare className="w-9 h-9 text-violet-400 dark:text-violet-500" />
+                <div className="w-20 h-20 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+                  <MessageSquare className="w-9 h-9 text-black/70 dark:text-white/70 dark:text-black dark:text-white" />
                 </div>
                 <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{L ? "اختر محادثة للبدء" : "Select a conversation"}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-600 mt-1.5">{L ? "ستظهر رسائلك هنا" : "Your messages will appear here"}</p>
@@ -829,24 +829,24 @@ export default function Inbox() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
                     {activeContact.role === "client" && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">{L ? "عميل" : "Client"}</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "عميل" : "Client"}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 h-4">
                     {isVoiceRemote ? (
-                      <span className="text-[10px] text-purple-500 animate-pulse flex items-center gap-1">
+                      <span className="text-[10px] text-black dark:text-white animate-pulse flex items-center gap-1">
                         <Mic className="w-2.5 h-2.5" /> {L ? "يسجل صوتاً..." : "recording..."}
                       </span>
                     ) : isTypingRemote ? (
-                      <span className="text-[10px] text-violet-500 font-medium flex items-center gap-1">
+                      <span className="text-[10px] text-black dark:text-white font-medium flex items-center gap-1">
                         <span className="flex gap-0.5">
-                          {[0, 150, 300].map(d => <span key={d} className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
+                          {[0, 150, 300].map(d => <span key={d} className="w-1 h-1 bg-black/[0.08] dark:bg-white/[0.1] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
                         </span>
                         {L ? "يكتب..." : "typing..."}
                       </span>
                     ) : (
                       <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(activeContact.id) ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(activeContact.id) ? "bg-black dark:bg-white" : "bg-gray-300 dark:bg-gray-600"}`} />
                         {onlineUsers.has(activeContact.id) ? (L ? "متصل الآن" : "Online") : roleLabel(activeContact.role, L)}
                       </p>
                     )}
@@ -856,7 +856,7 @@ export default function Inbox() {
                   {activeContact.role === "client" && me?.role !== "client" && (
                     <button
                       onClick={() => setShowClientContext(v => !v)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 px-2 py-1 rounded-lg transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white px-2 py-1 rounded-lg transition-colors"
                       data-testid="button-toggle-client-context"
                     >
                       <Activity className="w-3.5 h-3.5" />
@@ -864,33 +864,33 @@ export default function Inbox() {
                       {showClientContext ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                   )}
-                  <div className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} title={connected ? (L ? "متصل" : "Connected") : (L ? "غير متصل" : "Disconnected")} />
+                  <div className={`w-2 h-2 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} title={connected ? (L ? "متصل" : "Connected") : (L ? "غير متصل" : "Disconnected")} />
                 </div>
               </div>
 
               {/* ── Client Context Panel (employees chatting with clients) ── */}
               {showClientContext && activeContact?.role === "client" && me?.role !== "client" && clientContext && (
-                <div className="hidden md:block bg-violet-50 dark:bg-violet-900/10 border-b border-violet-100 dark:border-violet-800/30 px-5 py-3">
+                <div className="hidden md:block bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-b border-black/10 dark:border-white/10 dark:border-black dark:border-white px-5 py-3">
                   <div className="grid grid-cols-3 gap-4">
                     {/* Client Info */}
                     <div>
-                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5">{L ? "بيانات العميل" : "Client Data"}</p>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5">{L ? "بيانات العميل" : "Client Data"}</p>
                       <div className="space-y-0.5">
                         {clientContext.client?.email && (
                           <div className="flex items-center gap-1.5">
-                            <Mail className="w-3 h-3 text-violet-400" />
+                            <Mail className="w-3 h-3 text-black/70 dark:text-white/70" />
                             <span className="text-[10px] text-gray-600 dark:text-gray-300 truncate">{clientContext.client.email}</span>
                           </div>
                         )}
                         {clientContext.client?.country && (
                           <div className="flex items-center gap-1.5">
-                            <Globe className="w-3 h-3 text-violet-400" />
+                            <Globe className="w-3 h-3 text-black/70 dark:text-white/70" />
                             <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.country}</span>
                           </div>
                         )}
                         {clientContext.client?.phone && (
                           <div className="flex items-center gap-1.5">
-                            <Phone className="w-3 h-3 text-violet-400" />
+                            <Phone className="w-3 h-3 text-black/70 dark:text-white/70" />
                             <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.phone}</span>
                           </div>
                         )}
@@ -898,13 +898,13 @@ export default function Inbox() {
                     </div>
                     {/* Orders */}
                     <div>
-                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Package className="w-3 h-3" /> {L ? "الطلبات" : "Orders"} ({clientContext.orders?.length || 0})</p>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Package className="w-3 h-3" /> {L ? "الطلبات" : "Orders"} ({clientContext.orders?.length || 0})</p>
                       <div className="space-y-0.5">
                         {(clientContext.orders || []).slice(0, 2).map((o: any) => (
-                          <div key={o._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-violet-100 dark:border-violet-800/30">
+                          <div key={o._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                             <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{o.businessName || o.serviceType}</p>
                             <div className="flex items-center gap-1 mt-0.5">
-                              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-green-100 text-green-700" : o.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{o.status}</span>
+                              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : o.status === 'pending' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-100 text-gray-500"}`}>{o.status}</span>
                               {o.totalAmount && <span className="text-[8px] text-gray-400">{o.totalAmount.toLocaleString()} ر.س</span>}
                             </div>
                           </div>
@@ -914,10 +914,10 @@ export default function Inbox() {
                     </div>
                     {/* Projects */}
                     <div>
-                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Activity className="w-3 h-3" /> {L ? "المشاريع" : "Projects"} ({clientContext.projects?.length || 0})</p>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Activity className="w-3 h-3" /> {L ? "المشاريع" : "Projects"} ({clientContext.projects?.length || 0})</p>
                       <div className="space-y-0.5">
                         {(clientContext.projects || []).slice(0, 2).map((p: any) => (
-                          <div key={p._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-violet-100 dark:border-violet-800/30">
+                          <div key={p._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                             <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{p.title || (L ? "مشروع" : "Project")}</p>
                             <p className="text-[8px] text-gray-400">{p.phase || "—"} • {p.progress || 0}%</p>
                           </div>
@@ -973,17 +973,17 @@ export default function Inbox() {
               <div className="bg-white dark:bg-gray-900 border-t border-black/[0.06] dark:border-white/[0.06] p-3 flex-shrink-0 safe-bottom">
                 {/* Recording Bar */}
                 {isRecording && (
-                  <div className="flex items-center gap-3 mb-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-xl px-3 py-2.5">
-                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 flex-1">
+                  <div className="flex items-center gap-3 mb-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-3 py-2.5">
+                    <div className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full animate-pulse" />
+                    <span className="text-xs font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-1">
                       {L ? "تسجيل..." : "Recording..."} {recordingTime}s
                     </span>
-                    <button onClick={cancelRecording} className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" data-testid="button-cancel-recording">
+                    <button onClick={cancelRecording} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors" data-testid="button-cancel-recording">
                       <X className="w-4 h-4" />
                     </button>
                     <button
                       onClick={stopRecording}
-                      className="bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors font-semibold flex items-center gap-1"
+                      className="bg-black dark:bg-white text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black dark:bg-white transition-colors font-semibold flex items-center gap-1"
                       data-testid="button-stop-recording"
                     >
                       <Send className="w-3 h-3" /> {L ? "إرسال" : "Send"}
@@ -1006,7 +1006,7 @@ export default function Inbox() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingFile || isRecording}
-                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 flex-shrink-0"
+                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0"
                     data-testid="button-attach-file"
                   >
                     {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
@@ -1018,7 +1018,7 @@ export default function Inbox() {
                       type="button"
                       onClick={startRecording}
                       disabled={uploadingFile}
-                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 flex-shrink-0"
+                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0"
                       data-testid="button-start-recording"
                     >
                       <Mic className="w-4 h-4" />
@@ -1033,7 +1033,7 @@ export default function Inbox() {
                         value={messageText}
                         onChange={e => handleInputChange(e.target.value)}
                         placeholder={L ? "اكتب رسالتك..." : "Write a message..."}
-                        className="h-10 text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-violet-400 dark:focus:border-violet-600 rounded-xl pr-3 pl-3"
+                        className="h-10 text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-black/15 dark:border-white/15 dark:focus:border-black dark:border-white rounded-xl pr-3 pl-3"
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                         data-testid="input-message"
                       />
@@ -1045,7 +1045,7 @@ export default function Inbox() {
                     <Button
                       type="submit"
                       size="icon"
-                      className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 shadow-sm flex-shrink-0 disabled:opacity-70"
+                      className="w-10 h-10 bg-gradient-to-br from-black dark:from-white to-black dark:to-white text-white rounded-xl hover:from-black dark:from-white hover:to-black dark:to-white shadow-sm flex-shrink-0 disabled:opacity-70"
                       disabled={!messageText.trim() || sendMutation.isPending}
                       data-testid="button-send-message"
                     >

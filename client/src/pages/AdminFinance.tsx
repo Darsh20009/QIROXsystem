@@ -113,7 +113,7 @@ export default function AdminFinance() {
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-black/60">{L ? "إجمالي الأرباح" : "Total Revenue"}</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-black dark:text-white" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-revenue">{totalRevenue.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
@@ -124,7 +124,7 @@ export default function AdminFinance() {
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-black/60">{L ? "مستحق هذا الشهر" : "This Month's Revenue"}</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
+            <Users className="h-4 w-4 text-black dark:text-white" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-month-revenue">{(summary?.monthRevenue || 0).toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
@@ -132,25 +132,25 @@ export default function AdminFinance() {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-100 shadow-none rounded-2xl bg-amber-50/50">
+        <Card className="border-black/10 dark:border-white/10 shadow-none rounded-2xl bg-black/[0.04] dark:bg-white/[0.06]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-amber-700">{L ? "أموال معلقة" : "Pending Amount"}</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-black dark:text-white">{L ? "أموال معلقة" : "Pending Amount"}</CardTitle>
+            <Clock className="h-4 w-4 text-black dark:text-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-amber-800 flex items-center gap-1" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-amber-600/70 mt-1">{L ? "فواتير غير مدفوعة بعد" : "Unpaid invoices"}</p>
+            <div className="text-2xl font-black text-black dark:text-white flex items-center gap-1" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
+            <p className="text-xs text-black dark:text-white mt-1">{L ? "فواتير غير مدفوعة بعد" : "Unpaid invoices"}</p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-100 shadow-none rounded-2xl bg-red-50/40">
+        <Card className="border-black/10 dark:border-white/10 shadow-none rounded-2xl bg-black/[0.04] dark:bg-white/[0.06]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">{L ? "ملغاة / مرفوضة" : "Cancelled / Rejected"}</CardTitle>
-            <Ban className="h-4 w-4 text-red-400" />
+            <CardTitle className="text-sm font-medium text-black dark:text-white">{L ? "ملغاة / مرفوضة" : "Cancelled / Rejected"}</CardTitle>
+            <Ban className="h-4 w-4 text-black/70 dark:text-white/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-red-700 flex items-center gap-1" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-red-400/70 mt-1">{L ? "لا تُحتسب في الأرباح" : "Not counted in revenue"}</p>
+            <div className="text-2xl font-black text-black dark:text-white flex items-center gap-1" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
+            <p className="text-xs text-black/70 dark:text-white/70 mt-1">{L ? "لا تُحتسب في الأرباح" : "Not counted in revenue"}</p>
           </CardContent>
         </Card>
       </div>
@@ -227,7 +227,7 @@ export default function AdminFinance() {
             </Button>
 
             {emailResult && (
-              <div className={`flex items-center gap-2 text-xs font-medium ${emailResult.ok ? 'text-green-600' : 'text-red-500'}`}>
+              <div className={`flex items-center gap-2 text-xs font-medium ${emailResult.ok ? 'text-black dark:text-white' : 'text-black dark:text-white'}`}>
                 {emailResult.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                 {emailResult.msg}
               </div>

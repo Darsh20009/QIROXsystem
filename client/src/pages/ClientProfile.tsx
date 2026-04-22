@@ -175,7 +175,7 @@ export default function ClientProfile() {
 
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-[50vh]">
-      <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+      <Loader2 className="w-8 h-8 animate-spin text-black dark:text-white" />
     </div>
   );
 
@@ -183,7 +183,7 @@ export default function ClientProfile() {
     <div className="max-w-2xl mx-auto px-4 pb-16 space-y-5" dir={dir}>
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-indigo-600/10 to-pink-500/10 dark:from-violet-900/30 dark:via-indigo-900/20 dark:to-pink-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black dark:from-white via-black dark:via-white to-black dark:to-white dark:from-black dark:from-white dark:via-black dark:via-white dark:to-black dark:to-white" />
         </div>
         <Card className="border border-white/30 dark:border-white/5 bg-white/70 dark:bg-black/40 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden">
           <CardContent className="p-6 relative">
@@ -225,7 +225,7 @@ export default function ClientProfile() {
                     data-testid="input-jobtitle"
                   />
                 ) : profile?.jobTitle ? (
-                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70">
                     <Building2 className="w-3 h-3" />{profile.jobTitle}
                   </span>
                 ) : null}
@@ -238,7 +238,7 @@ export default function ClientProfile() {
                       size="sm"
                       onClick={() => saveMutation.mutate()}
                       disabled={saveMutation.isPending}
-                      className="gap-1 bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-none"
+                      className="gap-1 bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white border-none"
                       data-testid="btn-save-profile"
                     >
                       {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -281,7 +281,7 @@ export default function ClientProfile() {
                     key={b.label}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-400/20 to-yellow-300/20 border border-amber-400/30 text-amber-700 dark:text-amber-300"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] to-black/[0.08] dark:to-white/[0.1] border border-black/15 dark:border-white/15 text-black dark:text-white dark:text-black/70 dark:text-white/70"
                   >
                     {b.icon} {b.label}
                   </motion.span>
@@ -299,9 +299,9 @@ export default function ClientProfile() {
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: <ShoppingBag className="w-5 h-5" />, label: "الطلبات", value: stats.totalOrders, color: "from-blue-500 to-indigo-600" },
-          { icon: <FolderOpen className="w-5 h-5" />, label: "نشطة", value: stats.activeProjects, color: "from-emerald-500 to-teal-600" },
-          { icon: <CheckCircle2 className="w-5 h-5" />, label: "مكتملة", value: stats.completedProjects, color: "from-violet-500 to-purple-700" },
+          { icon: <ShoppingBag className="w-5 h-5" />, label: "الطلبات", value: stats.totalOrders, color: "from-black dark:from-white to-black dark:to-white" },
+          { icon: <FolderOpen className="w-5 h-5" />, label: "نشطة", value: stats.activeProjects, color: "from-black dark:from-white to-black dark:to-white" },
+          { icon: <CheckCircle2 className="w-5 h-5" />, label: "مكتملة", value: stats.completedProjects, color: "from-black dark:from-white to-black dark:to-white" },
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card className="border border-black/5 dark:border-white/5 bg-white/60 dark:bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden">
@@ -320,7 +320,7 @@ export default function ClientProfile() {
       <Card className="border border-black/5 dark:border-white/5 bg-white/60 dark:bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Camera className="w-4 h-4 text-violet-500" />
+            <Camera className="w-4 h-4 text-black dark:text-white" />
             <h3 className="font-bold text-sm text-gray-900 dark:text-white">صورة الملف الشخصي</h3>
           </div>
 
@@ -332,7 +332,7 @@ export default function ClientProfile() {
                 data-testid={`tab-profile-${tab}`}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all ${
                   profileTab === tab
-                    ? "bg-white dark:bg-white/10 text-violet-600 dark:text-violet-400 shadow-sm"
+                    ? "bg-white dark:bg-white/10 text-black dark:text-white dark:text-black/70 dark:text-white/70 shadow-sm"
                     : "text-black/50 dark:text-white/40 hover:text-black/70 dark:hover:text-white/60"
                 }`}
               >
@@ -348,10 +348,10 @@ export default function ClientProfile() {
                 <div className="flex flex-col items-center gap-3">
                   {currentPhoto ? (
                     <div className="relative">
-                      <img src={currentPhoto} alt="profile" className="w-24 h-24 rounded-full object-cover ring-4 ring-violet-400/40 shadow-lg" />
+                      <img src={currentPhoto} alt="profile" className="w-24 h-24 rounded-full object-cover ring-4 ring-black/15 dark:ring-white/15 shadow-lg" />
                       <button
                         onClick={removePhoto}
-                        className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition"
+                        className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-black dark:bg-white text-white flex items-center justify-center shadow-lg hover:bg-black dark:bg-white transition"
                         data-testid="btn-remove-photo"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export default function ClientProfile() {
                   <Button
                     onClick={() => fileRef.current?.click()}
                     disabled={savingPhoto}
-                    className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-none"
+                    className="gap-2 bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white border-none"
                     data-testid="btn-upload-photo"
                   >
                     {savingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -393,7 +393,7 @@ export default function ClientProfile() {
           <Card className="border border-black/5 dark:border-white/5 bg-white/60 dark:bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-2 mb-1">
-                <User className="w-4 h-4 text-violet-500" />
+                <User className="w-4 h-4 text-black dark:text-white" />
                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">{L ? "معلومات الاتصال" : "Contact Info"}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -413,18 +413,18 @@ export default function ClientProfile() {
 
               <div className="border-t border-black/5 dark:border-white/5 pt-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Link2 className="w-4 h-4 text-violet-500" />
+                  <Link2 className="w-4 h-4 text-black dark:text-white" />
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{L ? "روابط التواصل الاجتماعي" : "Social Media Links"}</h4>
                 </div>
                 <div className="space-y-2">
                   {[
-                    { key: "instagram", placeholder: "@username", icon: <Instagram className="w-4 h-4 text-pink-500" />, label: "Instagram" },
-                    { key: "twitter", placeholder: "@username", icon: <Twitter className="w-4 h-4 text-sky-400" />, label: "X (Twitter)" },
-                    { key: "snapchat", placeholder: "@username", icon: <SiSnapchat className="w-4 h-4 text-yellow-400" />, label: "Snapchat" },
+                    { key: "instagram", placeholder: "@username", icon: <Instagram className="w-4 h-4 text-black dark:text-white" />, label: "Instagram" },
+                    { key: "twitter", placeholder: "@username", icon: <Twitter className="w-4 h-4 text-black/70 dark:text-white/70" />, label: "X (Twitter)" },
+                    { key: "snapchat", placeholder: "@username", icon: <SiSnapchat className="w-4 h-4 text-black/70 dark:text-white/70" />, label: "Snapchat" },
                     { key: "tiktok", placeholder: "@username", icon: <SiTiktok className="w-4 h-4 text-gray-900 dark:text-white" />, label: "TikTok" },
-                    { key: "youtube", placeholder: "@channel", icon: <Youtube className="w-4 h-4 text-red-500" />, label: "YouTube" },
-                    { key: "linkedin", placeholder: "linkedin.com/in/...", icon: <Link2 className="w-4 h-4 text-blue-600" />, label: "LinkedIn" },
-                    { key: "linktree", placeholder: "https://linktr.ee/username", icon: <SiLinktree className="w-4 h-4 text-green-500" />, label: "Linktree" },
+                    { key: "youtube", placeholder: "@channel", icon: <Youtube className="w-4 h-4 text-black dark:text-white" />, label: "YouTube" },
+                    { key: "linkedin", placeholder: "linkedin.com/in/...", icon: <Link2 className="w-4 h-4 text-black dark:text-white" />, label: "LinkedIn" },
+                    { key: "linktree", placeholder: "https://linktr.ee/username", icon: <SiLinktree className="w-4 h-4 text-black dark:text-white" />, label: "Linktree" },
                   ].map(s => (
                     <div key={s.key} className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center flex-shrink-0">{s.icon}</div>
@@ -448,27 +448,27 @@ export default function ClientProfile() {
         <Card className="border border-black/5 dark:border-white/5 bg-white/60 dark:bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Globe className="w-4 h-4 text-violet-500" />
+              <Globe className="w-4 h-4 text-black dark:text-white" />
               <h3 className="font-bold text-sm text-gray-900 dark:text-white">{L ? "التواصل الاجتماعي" : "Social Media"}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {profile?.instagram && (
                 <a href={`https://instagram.com/${profile.instagram.replace("@","")}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 text-pink-600 dark:text-pink-400 hover:scale-105 transition-transform"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-black dark:from-white to-black dark:to-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:scale-105 transition-transform"
                   data-testid="link-instagram">
                   <Instagram className="w-3.5 h-3.5" /> {profile.instagram}
                 </a>
               )}
               {profile?.twitter && (
                 <a href={`https://x.com/${profile.twitter.replace("@","")}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 hover:scale-105 transition-transform"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black dark:bg-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:scale-105 transition-transform"
                   data-testid="link-twitter">
                   <Twitter className="w-3.5 h-3.5" /> {profile.twitter}
                 </a>
               )}
               {profile?.snapchat && (
                 <a href={`https://snapchat.com/add/${profile.snapchat.replace("@","")}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-400/10 border border-yellow-400/20 text-yellow-600 dark:text-yellow-400 hover:scale-105 transition-transform"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:scale-105 transition-transform"
                   data-testid="link-snapchat">
                   <SiSnapchat className="w-3.5 h-3.5" /> {profile.snapchat}
                 </a>
@@ -482,14 +482,14 @@ export default function ClientProfile() {
               )}
               {profile?.youtube && (
                 <a href={`https://youtube.com/@${profile.youtube.replace("@","")}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:scale-105 transition-transform"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black dark:bg-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:scale-105 transition-transform"
                   data-testid="link-youtube">
                   <Youtube className="w-3.5 h-3.5" /> {profile.youtube}
                 </a>
               )}
               {profile?.linktree && (
                 <a href={profile.linktree} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 hover:scale-105 transition-transform"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black dark:bg-white border border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:scale-105 transition-transform"
                   data-testid="link-linktree">
                   <SiLinktree className="w-3.5 h-3.5" /> Linktree
                 </a>
@@ -503,19 +503,19 @@ export default function ClientProfile() {
               <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5 space-y-1.5">
                 {profile.phone && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Phone className="w-3.5 h-3.5 text-violet-400" />
+                    <Phone className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                     {profile.phone}
                   </div>
                 )}
                 {profile.country && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Globe className="w-3.5 h-3.5 text-violet-400" />
+                    <Globe className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                     {profile.country}
                   </div>
                 )}
                 {profile.businessType && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Building2 className="w-3.5 h-3.5 text-violet-400" />
+                    <Building2 className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                     {profile.businessType}
                   </div>
                 )}
@@ -528,12 +528,12 @@ export default function ClientProfile() {
       <Card className="border border-black/5 dark:border-white/5 bg-white/60 dark:bg-black/30 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Star className="w-4 h-4 text-amber-500" />
+            <Star className="w-4 h-4 text-black dark:text-white" />
             <h3 className="font-bold text-sm text-gray-900 dark:text-white">شاراتي</h3>
           </div>
           {earnedBadges.length === 0 ? (
             <div className="text-center py-6">
-              <Sparkles className="w-8 h-8 text-amber-300/50 mx-auto mb-2" />
+              <Sparkles className="w-8 h-8 text-black/70 dark:text-white/70 mx-auto mb-2" />
               <p className="text-xs text-black/30 dark:text-white/30">أكمل أول طلب للحصول على شارتك!</p>
             </div>
           ) : (
@@ -548,14 +548,14 @@ export default function ClientProfile() {
                     transition={{ delay: i * 0.06 }}
                     className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all ${
                       earned
-                        ? "bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-amber-200/50 dark:border-amber-700/30"
+                        ? "bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"
                         : "bg-black/3 dark:bg-white/3 border-black/5 dark:border-white/5 grayscale"
                     }`}
                     data-testid={`badge-${i}`}
                   >
                     <span className="text-2xl">{b.icon}</span>
                     <span className="text-xs font-medium text-center text-gray-700 dark:text-gray-300 leading-tight">{b.label}</span>
-                    {earned && <span className="text-[10px] text-amber-500">مكتسبة ✓</span>}
+                    {earned && <span className="text-[10px] text-black dark:text-white">مكتسبة ✓</span>}
                   </motion.div>
                 );
               })}

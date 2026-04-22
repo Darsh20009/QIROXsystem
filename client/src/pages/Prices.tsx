@@ -32,22 +32,22 @@ const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelA
 ];
 
 const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string; bg: string }> = {
-  restaurant:    { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-400", bg: "bg-orange-500/10" },
-  ecommerce:     { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-400",   bg: "bg-blue-500/10" },
-  store:         { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "text-blue-400",   bg: "bg-blue-500/10" },
-  education:     { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "text-violet-400", bg: "bg-violet-500/10" },
+  restaurant:    { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
+  ecommerce:     { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  store:         { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  education:     { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
   corporate:     { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
   other:         { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
-  realestate:    { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "text-teal-400",   bg: "bg-teal-500/10" },
-  healthcare:    { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "text-rose-400",   bg: "bg-rose-500/10" },
-  health:        { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "text-rose-400",   bg: "bg-rose-500/10" },
-  fitness:       { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "text-green-400",  bg: "bg-green-500/10" },
-  beauty:        { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "text-pink-400",   bg: "bg-pink-500/10" },
-  tech:          { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "text-cyan-400",   bg: "bg-cyan-500/10" },
-  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-400", bg: "bg-orange-500/10" },
-  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-400",   bg: "bg-blue-500/10" },
+  realestate:    { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  healthcare:    { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  health:        { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  fitness:       { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "text-black/70 dark:text-white/70",  bg: "bg-black dark:bg-white" },
+  beauty:        { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  tech:          { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
+  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
+  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
   institutional: { labelAr: "مؤسسات وجمعيات",  labelEn: "Institutions",  icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
-  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "text-purple-400", bg: "bg-purple-500/10" },
+  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
   general:       { labelAr: "عام",              labelEn: "General",       icon: Globe,           color: "text-slate-400",  bg: "bg-slate-500/10" },
 };
 
@@ -103,14 +103,14 @@ const TIER_CONFIG: Record<string, {
     labelAr: "برو", labelEn: "Pro", icon: Star,
     cardBg: "bg-[#1a3a6e]",
     headerGrad: "from-[#1e40af] via-[#1a3a6e] to-[#1e3a8a]",
-    borderColor: "border-blue-500/50",
+    borderColor: "border-black dark:border-white",
     accentColor: "text-white",
     accentGlow: "shadow-[0_0_40px_rgba(59,130,246,0.25)]",
     priceColor: "text-white",
-    featureColor: "text-blue-100/80",
+    featureColor: "text-black/60 dark:text-white/60",
     badgeBg: "bg-white/10",
     badgeText: "text-white",
-    ctaBg: "bg-white hover:bg-blue-50 text-blue-700",
+    ctaBg: "bg-white hover:bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
     ctaText: "",
     patternColor: "opacity-[0.08]",
     taglinePrimary: "النظام الأذكى",
@@ -121,14 +121,14 @@ const TIER_CONFIG: Record<string, {
     labelAr: "إنفينتي", labelEn: "Infinite", icon: InfinityIcon,
     cardBg: "bg-[#09090f]",
     headerGrad: "from-[#0f0f18] via-[#0d0d16] to-[#09090f]",
-    borderColor: "border-amber-500/30",
-    accentColor: "text-amber-300",
+    borderColor: "border-black dark:border-white",
+    accentColor: "text-black/70 dark:text-white/70",
     accentGlow: "shadow-[0_0_50px_rgba(245,158,11,0.15)]",
     priceColor: "text-white",
     featureColor: "text-slate-300/80",
-    badgeBg: "bg-amber-400/10",
-    badgeText: "text-amber-300",
-    ctaBg: "bg-amber-400 hover:bg-amber-500 text-slate-900",
+    badgeBg: "bg-black/[0.08] dark:bg-white/[0.1]",
+    badgeText: "text-black/70 dark:text-white/70",
+    ctaBg: "bg-black/[0.08] dark:bg-white/[0.1] hover:bg-black dark:bg-white text-slate-900",
     ctaText: "",
     patternColor: "opacity-[0.07]",
     taglinePrimary: "بلا حدود",
@@ -200,7 +200,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
     >
       {/* Popular glow line */}
       {isPopular && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-black/[0.08] dark:via-white/[0.1] to-transparent" />
       )}
 
       {/* Decorative background */}
@@ -212,7 +212,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       {isInfinite && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[[15,20],[85,35],[45,60],[70,15],[30,75],[90,65],[10,85],[55,40]].map(([x,y],i) => (
-            <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-amber-400/40"
+            <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1]"
               style={{ left:`${x}%`, top:`${y}%` }} />
           ))}
         </div>
@@ -221,7 +221,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       {/* ─── Header ─── */}
       <div className={`relative px-6 pt-6 pb-5 bg-gradient-to-br ${cfg.headerGrad}`}>
         {/* Tier number badge */}
-        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-gray-300 dark:text-slate-600"}`}>
+        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/20" : "text-gray-300 dark:text-slate-600"}`}>
           {cfg.tierNum}
         </div>
 
@@ -229,7 +229,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
         {isPopular && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.1 + 0.3 }}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full mb-3 shadow-lg shadow-blue-500/30"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white text-[10px] font-black px-3 py-1.5 rounded-full mb-3 shadow-lg shadow-blue-500/30"
           >
             <Crown className="w-3 h-3" /> {lang === "ar" ? "الأكثر طلباً" : "Most Popular"}
           </motion.div>
@@ -238,27 +238,27 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
         {/* Icon + Name */}
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.badgeBg}`}>
-            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-300"}`} />
+            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-gray-500 dark:text-slate-300"}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-black/70 dark:text-white/70" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
             <p className={`font-black text-base leading-tight truncate ${cfg.accentColor}`}>
               {lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}
             </p>
           </div>
-          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-gray-300 dark:border-slate-600"}`}>
+          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-black/15 dark:border-white/15" : isPro ? "border-white/15" : "border-gray-300 dark:border-slate-600"}`}>
             {lang === "ar" ? cfg.labelAr : cfg.labelEn}
           </span>
         </div>
 
         {/* Tagline */}
-        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-500"}`}>
+        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-500"}`}>
           — {lang === "ar" ? cfg.taglinePrimary : cfg.taglineSecondary}
         </p>
       </div>
 
       {/* ─── Price ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-gray-100 bg-gray-50 dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-gray-100 bg-gray-50 dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <AnimatePresence mode="wait">
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
             <div className="flex items-baseline gap-2 flex-wrap">
@@ -285,14 +285,14 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
 
       {/* ─── Features ─── */}
       <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-gray-400 dark:text-slate-500"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/25" : "text-gray-400 dark:text-slate-500"}`}>
           {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
         </p>
         {/* Lifetime unlock banner */}
         {period === "lifetime" && (
-          <div className={`mb-3 flex items-center gap-2 px-3 py-2 rounded-xl ${isInfinite ? "bg-amber-400/10 border border-amber-400/20" : isPro ? "bg-white/10 border border-white/20" : "bg-green-50 border border-green-200 dark:bg-green-500/10 dark:border-green-500/20"}`}>
-            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-green-600 dark:text-green-400"}`} />
-            <span className={`text-[11px] font-black ${isInfinite ? "text-amber-300" : isPro ? "text-white" : "text-green-700 dark:text-green-300"}`}>
+          <div className={`mb-3 flex items-center gap-2 px-3 py-2 rounded-xl ${isInfinite ? "bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15" : isPro ? "bg-white/10 border border-white/20" : "bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white"}`}>
+            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} />
+            <span className={`text-[11px] font-black ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>
               {lang === "ar" ? "كل الميزات مفتوحة — بلا حدود ومدى الحياة" : "All features unlocked — unlimited forever"}
             </span>
           </div>
@@ -302,15 +302,15 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
             const FIcon = featureIcon(f);
             return (
               <div key={i} className="flex items-start gap-2.5">
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
-                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`} />
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-black/[0.08] dark:bg-white/[0.1]" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
+                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-gray-500 dark:text-slate-400"}`} />
                 </div>
                 <span className={`text-xs leading-snug ${cfg.featureColor}`}>{f}</span>
               </div>
             );
           })}
           {period !== "lifetime" && features.length > 6 && (
-            <div className={`text-[10px] font-bold ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
+            <div className={`text-[10px] font-bold ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
               {lang === "ar" ? `+ ${features.length - 6} ميزة أخرى` : `+ ${features.length - 6} more`}
             </div>
           )}
@@ -318,7 +318,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       </div>
 
       {/* ─── CTA ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <Button
           onClick={e => { e.stopPropagation(); if (!isLoading) onSelect(plan, price, period); }}
           disabled={isLoading}
@@ -573,14 +573,14 @@ export default function Prices() {
                 <button key={key} onClick={() => setPeriod(key)} data-testid={`tab-period-${key}`}
                   className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
                     isActive
-                      ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/25"
+                      ? "bg-black dark:bg-white border-black dark:border-white text-white shadow-lg shadow-blue-600/25"
                       : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-600"
                   }`}
                 >
                   <PIcon className="w-3 h-3" />
                   {pLabel}
                   {pBadge && !isActive && (
-                    <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">{pBadge}</span>
+                    <span className="text-[8px] font-black bg-black dark:bg-white text-white px-1.5 py-0.5 rounded-full">{pBadge}</span>
                   )}
                 </button>
               );
@@ -605,8 +605,8 @@ export default function Prices() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <div className="relative w-12 h-12">
-                <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
-                <Loader2 className="w-12 h-12 animate-spin text-blue-500/60" />
+                <div className="absolute inset-0 rounded-full border-2 border-black dark:border-white" />
+                <Loader2 className="w-12 h-12 animate-spin text-black dark:text-white" />
               </div>
               <p className="text-xs text-gray-400 dark:text-slate-600 uppercase tracking-wider">{lang === "ar" ? "جاري تحميل الأنظمة..." : "Loading systems..."}</p>
             </div>
@@ -673,7 +673,7 @@ export default function Prices() {
                       <div key={vi} className="p-3.5 text-center">
                         {typeof val === "boolean"
                           ? val
-                            ? <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 mx-auto" />
+                            ? <Check className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70 mx-auto" />
                             : <X className="w-4 h-4 text-gray-300 dark:text-slate-700 mx-auto" />
                           : <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{val}</span>}
                       </div>
@@ -689,11 +689,11 @@ export default function Prices() {
       {/* ─── DEMO TRIAL ─── */}
       <section className="py-14 bg-white dark:bg-[#050508] border-y border-gray-200 dark:border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="relative rounded-2xl border border-emerald-200 dark:border-emerald-500/20 overflow-hidden bg-emerald-50/50 dark:bg-transparent" data-testid="card-demo-plan">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 dark:from-emerald-950/30 to-transparent pointer-events-none" />
+          <div className="relative rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] dark:bg-transparent" data-testid="card-demo-plan">
+            <div className="absolute inset-0 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] dark:from-black dark:from-white to-transparent pointer-events-none" />
             <div className="relative grid grid-cols-1 md:grid-cols-2">
               <div className="p-8">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20 mb-5 uppercase tracking-widest">
+                <span className="inline-flex items-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-[10px] font-black px-3 py-1.5 rounded-full border border-black/10 dark:border-white/10 dark:border-black dark:border-white mb-5 uppercase tracking-widest">
                   <Rocket className="w-3 h-3" /> {lang === "ar" ? "جرّب قبل أن تشتري" : "Try before you buy"}
                 </span>
                 <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
@@ -705,20 +705,20 @@ export default function Prices() {
                     ? ["7 أيام كاملة","نظام حقيقي","دعم فني","بدون تعهد","تُحسم من الباقة"]
                     : ["7 full days","Real system","Support","No commitment","Deducted from plan"]
                   ).map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/8 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/15">
+                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black/[0.08] dark:bg-white/[0.1] text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                       <Check className="w-3 h-3" />{f}
                     </span>
                   ))}
                 </div>
                 <Link href="/contact">
-                  <Button className="h-11 px-7 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
+                  <Button className="h-11 px-7 rounded-xl font-black bg-black dark:bg-white hover:bg-black/[0.08] dark:bg-white/[0.1] text-white dark:text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
                     {lang === "ar" ? "ابدأ تجربتك المجانية" : "Start Free Trial"} <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </Link>
               </div>
-              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-emerald-200 dark:border-emerald-500/10">
+              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-black/10 dark:border-white/10 dark:border-black dark:border-white">
                 <div className="text-center">
-                  <div className="text-8xl font-black text-emerald-500 dark:text-emerald-400 mb-1 leading-none tabular-nums">30</div>
+                  <div className="text-8xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 leading-none tabular-nums">30</div>
                   <div className="text-gray-500 dark:text-slate-400 font-bold text-sm flex items-center justify-center gap-1">
                     {lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}
                   </div>
@@ -782,7 +782,7 @@ export default function Prices() {
                 <X className="h-4 w-4" />
               </button>
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center flex-shrink-0">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-white font-semibold text-sm">{salesOffer.title}</span>
@@ -790,7 +790,7 @@ export default function Prices() {
               <p className="text-white/60 text-sm leading-relaxed mb-4">{salesOffer.body}</p>
               <Button
                 onClick={() => { setShowSalesOffer(false); setFinderOpen(true); }}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white h-9 text-sm font-semibold"
+                className="w-full bg-gradient-to-r from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white h-9 text-sm font-semibold"
                 data-testid="button-sales-cta"
               >
                 {salesOffer.cta || "ابدأ الآن"}

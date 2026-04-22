@@ -47,9 +47,9 @@ function DeliveryDashboard() {
   });
 
   const statusStyle: Record<string, string> = {
-    pending: "bg-amber-50 border-amber-200 text-amber-700",
-    in_progress: "bg-blue-50 border-blue-200 text-blue-700",
-    completed: "bg-green-50 border-green-200 text-green-700",
+    pending: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white",
+    in_progress: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white",
+    completed: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white",
   };
 
   return (
@@ -74,9 +74,9 @@ function DeliveryDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: L ? "انتظار الاستلام" : "Awaiting Pickup", val: pending.length, color: "text-amber-400" },
-              { label: L ? "جاري التوصيل" : "In Delivery", val: inProgress.length, color: "text-blue-400" },
-              { label: L ? "مُسلّمة اليوم" : "Delivered Today", val: completed.length, color: "text-green-400" },
+              { label: L ? "انتظار الاستلام" : "Awaiting Pickup", val: pending.length, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "جاري التوصيل" : "In Delivery", val: inProgress.length, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "مُسلّمة اليوم" : "Delivered Today", val: completed.length, color: "text-black/70 dark:text-white/70" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -88,8 +88,8 @@ function DeliveryDashboard() {
       </motion.div>
 
       {[
-        { title: L ? "طلبات جديدة — بانتظار الاستلام" : "New Orders — Awaiting Pickup", items: pending, nextStatus: "in_progress", nextLabel: L ? "ابدأ التوصيل" : "Start Delivery", icon: Package, iconColor: "text-amber-500" },
-        { title: L ? "طلبات جاري توصيلها" : "Orders in Transit", items: inProgress, nextStatus: "completed", nextLabel: L ? "تم التسليم ✓" : "Delivered ✓", icon: Truck, iconColor: "text-blue-500" },
+        { title: L ? "طلبات جديدة — بانتظار الاستلام" : "New Orders — Awaiting Pickup", items: pending, nextStatus: "in_progress", nextLabel: L ? "ابدأ التوصيل" : "Start Delivery", icon: Package, iconColor: "text-black dark:text-white" },
+        { title: L ? "طلبات جاري توصيلها" : "Orders in Transit", items: inProgress, nextStatus: "completed", nextLabel: L ? "تم التسليم ✓" : "Delivered ✓", icon: Truck, iconColor: "text-black dark:text-white" },
       ].map(({ title, items, nextStatus, nextLabel, icon: Icon, iconColor }, si) => (
         <motion.div key={si} {...fade(0.1 + si * 0.1)}>
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -119,7 +119,7 @@ function DeliveryDashboard() {
                   </div>
                   <Button
                     size="sm"
-                    className={nextStatus === "completed" ? "bg-green-600 hover:bg-green-700 text-white gap-1.5" : "premium-btn gap-1.5"}
+                    className={nextStatus === "completed" ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-1.5" : "premium-btn gap-1.5"}
                     onClick={() => updateMutation.mutate({ id: order.id?.toString(), status: nextStatus })}
                     disabled={updateMutation.isPending}
                     data-testid={`button-delivery-${order.id}`}
@@ -149,8 +149,8 @@ function DeveloperDashboard() {
   const done = modRequests?.filter(m => m.status === "completed") || [];
 
   const priorityColor: Record<string, string> = {
-    urgent: "bg-red-100 text-red-700", high: "bg-amber-100 text-amber-700",
-    medium: "bg-blue-100 text-blue-700", low: "bg-gray-100 text-gray-600",
+    urgent: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", high: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
+    medium: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", low: "bg-gray-100 text-gray-600",
   };
 
   return (
@@ -169,9 +169,9 @@ function DeveloperDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pending.length, color: "text-amber-400" },
-              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgress.length, color: "text-blue-400" },
-              { label: L ? "مكتملة" : "Completed", val: done.length, color: "text-green-400" },
+              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pending.length, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgress.length, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "مكتملة" : "Completed", val: done.length, color: "text-black/70 dark:text-white/70" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -185,7 +185,7 @@ function DeveloperDashboard() {
       <motion.div {...fade(0.1)}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-blue-500" />
+            <Wrench className="w-4 h-4 text-black dark:text-white" />
             {L ? "طلبات التعديل المطلوبة" : "Required Modification Requests"}
           </h2>
           <Link href="/admin/mod-requests">
@@ -227,7 +227,7 @@ function DeveloperDashboard() {
       <motion.div {...fade(0.2)}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-purple-500" />
+            <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
             {L ? "قائمة مهامي اليومية" : "My Daily Tasks"}
           </h2>
           <Link href="/employee/checklist">
@@ -238,7 +238,7 @@ function DeveloperDashboard() {
         </div>
         <div className="border border-black/[0.06] bg-white rounded-2xl p-4">
           <p className="text-sm text-black/40 text-center">
-            <Link href="/employee/checklist" className="text-blue-600 hover:underline">{L ? "افتح قائمة المهام" : "Open Task List"}</Link> {L ? "لإدارة مهامك اليومية والتقنية" : "to manage your daily and technical tasks"}
+            <Link href="/employee/checklist" className="text-black dark:text-white hover:underline">{L ? "افتح قائمة المهام" : "Open Task List"}</Link> {L ? "لإدارة مهامك اليومية والتقنية" : "to manage your daily and technical tasks"}
           </p>
         </div>
       </motion.div>
@@ -275,12 +275,12 @@ function AccountantDashboard() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-green-400" />{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
-              <p className="text-2xl font-black text-green-400 flex items-center gap-1">{totalRevenue.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
+              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-black/70 dark:text-white/70" />{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              <p className="text-2xl font-black text-black/70 dark:text-white/70 flex items-center gap-1">{totalRevenue.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-red-400" />{L ? "مستحقات غير محصّلة" : "Uncollected Receivables"}</p>
-              <p className="text-2xl font-black text-red-400 flex items-center gap-1">{totalPending.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
+              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-black/70 dark:text-white/70" />{L ? "مستحقات غير محصّلة" : "Uncollected Receivables"}</p>
+              <p className="text-2xl font-black text-black/70 dark:text-white/70 flex items-center gap-1">{totalPending.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
             </div>
           </div>
         </div>
@@ -288,10 +288,10 @@ function AccountantDashboard() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: FileText, label: L ? "فواتير مسددة" : "Paid Invoices", val: paidInvoices, color: "text-green-500", bg: "bg-green-50" },
-          { icon: AlertCircle, label: L ? "فواتير معلّقة" : "Pending Invoices", val: unpaidInvoices, color: "text-red-500", bg: "bg-red-50" },
-          { icon: Receipt, label: L ? "إجمالي الوصولات" : "Total Receipts", val: receipts?.length || 0, color: "text-blue-500", bg: "bg-blue-50" },
-          { icon: Wallet, label: L ? "رصيد الخزينة" : "Treasury Balance", val: (totalRevenue - totalPending).toLocaleString(), sarVal: true, color: "text-purple-500", bg: "bg-purple-50" },
+          { icon: FileText, label: L ? "فواتير مسددة" : "Paid Invoices", val: paidInvoices, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+          { icon: AlertCircle, label: L ? "فواتير معلّقة" : "Pending Invoices", val: unpaidInvoices, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+          { icon: Receipt, label: L ? "إجمالي الوصولات" : "Total Receipts", val: receipts?.length || 0, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
+          { icon: Wallet, label: L ? "رصيد الخزينة" : "Treasury Balance", val: (totalRevenue - totalPending).toLocaleString(), sarVal: true, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]" },
         ].map(({ icon: Icon, label, val, sarVal, color, bg }, i) => (
           <motion.div key={i} {...fade(0.1 + i * 0.05)}>
             <Card className="border border-black/[0.06] shadow-none">
@@ -312,7 +312,7 @@ function AccountantDashboard() {
           <Card className="border border-black/[0.06] shadow-none">
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-sm font-bold text-black flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-red-500" />
+                <TrendingDown className="w-4 h-4 text-black dark:text-white" />
                 {L ? "آخر الفواتير المعلّقة" : "Latest Pending Invoices"}
               </CardTitle>
             </CardHeader>
@@ -323,7 +323,7 @@ function AccountantDashboard() {
                     <p className="text-sm font-medium text-black">{inv.clientName || (L ? "عميل" : "Client")}</p>
                     <p className="text-[11px] text-black/30">{L ? "فاتورة" : "Invoice"} #{inv.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-red-600 flex items-center gap-0.5">{Number(inv.totalAmount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
+                  <span className="text-sm font-bold text-black dark:text-white flex items-center gap-0.5">{Number(inv.totalAmount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!invoices || invoices.filter((i: any) => i.status === "pending").length === 0) && (
@@ -342,7 +342,7 @@ function AccountantDashboard() {
           <Card className="border border-black/[0.06] shadow-none">
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-sm font-bold text-black flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-black dark:text-white" />
                 {L ? "آخر الوصولات المحصّلة" : "Latest Collected Receipts"}
               </CardTitle>
             </CardHeader>
@@ -353,7 +353,7 @@ function AccountantDashboard() {
                     <p className="text-sm font-medium text-black">{rec.clientName || (L ? "عميل" : "Client")}</p>
                     <p className="text-[11px] text-black/30">{L ? "وصل" : "Receipt"} #{rec.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-green-600 flex items-center gap-0.5">+{Number(rec.amount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
+                  <span className="text-sm font-bold text-black dark:text-white flex items-center gap-0.5">+{Number(rec.amount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!receipts || receipts.length === 0) && (
@@ -411,9 +411,9 @@ function SalesDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: L ? "طلبات جديدة" : "New Orders", val: newOrders, color: "text-amber-400" },
-              { label: L ? "طلبات الشهر" : "This Month's Orders", val: thisMonthOrders, color: "text-blue-400" },
-              { label: L ? "إجمالي العملاء" : "Total Clients", val: customers?.length || 0, color: "text-green-400" },
+              { label: L ? "طلبات جديدة" : "New Orders", val: newOrders, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "طلبات الشهر" : "This Month's Orders", val: thisMonthOrders, color: "text-black/70 dark:text-white/70" },
+              { label: L ? "إجمالي العملاء" : "Total Clients", val: customers?.length || 0, color: "text-black/70 dark:text-white/70" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -430,8 +430,8 @@ function SalesDashboard() {
             <CardContent className="p-5">
               <Link href="/sales/marketing">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Palette className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Palette className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-black">{L ? "أدوات التسويق والبوسترات" : "Marketing Tools & Posters"}</p>
@@ -449,8 +449,8 @@ function SalesDashboard() {
             <CardContent className="p-5">
               <Link href="/admin/customers">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-black">{L ? "إدارة العملاء" : "Client Management"}</p>
@@ -468,8 +468,8 @@ function SalesDashboard() {
             <CardContent className="p-5">
               <Link href="/employee/new-order">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Zap className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Zap className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-black">{L ? "إضافة عميل وطلب جديد" : "Add Client & New Order"}</p>
@@ -487,8 +487,8 @@ function SalesDashboard() {
             <CardContent className="p-5">
               <Link href="/admin/orders">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Activity className="w-6 h-6 text-amber-600" />
+                  <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Activity className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-black">{L ? "متابعة الطلبات" : "Track Orders"}</p>
@@ -506,8 +506,8 @@ function SalesDashboard() {
             <CardContent className="p-5">
               <Link href="/employee/subscriptions">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Calendar className="w-6 h-6 text-violet-600" />
+                  <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Calendar className="w-6 h-6 text-black dark:text-white" />
                   </div>
                   <div>
                     <p className="font-bold text-black">{L ? "اشتراكات العملاء" : "Client Subscriptions"}</p>
@@ -539,13 +539,13 @@ function UpcomingMeetingsWidget() {
     <motion.div {...fade(0.15)} className="mt-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-violet-600 rounded-xl flex items-center justify-center">
+          <div className="w-7 h-7 bg-black dark:bg-white rounded-xl flex items-center justify-center">
             <Video className="w-3.5 h-3.5 text-white" />
           </div>
           <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
           <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{meetings.length} {L ? "اجتماع" : "meetings"}</span>
         </div>
-        <a href="/meet/join" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="employee-join-meeting-btn">
+        <a href="/meet/join" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white hover:bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-3 py-1.5 rounded-xl transition-colors" data-testid="employee-join-meeting-btn">
           <KeyRound className="w-3.5 h-3.5" />
           {L ? "انضم بكود" : "Join by Code"}
         </a>
@@ -557,15 +557,15 @@ function UpcomingMeetingsWidget() {
           const dateStr = scheduledDate.toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" });
           const timeStr = scheduledDate.toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
           return (
-            <div key={m._id} data-testid={`employee-card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-700" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
+            <div key={m._id} data-testid={`employee-card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
               {isLive && (
-                <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-100 dark:bg-violet-900/60 dark:text-violet-300 px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+                <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
                   {L ? "مباشر الآن" : "Live Now"}
                 </span>
               )}
               <div className="flex items-start gap-3 mb-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-violet-600" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-black dark:bg-white" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
                   <Video className={`w-4 h-4 ${isLive ? "text-white" : "text-black/50 dark:text-white/50"}`} />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -577,7 +577,7 @@ function UpcomingMeetingsWidget() {
                 <Calendar className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
                 <span className="text-[11px] text-black/50 dark:text-white/50">{dateStr} — {timeStr}</span>
               </div>
-              <button onClick={() => window.open(m.meetingLink, "_blank")} className={`w-full flex items-center justify-center gap-1.5 rounded-xl h-8 text-xs font-bold transition-colors ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black hover:bg-black/80 text-white"}`} data-testid={`employee-join-meeting-btn-${m._id}`}>
+              <button onClick={() => window.open(m.meetingLink, "_blank")} className={`w-full flex items-center justify-center gap-1.5 rounded-xl h-8 text-xs font-bold transition-colors ${isLive ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white" : "bg-black hover:bg-black/80 text-white"}`} data-testid={`employee-join-meeting-btn-${m._id}`}>
                 <Video className="w-3 h-3" />
                 {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
               </button>
@@ -621,14 +621,14 @@ function AbandonedCartsWidget() {
       <Card className="border border-black/[0.06] shadow-none">
         <CardHeader className="pb-3 pt-5 px-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-              <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl flex items-center justify-center">
+              <ShoppingCart className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
             </div>
             <div>
               <CardTitle className="text-base font-bold text-black dark:text-white">{L ? "عربات التسوق المهجورة" : "Abandoned Shopping Carts"}</CardTitle>
               <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{carts.length} {L ? "عميل لديه منتجات في العربة" : "clients have items in cart"}</p>
             </div>
-            <Badge className="mr-auto bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-0">
+            <Badge className="mr-auto bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0">
               {carts.length}
             </Badge>
           </div>
@@ -661,14 +661,14 @@ function AbandonedCartsWidget() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {waLink && (
                       <a href={waLink} target="_blank" rel="noopener noreferrer" data-testid={`wa-btn-${cart.cartId}`}
-                        className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors" title={L ? "واتساب" : "WhatsApp"}>
-                        <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl flex items-center justify-center hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors" title={L ? "واتساب" : "WhatsApp"}>
+                        <MessageCircle className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                       </a>
                     )}
                     {telLink && (
                       <a href={telLink} data-testid={`tel-btn-${cart.cartId}`}
-                        className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center hover:bg-blue-200 transition-colors" title={L ? "اتصل" : "Call"}>
-                        <Phone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-xl flex items-center justify-center hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors" title={L ? "اتصل" : "Call"}>
+                        <Phone className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                       </a>
                     )}
                     {!phone && (
@@ -733,10 +733,10 @@ function SupportDashboard() {
     <motion.div {...fade(0)} className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: L ? "إجمالي التذاكر" : "Total Tickets", value: totalCount, icon: MessageCircle, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
-          { label: L ? "مفتوحة" : "Open", value: openCount, icon: AlertCircle, color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" },
-          { label: L ? "قيد المعالجة" : "In Progress", value: inProgressCount, icon: Clock, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" },
-          { label: L ? "مغلقة" : "Closed", value: closedCount, icon: CheckCircle2, color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" },
+          { label: L ? "إجمالي التذاكر" : "Total Tickets", value: totalCount, icon: MessageCircle, color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+          { label: L ? "مفتوحة" : "Open", value: openCount, icon: AlertCircle, color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+          { label: L ? "قيد المعالجة" : "In Progress", value: inProgressCount, icon: Clock, color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
+          { label: L ? "مغلقة" : "Closed", value: closedCount, icon: CheckCircle2, color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70" },
         ].map((s, i) => (
           <motion.div key={i} {...fade(i * 0.08)}>
             <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
@@ -774,9 +774,9 @@ function SupportDashboard() {
           ) : (
             <div className="space-y-2">
               {tickets.slice(0, 10).map((ticket: any, i: number) => {
-                const statusColor = ticket.status === "open" ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                  : ticket.status === "in_progress" ? "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
-                  : "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
+                const statusColor = ticket.status === "open" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white"
+                  : ticket.status === "in_progress" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white"
+                  : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white";
                 const statusLabel = ticket.status === "open" ? (L ? "مفتوحة" : "Open")
                   : ticket.status === "in_progress" ? (L ? "قيد المعالجة" : "In Progress")
                   : (L ? "مغلقة" : "Closed");
@@ -840,8 +840,8 @@ export default function EmployeeRoleDashboard() {
           <CardContent className="p-5">
             <Link href="/my-tools">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900/30 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Wand2 className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wand2 className="w-6 h-6 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
                 </div>
                 <div>
                   <p className="font-bold text-black dark:text-white">{L ? "أدواتي ومميزاتي ⚡" : "My Tools & Features ⚡"}</p>

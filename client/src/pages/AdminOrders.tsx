@@ -65,12 +65,12 @@ interface OrderData {
 }
 
 function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
-  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  approved: { label: L ? "تمت الموافقة" : "Approved", color: "bg-green-500/10 text-green-600 border-green-500/20" },
-  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-black dark:bg-white text-black dark:text-white border-black dark:border-white" },
+  approved: { label: L ? "تمت الموافقة" : "Approved", color: "bg-black dark:bg-white text-black dark:text-white border-black dark:border-white" },
+  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "bg-black dark:bg-white text-black dark:text-white border-black dark:border-white" },
   completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.06] text-black/60 border-black/[0.08]" },
-  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-500/10 text-red-600 border-red-500/20" },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-black dark:bg-white text-black dark:text-white border-black dark:border-white" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-black dark:bg-white text-black dark:text-white border-black dark:border-white" },
 };
 }
 
@@ -478,11 +478,11 @@ export default function AdminOrders() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { key: "pending", label: L ? "قيد المراجعة" : "Under Review", color: "text-yellow-600 bg-yellow-50" },
-          { key: "approved", label: L ? "موافق عليه" : "Approved", color: "text-green-600 bg-green-50" },
-          { key: "in_progress", label: L ? "قيد التنفيذ" : "In Progress", color: "text-blue-600 bg-blue-50" },
+          { key: "pending", label: L ? "قيد المراجعة" : "Under Review", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+          { key: "approved", label: L ? "موافق عليه" : "Approved", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
+          { key: "in_progress", label: L ? "قيد التنفيذ" : "In Progress", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
           { key: "completed", label: L ? "مكتمل" : "Completed", color: "text-black/60 bg-black/[0.04]" },
-          { key: "cancelled", label: L ? "ملغي" : "Cancelled", color: "text-red-600 bg-red-50" },
+          { key: "cancelled", label: L ? "ملغي" : "Cancelled", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06]" },
         ].map((stat) => (
           <button
             key={stat.key}
@@ -562,10 +562,10 @@ export default function AdminOrders() {
                         </Button>
                         {order.status === "pending" && (
                           <>
-                            <Button size="sm" variant="ghost" className="text-green-600 h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "approved")} disabled={updateMutation.isPending} data-testid={`button-approve-${order.id}`}>
+                            <Button size="sm" variant="ghost" className="text-black dark:text-white h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "approved")} disabled={updateMutation.isPending} data-testid={`button-approve-${order.id}`}>
                               <CheckCircle className="w-3.5 h-3.5 mr-1" />{L ? "قبول" : "Approve"}
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-red-500 h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "cancelled")} disabled={updateMutation.isPending} data-testid={`button-reject-${order.id}`}>
+                            <Button size="sm" variant="ghost" className="text-black dark:text-white h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "cancelled")} disabled={updateMutation.isPending} data-testid={`button-reject-${order.id}`}>
                               <XCircle className="w-3.5 h-3.5 mr-1" />{L ? "رفض" : "Reject"}
                             </Button>
                           </>
@@ -625,7 +625,7 @@ export default function AdminOrders() {
                       });
                       setEditProjectOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors text-xs font-semibold flex-shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-xs font-semibold flex-shrink-0"
                     data-testid="button-edit-project"
                   >
                     <Save className="w-3 h-3" /> {L ? "تعديل المشروع" : "Edit Project"}
@@ -644,7 +644,7 @@ export default function AdminOrders() {
                   <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
                     {L ? "إدارة الطلب" : "Manage Order"}
                   </TabsTrigger>
-                  <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-green-600 data-[state=active]:text-green-700 data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                  <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
                     <DollarSign className="w-3 h-3" />{L ? "التكاليف والأرباح" : "Costs & Profits"}
                   </TabsTrigger>
                 </TabsList>
@@ -664,10 +664,10 @@ export default function AdminOrders() {
                         >
                           {selectedOrder.paymentProofUrl ? (
                             <div className="flex flex-col items-center gap-2">
-                              <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
+                              <div className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
                                 <CheckCircle className="w-6 h-6" />
                               </div>
-                              <p className="text-xs font-bold text-green-700">{L ? "تم رفع الإيصال بنجاح" : "Receipt uploaded successfully"}</p>
+                              <p className="text-xs font-bold text-black dark:text-white">{L ? "تم رفع الإيصال بنجاح" : "Receipt uploaded successfully"}</p>
                               <p className="text-[10px] text-black/30">{L ? "اضغط لتغيير الملف" : "Click to change file"}</p>
                             </div>
                           ) : (
@@ -718,7 +718,7 @@ export default function AdminOrders() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
+                                  className="text-xs gap-1.5 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                                   data-testid="button-approve-transfer"
                                   onClick={async () => {
                                     try {
@@ -735,7 +735,7 @@ export default function AdminOrders() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="text-xs gap-1.5 border-red-200 text-red-700 hover:bg-red-50"
+                                  className="text-xs gap-1.5 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                                   data-testid="button-reject-transfer"
                                   onClick={() => setRejectTransferOpen(true)}
                                 >
@@ -745,18 +745,18 @@ export default function AdminOrders() {
                               </div>
                             )}
                             {selectedOrder.paymentStatus === "approved" && (
-                              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
-                                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                <p className="text-xs font-semibold text-green-700">{L ? "تم قبول التحويل" : "Transfer approved"}</p>
+                              <div className="flex items-center gap-2 px-3 py-2 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg border border-black/10 dark:border-white/10">
+                                <CheckCircle className="w-4 h-4 text-black dark:text-white flex-shrink-0" />
+                                <p className="text-xs font-semibold text-black dark:text-white">{L ? "تم قبول التحويل" : "Transfer approved"}</p>
                               </div>
                             )}
                             {selectedOrder.paymentStatus === "rejected" && (
-                              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
-                                <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                              <div className="flex items-center gap-2 px-3 py-2 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg border border-black/10 dark:border-white/10">
+                                <XCircle className="w-4 h-4 text-black dark:text-white flex-shrink-0" />
                                 <div>
-                                  <p className="text-xs font-semibold text-red-700">{L ? "تم رفض التحويل" : "Transfer rejected"}</p>
+                                  <p className="text-xs font-semibold text-black dark:text-white">{L ? "تم رفض التحويل" : "Transfer rejected"}</p>
                                   {selectedOrder.paymentRejectionReason && (
-                                    <p className="text-[10px] text-red-600 mt-0.5">{selectedOrder.paymentRejectionReason}</p>
+                                    <p className="text-[10px] text-black dark:text-white mt-0.5">{selectedOrder.paymentRejectionReason}</p>
                                   )}
                                 </div>
                               </div>
@@ -792,7 +792,7 @@ export default function AdminOrders() {
                                   <a
                                     href={`https://wa.me/${selectedOrder.client.phone.replace(/\D/g, "")}`}
                                     target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                                     data-testid="link-whatsapp-order-client"
                                   >
                                     <SiWhatsapp className="w-3 h-3" />
@@ -801,7 +801,7 @@ export default function AdminOrders() {
                                   <a
                                     href={`https://t.me/${selectedOrder.client.phone.replace(/\D/g, "")}`}
                                     target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                                     data-testid="link-telegram-order-client"
                                   >
                                     <SiTelegram className="w-3 h-3" />
@@ -809,7 +809,7 @@ export default function AdminOrders() {
                                   </a>
                                   <button
                                     onClick={() => setPhoneReqOpen(true)}
-                                    className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-rose-500 hover:bg-rose-50 transition-colors"
+                                    className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors"
                                     data-testid="button-wrong-phone-order"
                                   >
                                     <PhoneOff className="w-3 h-3" />
@@ -882,7 +882,7 @@ export default function AdminOrders() {
                             <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "رسوم الشحن" : "Shipping Fee"}</p><p className="text-xs font-bold text-black flex items-center gap-1">{Number(selectedOrder.shippingFee).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p></div>
                           )}
                           <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "الدفعة الأولى" : "First Payment"}</p>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white'}`}>
                               {selectedOrder.isDepositPaid ? (L ? "مدفوعة ✓" : "Paid ✓") : (L ? "لم تُدفع" : "Not paid")}
                             </span>
                           </div>
@@ -900,10 +900,10 @@ export default function AdminOrders() {
                       {(() => {
                         const files = (selectedOrder as any).files || {};
                         const fileCategories = [
-                          { key: "logo",          label: L ? "الشعار" : "Logo",           color: "bg-violet-500" },
-                          { key: "brandIdentity", label: L ? "الهوية البصرية" : "Brand Identity",   color: "bg-blue-500" },
-                          { key: "content",       label: L ? "المحتوى والصور" : "Content & Images",   color: "bg-emerald-500" },
-                          { key: "paymentProof",  label: L ? "إثبات الدفع" : "Payment Proof",      color: "bg-amber-500" },
+                          { key: "logo",          label: L ? "الشعار" : "Logo",           color: "bg-black dark:bg-white" },
+                          { key: "brandIdentity", label: L ? "الهوية البصرية" : "Brand Identity",   color: "bg-black dark:bg-white" },
+                          { key: "content",       label: L ? "المحتوى والصور" : "Content & Images",   color: "bg-black dark:bg-white" },
+                          { key: "paymentProof",  label: L ? "إثبات الدفع" : "Payment Proof",      color: "bg-black dark:bg-white" },
                         ];
                         const allDocs: { label: string; url: string; color: string }[] = [];
                         fileCategories.forEach(({ key, label, color }) => {
@@ -1181,31 +1181,31 @@ export default function AdminOrders() {
                         </Button>
 
                         {/* ─── Usage Guide Section ─── */}
-                        <div className="border border-blue-200 rounded-2xl p-5 bg-blue-50">
-                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="border border-black/10 dark:border-white/10 rounded-2xl p-5 bg-black/[0.04] dark:bg-white/[0.06]">
+                          <p className="text-[10px] font-bold text-black dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                             <FileText className="w-3.5 h-3.5" />{L ? "شرح استخدام النظام" : "System Usage Guide"}
                           </p>
                           {!orderProject && (
-                            <p className="text-xs text-blue-600/60 mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط بهذا الطلب بعد. أنشئ المشروع أولاً لتتمكن من إضافة شرح الاستخدام." : "No project linked to this order yet. Create the project first to add the usage guide."}</p>
+                            <p className="text-xs text-black dark:text-white mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط بهذا الطلب بعد. أنشئ المشروع أولاً لتتمكن من إضافة شرح الاستخدام." : "No project linked to this order yet. Create the project first to add the usage guide."}</p>
                           )}
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "عنوان الدليل" : "Guide Title"}</label>
+                              <label className="text-[10px] font-bold text-black dark:text-white mb-1 block">{L ? "عنوان الدليل" : "Guide Title"}</label>
                               <Input value={guideForm.title} onChange={e => setGuideForm(f => ({ ...f, title: e.target.value }))}
                                 placeholder={L ? "شرح استخدام النظام" : "System Usage Guide"} className="text-sm bg-white" data-testid="input-guide-title" disabled={!orderProject} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "محتوى الشرح (يظهر للعميل في لوحة التحكم)" : "Guide Content (shown to client in dashboard)"}</label>
+                              <label className="text-[10px] font-bold text-black dark:text-white mb-1 block">{L ? "محتوى الشرح (يظهر للعميل في لوحة التحكم)" : "Guide Content (shown to client in dashboard)"}</label>
                               <Textarea value={guideForm.description} onChange={e => setGuideForm(f => ({ ...f, description: e.target.value }))}
                                 placeholder={L ? "اكتب شرحاً مفصّلاً لكيفية استخدام النظام، خطوة بخطوة..." : "Write a detailed guide on how to use the system, step by step..."} className="text-sm h-28 resize-none bg-white" data-testid="textarea-guide-desc" disabled={!orderProject} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "روابط ملفات مرفقة (رابط في كل سطر)" : "Attached file links (one link per line)"}</label>
+                              <label className="text-[10px] font-bold text-black dark:text-white mb-1 block">{L ? "روابط ملفات مرفقة (رابط في كل سطر)" : "Attached file links (one link per line)"}</label>
                               <Textarea value={guideForm.files} onChange={e => setGuideForm(f => ({ ...f, files: e.target.value }))}
                                 placeholder="https://docs.example.com/guide.pdf&#10;https://example.com/video.mp4" className="text-sm h-16 resize-none font-mono bg-white text-xs" data-testid="textarea-guide-files" disabled={!orderProject} dir="ltr" />
                             </div>
                             <Button onClick={handleSaveGuide} disabled={saveGuideMutation.isPending || !orderProject}
-                              className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-xl text-xs font-bold"
+                              className="w-full h-9 bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2 rounded-xl text-xs font-bold"
                               data-testid="button-save-guide">
                               {saveGuideMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
                               {L ? "حفظ شرح الاستخدام" : "Save Usage Guide"}
@@ -1214,28 +1214,28 @@ export default function AdminOrders() {
                         </div>
 
                         {/* ─── Delivery Data Section ─── */}
-                        <div className="border border-green-200 rounded-2xl p-5 bg-green-50">
-                          <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="border border-black/10 dark:border-white/10 rounded-2xl p-5 bg-black/[0.04] dark:bg-white/[0.06]">
+                          <p className="text-[10px] font-bold text-black dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                             <Package className="w-3.5 h-3.5" />{L ? "تسليم المشروع — فيديو وملفات" : "Project Delivery — Video & Files"}
                           </p>
                           {!orderProject && (
-                            <p className="text-xs text-green-600/60 mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط. أنشئ المشروع أولاً." : "No project linked. Create the project first."}</p>
+                            <p className="text-xs text-black dark:text-white mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط. أنشئ المشروع أولاً." : "No project linked. Create the project first."}</p>
                           )}
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-green-700 mb-1 block">{L ? "رابط فيديو التسليم / الشرح (YouTube أو أي رابط)" : "Delivery video / guide link (YouTube or any URL)"}</label>
+                              <label className="text-[10px] font-bold text-black dark:text-white mb-1 block">{L ? "رابط فيديو التسليم / الشرح (YouTube أو أي رابط)" : "Delivery video / guide link (YouTube or any URL)"}</label>
                               <Input value={deliveryForm.videoUrl} onChange={e => setDeliveryForm(f => ({ ...f, videoUrl: e.target.value }))}
                                 placeholder="https://youtube.com/watch?v=..." className="text-sm bg-white font-mono" dir="ltr" disabled={!orderProject} data-testid="input-delivery-video" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-green-700 mb-1 block">{L ? "ملفات التسليم (سطر لكل ملف: اسم|رابط|إيموجي)" : "Delivery files (one per line: name|url|emoji)"}</label>
+                              <label className="text-[10px] font-bold text-black dark:text-white mb-1 block">{L ? "ملفات التسليم (سطر لكل ملف: اسم|رابط|إيموجي)" : "Delivery files (one per line: name|url|emoji)"}</label>
                               <Textarea value={deliveryForm.files} onChange={e => setDeliveryForm(f => ({ ...f, files: e.target.value }))}
                                 placeholder={"دليل الاستخدام|https://drive.google.com/...|📄\nشرح الكود المصدري|https://github.com/...|💻"}
                                 className="text-sm h-24 resize-none font-mono bg-white text-xs" data-testid="textarea-delivery-files" disabled={!orderProject} dir="ltr" />
-                              <p className="text-[10px] text-green-600/60 mt-1">{L ? "صيغة كل سطر: اسم الملف | رابط التحميل | إيموجي (اختياري)" : "Each line format: filename | download URL | emoji (optional)"}</p>
+                              <p className="text-[10px] text-black dark:text-white mt-1">{L ? "صيغة كل سطر: اسم الملف | رابط التحميل | إيموجي (اختياري)" : "Each line format: filename | download URL | emoji (optional)"}</p>
                             </div>
                             <Button onClick={handleSaveDelivery} disabled={saveDeliveryMutation.isPending || !orderProject}
-                              className="w-full h-9 bg-green-600 hover:bg-green-700 text-white gap-2 rounded-xl text-xs font-bold"
+                              className="w-full h-9 bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2 rounded-xl text-xs font-bold"
                               data-testid="button-save-delivery">
                               {saveDeliveryMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
                               حفظ بيانات التسليم
@@ -1334,8 +1334,8 @@ export default function AdminOrders() {
                       <div className="pt-3 border-t border-black/[0.05]">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-violet-100 rounded-xl flex items-center justify-center">
-                              <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+                            <div className="w-7 h-7 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
                             </div>
                             <div>
                               <p className="text-sm font-bold text-black">{L ? "دليل التنفيذ الذكي" : "AI Workflow Guide"}</p>
@@ -1376,7 +1376,7 @@ export default function AdminOrders() {
                               }
                             }}
                             disabled={aiChecklistLoading}
-                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs rounded-xl"
+                            className="gap-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white h-8 text-xs rounded-xl"
                             data-testid="button-ai-checklist"
                           >
                             {aiChecklistLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
@@ -1390,14 +1390,14 @@ export default function AdminOrders() {
                               const doneCount = (phase.tasks || []).filter((_: string, ti: number) => aiChecklistDone[`${pi}-${ti}`]).length;
                               const expanded = aiChecklistExpanded[pi] !== false;
                               return (
-                                <div key={pi} className="border border-violet-100 rounded-2xl overflow-hidden bg-violet-50/30">
+                                <div key={pi} className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-black/[0.04] dark:bg-white/[0.06]">
                                   <button
                                     onClick={() => setAiChecklistExpanded(p => ({ ...p, [pi]: !p[pi] }))}
-                                    className="w-full flex items-center justify-between p-3 hover:bg-violet-50 transition-colors text-right"
+                                    className="w-full flex items-center justify-between p-3 hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-right"
                                     data-testid={`checklist-phase-toggle-${pi}`}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${doneCount === phase.tasks.length ? "bg-green-500 text-white" : "bg-violet-200 text-violet-700"}`}>
+                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${doneCount === phase.tasks.length ? "bg-black dark:bg-white text-white" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white"}`}>
                                         {doneCount === phase.tasks.length ? <Check className="w-3 h-3" /> : pi + 1}
                                       </div>
                                       <span className="text-sm font-bold text-black">{phase.name}</span>
@@ -1414,10 +1414,10 @@ export default function AdminOrders() {
                                           <button
                                             key={ti}
                                             onClick={() => setAiChecklistDone(p => ({ ...p, [key]: !p[key] }))}
-                                            className={`w-full flex items-start gap-2.5 text-right py-2 px-2.5 rounded-xl transition-all ${done ? "bg-green-50 border border-green-100" : "hover:bg-white border border-transparent"}`}
+                                            className={`w-full flex items-start gap-2.5 text-right py-2 px-2.5 rounded-xl transition-all ${done ? "bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10" : "hover:bg-white border border-transparent"}`}
                                             data-testid={`checklist-task-${pi}-${ti}`}
                                           >
-                                            <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${done ? "bg-green-500 border-green-500" : "border-black/20"}`}>
+                                            <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${done ? "bg-black dark:bg-white border-black dark:border-white" : "border-black/20"}`}>
                                               {done && <Check className="w-2.5 h-2.5 text-white" />}
                                             </div>
                                             <span className={`text-xs leading-relaxed ${done ? "line-through text-black/30" : "text-black/70"}`}>{task}</span>
@@ -1453,22 +1453,22 @@ export default function AdminOrders() {
                         const isProfit = netProfit >= 0;
                         return (
                           <div className="grid grid-cols-3 gap-3">
-                            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                              <p className="text-[10px] text-blue-500 font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />{L ? "إجمالي الإيراد" : "Total Revenue"}</p>
-                              <p className="text-xl font-black text-blue-700">{revenue.toLocaleString()}</p>
+                            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4">
+                              <p className="text-[10px] text-black dark:text-white font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />{L ? "إجمالي الإيراد" : "Total Revenue"}</p>
+                              <p className="text-xl font-black text-black dark:text-white">{revenue.toLocaleString()}</p>
                               <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
-                            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                              <p className="text-[10px] text-red-500 font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{L ? "إجمالي التكاليف" : "Total Costs"}</p>
-                              <p className="text-xl font-black text-red-700">{totalCosts.toLocaleString()}</p>
+                            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4">
+                              <p className="text-[10px] text-black dark:text-white font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{L ? "إجمالي التكاليف" : "Total Costs"}</p>
+                              <p className="text-xl font-black text-black dark:text-white">{totalCosts.toLocaleString()}</p>
                               <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
-                            <div className={`border rounded-2xl p-4 ${isProfit ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
-                              <p className={`text-[10px] font-bold mb-1 flex items-center gap-1 ${isProfit ? "text-green-600" : "text-orange-600"}`}>
+                            <div className={`border rounded-2xl p-4 ${isProfit ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10"}`}>
+                              <p className={`text-[10px] font-bold mb-1 flex items-center gap-1 ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
                                 {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}{L ? "صافي الربح" : "Net Profit"}
                               </p>
-                              <p className={`text-xl font-black ${isProfit ? "text-green-700" : "text-orange-700"}`}>{netProfit.toLocaleString()}</p>
-                              <p className={`text-[10px] ${isProfit ? "text-green-500" : "text-orange-500"}`}>{L ? "هامش" : "Margin"} {margin}%</p>
+                              <p className={`text-xl font-black ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{netProfit.toLocaleString()}</p>
+                              <p className={`text-[10px] ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{L ? "هامش" : "Margin"} {margin}%</p>
                             </div>
                           </div>
                         );
@@ -1487,12 +1487,12 @@ export default function AdminOrders() {
                               <span>{L ? "الربح" : "Profit"} {(100 - costPct).toFixed(0)}%</span>
                             </div>
                             <div className="h-3 bg-black/[0.04] rounded-full overflow-hidden flex">
-                              <div className="h-full bg-red-400 rounded-full transition-all duration-500" style={{ width: `${costPct}%` }} />
-                              <div className="h-full bg-green-400 flex-1 transition-all duration-500" />
+                              <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] rounded-full transition-all duration-500" style={{ width: `${costPct}%` }} />
+                              <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] flex-1 transition-all duration-500" />
                             </div>
                             <div className="flex gap-4 mt-2 text-[10px]">
-                              <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />{L ? "تكاليف" : "Costs"}</span>
-                              <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
+                              <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "تكاليف" : "Costs"}</span>
+                              <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
                             </div>
                           </div>
                         ) : null;
@@ -1572,14 +1572,14 @@ export default function AdminOrders() {
                           <div className="space-y-2">
                             {(orderExpenses || []).map((exp: any) => {
                               const catLabels: Record<string, { label: string; color: string }> = {
-                                hosting: { label: L ? "استضافة" : "Hosting", color: "bg-blue-50 text-blue-700" },
-                                domain: { label: L ? "دومين" : "Domain", color: "bg-purple-50 text-purple-700" },
-                                freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-orange-50 text-orange-700" },
-                                license: { label: L ? "ترخيص" : "License", color: "bg-amber-50 text-amber-700" },
-                                ads: { label: L ? "إعلانات" : "Ads", color: "bg-pink-50 text-pink-700" },
-                                design: { label: L ? "تصميم" : "Design", color: "bg-violet-50 text-violet-700" },
-                                salary: { label: L ? "راتب" : "Salary", color: "bg-teal-50 text-teal-700" },
-                                commission: { label: L ? "عمولة" : "Commission", color: "bg-cyan-50 text-cyan-700" },
+                                hosting: { label: L ? "استضافة" : "Hosting", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                domain: { label: L ? "دومين" : "Domain", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                license: { label: L ? "ترخيص" : "License", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                ads: { label: L ? "إعلانات" : "Ads", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                design: { label: L ? "تصميم" : "Design", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                salary: { label: L ? "راتب" : "Salary", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+                                commission: { label: L ? "عمولة" : "Commission", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
                                 other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
                               };
                               const cat = catLabels[exp.category] || catLabels.other;
@@ -1587,11 +1587,11 @@ export default function AdminOrders() {
                                 <div key={exp.id} className="flex items-center gap-3 bg-white border border-black/[0.06] rounded-xl px-4 py-3 group">
                                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat.color}`}>{cat.label}</span>
                                   <p className="text-xs text-black/70 flex-1 truncate">{exp.description}</p>
-                                  <p className="text-xs font-bold text-red-600 flex-shrink-0 flex items-center gap-1">{Number(exp.amount).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
+                                  <p className="text-xs font-bold text-black dark:text-white flex-shrink-0 flex items-center gap-1">{Number(exp.amount).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
                                   <button
                                     onClick={() => deleteExpenseMutation.mutate(exp.id)}
                                     disabled={deleteExpenseMutation.isPending}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] text-black/70 dark:text-white/70 hover:text-black dark:text-white"
                                     data-testid={`button-delete-expense-${exp.id}`}
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -1616,7 +1616,7 @@ export default function AdminOrders() {
         <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PhoneOff className="w-4 h-4 text-rose-500" />
+              <PhoneOff className="w-4 h-4 text-black dark:text-white" />
               {L ? "رفع طلب تصحيح الرقم" : "Submit Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
@@ -1641,7 +1641,7 @@ export default function AdminOrders() {
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setPhoneReqOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
-                className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
+                className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                 onClick={() => selectedOrder?.userId && phoneReqMutation.mutate({ clientId: selectedOrder.userId, notes: phoneReqNotes })}
                 disabled={phoneReqMutation.isPending || !selectedOrder?.userId}
                 data-testid="button-submit-phone-request-order"
@@ -1659,7 +1659,7 @@ export default function AdminOrders() {
         <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <Save className="w-4 h-4 text-violet-500" />
+              <Save className="w-4 h-4 text-black dark:text-white" />
               {L ? "تعديل بيانات المشروع" : "Edit Project Details"}
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -1740,7 +1740,7 @@ export default function AdminOrders() {
                 {L ? "إلغاء" : "Cancel"}
               </Button>
               <Button
-                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                 disabled={editProjectMutation.isPending}
                 onClick={() => {
                   if (!selectedOrder) return;
@@ -1768,7 +1768,7 @@ export default function AdminOrders() {
         <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-red-500" />
+              <XCircle className="w-4 h-4 text-black dark:text-white" />
               {L ? "رفض إيصال التحويل" : "Reject Transfer Receipt"}
             </DialogTitle>
             <DialogDescription>
@@ -1790,7 +1790,7 @@ export default function AdminOrders() {
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setRejectTransferOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
-                className="bg-red-500 hover:bg-red-600 text-white gap-2"
+                className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white gap-2"
                 data-testid="button-confirm-reject-transfer"
                 onClick={async () => {
                   if (!selectedOrder) return;
