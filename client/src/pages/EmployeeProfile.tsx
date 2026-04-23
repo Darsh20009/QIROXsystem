@@ -571,35 +571,44 @@ export default function EmployeeProfile() {
                   animate={{ rotateY: cardFlipped ? 180 : 0 }}
                   transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
                 >
-                  {/* FRONT */}
+                  {/* FRONT — Ivory & Gray luxury edition */}
                   <div
-                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl"
+                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-400/30"
                     style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-zinc-800" />
-                    {/* Decorative grain overlay */}
-                    <div className="absolute inset-0 opacity-[0.08]" style={{
-                      backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-                      backgroundSize: "16px 16px"
+                    {/* Ivory base with subtle warm gradient */}
+                    <div className="absolute inset-0" style={{
+                      background: "linear-gradient(135deg, #FAF6EC 0%, #F2EDDF 50%, #E8E2D2 100%)"
                     }} />
-                    {/* Top diagonal silver accent */}
-                    <div className="absolute top-0 left-0 right-0 h-24 overflow-hidden">
-                      <div className="absolute -top-12 -left-8 w-[140%] h-24 bg-gradient-to-r from-zinc-700/40 via-zinc-500/20 to-transparent rotate-[-6deg]" />
-                    </div>
+                    {/* Embossed concentric rings */}
+                    <div className="absolute -top-32 -right-32 w-72 h-72 rounded-full border border-zinc-400/15" />
+                    <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full border border-zinc-400/10" />
+                    <div className="absolute -bottom-32 -left-32 w-72 h-72 rounded-full border border-zinc-400/15" />
+                    {/* Fine grain texture */}
+                    <div className="absolute inset-0 opacity-[0.06] mix-blend-multiply" style={{
+                      backgroundImage: "radial-gradient(circle at 1px 1px, #4a4a4a 1px, transparent 0)",
+                      backgroundSize: "14px 14px"
+                    }} />
+                    {/* Top metallic strip */}
+                    <div className="absolute top-0 left-0 right-0 h-14" style={{
+                      background: "linear-gradient(180deg, rgba(82,82,91,0.18) 0%, rgba(82,82,91,0.04) 60%, transparent 100%)"
+                    }} />
                     {/* Lanyard hole */}
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-zinc-950 border border-zinc-700/60 shadow-inner" />
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-zinc-300 border border-zinc-400/60 shadow-inner" />
 
                     <div className="relative z-10 flex flex-col items-center pt-8 pb-5 px-5 h-full">
                       {/* Logo */}
                       <div className="flex items-center gap-2 mb-1">
-                        <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain invert" />
+                        <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain" />
                       </div>
                       <div className="text-[9px] tracking-[0.4em] text-zinc-500 font-medium mb-5">EMPLOYEE</div>
 
-                      {/* Photo */}
+                      {/* Photo with double silver ring */}
                       <div className="relative mb-4">
-                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-zinc-300 via-zinc-500 to-zinc-700 opacity-70 blur-[2px]" />
-                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-zinc-200/30 bg-zinc-800 shadow-xl">
+                        <div className="absolute -inset-1.5 rounded-full" style={{
+                          background: "conic-gradient(from 180deg, #d4d4d8, #a1a1aa, #71717a, #a1a1aa, #d4d4d8)"
+                        }} />
+                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-[3px] border-[#FAF6EC] bg-zinc-200 shadow-xl">
                           {profile?.profilePhotoUrl ? (
                             <img src={profile.profilePhotoUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -611,52 +620,52 @@ export default function EmployeeProfile() {
                       </div>
 
                       {/* Name */}
-                      <div className="text-white font-bold text-lg tracking-wide text-center leading-tight" data-testid="text-id-name">
+                      <div className="text-zinc-900 font-bold text-lg tracking-wide text-center leading-tight" data-testid="text-id-name">
                         {profile?.fullName || (user as any)?.fullName || (user as any)?.username}
                       </div>
 
                       {/* Job title */}
-                      <div className="mt-1 px-3 py-0.5 rounded-full border border-zinc-600/50 text-zinc-300 text-[10px] tracking-[0.2em] uppercase font-medium">
+                      <div className="mt-1.5 px-3 py-0.5 rounded-full border border-zinc-400/60 bg-white/40 text-zinc-700 text-[10px] tracking-[0.2em] uppercase font-semibold">
                         {profile?.jobTitle || (user as any)?.role || "Member"}
                       </div>
 
                       {/* Divider */}
-                      <div className="my-4 w-12 h-px bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+                      <div className="my-4 w-12 h-px bg-gradient-to-r from-transparent via-zinc-500/60 to-transparent" />
 
                       {/* Social handles */}
                       <div className="flex flex-wrap justify-center gap-2 px-2">
                         {(user as any)?.instagram && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Instagram className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).instagram}</span>
                           </div>
                         )}
                         {(user as any)?.twitter && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Twitter className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).twitter}</span>
                           </div>
                         )}
                         {(user as any)?.linkedin && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Linkedin className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).linkedin}</span>
                           </div>
                         )}
                         {(user as any)?.tiktok && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Music2 className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).tiktok}</span>
                           </div>
                         )}
                         {(user as any)?.youtube && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Youtube className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).youtube}</span>
                           </div>
                         )}
                         {(user as any)?.linktree && (
-                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-700">
                             <Globe className="w-2.5 h-2.5" />
                             <span className="truncate max-w-[80px]">{(user as any).linktree}</span>
                           </div>
@@ -664,63 +673,100 @@ export default function EmployeeProfile() {
                       </div>
 
                       {/* Bottom brand strip */}
-                      <div className="mt-auto w-full pt-3 border-t border-zinc-700/40 flex items-center justify-between">
+                      <div className="mt-auto w-full pt-3 border-t border-zinc-400/40 flex items-center justify-between">
                         <span className="text-[8px] tracking-[0.3em] text-zinc-500">qiroxstudio.online</span>
                         <span className="text-[8px] tracking-[0.3em] text-zinc-500">© QIROX</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* BACK */}
+                  {/* BACK — Ivory & Gray with creative QR frame */}
                   <div
-                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl"
+                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-400/30"
                     style={{
                       backfaceVisibility: "hidden",
                       WebkitBackfaceVisibility: "hidden",
                       transform: "rotateY(180deg)"
                     }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900" />
-                    <div className="absolute inset-0 opacity-[0.08]" style={{
-                      backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-                      backgroundSize: "16px 16px"
+                    {/* Ivory base */}
+                    <div className="absolute inset-0" style={{
+                      background: "linear-gradient(160deg, #FAF6EC 0%, #EFE9DA 55%, #E2DBC9 100%)"
+                    }} />
+                    {/* Subtle grain */}
+                    <div className="absolute inset-0 opacity-[0.06] mix-blend-multiply" style={{
+                      backgroundImage: "radial-gradient(circle at 1px 1px, #4a4a4a 1px, transparent 0)",
+                      backgroundSize: "14px 14px"
+                    }} />
+                    {/* Decorative diagonal gray ribbon */}
+                    <div className="absolute -top-10 -left-10 w-[160%] h-20 rotate-[-12deg]" style={{
+                      background: "linear-gradient(90deg, transparent, rgba(113,113,122,0.08), rgba(113,113,122,0.18), rgba(113,113,122,0.08), transparent)"
                     }} />
                     {/* Top accent */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-600 via-zinc-300 to-zinc-600" />
+                    <div className="absolute top-0 left-0 right-0 h-1" style={{
+                      background: "linear-gradient(90deg, #a1a1aa, #d4d4d8, #71717a, #d4d4d8, #a1a1aa)"
+                    }} />
                     {/* Bottom accent */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-600 via-zinc-300 to-zinc-600" />
+                    <div className="absolute bottom-0 left-0 right-0 h-1" style={{
+                      background: "linear-gradient(90deg, #a1a1aa, #d4d4d8, #71717a, #d4d4d8, #a1a1aa)"
+                    }} />
 
                     <div className="relative z-10 flex flex-col items-center justify-between pt-7 pb-5 px-5 h-full">
                       {/* Header */}
                       <div className="flex flex-col items-center">
-                        <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain invert opacity-90" />
+                        <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain opacity-90" />
                         <div className="mt-1 text-[9px] tracking-[0.5em] text-zinc-500 font-semibold">IDENTIFICATION</div>
                       </div>
 
-                      {/* Big ID label */}
-                      <div className="absolute top-14 left-4 text-[80px] font-black text-white/[0.04] leading-none tracking-tighter select-none">
+                      {/* Watermark ID */}
+                      <div className="absolute top-14 left-4 text-[80px] font-black text-zinc-700/[0.05] leading-none tracking-tighter select-none">
                         ID
                       </div>
 
-                      {/* QR Code */}
+                      {/* QR Code — creative framed presentation */}
                       <div className="relative">
-                        <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-zinc-200 via-zinc-400 to-zinc-600 opacity-30 blur-sm" />
-                        <div className="relative p-3 bg-white rounded-2xl shadow-xl">
-                          <QRCodeSVG
-                            id="qr-login-svg"
-                            value={qrLoginUrl}
-                            size={160}
-                            level="M"
-                            includeMargin={false}
-                            bgColor="#ffffff"
-                            fgColor="#0a0a0a"
-                          />
+                        {/* Outer soft halo */}
+                        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-zinc-300/40 via-zinc-200/20 to-transparent blur-xl" />
+
+                        {/* Outer ring with conic metallic gradient */}
+                        <div className="relative p-[3px] rounded-[22px]" style={{
+                          background: "conic-gradient(from 135deg, #d4d4d8, #71717a, #a1a1aa, #f4f4f5, #71717a, #d4d4d8)"
+                        }}>
+                          {/* Inner ivory mat */}
+                          <div className="relative p-3 rounded-[19px] bg-[#FAF6EC]">
+                            {/* Corner brackets */}
+                            <span className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-zinc-700 rounded-tl-md" />
+                            <span className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-zinc-700 rounded-tr-md" />
+                            <span className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-zinc-700 rounded-bl-md" />
+                            <span className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-zinc-700 rounded-br-md" />
+
+                            <QRCodeSVG
+                              id="qr-login-svg"
+                              value={qrLoginUrl}
+                              size={150}
+                              level="H"
+                              includeMargin={false}
+                              bgColor="#FAF6EC"
+                              fgColor="#1f1f23"
+                              imageSettings={{
+                                src: qiroxLogoPath,
+                                height: 26,
+                                width: 26,
+                                excavate: true,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Floating "SCAN" pill */}
+                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-zinc-900 text-[8px] font-black tracking-[0.3em] text-[#FAF6EC] shadow-lg">
+                          QIROX • QR
                         </div>
                       </div>
 
                       {/* Scan instructions */}
                       <div className="text-center space-y-1.5">
-                        <div className="text-white text-xs font-bold tracking-wider">
+                        <div className="text-zinc-900 text-xs font-bold tracking-wider">
                           {L ? "امسح للدخول الفوري" : "SCAN TO LOGIN"}
                         </div>
                         <div className="text-zinc-500 text-[9px] tracking-wide">
@@ -729,9 +775,9 @@ export default function EmployeeProfile() {
                       </div>
 
                       {/* ID footer */}
-                      <div className="w-full flex items-center justify-between pt-3 border-t border-zinc-700/40">
+                      <div className="w-full flex items-center justify-between pt-3 border-t border-zinc-400/40">
                         <span className="text-[8px] tracking-[0.3em] text-zinc-500">EMP. ID</span>
-                        <span className="text-[9px] font-mono text-zinc-300 tracking-wider">
+                        <span className="text-[9px] font-mono text-zinc-700 tracking-wider">
                           {((user as any)?.id || "").toString().slice(-8).toUpperCase() || "—"}
                         </span>
                       </div>
