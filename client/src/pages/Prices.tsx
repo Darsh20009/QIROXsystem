@@ -686,7 +686,7 @@ export default function Prices() {
         </section>
       )}
 
-      {/* ─── DEMO TRIAL ─── */}
+      {false && (
       <section className="py-14 bg-white dark:bg-[#050508] border-y border-gray-200 dark:border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="relative rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] dark:bg-transparent" data-testid="card-demo-plan">
@@ -732,8 +732,8 @@ export default function Prices() {
         </div>
       </section>
 
-      {/* ─── ADDONS — official QIROX catalog (live from API) ─── */}
-      <ExtraAddonsSection lang={lang} />
+      )}
+      {/* Add-ons removed from customer UI per product decision */}
 
 
       {/* ─── CTA ─── */}

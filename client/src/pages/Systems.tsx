@@ -29,6 +29,7 @@ const SEGMENTS = [
   { key: "corporate",   labelAr: "شركات ومؤسسات",       icon: Building2,       color: "from-slate-600 to-gray-700",    bg: "bg-slate-50 dark:bg-slate-900/10",     text: "text-slate-600 dark:text-slate-400",  border: "border-slate-200 dark:border-slate-800/40" },
   { key: "realestate",  labelAr: "عقارات",              icon: Home,            color: "from-black dark:from-white to-black dark:to-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "salon",       labelAr: "صالونات تجميل",       icon: Sparkles,        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
 ];
 
 interface SystemCard {
@@ -248,6 +249,47 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       features: ["ملفات الوسطاء والعقارات المسندة", "لوحة أداء الوسيط", "عمولات تلقائية", "تدريب وموارد الوسيط"],
     },
   ],
+  salon: [
+    {
+      icon: Sparkles,
+      title: "موقع صالون التجميل",
+      description: "موقع أنيق يعكس فخامة صالونك ويُسهّل على عملائك الحجز",
+      features: ["معرض الخدمات والأسعار", "صور قبل/بعد للأعمال", "حجز موعد فوري", "صفحة الفريق والاختصاصيين"],
+      badge: "الأكثر طلباً",
+      highlight: true,
+    },
+    {
+      icon: CalendarCheck,
+      title: "نظام حجز المواعيد",
+      description: "حجوزات ذكية بدون اتصال — العميلة تحجز بنفسها وتختار المختصة",
+      features: ["تقويم لكل مختصة", "تأكيد تلقائي بـ SMS/WhatsApp", "تذكير قبل الموعد بساعة", "إعادة جدولة وإلغاء سهل"],
+    },
+    {
+      icon: Users,
+      title: "إدارة العميلات (CRM)",
+      description: "ملف كامل لكل عميلة — تاريخ زياراتها وتفضيلاتها وصورها",
+      features: ["سجل الزيارات والخدمات", "تفضيلات الألوان والمنتجات", "نقاط ولاء وعروض خاصة", "رسائل أعياد الميلاد"],
+    },
+    {
+      icon: Package,
+      title: "نظام إدارة المنتجات والمخزون",
+      description: "تتبع منتجات التجميل والمستحضرات وتنبيهات نفاد الكمية",
+      features: ["جرد المنتجات لحظياً", "تنبيهات انتهاء الصلاحية", "ربط مع البيع داخل الصالون", "تقارير الأكثر مبيعاً"],
+    },
+    {
+      icon: TrendingUp,
+      title: "أدوات التسويق وإنستغرام",
+      description: "زيدي عميلاتك عبر إنستغرام وتيك توك بأدوات احترافية",
+      features: ["نشر تلقائي للجدول الفارغ", "كوبونات خصم", "ربط بإنستغرام Shop", "حملات WhatsApp مستهدفة"],
+    },
+    {
+      icon: BarChart3,
+      title: "لوحة تحليل أداء الصالون",
+      description: "تقارير دقيقة عن إيرادات وأداء فريقك",
+      features: ["إيرادات يومية وشهرية", "أداء كل مختصة", "نسبة إعادة الزيارة", "تقييم العميلات"],
+      locked: true,
+    },
+  ],
   healthcare: [
     {
       icon: Stethoscope,
@@ -320,6 +362,7 @@ export default function Systems() {
     corporate:  lang === "ar" ? "شركات ومؤسسات"     : "Corporate",
     realestate: lang === "ar" ? "عقارات"             : "Real Estate",
     healthcare: lang === "ar" ? "صحة وعيادات"        : "Health & Clinics",
+    salon:      lang === "ar" ? "صالونات تجميل"      : "Beauty Salons",
   };
 
   const trustBadges = [

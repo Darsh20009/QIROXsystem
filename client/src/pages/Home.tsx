@@ -14,8 +14,7 @@ import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
 import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
-  Heart, Coffee, Briefcase, MessageSquare, Mail, Database,
-  Send, Search, Bot,
+  Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
 } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
 
@@ -25,7 +24,9 @@ const SECTORS = [
   { icon: GraduationCap,  arName: "منصات تعليمية",   enName: "Education" },
   { icon: Building2,      arName: "شركات ومؤسسات",  enName: "Corporate" },
   { icon: Heart,          arName: "صحة وعيادات",     enName: "Healthcare" },
-  { icon: Briefcase,      arName: "خدمات احترافية",  enName: "Services" },
+  { icon: HomeIcon,       arName: "عقارات",           enName: "Real Estate" },
+  { icon: Scissors,       arName: "صالونات تجميل",   enName: "Beauty Salons" },
+  { icon: Lightbulb,      arName: "ابدأ فكرتك الخاصة", enName: "Start your own idea", custom: true },
 ];
 
 const PILLARS = [
@@ -33,15 +34,6 @@ const PILLARS = [
   { icon: Shield,   ar: { t: "آمن",          d: "حماية كاملة لبياناتك" },           en: { t: "Secure",     d: "Full data protection" } },
   { icon: Cpu,      ar: { t: "ذكي",          d: "مساعد ذكي ينفّذ معك" },             en: { t: "Smart",      d: "AI helps you build" } },
   { icon: Sparkles, ar: { t: "بسيط",         d: "سهل حتى لو ما عندك خبرة تقنية" },   en: { t: "Simple",     d: "Easy, even without tech skills" } },
-];
-
-const PRICING_HIGHLIGHTS = [
-  { icon: Mail,         ar: "بريد رسمي",   en: "Branded Email", priceAr: "600",  priceEn: "600",  perAr: "/سنة", perEn: "/yr", noteAr: "5 صناديق + إدارة كاملة من النظام", noteEn: "5 mailboxes + full in-app management" },
-  { icon: Database,     ar: "قاعدة بيانات", en: "Database",     priceAr: "300",  priceEn: "300",  perAr: "/شهر", perEn: "/mo", noteAr: "10GB MongoDB أو PostgreSQL",        noteEn: "10GB MongoDB or PostgreSQL" },
-  { icon: MessageSquare,ar: "رسائل SMS",   en: "SMS",           priceAr: "300",  priceEn: "300",  perAr: "/شهر", perEn: "/mo", noteAr: "1500 رسالة شهرياً",                noteEn: "1,500 messages / month" },
-  { icon: Send,         ar: "إرسال بريد",  en: "Email Sending", priceAr: "100",  priceEn: "100",  perAr: "/شهر", perEn: "/mo", noteAr: "1000 رسالة شهرياً",                noteEn: "1,000 messages / month" },
-  { icon: Search,       ar: "تحسين SEO",  en: "SEO Boost",      priceAr: "300",  priceEn: "300",  perAr: "/شهر", perEn: "/mo", noteAr: "تحسين كامل لمحركات البحث",        noteEn: "Full search engine optimization" },
-  { icon: Bot,          ar: "ذكاء اصطناعي", en: "AI Add-On",    priceAr: "150",  priceEn: "150",  perAr: "+", perEn: "+",      noteAr: "3 فئات: A1 / A2 / A3",             noteEn: "3 tiers: A1 / A2 / A3" },
 ];
 
 const TABS = [
@@ -194,12 +186,26 @@ export default function Home() {
 
             {/* Sector chips */}
             <motion.div {...fade(1)} className="flex flex-wrap justify-center gap-2 md:gap-2.5 mb-14">
-              {SECTORS.map((s, i) => (
-                <div key={i} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-xs font-medium">
-                  <s.icon className="w-3.5 h-3.5" />
-                  {ar ? s.arName : s.enName}
-                </div>
-              ))}
+              {SECTORS.map((s: any, i) => {
+                const content = (
+                  <div
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                      s.custom
+                        ? "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
+                        : "bg-black/[0.04] dark:bg-white/[0.06] hover-elevate"
+                    }`}
+                    data-testid={`chip-sector-${i}`}
+                  >
+                    <s.icon className="w-3.5 h-3.5" />
+                    {ar ? s.arName : s.enName}
+                  </div>
+                );
+                return (
+                  <Link key={i} href={s.custom ? "/contact" : "/systems"}>
+                    {content}
+                  </Link>
+                );
+              })}
             </motion.div>
 
             {/* Templates grid */}
@@ -245,44 +251,36 @@ export default function Home() {
 
         {/* ─── PRICING ─── */}
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-12 text-center max-w-2xl mx-auto">
+          <div className="container mx-auto px-5 md:px-8 max-w-4xl">
+            <motion.div {...fade(0)} className="mb-10 text-center">
               <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{ar ? "أسعار واضحة، بدون مفاجآت" : "Clear pricing, zero surprises"}</h2>
-              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed">
-                {ar ? "كل خدمة بسعرها المعلن. تدفع فقط على اللي تحتاجه." : "Every service at its published price. Pay only for what you need."}
+              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed max-w-2xl mx-auto">
+                {ar
+                  ? "باقات شاملة بكل ما تحتاجه — كل شيء داخل السعر، بدون إضافات خفية ولا مفاجآت."
+                  : "All-inclusive plans — everything in the price, no hidden add-ons, no surprises."}
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto">
-              {PRICING_HIGHLIGHTS.map((p, i) => (
-                <motion.div key={i} {...fade(i)}
-                  className="rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] p-5 md:p-6 hover-elevate transition-all"
-                  data-testid={`card-addon-${i}`}
-                >
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-11 h-11 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
-                      <p.icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-black text-xl md:text-2xl tracking-tight">{ar ? p.priceAr : p.priceEn}</span>
-                      <SARIcon className="w-3.5 h-3.5 text-black/45 dark:text-white/45" />
-                      <span className="text-[11px] text-black/45 dark:text-white/45 font-medium">{ar ? p.perAr : p.perEn}</span>
-                    </div>
-                  </div>
-                  <div className="font-bold text-base md:text-lg mb-1.5">{ar ? p.ar : p.en}</div>
-                  <div className="text-xs md:text-sm text-black/55 dark:text-white/55 leading-relaxed">{ar ? p.noteAr : p.noteEn}</div>
-                </motion.div>
-              ))}
-            </div>
-
-            <div className="text-center mt-12">
+            <motion.div {...fade(1)} className="rounded-3xl bg-black/[0.03] dark:bg-white/[0.04] p-8 md:p-12 text-center">
+              <div className="text-sm font-bold text-black/55 dark:text-white/55 mb-3 uppercase tracking-wider">
+                {ar ? "ابدأ من" : "Starting from"}
+              </div>
+              <div className="flex items-baseline justify-center gap-2 mb-6">
+                <span className="text-5xl md:text-6xl font-black tracking-tight">1,500</span>
+                <SARIcon className="w-6 h-6 text-black/55 dark:text-white/55" />
+              </div>
+              <p className="text-black/65 dark:text-white/65 text-sm md:text-base leading-relaxed max-w-xl mx-auto mb-8">
+                {ar
+                  ? "تختار الباقة اللي تناسب نشاطك، ونحن نبني ونسلّم. كل شيء واضح من البداية."
+                  : "Pick the plan that fits your business, we build & deliver. Everything clear upfront."}
+              </p>
               <Link href="/prices">
-                <Button className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-view-pricing">
-                  {ar ? "عرض كل الباقات والإضافات" : "See all plans & add-ons"}
+                <Button className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-7 font-bold gap-2" data-testid="button-view-pricing">
+                  {ar ? "عرض كل الباقات" : "See all plans"}
                   <Arrow className="w-4 h-4" />
                 </Button>
               </Link>
-            </div>
+            </motion.div>
           </div>
         </section>
 
