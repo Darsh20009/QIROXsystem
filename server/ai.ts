@@ -504,7 +504,7 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           planPeriod: { type: "string", enum: ["monthly", "sixmonth", "annual", "lifetime"], description: "فترة الاشتراك" },
           businessName: { type: "string", description: "اسم نشاط العميل" },
           phone: { type: "string", description: "رقم الجوال" },
-          totalAmount: { type: "number", description: "المبلغ الإجمالي بالريال" },
+          totalAmount: { type: ["number", "string"], description: "المبلغ الإجمالي بالريال (رقم)" },
           notes: { type: "string", description: "ملاحظات للطلب" },
           projectType: { type: "string", description: "نوع المشروع" },
           sector: { type: "string", description: "القطاع" },
@@ -1255,7 +1255,21 @@ async function handleChat(req: any, res: any) {
     return res.json({ reply: textReply.replace(/\[اقتراح:[^\]]+\]/g, "").trim(), suggestions });
   } catch (err: any) {
     console.error("[AI Chat Error]", err.message);
-    return res.json({ reply: "⚠️ حدث خطأ في الذكاء الاصطناعي. تحقق من الإنترنت وحاول مجدداً." });
+    // Fallback: retry without tools so user still gets a real answer
+    try {
+      const fallback = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: "أنت مساعد QIROX Studio الذكي. أجب بالعربية باختصار وبأسلوب ودود. لا تستخدم أي أدوات الآن — فقط ساعد العميل بالكلام." },
+          { role: "user", content: req.body?.message || "" },
+        ],
+        temperature: 0.6, max_tokens: 500,
+      });
+      const reply = fallback.choices[0]?.message?.content?.trim() || "أهلاً، كيف أقدر أساعدك؟";
+      return res.json({ reply, suggestions: [] });
+    } catch {
+      return res.json({ reply: "أهلاً بك في QIROX 👋 خدمتنا متاحة. كيف أقدر أساعدك؟ يمكنك تصفح /prices للأسعار أو /start للبدء بمشروع.", suggestions: [] });
+    }
   }
 }
 
