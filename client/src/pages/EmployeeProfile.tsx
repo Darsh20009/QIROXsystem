@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download, Instagram, Twitter, Linkedin, Youtube, Music2, Globe, RotateCw, IdCard } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+import qiroxLogoNoBgPath from "@assets/qirox_without_background_1771716363944.png";
 import { BiometricManager } from "@/components/BiometricManager";
 import { UserAvatar } from "@/components/UserAvatar";
 import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
@@ -60,27 +61,78 @@ export default function EmployeeProfile() {
   const cardBackRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<"front" | "back" | null>(null);
 
+  /** Convert any img element's CSS filter (brightness-0 invert) to a white pixel canvas data URL */
+  async function toWhiteDataUrl(src: string): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const offscreen = document.createElement("canvas");
+        offscreen.width = img.naturalWidth;
+        offscreen.height = img.naturalHeight;
+        const ctx = offscreen.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const alpha = data[i + 3];
+          if (alpha > 0) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+          }
+        }
+        ctx.putImageData(imageData, 0, 0);
+        resolve(offscreen.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    });
+  }
+
   async function downloadCardSide(side: "front" | "back") {
     const node = side === "front" ? cardFrontRef.current : cardBackRef.current;
     if (!node) return;
     try {
       setDownloading(side);
       const html2canvas = (await import("html2canvas")).default;
+
+      // Pre-render white logo data URL for canvas (html2canvas ignores CSS filters)
+      const whiteLogoUrl = await toWhiteDataUrl(qiroxLogoPath);
+
       // Temporarily neutralize 3D transforms so capture is flat
       const prevTransform = node.style.transform;
       const prevBackface = node.style.backfaceVisibility;
       node.style.transform = "none";
       node.style.backfaceVisibility = "visible";
+
       // Allow layout/paint flush
       await new Promise(r => requestAnimationFrame(() => r(null)));
+
       const canvas = await html2canvas(node, {
         backgroundColor: null,
         scale: 3,
         useCORS: true,
+        allowTaint: false,
         logging: false,
+        onclone: (_doc, element) => {
+          // Fix Arabic text direction (inherited dir="ltr" from outer wrapper)
+          element.style.direction = "rtl";
+          element.querySelectorAll("[data-dir-auto]").forEach(el => {
+            (el as HTMLElement).style.direction = "rtl";
+            (el as HTMLElement).style.unicodeBidi = "embed";
+          });
+          // Replace CSS-filtered logo imgs with pre-rendered white version
+          element.querySelectorAll("img[data-white-logo]").forEach(el => {
+            (el as HTMLImageElement).src = whiteLogoUrl;
+            (el as HTMLImageElement).style.filter = "none";
+          });
+        },
       });
+
       node.style.transform = prevTransform;
       node.style.backfaceVisibility = prevBackface;
+
       const url = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       const name = ((profile as any)?.fullName || (user as any)?.fullName || (user as any)?.username || "qirox-employee").toString().replace(/\s+/g, "-");
@@ -636,12 +688,12 @@ export default function EmployeeProfile() {
                     {/* Lanyard hole */}
                     <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-zinc-800 border border-white/20 shadow-inner" />
 
-                    <div className="relative z-10 flex flex-col items-center pt-8 pb-5 px-5 h-full">
+                    <div className="relative z-10 flex flex-col items-center pt-8 pb-5 px-5 h-full" dir="rtl">
                       {/* Logo */}
                       <div className="flex items-center gap-2 mb-1">
-                        <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain brightness-0 invert" />
+                        <img src={qiroxLogoPath} alt="QIROX" data-white-logo="true" className="h-7 w-auto object-contain brightness-0 invert" crossOrigin="anonymous" />
                       </div>
-                      <div className="text-[9px] tracking-[0.4em] text-white/50 font-medium mb-5">EMPLOYEE</div>
+                      <div className="text-[9px] tracking-[0.4em] text-white/50 font-medium mb-5" dir="ltr">EMPLOYEE</div>
 
                       {/* Photo with silver ring */}
                       <div className="relative mb-4">
@@ -650,7 +702,7 @@ export default function EmployeeProfile() {
                         }} />
                         <div className="relative w-32 h-32 rounded-full overflow-hidden border-[3px] border-black bg-zinc-800 shadow-xl">
                           {profile?.profilePhotoUrl ? (
-                            <img src={profile.profilePhotoUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={profile.profilePhotoUrl} alt="" className="w-full h-full object-cover" crossOrigin="anonymous" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-4xl text-white/60 font-bold">
                               {(profile?.fullName || (user as any)?.fullName || "?")[0]?.toUpperCase()}
@@ -660,12 +712,12 @@ export default function EmployeeProfile() {
                       </div>
 
                       {/* Name */}
-                      <div className="text-white font-bold text-lg tracking-wide text-center leading-tight px-2 truncate max-w-full" data-testid="text-id-name">
+                      <div className="text-white font-bold text-lg tracking-wide text-center leading-tight px-2 truncate max-w-full" dir="auto" data-dir-auto="true" data-testid="text-id-name">
                         {profile?.fullName || (user as any)?.fullName || (user as any)?.username}
                       </div>
 
                       {/* Job title */}
-                      <div className="mt-1.5 px-3 py-1 rounded-full border border-white/25 bg-white/[0.06] text-white/85 text-[10px] tracking-[0.18em] uppercase font-semibold max-w-[220px] truncate text-center">
+                      <div className="mt-1.5 px-3 py-1 rounded-full border border-white/25 bg-white/[0.06] text-white/85 text-[10px] tracking-[0.18em] uppercase font-semibold max-w-[220px] truncate text-center" dir="auto" data-dir-auto="true">
                         {(profile?.jobTitle && profile.jobTitle.trim()) || (L ? "موظف" : "Team Member")}
                       </div>
 
@@ -752,11 +804,11 @@ export default function EmployeeProfile() {
                       background: "linear-gradient(90deg, #71717a, #ffffff, #a1a1aa, #ffffff, #71717a)"
                     }} />
 
-                    <div className="relative z-10 flex flex-col items-center justify-between pt-7 pb-5 px-5 h-full">
+                    <div className="relative z-10 flex flex-col items-center justify-between pt-7 pb-5 px-5 h-full" dir="rtl">
                       {/* Header */}
                       <div className="flex flex-col items-center">
-                        <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain brightness-0 invert opacity-95" />
-                        <div className="mt-1 text-[9px] tracking-[0.5em] text-white/55 font-semibold">IDENTIFICATION</div>
+                        <img src={qiroxLogoPath} alt="QIROX" data-white-logo="true" crossOrigin="anonymous" className="h-6 w-auto object-contain brightness-0 invert opacity-95" />
+                        <div className="mt-1 text-[9px] tracking-[0.5em] text-white/55 font-semibold" dir="ltr">IDENTIFICATION</div>
                       </div>
 
                       {/* Watermark ID */}
@@ -793,7 +845,7 @@ export default function EmployeeProfile() {
                               />
                               {/* Centered QIROX logo overlay */}
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-md bg-white flex items-center justify-center shadow-md ring-1 ring-black/10">
-                                <img src={qiroxLogoPath} alt="QIROX" className="w-7 h-7 object-contain" />
+                                <img src={qiroxLogoNoBgPath} alt="QIROX" crossOrigin="anonymous" className="w-7 h-7 object-contain" />
                               </div>
                             </div>
                           </div>
@@ -807,10 +859,10 @@ export default function EmployeeProfile() {
 
                       {/* Scan instructions */}
                       <div className="text-center space-y-1.5">
-                        <div className="text-white text-xs font-bold tracking-wider">
+                        <div className="text-white text-xs font-bold tracking-wider" dir="auto" data-dir-auto="true">
                           {L ? "امسح للدخول الفوري" : "SCAN TO LOGIN"}
                         </div>
-                        <div className="text-white/55 text-[9px] tracking-wide">
+                        <div className="text-white/55 text-[9px] tracking-wide" dir="auto" data-dir-auto="true">
                           {L ? "افتح كاميرا هاتفك ووجهها للباركود" : "Open your phone camera & point it at the code"}
                         </div>
                       </div>
