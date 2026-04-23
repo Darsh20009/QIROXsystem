@@ -56,6 +56,45 @@ export default function EmployeeProfile() {
     const queryClient = useQueryClient();
     const { data: user } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cardFrontRef = useRef<HTMLDivElement>(null);
+  const cardBackRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState<"front" | "back" | null>(null);
+
+  async function downloadCardSide(side: "front" | "back") {
+    const node = side === "front" ? cardFrontRef.current : cardBackRef.current;
+    if (!node) return;
+    try {
+      setDownloading(side);
+      const html2canvas = (await import("html2canvas")).default;
+      // Temporarily neutralize 3D transforms so capture is flat
+      const prevTransform = node.style.transform;
+      const prevBackface = node.style.backfaceVisibility;
+      node.style.transform = "none";
+      node.style.backfaceVisibility = "visible";
+      // Allow layout/paint flush
+      await new Promise(r => requestAnimationFrame(() => r(null)));
+      const canvas = await html2canvas(node, {
+        backgroundColor: null,
+        scale: 3,
+        useCORS: true,
+        logging: false,
+      });
+      node.style.transform = prevTransform;
+      node.style.backfaceVisibility = prevBackface;
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      const name = ((profile as any)?.fullName || (user as any)?.fullName || (user as any)?.username || "qirox-employee").toString().replace(/\s+/g, "-");
+      a.href = url;
+      a.download = `${name}-id-card-${side}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.error("download card error", e);
+    } finally {
+      setDownloading(null);
+    }
+  }
   const [form, setForm] = useState<Partial<Profile>>({});
   const [newSkill, setNewSkill] = useState("");
   const [photoTab, setPhotoTab] = useState<PhotoTab>("photo");
@@ -573,6 +612,7 @@ export default function EmployeeProfile() {
                 >
                   {/* FRONT — Ivory & Gray luxury edition */}
                   <div
+                    ref={cardFrontRef}
                     className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-400/30"
                     style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
                   >
@@ -682,6 +722,7 @@ export default function EmployeeProfile() {
 
                   {/* BACK — Ivory & Gray with creative QR frame */}
                   <div
+                    ref={cardBackRef}
                     className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-400/30"
                     style={{
                       backfaceVisibility: "hidden",
@@ -790,34 +831,39 @@ export default function EmployeeProfile() {
                 {L ? "اضغط على البطاقة لقلبها وعرض الباركود" : "Tap the card to flip and reveal the QR code"}
               </p>
 
-              <div className="flex gap-2 w-full">
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  onClick={() => downloadCardSide("front")}
+                  disabled={downloading !== null}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                  data-testid="button-download-card-front"
+                >
+                  {downloading === "front" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  {L ? "تحميل الوجه" : "Download Front"}
+                </Button>
+                <Button
+                  onClick={() => downloadCardSide("back")}
+                  disabled={downloading !== null}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                  data-testid="button-download-card-back"
+                >
+                  {downloading === "back" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  {L ? "تحميل الخلفية" : "Download Back"}
+                </Button>
                 <Button
                   onClick={() => generateQrMutation.mutate()}
                   disabled={generateQrMutation.isPending}
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className="flex-1 gap-1.5 text-xs border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
+                  className="col-span-2 gap-1.5 text-xs text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                   data-testid="button-regenerate-qr"
                 >
                   {generateQrMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                  {L ? "تجديد الباركود" : "Regenerate"}
-                </Button>
-                <Button
-                  onClick={() => {
-                    const svg = document.querySelector("#qr-login-svg") as SVGSVGElement | null;
-                    if (!svg) return;
-                    const data = new XMLSerializer().serializeToString(svg);
-                    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
-                    const a = document.createElement("a");
-                    a.href = url; a.download = "login-qr.svg"; a.click();
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1.5 text-xs border-black/10 hover:bg-black/[0.04]"
-                  data-testid="button-download-qr"
-                >
-                  <Download className="w-3 h-3" />
-                  {L ? "تحميل QR" : "Download QR"}
+                  {L ? "تجديد الباركود" : "Regenerate QR"}
                 </Button>
               </div>
             </div>
