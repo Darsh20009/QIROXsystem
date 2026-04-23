@@ -198,14 +198,12 @@ export default function Navigation() {
   }, []);
 
   const navLinks = [
-    { href: "/", label: t("nav.home") },
+    { href: "/", label: lang === "ar" ? "الرئيسية" : "Home" },
+    { href: "/about", label: lang === "ar" ? "من نحن" : "About" },
+    { href: "/prices", label: lang === "ar" ? "الباقات" : "Plans" },
     { href: "/devices", label: lang === "ar" ? "الأجهزة" : "Devices" },
-    { href: "/prices", label: t("nav.prices") },
-    { href: "/demos", label: lang === "ar" ? "النماذج" : "Demos" },
-    { href: "/consultation", label: lang === "ar" ? "احجز استشارة" : "Book Consultation" },
-    { href: "/about", label: t("nav.about") },
-    { href: "/partners", label: t("nav.partners") },
-    { href: "/contact", label: t("nav.contact") },
+    { href: "/consultation", label: lang === "ar" ? "الاستشارات" : "Consultations" },
+    { href: "/contact", label: lang === "ar" ? "تواصل معنا" : "Contact Us" },
   ];
 
   const adminLinks = user ? [
@@ -214,7 +212,7 @@ export default function Navigation() {
 
   const allLinks = [...navLinks, ...adminLinks];
 
-  const darkHeroRoutes = ["/", "/devices", "/demos", "/consultation"];
+  const darkHeroRoutes: string[] = [];
   const isOnDarkHero = darkHeroRoutes.includes(location) && !scrolled;
 
   return (
