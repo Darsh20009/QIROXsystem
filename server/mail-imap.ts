@@ -1,7 +1,7 @@
 import { ImapFlow } from "imapflow";
 import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
-import { MailAccountModel, MailCacheModel } from "./models";
+import { MailAccountModel, MailCacheModel, UserModel } from "./models";
 import type { Document } from "mongoose";
 
 export interface MailAccountDoc {
@@ -309,5 +309,20 @@ export async function seedDefaultAccounts(): Promise<void> {
       { upsert: true }
     );
   }
+
+  // Update known users' jobTitle so the sidebar shows proper title
+  const USER_TITLES: { username: string; jobTitle: string; fullName: string }[] = [
+    { username: "y.darwish",     jobTitle: "المدير التقني · CTO",    fullName: "يوسف محمد درويش" },
+    { username: "ydarwish",      jobTitle: "المدير التقني · CTO",    fullName: "يوسف محمد درويش" },
+    { username: "m.aldbani",     jobTitle: "المدير التنفيذي · CEO",  fullName: "محمد الدباني" },
+    { username: "maldbani",      jobTitle: "المدير التنفيذي · CEO",  fullName: "محمد الدباني" },
+  ];
+  for (const u of USER_TITLES) {
+    await UserModel.updateOne(
+      { username: u.username, jobTitle: { $in: ["", null, undefined] } },
+      { $set: { jobTitle: u.jobTitle } }
+    ).catch(() => {});
+  }
+
   console.log("[Mail] Default accounts seeded");
 }

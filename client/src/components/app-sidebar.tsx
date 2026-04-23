@@ -35,6 +35,20 @@ const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sa
 const FINANCE_ROLES = ["admin", "manager", "accountant"];
 const SALES_ROLES = ["admin", "manager", "sales_manager", "sales"];
 
+const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
+  admin:         { ar: "مدير النظام",       en: "System Admin" },
+  manager:       { ar: "مدير تنفيذي",       en: "Executive Manager" },
+  developer:     { ar: "مطوّر",             en: "Developer" },
+  designer:      { ar: "مصمم",              en: "Designer" },
+  support:       { ar: "دعم فني",           en: "Support" },
+  sales_manager: { ar: "مدير المبيعات",     en: "Sales Manager" },
+  sales:         { ar: "مبيعات",            en: "Sales" },
+  accountant:    { ar: "محاسب",             en: "Accountant" },
+  merchant:      { ar: "تاجر",              en: "Merchant" },
+  client:        { ar: "عميل",              en: "Client" },
+  supplier:      { ar: "مورّد",             en: "Supplier" },
+};
+
 interface NavItem {
   title: string;
   icon: any;
@@ -96,6 +110,7 @@ export function AppSidebar() {
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
     // Employee — communication (التواصل)
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
+    { title: ar ? "الصندوق البريدي" : "Mail Inbox", icon: Mail, url: "/employee/mail", group: "employee", section: "communication" },
     { title: ar ? "مجموعات الفريق" : "Team Groups", icon: Users, url: "/groups", group: "employee", section: "communication" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication" },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "employee", section: "communication" },
@@ -153,6 +168,7 @@ export function AppSidebar() {
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
     { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
+    { title: ar ? "إدارة البريد المؤسسي" : "Corporate Mail Mgmt", icon: Mail, url: "/admin/mail-accounts", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "التقييمات والمراجعات" : "Reviews & Ratings", icon: Star, url: "/admin/reviews", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
     { title: ar ? "إشعارات Push" : "Push Notifications", icon: Megaphone, url: "/admin/push-notifications", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     // Admin — finance
@@ -537,12 +553,19 @@ export function AppSidebar() {
         {user ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black shrink-0">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black bg-black dark:bg-white text-white dark:text-black shrink-0">
                 {(user.fullName || user.username || "?")[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate text-black dark:text-white">{user.fullName || user.username}</p>
-                <p className="text-[10px] text-black/25 dark:text-white/25 truncate">{user.role}</p>
+                <p className="text-[10px] text-black/40 dark:text-white/40 truncate">
+                  {(user as any).jobTitle
+                    ? (user as any).jobTitle
+                    : (ar
+                        ? (ROLE_LABELS[user.role]?.ar || user.role)
+                        : (ROLE_LABELS[user.role]?.en || user.role)
+                      )}
+                </p>
               </div>
             </div>
             <button
