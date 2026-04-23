@@ -82,6 +82,8 @@ const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
 const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
 const EmployeeProfile = lazy(() => import("@/pages/EmployeeProfile"));
+const EmployeeMail = lazy(() => import("@/pages/EmployeeMail"));
+const AdminMailAccounts = lazy(() => import("@/pages/AdminMailAccounts"));
 const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
 const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
 const DevChecklist = lazy(() => import("@/pages/DevChecklist"));
@@ -288,6 +290,8 @@ function AdminRouter() {
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />
+        <Route path="/employee/mail" component={EmployeeMail} />
+        <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
         <Route path="/employee/demos" component={EmployeeDemos} />
         <Route path="/profile" component={ClientProfile} />
         <Route path="/employee/new-order" component={EmployeeNewOrder} />
@@ -372,6 +376,8 @@ const ALL_PAGES = [
   { title: "الفواتير", titleEn: "Invoices", url: "/admin/invoices", group: "employee" },
   { title: "الإيصالات", titleEn: "Receipts", url: "/admin/receipts", group: "employee" },
   { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor/portal", group: "employee" },
+  { title: "الصندوق البريدي", titleEn: "Mail Inbox", url: "/employee/mail", group: "employee" },
+  { title: "إدارة البريد الإلكتروني", titleEn: "Email Accounts", url: "/admin/mail-accounts", group: "employee" },
   { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
   { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
   { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },

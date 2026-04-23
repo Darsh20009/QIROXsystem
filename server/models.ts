@@ -1921,3 +1921,38 @@ const quotationSchema = new mongoose.Schema({
 }, { timestamps: true });
 quotationSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const QuotationModel = mongoose.models.Quotation || mongoose.model("Quotation", quotationSchema);
+
+// ─── Mail Accounts ───────────────────────────────────────────────────────────
+const mailAccountSchema = new mongoose.Schema({
+  emailAddress:   { type: String, required: true, unique: true },
+  password:       { type: String, required: true },
+  displayName:    { type: String, default: "" },
+  jobTitle:       { type: String, default: "" },
+  imapHost:       { type: String, default: "server222.web-hosting.com" },
+  imapPort:       { type: Number, default: 993 },
+  smtpHost:       { type: String, default: "server222.web-hosting.com" },
+  smtpPort:       { type: Number, default: 465 },
+  assignedUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  isShared:       { type: Boolean, default: false },
+  sharedWith:     [{ type: String }], // roles that can see this inbox: "admin","ceo","cto"
+}, { timestamps: true });
+mailAccountSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.password; ret.id = ret._id?.toString(); return ret; } });
+export const MailAccountModel = mongoose.models.MailAccount || mongoose.model("MailAccount", mailAccountSchema);
+
+// ─── Mail Cache (locally cached email list per account) ──────────────────────
+const mailCacheSchema = new mongoose.Schema({
+  accountId:  { type: mongoose.Schema.Types.ObjectId, ref: "MailAccount", required: true, index: true },
+  folder:     { type: String, default: "INBOX" },
+  uid:        { type: Number, required: true },
+  subject:    { type: String, default: "" },
+  from:       { type: String, default: "" },
+  to:         { type: String, default: "" },
+  date:       { type: Date },
+  seen:       { type: Boolean, default: false },
+  html:       { type: String, default: "" },
+  text:       { type: String, default: "" },
+  snippet:    { type: String, default: "" },
+}, { timestamps: true });
+mailCacheSchema.index({ accountId: 1, folder: 1, uid: 1 }, { unique: true });
+mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const MailCacheModel = mongoose.models.MailCache || mongoose.model("MailCache", mailCacheSchema);
