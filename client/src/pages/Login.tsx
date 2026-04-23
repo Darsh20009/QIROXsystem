@@ -6,7 +6,8 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine } from "lucide-react";
+import { QrLoginScanner } from "@/components/QrLoginScanner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +32,7 @@ export default function Login() {
   const queryClient = useQueryClient();
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleCallbackHandled = useRef(false);
@@ -1279,6 +1281,30 @@ export default function Login() {
                 </motion.button>
               )}
 
+              {/* QR Scan login */}
+              {!isRegister && (
+                <button
+                  type="button"
+                  onClick={() => setQrScannerOpen(true)}
+                  className="mt-3 w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                  data-testid="button-open-qr-scanner"
+                >
+                  <div className="relative flex-shrink-0 w-11 h-11 rounded-lg bg-black flex items-center justify-center">
+                    <ScanLine className="w-5 h-5 text-white" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-black font-bold text-[13px] leading-snug">
+                      {ar ? "تسجيل الدخول بالباركود" : "Sign in with QR badge"}
+                    </p>
+                    <p className="text-black/45 text-[10.5px] font-medium mt-0.5">
+                      {ar ? "امسح بطاقة الموظف · بدون كلمة مرور" : "Scan your ID badge · no password"}
+                    </p>
+                  </div>
+                  <QrCode className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+                </button>
+              )}
+
               <div className="flex items-center gap-3 mt-4">
                 <div className="flex-1 h-px bg-black/[0.07]" />
                 <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
@@ -1286,6 +1312,39 @@ export default function Login() {
               </div>
             </div>
           )}
+
+          {/* QR scanner shown even when no OAuth providers enabled */}
+          {!isRegister && !(googleEnabled || githubEnabled || appleEnabled) && (
+            <div className="mb-5">
+              <button
+                type="button"
+                onClick={() => setQrScannerOpen(true)}
+                className="w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                data-testid="button-open-qr-scanner-alt"
+              >
+                <div className="relative flex-shrink-0 w-11 h-11 rounded-lg bg-black flex items-center justify-center">
+                  <ScanLine className="w-5 h-5 text-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-black font-bold text-[13px] leading-snug">
+                    {ar ? "تسجيل الدخول بالباركود" : "Sign in with QR badge"}
+                  </p>
+                  <p className="text-black/45 text-[10.5px] font-medium mt-0.5">
+                    {ar ? "امسح بطاقة الموظف · بدون كلمة مرور" : "Scan your ID badge · no password"}
+                  </p>
+                </div>
+                <QrCode className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+              </button>
+              <div className="flex items-center gap-3 mt-4">
+                <div className="flex-1 h-px bg-black/[0.07]" />
+                <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
+                <div className="flex-1 h-px bg-black/[0.07]" />
+              </div>
+            </div>
+          )}
+
+          <QrLoginScanner open={qrScannerOpen} onClose={() => setQrScannerOpen(false)} />
 
           {/* Form */}
           <Form {...form}>
