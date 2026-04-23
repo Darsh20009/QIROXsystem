@@ -1,11 +1,22 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { QiroxIcon } from "@/components/qirox-brand";
-import { Sparkles, X, Send, Loader2, Minimize2 } from "lucide-react";
+import { Sparkles, X, Send, Loader2, Minimize2, ArrowUpRight, ExternalLink, Eye, QrCode } from "lucide-react";
 
-type Msg = { role: "user" | "assistant"; content: string; suggestions?: string[] };
+type ToolArtifact = {
+  name: string;
+  displayType?: string;
+  data?: any;
+};
+
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  suggestions?: string[];
+  artifacts?: ToolArtifact[];
+};
 
 const SESSION_KEY = "qirox_companion_session";
 
@@ -43,7 +54,7 @@ function pageContext(path: string, L: boolean): { hint: string; quick: string[] 
 }
 
 export default function QiroxCompanion() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { data: user } = useUser();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
@@ -113,7 +124,26 @@ export default function QiroxCompanion() {
       const data = await res.json();
       const reply = data.reply || data.message || data.content || (L ? "..." : "...");
       const suggestions: string[] = Array.isArray(data.suggestions) ? data.suggestions : [];
-      setMsgs(m => [...m, { role: "assistant", content: reply, suggestions }]);
+
+      // Collect tool artifacts (navigation, previews, qr, etc.) for visual rendering
+      const artifacts: ToolArtifact[] = Array.isArray(data.allTools)
+        ? data.allTools
+            .filter((t: any) => t.success && t.displayType && t.data)
+            .map((t: any) => ({ name: t.name, displayType: t.displayType, data: t.data }))
+        : [];
+
+      // Auto-navigate if AI fired a navigate_to tool with autoOpen
+      const autoNav = artifacts.find(a => a.displayType === "navigate" && a.data?.autoOpen !== false && a.data?.path);
+      if (autoNav) {
+        setTimeout(() => setLocation(autoNav.data.path), 700);
+      }
+
+      // Legacy NAVIGATE action (text marker fallback)
+      if (data.action === "NAVIGATE" && data?.data?.url && !autoNav) {
+        artifacts.push({ name: "navigate_to", displayType: "navigate", data: { path: data.data.url, label: data.data.label, autoOpen: false } });
+      }
+
+      setMsgs(m => [...m, { role: "assistant", content: reply, suggestions, artifacts }]);
     } catch (err: any) {
       setMsgs(m => [...m, { role: "assistant", content: L ? "تعذّر الاتصال بالمساعد. حاول مرة أخرى." : "Connection failed. Try again." }]);
     } finally {
@@ -178,9 +208,113 @@ export default function QiroxCompanion() {
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 bg-black/[0.015]">
                 {msgs.map((m, i) => (
                   <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] ${m.role === "user" ? "bg-black text-white" : "bg-white border border-black/10 text-black"} rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words`}
+                    <div className={`max-w-[92%] ${m.role === "user" ? "bg-black text-white" : "bg-white border border-black/10 text-black"} rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words space-y-2`}
                          data-testid={`msg-${m.role}-${i}`}>
-                      {m.content}
+                      {m.content && <div>{m.content}</div>}
+
+                      {/* Tool artifacts (navigate buttons, page previews, QR images, page lists) */}
+                      {m.artifacts && m.artifacts.length > 0 && (
+                        <div className="space-y-2 mt-1">
+                          {m.artifacts.map((a, k) => {
+                            if (a.displayType === "navigate") {
+                              const path = a.data?.path || "/";
+                              const label = a.data?.label || path;
+                              const auto = a.data?.autoOpen !== false;
+                              return (
+                                <button
+                                  key={k}
+                                  onClick={() => setLocation(path)}
+                                  className="w-full flex items-center justify-between gap-2 bg-black text-white hover:bg-black/85 transition rounded-xl px-3 py-2.5 text-xs font-bold group"
+                                  data-testid={`artifact-navigate-${i}-${k}`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                    <span>{auto ? (L ? "تم فتح: " : "Opened: ") : (L ? "افتح: " : "Open: ")}{label}</span>
+                                  </span>
+                                  <span className="text-[10px] opacity-60 font-mono">{path}</span>
+                                </button>
+                              );
+                            }
+
+                            if (a.displayType === "page_preview") {
+                              const path = a.data?.path || "/";
+                              const title = a.data?.title || path;
+                              const height = Math.min(600, Math.max(220, Number(a.data?.height) || 360));
+                              return (
+                                <div key={k} className="rounded-xl overflow-hidden border border-black/10 bg-white" data-testid={`artifact-preview-${i}-${k}`}>
+                                  <div className="flex items-center justify-between bg-black/[0.03] px-3 py-1.5 border-b border-black/10">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-black/70">
+                                      <Eye className="w-3 h-3" />
+                                      <span>{title}</span>
+                                    </div>
+                                    <button
+                                      onClick={() => setLocation(path)}
+                                      className="flex items-center gap-1 text-[10px] text-black/55 hover:text-black"
+                                    >
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                      {L ? "فتح" : "Open"}
+                                    </button>
+                                  </div>
+                                  <iframe
+                                    src={path}
+                                    title={title}
+                                    style={{ height: `${height}px` }}
+                                    className="w-full bg-white"
+                                    sandbox="allow-same-origin allow-scripts allow-forms"
+                                  />
+                                </div>
+                              );
+                            }
+
+                            if (a.displayType === "qr_code") {
+                              const url = a.data?.imageUrl;
+                              if (!url) return null;
+                              return (
+                                <div key={k} className="rounded-xl border border-black/10 bg-white p-3 flex items-center gap-3" data-testid={`artifact-qr-${i}-${k}`}>
+                                  <img src={url} alt={a.data?.label || "QR"} className="w-24 h-24 rounded-lg" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-black/70 mb-1">
+                                      <QrCode className="w-3 h-3" />
+                                      {L ? "رمز QR" : "QR Code"}
+                                    </div>
+                                    {a.data?.label && <p className="text-[11px] font-medium text-black truncate">{a.data.label}</p>}
+                                    <p className="text-[10px] text-black/50 truncate" dir="ltr">{a.data?.source}</p>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (a.displayType === "pages_list" && Array.isArray(a.data?.pages)) {
+                              return (
+                                <div key={k} className="rounded-xl border border-black/10 bg-white p-2 grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto" data-testid={`artifact-pages-${i}-${k}`}>
+                                  {a.data.pages.slice(0, 24).map((p: any, idx: number) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setLocation(p.path)}
+                                      className="flex flex-col items-start text-left p-1.5 rounded-lg bg-black/[0.03] hover:bg-black hover:text-white transition group"
+                                    >
+                                      <span className="text-[11px] font-bold leading-tight truncate w-full">{p.title}</span>
+                                      <span className="text-[9px] opacity-50 group-hover:opacity-70 font-mono truncate w-full" dir="ltr">{p.path}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            // Generic action_success — small chip
+                            if (a.displayType === "action_success") {
+                              return (
+                                <div key={k} className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-2 py-1 inline-flex items-center gap-1 font-bold">
+                                  ✓ {a.name}
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })}
+                        </div>
+                      )}
+
                       {m.suggestions && m.suggestions.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-black/10">
                           {m.suggestions.slice(0, 4).map((s, j) => (

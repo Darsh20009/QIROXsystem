@@ -515,6 +515,51 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "navigate_to",
+      description: "ينقل المستخدم فوراً إلى صفحة داخل المنصة. استخدم هذه الأداة عندما يطلب المستخدم 'افتح/خذني/وديني/روح إلى/أبي أوصل لـ' لأي قسم أو شاشة. متاحة لجميع الأدوار. استخدم المسارات الداخلية فقط (تبدأ بـ /).",
+      parameters: {
+        type: "object",
+        required: ["path"],
+        properties: {
+          path: { type: "string", description: "المسار الكامل داخل التطبيق (مثال: /admin/orders, /employee/profile, /prices, /systems/restaurant). يجب أن يبدأ بـ /." },
+          label: { type: "string", description: "اسم وصفي للزر الذي سيراه المستخدم (مثال: 'افتح الطلبات')" },
+          autoOpen: { type: "boolean", description: "إذا true يفتح الصفحة فوراً تلقائياً، إذا false يعرض زر للمستخدم. الافتراضي true." },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "show_page_preview",
+      description: "يعرض معاينة مرئية حية (iframe) لصفحة داخل المنصة داخل المحادثة، حتى يرى المستخدم محتوى الصفحة دون مغادرة الشات. استخدمها عندما يقول المستخدم 'وريني/أرني/اعرض لي صورة من/كيف تبدو صفحة...'. متاحة لجميع الأدوار.",
+      parameters: {
+        type: "object",
+        required: ["path"],
+        properties: {
+          path: { type: "string", description: "المسار الداخلي للصفحة (مثال: /prices, /admin/dashboard)" },
+          title: { type: "string", description: "عنوان المعاينة الذي يُعرض فوقها" },
+          height: { type: "number", description: "ارتفاع الإطار بالبكسل (افتراضي 360، أقصى 600)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_navigable_pages",
+      description: "يُرجع قائمة بأهم الصفحات والشاشات المتاحة في المنصة لمساعدة الذكاء الاصطناعي على معرفة أين يوجّه المستخدم. استخدمها عندما تشك في المسار الصحيح أو يريد المستخدم استعراض ما هو متاح.",
+      parameters: {
+        type: "object",
+        properties: {
+          area: { type: "string", enum: ["admin", "employee", "client", "public", "all"], description: "تصفية حسب المنطقة (افتراضي all)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "generate_qr_code",
       description: "توليد رمز QR من أي رابط أو نص. يُرجع صورة QR جاهزة للعرض أو الطباعة أو المشاركة. يُفيد لمشاركة فواتير، عروض أسعار، روابط دفع، روابط تحقق، أو أي رابط آخر.",
       parameters: {
@@ -1005,6 +1050,96 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
       };
     }
 
+    /* ── navigate_to ── */
+    if (name === "navigate_to") {
+      let path = String(args.path || "").trim();
+      if (!path.startsWith("/")) path = "/" + path;
+      // Strip protocol/host if accidentally included
+      try {
+        if (/^https?:\/\//i.test(path)) {
+          const u = new URL(path);
+          path = u.pathname + u.search;
+        }
+      } catch {}
+      return {
+        success: true,
+        data: {
+          path,
+          label: args.label || path,
+          autoOpen: args.autoOpen !== false,
+        },
+        display: { type: "navigate" },
+      };
+    }
+
+    /* ── show_page_preview ── */
+    if (name === "show_page_preview") {
+      let path = String(args.path || "").trim();
+      if (!path.startsWith("/")) path = "/" + path;
+      const height = Math.min(600, Math.max(200, Number(args.height) || 360));
+      return {
+        success: true,
+        data: {
+          path,
+          title: args.title || path,
+          height,
+        },
+        display: { type: "page_preview" },
+      };
+    }
+
+    /* ── list_navigable_pages ── */
+    if (name === "list_navigable_pages") {
+      const area = String(args.area || "all").toLowerCase();
+      const PAGES: Record<string, { path: string; title: string }[]> = {
+        public: [
+          { path: "/", title: "الرئيسية" },
+          { path: "/about", title: "من نحن" },
+          { path: "/prices", title: "الباقات والأسعار" },
+          { path: "/devices", title: "الأجهزة" },
+          { path: "/consultations", title: "الاستشارات" },
+          { path: "/contact", title: "تواصل معنا" },
+          { path: "/systems", title: "الأنظمة الجاهزة" },
+        ],
+        client: [
+          { path: "/dashboard", title: "لوحة العميل" },
+          { path: "/dashboard/orders", title: "طلباتي" },
+          { path: "/dashboard/wallet", title: "محفظتي" },
+          { path: "/dashboard/projects", title: "مشاريعي" },
+          { path: "/dashboard/invoices", title: "فواتيري" },
+          { path: "/dashboard/support", title: "تذاكر الدعم" },
+        ],
+        employee: [
+          { path: "/employee", title: "لوحة الموظف" },
+          { path: "/employee/profile", title: "ملف الموظف" },
+          { path: "/employee/tasks", title: "مهامي" },
+          { path: "/employee/orders", title: "الطلبات" },
+          { path: "/employee/clients", title: "العملاء" },
+          { path: "/employee/projects", title: "المشاريع" },
+          { path: "/employee/quotations", title: "عروض الأسعار" },
+          { path: "/employee/invoices", title: "الفواتير" },
+        ],
+        admin: [
+          { path: "/admin", title: "لوحة الإدارة" },
+          { path: "/admin/orders", title: "إدارة الطلبات" },
+          { path: "/admin/clients", title: "إدارة العملاء" },
+          { path: "/admin/employees", title: "إدارة الموظفين" },
+          { path: "/admin/projects", title: "إدارة المشاريع" },
+          { path: "/admin/quotations", title: "عروض الأسعار" },
+          { path: "/admin/invoices", title: "الفواتير" },
+          { path: "/admin/payments", title: "المدفوعات" },
+          { path: "/admin/analytics", title: "التحليلات" },
+          { path: "/admin/ai-sessions", title: "جلسات الذكاء الاصطناعي" },
+          { path: "/admin/notifications", title: "الإشعارات" },
+          { path: "/admin/system-map", title: "خريطة النظام" },
+        ],
+      };
+      const pages = area === "all"
+        ? Object.entries(PAGES).flatMap(([a, list]) => list.map(p => ({ ...p, area: a })))
+        : (PAGES[area] || []).map(p => ({ ...p, area }));
+      return { success: true, data: { pages }, display: { type: "pages_list" } };
+    }
+
     /* ── search_web ── */
     if (name === "search_web") {
       const result = await searchWeb(args.query);
@@ -1078,16 +1213,16 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
   const timeStr = now.toLocaleTimeString("ar-SA");
 
   const roleCapabilities: Record<string, string> = {
-    admin: "لديك صلاحية كاملة: قراءة وكتابة وحذف في جميع أقسام النظام. يمكنك تغيير حالات الطلبات، إرسال الإشعارات للجميع، إنشاء المهام، عرض التحليلات الكاملة.",
-    manager: "لديك صلاحية واسعة مثل المدير: تغيير حالات الطلبات، إرسال الإشعارات، إنشاء المهام، عرض التحليلات.",
-    developer: "موظف مطور — يمكنك عرض طلباتك ومهامك، إنشاء مهام في المشاريع المعينة لك، والحصول على أي مساعدة تقنية أو إبداعية تحتاجها.",
-    designer: "موظف مصمم — يمكنك عرض طلباتك ومهامك، إنشاء مهام في مشاريعك، والحصول على أي مساعدة تصميمية أو إبداعية.",
-    support: "موظف دعم — يمكنك عرض الطلبات وتغيير حالاتها، وإرسال تذاكر دعم، والمساعدة في أي شيء.",
-    sales: "موظف مبيعات — يمكنك عرض العملاء والطلبات وإرسال تذاكر دعم، والمساعدة في أي مهام مبيعاتية.",
-    sales_manager: "مدير مبيعات — يمكنك عرض العملاء والطلبات وإرسال الإشعارات وإدارة فريق المبيعات.",
-    accountant: "محاسب — يمكنك عرض التحليلات المالية والطلبات والمحافظ وأي تقارير مالية.",
-    merchant: "تاجر — يمكنك عرض متجرك وطلباتك وعملائك وإدارة منتجاتك، والمساعدة في أي شيء تجاري.",
-    client: "يمكنك عرض طلباتك ومشاريعك ورصيد محفظتك، وإلغاء الطلبات المعلّقة، وإرسال تذاكر دعم.",
+    admin: "**صلاحية مطلقة**: تنفيذ أي عملية في النظام بلا قيود — قراءة/إنشاء/تعديل/حذف، إدارة الموظفين والعملاء والطلبات والفواتير والإعدادات، الوصول لكل الصفحات الإدارية، إرسال إشعارات لأي جهة، إصدار أي مستند رسمي. تصرّف كأنك مدير العمليات الرقمي للمنصة.",
+    manager: "**صلاحية إدارية كاملة في حدود قسمه**: إدارة الطلبات والمشاريع والموظفين تحت إشرافه، إصدار عروض/فواتير، إرسال إشعارات للفريق، الوصول للوحات التحليل والإدارة. تصرّف بثقة المدير.",
+    developer: "**صلاحية موظف مطور كاملة**: إدارة المهام والمشاريع المعينة، تعديل حالاتها، إنشاء مهام جديدة، إصدار عروض سعر وفواتير للعملاء التقنيين، الوصول للوحة الموظف وكل أدواتها، طلب أي مساعدة تقنية/إبداعية بلا حدود (كتابة كود، مراجعة، شرح، توليد أفكار).",
+    designer: "**صلاحية موظف مصمم كاملة**: إدارة مشاريع التصميم والمهام المرتبطة، إصدار عروض سعر للتصميم، إنشاء مهام، طلب أي مساعدة إبداعية (موود بورد، ألوان، خطوط، نسخة، أفكار حملات).",
+    support: "**صلاحية موظف دعم كاملة**: عرض/تعديل جميع الطلبات وحالاتها، الرد على تذاكر الدعم، إرسال إيميلات للعملاء، إصدار فواتير حال الحاجة، الوصول لقاعدة العملاء والمشاريع. تصرّف كخط دفاع أول للعملاء.",
+    sales: "**صلاحية موظف مبيعات كاملة**: إدارة العملاء، إنشاء طلبات نيابة عنهم، إصدار عروض أسعار وفواتير، إرسال إيميلات تسويقية ومتابعات، الوصول لخط الأنابيب البيعي. اقفل الصفقات بنشاط.",
+    sales_manager: "**صلاحية مدير مبيعات كاملة**: كل صلاحيات المبيعات + إدارة الفريق، توزيع الفرص، إرسال إشعارات للفريق، عرض تحليلات الأداء.",
+    accountant: "**صلاحية محاسب كاملة**: إصدار/تعديل الفواتير، إدارة المحافظ والمدفوعات، عرض التقارير المالية، تصدير البيانات، إرسال تذكير دفع. تصرّف كأمين على الجانب المالي.",
+    merchant: "**صلاحية تاجر كاملة**: إدارة المتجر والمنتجات والطلبات، إصدار فواتير للعملاء، الردّ على استفساراتهم، عرض إحصاءات المبيعات.",
+    client: "صلاحية عميل: عرض طلباتك ومشاريعك ورصيد محفظتك، إلغاء الطلبات المعلّقة، إرسال تذاكر دعم، طلب فواتير، تصفح الباقات والأنظمة.",
     guest: "أنت زائر — يمكنني مساعدتك في فهم المنصة واختيار الباقة المناسبة وإرسال طلب تواصل أو استشارة مجانية نيابةً عنك.",
   };
 
@@ -1100,7 +1235,16 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
 - صلاحياتك: ${roleCapabilities[userRole || "guest"] || roleCapabilities.guest}
 
 == قدراتك الحقيقية في النظام ==
-أنت لست مجرد محادثة — أنت عامل ذكي يمكنه **تنفيذ عمليات فعلية** على النظام:
+أنت لست مجرد محادثة — أنت عامل ذكي يمكنه **تنفيذ عمليات فعلية** على النظام، **التنقّل بين الصفحات نيابة عن المستخدم**، و**عرض الصفحات بصرياً داخل المحادثة**:
+
+### 🧭 التنقّل والمعاينة البصرية (مهم جداً للموظفين)
+- **navigate_to**: عندما يقول المستخدم "افتح/خذني/وديني/روح/أبي أوصل لـ" أي شاشة → استخدم هذه الأداة فوراً وستفتح الصفحة له تلقائياً. مثال: المستخدم يقول "وديني صفحة الطلبات" → استدع \`navigate_to({ path: "/admin/orders", label: "الطلبات", autoOpen: true })\`.
+- **show_page_preview**: عندما يقول المستخدم "وريني/أرني صورة من/كيف تبدو صفحة..." → استخدم هذه الأداة لعرض معاينة حية للصفحة داخل الشات (iframe). مثال: "أبي أشوف صفحة الباقات" → استدع \`show_page_preview({ path: "/prices", title: "صفحة الباقات", height: 420 })\`.
+- **list_navigable_pages**: إذا لم تكن متأكداً من المسار الصحيح، استدعِ هذه الأداة أولاً للحصول على القائمة الكاملة.
+- **كن استباقياً**: عندما تقترح خطوة على المستخدم تتطلب فتح صفحة معينة، أرفقها بـ \`navigate_to\` تلقائياً ليصل بنقرة واحدة.
+- **اجمع الأدوات**: مثلاً عند إنشاء عرض سعر → نفّذ \`create_quotation\`، ثم \`generate_qr_code\` لرابط الطباعة، ثم اقترح \`navigate_to\` لصفحة عروض الأسعار. كل ذلك في رد واحد.
+
+### العمليات الأخرى:
 - 📋 **قراءة البيانات**: الطلبات، العملاء، الموظفون، المشاريع، التحليلات، المحفظة
 - ✏️ **تعديل البيانات**: تغيير حالة الطلبات، إنشاء المهام، تحديث الملاحظات
 - 📩 **الإرسال**:
