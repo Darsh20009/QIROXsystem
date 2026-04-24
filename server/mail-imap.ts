@@ -239,6 +239,7 @@ export async function sendMail(opts: {
   to: string;
   subject: string;
   body: string;
+  attachments?: { filename: string; content: string; contentType: string; encoding?: string }[];
 }): Promise<void> {
   const account = await getAccountRaw(opts.accountId);
   if (!account) throw new Error("Account not found");
@@ -263,6 +264,11 @@ export async function sendMail(opts: {
     subject: opts.subject,
     html,
     text: opts.body,
+    attachments: (opts.attachments || []).map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, "base64"),
+      contentType: a.contentType,
+    })),
   });
 }
 
@@ -310,18 +316,39 @@ export async function seedDefaultAccounts(): Promise<void> {
     );
   }
 
-  // Update known users' jobTitle so the sidebar shows proper title
-  const USER_TITLES: { username: string; jobTitle: string; fullName: string }[] = [
-    { username: "y.darwish",     jobTitle: "المدير التقني · CTO",    fullName: "يوسف محمد درويش" },
-    { username: "ydarwish",      jobTitle: "المدير التقني · CTO",    fullName: "يوسف محمد درويش" },
-    { username: "m.aldbani",     jobTitle: "المدير التنفيذي · CEO",  fullName: "محمد الدباني" },
-    { username: "maldbani",      jobTitle: "المدير التنفيذي · CEO",  fullName: "محمد الدباني" },
+  // Update known users' jobTitle and auto-assign their personal mail accounts
+  const KNOWN_USERS = [
+    {
+      patterns: [/y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i],
+      jobTitle: "المدير التقني · CTO",
+      mailEmail: "y.darwish@qiroxstudio.online",
+    },
+    {
+      patterns: [/m\.aldbani/i, /maldbani/i, /الدباني/i, /aldbani/i],
+      jobTitle: "المدير التنفيذي · CEO",
+      mailEmail: "m.aldbani@qiroxstudio.online",
+    },
   ];
-  for (const u of USER_TITLES) {
-    await UserModel.updateOne(
-      { username: u.username, jobTitle: { $in: ["", null, undefined] } },
-      { $set: { jobTitle: u.jobTitle } }
-    ).catch(() => {});
+
+  for (const ku of KNOWN_USERS) {
+    // Build OR query to find user by username, email, or fullName
+    const orConditions = ku.patterns.flatMap(p => [
+      { username: p },
+      { email: p },
+      { fullName: p },
+    ]);
+    const foundUser = await UserModel.findOne({ $or: orConditions }).select("_id fullName").catch(() => null);
+
+    if (foundUser) {
+      // Set jobTitle
+      await UserModel.updateOne({ _id: foundUser._id }, { $set: { jobTitle: ku.jobTitle } }).catch(() => {});
+      // Auto-assign personal mail account
+      await MailAccountModel.updateOne(
+        { emailAddress: ku.mailEmail },
+        { $set: { assignedUserId: foundUser._id.toString() } }
+      ).catch(() => {});
+      console.log(`[Mail] Auto-assigned ${ku.mailEmail} → ${(foundUser as any).fullName || foundUser._id}`);
+    }
   }
 
   console.log("[Mail] Default accounts seeded");

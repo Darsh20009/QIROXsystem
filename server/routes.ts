@@ -13254,11 +13254,11 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       const user = req.user as any;
       if ((user.role || "") === "client") return res.sendStatus(403);
       try {
-        const { accountId, to, subject, body } = req.body;
+        const { accountId, to, subject, body, attachments } = req.body;
         if (!accountId || !to || !subject || !body) return res.status(400).json({ error: "accountId, to, subject, body required" });
         const account = await MailAccountModel.findById(accountId).lean() as any;
         if (!account || !canAccessAccount(user, account)) return res.sendStatus(403);
-        await sendMail({ accountId, to, subject, body });
+        await sendMail({ accountId, to, subject, body, attachments: Array.isArray(attachments) ? attachments : [] });
         res.json({ ok: true });
       } catch (err: any) {
         console.error("[Mail] send error:", err.message);

@@ -328,8 +328,11 @@ export default function Home() {
             <motion.div {...fade(1)} className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-14">
               {SECTORS.map((s: any, i) => {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
+                const sectorHref = s.custom
+                  ? "/start"
+                  : `/start?sector=${encodeURIComponent(s.arName)}`;
                 return (
-                  <Link key={i} href={s.custom ? "/contact" : "/systems"}>
+                  <Link key={i} href={sectorHref}>
                     <div
                       className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] ${
                         s.custom

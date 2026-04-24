@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
-import { ArrowRight, ArrowLeft, Send, Sparkles, Loader2, ShoppingBag, MessageSquare } from "lucide-react";
+import { ArrowRight, ArrowLeft, Send, Sparkles, Loader2, ShoppingBag, Paperclip, X, ImageIcon, FileText } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
 
-type Msg = { role: "user" | "assistant"; content: string; suggestions?: string[] };
+type AttachedFile = { name: string; type: string; size: number; data: string; preview?: string };
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  suggestions?: string[];
+  files?: AttachedFile[];
+};
 
 const STARTERS_AR = [
   "أبغى موقع متجر إلكتروني",
@@ -25,6 +31,12 @@ const STARTERS_EN = [
   "A mobile app for my services",
 ];
 
+function formatBytes(b: number) {
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1048576).toFixed(1) + " MB";
+}
+
 export default function QuickStart() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
@@ -36,7 +48,9 @@ export default function QuickStart() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [started, setStarted] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const starters = useMemo(() => (ar ? STARTERS_AR : STARTERS_EN), [ar]);
 
@@ -44,41 +58,149 @@ export default function QuickStart() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, busy]);
 
+  async function pickFiles(acceptImages = false) {
+    return new Promise<AttachedFile[]>((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      input.accept = acceptImages ? "image/*" : "image/*,application/pdf,.doc,.docx,.txt,.zip";
+      input.onchange = async () => {
+        const files = Array.from(input.files || []);
+        const result: AttachedFile[] = [];
+        for (const f of files) {
+          if (f.size > 8 * 1024 * 1024) continue;
+          const data = await new Promise<string>(res => {
+            const r = new FileReader();
+            r.onload = () => res((r.result as string).split(",")[1]);
+            r.readAsDataURL(f);
+          });
+          const preview = f.type.startsWith("image/") ? `data:${f.type};base64,${data}` : undefined;
+          result.push({ name: f.name, type: f.type, size: f.size, data, preview });
+        }
+        resolve(result);
+      };
+      input.click();
+    });
+  }
+
+  async function addFiles(imagesOnly = false) {
+    const files = await pickFiles(imagesOnly);
+    setPendingFiles(prev => [...prev, ...files]);
+  }
+
   async function send(text: string) {
     const t = text.trim();
-    if (!t || busy) return;
+    if (!t && pendingFiles.length === 0) return;
+    if (busy) return;
     if (!started) setStarted(true);
 
-    setMsgs((m) => [...m, { role: "user", content: t }]);
+    const filesToSend = [...pendingFiles];
+    setMsgs(m => [...m, { role: "user", content: t, files: filesToSend.length > 0 ? filesToSend : undefined }]);
     setInput("");
+    setPendingFiles([]);
     setBusy(true);
 
     try {
+      // Build message with file context
+      let fullMessage = t;
+      if (filesToSend.length > 0) {
+        const fileNames = filesToSend.map(f => f.name).join(", ");
+        fullMessage += `\n\n[المستخدم أرفق ${filesToSend.length} ملف/صورة: ${fileNames}]`;
+      }
+
       const res = await fetch("/api/ai/message", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `${t}\n\n[سياق: العميل في صفحة البدء السريع — مساعده في تحديد متطلبات مشروعه وإنشاء طلب أو طلب استشارة فعلي عبر الأدوات.]`,
+          message: `${fullMessage}\n\n[سياق: العميل في صفحة البدء السريع — مساعده في تحديد متطلبات مشروعه وإنشاء طلب أو طلب استشارة فعلي عبر الأدوات.]`,
           sessionId: sessionIdRef.current,
-          userId: user?.id,
-          userName: user?.fullName,
-          userRole: user?.role || "guest",
+          userId: (user as any)?.id,
+          userName: (user as any)?.fullName,
+          userRole: (user as any)?.role || "guest",
+          attachments: filesToSend.map(f => ({ name: f.name, type: f.type, data: f.data })),
         }),
       });
       const data = await res.json();
       const reply = data.reply || data.message || data.content || (ar ? "..." : "...");
       const suggestions: string[] = Array.isArray(data.suggestions) ? data.suggestions : [];
-      setMsgs((m) => [...m, { role: "assistant", content: reply, suggestions }]);
+      setMsgs(m => [...m, { role: "assistant", content: reply, suggestions }]);
     } catch {
-      setMsgs((m) => [
-        ...m,
-        { role: "assistant", content: ar ? "تعذّر الاتصال. حاول مرة أخرى." : "Connection failed. Try again." },
-      ]);
+      setMsgs(m => [...m, { role: "assistant", content: ar ? "تعذّر الاتصال. حاول مرة أخرى." : "Connection failed. Try again." }]);
     } finally {
       setBusy(false);
     }
   }
+
+  const InputBar = (
+    <form
+      onSubmit={e => { e.preventDefault(); send(input); }}
+      className="relative shrink-0"
+    >
+      {/* Pending file previews */}
+      {pendingFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {pendingFiles.map((f, i) => (
+            <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-[11px]">
+              {f.preview ? (
+                <img src={f.preview} alt={f.name} className="w-7 h-7 rounded object-cover shrink-0" />
+              ) : (
+                <FileText className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0" />
+              )}
+              <span className="truncate max-w-[100px]">{f.name}</span>
+              <span className="text-black/30 dark:text-white/30 shrink-0">{formatBytes(f.size)}</span>
+              <button type="button" onClick={() => setPendingFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 dark:text-white/30 hover:text-red-500 transition">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-1.5">
+        {/* Image attach */}
+        <button
+          type="button"
+          onClick={() => addFiles(true)}
+          className="shrink-0 w-9 h-9 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] flex items-center justify-center transition text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+          title={ar ? "إرفاق صورة" : "Attach image"}
+          data-testid="button-attach-image-chat"
+        >
+          <ImageIcon className="w-4 h-4" />
+        </button>
+        {/* File attach */}
+        <button
+          type="button"
+          onClick={() => addFiles(false)}
+          className="shrink-0 w-9 h-9 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] flex items-center justify-center transition text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+          title={ar ? "إرفاق ملف" : "Attach file"}
+          data-testid="button-attach-file-chat"
+        >
+          <Paperclip className="w-4 h-4" />
+        </button>
+
+        <div className="relative flex-1">
+          <Input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder={ar ? "اكتب رسالتك…" : "Type your message…"}
+            className={`h-11 ${ar ? "pl-11 pr-4" : "pr-11 pl-4"} text-sm bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-xl`}
+            disabled={busy}
+            data-testid="input-conversation-message"
+          />
+          <button
+            type="submit"
+            disabled={(!input.trim() && pendingFiles.length === 0) || busy}
+            className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
+            data-testid="button-conversation-send"
+            aria-label="send"
+          >
+            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white" dir={dir}>
@@ -86,7 +208,6 @@ export default function QuickStart() {
 
       <main className="flex-1 flex flex-col">
         {!started ? (
-          /* ─── Welcome screen ─── */
           <div className="flex-1 flex flex-col items-center justify-center px-5 py-16 md:py-24">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -112,32 +233,64 @@ export default function QuickStart() {
                   : "Talk naturally with QIROX AI. It understands your needs, suggests the right solution, and creates your order directly — no long forms."}
               </p>
 
-              {/* Input box */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  send(input);
-                }}
-                className="relative max-w-xl mx-auto mb-6"
-              >
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={ar ? "اكتب فكرتك أو احتياجك بكلمات بسيطة…" : "Describe your idea or need in simple words…"}
-                  className="h-14 pl-4 pr-14 text-base bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-2xl"
-                  data-testid="input-quickstart-message"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
-                  data-testid="button-quickstart-send"
-                  aria-label="send"
+              {/* Input box with file attach */}
+              <div className="max-w-xl mx-auto mb-6">
+                {pendingFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2 justify-center">
+                    {pendingFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-[11px]">
+                        {f.preview ? (
+                          <img src={f.preview} alt={f.name} className="w-7 h-7 rounded object-cover shrink-0" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0" />
+                        )}
+                        <span className="truncate max-w-[100px]">{f.name}</span>
+                        <button type="button" onClick={() => setPendingFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-red-500 transition">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <form
+                  onSubmit={e => { e.preventDefault(); send(input); }}
+                  className="relative"
                 >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => addFiles(true)}
+                      className="shrink-0 h-14 w-12 rounded-2xl border border-black/12 dark:border-white/12 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white"
+                      title={ar ? "إرفاق صورة" : "Attach image"}
+                      data-testid="button-attach-image-start"
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                    </button>
+                    <div className="relative flex-1">
+                      <Input
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        placeholder={ar ? "اكتب فكرتك أو احتياجك بكلمات بسيطة…" : "Describe your idea or need in simple words…"}
+                        className={`h-14 ${ar ? "pl-14 pr-4" : "pr-14 pl-4"} text-base bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-2xl`}
+                        data-testid="input-quickstart-message"
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        disabled={!input.trim() && pendingFiles.length === 0}
+                        className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
+                        data-testid="button-quickstart-send"
+                        aria-label="send"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </form>
+                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1.5 text-center">
+                  {ar ? "يمكنك إرفاق صور أو ملفات لتوضيح فكرتك (حد أقصى 8MB لكل ملف)" : "You can attach images or files to describe your idea (max 8MB each)"}
+                </p>
+              </div>
 
               {/* Starter chips */}
               <div className="flex flex-wrap justify-center gap-2 mb-10">
@@ -192,7 +345,7 @@ export default function QuickStart() {
             {/* Messages */}
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto space-y-3 pb-4 min-h-[420px] max-h-[calc(100vh-280px)]"
+              className="flex-1 overflow-y-auto space-y-3 pb-4 min-h-[420px] max-h-[calc(100vh-320px)]"
             >
               <AnimatePresence initial={false}>
                 {msgs.map((m, i) => (
@@ -211,6 +364,23 @@ export default function QuickStart() {
                       }`}
                       data-testid={`msg-${m.role}-${i}`}
                     >
+                      {/* File thumbnails for user messages */}
+                      {m.files && m.files.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {m.files.map((f, j) => (
+                            <div key={j} className="flex items-center gap-1.5">
+                              {f.preview ? (
+                                <img src={f.preview} alt={f.name} className="max-w-[160px] max-h-[120px] rounded-lg object-cover" />
+                              ) : (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 text-[11px]">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate max-w-[120px]">{f.name}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {m.content}
                       {m.role === "assistant" && m.suggestions && m.suggestions.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -241,32 +411,8 @@ export default function QuickStart() {
               )}
             </div>
 
-            {/* Input */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                send(input);
-              }}
-              className="relative shrink-0"
-            >
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={ar ? "اكتب رسالتك…" : "Type your message…"}
-                className="h-12 pl-4 pr-12 text-sm bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-xl"
-                disabled={busy}
-                data-testid="input-conversation-message"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || busy}
-                className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
-                data-testid="button-conversation-send"
-                aria-label="send"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </form>
+            {/* Input bar */}
+            {InputBar}
 
             {/* Footer hint */}
             <p className="text-[11px] text-center text-black/40 dark:text-white/40 mt-3">
