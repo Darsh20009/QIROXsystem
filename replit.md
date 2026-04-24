@@ -1,5 +1,30 @@
 # Qirox Platform
 
+## Latest Changes (Apr 24, 2026) — Mail, QR Login & AI Chat Fixes
+
+### EmployeeMail (client/src/pages/EmployeeMail.tsx)
+- Fixed critical bug: queries now use explicit `queryFn` with correct URLs `/api/mail/inbox/${selectedAccountId}?folder=...` and `/api/mail/folders/${selectedAccountId}`
+- Added full file/image attachment support: base64 previews, up to 10MB, image/file type detection
+- Removed stale `useUser` import (it was returning query result object, not `{ user }`)
+
+### Corporate Mail Backend (server/mail-imap.ts)
+- `sendMail` now accepts `attachments` array and converts base64 to Buffer for nodemailer
+- Added 9-second connection timeout + `socketTimeout: 8000` + `connectionTimeout: 8000` to both `fetchInbox` and `fetchFolders` — prevents IMAP hang when server is unreachable
+- Seed auto-assigns `y.darwish@qiroxstudio.online` → يوسف درويش and `m.aldbani@qiroxstudio.online` → محمد الدباني by regex pattern matching
+
+### QR Barcode Login Fix (server/routes.ts + server/index.ts)
+- Root cause: `.lean()` on Mongoose returned plain objects without `id` virtual, causing `serializeUser` to fail silently
+- Fix: removed `.lean()`, used `userDoc.toObject()` with explicit `id: userDoc._id.toString()`
+- Added `req.session.save()` before redirect to guarantee session persists across the redirect
+- Login.tsx now handles `?qr=invalid|denied|error` params with Arabic toast messages
+
+### AI Chat / QuickStart (client/src/pages/QuickStart.tsx)
+- Added image + file attachment buttons with previews in both welcome and conversation screens
+- Added `useEffect` to auto-start chat with sector name from `?sector=` URL param (set by home page sector cards)
+
+### Home Page (client/src/pages/Home.tsx)
+- Sector card links changed from `/systems`/`/contact` to `/start?sector=...` (AI chat with pre-filled sector)
+
 ## Latest Changes (Apr 13, 2026) — AI Document Assistant
 
 ### Contracts & Invoices AI Tool

@@ -7660,17 +7660,28 @@ export async function registerRoutes(
   app.get("/api/qr-login/:token", async (req, res) => {
     try {
       const { UserModel } = await import("./models");
-      const user = await (UserModel as any).findOne({ qrLoginToken: req.params.token }).lean();
-      if (!user) return res.redirect("/login?qr=invalid");
+      // Do NOT use .lean() — Passport's serializeUser needs the `id` virtual
+      const userDoc = await (UserModel as any).findOne({ qrLoginToken: req.params.token });
+      if (!userDoc) return res.redirect("/login?qr=invalid");
       // Only allow employees (not clients) to use QR login
-      if (!user.role || user.role === "client") return res.redirect("/login?qr=denied");
+      if (!userDoc.role || userDoc.role === "client") return res.redirect("/login?qr=denied");
+      // Build a plain user object with id set so Passport's serializeUser works
+      const user = { ...userDoc.toObject(), id: userDoc._id.toString() };
       // Log in the user via Passport
       req.login(user, (err) => {
-        if (err) return res.redirect("/login?qr=error");
-        const dash = user.role === "admin" ? "/admin" : "/employee";
-        return res.redirect(dash);
+        if (err) {
+          console.error("[QR Login] req.login error:", err);
+          return res.redirect("/login?qr=error");
+        }
+        const dash = userDoc.role === "admin" ? "/admin" : "/employee";
+        // Save session before redirect to ensure cookie is set
+        req.session.save((saveErr) => {
+          if (saveErr) console.error("[QR Login] session save error:", saveErr);
+          return res.redirect(dash);
+        });
       });
     } catch (err) {
+      console.error("[QR Login] error:", err);
       res.redirect("/login?qr=error");
     }
   });

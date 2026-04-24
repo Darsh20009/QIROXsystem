@@ -50,12 +50,20 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
     auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
   });
 
   const messages: EmailMessage[] = [];
 
+  // Race against a timeout to avoid hanging the API response
+  const connectWithTimeout = () => Promise.race([
+    client.connect(),
+    new Promise<never>((_, rej) => setTimeout(() => rej(new Error("IMAP connection timeout")), 9000)),
+  ]);
+
   try {
-    await client.connect();
+    await connectWithTimeout();
     const mailbox = await client.mailboxOpen(folder);
     const total = mailbox.exists;
 
@@ -122,10 +130,15 @@ export async function fetchFolders(accountId: string): Promise<string[]> {
     auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
   });
 
   try {
-    await client.connect();
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000)),
+    ]);
     const list = await client.list();
     await client.logout();
     return list.map((f: any) => f.path).filter(Boolean);

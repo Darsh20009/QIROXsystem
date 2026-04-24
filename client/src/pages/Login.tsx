@@ -57,6 +57,23 @@ export default function Login() {
     }
   }, []);
 
+  // Handle QR login error redirects (?qr=invalid|denied|error)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qrStatus = params.get("qr");
+    if (!qrStatus) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    const messages: Record<string, { title: string; desc: string }> = {
+      invalid: { title: "باركود غير صالح", desc: "رمز الباركود الذي مسحته غير موجود أو منتهي الصلاحية" },
+      denied:  { title: "غير مسموح", desc: "هذا الحساب لا يملك صلاحية الدخول بالباركود" },
+      error:   { title: "خطأ في تسجيل الدخول", desc: "حدث خطأ أثناء محاولة الدخول. حاول مجدداً أو سجّل الدخول يدوياً" },
+    };
+    const msg = messages[qrStatus] || messages.error;
+    setTimeout(() => {
+      toast({ title: msg.title, description: msg.desc, variant: "destructive" });
+    }, 200);
+  }, []);
+
   // Check if Google OAuth is enabled on the server
   useEffect(() => {
     fetch("/api/auth/google/status", { credentials: "include" })

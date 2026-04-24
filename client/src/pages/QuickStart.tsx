@@ -51,8 +51,24 @@ export default function QuickStart() {
   const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const autoStartedRef = useRef(false);
 
   const starters = useMemo(() => (ar ? STARTERS_AR : STARTERS_EN), [ar]);
+
+  // Auto-start if ?sector= param is in the URL
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const sector = params.get("sector");
+    if (sector) {
+      autoStartedRef.current = true;
+      window.history.replaceState({}, "", window.location.pathname);
+      const msg = ar
+        ? `أريد نظاماً أو موقعاً لـ ${sector}`
+        : `I need a system or website for ${sector}`;
+      setTimeout(() => send(msg), 300);
+    }
+  }, [ar]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

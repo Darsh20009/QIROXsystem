@@ -2,10 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Mail, Send, Inbox, Trash2, RefreshCw, Loader2,
   ChevronLeft, Search, X, Pencil, Folder, Paperclip,
@@ -72,8 +70,6 @@ export default function EmployeeMail() {
   const { L } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { user } = useUser();
-
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
