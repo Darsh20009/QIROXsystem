@@ -12,7 +12,7 @@ const translations = {
   "nav.contact": { ar: "تواصل", en: "Contact" },
   "nav.dashboard": { ar: "لوحة التحكم", en: "Dashboard" },
   "nav.login": { ar: "دخول", en: "Login" },
-  "nav.startProject": { ar: "ابدأ مشروعك", en: "Start Project" },
+  "nav.startProject": { ar: "ابدأ فكرتك الخاصة", en: "Start Your Idea" },
 
   "home.badge": { ar: "SYSTEMS FACTORY", en: "SYSTEMS FACTORY" },
   "home.tagline": { ar: "Build Systems. Stay Human.", en: "Build Systems. Stay Human." },
@@ -34,7 +34,7 @@ const translations = {
   "home.startFrom": { ar: "يبدأ من", en: "Starting from" },
 
   "home.hero.subtitleFull": { ar: "مصنع الأنظمة الرقمية — نبني بنية تحتية رقمية متكاملة", en: "Digital Systems Factory — Building complete digital infrastructure" },
-  "home.startProject": { ar: "ابدأ مشروعك", en: "Start Your Project" },
+  "home.startProject": { ar: "ابدأ فكرتك الخاصة", en: "Start Your Own Idea" },
   "home.exploreSystems": { ar: "استعرض الأنظمة", en: "Explore Systems" },
   "home.promo.new": { ar: "NEW", en: "NEW" },
   "home.promo.text": { ar: "باقة Enterprise متاحة الآن", en: "Enterprise package now available" },
@@ -45,7 +45,7 @@ const translations = {
   "home.stats.locations": { ar: "السعودية ومصر", en: "Saudi Arabia & Egypt" },
 
   "home.pathfinder.label": { ar: "ابدأ هنا", en: "Start Here" },
-  "home.pathfinder.title": { ar: "ابدأ مشروعك الرقمي الآن", en: "Start Your Digital Project Now" },
+  "home.pathfinder.title": { ar: "ابدأ فكرتك الخاصة الآن", en: "Start Your Own Idea Now" },
   "home.pathfinder.desc": { ar: "نحوّل فكرتك إلى نظام رقمي متكامل يعمل من أول يوم. ابدأ بباقة تناسبك واحصل على نظامك خلال أيام.", en: "We transform your idea into a complete digital system that works from day one. Start with a package that suits you and get your system within days." },
   "home.pathfinder.cta": { ar: "ابدأ الآن", en: "Start Now" },
   "home.pathfinder.quickLinks": { ar: "روابط سريعة", en: "Quick Links" },
@@ -103,9 +103,9 @@ const translations = {
   "home.why.security.title": { ar: "حماية متكاملة", en: "Comprehensive Security" },
   "home.why.security.desc": { ar: "أمان على أعلى مستوى لحماية بيانات عملائك ومعاملاتك.", en: "Top-level security to protect your clients' data and transactions." },
 
-  "home.spotlight.title": { ar: "ابدأ مشروعك الآن", en: "Start Your Project Now" },
+  "home.spotlight.title": { ar: "ابدأ فكرتك الخاصة الآن", en: "Start Your Own Idea Now" },
   "home.spotlight.desc": { ar: "نحوّل فكرتك إلى نظام رقمي متكامل يعمل من أول يوم.", en: "We transform your idea into a complete digital system that works from day one." },
-  "home.spotlight.cta": { ar: "ابدأ مشروعك", en: "Start Your Project" },
+  "home.spotlight.cta": { ar: "ابدأ فكرتك الخاصة", en: "Start Your Own Idea" },
   "home.spotlight.prices": { ar: "الباقات والأسعار", en: "Packages & Pricing" },
   "home.spotlight.riyadh": { ar: "الرياض", en: "Riyadh" },
   "home.spotlight.cairo": { ar: "القاهرة", en: "Cairo" },
@@ -202,7 +202,7 @@ const translations = {
   "portfolio.readyTitle": { ar: "جاهز لبناء", en: "Ready to build" },
   "portfolio.readyHighlight": { ar: "مشروعك", en: "your project" },
   "portfolio.readySubtitle": { ar: "اختر النظام المناسب وابدأ بنيتك التحتية الرقمية.", en: "Choose the right system and start your digital infrastructure." },
-  "portfolio.startProject": { ar: "ابدأ مشروعك", en: "Start Your Project" },
+  "portfolio.startProject": { ar: "ابدأ فكرتك الخاصة", en: "Start Your Own Idea" },
   "portfolio.contactUs": { ar: "تواصل معنا", en: "Contact Us" },
 
   "login.title": { ar: "تسجيل الدخول", en: "Sign In" },

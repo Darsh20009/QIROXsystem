@@ -131,7 +131,7 @@ const PACKAGES = [
       "دعم بريد إلكتروني",
       "تسليم خلال أسبوعين",
     ],
-    cta: "ابدأ مشروعك",
+    cta: "ابدأ فكرتك الخاصة",
     href: "/order",
   },
   {
@@ -297,7 +297,7 @@ export default function DevPortal() {
           <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
             <Link href="/order">
               <Button size="lg" className="bg-white text-black hover:bg-white/90 rounded-2xl px-8 h-12 font-bold gap-2">
-                ابدأ مشروعك <ArrowLeft className="w-4 h-4" />
+                ابدأ فكرتك الخاصة <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
             <a href="#api">
@@ -664,7 +664,7 @@ export default function DevPortal() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/order">
               <Button size="lg" className="bg-white text-black hover:bg-white/90 rounded-2xl px-10 h-12 font-bold gap-2">
-                ابدأ مشروعك <ArrowLeft className="w-4 h-4" />
+                ابدأ فكرتك الخاصة <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
             <Link href="/contact">

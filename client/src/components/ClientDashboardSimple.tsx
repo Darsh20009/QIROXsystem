@@ -134,7 +134,7 @@ function JourneyCard({ state, order, project, onUploadProof }: {
 
   const cards: Record<JourneyState, { title: string; desc: string; color: string; bg: string; cta?: { label: string; href?: string; action?: () => void; icon: any } }> = {
     no_order: {
-      title: "ابدأ مشروعك الآن",
+      title: "ابدأ فكرتك الخاصة",
       desc: "اختر الباقة المناسبة وسيبدأ فريقنا في تحويل فكرتك إلى واقع",
       color: "text-violet-700", bg: "bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200",
       cta: { label: "تصفح الباقات", href: "/prices", icon: Sparkles }
@@ -370,7 +370,7 @@ export default function ClientDashboardSimple({ user }: Props) {
                     {(orders as any[]).length === 0 && (
                       <Link href="/prices">
                         <Button className="gap-2 rounded-xl font-bold" data-testid="button-start-project">
-                          <Sparkles className="w-4 h-4" /> ابدأ مشروعك
+                          <Sparkles className="w-4 h-4" /> ابدأ فكرتك الخاصة
                         </Button>
                       </Link>
                     )}

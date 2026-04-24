@@ -1129,7 +1129,7 @@ export default function Login() {
             </h1>
             <p className="text-black/35 text-sm">
               {isRegister
-                ? (isEmployeeRegister ? "حساب خاص بفريق QIROX الداخلي" : "أنشئ حسابك وابدأ مشروعك الرقمي اليوم")
+                ? (isEmployeeRegister ? "حساب خاص بفريق QIROX الداخلي" : "أنشئ حسابك وابدأ فكرتك الخاصة اليوم")
                 : "أدخل بياناتك للوصول إلى لوحة تحكمك"
               }
             </p>

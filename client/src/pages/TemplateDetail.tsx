@@ -878,7 +878,7 @@ export default function TemplateDetail() {
                 )}
                 <Link href="/pricing">
                   <Button variant="outline" className="h-12 px-7 rounded-2xl font-bold gap-2 border-white/20 text-white hover:bg-white/10 text-sm" data-testid="btn-order-template">
-                    <ArrowRight className="w-4 h-4" /> ابدأ مشروعك
+                    <ArrowRight className="w-4 h-4" /> ابدأ فكرتك الخاصة
                   </Button>
                 </Link>
               </motion.div>
@@ -1822,15 +1822,15 @@ export default function TemplateDetail() {
             <h3 className="text-3xl font-black text-white mb-3">أعجبك هذا النظام؟</h3>
             <p className="text-white/50 text-sm mb-8 max-w-md mx-auto">
               {isEcommerce
-                ? "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة المتجر وتخصيصه لمنتجاتك وعلامتك التجارية خلال أيام."
+                ? "ابدأ فكرتك الخاصة وسيتولى فريقنا تهيئة المتجر وتخصيصه لمنتجاتك وعلامتك التجارية خلال أيام."
                 : isRestaurant
-                ? "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام وتخصيصه لمقهى أو مطعمك خلال أيام."
-                : "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام وتخصيصه لمشروعك خلال أيام."}
+                ? "ابدأ فكرتك الخاصة وسيتولى فريقنا تهيئة النظام وتخصيصه لمقهى أو مطعمك خلال أيام."
+                : "ابدأ فكرتك الخاصة وسيتولى فريقنا تهيئة النظام وتخصيصه لمشروعك خلال أيام."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href={`/order?template=${template.slug}`}>
                 <Button className="h-12 px-9 rounded-2xl bg-white text-black hover:bg-white/90 font-bold text-sm gap-2" data-testid="btn-start-order-cta">
-                  <ArrowRight className="w-5 h-5" /> ابدأ مشروعك الآن
+                  <ArrowRight className="w-5 h-5" /> ابدأ فكرتك الخاصة
                 </Button>
               </Link>
               <Link href="/demos">

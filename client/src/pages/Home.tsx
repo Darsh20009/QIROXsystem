@@ -257,7 +257,7 @@ export default function Home() {
                 <Link href="/start">
                   <Button size="lg" className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-start">
                     <Sparkles className="w-4 h-4" />
-                    {ar ? "ابدأ بمحادثة بسيطة" : "Start with a simple chat"}
+                    {ar ? "ابدأ فكرتك الخاصة" : "Start Your Own Idea"}
                     <Arrow className="w-4 h-4" />
                   </Button>
                 </Link>
@@ -640,7 +640,7 @@ export default function Home() {
                 <Link href="/start">
                   <Button size="lg" className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-start">
                     <Sparkles className="w-4 h-4" />
-                    {ar ? "ابدأ الآن" : "Get started"}
+                    {ar ? "ابدأ فكرتك الخاصة" : "Start Your Own Idea"}
                     <Arrow className="w-4 h-4" />
                   </Button>
                 </Link>

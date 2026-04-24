@@ -152,6 +152,9 @@ export async function markSeen(accountId: string, folder: string, uid: number): 
   const account = await getAccountRaw(accountId);
   if (!account) return;
 
+  // Update cache immediately regardless of IMAP result
+  await MailCacheModel.findOneAndUpdate({ accountId, folder, uid }, { $set: { seen: true } });
+
   const client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort,
@@ -159,15 +162,19 @@ export async function markSeen(accountId: string, folder: string, uid: number): 
     auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
+    socketTimeout: 6000,
+    connectionTimeout: 6000,
   });
 
   try {
-    await client.connect();
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000)),
+    ]);
     await client.mailboxOpen(folder);
     await client.messageFlagsAdd({ uid }, ["\\Seen"], { uid: true });
     await client.logout();
-    await MailCacheModel.findOneAndUpdate({ accountId, folder, uid }, { $set: { seen: true } });
-  } catch (err) {
+  } catch {
     try { await client.logout(); } catch {}
   }
 }
@@ -176,6 +183,9 @@ export async function deleteMessage(accountId: string, folder: string, uid: numb
   const account = await getAccountRaw(accountId);
   if (!account) return;
 
+  // Remove from cache immediately
+  await MailCacheModel.deleteOne({ accountId, folder, uid });
+
   const client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort,
@@ -183,18 +193,21 @@ export async function deleteMessage(accountId: string, folder: string, uid: numb
     auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
+    socketTimeout: 6000,
+    connectionTimeout: 6000,
   });
 
   try {
-    await client.connect();
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000)),
+    ]);
     await client.mailboxOpen(folder);
     await client.messageFlagsAdd({ uid }, ["\\Deleted"], { uid: true });
     await client.mailboxClose();
     await client.logout();
-    await MailCacheModel.deleteOne({ accountId, folder, uid });
-  } catch (err) {
+  } catch {
     try { await client.logout(); } catch {}
-    throw err;
   }
 }
 

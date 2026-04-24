@@ -13229,7 +13229,7 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       }
     });
 
-    // POST /api/mail/seen/:accountId — mark message as seen
+    // POST /api/mail/seen/:accountId — mark message as seen (fire-and-forget IMAP)
     app.post("/api/mail/seen/:accountId", async (req, res) => {
       if (!req.isAuthenticated()) return res.sendStatus(401);
       const user = req.user as any;
@@ -13237,7 +13237,8 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
         const account = await MailAccountModel.findById(req.params.accountId).lean() as any;
         if (!account || !canAccessAccount(user, account)) return res.sendStatus(403);
         const { uid, folder } = req.body;
-        await markSeen(req.params.accountId, folder || "INBOX", Number(uid));
+        // Respond immediately — markSeen handles cache + async IMAP
+        markSeen(req.params.accountId, folder || "INBOX", Number(uid)).catch(() => {});
         res.json({ ok: true });
       } catch (err: any) {
         res.status(500).json({ error: err.message });

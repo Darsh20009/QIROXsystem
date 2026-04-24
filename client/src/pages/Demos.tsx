@@ -268,7 +268,7 @@ export default function Demos() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/order">
               <Button className="h-12 px-8 rounded-2xl bg-white text-black hover:bg-white/90 font-bold text-base gap-2" data-testid="btn-start-project">
-                <ArrowRight className="w-5 h-5" /> {L ? "ابدأ مشروعك الآن" : "Start Your Project"}
+                <ArrowRight className="w-5 h-5" /> {L ? "ابدأ فكرتك الخاصة" : "Start Your Own Idea"}
               </Button>
             </Link>
             <Link href="/consultation">
