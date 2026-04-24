@@ -136,14 +136,14 @@ const SECTOR_ILLUSTRATIONS: Record<string, React.FC> = {
 };
 
 const SECTORS = [
-  { icon: ShoppingBag, arName: "متاجر إلكترونية", enName: "E-Commerce" },
-  { icon: Coffee, arName: "مطاعم ومقاهي", enName: "Restaurants" },
-  { icon: GraduationCap, arName: "منصات تعليمية", enName: "Education" },
-  { icon: Building2, arName: "شركات ومؤسسات", enName: "Corporate" },
-  { icon: Heart, arName: "صحة وعيادات", enName: "Healthcare" },
-  { icon: HomeIcon, arName: "عقارات", enName: "Real Estate" },
-  { icon: Scissors, arName: "صالونات تجميل", enName: "Beauty Salons" },
-  { icon: Lightbulb, arName: "ابدأ فكرتك الخاصة", enName: "Start your own idea", custom: true },
+  { icon: ShoppingBag, arName: "متاجر إلكترونية", enName: "E-Commerce",   segment: "ecommerce" },
+  { icon: Coffee,      arName: "مطاعم ومقاهي",    enName: "Restaurants",  segment: "restaurant" },
+  { icon: GraduationCap, arName: "منصات تعليمية", enName: "Education",    segment: "education" },
+  { icon: Building2,   arName: "شركات ومؤسسات",   enName: "Corporate",    segment: "corporate" },
+  { icon: Heart,       arName: "صحة وعيادات",      enName: "Healthcare",   segment: "healthcare" },
+  { icon: HomeIcon,    arName: "عقارات",           enName: "Real Estate",  segment: "realestate" },
+  { icon: Scissors,    arName: "صالونات تجميل",    enName: "Beauty Salons",segment: "beauty" },
+  { icon: Lightbulb,   arName: "ابدأ فكرتك الخاصة", enName: "Start your own idea", custom: true },
 ];
 
 const PILLARS = [
@@ -330,7 +330,7 @@ export default function Home() {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                 const sectorHref = s.custom
                   ? "/start"
-                  : `/start?sector=${encodeURIComponent(s.arName)}`;
+                  : `/prices?segment=${s.segment}`;
                 return (
                   <Link key={i} href={sectorHref}>
                     <div
@@ -342,22 +342,35 @@ export default function Home() {
                       data-testid={`card-sector-${i}`}
                     >
                       {/* Illustration */}
-                      <div className={`absolute inset-0 flex items-center justify-center p-4 ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                      <div className={`absolute inset-0 flex items-center justify-center p-4 pb-12 ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
                         {IllustrationComponent && <IllustrationComponent />}
                       </div>
-                      {/* Label */}
+                      {/* Label + price badge */}
                       <div className={`absolute bottom-0 inset-x-0 p-3 pt-6 ${
                         s.custom
-                          ? "bg-gradient-to-t from-black/60 dark:from-white/20 to-transparent"
-                          : "bg-gradient-to-t from-black/[0.07] dark:from-white/[0.08] to-transparent"
+                          ? "bg-gradient-to-t from-black/70 dark:from-white/30 to-transparent"
+                          : "bg-gradient-to-t from-black/[0.12] dark:from-white/[0.12] to-transparent"
                       }`}>
                         <div className={`text-xs font-bold ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
                           {ar ? s.arName : s.enName}
                         </div>
+                        {!s.custom && (
+                          <div className={`text-[9px] mt-0.5 font-medium ${s.custom ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`}>
+                            {ar ? "السعر على حسب الاحتياج" : "Custom pricing"}
+                          </div>
+                        )}
                       </div>
                       {s.custom && (
                         <div className="absolute top-3 right-3">
                           <Lightbulb className="w-4 h-4 text-white/80 dark:text-black/80" />
+                        </div>
+                      )}
+                      {/* Arrow on hover */}
+                      {!s.custom && (
+                        <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                            <ChevronRight className="w-3 h-3 text-black/60 dark:text-white/60" />
+                          </div>
                         </div>
                       )}
                     </div>

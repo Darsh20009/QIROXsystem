@@ -4,15 +4,15 @@ import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
 import SARIcon from "@/components/SARIcon";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { useState, useMemo, useEffect } from "react";
 import {
   Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield,
   Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
   Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
-  Dumbbell, Store, CheckCircle2, Sparkles, ShoppingCart, Cpu, Code2, Server, Database, LayoutDashboard,
-  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes
+  Dumbbell, Store, CheckCircle2, Sparkles, Cpu, Code2, Server, Database, LayoutDashboard,
+  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes, MessageCircle
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -171,9 +171,9 @@ function GridPattern({ className = "" }: { className?: string }) {
 }
 
 /* ─── Tier Card ───────────────────────────────────────────────────────── */
-function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoading }: {
+function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoading, whatsapp }: {
   plan: any; period: BillingPeriod; idx: number; isPopularOverride?: boolean;
-  onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string; isLoading?: boolean;
+  onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string; isLoading?: boolean; whatsapp?: string;
 }) {
   const cfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.lite;
   const price = getPeriodPrice(plan, period);
@@ -261,24 +261,14 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-gray-100 bg-gray-50 dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <AnimatePresence mode="wait">
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className={`text-4xl font-black tracking-tight ${cfg.priceColor}`}>{price.toLocaleString()}</span>
-              {lang === "ar"
-                ? <SARIcon size={16} className={`${isPro || isInfinite ? "opacity-40" : "opacity-60"}`} />
-                : <span className={`text-sm font-medium ${isPro || isInfinite ? "text-white/40" : "text-gray-400 dark:text-slate-400"}`}>SAR</span>}
-              <span className={`text-xs ${isPro || isInfinite ? "text-white/30" : "text-gray-400 dark:text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-2xl font-black tracking-tight ${cfg.priceColor}`}>
+                {lang === "ar" ? "على حسب الاحتياج" : "Custom Pricing"}
+              </span>
             </div>
-            {monthlyEquiv && period !== "monthly" && (
-              <div className={`mt-2 flex items-center gap-2 flex-wrap text-[11px] ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
-                <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} {lang === "ar" ? <SARIcon size={10} className="opacity-70" /> : "SAR"}/شهر</span></span>
-                {saving > 0 && <span className={`font-black text-emerald-${isPro ? "300" : "500"}`}>{lang === "ar" ? `— وفّر ${saving}%` : `— Save ${saving}%`}</span>}
-              </div>
-            )}
-            {period === "lifetime" && (
-              <p className={`text-[11px] mt-2 flex items-center gap-1 ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
-                <Globe className="w-3 h-3" /> {lang === "ar" ? "دومين مجاني 3 سنوات" : "Free domain 3 years"}
-              </p>
-            )}
+            <p className={`text-[11px] mt-1.5 ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
+              {lang === "ar" ? "تواصل معنا للحصول على عرض خاص" : "Contact us for a personalized quote"}
+            </p>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -320,12 +310,24 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       {/* ─── CTA ─── */}
       <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <Button
-          onClick={e => { e.stopPropagation(); if (!isLoading) onSelect(plan, price, period); }}
-          disabled={isLoading}
+          onClick={e => {
+            e.stopPropagation();
+            const planName = lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr);
+            const segmentLabel = plan.segment ? SEGMENT_LOOKUP[plan.segment]?.labelAr ?? plan.segment : "";
+            const msg = lang === "ar"
+              ? `مرحباً، أريد الاستفسار عن باقة ${planName}${segmentLabel ? ` لـ${segmentLabel}` : ""}`
+              : `Hello, I'd like to inquire about the ${planName} plan${segmentLabel ? ` for ${SEGMENT_LOOKUP[plan.segment]?.labelEn ?? segmentLabel}` : ""}`;
+            const waNumber = whatsapp ? whatsapp.replace(/\D/g, "") : "";
+            const waUrl = waNumber
+              ? `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`
+              : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, "_blank");
+          }}
           className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
           data-testid={`button-select-${plan.tier}`}
         >
-          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جارٍ الإضافة..." : "Adding..."}</> : <>{lang === "ar" ? `أضف للسلة` : `Add to Cart`} <ShoppingCart className="w-4 h-4" /></>}
+          {lang === "ar" ? "تواصل للحصول على عرض" : "Get a Quote"}
+          <MessageCircle className="w-4 h-4" />
         </Button>
       </div>
     </motion.div>
@@ -336,6 +338,10 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
 export default function Prices() {
   const { data: plans, isLoading } = usePricingPlans();
   const { lang, dir } = useI18n();
+  const { data: publicSettings } = useQuery<{ whatsapp?: string }>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 10 * 60 * 1000,
+  });
 
   const segments = useMemo(() => {
     if (!plans || plans.length === 0) return Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
@@ -351,7 +357,21 @@ export default function Prices() {
     return result.length > 0 ? result : Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
   }, [plans]);
 
-  const [segment, setSegment] = useState("");
+  const searchStr = useSearch();
+  const [segment, setSegment] = useState(() => {
+    // Auto-select segment from URL param (?segment=xxx) set by home page sector cards
+    if (typeof window !== "undefined") {
+      const param = new URLSearchParams(window.location.search).get("segment");
+      if (param) return param;
+    }
+    return "";
+  });
+
+  // Sync segment when URL param changes (e.g. user goes home → picks another sector)
+  useEffect(() => {
+    const param = new URLSearchParams(searchStr).get("segment");
+    if (param) setSegment(param);
+  }, [searchStr]);
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const [finderOpen, setFinderOpen] = useState(false);
   const [, navigate] = useLocation();
@@ -623,7 +643,7 @@ export default function Prices() {
                 className="grid grid-cols-1 md:grid-cols-3 gap-5"
               >
                 {tierPlans.map((plan: any, idx: number) => (
-                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} isLoading={addToCartMutation.isPending && addingPlanId === (plan._id || plan.id || plan.tier)} />
+                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} isLoading={addToCartMutation.isPending && addingPlanId === (plan._id || plan.id || plan.tier)} whatsapp={publicSettings?.whatsapp} />
                 ))}
               </motion.div>
             </AnimatePresence>

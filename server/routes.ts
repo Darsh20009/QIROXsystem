@@ -13382,7 +13382,9 @@ export async function seedDatabase() {
   // Seed Sector Templates
   const existingTemplates = await storage.getSectorTemplates();
   const firstEduTemplate = existingTemplates.find((t: any) => t.slug === "quran-academy");
-  const templatesNeedReseed = existingTemplates.length === 0 || (firstEduTemplate && (firstEduTemplate as any).priceMin !== 2200);
+  const hasBeautyTemplate = existingTemplates.some((t: any) => t.slug === "beauty-salon");
+  const hasRealEstateTemplate = existingTemplates.some((t: any) => t.slug === "real-estate");
+  const templatesNeedReseed = existingTemplates.length === 0 || (firstEduTemplate && (firstEduTemplate as any).priceMin !== 2200) || !hasBeautyTemplate || !hasRealEstateTemplate;
   if (templatesNeedReseed) {
     for (const t of existingTemplates) {
       await storage.deleteSectorTemplate((t as any).id);
@@ -13544,13 +13546,51 @@ export async function seedDatabase() {
         features: ["Digital Menu", "QR Ordering", "Kitchen Display", "Table Management", "Real-time Analytics"],
         featuresAr: ["قائمة رقمية", "طلب QR", "شاشة المطبخ", "إدارة الطاولات", "تحليلات مباشرة"],
         tags: ["restaurant", "cafe", "food"],
-        priceMin: 1199,
-        priceMax: 1199,
+        priceMin: 0,
+        priceMax: 0,
         currency: "SAR",
         estimatedDuration: "2-4 أسابيع",
         status: "active" as const,
         sortOrder: 8,
         heroColor: "#92400e",
+      },
+      {
+        name: "Real Estate Platform",
+        nameAr: "منصة العقارات",
+        slug: "real-estate",
+        description: "Professional real estate platform with property listings, advanced search & filters, virtual tours, appointment scheduling, and agent portal.",
+        descriptionAr: "منصة عقارية احترافية مع قوائم العقارات وبحث متقدم وجولات افتراضية وجدولة المعاينات وبوابة الوكلاء.",
+        category: "realestate",
+        icon: "Home",
+        features: ["Property Listings", "Advanced Search & Filters", "Virtual Tours", "Appointment Scheduling", "Agent Portal", "Mortgage Calculator"],
+        featuresAr: ["قوائم العقارات", "بحث وفلترة متقدم", "جولات افتراضية", "جدولة المعاينات", "بوابة الوكلاء", "حاسبة التقسيط"],
+        tags: ["realestate", "property", "عقارات"],
+        priceMin: 0,
+        priceMax: 0,
+        currency: "SAR",
+        estimatedDuration: "3-5 أسابيع",
+        status: "active" as const,
+        sortOrder: 9,
+        heroColor: "#0f766e",
+      },
+      {
+        name: "Beauty Salon & Spa System",
+        nameAr: "نظام الصالونات ومراكز التجميل",
+        slug: "beauty-salon",
+        description: "Complete beauty salon management system with online booking, staff management, gallery showcase, loyalty program, and automated reminders.",
+        descriptionAr: "نظام متكامل لإدارة صالونات التجميل مع الحجز الأونلاين وإدارة الفريق ومعرض الأعمال وبرنامج الولاء والتذكيرات التلقائية.",
+        category: "beauty",
+        icon: "Scissors",
+        features: ["Online Booking", "Staff & Schedule Management", "Works Gallery", "Loyalty Program", "Automated Reminders", "Service Menu"],
+        featuresAr: ["حجز أونلاين", "إدارة الفريق والجداول", "معرض الأعمال", "برنامج الولاء", "تذكيرات تلقائية", "قائمة الخدمات"],
+        tags: ["beauty", "salon", "spa", "صالون", "تجميل"],
+        priceMin: 0,
+        priceMax: 0,
+        currency: "SAR",
+        estimatedDuration: "2-4 أسابيع",
+        status: "active" as const,
+        sortOrder: 10,
+        heroColor: "#be185d",
       },
     ];
 
@@ -13593,9 +13633,11 @@ export async function seedDatabase() {
   // Seed Pricing Plans — Segment × Tier system (v5)
   const existingPlans = await storage.getPricingPlans();
   const restaurantLite = existingPlans.find((p: any) => p.slug === "restaurant-lite");
+  const beautyLite = existingPlans.find((p: any) => p.slug === "beauty-lite");
   const needsReseed =
     !restaurantLite ||
     !(restaurantLite as any).segment ||
+    !beautyLite ||
     existingPlans.some((p: any) => p.slug === "ecommerce" || p.slug === "lite");
 
   if (needsReseed) {
@@ -13675,6 +13717,17 @@ export async function seedDatabase() {
             featuresAr: ["كل مزايا لايت", "نظام حجز متكامل", "ملف المريض", "إشعارات المواعيد", "تقارير العيادة", "بوابة المريض", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
           { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
             featuresAr: ["كل مزايا برو", "تطبيق جوال", "سجل طبي إلكتروني", "وصفة طبية رقمية", "تكامل مختبرات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
+      },
+      {
+        segment: "beauty",
+        plans: [
+          { tier: "lite", monthly: 199, sixmo: 380, annual: 699, lifetime: 3499, popular: false,
+            featuresAr: ["موقع صالون احترافي", "معرض الأعمال", "حجز مواعيد أونلاين", "قائمة الخدمات والأسعار", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 349, sixmo: 650, annual: 1199, lifetime: 5999, popular: true,
+            featuresAr: ["كل مزايا لايت", "نظام حجز ذكي مع تذكيرات", "إدارة الفريق والمواعيد", "بوابة العميل", "برنامج ولاء ونقاط", "تقارير الإيرادات", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 599, sixmo: 1100, annual: 1999, lifetime: 9999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال للصالون", "بوابة دفع إلكتروني", "نظام CRM للعملاء", "حملات تسويقية مدمجة", "تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
     ];
