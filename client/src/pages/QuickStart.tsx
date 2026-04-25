@@ -1,443 +1,627 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Link } from "wouter";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
-import { ArrowRight, ArrowLeft, Send, Sparkles, Loader2, ShoppingBag, Paperclip, X, ImageIcon, FileText } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles,
+  UtensilsCrossed, ShoppingBag, GraduationCap, Building2,
+  Heart, Scissors, Home, MoreHorizontal, Globe, Smartphone,
+  LayoutDashboard, CalendarCheck, CreditCard, BarChart3,
+  MessageSquare, Truck, Lock, Zap, Phone, Video, Check,
+} from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
 
-type AttachedFile = { name: string; type: string; size: number; data: string; preview?: string };
-type Msg = {
-  role: "user" | "assistant";
-  content: string;
-  suggestions?: string[];
-  files?: AttachedFile[];
-};
-
-const STARTERS_AR = [
-  "أبغى موقع متجر إلكتروني",
-  "أحتاج نظام حجوزات لمطعمي",
-  "موقع تعريفي لشركتي",
-  "تطبيق جوال لخدماتي",
-];
-const STARTERS_EN = [
-  "I want an e-commerce site",
-  "I need a booking system for my restaurant",
-  "A landing page for my company",
-  "A mobile app for my services",
+/* ─── Data ─── */
+const SECTORS_AR = [
+  { key: "restaurant",  icon: UtensilsCrossed, label: "مطاعم ومقاهي",    color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
+  { key: "ecommerce",   icon: ShoppingBag,     label: "متاجر إلكترونية", color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
+  { key: "education",   icon: GraduationCap,   label: "منصات تعليمية",   color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
+  { key: "corporate",   icon: Building2,       label: "شركات ومؤسسات",   color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
+  { key: "healthcare",  icon: Heart,           label: "صحة وعيادات",     color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
+  { key: "beauty",      icon: Scissors,        label: "تجميل وصالونات",  color: "text-pink-500",    bg: "bg-pink-50 dark:bg-pink-500/10" },
+  { key: "realestate",  icon: Home,            label: "عقارات",           color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+  { key: "other",       icon: MoreHorizontal,  label: "قطاع آخر",         color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
 ];
 
-function formatBytes(b: number) {
-  if (b < 1024) return b + " B";
-  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
-  return (b / 1048576).toFixed(1) + " MB";
-}
+const SECTORS_EN = [
+  { key: "restaurant",  icon: UtensilsCrossed, label: "Restaurants & Cafes", color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
+  { key: "ecommerce",   icon: ShoppingBag,     label: "Online Stores",        color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
+  { key: "education",   icon: GraduationCap,   label: "Education Platforms",  color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
+  { key: "corporate",   icon: Building2,       label: "Corporate & Business", color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
+  { key: "healthcare",  icon: Heart,           label: "Health & Clinics",     color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
+  { key: "beauty",      icon: Scissors,        label: "Beauty & Salons",      color: "text-pink-500",    bg: "bg-pink-50 dark:bg-pink-500/10" },
+  { key: "realestate",  icon: Home,            label: "Real Estate",          color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+  { key: "other",       icon: MoreHorizontal,  label: "Other Sector",         color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
+];
 
+const FEATURES_AR = [
+  { key: "website",    icon: Globe,          label: "موقع ويب" },
+  { key: "mobile",     icon: Smartphone,     label: "تطبيق جوال" },
+  { key: "dashboard",  icon: LayoutDashboard,label: "لوحة تحكم" },
+  { key: "booking",    icon: CalendarCheck,  label: "نظام حجوزات" },
+  { key: "payment",    icon: CreditCard,     label: "دفع إلكتروني" },
+  { key: "reports",    icon: BarChart3,      label: "تقارير وإحصاءات" },
+  { key: "chat",       icon: MessageSquare,  label: "تواصل مع العملاء" },
+  { key: "delivery",   icon: Truck,          label: "نظام توصيل" },
+  { key: "auth",       icon: Lock,           label: "نظام تسجيل الدخول" },
+  { key: "ai",         icon: Zap,            label: "ميزات ذكاء اصطناعي" },
+];
+
+const FEATURES_EN = [
+  { key: "website",    icon: Globe,          label: "Website" },
+  { key: "mobile",     icon: Smartphone,     label: "Mobile App" },
+  { key: "dashboard",  icon: LayoutDashboard,label: "Admin Dashboard" },
+  { key: "booking",    icon: CalendarCheck,  label: "Booking System" },
+  { key: "payment",    icon: CreditCard,     label: "Online Payment" },
+  { key: "reports",    icon: BarChart3,      label: "Reports & Analytics" },
+  { key: "chat",       icon: MessageSquare,  label: "Customer Messaging" },
+  { key: "delivery",   icon: Truck,          label: "Delivery System" },
+  { key: "auth",       icon: Lock,           label: "Authentication" },
+  { key: "ai",         icon: Zap,            label: "AI Features" },
+];
+
+const BUDGETS_AR = [
+  { key: "unknown",   label: "لم أحدد بعد",     sub: "سنقترح ما يناسبك" },
+  { key: "small",     label: "أقل من 15,000 ريال",   sub: "مشاريع لايت" },
+  { key: "medium",    label: "15,000 – 50,000 ريال",  sub: "مشاريع برو" },
+  { key: "large",     label: "أكثر من 50,000 ريال",   sub: "مشاريع إنفينيت" },
+];
+
+const BUDGETS_EN = [
+  { key: "unknown",   label: "Not sure yet",      sub: "We'll suggest the best fit" },
+  { key: "small",     label: "Under SAR 15,000",  sub: "Lite projects" },
+  { key: "medium",    label: "SAR 15,000 – 50,000", sub: "Pro projects" },
+  { key: "large",     label: "SAR 50,000+",        sub: "Infinite projects" },
+];
+
+const CONTACT_OPTIONS_AR = [
+  { key: "phone",     icon: Phone,     label: "مكالمة هاتفية" },
+  { key: "whatsapp",  icon: SiWhatsapp,label: "واتساب" },
+  { key: "video",     icon: Video,     label: "مكالمة فيديو" },
+];
+
+const CONTACT_OPTIONS_EN = [
+  { key: "phone",     icon: Phone,     label: "Phone Call" },
+  { key: "whatsapp",  icon: SiWhatsapp,label: "WhatsApp" },
+  { key: "video",     icon: Video,     label: "Video Call" },
+];
+
+const TOTAL_STEPS = 5; // 1: sector, 2: idea, 3: features, 4: budget, 5: contact
+
+/* ─── Component ─── */
 export default function QuickStart() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
   const { data: user } = useUser();
   const Arrow = ar ? ArrowLeft : ArrowRight;
-  const sessionIdRef = useRef<string>(`qs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
-  const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const autoStartedRef = useRef(false);
+  const sectors  = ar ? SECTORS_AR  : SECTORS_EN;
+  const featuresList = ar ? FEATURES_AR : FEATURES_EN;
+  const budgets  = ar ? BUDGETS_AR  : BUDGETS_EN;
+  const contactOptions = ar ? CONTACT_OPTIONS_AR : CONTACT_OPTIONS_EN;
 
-  const starters = useMemo(() => (ar ? STARTERS_AR : STARTERS_EN), [ar]);
+  /* form state */
+  const [step, setStep]           = useState(0); // 0 = hero
+  const [sector, setSector]       = useState("");
+  const [idea, setIdea]           = useState("");
+  const [features, setFeatures]   = useState<string[]>([]);
+  const [budget, setBudget]       = useState("");
+  const [name, setName]           = useState((user as any)?.fullName || "");
+  const [phone, setPhone]         = useState((user as any)?.phone || "");
+  const [email, setEmail]         = useState((user as any)?.email || "");
+  const [contact, setContact]     = useState("whatsapp");
 
-  // Auto-start if ?sector= param is in the URL
-  useEffect(() => {
-    if (autoStartedRef.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const sector = params.get("sector");
-    if (sector) {
-      autoStartedRef.current = true;
-      window.history.replaceState({}, "", window.location.pathname);
-      const msg = ar
-        ? `أريد نظاماً أو موقعاً لـ ${sector}`
-        : `I need a system or website for ${sector}`;
-      setTimeout(() => send(msg), 300);
-    }
-  }, [ar]);
+  /* submission state */
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted]   = useState(false);
+  const [refNumber, setRefNumber]   = useState("");
+  const [error, setError]           = useState("");
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [msgs, busy]);
+  const progressPct = step === 0 ? 0 : Math.round((step / TOTAL_STEPS) * 100);
 
-  async function pickFiles(acceptImages = false) {
-    return new Promise<AttachedFile[]>((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.multiple = true;
-      input.accept = acceptImages ? "image/*" : "image/*,application/pdf,.doc,.docx,.txt,.zip";
-      input.onchange = async () => {
-        const files = Array.from(input.files || []);
-        const result: AttachedFile[] = [];
-        for (const f of files) {
-          if (f.size > 8 * 1024 * 1024) continue;
-          const data = await new Promise<string>(res => {
-            const r = new FileReader();
-            r.onload = () => res((r.result as string).split(",")[1]);
-            r.readAsDataURL(f);
-          });
-          const preview = f.type.startsWith("image/") ? `data:${f.type};base64,${data}` : undefined;
-          result.push({ name: f.name, type: f.type, size: f.size, data, preview });
-        }
-        resolve(result);
-      };
-      input.click();
-    });
+  function toggleFeature(key: string) {
+    setFeatures(f => f.includes(key) ? f.filter(k => k !== key) : [...f, key]);
   }
 
-  async function addFiles(imagesOnly = false) {
-    const files = await pickFiles(imagesOnly);
-    setPendingFiles(prev => [...prev, ...files]);
+  function canNext(): boolean {
+    if (step === 1) return !!sector;
+    if (step === 2) return idea.trim().length >= 5;
+    if (step === 3) return features.length > 0;
+    if (step === 4) return !!budget;
+    if (step === 5) return name.trim().length >= 2 && phone.trim().length >= 8;
+    return true;
   }
 
-  async function send(text: string) {
-    const t = text.trim();
-    if (!t && pendingFiles.length === 0) return;
-    if (busy) return;
-    if (!started) setStarted(true);
+  function next() { if (canNext()) setStep(s => s + 1); }
+  function back() { setStep(s => Math.max(0, s - 1)); }
 
-    const filesToSend = [...pendingFiles];
-    setMsgs(m => [...m, { role: "user", content: t, files: filesToSend.length > 0 ? filesToSend : undefined }]);
-    setInput("");
-    setPendingFiles([]);
-    setBusy(true);
-
+  async function submit() {
+    if (!canNext()) return;
+    setSubmitting(true);
+    setError("");
     try {
-      // Build message with file context
-      let fullMessage = t;
-      if (filesToSend.length > 0) {
-        const fileNames = filesToSend.map(f => f.name).join(", ");
-        fullMessage += `\n\n[المستخدم أرفق ${filesToSend.length} ملف/صورة: ${fileNames}]`;
-      }
+      const sectorObj = sectors.find(s => s.key === sector);
+      const selectedFeatureLabels = features.map(f => featuresList.find(x => x.key === f)?.label || f);
+      const budgetObj = budgets.find(b => b.key === budget);
 
-      const res = await fetch("/api/ai/message", {
+      const r = await fetch("/api/quickstart/lead", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `${fullMessage}\n\n[سياق: العميل في صفحة البدء السريع — مساعده في تحديد متطلبات مشروعه وإنشاء طلب أو طلب استشارة فعلي عبر الأدوات.]`,
-          sessionId: sessionIdRef.current,
-          userId: (user as any)?.id,
-          userName: (user as any)?.fullName,
-          userRole: (user as any)?.role || "guest",
-          attachments: filesToSend.map(f => ({ name: f.name, type: f.type, data: f.data })),
+          clientName: name.trim(),
+          clientPhone: phone.trim(),
+          clientEmail: email.trim() || undefined,
+          sector,
+          idea: idea.trim(),
+          features: selectedFeatureLabels,
+          budget: budgetObj?.label || budget,
+          preferredContact: contact,
+          lang,
         }),
       });
-      const data = await res.json();
-      const reply = data.reply || data.message || data.content || (ar ? "..." : "...");
-      const suggestions: string[] = Array.isArray(data.suggestions) ? data.suggestions : [];
-      setMsgs(m => [...m, { role: "assistant", content: reply, suggestions }]);
-    } catch {
-      setMsgs(m => [...m, { role: "assistant", content: ar ? "تعذّر الاتصال. حاول مرة أخرى." : "Connection failed. Try again." }]);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Error");
+      setRefNumber(data.refNumber || "QS-000000");
+      setSubmitted(true);
+    } catch (e: any) {
+      setError(ar ? "حدث خطأ. حاول مجدداً." : "Something went wrong. Please try again.");
     } finally {
-      setBusy(false);
+      setSubmitting(false);
     }
   }
 
-  const InputBar = (
-    <form
-      onSubmit={e => { e.preventDefault(); send(input); }}
-      className="relative shrink-0"
-    >
-      {/* Pending file previews */}
-      {pendingFiles.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {pendingFiles.map((f, i) => (
-            <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-[11px]">
-              {f.preview ? (
-                <img src={f.preview} alt={f.name} className="w-7 h-7 rounded object-cover shrink-0" />
-              ) : (
-                <FileText className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0" />
-              )}
-              <span className="truncate max-w-[100px]">{f.name}</span>
-              <span className="text-black/30 dark:text-white/30 shrink-0">{formatBytes(f.size)}</span>
-              <button type="button" onClick={() => setPendingFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 dark:text-white/30 hover:text-red-500 transition">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit:  (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+  };
 
-      <div className="flex items-center gap-1.5">
-        {/* Image attach */}
-        <button
-          type="button"
-          onClick={() => addFiles(true)}
-          className="shrink-0 w-9 h-9 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] flex items-center justify-center transition text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-          title={ar ? "إرفاق صورة" : "Attach image"}
-          data-testid="button-attach-image-chat"
-        >
-          <ImageIcon className="w-4 h-4" />
-        </button>
-        {/* File attach */}
-        <button
-          type="button"
-          onClick={() => addFiles(false)}
-          className="shrink-0 w-9 h-9 rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] flex items-center justify-center transition text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-          title={ar ? "إرفاق ملف" : "Attach file"}
-          data-testid="button-attach-file-chat"
-        >
-          <Paperclip className="w-4 h-4" />
-        </button>
-
-        <div className="relative flex-1">
-          <Input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={ar ? "اكتب رسالتك…" : "Type your message…"}
-            className={`h-11 ${ar ? "pl-11 pr-4" : "pr-11 pl-4"} text-sm bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-xl`}
-            disabled={busy}
-            data-testid="input-conversation-message"
-          />
-          <button
-            type="submit"
-            disabled={(!input.trim() && pendingFiles.length === 0) || busy}
-            className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
-            data-testid="button-conversation-send"
-            aria-label="send"
+  /* ─── Success screen ─── */
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white" dir={dir}>
+        <Navigation />
+        <main className="flex-1 flex items-center justify-center px-5 py-20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, type: "spring" }}
+            className="max-w-lg w-full text-center"
           >
-            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      </div>
-    </form>
-  );
-
-  return (
-    <div className="min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white" dir={dir}>
-      <Navigation />
-
-      <main className="flex-1 flex flex-col">
-        {!started ? (
-          <div className="flex-1 flex flex-col items-center justify-center px-5 py-16 md:py-24">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="max-w-2xl w-full text-center"
-            >
-              <img src={qiroxLogo} alt="QIROX" className="h-12 md:h-14 w-auto mx-auto mb-6 dark:invert" />
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-6">
-                <Sparkles className="w-3 h-3" />
-                {ar ? "بدء سريع بالذكاء الاصطناعي" : "Quick start with AI"}
-              </div>
-              <h1 className="text-3xl md:text-5xl font-black leading-tight tracking-tight mb-5">
-                {ar ? "احكِ لنا فكرتك" : "Tell us your idea"}
-                <br />
-                <span className="text-black/40 dark:text-white/40">
-                  {ar ? "نتولى الباقي" : "we handle the rest"}
-                </span>
-              </h1>
-              <p className="text-sm md:text-base text-black/60 dark:text-white/60 mb-10 max-w-lg mx-auto leading-relaxed">
-                {ar
-                  ? "تحدّث مع QIROX AI بشكل طبيعي. هو يفهم احتياجك، يقترح الحل المناسب، وينشئ طلبك مباشرة — بدون نماذج طويلة."
-                  : "Talk naturally with QIROX AI. It understands your needs, suggests the right solution, and creates your order directly — no long forms."}
-              </p>
-
-              {/* Input box with file attach */}
-              <div className="max-w-xl mx-auto mb-6">
-                {pendingFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2 justify-center">
-                    {pendingFiles.map((f, i) => (
-                      <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-[11px]">
-                        {f.preview ? (
-                          <img src={f.preview} alt={f.name} className="w-7 h-7 rounded object-cover shrink-0" />
-                        ) : (
-                          <FileText className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0" />
-                        )}
-                        <span className="truncate max-w-[100px]">{f.name}</span>
-                        <button type="button" onClick={() => setPendingFiles(p => p.filter((_, j) => j !== i))} className="text-black/30 hover:text-red-500 transition">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <form
-                  onSubmit={e => { e.preventDefault(); send(input); }}
-                  className="relative"
-                >
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => addFiles(true)}
-                      className="shrink-0 h-14 w-12 rounded-2xl border border-black/12 dark:border-white/12 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-center transition text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white"
-                      title={ar ? "إرفاق صورة" : "Attach image"}
-                      data-testid="button-attach-image-start"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                    </button>
-                    <div className="relative flex-1">
-                      <Input
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        placeholder={ar ? "اكتب فكرتك أو احتياجك بكلمات بسيطة…" : "Describe your idea or need in simple words…"}
-                        className={`h-14 ${ar ? "pl-14 pr-4" : "pr-14 pl-4"} text-base bg-black/[0.03] dark:bg-white/[0.05] border-black/15 dark:border-white/15 rounded-2xl`}
-                        data-testid="input-quickstart-message"
-                        autoFocus
-                      />
-                      <button
-                        type="submit"
-                        disabled={!input.trim() && pendingFiles.length === 0}
-                        className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center disabled:opacity-30 transition`}
-                        data-testid="button-quickstart-send"
-                        aria-label="send"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </form>
-                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1.5 text-center">
-                  {ar ? "يمكنك إرفاق صور أو ملفات لتوضيح فكرتك (حد أقصى 8MB لكل ملف)" : "You can attach images or files to describe your idea (max 8MB each)"}
-                </p>
-              </div>
-
-              {/* Starter chips */}
-              <div className="flex flex-wrap justify-center gap-2 mb-10">
-                {starters.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => send(s)}
-                    className="px-4 py-2 rounded-full border border-black/12 dark:border-white/12 text-xs md:text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
-                    data-testid={`button-starter-${i}`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-
-              {/* Alt actions */}
-              <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-black/45 dark:text-white/45">
-                <span>{ar ? "أو" : "or"}</span>
-                <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-black dark:hover:text-white transition" data-testid="link-quickstart-whatsapp">
-                  <SiWhatsapp className="w-3.5 h-3.5" />
-                  {ar ? "تواصل واتساب" : "WhatsApp us"}
-                </a>
-                <span className="opacity-40">·</span>
-                <Link href="/cart" className="inline-flex items-center gap-1.5 hover:text-black dark:hover:text-white transition" data-testid="link-quickstart-manual">
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  {ar ? "تصفح يدوي للباقات" : "Browse plans manually"}
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        ) : (
-          /* ─── Conversation screen ─── */
-          <div className="flex-1 flex flex-col max-w-3xl w-full mx-auto px-4 py-6">
-            {/* Header card */}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] mb-4">
-              <div className="w-9 h-9 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold">{ar ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}</p>
-                <p className="text-[11px] text-black/45 dark:text-white/45 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
-                  {ar ? "متصل وجاهز للتنفيذ" : "Online & ready to act"}
-                </p>
-              </div>
-              <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer" className="text-xs text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white inline-flex items-center gap-1.5" data-testid="link-conversation-whatsapp">
-                <SiWhatsapp className="w-3.5 h-3.5" />
-                {ar ? "واتساب" : "WhatsApp"}
+            <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+            </div>
+            <h1 className="text-3xl font-black mb-3">
+              {ar ? "تم! وصلت طلبك 🎉" : "Done! We got your request 🎉"}
+            </h1>
+            <p className="text-black/60 dark:text-white/60 mb-6 leading-relaxed">
+              {ar
+                ? `فريق QIROX سيتواصل معك على ${phone} في أقرب وقت. رقم المرجع:`
+                : `QIROX team will contact you at ${phone} shortly. Your reference:`}
+            </p>
+            <div className="inline-block px-6 py-3 rounded-2xl border-2 border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-2xl font-black tracking-widest mb-8">
+              {refNumber}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href={`https://wa.me/966554656670?text=${encodeURIComponent(ar ? `مرحباً، مرجع طلبي: ${refNumber}` : `Hello, my reference: ${refNumber}`)}`}
+                target="_blank" rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] text-white font-bold hover:bg-[#1ebe5d] transition text-sm"
+                data-testid="link-success-whatsapp"
+              >
+                <SiWhatsapp className="w-4 h-4" />
+                {ar ? "تواصل على واتساب" : "Chat on WhatsApp"}
+              </a>
+              <a
+                href="/"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-black/15 dark:border-white/15 font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition text-sm"
+              >
+                {ar ? "العودة للرئيسية" : "Back to Home"}
               </a>
             </div>
+          </motion.div>
+        </main>
+      </div>
+    );
+  }
 
-            {/* Messages */}
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto space-y-3 pb-4 min-h-[420px] max-h-[calc(100vh-320px)]"
+  /* ─── Hero screen ─── */
+  if (step === 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white" dir={dir}>
+        <Navigation />
+        <main className="flex-1 flex items-center justify-center px-5 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            className="max-w-2xl w-full text-center"
+          >
+            <img src={qiroxLogo} alt="QIROX" className="h-12 w-auto mx-auto mb-8 dark:invert" />
+
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 dark:border-white/10 text-[11px] font-bold tracking-widest uppercase mb-7 bg-black/[0.02] dark:bg-white/[0.03]">
+              <Sparkles className="w-3 h-3" />
+              {ar ? "حدّد مشروعك خلال دقيقتين" : "Define your project in 2 minutes"}
+            </div>
+
+            <h1 className="text-4xl md:text-6xl font-black leading-[1.1] tracking-tight mb-5">
+              {ar ? (
+                <>
+                  ابدأ مشروعك<br />
+                  <span className="text-black/25 dark:text-white/25">بخطوات واضحة</span>
+                </>
+              ) : (
+                <>
+                  Start your project<br />
+                  <span className="text-black/25 dark:text-white/25">with clear steps</span>
+                </>
+              )}
+            </h1>
+
+            <p className="text-base text-black/55 dark:text-white/55 mb-10 max-w-md mx-auto leading-relaxed">
+              {ar
+                ? "5 أسئلة بسيطة — وفريق QIROX يتواصل معك بعرض مفصّل يناسب نشاطك تماماً."
+                : "5 simple questions — and QIROX team contacts you with a tailored proposal for your business."}
+            </p>
+
+            {/* Step preview pills */}
+            <div className="flex flex-wrap justify-center gap-2 mb-10">
+              {(ar
+                ? ["القطاع", "الفكرة", "المميزات", "الميزانية", "بياناتك"]
+                : ["Sector", "Your Idea", "Features", "Budget", "Your Info"]
+              ).map((label, i) => (
+                <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-black/10 dark:border-white/10 text-xs font-medium text-black/50 dark:text-white/50">
+                  <span className="w-4 h-4 rounded-full bg-black/10 dark:bg-white/10 text-[10px] flex items-center justify-center font-black">{i + 1}</span>
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => setStep(1)}
+              className="h-14 px-10 rounded-2xl bg-black text-white dark:bg-white dark:text-black hover:opacity-90 text-base font-black gap-2 shadow-2xl shadow-black/20"
+              data-testid="button-start-wizard"
             >
-              <AnimatePresence initial={false}>
-                {msgs.map((m, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-                        m.role === "user"
-                          ? "bg-black text-white dark:bg-white dark:text-black"
-                          : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/[0.06] dark:border-white/[0.08]"
-                      }`}
-                      data-testid={`msg-${m.role}-${i}`}
-                    >
-                      {/* File thumbnails for user messages */}
-                      {m.files && m.files.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {m.files.map((f, j) => (
-                            <div key={j} className="flex items-center gap-1.5">
-                              {f.preview ? (
-                                <img src={f.preview} alt={f.name} className="max-w-[160px] max-h-[120px] rounded-lg object-cover" />
-                              ) : (
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 text-[11px]">
-                                  <FileText className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="truncate max-w-[120px]">{f.name}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {m.content}
-                      {m.role === "assistant" && m.suggestions && m.suggestions.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {m.suggestions.map((s, j) => (
-                            <button
-                              key={j}
-                              onClick={() => send(s)}
-                              className="px-2.5 py-1 text-[11px] rounded-full border border-black/15 dark:border-white/15 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition"
-                              data-testid={`suggestion-${i}-${j}`}
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {ar ? "ابدأ الآن" : "Start Now"}
+              <Arrow className="w-5 h-5" />
+            </Button>
 
-              {busy && (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl px-4 py-3 bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] inline-flex items-center gap-2 text-xs text-black/55 dark:text-white/55">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    {ar ? "QIROX يفكر…" : "QIROX is thinking…"}
+            <p className="text-[11px] text-black/30 dark:text-white/30 mt-4">
+              {ar ? "مجاناً · لا تحتاج حساباً · يستغرق أقل من دقيقتين" : "Free · No account needed · Under 2 minutes"}
+            </p>
+          </motion.div>
+        </main>
+      </div>
+    );
+  }
+
+  /* ─── Wizard screen ─── */
+  return (
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white" dir={dir}>
+      <Navigation />
+
+      <main className="flex-1 flex flex-col items-center px-4 py-8">
+        <div className="w-full max-w-2xl">
+
+          {/* Progress bar */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between text-[11px] text-black/40 dark:text-white/40 mb-2 font-medium">
+              <span>{ar ? `الخطوة ${step} من ${TOTAL_STEPS}` : `Step ${step} of ${TOTAL_STEPS}`}</span>
+              <span>{progressPct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-black/8 dark:bg-white/8 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-black dark:bg-white"
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+
+          {/* Step content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              variants={slideVariants}
+              custom={1}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: "easeOut" }}
+            >
+
+              {/* ─── Step 1: Sector ─── */}
+              {step === 1 && (
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-2">
+                    {ar ? "ما قطاع نشاطك؟" : "What's your business sector?"}
+                  </h2>
+                  <p className="text-black/50 dark:text-white/50 text-sm mb-7">
+                    {ar ? "اختر الأقرب لمشروعك" : "Pick the closest to your project"}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {sectors.map(s => {
+                      const Icon = s.icon;
+                      const selected = sector === s.key;
+                      return (
+                        <button
+                          key={s.key}
+                          onClick={() => { setSector(s.key); }}
+                          className={`relative flex flex-col items-center gap-2.5 p-4 rounded-2xl border-2 transition-all duration-200 text-center ${
+                            selected
+                              ? "border-black dark:border-white bg-black text-white dark:bg-white dark:text-black shadow-lg scale-[1.03]"
+                              : "border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                          }`}
+                          data-testid={`sector-${s.key}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selected ? "bg-white/15" : s.bg}`}>
+                            <Icon className={`w-5 h-5 ${selected ? "text-white dark:text-black" : s.color}`} />
+                          </div>
+                          <span className="text-xs font-bold leading-tight">{s.label}</span>
+                          {selected && (
+                            <CheckCircle2 className="absolute top-2 left-2 w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Input bar */}
-            {InputBar}
+              {/* ─── Step 2: Idea ─── */}
+              {step === 2 && (
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-2">
+                    {ar ? "صف فكرتك بكلماتك" : "Describe your idea in your own words"}
+                  </h2>
+                  <p className="text-black/50 dark:text-white/50 text-sm mb-7">
+                    {ar
+                      ? "لا تقلق من التفاصيل — اكتب ما يدور في ذهنك"
+                      : "Don't worry about details — just write what's on your mind"}
+                  </p>
+                  <Textarea
+                    value={idea}
+                    onChange={e => setIdea(e.target.value)}
+                    placeholder={ar
+                      ? "مثال: أريد تطبيق لحجز مواعيد صالون الحلاقة، يعرض الأوقات المتاحة للعملاء ويرسل تنبيهات قبل الموعد…"
+                      : "Example: I want an app for booking barbershop appointments, showing available slots and sending reminders…"}
+                    className="min-h-[160px] text-sm bg-black/[0.02] dark:bg-white/[0.04] border-black/12 dark:border-white/12 rounded-2xl resize-none"
+                    data-testid="textarea-idea"
+                  />
+                  <p className={`text-xs mt-2 transition-colors ${idea.trim().length < 5 ? "text-black/30 dark:text-white/30" : "text-emerald-500"}`}>
+                    {idea.trim().length} {ar ? "حرف" : "characters"}
+                    {idea.trim().length >= 5 && " ✓"}
+                  </p>
+                </div>
+              )}
 
-            {/* Footer hint */}
-            <p className="text-[11px] text-center text-black/40 dark:text-white/40 mt-3">
-              {ar
-                ? "QIROX AI ينشئ طلبك أو يحجز استشارتك مباشرة عند جمع كل المعلومات اللازمة."
-                : "QIROX AI creates your order or books a consultation directly once it gathers all needed info."}
-            </p>
+              {/* ─── Step 3: Features ─── */}
+              {step === 3 && (
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-2">
+                    {ar ? "ما المميزات التي تحتاجها؟" : "What features do you need?"}
+                  </h2>
+                  <p className="text-black/50 dark:text-white/50 text-sm mb-7">
+                    {ar ? "اختر كل ما ينطبق — يمكنك اختيار أكثر من واحدة" : "Pick all that apply — multiple choices allowed"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {featuresList.map(f => {
+                      const Icon = f.icon;
+                      const selected = features.includes(f.key);
+                      return (
+                        <button
+                          key={f.key}
+                          onClick={() => toggleFeature(f.key)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-200 text-start ${
+                            selected
+                              ? "border-black dark:border-white bg-black text-white dark:bg-white dark:text-black"
+                              : "border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 hover:bg-black/[0.02]"
+                          }`}
+                          data-testid={`feature-${f.key}`}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          {f.label}
+                          {selected && <Check className="w-3.5 h-3.5 ms-auto shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {features.length > 0 && (
+                    <p className="text-xs text-emerald-500 mt-3 font-medium">
+                      {features.length} {ar ? "مميزة مختارة ✓" : "features selected ✓"}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Step 4: Budget ─── */}
+              {step === 4 && (
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-2">
+                    {ar ? "ما ميزانيتك التقريبية؟" : "What's your approximate budget?"}
+                  </h2>
+                  <p className="text-black/50 dark:text-white/50 text-sm mb-7">
+                    {ar ? "هذا يساعدنا في اقتراح الباقة المناسبة لك" : "This helps us suggest the right package for you"}
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    {budgets.map(b => {
+                      const selected = budget === b.key;
+                      return (
+                        <button
+                          key={b.key}
+                          onClick={() => setBudget(b.key)}
+                          className={`flex items-center justify-between px-5 py-4 rounded-2xl border-2 text-start transition-all duration-200 ${
+                            selected
+                              ? "border-black dark:border-white bg-black text-white dark:bg-white dark:text-black shadow-lg"
+                              : "border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25"
+                          }`}
+                          data-testid={`budget-${b.key}`}
+                        >
+                          <div>
+                            <div className="font-bold text-sm">{b.label}</div>
+                            <div className={`text-xs mt-0.5 ${selected ? "opacity-70" : "text-black/40 dark:text-white/40"}`}>{b.sub}</div>
+                          </div>
+                          {selected && <CheckCircle2 className="w-5 h-5 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ─── Step 5: Contact Info ─── */}
+              {step === 5 && (
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-2">
+                    {ar ? "بياناتك للتواصل" : "Your contact info"}
+                  </h2>
+                  <p className="text-black/50 dark:text-white/50 text-sm mb-7">
+                    {ar ? "سيتواصل معك فريقنا خلال 24 ساعة" : "Our team will reach out within 24 hours"}
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold mb-1.5">
+                        {ar ? "اسمك الكريم" : "Your Name"} <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder={ar ? "مثال: محمد العلي" : "e.g. John Smith"}
+                        className="h-12 rounded-xl border-black/12 dark:border-white/12 bg-black/[0.02] dark:bg-white/[0.04]"
+                        data-testid="input-name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1.5">
+                        {ar ? "رقم جوالك" : "Phone Number"} <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder={ar ? "05xxxxxxxx" : "+966 5x xxx xxxx"}
+                        className="h-12 rounded-xl border-black/12 dark:border-white/12 bg-black/[0.02] dark:bg-white/[0.04]"
+                        dir="ltr"
+                        type="tel"
+                        data-testid="input-phone"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1.5">
+                        {ar ? "بريدك الإلكتروني (اختياري)" : "Email (optional)"}
+                      </label>
+                      <Input
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="example@domain.com"
+                        className="h-12 rounded-xl border-black/12 dark:border-white/12 bg-black/[0.02] dark:bg-white/[0.04]"
+                        dir="ltr"
+                        type="email"
+                        data-testid="input-email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-2">
+                        {ar ? "طريقة التواصل المفضّلة" : "Preferred Contact Method"}
+                      </label>
+                      <div className="flex gap-2">
+                        {contactOptions.map(c => {
+                          const Icon = c.icon;
+                          const selected = contact === c.key;
+                          return (
+                            <button
+                              key={c.key}
+                              onClick={() => setContact(c.key)}
+                              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium flex-1 justify-center transition-all ${
+                                selected
+                                  ? "border-black dark:border-white bg-black text-white dark:bg-white dark:text-black"
+                                  : "border-black/10 dark:border-white/10 hover:border-black/25"
+                              }`}
+                              data-testid={`contact-${c.key}`}
+                            >
+                              <Icon className="w-4 h-4 shrink-0" />
+                              {c.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <p className="text-sm text-red-500 mt-4 font-medium">{error}</p>
+                  )}
+                </div>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between mt-8 pt-6 border-t border-black/8 dark:border-white/8">
+            <button
+              onClick={back}
+              className="flex items-center gap-1.5 text-sm text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white transition font-medium"
+              data-testid="button-back"
+            >
+              {ar ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
+              {ar ? "رجوع" : "Back"}
+            </button>
+
+            {step < TOTAL_STEPS ? (
+              <Button
+                onClick={next}
+                disabled={!canNext()}
+                className="h-12 px-8 rounded-xl bg-black text-white dark:bg-white dark:text-black hover:opacity-90 font-black gap-2 disabled:opacity-30"
+                data-testid="button-next"
+              >
+                {ar ? "التالي" : "Next"}
+                <Arrow className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={submit}
+                disabled={!canNext() || submitting}
+                className="h-12 px-8 rounded-xl bg-black text-white dark:bg-white dark:text-black hover:opacity-90 font-black gap-2 disabled:opacity-30"
+                data-testid="button-submit"
+              >
+                {submitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />{ar ? "جارٍ الإرسال…" : "Sending…"}</>
+                ) : (
+                  <>{ar ? "أرسل طلبي 🚀" : "Send Request 🚀"}</>
+                )}
+              </Button>
+            )}
           </div>
-        )}
+
+          {/* Step summary chips (visible in step 5 as review) */}
+          {step === 5 && (
+            <div className="mt-6 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/8 dark:border-white/8">
+              <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-3">
+                {ar ? "ملخص طلبك:" : "Your request summary:"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  sectors.find(s => s.key === sector)?.label,
+                  ...(features.slice(0, 3).map(f => featuresList.find(x => x.key === f)?.label)),
+                  features.length > 3 ? `+${features.length - 3} ${ar ? "أخرى" : "more"}` : null,
+                  budgets.find(b => b.key === budget)?.label,
+                ].filter(Boolean).map((t, i) => (
+                  <span key={i} className="px-2.5 py-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06] text-[11px] font-medium">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

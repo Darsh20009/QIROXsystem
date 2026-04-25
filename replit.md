@@ -1,5 +1,31 @@
 # Qirox Platform
 
+## Latest Changes (Apr 25, 2026 — Session 2) — QuickStart AI Wizard
+
+### QuickStart Wizard (client/src/pages/QuickStart.tsx)
+- **Full redesign** — Replaced old free-form AI chat with a beautiful 5-step structured wizard
+- **Hero screen (step 0)**: Animated intro with step preview pills, "ابدأ الآن" CTA, dark mode support
+- **Step 1 — Sector**: 8 sector cards with icons & colors (restaurant, ecommerce, education, corporate, healthcare, beauty, realestate, other)
+- **Step 2 — Idea**: Large textarea with creative placeholder examples; character counter + green ✓ on valid input
+- **Step 3 — Features**: 10 multi-select chips (website, mobile app, dashboard, booking, payment, reports, chat, delivery, auth, AI)
+- **Step 4 — Budget**: 4 single-select cards (unknown / <15K / 15K-50K / 50K+)
+- **Step 5 — Contact**: Name, phone (required), email (optional), preferred contact method (phone/WhatsApp/video)
+- **Step 5 — Summary**: Review chips showing sector + features + budget before submit
+- **Success screen**: Reference number (QS-XXXXXX), WhatsApp link, back to home
+- **Progress bar**: Animated with step counter (e.g. "الخطوة 2 من 5")
+- **Framer-motion**: Slide transitions between steps; spring animation on success screen
+- **Bilingual**: Full Arabic/English support via `useI18n()`; RTL/LTR aware arrow direction
+
+### Backend — New Endpoint (server/routes.ts)
+- **POST /api/quickstart/lead**: Accepts `{clientName, clientPhone, clientEmail, sector, idea, features[], budget, preferredContact}`
+  - Creates `ConsultationBooking` with structured notes field (emoji-formatted summary of all wizard answers)
+  - Notifies admins/managers/sales team via `sendConsultationNotificationEmail`
+  - Fires `fireNotifyAdmins` push notification: "🚀 عميل جديد من AI Wizard"
+  - Returns `{ok, bookingId, refNumber}` — refNumber format: `QS-XXXXXX` (last 6 chars of ObjectId)
+- **No auth required** — works for anonymous visitors and logged-in users
+
+---
+
 ## Latest Changes (Apr 25, 2026) — Pricing Overhaul & Code Cleanup
 
 ### Pricing Strategy — "على حسب الاحتياج" (Custom Pricing)

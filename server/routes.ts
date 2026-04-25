@@ -8970,6 +8970,90 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
+  // POST /api/quickstart/lead — AI wizard submits a structured project lead
+  app.post("/api/quickstart/lead", async (req, res) => {
+    try {
+      const { ConsultationBookingModel, UserModel } = await import("./models");
+      const user = req.isAuthenticated() ? (req.user as any) : null;
+
+      const {
+        clientName, clientPhone, clientEmail,
+        sector, idea, features, budget, preferredContact,
+        lang,
+      } = req.body;
+
+      if (!clientName?.trim() || !clientPhone?.trim()) {
+        return res.status(400).json({ error: "الاسم ورقم الجوال مطلوبان" });
+      }
+
+      const SECTOR_LABELS: Record<string, string> = {
+        restaurant: "مطاعم ومقاهي", ecommerce: "متاجر إلكترونية", education: "منصات تعليمية",
+        corporate: "شركات ومؤسسات", healthcare: "صحة وعيادات", beauty: "تجميل وصالونات",
+        realestate: "عقارات", other: "أخرى",
+      };
+      const sectorLabel = SECTOR_LABELS[sector] || sector || "غير محدد";
+      const featuresText = Array.isArray(features) && features.length > 0 ? features.join("، ") : "غير محددة";
+
+      const topic = `مشروع جديد — ${sectorLabel}`;
+      const structuredNotes = [
+        `📋 طلب وارد عبر QIROX AI Wizard`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `👤 الاسم: ${clientName.trim()}`,
+        `📱 الجوال: ${clientPhone.trim()}`,
+        clientEmail?.trim() ? `📧 البريد: ${clientEmail.trim()}` : null,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `🏢 القطاع: ${sectorLabel}`,
+        `💡 الفكرة: ${idea?.trim() || "لم يوضّح"}`,
+        `⚙️ المميزات المطلوبة: ${featuresText}`,
+        `💰 الميزانية: ${budget || "لم تُحدد"}`,
+        `📞 طريقة التواصل المفضّلة: ${preferredContact || "هاتف"}`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `🕐 التاريخ: ${new Date().toLocaleString("ar-SA")}`,
+        `🔗 المصدر: QIROX AI QuickStart`,
+      ].filter(Boolean).join("\n");
+
+      const booking = await ConsultationBookingModel.create({
+        clientName: clientName.trim(),
+        clientEmail: clientEmail?.trim() || "",
+        clientPhone: clientPhone.trim(),
+        clientId: user?._id || user?.id || null,
+        consultationType: preferredContact === "video" ? "video" : preferredContact === "whatsapp" ? "phone" : "phone",
+        topic,
+        notes: structuredNotes,
+        status: "pending",
+      });
+
+      const bookingId = String((booking as any)._id || (booking as any).id);
+      const refNumber = `QS-${bookingId.slice(-6).toUpperCase()}`;
+
+      // Notify admins
+      const admins = await UserModel.find({ role: { $in: ["admin", "manager", "sales", "sales_manager"] } }, { email: 1, fullName: 1 });
+      for (const staff of admins) {
+        if (staff.email) {
+          sendConsultationNotificationEmail(staff.email, staff.fullName || staff.email, {
+            bookingId,
+            clientName: clientName.trim(),
+            clientEmail: clientEmail?.trim() || "غير محدد",
+            clientPhone: clientPhone.trim(),
+            date: "سيتم التحديد لاحقاً", startTime: "", endTime: "",
+            consultationType: "phone",
+            topic,
+          }).catch(() => {});
+        }
+      }
+      fireNotifyAdmins(
+        `🚀 عميل جديد من AI Wizard`,
+        `${clientName.trim()} — ${sectorLabel} | ${clientPhone.trim()}`,
+        { type: "info", link: "/admin/consultation", icon: "🚀" }
+      );
+
+      res.status(201).json({ ok: true, bookingId, refNumber, clientName: clientName.trim() });
+    } catch (err: any) {
+      console.error("[QuickStart Lead Error]", err.message);
+      res.status(500).json({ error: err.message || "حدث خطأ" });
+    }
+  });
+
   app.patch("/api/admin/consultation/bookings/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as any;
