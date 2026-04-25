@@ -154,9 +154,9 @@ function FloatingBadge({
 export function PricesHeroVisual({ lang = "ar" }: { lang?: string }) {
   const L = lang === "ar";
   const tiers = [
-    { name: L ? "لايت" : "Lite", price: "3,499", tag: L ? "مثالي للبداية" : "Perfect start" },
-    { name: L ? "برو" : "Pro", price: "5,999", tag: L ? "الأكثر مبيعاً" : "Best seller", active: true },
-    { name: L ? "إنفينيت" : "Infinite", price: L ? "حسب الطلب" : "Custom", tag: L ? "للمؤسسات" : "Enterprise" },
+    { name: L ? "لايت" : "Lite",     price: L ? "على حسب الاحتياج" : "Custom", tag: L ? "مثالي للبداية" : "Perfect start" },
+    { name: L ? "برو" : "Pro",       price: L ? "على حسب الاحتياج" : "Custom", tag: L ? "الأكثر مبيعاً" : "Best seller", active: true },
+    { name: L ? "إنهائي" : "Infinite", price: L ? "على حسب الاحتياج" : "Custom", tag: L ? "للمؤسسات" : "Enterprise" },
   ];
   const features = [
     L ? "لوحة تحكم شاملة" : "Full dashboard",
@@ -226,8 +226,8 @@ export function PricesHeroVisual({ lang = "ar" }: { lang?: string }) {
         </div>
         <div style={{ background: "#fff", borderRadius: 8, padding: "8px 8px" }}>
           <p style={{ fontSize: 6, color: "rgba(0,0,0,0.4)", margin: "0 0 4px" }}>{L ? "الباقة الأكثر طلباً" : "Top plan"}</p>
-          <p style={{ fontSize: 13, fontWeight: 900, color: "#111", fontFamily: "monospace", margin: "0 0 2px" }}>5,999</p>
-          <p style={{ fontSize: 5, color: "rgba(0,0,0,0.3)", margin: 0 }}>SAR</p>
+          <p style={{ fontSize: 9, fontWeight: 900, color: "#111", fontFamily: "sans-serif", margin: "0 0 2px" }}>{L ? "على حسب الاحتياج" : "Custom"}</p>
+          <p style={{ fontSize: 5, color: "rgba(0,0,0,0.3)", margin: 0 }}>{L ? "تواصل للحصول على عرض" : "Contact for quote"}</p>
         </div>
         <div style={{ marginTop: 7, space: 4 }}>
           {[L ? "نظام كامل" : "Full system", L ? "جوال + ويب" : "Mobile + Web"].map((item, i) => (

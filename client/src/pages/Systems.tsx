@@ -29,7 +29,7 @@ const SEGMENTS = [
   { key: "corporate",   labelAr: "شركات ومؤسسات",       icon: Building2,       color: "from-slate-600 to-gray-700",    bg: "bg-slate-50 dark:bg-slate-900/10",     text: "text-slate-600 dark:text-slate-400",  border: "border-slate-200 dark:border-slate-800/40" },
   { key: "realestate",  labelAr: "عقارات",              icon: Home,            color: "from-black dark:from-white to-black dark:to-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
-  { key: "salon",       labelAr: "صالونات تجميل",       icon: Sparkles,        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "beauty",      labelAr: "صالونات تجميل",       icon: Sparkles,        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
 ];
 
 interface SystemCard {
@@ -249,7 +249,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       features: ["ملفات الوسطاء والعقارات المسندة", "لوحة أداء الوسيط", "عمولات تلقائية", "تدريب وموارد الوسيط"],
     },
   ],
-  salon: [
+  beauty: [
     {
       icon: Sparkles,
       title: "موقع صالون التجميل",
@@ -362,7 +362,7 @@ export default function Systems() {
     corporate:  lang === "ar" ? "شركات ومؤسسات"     : "Corporate",
     realestate: lang === "ar" ? "عقارات"             : "Real Estate",
     healthcare: lang === "ar" ? "صحة وعيادات"        : "Health & Clinics",
-    salon:      lang === "ar" ? "صالونات تجميل"      : "Beauty Salons",
+    beauty:     lang === "ar" ? "صالونات تجميل"      : "Beauty Salons",
   };
 
   const trustBadges = [

@@ -24,11 +24,11 @@ import { PricesHeroVisual } from "@/components/MarketingVisual";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
-const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelAr: string; sublabelEn: string; icon: any; badgeAr?: string; badgeEn?: string }[] = [
+const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelAr: string; sublabelEn: string; icon: any }[] = [
   { key: "monthly",  labelAr: "شهري",       labelEn: "Monthly",   sublabelAr: "ادفع كل شهر",   sublabelEn: "Pay monthly",    icon: Calendar },
-  { key: "sixmonth", labelAr: "نصف سنوي",   labelEn: "6 Months",  sublabelAr: "6 أشهر",         sublabelEn: "6 months",       icon: CalendarRange, badgeAr: "وفّر 30%", badgeEn: "Save 30%" },
-  { key: "annual",   labelAr: "سنوي",       labelEn: "Annual",    sublabelAr: "سنة كاملة",      sublabelEn: "Full year",      icon: CalendarDays,  badgeAr: "الأوفر",   badgeEn: "Best Value" },
-  { key: "lifetime", labelAr: "مدى الحياة", labelEn: "Lifetime",  sublabelAr: "دفعة واحدة",     sublabelEn: "One-time",       icon: InfinityIcon,  badgeAr: "دائم",     badgeEn: "Forever" },
+  { key: "sixmonth", labelAr: "نصف سنوي",   labelEn: "6 Months",  sublabelAr: "6 أشهر",         sublabelEn: "6 months",       icon: CalendarRange },
+  { key: "annual",   labelAr: "سنوي",       labelEn: "Annual",    sublabelAr: "سنة كاملة",      sublabelEn: "Full year",      icon: CalendarDays  },
+  { key: "lifetime", labelAr: "مدى الحياة", labelEn: "Lifetime",  sublabelAr: "دفعة واحدة",     sublabelEn: "One-time",       icon: InfinityIcon  },
 ];
 
 const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string; bg: string }> = {
@@ -583,25 +583,21 @@ export default function Prices() {
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex flex-wrap items-center gap-2" data-testid="billing-period-selector">
             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-slate-600 ml-2">
-              {lang === "ar" ? "الفترة :" : "PERIOD :"}
+              {lang === "ar" ? "عرض المميزات :" : "FEATURES :"}
             </span>
-            {PERIODS.map(({ key, labelAr, labelEn, icon: PIcon, badgeAr, badgeEn }) => {
+            {PERIODS.map(({ key, labelAr, labelEn, icon: PIcon }) => {
               const pLabel = lang === "ar" ? labelAr : labelEn;
-              const pBadge = lang === "ar" ? badgeAr : badgeEn;
               const isActive = period === key;
               return (
                 <button key={key} onClick={() => setPeriod(key)} data-testid={`tab-period-${key}`}
                   className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
                     isActive
-                      ? "bg-black dark:bg-white border-black dark:border-white text-white shadow-lg shadow-blue-600/25"
+                      ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-slate-900 shadow-lg shadow-black/10"
                       : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-600"
                   }`}
                 >
                   <PIcon className="w-3 h-3" />
                   {pLabel}
-                  {pBadge && !isActive && (
-                    <span className="text-[8px] font-black bg-black dark:bg-white text-white px-1.5 py-0.5 rounded-full">{pBadge}</span>
-                  )}
                 </button>
               );
             })}
@@ -613,13 +609,16 @@ export default function Prices() {
       <section className="py-14 bg-gray-100 dark:bg-[#0a0a14]">
         <div className="container mx-auto px-4 max-w-5xl">
           {/* Context breadcrumb */}
-          <div className="flex items-center gap-2 mb-10">
-            <div className={`w-6 h-6 rounded-md ${activeSeg.bg} flex items-center justify-center`}>
-              <activeSeg.icon className={`w-3.5 h-3.5 ${activeSeg.color}`} />
+          <div className="flex items-center gap-3 mb-10">
+            <div className={`w-7 h-7 rounded-lg ${activeSeg.bg} flex items-center justify-center`}>
+              <activeSeg.icon className={`w-4 h-4 ${activeSeg.color}`} />
             </div>
             <span className="text-sm font-black text-gray-800 dark:text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
             <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-slate-700" />
-            <span className="text-xs text-gray-500 dark:text-slate-500">{lang === "ar" ? PERIODS.find(p => p.key === period)?.labelAr : PERIODS.find(p => p.key === period)?.labelEn}</span>
+            <span className="text-xs font-medium text-gray-500 dark:text-slate-500">{lang === "ar" ? "الباقات المتاحة" : "Available Plans"}</span>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] text-gray-500 dark:text-slate-400">
+              {lang === "ar" ? "السعر على حسب الاحتياج" : "Custom Pricing"}
+            </span>
           </div>
 
           {isLoading ? (
@@ -680,7 +679,7 @@ export default function Prices() {
                   })}
                 </div>
                 {[
-                  { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1 text-gray-800 dark:text-slate-200">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
+                  { label: lang === "ar" ? "السعر" : "Price", values: tierPlans.map(() => lang === "ar" ? <span className="text-xs font-bold text-gray-700 dark:text-slate-300">على حسب الاحتياج</span> : <span className="text-xs font-bold text-gray-700 dark:text-slate-300">Custom</span>) },
                   { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
                   { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
                   { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },

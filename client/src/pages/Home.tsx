@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
-import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useTemplates } from "@/hooks/use-templates";
@@ -459,8 +458,6 @@ export default function Home() {
                 const isPopular = plan.isPopular || plan.popular || plan.tier === "pro";
                 const isPro = plan.tier === "pro";
                 const isInfinite = plan.tier === "infinite";
-                const monthlyPrice = plan.monthlyPrice ?? plan.price ?? null;
-
                 return (
                   <motion.div key={planKey} {...fade(i)}>
                     <div className={`relative rounded-2xl overflow-hidden h-full flex flex-col transition-transform duration-300 hover:scale-[1.02] ${
@@ -496,17 +493,12 @@ export default function Home() {
 
                         {/* Price */}
                         <div className="mb-6">
-                          {monthlyPrice != null ? (
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-4xl font-black">{monthlyPrice.toLocaleString()}</span>
-                              <SARIcon className="w-5 h-5 opacity-60" />
-                              <span className={`text-xs ${isPopular ? "text-white/50 dark:text-black/50" : "text-black/40 dark:text-white/40"}`}>/ {ar ? "شهر" : "mo"}</span>
-                            </div>
-                          ) : (
-                            <div className={`text-sm font-bold ${isPopular ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`}>
-                              {ar ? "تواصل للسعر" : "Contact for pricing"}
-                            </div>
-                          )}
+                          <div className={`text-xl font-black ${isPopular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                            {ar ? "على حسب الاحتياج" : "Custom Pricing"}
+                          </div>
+                          <div className={`text-xs mt-1 ${isPopular ? "text-white/50 dark:text-black/50" : "text-black/40 dark:text-white/40"}`}>
+                            {ar ? "تواصل للحصول على عرض خاص" : "Contact us for a quote"}
+                          </div>
                         </div>
 
                         {/* Features */}
