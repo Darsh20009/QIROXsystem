@@ -103,6 +103,7 @@ export function AppSidebar() {
     { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "clients" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "clients" },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Megaphone, url: "/sales/marketing", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
+    { title: ar ? "تقارير المبيعات" : "Sales Reports", icon: BarChart3, url: "/admin/sales-reports", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
     // Employee — work (العمل والطلبات)
     { title: ar ? "المشاريع" : "Projects", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
     { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work" },

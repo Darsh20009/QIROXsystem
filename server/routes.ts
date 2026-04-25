@@ -9012,6 +9012,22 @@ export async function registerRoutes(
         `🔗 المصدر: QIROX AI QuickStart`,
       ].filter(Boolean).join("\n");
 
+      // Round-robin auto-assign to sales team member with fewest leads
+      let assignedEmployee: any = null;
+      try {
+        const salesTeam = await UserModel.find({ role: { $in: ["sales", "sales_manager"] } }, { _id: 1, fullName: 1, email: 1 }).lean();
+        if (salesTeam.length > 0) {
+          const counts = await Promise.all(
+            (salesTeam as any[]).map((s: any) =>
+              ConsultationBookingModel.countDocuments({ employeeId: s._id, notes: /QIROX AI Wizard/ })
+                .then((c: number) => ({ user: s, count: c }))
+            )
+          );
+          counts.sort((a: any, b: any) => a.count - b.count);
+          assignedEmployee = counts[0].user;
+        }
+      } catch (_) {}
+
       const booking = await ConsultationBookingModel.create({
         clientName: clientName.trim(),
         clientEmail: clientEmail?.trim() || "",
@@ -9021,6 +9037,7 @@ export async function registerRoutes(
         topic,
         notes: structuredNotes,
         status: "pending",
+        ...(assignedEmployee ? { employeeId: assignedEmployee._id, employeeName: assignedEmployee.fullName } : {}),
       });
 
       const bookingId = String((booking as any)._id || (booking as any).id);
@@ -9050,6 +9067,110 @@ export async function registerRoutes(
       res.status(201).json({ ok: true, bookingId, refNumber, clientName: clientName.trim() });
     } catch (err: any) {
       console.error("[QuickStart Lead Error]", err.message);
+      res.status(500).json({ error: err.message || "حدث خطأ" });
+    }
+  });
+
+  // GET /api/track/:ref — public order/lead tracking by reference number (QS-XXXXXX)
+  app.get("/api/track/:ref", async (req, res) => {
+    try {
+      const ref = (req.params.ref || "").trim().toUpperCase();
+      if (!ref.startsWith("QS-") || ref.length < 9) {
+        return res.status(400).json({ error: "رقم المرجع غير صالح" });
+      }
+      const suffix = ref.slice(3).toUpperCase(); // last 6 chars of ObjectId
+      const { ConsultationBookingModel } = await import("./models");
+      // Pull QS leads: those with "QIROX AI Wizard" in notes, recent first
+      const bookings = await ConsultationBookingModel
+        .find({ notes: /QIROX AI Wizard/ })
+        .sort({ createdAt: -1 })
+        .limit(2000)
+        .lean();
+      const found = bookings.find((b: any) => {
+        const id = String(b._id);
+        return id.slice(-6).toUpperCase() === suffix;
+      });
+      if (!found) return res.status(404).json({ error: "لم يتم العثور على الطلب" });
+      const refNumber = `QS-${String(found._id).slice(-6).toUpperCase()}`;
+      return res.json({
+        refNumber,
+        clientName: found.clientName,
+        status: found.status,
+        topic: found.topic,
+        createdAt: found.createdAt,
+        consultationType: found.consultationType,
+        employeeName: found.employeeName || null,
+        adminNotes: found.adminNotes || null,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "حدث خطأ" });
+    }
+  });
+
+  // GET /api/admin/sales-reports — sales team analytics
+  app.get("/api/admin/sales-reports", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const allowed = ["admin", "manager", "sales_manager", "sales"];
+    if (!allowed.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { ConsultationBookingModel, UserModel } = await import("./models");
+
+      const allLeads = await ConsultationBookingModel
+        .find({ notes: /QIROX AI Wizard/ })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Status breakdown
+      const statusBreakdown: Record<string, number> = {};
+      for (const b of allLeads as any[]) {
+        statusBreakdown[b.status] = (statusBreakdown[b.status] || 0) + 1;
+      }
+
+      // Monthly trend (last 12 months)
+      const now = new Date();
+      const monthly: { month: string; count: number }[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = d.toLocaleDateString("ar-SA", { month: "short", year: "2-digit" });
+        const count = (allLeads as any[]).filter((b: any) => {
+          const bDate = new Date(b.createdAt);
+          return bDate.getFullYear() === d.getFullYear() && bDate.getMonth() === d.getMonth();
+        }).length;
+        monthly.push({ month: label, count });
+      }
+
+      // Per-sales-person breakdown
+      const salesUsers = await UserModel.find({ role: { $in: ["sales", "sales_manager"] } }, { fullName: 1 }).lean();
+      const perSales = (salesUsers as any[]).map((su: any) => {
+        const empId = String(su._id);
+        const assigned = (allLeads as any[]).filter((b: any) => b.employeeId && String(b.employeeId) === empId);
+        return {
+          name: su.fullName,
+          total: assigned.length,
+          pending: assigned.filter((b: any) => b.status === "pending").length,
+          confirmed: assigned.filter((b: any) => b.status === "confirmed").length,
+          completed: assigned.filter((b: any) => b.status === "completed").length,
+        };
+      });
+
+      // Sector breakdown (parse from topic field)
+      const sectorBreakdown: Record<string, number> = {};
+      for (const b of allLeads as any[]) {
+        const match = (b.topic as string || "").replace("مشروع جديد — ", "").trim();
+        const key = match || "أخرى";
+        sectorBreakdown[key] = (sectorBreakdown[key] || 0) + 1;
+      }
+
+      return res.json({
+        totalLeads: allLeads.length,
+        statusBreakdown,
+        monthly,
+        perSales,
+        sectorBreakdown,
+        unassigned: (allLeads as any[]).filter((b: any) => !b.employeeId).length,
+      });
+    } catch (err: any) {
       res.status(500).json({ error: err.message || "حدث خطأ" });
     }
   });

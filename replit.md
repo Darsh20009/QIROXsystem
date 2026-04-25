@@ -1,5 +1,37 @@
 # Qirox Platform
 
+## Latest Changes (Apr 25, 2026 — Session 3) — Order Tracking, Sales Reports, Auto-Assign
+
+### Public Order Tracking Page (client/src/pages/TrackOrder.tsx)
+- **Route**: `/track` — publicly accessible (no auth required)
+- **UI**: Dark hero header with live indicator badge + reference input card + animated result display
+- **Lookup**: Enter `QS-XXXXXX` reference number → calls `GET /api/track/:ref`
+- **Result card**: Shows status badge, client name, topic, assigned rep name, admin notes, submission date
+- **Progress stepper**: 3-step visual (استلام الطلب → تأكيد التواصل → اكتمال المتابعة) with animated pulse on active step
+- **Negative states**: Rejected/cancelled show red/grey card without progress stepper
+- **Bilingual**: Full Arabic/English; RTL/LTR aware
+
+### Sales Reports Dashboard (client/src/pages/AdminSalesReports.tsx)
+- **Route**: `/admin/sales-reports` — restricted to admin/manager/sales_manager/sales
+- **Sidebar link**: "تقارير المبيعات" added to employee sidebar under SALES_ROLES group
+- **Stat cards**: Total leads, Pending count, Conversion rate %, Unassigned leads count
+- **Monthly bar chart**: Recharts BarChart — last 12 months lead volume trend
+- **Status pie chart**: Recharts PieChart — breakdown by pending/confirmed/completed/rejected/cancelled
+- **Sector bar chart**: Top 8 sectors ranked by lead count with proportional progress bars
+- **Sales team table**: Per-rep breakdown (total / pending / confirmed / completed), sorted by total
+
+### Auto-Assign QuickStart Leads (server/routes.ts — POST /api/quickstart/lead)
+- **Round-robin assignment**: When a new QuickStart lead is submitted, queries all users with role `sales`/`sales_manager`
+- **Fairness**: Assigns to the sales person with the fewest QuickStart leads (prevents pile-up)
+- **Fields set**: `employeeId`, `employeeName` on the created ConsultationBooking
+- **Graceful fallback**: If no sales team exists, booking is created without assignment (silent catch)
+
+### New Backend Endpoints (server/routes.ts)
+- **GET /api/track/:ref** — Public. Looks up ConsultationBooking by `QS-XXXXXX` ref suffix match. Returns: refNumber, clientName, status, topic, createdAt, consultationType, employeeName, adminNotes
+- **GET /api/admin/sales-reports** — Auth required (sales roles). Returns: totalLeads, statusBreakdown, monthly trend (12mo), perSales array, sectorBreakdown, unassigned count
+
+---
+
 ## Latest Changes (Apr 25, 2026 — Session 2) — QuickStart AI Wizard
 
 ### QuickStart Wizard (client/src/pages/QuickStart.tsx)

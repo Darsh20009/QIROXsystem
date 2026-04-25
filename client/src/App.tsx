@@ -169,7 +169,9 @@ const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
 const AdminQuotations = lazy(() => import("@/pages/AdminQuotations"));
 const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
 const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start"];
+const TrackOrder = lazy(() => import("@/pages/TrackOrder"));
+const AdminSalesReports = lazy(() => import("@/pages/AdminSalesReports"));
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track"];
 
 
 function PublicRouter() {
@@ -209,6 +211,7 @@ function PublicRouter() {
         <Route path="/templates/:slug" component={TemplateDetail} />
         <Route path="/switch-reminder" component={SwitchReminder} />
         <Route path="/embed" component={EmbedDashboard} />
+        <Route path="/track" component={TrackOrder} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -252,6 +255,7 @@ function AdminRouter() {
         <Route path="/admin/payroll" component={AdminPayroll} />
         <Route path="/admin/attendance" component={AdminAttendance} />
         <Route path="/admin/profit-report" component={AdminProfitReport} />
+        <Route path="/admin/sales-reports" component={AdminSalesReports} />
         <Route path="/admin/invoices" component={AdminInvoices} />
         <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
         <Route path="/admin/receipts" component={AdminReceipts} />
