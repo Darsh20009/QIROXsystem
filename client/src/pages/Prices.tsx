@@ -4,7 +4,7 @@ import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
 import SARIcon from "@/components/SARIcon";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -15,10 +15,9 @@ import {
   Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes, MessageCircle
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { PackageFinderModal } from "@/components/PackageFinderModal";
 import { PricesHeroVisual } from "@/components/MarketingVisual";
 
@@ -137,25 +136,6 @@ const TIER_CONFIG: Record<string, {
   },
 };
 
-function getPeriodPrice(plan: any, period: BillingPeriod): number {
-  if (period === "monthly")  return plan.monthlyPrice  ?? 0;
-  if (period === "sixmonth") return plan.sixMonthPrice ?? 0;
-  if (period === "annual")   return plan.annualPrice   ?? 0;
-  return plan.lifetimePrice ?? plan.price ?? 0;
-}
-function getPeriodSuffix(period: BillingPeriod, lang: string): string {
-  if (lang === "en") {
-    if (period === "monthly")  return "/ mo";
-    if (period === "sixmonth") return "/ 6 mo";
-    if (period === "annual")   return "/ yr";
-    return "";
-  }
-  if (period === "monthly")  return "/ شهر";
-  if (period === "sixmonth") return "/ 6 أشهر";
-  if (period === "annual")   return "/ سنة";
-  return "";
-}
-
 /* ─── Decorative SVG grid pattern ────────────────────────────────────── */
 function GridPattern({ className = "" }: { className?: string }) {
   return (
@@ -171,20 +151,14 @@ function GridPattern({ className = "" }: { className?: string }) {
 }
 
 /* ─── Tier Card ───────────────────────────────────────────────────────── */
-function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoading, whatsapp }: {
+function TierCard({ plan, period, idx, isPopularOverride, lang, whatsapp }: {
   plan: any; period: BillingPeriod; idx: number; isPopularOverride?: boolean;
-  onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string; isLoading?: boolean; whatsapp?: string;
+  lang: string; whatsapp?: string;
 }) {
   const cfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.lite;
-  const price = getPeriodPrice(plan, period);
   const isPopular = plan.isPopular || isPopularOverride;
   const isPro = plan.tier === "pro";
   const isInfinite = plan.tier === "infinite";
-  const monthlyBase = plan.monthlyPrice ?? 0;
-  const monthlyEquiv = period === "monthly" ? price
-    : period === "sixmonth" ? Math.round(price / 6)
-    : period === "annual"   ? Math.round(price / 12) : null;
-  const saving = monthlyEquiv && monthlyBase ? Math.round(((monthlyBase - monthlyEquiv) / monthlyBase) * 100) : 0;
   const features = (lang === "ar" ? plan.featuresAr : (plan.featuresEn || plan.featuresAr)) ?? [];
   const TierIcon = cfg.icon;
 
@@ -193,9 +167,8 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
       initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
       className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-500
-        hover:-translate-y-1 hover:shadow-2xl cursor-pointer group
+        hover:-translate-y-1 hover:shadow-2xl group
         ${cfg.cardBg} ${cfg.borderColor} ${cfg.accentGlow}`}
-      onClick={() => onSelect(plan, price, period)}
       data-testid={`card-tier-${plan.tier}`}
     >
       {/* Popular glow line */}
@@ -374,10 +347,7 @@ export default function Prices() {
   }, [searchStr]);
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const [finderOpen, setFinderOpen] = useState(false);
-  const [, navigate] = useLocation();
   const { data: user } = useUser();
-  const { toast } = useToast();
-  const [addingPlanId, setAddingPlanId] = useState<string | null>(null);
   const [salesOffer, setSalesOffer] = useState<{ title: string; body: string; cta: string } | null>(null);
   const [showSalesOffer, setShowSalesOffer] = useState(false);
 
@@ -400,64 +370,6 @@ export default function Prices() {
     }, 18000);
     return () => clearTimeout(timer);
   }, [user]);
-
-  const addToCartMutation = useMutation({
-    mutationFn: async ({ plan, price, period }: { plan: any; price: number; period: BillingPeriod }) => {
-      const periodLabelAr = PERIODS.find(p => p.key === period)?.labelAr ?? period;
-      const periodLabelEn = PERIODS.find(p => p.key === period)?.labelEn ?? period;
-      const tierLabelAr = TIER_CONFIG[plan.tier]?.labelAr ?? plan.tier;
-      const segInfo = SEGMENT_LOOKUP[plan.segment];
-      const cartItem = {
-        type: "plan",
-        refId: plan._id || plan.id || "",
-        name: plan.nameEn || plan.nameAr || tierLabelAr,
-        nameAr: plan.nameAr || tierLabelAr,
-        price,
-        qty: 1,
-        config: {
-          tier: plan.tier,
-          tierLabel: tierLabelAr,
-          segment: plan.segment,
-          segmentLabel: segInfo?.labelAr || plan.segment,
-          period,
-          periodLabel: periodLabelAr,
-          periodLabelEn,
-        },
-      };
-      if (!user) {
-        const existing = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : { items: [] }; } catch { return { items: [] }; } })();
-        const hadPlan = existing.items.some((i: any) => i.type === "plan" || i.type === "service");
-        existing.items = existing.items.filter((i: any) => i.type !== "plan" && i.type !== "service");
-        existing.items.push({ ...cartItem, _id: Date.now().toString() });
-        localStorage.setItem("qiroxGuestCart", JSON.stringify(existing));
-        return { guest: true, replaced: hadPlan };
-      }
-      const cachedCart = (queryClient.getQueryData(["/api/cart"]) as any);
-      const hadPlan = Array.isArray(cachedCart?.items) && cachedCart.items.some((i: any) => i.type === "plan" || i.type === "service");
-      const r = await apiRequest("POST", "/api/cart/items", cartItem);
-      const data = await r.json();
-      return { ...data, replaced: hadPlan };
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      setAddingPlanId(null);
-      if (data?.replaced) {
-        toast({ title: "✓ تم استبدال الباقة السابقة", description: "أُضيفت الباقة الجديدة كمشروع واحد في السلة" });
-      } else {
-        toast({ title: "✓ تمت إضافة الباقة للسلة", description: "يمكنك إضافة خدمات إضافية قبل إتمام الطلب" });
-      }
-      navigate("/cart");
-    },
-    onError: () => {
-      setAddingPlanId(null);
-      toast({ title: "تعذّر إضافة الباقة للسلة", variant: "destructive" });
-    },
-  });
-
-  function handlePlanSelect(plan: any, price: number, p: BillingPeriod) {
-    setAddingPlanId(plan._id || plan.id || plan.tier);
-    addToCartMutation.mutate({ plan, price, period: p });
-  }
 
   useEffect(() => {
     if (!segment && segments.length > 0) setSegment(segments[0].key);
@@ -642,7 +554,7 @@ export default function Prices() {
                 className="grid grid-cols-1 md:grid-cols-3 gap-5"
               >
                 {tierPlans.map((plan: any, idx: number) => (
-                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} isLoading={addToCartMutation.isPending && addingPlanId === (plan._id || plan.id || plan.tier)} whatsapp={publicSettings?.whatsapp} />
+                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} lang={lang} whatsapp={publicSettings?.whatsapp} />
                 ))}
               </motion.div>
             </AnimatePresence>
@@ -705,54 +617,6 @@ export default function Prices() {
         </section>
       )}
 
-      {false && (
-      <section className="py-14 bg-white dark:bg-[#050508] border-y border-gray-200 dark:border-slate-800/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="relative rounded-2xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white overflow-hidden bg-black/[0.04] dark:bg-white/[0.06] dark:bg-transparent" data-testid="card-demo-plan">
-            <div className="absolute inset-0 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] dark:from-black dark:from-white to-transparent pointer-events-none" />
-            <div className="relative grid grid-cols-1 md:grid-cols-2">
-              <div className="p-8">
-                <span className="inline-flex items-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 text-[10px] font-black px-3 py-1.5 rounded-full border border-black/10 dark:border-white/10 dark:border-black dark:border-white mb-5 uppercase tracking-widest">
-                  <Rocket className="w-3 h-3" /> {lang === "ar" ? "جرّب قبل أن تشتري" : "Try before you buy"}
-                </span>
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
-                <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
-                  {lang === "ar" ? "جرّب نظامك الحقيقي لمدة 7 أيام — بدون تعهد بالشراء" : "Try your real system for 7 days — no purchase commitment"}
-                </p>
-                <div className="flex flex-wrap gap-2 mb-7">
-                  {(lang === "ar"
-                    ? ["7 أيام كاملة","نظام حقيقي","دعم فني","بدون تعهد","تُحسم من الباقة"]
-                    : ["7 full days","Real system","Support","No commitment","Deducted from plan"]
-                  ).map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black/[0.08] dark:bg-white/[0.1] text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
-                      <Check className="w-3 h-3" />{f}
-                    </span>
-                  ))}
-                </div>
-                <Link href="/contact">
-                  <Button className="h-11 px-7 rounded-xl font-black bg-black dark:bg-white hover:bg-black/[0.08] dark:bg-white/[0.1] text-white dark:text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
-                    {lang === "ar" ? "ابدأ تجربتك المجانية" : "Start Free Trial"} <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-black/10 dark:border-white/10 dark:border-black dark:border-white">
-                <div className="text-center">
-                  <div className="text-8xl font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-1 leading-none tabular-nums">30</div>
-                  <div className="text-gray-500 dark:text-slate-400 font-bold text-sm flex items-center justify-center gap-1">
-                    {lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}
-                  </div>
-                  <div className="text-xs text-gray-400 dark:text-slate-600 mt-3 max-w-[160px]">
-                    {lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price on subscribe"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      )}
-      {/* Add-ons removed from customer UI per product decision */}
 
 
       {/* ─── CTA ─── */}

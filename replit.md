@@ -1,5 +1,45 @@
 # Qirox Platform
 
+## Latest Changes (Apr 25, 2026) — Pricing Overhaul & Code Cleanup
+
+### Pricing Strategy — "على حسب الاحتياج" (Custom Pricing)
+- All plan prices replaced with "على حسب الاحتياج" / "Custom Pricing" throughout
+- TierCard CTA changed from "أضف للسلة" (add to cart) to "تواصل للحصول على عرض" — opens WhatsApp with pre-filled Arabic/English inquiry message using `publicSettings.whatsapp` number
+- Billing period savings badges removed; section renamed from "دورة الفاتورة" to "عرض المميزات"
+- Breadcrumb in tier cards section shows "السعر على حسب الاحتياج" badge
+- Hero browser mockup and phone mockup in `PricesHeroVisual` updated to "على حسب الاحتياج"
+- Comparison table price row shows "على حسب الاحتياج" / "Custom" instead of SAR figures
+
+### Prices.tsx Dead Code Cleanup
+- Removed `addToCartMutation` (useMutation), `handlePlanSelect`, `addingPlanId`/`setAddingPlanId` — cart flow replaced by WhatsApp contact
+- Removed unused imports: `useMutation`, `useLocation`, `useToast`, `queryClient`
+- Removed `getPeriodPrice` and `getPeriodSuffix` dead utility functions
+- Removed `onSelect`, `isLoading` from `TierCard` props interface; removed card `onClick` wrapper
+- Removed `{false && (...)}` dead demo-plan section
+- Removed dead `cursor-pointer` class from TierCard wrapper (WhatsApp button handles interaction)
+
+### Home Page (client/src/pages/Home.tsx)
+- All sector cards now link to `/prices?segment=<sector>` instead of `/start?sector=...`
+- Added "السعر على حسب الاحتياج" sub-label on each non-custom sector card
+
+### Beauty Salon Segment (server/routes.ts)
+- Added `beauty-lite`, `beauty-pro`, `beauty-infinite` pricing plans with Arabic features
+- Added Beauty Salon and Real Estate sector templates to DB seed
+- Reseed condition checks for `beauty-lite` plan + beauty/realestate templates
+
+### Prices.tsx URL Param Auto-Select
+- `useState` initializer reads `?segment=xxx` from `window.location.search` on first render
+- `useEffect` + `useSearch` (wouter) re-syncs segment when URL param changes reactively
+
+### Systems.tsx Alignment
+- Renamed `salon` segment key → `beauty` across `SEGMENTS` array, `SYSTEMS` object, and `segLabels`
+- All Systems.tsx segment links point to `/prices?segment=${segment}` correctly
+
+### index.html — Runtime Crash Fix
+- Removed faulty devtools-detection script that wiped `document.body.innerHTML = ''` when Replit preview iframe chrome falsely triggered the `outerWidth - innerWidth > 200` threshold, causing `createRoot` to crash with "Target container is not a DOM element"
+- Kept only right-click prevention (no keyboard blocking or devtools detection)
+- Added null-safety guard in `main.tsx`: `createRoot` only called when `#root` element exists
+
 ## Latest Changes (Apr 24, 2026) — Mail, QR Login & AI Chat Fixes
 
 ### EmployeeMail (client/src/pages/EmployeeMail.tsx)
