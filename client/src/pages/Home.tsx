@@ -212,10 +212,19 @@ export default function Home() {
 
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
+  const CURRENT_CATEGORIES = ["restaurant", "ecommerce", "مطاعم", "متاجر", "Restaurants", "E-Commerce"];
   const visibleTemplates = useMemo(
-    () => (templates as any[]).filter((t) => t?.status !== "draft").slice(0, 8),
+    () =>
+      (templates as any[])
+        .filter((t) => {
+          if (t?.status === "draft") return false;
+          const cat = (t?.category || t?.sector || "").toLowerCase();
+          return CURRENT_CATEGORIES.some((c) => cat.includes(c.toLowerCase()));
+        })
+        .slice(0, 4),
     [templates]
   );
+  const CURRENT_SECTORS = SECTORS.filter((s) => s.arName === "متاجر إلكترونية" || s.arName === "مطاعم ومقاهي");
 
   const displayedPlans = (pricingPlans as any[]).length > 0 ? (pricingPlans as any[]).slice(0, 3) : FALLBACK_PLANS;
 
@@ -379,13 +388,13 @@ export default function Home() {
             </motion.div>
 
             {/* Templates grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 max-w-2xl mx-auto">
               {visibleTemplates.length === 0
-                ? SECTORS.slice(0, 8).map((s: any, i) => {
+                ? CURRENT_SECTORS.map((s: any, i) => {
                     const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                     return (
                       <motion.div key={i} {...fade(i)}>
-                        <Link href="/systems">
+                        <Link href={`/prices?segment=${s.segment}`}>
                           <div className="group aspect-[4/5] rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] overflow-hidden cursor-pointer hover:bg-black/[0.06] dark:hover:bg-white/[0.07] transition-all duration-300 hover:scale-[1.02]" data-testid={`card-template-placeholder-${i}`}>
                             <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/30 dark:text-white/30 p-6">
                               {IllustrationComponent ? <IllustrationComponent /> : <Layers className="w-10 h-10" />}
@@ -613,13 +622,9 @@ export default function Home() {
               <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
                 {apiPartners.map((p: any) => (
                   <div key={p.id || p._id} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300" data-testid={`logo-partner-${p.id || p._id}`}>
-                    {p.websiteUrl ? (
-                      <a href={p.websiteUrl} target="_blank" rel="noreferrer" title={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)}>
-                        <img src={p.logoUrl} alt={p.name} className="h-12 md:h-14 w-auto object-contain max-w-[140px]" />
-                      </a>
-                    ) : (
-                      <img src={p.logoUrl} alt={p.name} className="h-12 md:h-14 w-auto object-contain max-w-[140px]" />
-                    )}
+                    <Link href="/partners">
+                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)} className="h-12 md:h-14 w-auto object-contain max-w-[140px] cursor-pointer" />
+                    </Link>
                   </div>
                 ))}
               </div>

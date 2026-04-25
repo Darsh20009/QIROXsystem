@@ -279,7 +279,7 @@ export async function sendMail(opts: {
   const transport = nodemailer.createTransport({
     host: account.smtpHost,
     port: account.smtpPort,
-    secure: true,
+    secure: account.smtpPort === 465,
     auth: { user: account.emailAddress, pass: account.password },
     tls: { rejectUnauthorized: false },
   });
