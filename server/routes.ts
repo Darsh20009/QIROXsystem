@@ -13260,6 +13260,42 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       }
     });
 
+    // POST /api/mail/test-connection — test IMAP+SMTP for an account or supplied credentials
+    app.post("/api/mail/test-connection", async (req, res) => {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+      try {
+        const { accountId, emailAddress, password, imapHost, imapPort, smtpHost, smtpPort } = req.body;
+        let creds: { emailAddress: string; password: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number };
+        if (accountId) {
+          const acc = await MailAccountModel.findById(accountId).lean() as any;
+          if (!acc) return res.status(404).json({ error: "Account not found" });
+          creds = {
+            emailAddress: acc.emailAddress,
+            password: password || acc.password,
+            imapHost: imapHost || acc.imapHost,
+            imapPort: imapPort || acc.imapPort,
+            smtpHost: smtpHost || acc.smtpHost,
+            smtpPort: smtpPort || acc.smtpPort,
+          };
+        } else {
+          if (!emailAddress || !password) return res.status(400).json({ error: "emailAddress and password required" });
+          creds = {
+            emailAddress,
+            password,
+            imapHost: imapHost || "server222.web-hosting.com",
+            imapPort: imapPort || 993,
+            smtpHost: smtpHost || "server222.web-hosting.com",
+            smtpPort: smtpPort || 465,
+          };
+        }
+        const { testMailConnection } = await import("./mail-imap");
+        const result = await testMailConnection(creds);
+        res.json(result);
+      } catch (err: any) {
+        res.status(500).json({ imap: false, smtp: false, error: err.message });
+      }
+    });
+
     // POST /api/mail/send — send branded email
     app.post("/api/mail/send", async (req, res) => {
       if (!req.isAuthenticated()) return res.sendStatus(401);

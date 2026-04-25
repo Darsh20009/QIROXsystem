@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Mail, Plus, Pencil, Trash2, Loader2, User, Users,
-  Shield, ChevronDown, ChevronUp, Eye, EyeOff, X
+  Shield, CheckCircle2, XCircle, Wifi, X
 } from "lucide-react";
 
 interface MailAccount {
@@ -32,6 +32,13 @@ interface Employee {
   email?: string;
 }
 
+interface TestResult {
+  imap: boolean;
+  smtp: boolean;
+  imapError?: string;
+  smtpError?: string;
+}
+
 const ROLES = ["admin", "manager", "ceo", "cto", "developer", "designer", "support", "sales", "accountant"];
 
 export default function AdminMailAccounts() {
@@ -41,8 +48,9 @@ export default function AdminMailAccounts() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState<Partial<MailAccount & { password: string }>>({});
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [form, setForm] = useState<Partial<MailAccount & { password: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number }>>({});
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
 
   const { data: accounts = [], isLoading } = useQuery<MailAccount[]>({
     queryKey: ["/api/mail/accounts/all"],
@@ -54,12 +62,14 @@ export default function AdminMailAccounts() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest("PUT", `/api/mail/accounts/${id}`, data);
+      const r = await apiRequest("PUT", `/api/mail/accounts/${id}`, data);
+      return r.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/mail/accounts/all"] });
       qc.invalidateQueries({ queryKey: ["/api/mail/accounts"] });
       setEditingId(null);
+      setTestResult(null);
       toast({ title: L ? "تم التحديث" : "Updated successfully" });
     },
     onError: (err: any) => {
@@ -69,13 +79,15 @@ export default function AdminMailAccounts() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/mail/accounts", data);
+      const r = await apiRequest("POST", "/api/mail/accounts", data);
+      return r.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/mail/accounts/all"] });
       qc.invalidateQueries({ queryKey: ["/api/mail/accounts"] });
       setCreating(false);
       setForm({});
+      setTestResult(null);
       toast({ title: L ? "تم إضافة الحساب" : "Account created" });
     },
     onError: (err: any) => {
@@ -85,7 +97,8 @@ export default function AdminMailAccounts() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/mail/accounts/${id}`);
+      const r = await apiRequest("DELETE", `/api/mail/accounts/${id}`);
+      return r.json();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/mail/accounts/all"] });
@@ -93,9 +106,25 @@ export default function AdminMailAccounts() {
     },
   });
 
+  const testMutation = useMutation({
+    mutationFn: async (payload: any): Promise<TestResult> => {
+      const r = await apiRequest("POST", "/api/mail/test-connection", payload);
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setTestResult(data);
+      setTestingId(null);
+    },
+    onError: () => {
+      setTestingId(null);
+      toast({ title: L ? "فشل الاختبار" : "Test failed", variant: "destructive" });
+    },
+  });
+
   function startEdit(account: MailAccount) {
     setEditingId(account.id);
     setCreating(false);
+    setTestResult(null);
     setForm({
       displayName: account.displayName,
       jobTitle: account.jobTitle,
@@ -126,6 +155,44 @@ export default function AdminMailAccounts() {
     createMutation.mutate(form);
   }
 
+  function runTest(accountId: string | null, emailAddress?: string) {
+    setTestingId(accountId || "new");
+    setTestResult(null);
+    const payload: any = {};
+    if (accountId) {
+      payload.accountId = accountId;
+      if (form.password) payload.password = form.password;
+    } else {
+      payload.emailAddress = emailAddress || form.emailAddress;
+      payload.password = form.password;
+      if (form.imapHost) payload.imapHost = form.imapHost;
+      if (form.imapPort) payload.imapPort = form.imapPort;
+      if (form.smtpHost) payload.smtpHost = form.smtpHost;
+      if (form.smtpPort) payload.smtpPort = form.smtpPort;
+    }
+    testMutation.mutate(payload);
+  }
+
+  function TestResultBadge({ result }: { result: TestResult }) {
+    return (
+      <div className="flex flex-wrap gap-2 mt-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10">
+        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${result.imap ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"}`}>
+          {result.imap ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+          IMAP {result.imap ? (L ? "✓ يعمل" : "✓ OK") : (L ? `✗ فشل${result.imapError ? `: ${result.imapError}` : ""}` : `✗ Failed${result.imapError ? `: ${result.imapError}` : ""}`)}
+        </div>
+        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${result.smtp ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"}`}>
+          {result.smtp ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+          SMTP {result.smtp ? (L ? "✓ يعمل" : "✓ OK") : (L ? `✗ فشل${result.smtpError ? `: ${result.smtpError}` : ""}` : `✗ Failed${result.smtpError ? `: ${result.smtpError}` : ""}`)}
+        </div>
+        {!result.imap && !result.smtp && (
+          <p className="w-full text-[11px] text-red-500/80 mt-1">
+            {L ? "تأكّد من صحة كلمة المرور في لوحة تحكم cPanel/Webmail ثم حدّثها هنا" : "Verify the password in cPanel / Webmail, then update it here"}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6" dir={L ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between">
@@ -136,7 +203,7 @@ export default function AdminMailAccounts() {
           </p>
         </div>
         <Button
-          onClick={() => { setCreating(true); setEditingId(null); setForm({ imapHost: "server222.web-hosting.com", imapPort: 993, smtpHost: "server222.web-hosting.com", smtpPort: 465 }); }}
+          onClick={() => { setCreating(true); setEditingId(null); setTestResult(null); setForm({ imapHost: "server222.web-hosting.com", imapPort: 993, smtpHost: "server222.web-hosting.com", smtpPort: 465 }); }}
           className="bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black gap-2"
           data-testid="button-add-account"
         >
@@ -151,7 +218,7 @@ export default function AdminMailAccounts() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
               <span className="flex items-center gap-2"><Plus className="w-4 h-4" />{L ? "حساب بريدي جديد" : "New Email Account"}</span>
-              <button onClick={() => setCreating(false)}><X className="w-4 h-4" /></button>
+              <button onClick={() => { setCreating(false); setTestResult(null); }}><X className="w-4 h-4" /></button>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -173,8 +240,19 @@ export default function AdminMailAccounts() {
                 <Input value={form.jobTitle || ""} onChange={e => setForm(f => ({ ...f, jobTitle: e.target.value }))} placeholder={L ? "المدير التنفيذي" : "CEO"} data-testid="input-new-jobtitle" />
               </div>
             </div>
+            {testResult && testingId === "new" && <TestResultBadge result={testResult} />}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setCreating(false)}>{L ? "إلغاء" : "Cancel"}</Button>
+              <Button variant="outline" onClick={() => { setCreating(false); setTestResult(null); }}>{L ? "إلغاء" : "Cancel"}</Button>
+              <Button
+                variant="outline"
+                onClick={() => runTest(null)}
+                disabled={testMutation.isPending || !form.emailAddress || !form.password}
+                className="gap-1.5"
+                data-testid="button-test-new"
+              >
+                {testMutation.isPending && testingId === "new" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wifi className="w-3.5 h-3.5" />}
+                {L ? "اختبار الاتصال" : "Test Connection"}
+              </Button>
               <Button onClick={saveCreate} disabled={createMutation.isPending} className="bg-black text-white dark:bg-white dark:text-black gap-2">
                 {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 {L ? "حفظ" : "Save"}
@@ -229,7 +307,18 @@ export default function AdminMailAccounts() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => editingId === account.id ? setEditingId(null) : startEdit(account)} data-testid={`button-edit-${account.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs gap-1"
+                      disabled={testMutation.isPending && testingId === account.id}
+                      onClick={() => { setTestingId(account.id); setTestResult(null); testMutation.mutate({ accountId: account.id }); }}
+                      data-testid={`button-test-${account.id}`}
+                    >
+                      {testMutation.isPending && testingId === account.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wifi className="w-3 h-3" />}
+                      {L ? "اختبار" : "Test"}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => editingId === account.id ? (setEditingId(null), setTestResult(null)) : startEdit(account)} data-testid={`button-edit-${account.id}`}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="w-8 h-8 text-red-500 hover:text-red-700" onClick={() => deleteMutation.mutate(account.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-${account.id}`}>
@@ -237,6 +326,13 @@ export default function AdminMailAccounts() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Inline test result for this account (outside edit panel) */}
+                {testResult && testingId === account.id && editingId !== account.id && (
+                  <div className="px-4 pb-3">
+                    <TestResultBadge result={testResult} />
+                  </div>
+                )}
 
                 {/* Edit panel */}
                 {editingId === account.id && (
@@ -250,8 +346,11 @@ export default function AdminMailAccounts() {
                         <label className="text-xs font-medium block mb-1">{L ? "المنصب" : "Job Title"}</label>
                         <Input value={form.jobTitle || ""} onChange={e => setForm(f => ({ ...f, jobTitle: e.target.value }))} data-testid="input-edit-jobtitle" />
                       </div>
-                      <div>
-                        <label className="text-xs font-medium block mb-1">{L ? "كلمة المرور الجديدة (اختياري)" : "New Password (optional)"}</label>
+                      <div className="col-span-2">
+                        <label className="text-xs font-medium block mb-1">
+                          {L ? "كلمة المرور الجديدة" : "New Password"}
+                          <span className="text-black/40 dark:text-white/40 font-normal mr-1">{L ? "(اختر واختبر قبل الحفظ)" : "(enter then Test before saving)"}</span>
+                        </label>
                         <Input type="password" value={form.password || ""} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" dir="ltr" data-testid="input-edit-password" />
                       </div>
                       <div>
@@ -274,6 +373,9 @@ export default function AdminMailAccounts() {
                         </Select>
                       </div>
                     </div>
+
+                    {/* Test result inside edit panel */}
+                    {testResult && testingId === account.id && <TestResultBadge result={testResult} />}
 
                     {/* Shared roles */}
                     <div>
@@ -304,7 +406,17 @@ export default function AdminMailAccounts() {
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
-                      <Button variant="outline" onClick={() => setEditingId(null)}>{L ? "إلغاء" : "Cancel"}</Button>
+                      <Button variant="outline" onClick={() => { setEditingId(null); setTestResult(null); }}>{L ? "إلغاء" : "Cancel"}</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => runTest(account.id)}
+                        disabled={testMutation.isPending}
+                        className="gap-1.5"
+                        data-testid={`button-test-edit-${account.id}`}
+                      >
+                        {testMutation.isPending && testingId === account.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wifi className="w-3.5 h-3.5" />}
+                        {L ? "اختبار الاتصال" : "Test Connection"}
+                      </Button>
                       <Button onClick={() => saveEdit(account.id)} disabled={updateMutation.isPending} className="bg-black text-white dark:bg-white dark:text-black gap-2">
                         {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                         {L ? "حفظ التغييرات" : "Save Changes"}

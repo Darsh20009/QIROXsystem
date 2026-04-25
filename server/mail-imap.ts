@@ -298,6 +298,66 @@ export async function sendMail(opts: {
   });
 }
 
+export async function testMailConnection(creds: {
+  emailAddress: string;
+  password: string;
+  imapHost: string;
+  imapPort: number;
+  smtpHost: string;
+  smtpPort: number;
+}): Promise<{ imap: boolean; smtp: boolean; imapError?: string; smtpError?: string }> {
+  // Test IMAP
+  let imapOk = false;
+  let imapError: string | undefined;
+  const imapClient = new ImapFlow({
+    host: creds.imapHost,
+    port: creds.imapPort,
+    secure: true,
+    auth: { user: creds.emailAddress, pass: creds.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
+  });
+  try {
+    await Promise.race([
+      imapClient.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connection timeout")), 9000)),
+    ]);
+    imapOk = true;
+    await imapClient.logout();
+  } catch (e: any) {
+    imapError = e.responseText || e.message || "Unknown error";
+    try { await imapClient.logout(); } catch {}
+  }
+
+  // Test SMTP
+  let smtpOk = false;
+  let smtpError: string | undefined;
+  const transport = nodemailer.createTransport({
+    host: creds.smtpHost,
+    port: creds.smtpPort,
+    secure: creds.smtpPort === 465,
+    auth: { user: creds.emailAddress, pass: creds.password },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 8000,
+    socketTimeout: 8000,
+  });
+  try {
+    await Promise.race([
+      transport.verify(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("SMTP timeout")), 9000)),
+    ]);
+    smtpOk = true;
+  } catch (e: any) {
+    smtpError = e.message || "Unknown error";
+  } finally {
+    transport.close();
+  }
+
+  return { imap: imapOk, smtp: smtpOk, imapError, smtpError };
+}
+
 export async function seedDefaultAccounts(): Promise<void> {
   const defaults = [
     {
