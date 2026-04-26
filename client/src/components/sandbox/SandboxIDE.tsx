@@ -347,8 +347,25 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
     }
   };
 
-  const handleDownload = () => {
-    window.open(`/api/sandbox/projects/${projectId}/download`, "_blank");
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(`/api/sandbox/projects/${projectId}/download`, { credentials: "include" });
+      if (!res.ok) throw new Error("فشل التحميل");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : `project-${projectId}.zip`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast({ title: ar ? "خطأ في التحميل" : "Download error", description: err.message, variant: "destructive" });
+    }
   };
 
   const buildMutation = useMutation({
