@@ -411,27 +411,42 @@ export default function Home() {
                       </motion.div>
                     );
                   })
-                : visibleTemplates.map((tpl: any, i: number) => (
-                    <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
-                      <Link href={`/templates/${tpl.slug || tpl._id}`}>
-                        <div className="group aspect-[4/5] rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all" data-testid={`card-template-${tpl._id || i}`}>
-                          <div className="h-3/4 flex items-center justify-center overflow-hidden bg-gradient-to-br from-black/[0.02] to-black/[0.06] dark:from-white/[0.03] dark:to-white/[0.08] text-black/25 dark:text-white/25">
-                            {tpl.coverImage ? (
-                              <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            ) : (() => {
-                                const sector = SECTORS.find(s => s.enName.toLowerCase().includes((tpl.category || "").toLowerCase()) || s.arName.includes(tpl.category || ""));
-                                const IllComp = sector ? SECTOR_ILLUSTRATIONS[sector.arName] : null;
-                                return IllComp ? <div className="w-full h-full p-6"><IllComp /></div> : <Layers className="w-10 h-10" />;
-                              })()}
+                : visibleTemplates.map((tpl: any, i: number) => {
+                    const tplCat = (tpl.category || tpl.sector || "").toLowerCase();
+                    const matchedSector = SECTORS.find(s =>
+                      s.segment === tplCat ||
+                      s.segment === tpl.category ||
+                      s.enName.toLowerCase().replace(/[^a-z]/g, "").includes(tplCat.replace(/[^a-z]/g, "")) ||
+                      s.arName.includes(tpl.category || "")
+                    );
+                    const IllComp = matchedSector ? SECTOR_ILLUSTRATIONS[matchedSector.arName] : null;
+                    const catLabel = matchedSector ? (ar ? matchedSector.arName : matchedSector.enName) : (tpl.category || "");
+                    return (
+                      <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
+                        <Link href={`/templates/${tpl.slug || tpl._id}`}>
+                          <div className="group aspect-[4/5] rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all" data-testid={`card-template-${tpl._id || i}`}>
+                            <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/25 dark:text-white/25" style={tpl.heroColor && !tpl.coverImage && !IllComp ? { background: `linear-gradient(135deg, ${tpl.heroColor}22 0%, ${tpl.heroColor}44 100%)` } : {}}>
+                              {tpl.coverImage ? (
+                                <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              ) : IllComp ? (
+                                <div className="w-full h-full p-6"><IllComp /></div>
+                              ) : (
+                                <div className="flex flex-col items-center gap-3">
+                                  {matchedSector && (() => { const Icon = matchedSector.icon; return <Icon className="w-10 h-10" style={tpl.heroColor ? { color: tpl.heroColor } : {}} />; })()}
+                                  {!matchedSector && <Layers className="w-10 h-10" />}
+                                  <span className="text-xs font-medium text-black/40 dark:text-white/40">{catLabel}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-3.5 md:p-4">
+                              <div className="font-bold text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
+                              <div className="text-[11px] text-black/45 dark:text-white/45 mt-0.5 truncate">{catLabel}</div>
+                            </div>
                           </div>
-                          <div className="p-3.5 md:p-4">
-                            <div className="font-bold text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
-                            <div className="text-[11px] text-black/45 dark:text-white/45 mt-0.5 truncate">{tpl.category || tpl.sector || ""}</div>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
             </div>
 
             <div className="text-center mt-12">
