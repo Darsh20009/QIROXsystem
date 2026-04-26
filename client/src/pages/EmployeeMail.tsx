@@ -439,7 +439,7 @@ export default function EmployeeMail() {
   const ChevronBack = L ? ChevronRight : ChevronLeft;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f5f7] dark:bg-[#0d0d0f]" dir={dir}>
+    <div className="flex h-full overflow-hidden bg-[#f5f5f7] dark:bg-[#0d0d0f]" dir={dir}>
       {/* Outlook Setup Modal */}
       {outlookSetupAccount && (
         <OutlookSetupModal

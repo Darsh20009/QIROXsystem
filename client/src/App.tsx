@@ -833,7 +833,7 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
 function AppInner() {
   const [location, navigate] = useLocation();
-  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user, isLoading: userLoading } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();

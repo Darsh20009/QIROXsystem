@@ -263,6 +263,7 @@ export function buildBrandedHtml(opts: {
 export async function sendMail(opts: {
   accountId: string;
   to: string;
+  cc?: string;
   subject: string;
   body: string;
   attachments?: { filename: string; content: string; contentType: string; encoding?: string }[];
@@ -287,6 +288,7 @@ export async function sendMail(opts: {
   await transport.sendMail({
     from: `"${account.displayName || "QIROX"}" <${account.emailAddress}>`,
     to: opts.to,
+    ...(opts.cc ? { cc: opts.cc } : {}),
     subject: opts.subject,
     html,
     text: opts.body,
@@ -393,6 +395,12 @@ export async function seedDefaultAccounts(): Promise<void> {
       sharedWith: ["admin", "ceo", "cto", "manager", "support"],
     },
   ];
+
+  // Remove stale accounts from old domain
+  const validEmails = defaults.map(d => d.emailAddress);
+  await MailAccountModel.deleteMany({
+    emailAddress: { $regex: /qiroxstudio\.online$/i, $nin: validEmails },
+  }).catch(() => {});
 
   for (const acc of defaults) {
     const { password, ...rest } = acc;
