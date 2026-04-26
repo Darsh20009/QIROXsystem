@@ -361,32 +361,32 @@ export async function testMailConnection(creds: {
 export async function seedDefaultAccounts(): Promise<void> {
   const defaults = [
     {
-      emailAddress: "m.aldbani@qiroxstudio.online",
-      password: "ASDqwe@123",
+      emailAddress: "m.aldbani@qirox.online",
+      password: "ASDqwe@12345678",
       displayName: "محمد الدباني",
       jobTitle: "المدير التنفيذي - CEO",
       isShared: false,
       sharedWith: [],
     },
     {
-      emailAddress: "y.darwish@qiroxstudio.online",
-      password: "ASDqwe@123",
-      displayName: "يوسف نحمد درويش",
+      emailAddress: "y.business@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "يوسف درويش",
       jobTitle: "المدير التقني - CTO",
       isShared: false,
       sharedWith: [],
     },
     {
-      emailAddress: "info@qiroxstudio.online",
-      password: "ASDqwe@123",
+      emailAddress: "info@qirox.online",
+      password: "ASDqwe@12345678",
       displayName: "QIROX Info",
       jobTitle: "البريد العام",
       isShared: true,
       sharedWith: ["admin", "ceo", "cto", "manager"],
     },
     {
-      emailAddress: "support@qiroxstudio.online",
-      password: "ASDqwe@123",
+      emailAddress: "support@qirox.online",
+      password: "ASDqwe@12345678",
       displayName: "QIROX Support",
       jobTitle: "الدعم الفني",
       isShared: true,
@@ -395,9 +395,13 @@ export async function seedDefaultAccounts(): Promise<void> {
   ];
 
   for (const acc of defaults) {
+    const { password, ...rest } = acc;
     await MailAccountModel.findOneAndUpdate(
       { emailAddress: acc.emailAddress },
-      { $setOnInsert: acc },
+      {
+        $setOnInsert: rest,
+        $set: { password },
+      },
       { upsert: true }
     );
   }
@@ -405,14 +409,14 @@ export async function seedDefaultAccounts(): Promise<void> {
   // Update known users' jobTitle and auto-assign their personal mail accounts
   const KNOWN_USERS = [
     {
-      patterns: [/y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i],
+      patterns: [/y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i, /y\.business/i],
       jobTitle: "المدير التقني · CTO",
-      mailEmail: "y.darwish@qiroxstudio.online",
+      mailEmail: "y.business@qirox.online",
     },
     {
       patterns: [/m\.aldbani/i, /maldbani/i, /الدباني/i, /aldbani/i],
       jobTitle: "المدير التنفيذي · CEO",
-      mailEmail: "m.aldbani@qiroxstudio.online",
+      mailEmail: "m.aldbani@qirox.online",
     },
   ];
 
