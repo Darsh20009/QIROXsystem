@@ -30,6 +30,7 @@ const SEGMENTS = [
   { key: "realestate",  labelAr: "عقارات",              icon: Home,            color: "from-black dark:from-white to-black dark:to-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "beauty",      labelAr: "صالونات تجميل",       icon: Sparkles,        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+  { key: "marketing",   labelAr: "وكالات التسويق",       icon: TrendingUp,      color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06]",   text: "text-black dark:text-white",   border: "border-black/10 dark:border-white/10" },
 ];
 
 interface SystemCard {
@@ -290,6 +291,47 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       locked: true,
     },
   ],
+  marketing: [
+    {
+      icon: Globe,
+      title: "موقع الوكالة الاحترافي",
+      description: "موقع يعكس هوية وكالتك ويعرض خدماتك وأعمالك السابقة بأعلى مستوى",
+      features: ["صفحة المحفظة والأعمال السابقة", "بلوق المقالات والتسويق بالمحتوى", "نماذج التواصل والاستفسار", "تحسين SEO متكامل"],
+      badge: "الأكثر طلباً",
+      highlight: true,
+    },
+    {
+      icon: BarChart3,
+      title: "لوحة تقارير أداء العملاء",
+      description: "منصة خاصة تتيح لعملائك متابعة نتائج حملاتهم الإعلانية لحظةً بلحظة",
+      features: ["تقارير أداء مخصصة لكل عميل", "تصدير PDF بلمسة واحدة", "عرض ROI بشكل واضح ومفهوم", "إشعارات تلقائية بالنتائج الأسبوعية"],
+    },
+    {
+      icon: Briefcase,
+      title: "نظام عروض الأسعار والعقود",
+      description: "أنشئ وأرسل عروض أسعار احترافية وعقوداً إلكترونية لعملائك في ثوانٍ",
+      features: ["قوالب عروض جاهزة وقابلة للتخصيص", "توقيع إلكتروني للعقود", "تتبع حالة موافقة العميل", "أرشيف كامل للعقود والعروض"],
+    },
+    {
+      icon: Users,
+      title: "نظام إدارة العملاء (CRM)",
+      description: "تتبع علاقاتك مع عملائك وإدارة المشاريع والتواصل من مكان واحد",
+      features: ["ملف شامل لكل عميل ومشروع", "تتبع المهام ومراحل التنفيذ", "سجل التواصل والمراسلات", "تذكيرات وإشعارات تلقائية"],
+    },
+    {
+      icon: MessageSquare,
+      title: "نظام إدارة المحتوى والسوشيال",
+      description: "جدولة ونشر المحتوى لمنصات التواصل الاجتماعي لعملائك من مكان واحد",
+      features: ["جدولة المنشورات لأكثر من منصة", "تحليل التفاعل والنمو", "تقرير أداء أسبوعي تلقائي", "إدارة متعدد المنصات"],
+    },
+    {
+      icon: Zap,
+      title: "نظام الحملات البريدية",
+      description: "إدارة وإرسال حملات بريد إلكتروني احترافية لقوائم عملائك",
+      features: ["قوالب بريد إلكتروني جاهزة", "تحليل معدل الفتح والنقر", "تقسيم الجمهور بذكاء", "حملات تلقائية مجدولة"],
+      locked: true,
+    },
+  ],
   healthcare: [
     {
       icon: Stethoscope,
@@ -363,6 +405,7 @@ export default function Systems() {
     realestate: lang === "ar" ? "عقارات"             : "Real Estate",
     healthcare: lang === "ar" ? "صحة وعيادات"        : "Health & Clinics",
     beauty:     lang === "ar" ? "صالونات تجميل"      : "Beauty Salons",
+    marketing:  lang === "ar" ? "وكالات التسويق"     : "Marketing Agencies",
   };
 
   const trustBadges = [
@@ -428,7 +471,7 @@ export default function Systems() {
           <p className="text-center text-xs font-semibold text-black/30 dark:text-white/30 uppercase tracking-widest mb-4">
             {lang === "ar" ? "اختر نوع مشروعك" : "Choose Your Project Type"}
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5" data-testid="segment-selector">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5" data-testid="segment-selector">
             {SEGMENTS.map((seg) => {
               const Icon = seg.icon;
               const isActive = segment === seg.key;
@@ -520,17 +563,30 @@ export default function Systems() {
                       </li>
                     ))}
                   </ul>
-                  {sys.locked ? (
-                    <div className="w-full h-9 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.06] dark:border-white/[0.06] cursor-not-allowed select-none">
-                      🔒 {lang === "ar" ? "غير متاح حالياً — قريباً" : "Not Available Yet — Coming Soon"}
+                  {/* Capability tags — info only, no order CTA */}
+                  <div className="pt-1">
+                    <div className={`text-[9px] font-bold uppercase tracking-widest mb-2 ${sys.locked ? "text-black/25 dark:text-white/25" : "text-black/35 dark:text-white/35"}`}>
+                      {lang === "ar" ? "يشمل" : "Includes"}
                     </div>
-                  ) : (
-                    <Link href={`/order?segment=${segment}`}>
-                      <Button size="sm" className={`w-full h-9 rounded-xl font-bold text-xs gap-1.5 bg-gradient-to-r ${activeSegment.color} text-white hover:opacity-90`}>
-                        {lang === "ar" ? "اطلب هذا النظام" : "Order This System"} <ChevronRight className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
-                  )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {sys.features.slice(0, 3).map((f, fi) => (
+                        <span key={fi} className={`text-[10px] font-semibold px-2 py-1 rounded-lg leading-tight ${
+                          sys.locked
+                            ? "bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30"
+                            : sys.highlight
+                              ? `${activeSegment.bg} border ${activeSegment.border} ${activeSegment.text}`
+                              : "bg-black/[0.04] dark:bg-white/[0.05] text-black/55 dark:text-white/55"
+                        }`}>
+                          {f}
+                        </span>
+                      ))}
+                      {sys.locked && (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30">
+                          🔒 {lang === "ar" ? "قريباً" : "Soon"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}

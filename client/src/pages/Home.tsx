@@ -14,7 +14,7 @@ import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
-  Check, Star, Infinity, ChevronRight,
+  Check, Star, Infinity, ChevronRight, TrendingUp,
 } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
 
@@ -135,14 +135,15 @@ const SECTOR_ILLUSTRATIONS: Record<string, React.FC> = {
 };
 
 const SECTORS = [
-  { icon: ShoppingBag, arName: "متاجر إلكترونية", enName: "E-Commerce",   segment: "ecommerce" },
-  { icon: Coffee,      arName: "مطاعم ومقاهي",    enName: "Restaurants",  segment: "restaurant" },
-  { icon: GraduationCap, arName: "منصات تعليمية", enName: "Education",    segment: "education" },
-  { icon: Building2,   arName: "شركات ومؤسسات",   enName: "Corporate",    segment: "corporate" },
-  { icon: Heart,       arName: "صحة وعيادات",      enName: "Healthcare",   segment: "healthcare" },
-  { icon: HomeIcon,    arName: "عقارات",           enName: "Real Estate",  segment: "realestate" },
-  { icon: Scissors,    arName: "صالونات تجميل",    enName: "Beauty Salons",segment: "beauty" },
-  { icon: Lightbulb,   arName: "ابدأ فكرتك الخاصة", enName: "Start your own idea", custom: true },
+  { icon: ShoppingBag, arName: "متاجر إلكترونية",    enName: "E-Commerce",        segment: "ecommerce" },
+  { icon: Coffee,      arName: "مطاعم ومقاهي",       enName: "Restaurants",       segment: "restaurant" },
+  { icon: GraduationCap, arName: "منصات تعليمية",   enName: "Education",         segment: "education" },
+  { icon: Building2,   arName: "شركات ومؤسسات",      enName: "Corporate",         segment: "corporate" },
+  { icon: Heart,       arName: "صحة وعيادات",         enName: "Healthcare",        segment: "healthcare" },
+  { icon: HomeIcon,    arName: "عقارات",              enName: "Real Estate",       segment: "realestate" },
+  { icon: Scissors,    arName: "صالونات تجميل",       enName: "Beauty Salons",     segment: "beauty" },
+  { icon: TrendingUp,  arName: "وكالات التسويق",      enName: "Marketing Agencies",segment: "marketing" },
+  { icon: Lightbulb,   arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
 ];
 
 const PILLARS = [
@@ -333,7 +334,7 @@ export default function Home() {
             </motion.div>
 
             {/* Sector illustrated cards grid */}
-            <motion.div {...fade(1)} className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-14">
+            <motion.div {...fade(1)} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-14">
               {SECTORS.map((s: any, i) => {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                 const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;
