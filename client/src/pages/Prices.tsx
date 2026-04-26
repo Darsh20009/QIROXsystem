@@ -182,6 +182,7 @@ function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
   const TIcon = icons[tier];
 
   const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
+  const descrs = { lite: "الباقة الأساسية — مثالية للانطلاق", pro: "الباقة الذكية — الأكثر توازناً", infinity: "الباقة الشاملة — بلا قيود" };
 
   return (
     <motion.div
@@ -189,66 +190,76 @@ function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
       className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow}`}
       data-testid={`card-plan-${tier}`}
     >
-      {isPro && <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
-      {isInfinity && <div className="absolute inset-0 pointer-events-none">{[[10,15],[88,25],[45,55],[72,10],[25,80],[93,60]].map(([x,y],i)=><div key={i} className="absolute w-1 h-1 rounded-full bg-amber-500/20" style={{left:`${x}%`,top:`${y}%`}}/>)}</div>}
+      {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
+      {isInfinity && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"/>}
+
+      {/* Popular badge — outside the card, above it */}
+      {isPro && (
+        <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+          <span className="flex items-center gap-1 text-[10px] font-black px-3 py-1 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30">
+            <Crown className="w-3 h-3"/> الأكثر طلباً
+          </span>
+        </div>
+      )}
 
       {/* Header */}
-      <div className={`px-5 pt-5 pb-4 bg-gradient-to-br ${isPro || isInfinity ? st.headerBg : st.headerBg} relative`}>
-        {isPro && <div className="absolute -top-px inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"/>}
-        <div className="flex items-center justify-between mb-3">
-          <div className={`w-9 h-9 rounded-xl ${st.badgeBg} flex items-center justify-center`}>
-            <TIcon className={`w-4.5 h-4.5 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
+      <div className={`px-6 pt-6 pb-5 bg-gradient-to-br ${isPro || isInfinity ? st.headerBg : st.headerBg} relative`}>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className={`w-10 h-10 rounded-2xl ${st.badgeBg} flex items-center justify-center mb-4`}>
+              <TIcon className={`w-5 h-5 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
+            </div>
+            <h3 className={`text-2xl font-black ${st.textColor}`}>{tierNames[tier]}</h3>
+            <p className={`text-xs mt-1 ${isPro ? "text-blue-300/60" : isInfinity ? "text-amber-400/50" : "text-gray-400 dark:text-slate-500"}`}>{descrs[tier]}</p>
           </div>
-          {isPro && <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white"><Crown className="w-3 h-3"/> الأكثر طلباً</span>}
-          {isInfinity && <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20"><InfinityIcon className="w-3 h-3"/> الباقة الشاملة</span>}
+          {isInfinity && (
+            <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 mt-1">
+              <InfinityIcon className="w-3 h-3"/> شامل
+            </span>
+          )}
         </div>
-        <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 ${isPro ? "text-blue-300/40" : isInfinity ? "text-amber-400/30" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
-        <h3 className={`text-xl font-black ${st.textColor}`}>{tierNames[tier]}</h3>
-        <p className={`text-[11px] mt-0.5 font-bold tracking-wider ${isPro ? "text-blue-300/50" : isInfinity ? "text-amber-400/50" : "text-gray-400"}`}>— {st.tag}</p>
       </div>
 
       {/* Price */}
-      <div className={`px-5 py-4 ${isPro ? "bg-white/[0.04] border-t border-white/10" : isInfinity ? "bg-white/[0.02] border-t border-white/[0.06]" : "bg-gray-50 dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800"}`}>
+      <div className={`px-6 py-5 ${isPro ? "bg-white/[0.04] border-t border-white/10" : isInfinity ? "bg-white/[0.02] border-t border-white/[0.06]" : "bg-gray-50 dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800"}`}>
         <AnimatePresence mode="wait">
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
-            <div className="flex items-end gap-1.5 flex-wrap">
-              <span className={`text-3xl font-black tracking-tight ${st.textColor}`}>{fmt(price)}</span>
-              <span className={`text-sm font-bold mb-1 ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>ريال</span>
-              <span className={`text-xs mb-1 ${isPro || isInfinity ? "text-white/30" : "text-gray-400"}`}>/ {label}</span>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{fmt(price)}</span>
+              <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>ريال</span>
             </div>
-            {sublabel && <p className={`text-[11px] mt-0.5 ${isPro ? "text-blue-300/40" : isInfinity ? "text-amber-400/30" : "text-gray-400"}`}>{sublabel}</p>}
+            <p className={`text-xs mt-1 ${isPro ? "text-blue-300/50" : isInfinity ? "text-amber-400/40" : "text-gray-400"}`}>
+              {period === "sixmonth" ? "كل 6 أشهر" : period === "annual" ? "سنوياً — دفعة واحدة" : period === "multiyear" ? `${years} سنوات (خصم ${multiYearDiscount(years)}%)` : "مرة واحدة — للأبد"}
+            </p>
+            {period === "sixmonth" && <p className={`text-[10px] mt-0.5 ${isPro || isInfinity ? "text-white/25" : "text-gray-400/70"}`}>ما يعادل {fmt(prices.sm * 2)} ريال / سنة</p>}
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Features */}
-      <div className={`flex-1 px-5 py-4 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3 ${isPro ? "text-white/20" : isInfinity ? "text-amber-400/25" : "text-gray-400 dark:text-slate-500"}`}>يشمل النظام</p>
-        {/* Lifetime extra banner */}
+      <div className={`flex-1 px-6 py-5 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
         {isLifetime && (
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-3 ${isPro ? "bg-white/10 border border-white/20" : isInfinity ? "bg-amber-500/10 border border-amber-500/20" : "bg-black/[0.04] border border-black/[0.08] dark:bg-white/[0.04] dark:border-white/[0.08]"}`}>
-            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-600 dark:text-white"}`}/>
-            <span className={`text-[11px] font-black ${isInfinity ? "text-amber-300" : isPro ? "text-white" : "text-gray-700 dark:text-white"}`}>كل الميزات مفتوحة — مدى الحياة</span>
+          <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl mb-4 ${isPro ? "bg-white/10 border border-white/15" : isInfinity ? "bg-amber-500/10 border border-amber-500/20" : "bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20"}`}>
+            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-emerald-600 dark:text-emerald-400"}`}/>
+            <span className={`text-xs font-black ${isInfinity ? "text-amber-300" : isPro ? "text-white" : "text-emerald-700 dark:text-emerald-300"}`}>جميع الميزات مفتوحة — مدى الحياة</span>
           </div>
         )}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {features.map(({ icon: Icon, ar }, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isPro ? "bg-white/10" : isInfinity ? "bg-white/[0.07]" : "bg-gray-100 dark:bg-slate-800"}`}>
-                <Icon className={`w-3 h-3 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
-              </div>
-              <span className={`text-[11px] leading-snug ${isInfinity ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}`}>{ar}</span>
+            <div key={i} className="flex items-start gap-3">
+              <Check className={`w-4 h-4 shrink-0 mt-0.5 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-300" : "text-emerald-500"}`}/>
+              <span className={`text-[12px] leading-snug ${isInfinity ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}`}>{ar}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* CTA */}
-      <div className={`px-5 pb-5 pt-3 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+      <div className={`px-6 pb-6 pt-4 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
         <a
           href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في باقة ${tierNames[tier]} لـ ${period === "sixmonth" ? "6 أشهر" : period === "annual" ? "سنة" : period === "multiyear" ? `${years} سنوات` : "مدى الحياة"} بسعر ${fmt(price)} ريال`)}`}
           target="_blank" rel="noopener noreferrer"
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${st.btnBg}`}
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black transition-all ${st.btnBg}`}
           data-testid={`button-subscribe-${tier}`}
         >
           <MessageSquare className="w-4 h-4"/>
@@ -259,39 +270,47 @@ function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
   );
 }
 
-/* ─── Custom Plan Card ────────────────────────────────────────────────── */
-function CustomCard({ onOpen }: { onOpen: ()=>void }) {
+/* ─── Custom Plan Banner (horizontal strip below main cards) ─────────── */
+function CustomBanner({ onOpen }: { onOpen: ()=>void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-      className="relative flex flex-col rounded-2xl border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-[#0d0d18] overflow-hidden group hover:border-gray-400 dark:hover:border-slate-500 transition-all hover:shadow-xl"
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+      className="mt-5 rounded-2xl border border-dashed border-violet-300 dark:border-violet-700/40 bg-gradient-to-l from-violet-50 via-white to-purple-50 dark:from-violet-950/20 dark:via-[#0d0d18] dark:to-purple-950/10 overflow-hidden"
       data-testid="card-custom-plan"
     >
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center gap-5">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
-          <Sparkles className="w-8 h-8 text-white"/>
+      <div className="flex flex-col md:flex-row items-center gap-6 px-8 py-6">
+        {/* Icon */}
+        <div className="shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <Sparkles className="w-7 h-7 text-white"/>
         </div>
-        <div>
-          <h3 className="text-lg font-black text-gray-900 dark:text-white mb-1">على تخصيص</h3>
-          <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">اكتب كل متطلباتك ومميزاتك التي تحتاجها، وسنقدم لك عرضاً مناسباً</p>
+
+        {/* Text */}
+        <div className="flex-1 text-center md:text-start">
+          <div className="flex items-center gap-2 justify-center md:justify-start mb-1">
+            <h3 className="text-base font-black text-gray-900 dark:text-white">باقة مخصصة — ما وجدت ما يناسبك؟</h3>
+            <span className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+              <Bot className="w-2.5 h-2.5"/> AI
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            اوصف احتياجاتك بمساعدة الذكاء الاصطناعي، وسنعد لك عرض سعر مخصص مع رقم تذكرة للمتابعة
+          </p>
+          <div className="flex items-center gap-4 mt-2 justify-center md:justify-start">
+            {["أي مدة تناسبك","ميزات غير محدودة","عرض سعر خاص بك"].map((t,i)=>(
+              <span key={i} className="flex items-center gap-1 text-[11px] text-violet-600 dark:text-violet-400 font-bold">
+                <Check className="w-3 h-3"/> {t}
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="w-full space-y-2 text-start">
-          {["اختر المدة التي تناسبك","صف احتياجاتك بمساعدة الذكاء الاصطناعي","احصل على رقم تذكرة ومتابعة"].map((t,i)=>(
-            <div key={i} className="flex items-center gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">{i+1}</span>
-              </div>
-              <span className="text-xs text-gray-500 dark:text-slate-400">{t}</span>
-            </div>
-          ))}
-        </div>
-        <p className="text-[10px] text-violet-600 dark:text-violet-400 font-black flex items-center gap-1">
-          <Bot className="w-3 h-3"/> مع مساعدة الذكاء الاصطناعي
-        </p>
-      </div>
-      <div className="px-6 pb-6">
-        <button onClick={onOpen} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white text-sm font-black transition-all shadow-lg shadow-purple-500/20" data-testid="button-open-custom">
-          <Sparkles className="w-4 h-4"/> صمّم باقتك الخاصة
+
+        {/* CTA */}
+        <button
+          onClick={onOpen}
+          className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white text-sm font-black transition-all shadow-lg shadow-purple-500/20 whitespace-nowrap"
+          data-testid="button-open-custom"
+        >
+          <Sparkles className="w-4 h-4"/> صمّم باقتك
         </button>
       </div>
     </motion.div>
@@ -636,7 +655,7 @@ export default function Prices() {
 
       {/* ── Pricing Content ── */}
       <section className="px-4 pb-16">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-5xl mx-auto">
 
           {/* Restaurant / Ecommerce */}
           {(sector === "restaurant" || sector === "ecommerce") && (
@@ -670,13 +689,17 @@ export default function Prices() {
                 )}
               </div>
 
-              {/* Plan cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Plan cards — 3 col grid, Pro slightly elevated */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
                 <PlanCard tier="lite"     period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
-                <PlanCard tier="pro"      period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <div className="md:mt-[-14px]">
+                  <PlanCard tier="pro"   period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                </div>
                 <PlanCard tier="infinity" period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
-                <CustomCard onOpen={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector, period==="multiyear"?`${years}y`:period)}/>
               </div>
+
+              {/* Custom banner — below main cards */}
+              <CustomBanner onOpen={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector, period==="multiyear"?`${years}y`:period)}/>
 
               {/* Lifetime perks */}
               {period === "lifetime" && <LifetimePerks/>}
