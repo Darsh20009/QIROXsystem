@@ -440,10 +440,10 @@ export async function seedDefaultAccounts(): Promise<void> {
     if (foundUser) {
       // Set jobTitle
       await UserModel.updateOne({ _id: foundUser._id }, { $set: { jobTitle: ku.jobTitle } }).catch(() => {});
-      // Auto-assign personal mail account
+      // Auto-assign personal mail account (store as ObjectId)
       await MailAccountModel.updateOne(
         { emailAddress: ku.mailEmail },
-        { $set: { assignedUserId: foundUser._id.toString() } }
+        { $set: { assignedUserId: foundUser._id } }
       ).catch(() => {});
       console.log(`[Mail] Auto-assigned ${ku.mailEmail} → ${(foundUser as any).fullName || foundUser._id}`);
     }
