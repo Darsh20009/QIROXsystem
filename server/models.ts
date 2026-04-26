@@ -750,7 +750,24 @@ const paymobOnboardingSchema = new mongoose.Schema({
   status:           { type: String, enum: ['pending', 'reviewing', 'approved', 'rejected'], default: 'pending' },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema, orderExpenseSchema].forEach(s => {
+const priceRequestSchema = new mongoose.Schema({
+  ticketNumber:   { type: String, unique: true, required: true, index: true },
+  sector:         { type: String, required: true },
+  sectorLabel:    { type: String, default: '' },
+  duration:       { type: String, default: '' },
+  requirements:   { type: String, required: true },
+  contactName:    { type: String, required: true },
+  contactPhone:   { type: String, required: true },
+  contactEmail:   { type: String, default: '' },
+  userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  status:         { type: String, enum: ['pending', 'reviewing', 'quoted', 'accepted', 'rejected'], default: 'pending' },
+  quotedPrice:    { type: Number, default: null },
+  quotedCurrency: { type: String, default: 'SAR' },
+  quotedAt:       { type: Date, default: null },
+  adminNotes:     { type: String, default: '' },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema, orderExpenseSchema, priceRequestSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -1957,3 +1974,5 @@ const mailCacheSchema = new mongoose.Schema({
 mailCacheSchema.index({ accountId: 1, folder: 1, uid: 1 }, { unique: true });
 mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const MailCacheModel = mongoose.models.MailCache || mongoose.model("MailCache", mailCacheSchema);
+
+export const PriceRequestModel = mongoose.models.PriceRequest || mongoose.model("PriceRequest", priceRequestSchema);

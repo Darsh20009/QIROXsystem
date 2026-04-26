@@ -8438,6 +8438,154 @@ export async function registerRoutes(
     }
   });
 
+  // ── Price Request (Custom Package Tickets) ─────────────────────────────────
+
+  // AI help for custom pricing (no prices mentioned)
+  app.post("/api/price-request/ai-help", async (req, res) => {
+    const { message, history = [] } = req.body;
+    if (!message) return res.status(400).json({ error: "message required" });
+    try {
+      const Groq = (await import("groq-sdk")).default;
+      const key = process.env.GROQ_API_KEY;
+      if (!key) return res.status(503).json({ error: "AI unavailable" });
+      const groq = new Groq({ apiKey: key });
+      const systemPrompt = `أنت مساعد ذكي تابع لشركة كيروكس (QIROX Studio) لتطوير الأنظمة والتطبيقات.
+مهمتك مساعدة العميل على صياغة احتياجاته التقنية بشكل واضح ودقيق حتى يتمكن الفريق من تقديم عرض سعر مناسب.
+قواعد صارمة:
+- لا تذكر أي أسعار أو أرقام مالية أو تكاليف تقديرية أبداً
+- لا تقترح أي باقة بسعر معين
+- اسأل عن: نوع النشاط، الميزات المطلوبة، عدد المستخدمين، هل يحتاج تطبيقاً، اللغات، بوابة دفع، إلخ
+- كن ودوداً وموجزاً
+- رد دائماً بالعربية إلا إذا تكلم العميل بلغة أخرى`;
+      const msgs = [
+        { role: "system" as const, content: systemPrompt },
+        ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
+        { role: "user" as const, content: message },
+      ];
+      const completion = await groq.chat.completions.create({ model: "llama-3.1-70b-versatile", messages: msgs, max_tokens: 400, temperature: 0.7 });
+      res.json({ reply: completion.choices[0]?.message?.content || "..." });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Public: Create price request ticket
+  app.post("/api/price-request", async (req, res) => {
+    const { sector, sectorLabel, duration, requirements, contactName, contactPhone, contactEmail } = req.body;
+    if (!sector || !requirements || !contactName || !contactPhone) {
+      return res.status(400).json({ error: "الحقول المطلوبة: sector, requirements, contactName, contactPhone" });
+    }
+    try {
+      const { PriceRequestModel, UserModel } = await import("./models");
+      const count = await PriceRequestModel.countDocuments();
+      const year = new Date().getFullYear();
+      const ticketNumber = `QRX-${year}-${String(count + 1).padStart(4, "0")}`;
+      const userId = req.isAuthenticated() ? (req.user as any)._id : null;
+      const ticket = await PriceRequestModel.create({
+        ticketNumber, sector, sectorLabel: sectorLabel || sector, duration: duration || "", requirements,
+        contactName, contactPhone, contactEmail: contactEmail || "", userId,
+      });
+
+      // Notify all admins/managers via push + internal notification
+      try {
+        const admins = await UserModel.find({ role: { $in: ["admin", "manager", "cto", "ceo"] } }).select("_id").lean() as any[];
+        const notifPayload = {
+          title: "🎯 طلب سعر جديد",
+          body: `${contactName} — ${sectorLabel || sector} — ${ticketNumber}`,
+          link: `/admin/price-requests`,
+        };
+        for (const admin of admins) {
+          await createNotification({ userId: admin._id.toString(), type: "info", title: notifPayload.title, body: notifPayload.body, link: notifPayload.link, forAdmins: false });
+          pushToUser(admin._id.toString(), { type: "notification", ...notifPayload });
+        }
+      } catch {}
+
+      // Send email to admin
+      try {
+        const { sendDirectEmail } = await import("./email");
+        const subject = `🎯 طلب سعر جديد — ${ticketNumber}`;
+        const body = `<div dir="rtl" style="font-family:sans-serif;padding:20px;max-width:600px">
+          <h2 style="color:#1a1a2e;margin-bottom:16px">طلب سعر جديد — ${ticketNumber}</h2>
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:8px;color:#666;width:120px">القطاع:</td><td style="padding:8px;font-weight:bold">${sectorLabel || sector}</td></tr>
+            <tr><td style="padding:8px;color:#666">المدة:</td><td style="padding:8px;font-weight:bold">${duration || "غير محدد"}</td></tr>
+            <tr><td style="padding:8px;color:#666">الاسم:</td><td style="padding:8px;font-weight:bold">${contactName}</td></tr>
+            <tr><td style="padding:8px;color:#666">الهاتف:</td><td style="padding:8px;font-weight:bold">${contactPhone}</td></tr>
+            <tr><td style="padding:8px;color:#666">البريد:</td><td style="padding:8px;font-weight:bold">${contactEmail || "—"}</td></tr>
+          </table>
+          <div style="margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px">
+            <p style="margin:0 0 8px;font-weight:bold">الاحتياجات:</p>
+            <p style="margin:0;white-space:pre-wrap">${requirements}</p>
+          </div>
+        </div>`;
+        await sendDirectEmail("info@qirox.online", "فريق كيروكس", subject, body).catch(() => {});
+      } catch {}
+
+      res.status(201).json({ ticketNumber, id: ticket._id });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Public: Get price request by ticket number
+  app.get("/api/price-request/:number", async (req, res) => {
+    try {
+      const { PriceRequestModel } = await import("./models");
+      const ticket = await PriceRequestModel.findOne({ ticketNumber: req.params.number }).lean();
+      if (!ticket) return res.status(404).json({ error: "التذكرة غير موجودة" });
+      const safe: any = { ...(ticket as any) };
+      if (!(req.isAuthenticated() && ["admin","manager","cto","ceo"].includes((req.user as any).role))) {
+        delete safe.adminNotes;
+      }
+      res.json(safe);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin: List all price requests
+  app.get("/api/admin/price-requests", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","cto","ceo"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PriceRequestModel } = await import("./models");
+      const { status, page = 1, limit = 20 } = req.query;
+      const filter: any = {};
+      if (status) filter.status = status;
+      const total = await PriceRequestModel.countDocuments(filter);
+      const tickets = await PriceRequestModel.find(filter).sort({ createdAt: -1 }).skip((+page-1)*(+limit)).limit(+limit).lean();
+      res.json({ tickets, total, page: +page, pages: Math.ceil(total/(+limit)) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Admin: Update price request (set price, status, notes)
+  app.patch("/api/admin/price-request/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","cto","ceo"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PriceRequestModel } = await import("./models");
+      const { status, quotedPrice, quotedCurrency, adminNotes } = req.body;
+      const update: any = {};
+      if (status) update.status = status;
+      if (quotedPrice !== undefined) { update.quotedPrice = quotedPrice; update.quotedAt = new Date(); }
+      if (quotedCurrency) update.quotedCurrency = quotedCurrency;
+      if (adminNotes !== undefined) update.adminNotes = adminNotes;
+      const ticket = await PriceRequestModel.findByIdAndUpdate(req.params.id, { $set: update }, { returnDocument: "after" }).lean();
+      if (!ticket) return res.status(404).json({ error: "غير موجود" });
+
+      // If price is set, notify the user (if logged in)
+      if (quotedPrice && (ticket as any).userId) {
+        try {
+          await createNotification({ userId: (ticket as any).userId.toString(), type: "info", title: "💰 تم تحديد سعر طلبك", body: `تذكرة ${(ticket as any).ticketNumber} — تواصل معنا لمراجعة العرض`, link: `/prices` });
+          pushToUser((ticket as any).userId.toString(), { type: "notification", title: "💰 عرض سعر جاهز", body: `تذكرة ${(ticket as any).ticketNumber}`, link: "/prices" });
+        } catch {}
+      }
+      res.json(ticket);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Admin: set/update client subscription
   app.post("/api/admin/users/:id/subscription", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);

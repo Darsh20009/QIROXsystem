@@ -1,515 +1,629 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
-import SARIcon from "@/components/SARIcon";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useSearch } from "wouter";
 import { useI18n } from "@/lib/i18n";
-import { useState, useMemo, useEffect } from "react";
-import {
-  Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield,
-  Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
-  Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
-  Dumbbell, Store, CheckCircle2, Sparkles, Cpu, Code2, Server, Database, LayoutDashboard,
-  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes, MessageCircle
-} from "lucide-react";
-import { QiroxIcon } from "@/components/qirox-brand";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useRef, useEffect } from "react";
 import { useUser } from "@/hooks/use-auth";
-import { PackageFinderModal } from "@/components/PackageFinderModal";
-import { PricesHeroVisual } from "@/components/MarketingVisual";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
+  UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
+  Smartphone, Shield, BarChart3, Bell, Layers, Rocket, MessageSquare,
+  Copy, X, Send, Loader2, ChevronRight, ChevronDown, Phone, Mail,
+  User, Calendar, CalendarRange, CalendarDays, Bot, CheckCircle2,
+  ArrowRight, ExternalLink, Tag, Palette, Lock, TrendingUp, Database,
+  Server, LayoutDashboard, Dumbbell, Store, Users, MessageCircle,
+  Minus, Plus, ScanLine, ClipboardList, ReceiptText, Printer, Truck,
+  CreditCard, Award, Apple, PlayCircle, Gift, Clock, ChevronLeft,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
+/* ─── Pricing Data ────────────────────────────────────────────────────── */
+const PRICES = {
+  restaurant: { lite: { sm: 399, yr: 699, life: 3999 }, pro: { sm: 599, yr: 999, life: 5999 }, infinity: { sm: 899, yr: 1499, life: 8999 } },
+  ecommerce:  { lite: { sm: 399, yr: 699, life: 3999 }, pro: { sm: 599, yr: 999, life: 5999 }, infinity: { sm: 899, yr: 1499, life: 8999 } },
+};
+function multiYearPrice(annual: number, years: number) {
+  let total = 0;
+  for (let i = 0; i < years; i++) total += annual * Math.max(1 - i * 0.05, 0.6);
+  return Math.round(total);
+}
+function multiYearDiscount(years: number) { return Math.min((years - 1) * 5, 40); }
 
-const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelAr: string; sublabelEn: string; icon: any }[] = [
-  { key: "monthly",  labelAr: "شهري",       labelEn: "Monthly",   sublabelAr: "ادفع كل شهر",   sublabelEn: "Pay monthly",    icon: Calendar },
-  { key: "sixmonth", labelAr: "نصف سنوي",   labelEn: "6 Months",  sublabelAr: "6 أشهر",         sublabelEn: "6 months",       icon: CalendarRange },
-  { key: "annual",   labelAr: "سنوي",       labelEn: "Annual",    sublabelAr: "سنة كاملة",      sublabelEn: "Full year",      icon: CalendarDays  },
-  { key: "lifetime", labelAr: "مدى الحياة", labelEn: "Lifetime",  sublabelAr: "دفعة واحدة",     sublabelEn: "One-time",       icon: InfinityIcon  },
+/* ─── Features ────────────────────────────────────────────────────────── */
+const RESTAURANT_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع العميل الاحترافي" },
+    { icon: LayoutDashboard, ar: "نظام إدارة الطاولات" },
+    { icon: ScanLine,        ar: "نظام نقاط البيع (POS)" },
+    { icon: Printer,         ar: "نظام طباعة الفواتير والطلبات" },
+    { icon: Truck,           ar: "نظام تتبع الطلبات" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: BarChart3,      ar: "نظام المحاسبة المتكاملة" },
+    { icon: Award,          ar: "نظام الولاء والنقاط" },
+    { icon: Apple,          ar: "إضافة لـ Apple Wallet" },
+    { icon: Users,          ar: "إدارة العملاء المتكاملة" },
+    { icon: Star,           ar: "نظام التقييمات والمراجعات" },
+    { icon: Layers,         ar: "نظام الـ Integrations" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية مجانية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
+    { icon: Apple,          ar: "تطبيق App Store (سنوي/مدى الحياة)" },
+    { icon: Mail,           ar: "5 بريد باسم المطعم/الكافيه" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Building2,      ar: "توافق نظام الحضور والإدارة المؤسسية" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+const ECOMMERCE_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع متجر إلكتروني احترافي" },
+    { icon: ShoppingBag,     ar: "نظام إدارة المنتجات والمخزون" },
+    { icon: ReceiptText,     ar: "سلة التسوق وإدارة الطلبات" },
+    { icon: Printer,         ar: "نظام طباعة الفواتير" },
+    { icon: Truck,           ar: "نظام تتبع وشحن الطلبات" },
+    { icon: Layers,          ar: "الميزات الأساسية للمتجر" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: BarChart3,      ar: "نظام المحاسبة والتقارير" },
+    { icon: Award,          ar: "نظام الولاء والكوبونات" },
+    { icon: Apple,          ar: "إضافة لـ Apple Wallet" },
+    { icon: Users,          ar: "إدارة العملاء المتكاملة" },
+    { icon: Star,           ar: "نظام التقييمات والمراجعات" },
+    { icon: Layers,         ar: "نظام الـ Integrations" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية مجانية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات للطلبات الجديدة" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
+    { icon: Apple,          ar: "تطبيق App Store (سنوي/مدى الحياة)" },
+    { icon: Mail,           ar: "5 بريد باسم المتجر" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Database,       ar: "نظام مخزون متكامل متقدم" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const LIFETIME_PERKS = [
+  { icon: Globe,    ar: "نطاق مجاني لمدة 3 سنوات" },
+  { icon: Shield,   ar: "دعم تقني مستمر 3 سنوات من التسليم" },
+  { icon: Server,   ar: "استضافة على خوادم كيروكس مدى الحياة" },
+  { icon: Clock,    ar: "متابعة شخصية بعد 3 سنوات بـ 100 ريال/سنة فقط" },
 ];
 
-const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string; bg: string }> = {
-  restaurant:    { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
-  ecommerce:     { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  store:         { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  education:     { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
-  corporate:     { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
-  other:         { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
-  realestate:    { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  healthcare:    { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  health:        { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  fitness:       { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "text-black/70 dark:text-white/70",  bg: "bg-black dark:bg-white" },
-  beauty:        { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  tech:          { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
-  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-black/70 dark:text-white/70",   bg: "bg-black dark:bg-white" },
-  institutional: { labelAr: "مؤسسات وجمعيات",  labelEn: "Institutions",  icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
-  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "text-black/70 dark:text-white/70", bg: "bg-black dark:bg-white" },
-  general:       { labelAr: "عام",              labelEn: "General",       icon: Globe,           color: "text-slate-400",  bg: "bg-slate-500/10" },
-};
+const OTHER_SECTORS = [
+  { key: "education",    icon: GraduationCap, ar: "تعليم وأكاديميات" },
+  { key: "healthcare",   icon: Heart,         ar: "صحة وعيادات" },
+  { key: "realestate",   icon: Home,          ar: "عقارات" },
+  { key: "corporate",    icon: Building2,     ar: "شركات ومؤسسات" },
+  { key: "fitness",      icon: Dumbbell,      ar: "لياقة وجيم" },
+  { key: "beauty",       icon: Sparkles,      ar: "تجميل وصالونات" },
+  { key: "events",       icon: Calendar,      ar: "فعاليات ومناسبات" },
+  { key: "other",        icon: Globe,         ar: "قطاع آخر" },
+];
 
-// Map feature keywords to icons for visual display
-function featureIcon(text: string): any {
-  const t = text.toLowerCase();
-  if (t.includes("تطبيق") || t.includes("جوال") || t.includes("app")) return Smartphone;
-  if (t.includes("دفع") || t.includes("payment") || t.includes("بنك")) return Shield;
-  if (t.includes("تقرير") || t.includes("إحصاء") || t.includes("report")) return BarChart3;
-  if (t.includes("مستخدم") || t.includes("عميل") || t.includes("user")) return Users;
-  if (t.includes("إشعار") || t.includes("notif")) return Bell;
-  if (t.includes("قاعدة") || t.includes("database") || t.includes("بيانات")) return Database;
-  if (t.includes("سيرفر") || t.includes("server") || t.includes("استضافة")) return Server;
-  if (t.includes("لوحة") || t.includes("dashboard") || t.includes("واجهة")) return LayoutDashboard;
-  if (t.includes("دومين") || t.includes("domain") || t.includes("نطاق")) return Globe;
-  if (t.includes("برمجة") || t.includes("كود") || t.includes("code")) return Code2;
-  if (t.includes("أمان") || t.includes("حماية") || t.includes("security")) return Lock;
-  if (t.includes("seo") || t.includes("تسويق") || t.includes("marketing")) return TrendingUp;
-  if (t.includes("تصميم") || t.includes("هوية") || t.includes("design")) return Palette;
-  if (t.includes("طبقة") || t.includes("layer") || t.includes("module")) return Layers;
-  return CheckCircle2;
-}
+const DURATION_OPTS = [
+  { key: "sixmonth", ar: "6 أشهر", icon: CalendarRange },
+  { key: "annual",   ar: "سنة", icon: CalendarDays },
+  { key: "2y",       ar: "سنتان", icon: CalendarDays },
+  { key: "3y",       ar: "3 سنوات", icon: CalendarDays },
+  { key: "5y",       ar: "5 سنوات", icon: CalendarDays },
+  { key: "lifetime", ar: "مدى الحياة", icon: InfinityIcon },
+];
 
-const TIER_CONFIG: Record<string, {
-  labelAr: string; labelEn: string; icon: any;
-  cardBg: string; headerGrad: string; borderColor: string;
-  accentColor: string; accentGlow: string;
-  priceColor: string; featureColor: string;
-  badgeBg: string; badgeText: string;
-  ctaBg: string; ctaText: string;
-  patternColor: string; taglinePrimary: string; taglineSecondary: string;
-  tierNum: string;
-}> = {
+/* ─── Helpers ─────────────────────────────────────────────────────────── */
+function fmt(n: number) { return n.toLocaleString("ar-SA"); }
+
+type Period = "sixmonth" | "annual" | "multiyear" | "lifetime";
+type Sector = "restaurant" | "ecommerce" | "other";
+type Tier   = "lite" | "pro" | "infinity";
+
+/* ─── Plan Card ───────────────────────────────────────────────────────── */
+const TIER_STYLES: Record<Tier, { bg: string; border: string; headerBg: string; textColor: string; badgeBg: string; btnBg: string; glow: string; tag: string }> = {
   lite: {
-    labelAr: "لايت", labelEn: "Lite", icon: Zap,
-    cardBg: "bg-white dark:bg-[#0f172a]",
-    headerGrad: "from-gray-50 via-white to-gray-50 dark:from-[#0f172a] dark:via-[#131e2e] dark:to-[#0f172a]",
-    borderColor: "border-gray-200 dark:border-slate-700/60",
-    accentColor: "text-gray-900 dark:text-slate-200",
-    accentGlow: "",
-    priceColor: "text-gray-900 dark:text-white",
-    featureColor: "text-gray-600 dark:text-slate-300",
-    badgeBg: "bg-gray-100 dark:bg-slate-800/80",
-    badgeText: "text-gray-600 dark:text-slate-300",
-    ctaBg: "bg-gray-900 hover:bg-black text-white dark:bg-slate-200 dark:hover:bg-white dark:text-slate-900",
-    ctaText: "",
-    patternColor: "opacity-[0.03] dark:opacity-[0.06]",
-    taglinePrimary: "انطلق بثقة",
-    taglineSecondary: "Launch with confidence",
-    tierNum: "01",
+    bg: "bg-white dark:bg-[#0f172a]", border: "border-gray-200 dark:border-slate-700/50",
+    headerBg: "bg-gray-50 dark:bg-[#111827]", textColor: "text-gray-900 dark:text-white",
+    badgeBg: "bg-gray-100 dark:bg-slate-800", btnBg: "bg-gray-900 hover:bg-black text-white dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900",
+    glow: "", tag: "انطلق بثقة",
   },
   pro: {
-    labelAr: "برو", labelEn: "Pro", icon: Star,
-    cardBg: "bg-[#1a3a6e]",
-    headerGrad: "from-[#1e40af] via-[#1a3a6e] to-[#1e3a8a]",
-    borderColor: "border-black dark:border-white",
-    accentColor: "text-white",
-    accentGlow: "shadow-[0_0_40px_rgba(59,130,246,0.25)]",
-    priceColor: "text-white",
-    featureColor: "text-black/60 dark:text-white/60",
-    badgeBg: "bg-white/10",
-    badgeText: "text-white",
-    ctaBg: "bg-white hover:bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
-    ctaText: "",
-    patternColor: "opacity-[0.08]",
-    taglinePrimary: "النظام الأذكى",
-    taglineSecondary: "The smart system",
-    tierNum: "02",
+    bg: "bg-[#1a3a6e]", border: "border-blue-400/20",
+    headerBg: "from-[#1e40af] to-[#1a3a6e]", textColor: "text-white",
+    badgeBg: "bg-white/10", btnBg: "bg-white hover:bg-blue-50 text-blue-900",
+    glow: "shadow-[0_0_60px_rgba(59,130,246,0.18)]", tag: "النظام الأذكى",
   },
-  infinite: {
-    labelAr: "إنفينتي", labelEn: "Infinite", icon: InfinityIcon,
-    cardBg: "bg-[#09090f]",
-    headerGrad: "from-[#0f0f18] via-[#0d0d16] to-[#09090f]",
-    borderColor: "border-black dark:border-white",
-    accentColor: "text-black/70 dark:text-white/70",
-    accentGlow: "shadow-[0_0_50px_rgba(245,158,11,0.15)]",
-    priceColor: "text-white",
-    featureColor: "text-slate-300/80",
-    badgeBg: "bg-black/[0.08] dark:bg-white/[0.1]",
-    badgeText: "text-black/70 dark:text-white/70",
-    ctaBg: "bg-black/[0.08] dark:bg-white/[0.1] hover:bg-black dark:bg-white text-slate-900",
-    ctaText: "",
-    patternColor: "opacity-[0.07]",
-    taglinePrimary: "بلا حدود",
-    taglineSecondary: "No limits",
-    tierNum: "03",
+  infinity: {
+    bg: "bg-[#09090f]", border: "border-amber-500/15",
+    headerBg: "from-[#0f0f18] to-[#09090f]", textColor: "text-white",
+    badgeBg: "bg-white/[0.07]", btnBg: "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white",
+    glow: "shadow-[0_0_60px_rgba(245,158,11,0.12)]", tag: "بلا حدود",
   },
 };
 
-/* ─── Decorative SVG grid pattern ────────────────────────────────────── */
-function GridPattern({ className = "" }: { className?: string }) {
-  return (
-    <svg className={`absolute inset-0 w-full h-full ${className}`} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid-sm" width="20" height="20" patternUnits="userSpaceOnUse">
-          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid-sm)" />
-    </svg>
-  );
-}
-
-/* ─── Tier Card ───────────────────────────────────────────────────────── */
-function TierCard({ plan, period, idx, isPopularOverride, lang, whatsapp }: {
-  plan: any; period: BillingPeriod; idx: number; isPopularOverride?: boolean;
-  lang: string; whatsapp?: string;
+function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
+  tier: Tier; period: Period; years: number; sector: "restaurant"|"ecommerce";
+  onCustom: ()=>void; whatsapp: string;
 }) {
-  const cfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.lite;
-  const isPopular = plan.isPopular || isPopularOverride;
-  const isPro = plan.tier === "pro";
-  const isInfinite = plan.tier === "infinite";
-  const features = (lang === "ar" ? plan.featuresAr : (plan.featuresEn || plan.featuresAr)) ?? [];
-  const TierIcon = cfg.icon;
+  const st = TIER_STYLES[tier];
+  const prices = PRICES[sector][tier];
+  const features = sector === "restaurant" ? RESTAURANT_FEATURES[tier] : ECOMMERCE_FEATURES[tier];
+  const isPro = tier === "pro";
+  const isInfinity = tier === "infinity";
+  const isLifetime = period === "lifetime";
+
+  let price = 0, label = "", sublabel = "";
+  if (period === "sixmonth") { price = prices.sm; label = "6 أشهر"; sublabel = `${fmt(prices.sm * 2)} / السنة`; }
+  else if (period === "annual") { price = prices.yr; label = "سنة"; sublabel = "دفعة واحدة"; }
+  else if (period === "multiyear") {
+    price = multiYearPrice(prices.yr, years);
+    const disc = multiYearDiscount(years);
+    label = `${years} سنوات`;
+    sublabel = disc > 0 ? `خصم ${disc}% على السنوات الإضافية` : "";
+  }
+  else { price = prices.life; label = "مدى الحياة"; sublabel = "دفعة واحدة للأبد"; }
+
+  const icons = { lite: Zap, pro: Star, infinity: InfinityIcon };
+  const TIcon = icons[tier];
+
+  const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
-      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-500
-        hover:-translate-y-1 hover:shadow-2xl group
-        ${cfg.cardBg} ${cfg.borderColor} ${cfg.accentGlow}`}
-      data-testid={`card-tier-${plan.tier}`}
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow}`}
+      data-testid={`card-plan-${tier}`}
     >
-      {/* Popular glow line */}
-      {isPopular && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-black/[0.08] dark:via-white/[0.1] to-transparent" />
-      )}
+      {isPro && <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
+      {isInfinity && <div className="absolute inset-0 pointer-events-none">{[[10,15],[88,25],[45,55],[72,10],[25,80],[93,60]].map(([x,y],i)=><div key={i} className="absolute w-1 h-1 rounded-full bg-amber-500/20" style={{left:`${x}%`,top:`${y}%`}}/>)}</div>}
 
-      {/* Decorative background */}
-      <div className={`absolute inset-0 text-gray-300 dark:text-slate-400 ${cfg.patternColor} pointer-events-none`}>
-        <GridPattern />
+      {/* Header */}
+      <div className={`px-5 pt-5 pb-4 bg-gradient-to-br ${isPro || isInfinity ? st.headerBg : st.headerBg} relative`}>
+        {isPro && <div className="absolute -top-px inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"/>}
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-9 h-9 rounded-xl ${st.badgeBg} flex items-center justify-center`}>
+            <TIcon className={`w-4.5 h-4.5 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
+          </div>
+          {isPro && <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-white/15 text-white"><Crown className="w-3 h-3"/> الأكثر طلباً</span>}
+          {isInfinity && <span className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20"><InfinityIcon className="w-3 h-3"/> الباقة الشاملة</span>}
+        </div>
+        <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 ${isPro ? "text-blue-300/40" : isInfinity ? "text-amber-400/30" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
+        <h3 className={`text-xl font-black ${st.textColor}`}>{tierNames[tier]}</h3>
+        <p className={`text-[11px] mt-0.5 font-bold tracking-wider ${isPro ? "text-blue-300/50" : isInfinity ? "text-amber-400/50" : "text-gray-400"}`}>— {st.tag}</p>
       </div>
 
-      {/* Amber constellation dots for Infinite */}
-      {isInfinite && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[[15,20],[85,35],[45,60],[70,15],[30,75],[90,65],[10,85],[55,40]].map(([x,y],i) => (
-            <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1]"
-              style={{ left:`${x}%`, top:`${y}%` }} />
-          ))}
-        </div>
-      )}
-
-      {/* ─── Header ─── */}
-      <div className={`relative px-6 pt-6 pb-5 bg-gradient-to-br ${cfg.headerGrad}`}>
-        {/* Tier number badge */}
-        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/20" : "text-gray-300 dark:text-slate-600"}`}>
-          {cfg.tierNum}
-        </div>
-
-        {/* Popular badge */}
-        {isPopular && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.1 + 0.3 }}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-black dark:from-white to-black dark:to-white text-white text-[10px] font-black px-3 py-1.5 rounded-full mb-3 shadow-lg shadow-blue-500/30"
-          >
-            <Crown className="w-3 h-3" /> {lang === "ar" ? "الأكثر طلباً" : "Most Popular"}
-          </motion.div>
-        )}
-
-        {/* Icon + Name */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.badgeBg}`}>
-            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-gray-500 dark:text-slate-300"}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-black/70 dark:text-white/70" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
-            <p className={`font-black text-base leading-tight truncate ${cfg.accentColor}`}>
-              {lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}
-            </p>
-          </div>
-          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-black/15 dark:border-white/15" : isPro ? "border-white/15" : "border-gray-300 dark:border-slate-600"}`}>
-            {lang === "ar" ? cfg.labelAr : cfg.labelEn}
-          </span>
-        </div>
-
-        {/* Tagline */}
-        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-500"}`}>
-          — {lang === "ar" ? cfg.taglinePrimary : cfg.taglineSecondary}
-        </p>
-      </div>
-
-      {/* ─── Price ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-gray-100 bg-gray-50 dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
+      {/* Price */}
+      <div className={`px-5 py-4 ${isPro ? "bg-white/[0.04] border-t border-white/10" : isInfinity ? "bg-white/[0.02] border-t border-white/[0.06]" : "bg-gray-50 dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800"}`}>
         <AnimatePresence mode="wait">
-          <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-2xl font-black tracking-tight ${cfg.priceColor}`}>
-                {lang === "ar" ? "على حسب الاحتياج" : "Custom Pricing"}
-              </span>
+          <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            <div className="flex items-end gap-1.5 flex-wrap">
+              <span className={`text-3xl font-black tracking-tight ${st.textColor}`}>{fmt(price)}</span>
+              <span className={`text-sm font-bold mb-1 ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>ريال</span>
+              <span className={`text-xs mb-1 ${isPro || isInfinity ? "text-white/30" : "text-gray-400"}`}>/ {label}</span>
             </div>
-            <p className={`text-[11px] mt-1.5 ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
-              {lang === "ar" ? "تواصل معنا للحصول على عرض خاص" : "Contact us for a personalized quote"}
-            </p>
+            {sublabel && <p className={`text-[11px] mt-0.5 ${isPro ? "text-blue-300/40" : isInfinity ? "text-amber-400/30" : "text-gray-400"}`}>{sublabel}</p>}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* ─── Features ─── */}
-      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/25" : "text-gray-400 dark:text-slate-500"}`}>
-          {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
-        </p>
-        {/* Lifetime unlock banner */}
-        {period === "lifetime" && (
-          <div className={`mb-3 flex items-center gap-2 px-3 py-2 rounded-xl ${isInfinite ? "bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15" : isPro ? "bg-white/10 border border-white/20" : "bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:border-black dark:border-white"}`}>
-            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} />
-            <span className={`text-[11px] font-black ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>
-              {lang === "ar" ? "كل الميزات مفتوحة — بلا حدود ومدى الحياة" : "All features unlocked — unlimited forever"}
-            </span>
+      {/* Features */}
+      <div className={`flex-1 px-5 py-4 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3 ${isPro ? "text-white/20" : isInfinity ? "text-amber-400/25" : "text-gray-400 dark:text-slate-500"}`}>يشمل النظام</p>
+        {/* Lifetime extra banner */}
+        {isLifetime && (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-3 ${isPro ? "bg-white/10 border border-white/20" : isInfinity ? "bg-amber-500/10 border border-amber-500/20" : "bg-black/[0.04] border border-black/[0.08] dark:bg-white/[0.04] dark:border-white/[0.08]"}`}>
+            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-600 dark:text-white"}`}/>
+            <span className={`text-[11px] font-black ${isInfinity ? "text-amber-300" : isPro ? "text-white" : "text-gray-700 dark:text-white"}`}>كل الميزات مفتوحة — مدى الحياة</span>
           </div>
         )}
-        <div className="space-y-2.5">
-          {(period === "lifetime" ? features : features.slice(0, 6)).map((f: string, i: number) => {
-            const FIcon = featureIcon(f);
-            return (
-              <div key={i} className="flex items-start gap-2.5">
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-black/[0.08] dark:bg-white/[0.1]" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
-                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-black/60 dark:text-white/60" : "text-gray-500 dark:text-slate-400"}`} />
-                </div>
-                <span className={`text-xs leading-snug ${cfg.featureColor}`}>{f}</span>
+        <div className="space-y-2">
+          {features.map(({ icon: Icon, ar }, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isPro ? "bg-white/10" : isInfinity ? "bg-white/[0.07]" : "bg-gray-100 dark:bg-slate-800"}`}>
+                <Icon className={`w-3 h-3 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
               </div>
-            );
-          })}
-          {period !== "lifetime" && features.length > 6 && (
-            <div className={`text-[10px] font-bold ${isInfinite ? "text-black/70 dark:text-white/70" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
-              {lang === "ar" ? `+ ${features.length - 6} ميزة أخرى` : `+ ${features.length - 6} more`}
+              <span className={`text-[11px] leading-snug ${isInfinity ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}`}>{ar}</span>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* ─── CTA ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-black/15 dark:border-white/15 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
-        <Button
-          onClick={e => {
-            e.stopPropagation();
-            const planName = lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr);
-            const segmentLabel = plan.segment ? SEGMENT_LOOKUP[plan.segment]?.labelAr ?? plan.segment : "";
-            const msg = lang === "ar"
-              ? `مرحباً، أريد الاستفسار عن باقة ${planName}${segmentLabel ? ` لـ${segmentLabel}` : ""}`
-              : `Hello, I'd like to inquire about the ${planName} plan${segmentLabel ? ` for ${SEGMENT_LOOKUP[plan.segment]?.labelEn ?? segmentLabel}` : ""}`;
-            const waNumber = whatsapp ? whatsapp.replace(/\D/g, "") : "";
-            const waUrl = waNumber
-              ? `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`
-              : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-            window.open(waUrl, "_blank");
-          }}
-          className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
-          data-testid={`button-select-${plan.tier}`}
+      {/* CTA */}
+      <div className={`px-5 pb-5 pt-3 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+        <a
+          href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في باقة ${tierNames[tier]} لـ ${period === "sixmonth" ? "6 أشهر" : period === "annual" ? "سنة" : period === "multiyear" ? `${years} سنوات` : "مدى الحياة"} بسعر ${fmt(price)} ريال`)}`}
+          target="_blank" rel="noopener noreferrer"
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all ${st.btnBg}`}
+          data-testid={`button-subscribe-${tier}`}
         >
-          {lang === "ar" ? "تواصل للحصول على عرض" : "Get a Quote"}
-          <MessageCircle className="w-4 h-4" />
-        </Button>
+          <MessageSquare className="w-4 h-4"/>
+          ابدأ الآن عبر واتساب
+        </a>
       </div>
     </motion.div>
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────────────────── */
-export default function Prices() {
-  const { data: plans, isLoading } = usePricingPlans();
-  const { lang, dir } = useI18n();
-  const { data: publicSettings } = useQuery<{ whatsapp?: string }>({
+/* ─── Custom Plan Card ────────────────────────────────────────────────── */
+function CustomCard({ onOpen }: { onOpen: ()=>void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+      className="relative flex flex-col rounded-2xl border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-[#0d0d18] overflow-hidden group hover:border-gray-400 dark:hover:border-slate-500 transition-all hover:shadow-xl"
+      data-testid="card-custom-plan"
+    >
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center gap-5">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <Sparkles className="w-8 h-8 text-white"/>
+        </div>
+        <div>
+          <h3 className="text-lg font-black text-gray-900 dark:text-white mb-1">على تخصيص</h3>
+          <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">اكتب كل متطلباتك ومميزاتك التي تحتاجها، وسنقدم لك عرضاً مناسباً</p>
+        </div>
+        <div className="w-full space-y-2 text-start">
+          {["اختر المدة التي تناسبك","صف احتياجاتك بمساعدة الذكاء الاصطناعي","احصل على رقم تذكرة ومتابعة"].map((t,i)=>(
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">{i+1}</span>
+              </div>
+              <span className="text-xs text-gray-500 dark:text-slate-400">{t}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-violet-600 dark:text-violet-400 font-black flex items-center gap-1">
+          <Bot className="w-3 h-3"/> مع مساعدة الذكاء الاصطناعي
+        </p>
+      </div>
+      <div className="px-6 pb-6">
+        <button onClick={onOpen} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white text-sm font-black transition-all shadow-lg shadow-purple-500/20" data-testid="button-open-custom">
+          <Sparkles className="w-4 h-4"/> صمّم باقتك الخاصة
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Lifetime Perks Banner ───────────────────────────────────────────── */
+function LifetimePerks() {
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mt-8 rounded-2xl bg-gradient-to-r from-[#09090f] via-[#0f0f1a] to-[#09090f] border border-amber-500/15 p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <InfinityIcon className="w-5 h-5 text-amber-400"/>
+        <h4 className="font-black text-white">مميزات خاصة بباقة مدى الحياة</h4>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {LIFETIME_PERKS.map(({ icon: Icon, ar }, i) => (
+          <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-white/[0.03] border border-amber-500/10">
+            <Icon className="w-4 h-4 text-amber-400 shrink-0 mt-0.5"/>
+            <span className="text-xs text-slate-300 leading-snug">{ar}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Custom Ticket Modal ─────────────────────────────────────────────── */
+interface ChatMsg { role: "user"|"assistant"; content: string; }
+function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
+  onClose: ()=>void; sector: string; sectorLabel: string; initialDuration?: string;
+}) {
+  const { toast } = useToast();
+  const { user } = useUser();
+  const [step, setStep] = useState<"chat"|"contact"|"success">("chat");
+  const [chatHistory, setChatHistory] = useState<ChatMsg[]>([
+    { role: "assistant", content: `مرحباً! أنا مساعد كيروكس 🤝\nسأساعدك على صياغة احتياجاتك بشكل دقيق حتى يتمكن فريقنا من تقديم أفضل عرض سعر لك.\n\nأخبرني: ما نوع نشاطك؟ وما أبرز الميزات التي تحتاجها في نظامك؟` },
+  ]);
+  const [input, setInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [requirements, setRequirements] = useState("");
+  const [contactName, setContactName] = useState((user as any)?.fullName || "");
+  const [contactPhone, setContactPhone] = useState((user as any)?.phone || "");
+  const [contactEmail, setContactEmail] = useState((user as any)?.email || "");
+  const [duration, setDuration] = useState(initialDuration || "annual");
+  const [submitting, setSubmitting] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [whatsapp, setWhatsapp] = useState("966500000000");
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  useQuery<any>({
     queryKey: ["/api/public/settings"],
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60_000,
+    select: (d: any) => { if (d?.whatsapp) setWhatsapp(d.whatsapp.replace(/\D/g,"")); return d; },
   });
 
-  const segments = useMemo(() => {
-    if (!plans || plans.length === 0) return Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
-    const seen = new Set<string>();
-    const result: (typeof SEGMENT_LOOKUP[string] & { key: string })[] = [];
-    for (const p of plans) {
-      const k: string = p.segment;
-      if (!k || k === "general" || seen.has(k)) continue;
-      seen.add(k);
-      const meta = SEGMENT_LOOKUP[k] ?? { labelAr: k, labelEn: k, icon: Globe, color: "text-slate-400", bg: "bg-slate-500/10" };
-      result.push({ key: k, ...meta });
+  useEffect(() => { chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }); }, [chatHistory]);
+
+  async function sendAiMsg() {
+    if (!input.trim()) return;
+    const userMsg = input.trim();
+    setInput("");
+    const updated: ChatMsg[] = [...chatHistory, { role: "user", content: userMsg }];
+    setChatHistory(updated);
+    setAiLoading(true);
+    try {
+      const r = await fetch("/api/price-request/ai-help", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg, history: updated.slice(0, -1) }),
+      });
+      const d = await r.json();
+      setChatHistory(prev => [...prev, { role: "assistant", content: d.reply || "..." }]);
+    } catch {
+      setChatHistory(prev => [...prev, { role: "assistant", content: "عذراً، حدث خطأ. اكتب احتياجاتك مباشرة في الحقل أدناه." }]);
     }
-    return result.length > 0 ? result : Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
-  }, [plans]);
+    setAiLoading(false);
+  }
 
-  const searchStr = useSearch();
-  const [segment, setSegment] = useState(() => {
-    // Auto-select segment from URL param (?segment=xxx) set by home page sector cards
-    if (typeof window !== "undefined") {
-      const param = new URLSearchParams(window.location.search).get("segment");
-      if (param) return param;
+  function useAsRequirements(content: string) {
+    setRequirements(content);
+    toast({ title: "تم نقل الوصف ✓", description: "يمكنك تعديله قبل الإرسال" });
+  }
+
+  async function handleSubmit() {
+    if (!contactName || !contactPhone || !requirements) {
+      toast({ title: "يرجى ملء جميع الحقول المطلوبة", variant: "destructive" }); return;
     }
-    return "";
-  });
+    setSubmitting(true);
+    try {
+      const r = await fetch("/api/price-request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sector, sectorLabel, duration, requirements, contactName, contactPhone, contactEmail }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "فشل الإرسال");
+      setTicketNumber(d.ticketNumber);
+      setStep("success");
+    } catch (e: any) {
+      toast({ title: "فشل الإرسال", description: e.message, variant: "destructive" });
+    }
+    setSubmitting(false);
+  }
 
-  // Sync segment when URL param changes (e.g. user goes home → picks another sector)
-  useEffect(() => {
-    const param = new URLSearchParams(searchStr).get("segment");
-    if (param) setSegment(param);
-  }, [searchStr]);
-  const [period, setPeriod] = useState<BillingPeriod>("monthly");
-  const [finderOpen, setFinderOpen] = useState(false);
-  const { data: user } = useUser();
-  const [salesOffer, setSalesOffer] = useState<{ title: string; body: string; cta: string } | null>(null);
-  const [showSalesOffer, setShowSalesOffer] = useState(false);
-
-  useEffect(() => {
-    if (user) return;
-    const timer = setTimeout(async () => {
-      try {
-        const data = await apiRequest("POST", "/api/ai/analyze", {
-          text: `أنت مساعد مبيعات ذكي لـ QIROX Studio. مستخدم جديد يتصفح صفحة الأسعار منذ 15 ثانية ولم يختر باقة بعد. اكتب رسالة مقنعة قصيرة جداً (3 أسطر) لتشجيعه على التواصل أو اختيار الباقة المناسبة. اجعلها ودية ومُلحّة بلطف. أجب بـ JSON فقط: {"title":"عنوان قصير","body":"رسالة قصيرة 2-3 جمل","cta":"نص زر الدعوة للفعل"}`
-        });
-        if (data?.result) {
-          const jsonMatch = data.result.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const offer = JSON.parse(jsonMatch[0]);
-            setSalesOffer(offer);
-            setShowSalesOffer(true);
-          }
-        }
-      } catch {}
-    }, 18000);
-    return () => clearTimeout(timer);
-  }, [user]);
-
-  useEffect(() => {
-    if (!segment && segments.length > 0) setSegment(segments[0].key);
-  }, [segments, segment]);
-
-  const activeSeg = segments.find(s => s.key === segment) ?? segments[0] ?? { key: "general", labelAr: "عام", labelEn: "General", icon: Globe, color: "text-slate-400", bg: "bg-slate-500/10" };
-  const tierPlans = plans?.filter((p: any) =>
-    p.segment === segment && ["lite","pro","infinite"].includes(p.tier ?? "")
-  ).sort((a: any, b: any) =>
-    (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[a.tier ?? ""] ?? 9) - (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[b.tier ?? ""] ?? 9)
-  ) ?? [];
+  const durLabels: Record<string,string> = { sixmonth:"6 أشهر", annual:"سنة", "2y":"سنتان", "3y":"3 سنوات", "5y":"5 سنوات", lifetime:"مدى الحياة" };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#080810]" dir={dir}>
-      <Navigation />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}/>
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0d0d18] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
-      {/* ─── HERO ─── */}
-      <section className="relative overflow-hidden bg-black">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
-          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-[#080810] to-transparent pointer-events-none" />
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.05] shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white"/>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-black text-black dark:text-white">باقة مخصصة — {sectorLabel}</h3>
+            <p className="text-[10px] text-black/40 dark:text-white/40">اكتب احتياجاتك واحصل على عرض سعر</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05]">
+            <X className="w-4 h-4 text-black/40 dark:text-white/40"/>
+          </button>
+        </div>
 
-        <div className="relative container mx-auto px-4 max-w-6xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 pt-24 mb-6">
-              <span className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40">
-                {lang === "ar" ? "مصنع الأنظمة الرقمية" : "DIGITAL SYSTEMS FACTORY"}
-              </span>
+        {/* Steps indicator */}
+        <div className="flex items-center gap-2 px-5 py-2 shrink-0 border-b border-black/[0.05] dark:border-white/[0.04]">
+          {["chat","contact","success"].map((s,i)=>(
+            <div key={s} className="flex items-center gap-1.5">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${step===s||( s==="success"&&step==="success")?"bg-violet-600 text-white":step==="success"||( i===0&&step!=="chat")||(i===1&&step==="success")?"bg-emerald-500 text-white":"bg-black/[0.06] dark:bg-white/[0.06] text-black/40 dark:text-white/40"}`}>
+                {(i===0&&step!=="chat")||(i===1&&step==="success")?<Check className="w-3 h-3"/>:i+1}
+              </div>
+              <span className={`text-[10px] font-semibold ${step===s?"text-violet-600":"text-black/30 dark:text-white/30"}`}>{["صياغة الاحتياجات","بياناتك","التأكيد"][i]}</span>
+              {i<2&&<ChevronLeft className="w-3 h-3 text-black/20 dark:text-white/20"/>}
             </div>
+          ))}
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pb-20">
-              <div>
-                <h1 className="text-5xl md:text-6xl font-black text-white mb-5 leading-[1.05] tracking-tight">
-                  {lang === "ar"
-                    ? <><span>باقات</span><br /><span className="text-white/60">مبنية</span><br /><span className="text-white/25">لقطاعك</span></>
-                    : <><span>Plans</span><br /><span className="text-white/60">built</span><br /><span className="text-white/25">for your sector</span></>}
-                </h1>
-                <p className="text-white/40 text-base leading-relaxed max-w-sm mb-8">
-                  {lang === "ar"
-                    ? "كل قطاع له نظامه الخاص المبرمج من الصفر — ليس قالبًا جاهزًا، بل مصنع مخصص لك."
-                    : "Every sector has its own system built from scratch — not a template, a factory built for you."}
-                </p>
-                {/* Stats row */}
-                <div className="flex items-center gap-6 mb-8">
-                  {[
-                    { val: "100+", label: lang === "ar" ? "نظام مُسلَّم" : "Delivered" },
-                    { val: "3",    label: lang === "ar" ? "مستويات" : "Tiers" },
-                    { val: "7",    label: lang === "ar" ? "قطاعات" : "Sectors" },
-                  ].map(s => (
-                    <div key={s.val}>
-                      <p className="text-2xl font-black text-white">{s.val}</p>
-                      <p className="text-[10px] text-white/30 uppercase tracking-wider">{s.label}</p>
+        {/* Body */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+
+          {/* ── Step 1: Chat ── */}
+          {step === "chat" && (
+            <div className="flex flex-col h-full">
+              <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+                {chatHistory.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role==="user"?"justify-start":"justify-end"}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${msg.role==="user"?"bg-black/[0.04] dark:bg-white/[0.05]":"bg-violet-600 text-white"}`}>
+                      <p className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.role==="user"?"text-black dark:text-white":"text-white"}`}>{msg.content}</p>
+                      {msg.role==="assistant"&&<button onClick={()=>useAsRequirements(msg.content)} className="mt-1.5 text-[9px] text-white/60 hover:text-white flex items-center gap-1"><ClipboardList className="w-3 h-3"/>استخدم كوصف</button>}
                     </div>
+                  </div>
+                ))}
+                {aiLoading && <div className="flex justify-end"><div className="bg-violet-600 rounded-2xl px-4 py-3"><div className="flex gap-1">{[0,1,2].map(i=><div key={i} className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</div></div></div>}
+              </div>
+              <div className="border-t border-black/[0.06] dark:border-white/[0.05] p-3 flex gap-2 shrink-0">
+                <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendAiMsg()} placeholder="اكتب احتياجاتك..." className="flex-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none placeholder:text-black/25 dark:placeholder:text-white/25 text-black dark:text-white" data-testid="input-ai-chat"/>
+                <button onClick={sendAiMsg} disabled={!input.trim()||aiLoading} className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 flex items-center justify-center transition" data-testid="button-send-ai">
+                  {aiLoading?<Loader2 className="w-4 h-4 text-white animate-spin"/>:<Send className="w-4 h-4 text-white"/>}
+                </button>
+              </div>
+              {/* Requirements textarea */}
+              <div className="p-3 pt-0 shrink-0">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black/30 dark:text-white/30 mb-1.5 block">الوصف النهائي لمتطلباتك *</label>
+                <textarea value={requirements} onChange={e=>setRequirements(e.target.value)} rows={3} placeholder="اكتب أو انقل الوصف هنا..." className="w-full bg-black/[0.03] dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none resize-none placeholder:text-black/20 dark:placeholder:text-white/20 text-black dark:text-white border border-black/[0.06] dark:border-white/[0.05]" data-testid="textarea-requirements"/>
+                <button onClick={()=>requirements&&setStep("contact")} disabled={!requirements.trim()} className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black transition" data-testid="button-next-contact">
+                  التالي: بياناتك <ArrowRight className="w-4 h-4"/>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Contact ── */}
+          {step === "contact" && (
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-800/20">
+                <p className="text-[10px] font-black text-violet-600 dark:text-violet-400 mb-1">الوصف المدخل:</p>
+                <p className="text-xs text-violet-700 dark:text-violet-300 leading-relaxed line-clamp-3">{requirements}</p>
+                <button onClick={()=>setStep("chat")} className="text-[10px] text-violet-500 mt-1 hover:underline">تعديل الوصف</button>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">مدة المشروع</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {DURATION_OPTS.map(({key,ar,icon:Icon})=>(
+                    <button key={key} onClick={()=>setDuration(key)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition ${duration===key?"bg-violet-600 text-white":"bg-black/[0.03] dark:bg-white/[0.04] text-black/50 dark:text-white/50 hover:bg-black/[0.06] dark:hover:bg-white/[0.07]"}`} data-testid={`button-duration-${key}`}>
+                      <Icon className="w-3 h-3"/>{ar}
+                    </button>
                   ))}
                 </div>
-
-                {/* Package Finder CTA */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setFinderOpen(true)}
-                  data-testid="button-open-package-finder"
-                  className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.1] hover:border-white/25 transition-all duration-300 text-right max-w-xs"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-4 h-4 text-black" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-white">
-                      {lang === "ar" ? "اعرف باقتك الخاصة بك" : "Find Your Package"}
-                    </p>
-                    <p className="text-[11px] text-white/40 mt-0.5">
-                      {lang === "ar" ? "سؤالين وأختار لك الأنسب 🤖" : "AI recommends your perfect plan"}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/40 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                </motion.button>
               </div>
 
-              {/* ── Marketing Visual ── */}
-              <div className="relative">
-                <PricesHeroVisual lang={lang} />
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">الاسم *</label>
+                  <div className="relative">
+                    <User className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+                    <Input value={contactName} onChange={e=>setContactName(e.target.value)} className="pr-9 h-9 text-sm" placeholder="اسمك الكريم" data-testid="input-contact-name"/>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">رقم الهاتف / واتساب *</label>
+                  <div className="relative">
+                    <Phone className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+                    <Input value={contactPhone} onChange={e=>setContactPhone(e.target.value)} className="pr-9 h-9 text-sm" placeholder="+966 5XX XXX XXX" dir="ltr" data-testid="input-contact-phone"/>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">البريد الإلكتروني (اختياري)</label>
+                  <div className="relative">
+                    <Mail className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+                    <Input value={contactEmail} onChange={e=>setContactEmail(e.target.value)} className="pr-9 h-9 text-sm" placeholder="email@example.com" dir="ltr" data-testid="input-contact-email"/>
+                  </div>
+                </div>
               </div>
+
+              <button onClick={handleSubmit} disabled={submitting||!contactName||!contactPhone} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 disabled:opacity-40 text-white text-sm font-black transition" data-testid="button-submit-ticket">
+                {submitting?<Loader2 className="w-4 h-4 animate-spin"/>:<Send className="w-4 h-4"/>}
+                {submitting?"جارٍ الإرسال...":"أرسل طلب السعر"}
+              </button>
             </div>
-          </motion.div>
+          )}
+
+          {/* ── Step 3: Success ── */}
+          {step === "success" && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-5">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500"/>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-black dark:text-white mb-1">تم استلام طلبك!</h3>
+                <p className="text-sm text-black/50 dark:text-white/50">رقم تذكرتك</p>
+                <div className="flex items-center gap-2 justify-center mt-2">
+                  <span className="text-2xl font-black text-violet-600 dark:text-violet-400 font-mono">{ticketNumber}</span>
+                  <button onClick={()=>{navigator.clipboard.writeText(ticketNumber);toast({title:"تم النسخ ✓"});}} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"><Copy className="w-4 h-4 text-black/40 dark:text-white/40"/></button>
+                </div>
+              </div>
+              <div className="w-full p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20 text-sm text-emerald-700 dark:text-emerald-300 space-y-1">
+                <p>✓ تم إشعار فريق كيروكس</p>
+                <p>✓ ستصلك رسالة تأكيد قريباً</p>
+                {user && <p>✓ يمكنك متابعة الطلب من حسابك</p>}
+              </div>
+              <a
+                href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} — ${sectorLabel}`)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] hover:bg-[#20c05c] text-white text-sm font-black transition"
+                data-testid="button-whatsapp-ticket"
+              >
+                <MessageSquare className="w-4 h-4"/>
+                تواصل واتساب برقم التذكرة
+              </a>
+              <button onClick={onClose} className="text-sm text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition">إغلاق</button>
+            </div>
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Page ───────────────────────────────────────────────────────── */
+export default function Prices() {
+  const { L } = useI18n();
+  const { user } = useUser();
+  const [sector, setSector] = useState<Sector>("restaurant");
+  const [period, setPeriod] = useState<Period>("annual");
+  const [years, setYears] = useState(2);
+  const [otherSector, setOtherSector] = useState("education");
+  const [otherDuration, setOtherDuration] = useState("annual");
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customSector, setCustomSector] = useState("restaurant");
+  const [customSectorLabel, setCustomSectorLabel] = useState("مطاعم ومقاهي");
+  const [customDuration, setCustomDuration] = useState("annual");
+
+  const { data: settings } = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 60_000 });
+  const whatsapp = (settings?.whatsapp || settings?.contactPhone || "").replace(/\D/g, "") || "966500000000";
+
+  const SECTORS_DATA = [
+    { key: "restaurant" as Sector, icon: UtensilsCrossed, ar: "مطاعم ومقاهي", en: "Restaurants", color: "from-orange-500 to-amber-500" },
+    { key: "ecommerce"  as Sector, icon: ShoppingBag,     ar: "متاجر إلكترونية", en: "E-Commerce", color: "from-blue-500 to-cyan-500" },
+    { key: "other"      as Sector, icon: Building2,        ar: "قطاعات أخرى", en: "Other Sectors", color: "from-violet-500 to-purple-600" },
+  ];
+
+  function openCustom(sec: string, label: string, dur?: string) {
+    setCustomSector(sec); setCustomSectorLabel(label);
+    setCustomDuration(dur || period === "multiyear" ? `${years}y` : period);
+    setCustomOpen(true);
+  }
+
+  const PERIODS_LIST = [
+    { key: "sixmonth" as Period, ar: "6 أشهر", icon: CalendarRange },
+    { key: "annual"   as Period, ar: "سنة", icon: CalendarDays },
+    { key: "multiyear"as Period, ar: "سنوات+", icon: CalendarDays, extra: true },
+    { key: "lifetime" as Period, ar: "مدى الحياة", icon: InfinityIcon },
+  ];
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-[#05050c]" dir="rtl">
+      <Navigation/>
+
+      {/* ── Hero ── */}
+      <section className="pt-24 pb-8 px-4 text-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-black/30 dark:text-white/30 mb-4">
+            <Tag className="w-3 h-3"/> الباقات والأسعار
+          </span>
+          <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white mb-3 leading-tight">
+            اختر الباقة المناسبة<br/>
+            <span className="bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">لنشاطك التجاري</span>
+          </h1>
+          <p className="text-gray-500 dark:text-slate-400 text-base max-w-lg mx-auto">
+            أسعار شفافة بدون رسوم مخفية — باقات مرنة تناسب كل قطاع
+          </p>
+        </motion.div>
       </section>
 
-      {/* ─── SEGMENT SELECTOR ─── */}
-      <section className="py-6 border-b border-gray-200 dark:border-slate-800/80 bg-gray-50/80 dark:bg-[#0a0a14] sticky top-0 z-20 backdrop-blur-sm">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex flex-wrap items-center gap-2" data-testid="segment-selector">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-slate-600 ml-2">
-              {lang === "ar" ? "القطاع :" : "SECTOR :"}
-            </span>
-            {segments.map(seg => {
-              const Icon = seg.icon;
-              const isActive = segment === seg.key;
+      {/* ── Sector Tabs ── */}
+      <section className="px-4 pb-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex gap-2 p-1.5 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl">
+            {SECTORS_DATA.map(s => {
+              const Icon = s.icon;
+              const active = sector === s.key;
               return (
-                <motion.button
-                  key={seg.key} onClick={() => setSegment(seg.key)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  data-testid={`btn-segment-${seg.key}`}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-xs font-bold transition-all duration-150 ${
-                    isActive
-                      ? "bg-gray-900 text-white dark:bg-white dark:text-slate-900 border-gray-900 dark:border-white"
-                      : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-700 dark:hover:text-slate-300 bg-transparent"
-                  }`}
+                <button
+                  key={s.key}
+                  onClick={() => setSector(s.key)}
+                  className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-4 rounded-xl transition-all ${active ? "bg-white dark:bg-[#1a1a2e] shadow-md" : "hover:bg-white/50 dark:hover:bg-white/[0.04]"}`}
+                  data-testid={`button-sector-${s.key}`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white dark:text-slate-700" : seg.color}`} />
-                  {lang === "ar" ? seg.labelAr : seg.labelEn}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── BILLING PERIOD TABS ─── */}
-      <section className="py-5 bg-white dark:bg-[#0a0a14] border-b border-gray-200 dark:border-slate-800/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex flex-wrap items-center gap-2" data-testid="billing-period-selector">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-slate-600 ml-2">
-              {lang === "ar" ? "عرض المميزات :" : "FEATURES :"}
-            </span>
-            {PERIODS.map(({ key, labelAr, labelEn, icon: PIcon }) => {
-              const pLabel = lang === "ar" ? labelAr : labelEn;
-              const isActive = period === key;
-              return (
-                <button key={key} onClick={() => setPeriod(key)} data-testid={`tab-period-${key}`}
-                  className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
-                    isActive
-                      ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-slate-900 shadow-lg shadow-black/10"
-                      : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-600"
-                  }`}
-                >
-                  <PIcon className="w-3 h-3" />
-                  {pLabel}
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? `bg-gradient-to-br ${s.color}` : "bg-black/[0.06] dark:bg-white/[0.06]"}`}>
+                    <Icon className={`w-4 h-4 ${active ? "text-white" : "text-black/40 dark:text-white/40"}`}/>
+                  </div>
+                  <span className={`text-[11px] font-black ${active ? "text-black dark:text-white" : "text-black/35 dark:text-white/35"}`}>{s.ar}</span>
                 </button>
               );
             })}
@@ -517,301 +631,143 @@ export default function Prices() {
         </div>
       </section>
 
-      {/* ─── TIER CARDS ─── */}
-      <section className="py-14 bg-gray-100 dark:bg-[#0a0a14]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          {/* Context breadcrumb */}
-          <div className="flex items-center gap-3 mb-10">
-            <div className={`w-7 h-7 rounded-lg ${activeSeg.bg} flex items-center justify-center`}>
-              <activeSeg.icon className={`w-4 h-4 ${activeSeg.color}`} />
-            </div>
-            <span className="text-sm font-black text-gray-800 dark:text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
-            <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-slate-700" />
-            <span className="text-xs font-medium text-gray-500 dark:text-slate-500">{lang === "ar" ? "الباقات المتاحة" : "Available Plans"}</span>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] text-gray-500 dark:text-slate-400">
-              {lang === "ar" ? "السعر على حسب الاحتياج" : "Custom Pricing"}
-            </span>
-          </div>
+      {/* ── Pricing Content ── */}
+      <section className="px-4 pb-16">
+        <div className="max-w-6xl mx-auto">
 
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="relative w-12 h-12">
-                <div className="absolute inset-0 rounded-full border-2 border-black dark:border-white" />
-                <Loader2 className="w-12 h-12 animate-spin text-black dark:text-white" />
-              </div>
-              <p className="text-xs text-gray-400 dark:text-slate-600 uppercase tracking-wider">{lang === "ar" ? "جاري تحميل الأنظمة..." : "Loading systems..."}</p>
-            </div>
-          ) : tierPlans.length === 0 ? (
-            <div className="text-center py-24 border border-dashed border-gray-300 dark:border-slate-800 rounded-2xl">
-              <Gift className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-slate-500 text-sm">{lang === "ar" ? "لا توجد باقات لهذا القطاع بعد" : "No plans for this sector yet"}</p>
-            </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${segment}-${period}`}
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-5"
-              >
-                {tierPlans.map((plan: any, idx: number) => (
-                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} lang={lang} whatsapp={publicSettings?.whatsapp} />
-                ))}
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </div>
-      </section>
-
-      {/* ─── COMPARISON TABLE ─── */}
-      {tierPlans.length === 3 && (
-        <section className="pb-16 bg-gray-100 dark:bg-[#0a0a14]">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-800" />
-              <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.2em] px-4">
-                {lang === "ar" ? "مقارنة الباقات" : "PLAN COMPARISON"}
-              </h2>
-              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-800" />
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-slate-800 overflow-x-auto bg-white dark:bg-transparent">
-              <div className="min-w-[480px]">
-                <div className="grid grid-cols-4 bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-800">
-                  <div className="p-4 text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-wider">
-                    {lang === "ar" ? "الميزة" : "Feature"}
-                  </div>
-                  {tierPlans.map((p: any) => {
-                    const cfg = TIER_CONFIG[p.tier] || TIER_CONFIG.lite;
+          {/* Restaurant / Ecommerce */}
+          {(sector === "restaurant" || sector === "ecommerce") && (
+            <>
+              {/* Period switcher */}
+              <div className="flex flex-col items-center mb-8 gap-3">
+                <div className="flex gap-1.5 p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl">
+                  {PERIODS_LIST.map(p => {
+                    const Icon = p.icon;
+                    const active = period === p.key;
                     return (
-                      <div key={p.id} className="p-4 text-center">
-                        <span className="text-xs font-black text-gray-700 dark:text-slate-300">
-                          {lang === "ar" ? cfg.labelAr : cfg.labelEn}
-                        </span>
-                      </div>
+                      <button key={p.key} onClick={() => setPeriod(p.key)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all ${active ? "bg-white dark:bg-[#1a1a2e] text-black dark:text-white shadow-sm" : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"}`}
+                        data-testid={`button-period-${p.key}`}
+                      >
+                        <Icon className="w-3.5 h-3.5"/>{p.ar}
+                      </button>
                     );
                   })}
                 </div>
-                {[
-                  { label: lang === "ar" ? "السعر" : "Price", values: tierPlans.map(() => lang === "ar" ? <span className="text-xs font-bold text-gray-700 dark:text-slate-300">على حسب الاحتياج</span> : <span className="text-xs font-bold text-gray-700 dark:text-slate-300">Custom</span>) },
-                  { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
-                  { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
-                  { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },
-                  { label: lang === "ar" ? "دومين مجاني"       : "Free Domain",    values: lang === "ar" ? [false, "سنة واحدة", "3 سنوات"] : [false, "1 year", "3 years"] },
-                  { label: lang === "ar" ? "دعم متعدد القنوات" : "Multi-channel",  values: [false, true, true] },
-                ].map((row, i) => (
-                  <div key={i} className={`grid grid-cols-4 border-b border-gray-100 dark:border-slate-800 last:border-0 ${i % 2 !== 0 ? "bg-gray-50/50 dark:bg-slate-900/20" : ""}`}>
-                    <div className="p-3.5 text-xs text-gray-500 dark:text-slate-500 font-medium">{row.label}</div>
-                    {row.values.map((val: any, vi) => (
-                      <div key={vi} className="p-3.5 text-center">
-                        {typeof val === "boolean"
-                          ? val
-                            ? <Check className="w-4 h-4 text-black dark:text-white dark:text-black/70 dark:text-white/70 mx-auto" />
-                            : <X className="w-4 h-4 text-gray-300 dark:text-slate-700 mx-auto" />
-                          : <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{val}</span>}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+
+                {/* Multi-year picker */}
+                {period === "multiyear" && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/20">
+                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">عدد السنوات:</span>
+                    <button onClick={() => setYears(y => Math.max(2, y - 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Minus className="w-3 h-3"/></button>
+                    <span className="text-lg font-black text-blue-700 dark:text-blue-300 w-6 text-center">{years}</span>
+                    <button onClick={() => setYears(y => Math.min(10, y + 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Plus className="w-3 h-3"/></button>
+                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400">خصم {multiYearDiscount(years)}% على السنوات الإضافية</span>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Plan cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <PlanCard tier="lite"     period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <PlanCard tier="pro"      period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <PlanCard tier="infinity" period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <CustomCard onOpen={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector, period==="multiyear"?`${years}y`:period)}/>
+              </div>
+
+              {/* Lifetime perks */}
+              {period === "lifetime" && <LifetimePerks/>}
+
+              {/* Multi-year note */}
+              {period === "multiyear" && (
+                <div className="mt-6 text-center text-xs text-black/30 dark:text-white/30">
+                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+                </div>
+              )}
+
+              {/* Lifetime note */}
+              {period !== "lifetime" && (
+                <div className="mt-6 text-center">
+                  <p className="text-xs text-black/30 dark:text-white/30">
+                    جميع باقات مدى الحياة تشمل نطاقاً مجانياً لمدة 3 سنوات + دعم تقني 3 سنوات + استضافة على خوادم كيروكس مدى الحياة
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Other Sectors */}
+          {sector === "other" && (
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-black dark:text-white mb-2">قطاعات أخرى</h2>
+                <p className="text-sm text-black/40 dark:text-white/40">اختر قطاعك، حدد المدة، وسنعدّ لك عرضاً مخصصاً</p>
+              </div>
+
+              {/* Sub-sector grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                {OTHER_SECTORS.map(s => {
+                  const Icon = s.icon;
+                  const active = otherSector === s.key;
+                  return (
+                    <button key={s.key} onClick={() => setOtherSector(s.key)}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${active ? "border-violet-400 bg-violet-50 dark:bg-violet-900/10" : "border-black/[0.06] dark:border-white/[0.06] hover:border-violet-200 dark:hover:border-violet-800"}`}
+                      data-testid={`button-other-sector-${s.key}`}
+                    >
+                      <Icon className={`w-5 h-5 ${active ? "text-violet-600 dark:text-violet-400" : "text-black/30 dark:text-white/30"}`}/>
+                      <span className={`text-[10px] font-bold text-center ${active ? "text-violet-700 dark:text-violet-300" : "text-black/40 dark:text-white/40"}`}>{s.ar}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Duration */}
+              <div className="mb-6">
+                <p className="text-[10px] font-black uppercase tracking-wider text-black/30 dark:text-white/30 mb-2">المدة المطلوبة</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {DURATION_OPTS.map(({ key, ar, icon: Icon }) => {
+                    const active = otherDuration === key;
+                    return (
+                      <button key={key} onClick={() => setOtherDuration(key)}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all ${active ? "border-violet-400 bg-violet-50 dark:bg-violet-900/10 text-violet-700 dark:text-violet-300" : "border-black/[0.06] dark:border-white/[0.06] text-black/40 dark:text-white/40 hover:border-violet-200"}`}
+                        data-testid={`button-other-duration-${key}`}
+                      >
+                        <Icon className="w-3.5 h-3.5"/>{ar}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector, otherDuration)}
+                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white text-base font-black transition shadow-lg shadow-purple-500/20"
+                data-testid="button-other-custom-open"
+              >
+                <Sparkles className="w-5 h-5"/>
+                احصل على عرض سعر مخصص
+              </button>
+
+              <div className="mt-4 text-center text-xs text-black/30 dark:text-white/30">
+                جميع باقات مدى الحياة تشمل نطاقاً مجانياً 3 سنوات + دعم 3 سنوات + استضافة دائمة على خوادم كيروكس
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          )}
 
-
-
-      {/* ─── CTA ─── */}
-      <section className="py-16 bg-white dark:bg-[#050508] border-t border-gray-200 dark:border-slate-800/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.2em] mb-4">
-                {lang === "ar" ? "باقة مخصصة" : "CUSTOM PLAN"}
-              </p>
-              <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
-                {lang === "ar" ? "تحتاج عرضاً خاصاً؟" : "Need a custom quote?"}
-              </h2>
-              <p className="text-gray-500 dark:text-slate-500 text-sm leading-relaxed">
-                {lang === "ar"
-                  ? "تواصل معنا وسنعدّ لك عرضاً يناسب احتياجاتك وميزانيتك تماماً."
-                  : "Contact us and we'll prepare a quote tailored exactly to your needs."}
-              </p>
-            </div>
-            <div className="flex md:justify-end">
-              <Link href="/contact">
-                <Button size="lg" className="bg-gray-900 dark:bg-white text-white dark:text-slate-900 h-12 px-8 rounded-xl font-black hover:bg-black dark:hover:bg-slate-100 gap-2" data-testid="button-custom-pricing">
-                  {lang === "ar" ? "تواصل معنا الآن" : "Contact Us Now"} <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
 
-      <PackageFinderModal open={finderOpen} onClose={() => setFinderOpen(false)} />
+      {/* Custom Modal */}
+      {customOpen && (
+        <CustomModal
+          onClose={() => setCustomOpen(false)}
+          sector={customSector}
+          sectorLabel={customSectorLabel}
+          initialDuration={customDuration}
+        />
+      )}
 
-      {/* Smart Sales Assistant Popup */}
-      <AnimatePresence>
-        {showSalesOffer && salesOffer && (
-          <motion.div
-            initial={{ opacity: 0, y: 80, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 80, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed bottom-6 end-6 z-50 w-80 bg-gradient-to-br from-[#1a1b2e] to-[#0f1020] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
-            data-testid="card-sales-assistant"
-          >
-            <div className="p-4">
-              <button onClick={() => setShowSalesOffer(false)} className="absolute top-3 end-3 text-white/30 hover:text-white transition-colors" data-testid="button-close-sales">
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-white font-semibold text-sm">{salesOffer.title}</span>
-              </div>
-              <p className="text-white/60 text-sm leading-relaxed mb-4">{salesOffer.body}</p>
-              <Button
-                onClick={() => { setShowSalesOffer(false); setFinderOpen(true); }}
-                className="w-full bg-gradient-to-r from-black dark:from-white to-black dark:to-white hover:from-black dark:from-white hover:to-black dark:to-white text-white h-9 text-sm font-semibold"
-                data-testid="button-sales-cta"
-              >
-                {salesOffer.cta || "ابدأ الآن"}
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <Footer />
+      <Footer/>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Extra add-ons section — driven by the official QIROX catalog API
-// ─────────────────────────────────────────────────────────────────────────
-const ADDON_ICON_MAP: Record<string, any> = {
-  Plus, Smartphone, TrendingUp, Palette, Database, Bell, Cpu, Sparkles,
-  Globe, Server, BarChart3, Layers, Shield, Lock, Users, Rocket, Boxes,
-  Code2, LayoutDashboard, Zap, Star, Mail: Bell,
-};
-
-const BILLING_LABEL: Record<string, { ar: string; en: string }> = {
-  one_time: { ar: "مرة واحدة", en: "One-time" },
-  monthly:  { ar: "شهرياً",    en: "Monthly" },
-  annual:   { ar: "سنوياً",    en: "Annual" },
-  lifetime: { ar: "مدى الحياة", en: "Lifetime" },
-};
-
-function ExtraAddonsSection({ lang }: { lang: string }) {
-  const { data: addons = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
-  const L = lang === "ar";
-
-  const visible = (addons || []).filter((a: any) => a.isActive !== false);
-
-  return (
-    <section className="py-16 bg-gray-50 dark:bg-[#080810]" data-testid="section-extra-addons">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center">
-            <Plus className="w-4 h-4 text-white dark:text-black" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white">
-              {L ? "كتالوج الميزات الإضافية الرسمي" : "Official Add-ons Catalog"}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-slate-500">
-              {L ? "أسعار رسمية موحّدة — تُضاف إلى أي باقة" : "Official unified pricing — add to any plan"}
-            </p>
-          </div>
-        </div>
-
-        <p className="text-[11px] text-gray-400 dark:text-slate-600 mb-8 ms-11">
-          {L ? "الأسعار شاملة، والميزات المخصّصة لمشروعك تظهر هنا أيضاً عند تسجيل الدخول." : "Prices are inclusive. Your custom features appear here when you're signed in."}
-        </p>
-
-        {isLoading ? (
-          <div className="text-center py-16 text-xs text-gray-400 dark:text-slate-600 uppercase tracking-widest">
-            <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-            {L ? "جارٍ تحميل الكتالوج..." : "Loading catalog..."}
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-gray-300 dark:border-slate-800 rounded-2xl">
-            <Gift className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 dark:text-slate-500">
-              {L ? "لا توجد ميزات إضافية متاحة حالياً." : "No add-ons available right now."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visible.map((a: any, idx: number) => {
-              const Icon = ADDON_ICON_MAP[a.icon] || Plus;
-              const isCustom = !!a.isCustom;
-              const billing = BILLING_LABEL[a.billingType || "one_time"];
-              const quotaTxt = a.quotaCount > 0
-                ? `${a.quotaCount.toLocaleString()} ${a.quotaLabel || (L ? "وحدة" : "units")}`
-                : null;
-              return (
-                <motion.div
-                  key={a.id || a._id || idx}
-                  initial={{ opacity: 0, y: 14 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: Math.min(idx * 0.04, 0.3) }}
-                  className={`relative rounded-2xl border bg-white dark:bg-white/[0.025] p-5 transition-colors ${
-                    isCustom
-                      ? "border-black dark:border-white"
-                      : "border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30"
-                  }`}
-                  data-testid={`card-addon-${a.id || a._id || idx}`}
-                >
-                  {isCustom && (
-                    <span className="absolute top-3 end-3 text-[9px] font-black tracking-[0.18em] uppercase px-2 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
-                      {L ? "مخصّص لك" : "Custom"}
-                    </span>
-                  )}
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-gray-700 dark:text-slate-200" />
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 dark:text-slate-600 mb-1">
-                    {a.category || "Feature"}
-                  </p>
-                  <h3 className="text-gray-900 dark:text-white font-black text-base mb-1" data-testid={`text-addon-name-${a.id || idx}`}>
-                    {L ? (a.nameAr || a.name) : (a.name || a.nameAr)}
-                  </h3>
-                  {(L ? a.descriptionAr : a.description) && (
-                    <p className="text-xs text-gray-500 dark:text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                      {L ? a.descriptionAr : a.description}
-                    </p>
-                  )}
-                  <div className="flex items-baseline gap-1.5 mb-1">
-                    <span className="text-3xl font-black text-gray-900 dark:text-white">
-                      {Number(a.price || 0).toLocaleString()}
-                    </span>
-                    {L ? <SARIcon size={13} className="opacity-60" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
-                    <span className="text-[10px] text-gray-400 dark:text-slate-600 ms-1">/ {billing[L ? "ar" : "en"]}</span>
-                  </div>
-                  {quotaTxt && (
-                    <p className="text-[11px] text-gray-500 dark:text-slate-500 mb-4">
-                      {L ? "يشمل: " : "Includes: "} <span className="font-semibold text-gray-700 dark:text-slate-300">{quotaTxt}</span>
-                    </p>
-                  )}
-                  <Link href="/order">
-                    <Button
-                      variant="outline"
-                      className="w-full h-9 rounded-lg font-bold text-xs mt-3 border-gray-300 dark:border-white/15 text-gray-700 dark:text-slate-200 hover:bg-black hover:text-white hover:border-black dark:hover:bg-white dark:hover:text-black dark:hover:border-white"
-                      data-testid={`button-add-addon-${a.id || idx}`}
-                    >
-                      {L ? "أضف لطلبي" : "Add to my order"}
-                    </Button>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
