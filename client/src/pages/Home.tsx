@@ -465,128 +465,167 @@ export default function Home() {
         {/* ─── PRICING ─── */}
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-black/[0.02] dark:bg-white/[0.02]">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-4 text-center">
+
+            <motion.div {...fade(0)} className="mb-14 text-center max-w-2xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.07] dark:border-white/[0.08] mb-5">
+                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-xs font-semibold text-black/45 dark:text-white/45 tracking-wider">{ar ? "شفافية كاملة في الأسعار" : "Full pricing transparency"}</span>
+              </div>
               <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
-                {ar ? "مهما كانت ميزانيتك" : "Whatever your budget"}
+                {ar ? "ابدأ من 399 ريال" : "Starting from SAR 399"}
                 <br />
-                <span className="text-black/35 dark:text-white/35">{ar ? "عندنا الحل المناسب" : "we have the right plan"}</span>
+                <span className="text-black/30 dark:text-white/30">{ar ? "لكل قطاع وميزانية" : "for every sector & budget"}</span>
               </h2>
-              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed max-w-2xl mx-auto mb-12">
-                {ar
-                  ? "باقات شاملة بكل ما تحتاجه — كل شيء داخل السعر، بدون إضافات خفية ولا مفاجآت. تكلّم مساعدنا واعرف الباقة المناسبة لك."
-                  : "All-inclusive plans — everything in the price, no hidden add-ons, no surprises. Talk to our advisor and find your perfect plan."}
+              <p className="text-black/50 dark:text-white/50 text-sm leading-relaxed max-w-lg mx-auto">
+                {ar ? "ثلاثة مستويات واضحة — اختر ما يناسب مشروعك الآن، وارتقِ عند نموّك." : "Three clear tiers — pick what fits your project now, upgrade as you grow."}
               </p>
             </motion.div>
 
-            {/* Plan cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 max-w-5xl mx-auto">
-              {displayedPlans.map((plan: any, i: number) => { const planKey = `plan-row-${i}`;
-                const isPopular = plan.isPopular || plan.popular || plan.tier === "pro";
-                const isPro = plan.tier === "pro";
-                const isInfinite = plan.tier === "infinite";
-                return (
-                  <motion.div key={planKey} {...fade(i)}>
-                    <div className={`relative rounded-2xl overflow-hidden h-full flex flex-col transition-transform duration-300 hover:scale-[1.02] ${
-                      isPopular
-                        ? "bg-black text-white dark:bg-white dark:text-black shadow-2xl shadow-black/20 dark:shadow-white/10"
-                        : "bg-white dark:bg-black border border-black/10 dark:border-white/10"
-                    }`} data-testid={`card-plan-${plan.tier || i}`}>
+            {/* Tier Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto items-start">
+              {[
+                {
+                  tier: "lite",
+                  nameAr: "لايت", nameEn: "Lite",
+                  tagAr: "للشركات الناشئة والمشاريع الصغيرة",
+                  tagEn: "For startups & small businesses",
+                  priceAr: "يبدأ من 399 ريال", priceEn: "From SAR 399",
+                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
+                  featuresAr: ["موقع احترافي كامل", "لوحة تحكم سهلة", "دعم فني أساسي", "SSL + نطاق مجاني", "تقارير الأداء"],
+                  featuresEn: ["Complete professional website", "Easy control panel", "Basic support", "Free SSL + domain", "Performance reports"],
+                  popular: false,
+                },
+                {
+                  tier: "pro",
+                  nameAr: "برو", nameEn: "Pro",
+                  tagAr: "الأكثر طلباً — للمشاريع الجادة",
+                  tagEn: "Most popular — for serious projects",
+                  priceAr: "يبدأ من 599 ريال", priceEn: "From SAR 599",
+                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
+                  featuresAr: ["كل ميزات لايت", "تطبيق جوال (iOS/Android)", "نظام متكامل للقطاع", "إشعارات فورية للعملاء", "تقارير متقدمة + AI"],
+                  featuresEn: ["All Lite features", "Mobile app (iOS/Android)", "Full sector system", "Push notifications", "Advanced reports + AI"],
+                  popular: true,
+                },
+                {
+                  tier: "infinite",
+                  nameAr: "إنفينيت", nameEn: "Infinite",
+                  tagAr: "للمؤسسات والمشاريع الكبيرة",
+                  tagEn: "For enterprises & large projects",
+                  priceAr: "يبدأ من 899 ريال", priceEn: "From SAR 899",
+                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
+                  featuresAr: ["كل ميزات برو", "تطوير مخصص بلا حدود", "خادم مخصص", "مساعد AI مدمج", "أولوية دعم 24/7"],
+                  featuresEn: ["All Pro features", "Unlimited custom dev", "Dedicated server", "Built-in AI assistant", "Priority 24/7 support"],
+                  popular: false,
+                },
+              ].map((tier, i) => (
+                <motion.div key={tier.tier} {...fade(i)} className={tier.popular ? "md:-mt-4" : ""}>
+                  <div className={`relative rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 ${
+                    tier.popular
+                      ? "bg-black dark:bg-white shadow-2xl shadow-black/25 dark:shadow-white/10"
+                      : "bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"
+                  }`} data-testid={`card-plan-${tier.tier}`}>
 
-                      {/* Top accent stripe */}
-                      <div className={`h-1 w-full ${isInfinite ? "bg-gradient-to-r from-zinc-400 via-white to-zinc-400" : isPro ? "bg-gradient-to-r from-zinc-700 via-zinc-400 to-zinc-700" : "bg-black/10 dark:bg-white/10"}`} />
-
-                      <div className="p-6 flex-1 flex flex-col">
-                        {/* Badge */}
-                        {isPopular && (
-                          <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase mb-3 ${isPopular ? "text-white/60 dark:text-black/60" : "text-black/40"}`}>
-                            <Star className="w-3 h-3" />
-                            {ar ? "الأكثر طلباً" : "Most popular"}
-                          </div>
-                        )}
-
-                        {/* Name */}
-                        <div className="mb-2">
-                          <span className="text-2xl font-black tracking-tight">
-                            {ar ? (plan.nameAr || plan.name || plan.nameEn) : (plan.nameEn || plan.name || plan.nameAr)}
-                          </span>
-                          {isInfinite && <Infinity className="w-5 h-5 inline-block mr-1.5 mb-1 opacity-60" />}
+                    {tier.popular && (
+                      <div className="absolute top-0 inset-x-0 flex justify-center -translate-y-full pb-1">
+                        <div className="bg-black dark:bg-white text-white dark:text-black text-[10px] font-black px-3 py-1 rounded-t-lg flex items-center gap-1">
+                          <Star className="w-2.5 h-2.5" />
+                          {ar ? "الأكثر طلباً" : "Most Popular"}
                         </div>
-
-                        {/* Tag */}
-                        <div className={`text-xs mb-5 ${isPopular ? "text-white/55 dark:text-black/55" : "text-black/45 dark:text-white/45"}`}>
-                          {ar ? (plan.tagAr || plan.descriptionAr || plan.description || "") : (plan.tagEn || plan.description || "")}
-                        </div>
-
-                        {/* Price */}
-                        <div className="mb-6">
-                          <div className={`text-xl font-black ${isPopular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
-                            {ar ? "على حسب الاحتياج" : "Custom Pricing"}
-                          </div>
-                          <div className={`text-xs mt-1 ${isPopular ? "text-white/50 dark:text-black/50" : "text-black/40 dark:text-white/40"}`}>
-                            {ar ? "تواصل للحصول على عرض خاص" : "Contact us for a quote"}
-                          </div>
-                        </div>
-
-                        {/* Features */}
-                        <ul className="space-y-2.5 flex-1 mb-6">
-                          {(ar
-                            ? (plan.featuresAr || plan.features || [])
-                            : (plan.featuresEn || plan.features || [])
-                          ).slice(0, 5).map((f: string, fi: number) => (
-                            <li key={fi} className="flex items-start gap-2 text-sm">
-                              <Check className={`w-4 h-4 shrink-0 mt-0.5 ${isPopular ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`} />
-                              <span className={isPopular ? "text-white/80 dark:text-black/80" : "text-black/65 dark:text-white/65"}>{f}</span>
-                            </li>
-                          ))}
-                        </ul>
-
-                        {/* CTA */}
-                        <Link href="/prices">
-                          <Button
-                            className={`w-full rounded-xl h-11 font-bold gap-2 ${
-                              isPopular
-                                ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
-                                : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"
-                            }`}
-                            data-testid={`button-plan-select-${plan.tier || i}`}
-                          >
-                            {ar ? "عرض التفاصيل" : "View details"}
-                            <Arrow className="w-4 h-4" />
-                          </Button>
-                        </Link>
                       </div>
+                    )}
+
+                    {/* Top gradient bar */}
+                    <div className={`h-1 w-full ${
+                      tier.tier === "infinite"
+                        ? "bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-300"
+                        : tier.popular
+                          ? "bg-gradient-to-r from-white/20 via-white/60 to-white/20"
+                          : "bg-black/[0.06] dark:bg-white/[0.08]"
+                    }`} />
+
+                    <div className="p-6 flex flex-col gap-5">
+                      {/* Header */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xl font-black tracking-tight ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                            {ar ? tier.nameAr : tier.nameEn}
+                          </span>
+                          {tier.tier === "infinite" && (
+                            <Infinity className={`w-4 h-4 ${tier.popular ? "text-white/50" : "text-black/30 dark:text-white/30"}`} />
+                          )}
+                        </div>
+                        <p className={`text-[11px] leading-snug ${tier.popular ? "text-white/55 dark:text-black/55" : "text-black/45 dark:text-white/45"}`}>
+                          {ar ? tier.tagAr : tier.tagEn}
+                        </p>
+                      </div>
+
+                      {/* Price */}
+                      <div className={`rounded-xl p-3.5 ${tier.popular ? "bg-white/10 dark:bg-black/10" : "bg-black/[0.03] dark:bg-white/[0.05]"}`}>
+                        <div className={`text-lg font-black ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                          {ar ? tier.priceAr : tier.priceEn}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 ${tier.popular ? "text-white/50 dark:text-black/50" : "text-black/40 dark:text-white/40"}`}>
+                          {ar ? tier.periodAr : tier.periodEn} · {ar ? "يختلف حسب القطاع" : "varies by sector"}
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <ul className="space-y-2">
+                        {(ar ? tier.featuresAr : tier.featuresEn).map((f, fi) => (
+                          <li key={fi} className="flex items-start gap-2 text-xs">
+                            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tier.popular ? "text-white/60 dark:text-black/60" : "text-black/40 dark:text-white/40"}`} />
+                            <span className={tier.popular ? "text-white/80 dark:text-black/80" : "text-black/65 dark:text-white/65"}>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* CTA */}
+                      <Link href="/prices">
+                        <Button className={`w-full rounded-xl h-10 font-bold text-sm gap-1.5 ${
+                          tier.popular
+                            ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
+                            : "bg-black/[0.06] text-black hover:bg-black/10 dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/15 border border-black/[0.08] dark:border-white/[0.08]"
+                        }`} data-testid={`button-plan-${tier.tier}`}>
+                          {ar ? "عرض التفاصيل" : "View details"}
+                          <Arrow className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
                     </div>
-                  </motion.div>
-                );
-              })}
+                  </div>
+                </motion.div>
+              ))}
             </div>
 
-            {/* Budget guarantee strip */}
-            <motion.div {...fade(3)} className="mt-10 max-w-5xl mx-auto rounded-2xl border border-black/10 dark:border-white/10 p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 text-center md:text-start">
-                <div className="w-10 h-10 rounded-xl bg-black dark:bg-white flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-white dark:text-black" />
+            {/* Bottom strip */}
+            <motion.div {...fade(4)} className="mt-10 max-w-5xl mx-auto">
+              <div className="rounded-2xl bg-black dark:bg-white p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+                <div className="relative flex items-center gap-3 text-center md:text-start">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 dark:bg-black/15 flex items-center justify-center shrink-0">
+                    <Cpu className="w-5 h-5 text-white dark:text-black" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-white dark:text-black">{ar ? "مش عارف ايش يناسبك؟" : "Not sure which tier fits?"}</div>
+                    <div className="text-xs text-white/55 dark:text-black/55 mt-0.5">{ar ? "اسأل مساعدنا الذكي — يساعدك تختار الأفضل لمشروعك في دقيقة" : "Ask our AI advisor — helps you pick the best fit in a minute"}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-bold text-sm">{ar ? "ميزانيتك هي نقطة البداية" : "Your budget is our starting point"}</div>
-                  <div className="text-xs text-black/50 dark:text-white/50 mt-0.5">{ar ? "احكِ لمساعدنا الذكي عن ميزانيتك، يرتّب لك أفضل حل ممكن" : "Tell our AI your budget, it'll arrange the best solution possible"}</div>
+                <div className="relative flex gap-2 shrink-0">
+                  <Link href="/start">
+                    <Button className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-ai-advisor">
+                      <Sparkles className="w-4 h-4" />
+                      {ar ? "اسأل المساعد" : "Ask the AI"}
+                    </Button>
+                  </Link>
+                  <Link href="/prices">
+                    <Button variant="outline" className="border-white/25 dark:border-black/25 text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/10 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-view-all-plans">
+                      {ar ? "كل الباقات" : "All plans"}
+                      <Arrow className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
                 </div>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Link href="/start">
-                  <Button className="bg-black text-white dark:bg-white dark:text-black rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-ai-advisor">
-                    <Cpu className="w-4 h-4" />
-                    {ar ? "اسأل المساعد" : "Ask the AI"}
-                  </Button>
-                </Link>
-                <Link href="/prices">
-                  <Button variant="outline" className="border-black/15 dark:border-white/15 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-view-all-plans">
-                    {ar ? "كل الباقات" : "All plans"}
-                    <Arrow className="w-4 h-4" />
-                  </Button>
-                </Link>
               </div>
             </motion.div>
+
           </div>
         </section>
 
