@@ -336,9 +336,8 @@ export default function Home() {
             <motion.div {...fade(1)} className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-14">
               {SECTORS.map((s: any, i) => {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
-                const sectorHref = s.custom
-                  ? "/start"
-                  : `/prices?segment=${s.segment}`;
+                const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;
+                const Icon = s.icon;
                 return (
                   <Link key={i} href={sectorHref}>
                     <div
@@ -349,36 +348,36 @@ export default function Home() {
                       }`}
                       data-testid={`card-sector-${i}`}
                     >
-                      {/* Illustration */}
-                      <div className={`absolute inset-0 flex items-center justify-center p-4 pb-12 ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
-                        {IllustrationComponent && <IllustrationComponent />}
+                      {/* Illustration top 70% */}
+                      <div className={`absolute inset-0 bottom-[30%] flex items-center justify-center p-3 ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                        {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-8 h-8 opacity-30" />}
                       </div>
-                      {/* Label + price badge */}
-                      <div className={`absolute bottom-0 inset-x-0 p-3 pt-6 ${
+
+                      {/* Bottom title strip — solid, always readable */}
+                      <div className={`absolute bottom-0 inset-x-0 h-[30%] flex flex-col items-center justify-center gap-0.5 px-2 ${
                         s.custom
-                          ? "bg-gradient-to-t from-black/70 dark:from-white/30 to-transparent"
-                          : "bg-gradient-to-t from-black/[0.12] dark:from-white/[0.12] to-transparent"
+                          ? "bg-black/80 dark:bg-white/80"
+                          : "bg-black/[0.06] dark:bg-white/[0.07] border-t border-black/[0.06] dark:border-white/[0.07]"
                       }`}>
-                        <div className={`text-xs font-bold ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
                           {ar ? s.arName : s.enName}
                         </div>
-                        {!s.custom && (
-                          <div className={`text-[9px] mt-0.5 font-medium ${s.custom ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`}>
-                            {ar ? "السعر على حسب الاحتياج" : "Custom pricing"}
-                          </div>
+                        {s.custom && (
+                          <div className="text-[9px] text-white/60 dark:text-black/60 font-medium">{ar ? "ابدأ فكرتك" : "Start your idea"}</div>
                         )}
                       </div>
-                      {s.custom && (
-                        <div className="absolute top-3 right-3">
-                          <Lightbulb className="w-4 h-4 text-white/80 dark:text-black/80" />
-                        </div>
-                      )}
-                      {/* Arrow on hover */}
+
+                      {/* Hover arrow */}
                       {!s.custom && (
-                        <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
                             <ChevronRight className="w-3 h-3 text-black/60 dark:text-white/60" />
                           </div>
+                        </div>
+                      )}
+                      {s.custom && (
+                        <div className="absolute top-2.5 right-2.5">
+                          <Lightbulb className="w-3.5 h-3.5 text-white/70 dark:text-black/70" />
                         </div>
                       )}
                     </div>
@@ -467,32 +466,30 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
 
             <motion.div {...fade(0)} className="mb-14 text-center max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.07] dark:border-white/[0.08] mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                <span className="text-xs font-semibold text-black/45 dark:text-white/45 tracking-wider">{ar ? "شفافية كاملة في الأسعار" : "Full pricing transparency"}</span>
-              </div>
               <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
-                {ar ? "ابدأ من 399 ريال" : "Starting from SAR 399"}
+                {ar ? "باقات مرنة" : "Flexible plans"}
                 <br />
-                <span className="text-black/30 dark:text-white/30">{ar ? "لكل قطاع وميزانية" : "for every sector & budget"}</span>
+                <span className="text-black/30 dark:text-white/30">{ar ? "تناسب كل مشروع وميزانية" : "for every project & budget"}</span>
               </h2>
               <p className="text-black/50 dark:text-white/50 text-sm leading-relaxed max-w-lg mx-auto">
-                {ar ? "ثلاثة مستويات واضحة — اختر ما يناسب مشروعك الآن، وارتقِ عند نموّك." : "Three clear tiers — pick what fits your project now, upgrade as you grow."}
+                {ar
+                  ? "ثلاثة مستويات واضحة — الأسعار تختلف حسب القطاع والمتطلبات. تكلّم مساعدنا وخذ سعراً مخصصاً لمشروعك."
+                  : "Three clear tiers — pricing varies by sector and needs. Talk to our advisor for a quote tailored to your project."}
               </p>
             </motion.div>
 
             {/* Tier Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto items-start">
-              {[
+              {([
                 {
                   tier: "lite",
                   nameAr: "لايت", nameEn: "Lite",
-                  tagAr: "للشركات الناشئة والمشاريع الصغيرة",
-                  tagEn: "For startups & small businesses",
-                  priceAr: "يبدأ من 399 ريال", priceEn: "From SAR 399",
-                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
-                  featuresAr: ["موقع احترافي كامل", "لوحة تحكم سهلة", "دعم فني أساسي", "SSL + نطاق مجاني", "تقارير الأداء"],
-                  featuresEn: ["Complete professional website", "Easy control panel", "Basic support", "Free SSL + domain", "Performance reports"],
+                  tagAr: "للبداية والمشاريع الصغيرة",
+                  tagEn: "For startups & small projects",
+                  keyAr: "الأساسيات الكاملة للانطلاق",
+                  keyEn: "Everything you need to launch",
+                  featuresAr: ["موقع احترافي متكامل", "لوحة تحكم سهلة الاستخدام", "دعم فني أساسي مستمر", "نطاق + SSL مجاني", "تقارير الأداء الشهرية"],
+                  featuresEn: ["Full professional website", "Easy-to-use dashboard", "Continuous basic support", "Free domain + SSL", "Monthly reports"],
                   popular: false,
                 },
                 {
@@ -500,124 +497,120 @@ export default function Home() {
                   nameAr: "برو", nameEn: "Pro",
                   tagAr: "الأكثر طلباً — للمشاريع الجادة",
                   tagEn: "Most popular — for serious projects",
-                  priceAr: "يبدأ من 599 ريال", priceEn: "From SAR 599",
-                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
-                  featuresAr: ["كل ميزات لايت", "تطبيق جوال (iOS/Android)", "نظام متكامل للقطاع", "إشعارات فورية للعملاء", "تقارير متقدمة + AI"],
-                  featuresEn: ["All Lite features", "Mobile app (iOS/Android)", "Full sector system", "Push notifications", "Advanced reports + AI"],
+                  keyAr: "نظام متكامل مع تطبيق جوال",
+                  keyEn: "Full system + mobile app",
+                  featuresAr: ["كل ميزات لايت", "تطبيق جوال iOS وAndroid", "نظام متكامل للقطاع", "إشعارات فورية للعملاء", "تقارير متقدمة وذكاء اصطناعي"],
+                  featuresEn: ["All Lite features", "iOS & Android mobile app", "Sector-specific full system", "Push notifications", "Advanced AI-powered reports"],
                   popular: true,
                 },
                 {
                   tier: "infinite",
                   nameAr: "إنفينيت", nameEn: "Infinite",
                   tagAr: "للمؤسسات والمشاريع الكبيرة",
-                  tagEn: "For enterprises & large projects",
-                  priceAr: "يبدأ من 899 ريال", priceEn: "From SAR 899",
-                  periodAr: "لـ 6 أشهر", periodEn: "for 6 months",
-                  featuresAr: ["كل ميزات برو", "تطوير مخصص بلا حدود", "خادم مخصص", "مساعد AI مدمج", "أولوية دعم 24/7"],
-                  featuresEn: ["All Pro features", "Unlimited custom dev", "Dedicated server", "Built-in AI assistant", "Priority 24/7 support"],
+                  tagEn: "For enterprises & large-scale",
+                  keyAr: "بدون حدود — كل شيء مخصص",
+                  keyEn: "Unlimited — everything custom",
+                  featuresAr: ["كل ميزات برو", "تطوير مخصص بلا قيود", "خادم مستقل مخصص", "مساعد ذكاء اصطناعي مدمج", "أولوية دعم على مدار الساعة"],
+                  featuresEn: ["All Pro features", "Unlimited custom development", "Dedicated private server", "Built-in AI assistant", "Priority round-the-clock support"],
                   popular: false,
                 },
-              ].map((tier, i) => (
-                <motion.div key={tier.tier} {...fade(i)} className={tier.popular ? "md:-mt-4" : ""}>
+              ] as const).map((tier, i) => (
+                <motion.div key={tier.tier} {...fade(i)} className={tier.popular ? "md:-mt-5" : ""}>
                   <div className={`relative rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 ${
                     tier.popular
-                      ? "bg-black dark:bg-white shadow-2xl shadow-black/25 dark:shadow-white/10"
-                      : "bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"
+                      ? "bg-black dark:bg-white shadow-2xl shadow-black/20 dark:shadow-white/10"
+                      : "bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] hover:shadow-md"
                   }`} data-testid={`card-plan-${tier.tier}`}>
 
+                    {/* Popular label above card */}
                     {tier.popular && (
-                      <div className="absolute top-0 inset-x-0 flex justify-center -translate-y-full pb-1">
-                        <div className="bg-black dark:bg-white text-white dark:text-black text-[10px] font-black px-3 py-1 rounded-t-lg flex items-center gap-1">
+                      <div className="absolute -top-px inset-x-0 flex justify-center">
+                        <div className="bg-black dark:bg-white text-white dark:text-black text-[10px] font-black px-4 py-1 rounded-b-xl flex items-center gap-1.5 shadow">
                           <Star className="w-2.5 h-2.5" />
                           {ar ? "الأكثر طلباً" : "Most Popular"}
                         </div>
                       </div>
                     )}
 
-                    {/* Top gradient bar */}
-                    <div className={`h-1 w-full ${
-                      tier.tier === "infinite"
-                        ? "bg-gradient-to-r from-zinc-300 via-zinc-100 to-zinc-300"
-                        : tier.popular
-                          ? "bg-gradient-to-r from-white/20 via-white/60 to-white/20"
-                          : "bg-black/[0.06] dark:bg-white/[0.08]"
-                    }`} />
+                    <div className={`p-6 flex flex-col gap-4 ${tier.popular ? "pt-8" : ""}`}>
 
-                    <div className="p-6 flex flex-col gap-5">
                       {/* Header */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-xl font-black tracking-tight ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className={`text-2xl font-black tracking-tight ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
                             {ar ? tier.nameAr : tier.nameEn}
-                          </span>
-                          {tier.tier === "infinite" && (
-                            <Infinity className={`w-4 h-4 ${tier.popular ? "text-white/50" : "text-black/30 dark:text-white/30"}`} />
-                          )}
+                            {tier.tier === "infinite" && <Infinity className="w-5 h-5 inline-block mr-2 mb-1 opacity-50" />}
+                          </div>
+                          <div className={`text-[11px] mt-0.5 ${tier.popular ? "text-white/55 dark:text-black/55" : "text-black/45 dark:text-white/45"}`}>
+                            {ar ? tier.tagAr : tier.tagEn}
+                          </div>
                         </div>
-                        <p className={`text-[11px] leading-snug ${tier.popular ? "text-white/55 dark:text-black/55" : "text-black/45 dark:text-white/45"}`}>
-                          {ar ? tier.tagAr : tier.tagEn}
-                        </p>
                       </div>
 
-                      {/* Price */}
-                      <div className={`rounded-xl p-3.5 ${tier.popular ? "bg-white/10 dark:bg-black/10" : "bg-black/[0.03] dark:bg-white/[0.05]"}`}>
-                        <div className={`text-lg font-black ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
-                          {ar ? tier.priceAr : tier.priceEn}
-                        </div>
-                        <div className={`text-[10px] mt-0.5 ${tier.popular ? "text-white/50 dark:text-black/50" : "text-black/40 dark:text-white/40"}`}>
-                          {ar ? tier.periodAr : tier.periodEn} · {ar ? "يختلف حسب القطاع" : "varies by sector"}
-                        </div>
+                      {/* Key value prop */}
+                      <div className={`text-sm font-bold px-3 py-2.5 rounded-lg ${
+                        tier.popular ? "bg-white/12 dark:bg-black/12 text-white dark:text-black" : "bg-black/[0.04] dark:bg-white/[0.05] text-black dark:text-white"
+                      }`}>
+                        {ar ? tier.keyAr : tier.keyEn}
                       </div>
 
                       {/* Features */}
-                      <ul className="space-y-2">
+                      <ul className="space-y-2 flex-1">
                         {(ar ? tier.featuresAr : tier.featuresEn).map((f, fi) => (
                           <li key={fi} className="flex items-start gap-2 text-xs">
-                            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tier.popular ? "text-white/60 dark:text-black/60" : "text-black/40 dark:text-white/40"}`} />
-                            <span className={tier.popular ? "text-white/80 dark:text-black/80" : "text-black/65 dark:text-white/65"}>{f}</span>
+                            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tier.popular ? "text-white/60 dark:text-black/60" : "text-black/35 dark:text-white/35"}`} />
+                            <span className={tier.popular ? "text-white/80 dark:text-black/80" : "text-black/60 dark:text-white/60"}>{f}</span>
                           </li>
                         ))}
                       </ul>
 
-                      {/* CTA */}
-                      <Link href="/prices">
-                        <Button className={`w-full rounded-xl h-10 font-bold text-sm gap-1.5 ${
-                          tier.popular
-                            ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
-                            : "bg-black/[0.06] text-black hover:bg-black/10 dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/15 border border-black/[0.08] dark:border-white/[0.08]"
-                        }`} data-testid={`button-plan-${tier.tier}`}>
-                          {ar ? "عرض التفاصيل" : "View details"}
-                          <Arrow className="w-3.5 h-3.5" />
-                        </Button>
-                      </Link>
+                      {/* Divider */}
+                      <div className={`h-px ${tier.popular ? "bg-white/10 dark:bg-black/10" : "bg-black/[0.05] dark:bg-white/[0.05]"}`} />
+
+                      {/* Price note + CTA */}
+                      <div>
+                        <div className={`text-[10px] mb-3 text-center ${tier.popular ? "text-white/45 dark:text-black/45" : "text-black/35 dark:text-white/35"}`}>
+                          {ar ? "السعر يختلف حسب القطاع والمتطلبات" : "Price varies by sector & requirements"}
+                        </div>
+                        <Link href="/prices">
+                          <Button className={`w-full rounded-xl h-10 font-bold text-sm gap-1.5 ${
+                            tier.popular
+                              ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
+                              : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                          }`} data-testid={`button-plan-${tier.tier}`}>
+                            {ar ? "اعرف السعر" : "See pricing"}
+                            <Arrow className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Bottom strip */}
+            {/* Bottom CTA */}
             <motion.div {...fade(4)} className="mt-10 max-w-5xl mx-auto">
               <div className="rounded-2xl bg-black dark:bg-white p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
                 <div className="relative flex items-center gap-3 text-center md:text-start">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 dark:bg-black/15 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-black/10 flex items-center justify-center shrink-0">
                     <Cpu className="w-5 h-5 text-white dark:text-black" />
                   </div>
                   <div>
-                    <div className="font-bold text-sm text-white dark:text-black">{ar ? "مش عارف ايش يناسبك؟" : "Not sure which tier fits?"}</div>
-                    <div className="text-xs text-white/55 dark:text-black/55 mt-0.5">{ar ? "اسأل مساعدنا الذكي — يساعدك تختار الأفضل لمشروعك في دقيقة" : "Ask our AI advisor — helps you pick the best fit in a minute"}</div>
+                    <div className="font-bold text-sm text-white dark:text-black">{ar ? "مو متأكد ايش يناسبك؟" : "Not sure which plan fits you?"}</div>
+                    <div className="text-xs text-white/50 dark:text-black/50 mt-0.5 max-w-xs">{ar ? "احكِ لمساعدنا الذكي عن مشروعك، يرتّب لك عرض سعر مخصص في دقائق" : "Tell our AI about your project and get a custom quote in minutes"}</div>
                   </div>
                 </div>
                 <div className="relative flex gap-2 shrink-0">
                   <Link href="/start">
                     <Button className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-ai-advisor">
-                      <Sparkles className="w-4 h-4" />
+                      <Cpu className="w-4 h-4" />
                       {ar ? "اسأل المساعد" : "Ask the AI"}
                     </Button>
                   </Link>
                   <Link href="/prices">
-                    <Button variant="outline" className="border-white/25 dark:border-black/25 text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/10 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-view-all-plans">
+                    <Button variant="outline" className="border-white/20 dark:border-black/20 text-white dark:text-black hover:bg-white/10 dark:hover:bg-black/10 rounded-xl h-10 px-5 font-bold text-sm gap-1.5" data-testid="button-view-all-plans">
                       {ar ? "كل الباقات" : "All plans"}
                       <Arrow className="w-3.5 h-3.5" />
                     </Button>
