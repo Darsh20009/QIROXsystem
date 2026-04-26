@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, Search, X, Pencil, Paperclip,
   Reply, AlertCircle, Star, Archive, Tag, Settings,
   MailOpen, SendHorizonal, FileText, ShieldAlert,
+  Copy, Check, MonitorSmartphone, Smartphone, ExternalLink,
 } from "lucide-react";
 import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
 
@@ -94,6 +95,178 @@ const FOLDER_ICONS: Record<string, any> = {
   Archive: Archive,
 };
 
+function CopyBtn({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  }
+  return (
+    <button onClick={copy} className="ml-1 p-1 rounded hover:bg-white/[0.08] transition shrink-0" title="نسخ">
+      {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-white/30 hover:text-white/60" />}
+    </button>
+  );
+}
+
+function OutlookSetupModal({ account, onClose, L }: { account: MailAccount; onClose: () => void; L: boolean }) {
+  const [tab, setTab] = useState<"desktop" | "mobile">("desktop");
+
+  const settings = {
+    email: account.emailAddress,
+    imapServer: "server222.web-hosting.com",
+    imapPort: "993",
+    imapSecurity: "SSL / TLS",
+    smtpServer: "server222.web-hosting.com",
+    smtpPort: "465",
+    smtpSecurity: "SSL / TLS",
+  };
+
+  function Row({ label, value }: { label: string; value: string }) {
+    return (
+      <div className="flex items-center justify-between gap-4 py-2.5 border-b border-white/[0.07] last:border-0">
+        <span className="text-[11px] text-white/45 w-24 shrink-0">{label}</span>
+        <span className="text-[12px] font-mono font-semibold text-white flex-1 text-start" dir="ltr">{value}</span>
+        <CopyBtn value={value} />
+      </div>
+    );
+  }
+
+  function Step({ n, text }: { n: number; text: string }) {
+    return (
+      <div className="flex items-start gap-3">
+        <div className="w-6 h-6 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-[10px] font-black text-violet-400 shrink-0 mt-0.5">{n}</div>
+        <p className="text-[12px] text-white/70 leading-relaxed flex-1">{text}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir={L ? "rtl" : "ltr"}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-[#111827] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden border border-white/[0.08] max-h-[90vh] flex flex-col">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-white/[0.08] flex items-center gap-3 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-[#0078D4]/20 border border-[#0078D4]/30 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+              <rect x="1" y="6" width="14" height="12" rx="1.5" fill="#0078D4" />
+              <rect x="9" y="3" width="14" height="12" rx="1.5" fill="#0F6CBD" opacity="0.85" />
+              <text x="3.5" y="14.5" fontSize="7" fontWeight="bold" fill="white">O</text>
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-black text-white">{L ? "إعداد Outlook" : "Outlook Setup"}</h3>
+            <p className="text-[10px] text-white/35 font-mono truncate" dir="ltr">{account.emailAddress}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/[0.07] transition">
+            <X className="w-4 h-4 text-white/40" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex px-5 pt-3 gap-2 shrink-0">
+          <button
+            onClick={() => setTab("desktop")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${tab === "desktop" ? "bg-violet-600 text-white" : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]"}`}
+            data-testid="tab-outlook-desktop"
+          >
+            <MonitorSmartphone className="w-3.5 h-3.5" />
+            {L ? "ويندوز / ماك" : "Desktop"}
+          </button>
+          <button
+            onClick={() => setTab("mobile")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${tab === "mobile" ? "bg-violet-600 text-white" : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]"}`}
+            data-testid="tab-outlook-mobile"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            {L ? "موبايل" : "Mobile"}
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+          {/* Server settings card */}
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+            <div className="px-4 py-2 bg-white/[0.04] border-b border-white/[0.06]">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/35">{L ? "إعدادات الوارد — IMAP" : "Incoming — IMAP"}</p>
+            </div>
+            <div className="px-4">
+              <Row label={L ? "الخادم" : "Server"} value={settings.imapServer} />
+              <Row label={L ? "المنفذ" : "Port"} value={settings.imapPort} />
+              <Row label={L ? "الأمان" : "Security"} value={settings.imapSecurity} />
+              <Row label={L ? "اسم المستخدم" : "Username"} value={settings.email} />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+            <div className="px-4 py-2 bg-white/[0.04] border-b border-white/[0.06]">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/35">{L ? "إعدادات الصادر — SMTP" : "Outgoing — SMTP"}</p>
+            </div>
+            <div className="px-4">
+              <Row label={L ? "الخادم" : "Server"} value={settings.smtpServer} />
+              <Row label={L ? "المنفذ" : "Port"} value={settings.smtpPort} />
+              <Row label={L ? "الأمان" : "Security"} value={settings.smtpSecurity} />
+              <Row label={L ? "اسم المستخدم" : "Username"} value={settings.email} />
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-amber-950/20 border border-amber-800/30 px-4 py-3 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-300/80 leading-relaxed">
+              {L
+                ? "كلمة المرور: استخدم كلمة مرور البريد الخاصة بك من cPanel. تأكد أن المصادقة مفعّلة للوارد والصادر."
+                : "Password: Use your cPanel email password. Ensure authentication is enabled for both incoming and outgoing."}
+            </p>
+          </div>
+
+          {/* Steps */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/25 mb-3">
+              {L
+                ? (tab === "desktop" ? "خطوات الإعداد — Outlook ويندوز" : "خطوات الإعداد — Outlook موبايل")
+                : (tab === "desktop" ? "Setup Steps — Outlook Desktop" : "Setup Steps — Outlook Mobile")}
+            </p>
+            <div className="space-y-3">
+              {tab === "desktop" ? (
+                <>
+                  <Step n={1} text={L ? 'افتح Outlook → اضغط "ملف" من الشريط العلوي → "إضافة حساب"' : 'Open Outlook → click "File" in the top ribbon → "Add Account"'} />
+                  <Step n={2} text={L ? `أدخل عنوان البريد: ${settings.email} → اضغط "خيارات متقدمة" → فعّل "إعداد الحساب يدوياً" → اضغط اتصال` : `Enter email: ${settings.email} → click "Advanced options" → enable "Let me set up my account manually" → Connect`} />
+                  <Step n={3} text={L ? 'اختر نوع الحساب: "IMAP"' : 'Choose account type: "IMAP"'} />
+                  <Step n={4} text={L ? `في "إعدادات الوارد": أدخل الخادم ${settings.imapServer}، المنفذ ${settings.imapPort}، الأمان SSL/TLS` : `Under "Incoming mail": server ${settings.imapServer}, port ${settings.imapPort}, encryption SSL/TLS`} />
+                  <Step n={5} text={L ? `في "إعدادات الصادر": أدخل الخادم ${settings.smtpServer}، المنفذ ${settings.smtpPort}، الأمان SSL/TLS` : `Under "Outgoing mail": server ${settings.smtpServer}, port ${settings.smtpPort}, encryption SSL/TLS`} />
+                  <Step n={6} text={L ? 'اضغط "التالي" → أدخل كلمة المرور → اضغط "تسجيل الدخول" → "تم"' : 'Click "Next" → enter your password → "Sign in" → "Done"'} />
+                </>
+              ) : (
+                <>
+                  <Step n={1} text={L ? 'افتح تطبيق Outlook على هاتفك → اضغط على أيقونة ملفك الشخصي (أعلى اليسار)' : 'Open the Outlook app on your phone → tap your profile icon (top left)'} />
+                  <Step n={2} text={L ? 'اضغط على أيقونة + لإضافة حساب جديد → "إضافة حساب بريد إلكتروني"' : 'Tap the + icon to add account → "Add Email Account"'} />
+                  <Step n={3} text={L ? `أدخل عنوان البريد: ${settings.email} → اضغط "متابعة"` : `Enter email: ${settings.email} → tap "Continue"`} />
+                  <Step n={4} text={L ? 'إذا لم يتعرف التطبيق تلقائياً → اضغط "إعداد يدوي" → اختر "IMAP"' : 'If not auto-detected → tap "Set Up Manually" → choose "IMAP"'} />
+                  <Step n={5} text={L ? `في إعدادات الخادم: أدخل بيانات IMAP وSMTP الموضحة أعلاه` : `In server settings: enter the IMAP and SMTP details shown above`} />
+                  <Step n={6} text={L ? 'أدخل كلمة المرور → اضغط "تسجيل الدخول" → منح الصلاحيات إذا طُلب' : 'Enter your password → tap "Sign In" → grant permissions if prompted'} />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Download link */}
+          <a
+            href={tab === "desktop" ? "https://www.microsoft.com/en-us/microsoft-365/outlook/outlook-for-windows" : "https://apps.apple.com/app/microsoft-outlook/id951937596"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.07] hover:bg-white/[0.04] transition text-[11px] text-white/40 hover:text-white/60"
+          >
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            {tab === "desktop"
+              ? (L ? "تحميل Outlook لـ Windows / Mac" : "Download Outlook for Windows / Mac")
+              : (L ? "تحميل Outlook من App Store / Google Play" : "Download Outlook from App Store / Google Play")}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EmployeeMail() {
   const { L } = useI18n();
   const { toast } = useToast();
@@ -104,6 +277,7 @@ export default function EmployeeMail() {
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [composing, setComposing] = useState(false);
+  const [outlookSetupAccount, setOutlookSetupAccount] = useState<MailAccount | null>(null);
   const [composeTo, setComposeTo] = useState("");
   const [composeCc, setComposeCc] = useState("");
   const [showCc, setShowCc] = useState(false);
@@ -266,6 +440,14 @@ export default function EmployeeMail() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f5f7] dark:bg-[#0d0d0f]" dir={dir}>
+      {/* Outlook Setup Modal */}
+      {outlookSetupAccount && (
+        <OutlookSetupModal
+          account={outlookSetupAccount}
+          onClose={() => setOutlookSetupAccount(null)}
+          L={L}
+        />
+      )}
 
       {/* ═══════════════ LEFT RAIL — Accounts & Folders ═══════════════ */}
       <aside className={`w-56 flex flex-col bg-[#111827] shrink-0 ${L ? "border-l border-white/[0.06]" : "border-r border-white/[0.06]"}`}>
@@ -299,7 +481,7 @@ export default function EmployeeMail() {
             <button
               key={account.id}
               onClick={() => { setSelectedAccountId(account.id); setSelectedEmail(null); setComposing(false); setSelectedFolder("INBOX"); }}
-              className={`w-full px-2.5 py-2 rounded-xl mb-0.5 flex items-center gap-2.5 transition-all text-start ${selectedAccountId === account.id ? "bg-white/[0.1] ring-1 ring-white/[0.12]" : "hover:bg-white/[0.05]"}`}
+              className={`group w-full px-2.5 py-2 rounded-xl mb-0.5 flex items-center gap-2.5 transition-all text-start ${selectedAccountId === account.id ? "bg-white/[0.1] ring-1 ring-white/[0.12]" : "hover:bg-white/[0.05]"}`}
               data-testid={`button-account-${account.id}`}
             >
               <div className={`w-7 h-7 rounded-lg ${getAccountColor(account.emailAddress)} flex items-center justify-center text-[10px] font-black text-white shrink-0`}>
@@ -309,9 +491,14 @@ export default function EmployeeMail() {
                 <p className="text-[11px] font-bold text-white truncate leading-tight">{account.displayName || account.emailAddress.split("@")[0]}</p>
                 <p className="text-[9px] text-white/35 truncate leading-tight">{account.emailAddress}</p>
               </div>
-              {account.isShared && selectedAccountId === account.id && (
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
-              )}
+              <button
+                onClick={e => { e.stopPropagation(); setOutlookSetupAccount(account); }}
+                className={`p-1 rounded-lg hover:bg-white/[0.12] transition shrink-0 ${selectedAccountId === account.id ? "opacity-60 hover:opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                title={L ? "إعداد في Outlook" : "Outlook Setup"}
+                data-testid={`button-outlook-setup-${account.id}`}
+              >
+                <Settings className="w-3 h-3 text-white/50" />
+              </button>
             </button>
           ))}
         </div>
