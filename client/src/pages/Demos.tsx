@@ -17,11 +17,14 @@ import { useI18n } from "@/lib/i18n";
 function getCategoryMeta(L: boolean): Record<string, { label: string; icon: any; color: string; bg: string; border: string }> {
   return {
     restaurant:  { label: L ? "مطاعم ومقاهي" : "Restaurants & Cafes",    icon: UtensilsCrossed, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10" },
+    food:        { label: L ? "مطاعم ومقاهي" : "Restaurants & Cafes",    icon: UtensilsCrossed, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10" },
     ecommerce:   { label: L ? "متاجر إلكترونية" : "E-Commerce",  icon: ShoppingBag,     color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
     education:   { label: L ? "منصات تعليمية" : "Education Platforms",    icon: GraduationCap,   color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10" },
     corporate:   { label: L ? "شركات ومؤسسات" : "Corporate",    icon: Building2,       color: "text-slate-700",  bg: "bg-slate-50",  border: "border-slate-200" },
     realestate:  { label: L ? "عقارات" : "Real Estate",           icon: Home,            color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
     healthcare:  { label: L ? "صحة وعيادات" : "Healthcare",      icon: Heart,           color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
+    health:      { label: L ? "صحة وعيادات" : "Healthcare",      icon: Heart,           color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
+    beauty:      { label: L ? "صالونات تجميل" : "Beauty Salons",  icon: Globe,           color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10" },
     general:     { label: L ? "عام" : "General",              icon: Globe,           color: "text-gray-700",   bg: "bg-gray-50",   border: "border-gray-200" },
   };
 }

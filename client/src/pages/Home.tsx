@@ -212,7 +212,7 @@ export default function Home() {
 
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
-  const CURRENT_CATEGORIES = ["restaurant", "ecommerce", "مطاعم", "متاجر", "Restaurants", "E-Commerce"];
+  const CURRENT_CATEGORIES = ["restaurant", "ecommerce", "food", "مطاعم", "متاجر", "Restaurants", "E-Commerce"];
   const visibleTemplates = useMemo(
     () =>
       (templates as any[])
@@ -413,9 +413,11 @@ export default function Home() {
                   })
                 : visibleTemplates.map((tpl: any, i: number) => {
                     const tplCat = (tpl.category || tpl.sector || "").toLowerCase();
+                    const CATEGORY_TO_SEGMENT: Record<string, string> = { food: "restaurant", cafe: "restaurant", dining: "restaurant", store: "ecommerce", shop: "ecommerce" };
+                    const resolvedSegment = CATEGORY_TO_SEGMENT[tplCat] || tplCat;
                     const matchedSector = SECTORS.find(s =>
+                      s.segment === resolvedSegment ||
                       s.segment === tplCat ||
-                      s.segment === tpl.category ||
                       s.enName.toLowerCase().replace(/[^a-z]/g, "").includes(tplCat.replace(/[^a-z]/g, "")) ||
                       s.arName.includes(tpl.category || "")
                     );
