@@ -767,7 +767,7 @@ export async function registerRoutes(
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "bio"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {

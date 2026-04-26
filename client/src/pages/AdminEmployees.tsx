@@ -499,6 +499,9 @@ export default function AdminEmployees() {
                     <Badge className={`mt-1.5 text-[10px] border ${roleColors[emp.role] || roleColors.client}`}>
                       {roleLabels[emp.role] || emp.role}
                     </Badge>
+                    {(emp as any).jobTitle && (
+                      <p className="mt-1 text-[10px] text-black/35 dark:text-white/35 truncate font-medium">{(emp as any).jobTitle}</p>
+                    )}
                   </div>
                 </div>
                 <div className="mt-3 space-y-1.5 border-t border-black/[0.05] pt-3">
@@ -509,6 +512,17 @@ export default function AdminEmployees() {
                       <Copy className="w-3 h-3 text-black/30 hover:text-black/60" />
                     </button>
                   </div>
+                  {(emp as any).workEmail && (
+                    <div className="flex items-center gap-2 group">
+                      <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 block" />
+                      </div>
+                      <span className="text-[11px] text-blue-600 dark:text-blue-400 font-mono truncate flex-1" dir="ltr">{(emp as any).workEmail}</span>
+                      <button onClick={() => copyToClipboard((emp as any).workEmail, "workEmail")} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Copy className="w-3 h-3 text-black/30 hover:text-black/60" />
+                      </button>
+                    </div>
+                  )}
                   {emp.phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="w-3 h-3 text-black/20 flex-shrink-0" />

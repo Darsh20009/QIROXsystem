@@ -417,7 +417,7 @@ export async function seedDefaultAccounts(): Promise<void> {
   // Update known users' jobTitle and auto-assign their personal mail accounts
   const KNOWN_USERS = [
     {
-      patterns: [/y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i, /y\.business/i],
+      patterns: [/يوسف/i, /youssef/i, /y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i, /y\.business/i],
       jobTitle: "المدير التقني · CTO",
       mailEmail: "y.business@qirox.online",
     },
@@ -438,8 +438,8 @@ export async function seedDefaultAccounts(): Promise<void> {
     const foundUser = await UserModel.findOne({ $or: orConditions }).select("_id fullName").catch(() => null);
 
     if (foundUser) {
-      // Set jobTitle
-      await UserModel.updateOne({ _id: foundUser._id }, { $set: { jobTitle: ku.jobTitle } }).catch(() => {});
+      // Set jobTitle + workEmail on the user record
+      await UserModel.updateOne({ _id: foundUser._id }, { $set: { jobTitle: ku.jobTitle, workEmail: ku.mailEmail } }).catch(() => {});
       // Auto-assign personal mail account (store as ObjectId)
       await MailAccountModel.updateOne(
         { emailAddress: ku.mailEmail },

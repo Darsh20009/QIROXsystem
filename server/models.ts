@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema({
   walletBalance: { type: Number, default: 0, min: 0 },
   // ── Enhanced Profile Fields ──
   jobTitle: { type: String, default: "" },
+  workEmail: { type: String, default: "" },
   bio: { type: String, default: "" },
   profilePhotoUrl: { type: String, default: "" },
   additionalRoles: { type: [String], default: [] },
