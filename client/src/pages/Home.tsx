@@ -14,7 +14,7 @@ import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
-  Check, Star, Infinity, ChevronRight, TrendingUp,
+  Check, Star, Infinity, ChevronRight, TrendingUp, Bot,
 } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
 
@@ -143,6 +143,7 @@ const SECTORS = [
   { icon: HomeIcon,    arName: "عقارات",              enName: "Real Estate",       segment: "realestate" },
   { icon: Scissors,    arName: "صالونات تجميل",       enName: "Beauty Salons",     segment: "beauty" },
   { icon: TrendingUp,  arName: "وكالات التسويق",      enName: "Marketing Agencies",segment: "marketing" },
+  { icon: Bot,         arName: "ذكاء اصطناعي",        enName: "AI Solutions",       segment: "ai" },
   { icon: Lightbulb,   arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
 ];
 
@@ -334,7 +335,7 @@ export default function Home() {
             </motion.div>
 
             {/* Sector illustrated cards grid */}
-            <motion.div {...fade(1)} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-14">
+            <motion.div {...fade(1)} className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-14">
               {SECTORS.map((s: any, i) => {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                 const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;

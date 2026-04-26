@@ -31,6 +31,7 @@ const SEGMENTS = [
   { key: "healthcare",  labelAr: "صحة وعيادات",         icon: Heart,           color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "beauty",      labelAr: "صالونات تجميل",       icon: Sparkles,        color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white",       text: "text-black dark:text-white dark:text-black/70 dark:text-white/70",   border: "border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
   { key: "marketing",   labelAr: "وكالات التسويق",       icon: TrendingUp,      color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06]",   text: "text-black dark:text-white",   border: "border-black/10 dark:border-white/10" },
+  { key: "ai",          labelAr: "ذكاء اصطناعي",         icon: Bot,             color: "from-black dark:from-white to-black dark:to-white",     bg: "bg-black/[0.04] dark:bg-white/[0.06]",   text: "text-black dark:text-white",   border: "border-black/10 dark:border-white/10" },
 ];
 
 interface SystemCard {
@@ -291,6 +292,47 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       locked: true,
     },
   ],
+  ai: [
+    {
+      icon: Bot,
+      title: "مساعد ذكاء اصطناعي مخصص",
+      description: "روبوت محادثة ذكي مدرّب على بيانات مشروعك — يرد على عملائك 24/7 بأسلوبك",
+      features: ["تدريب على محتوى موقعك ومنتجاتك", "يتحدث عربي وإنجليزي بطلاقة", "دمج مع WhatsApp والموقع والتطبيق", "تقارير المحادثات والتحليلات"],
+      badge: "الأكثر طلباً",
+      highlight: true,
+    },
+    {
+      icon: Zap,
+      title: "أتمتة العمليات بالذكاء الاصطناعي",
+      description: "أتمتة المهام المتكررة في مشروعك — من الردود إلى التقارير إلى إدارة المحتوى",
+      features: ["أتمتة الردود والمتابعة", "توليد محتوى وتقارير تلقائية", "تنبيهات ذكية حسب السياق", "تكامل مع أنظمتك الحالية"],
+    },
+    {
+      icon: BarChart3,
+      title: "لوحة تحليلات بالذكاء الاصطناعي",
+      description: "تحليل بيانات مشروعك واستخراج قرارات ذكية بشكل مرئي وسهل الفهم",
+      features: ["تحليل أنماط المبيعات", "توقع الطلب المستقبلي", "كشف الفرص والمخاطر تلقائياً", "تقارير قابلة للتصدير"],
+    },
+    {
+      icon: FileText,
+      title: "نظام توليد المحتوى التلقائي",
+      description: "إنشاء محتوى تسويقي ووصف المنتجات والمقالات بالذكاء الاصطناعي بلغتك",
+      features: ["كتابة وصف المنتجات بالجملة", "توليد مقالات SEO", "إنشاء منشورات السوشيال ميديا", "ترجمة احترافية عربي / إنجليزي"],
+    },
+    {
+      icon: Users,
+      title: "نظام التوصيات الذكية",
+      description: "محرك توصيات يقترح المنتجات أو الخدمات المناسبة لكل عميل تلقائياً",
+      features: ["توصيات مخصصة لكل زائر", "تحليل سلوك التصفح", "زيادة متوسط قيمة الطلب", "ربط مع متجرك أو منصتك"],
+    },
+    {
+      icon: Code2,
+      title: "تطوير نماذج AI مخصصة",
+      description: "بناء نماذج ذكاء اصطناعي مدربة خصيصاً على بيانات قطاعك ومتطلباتك",
+      features: ["نماذج NLP عربية متخصصة", "تصنيف صور ووثائق", "API جاهز للتكامل", "تدريب وتحديث مستمر"],
+      locked: true,
+    },
+  ],
   marketing: [
     {
       icon: Globe,
@@ -406,6 +448,7 @@ export default function Systems() {
     healthcare: lang === "ar" ? "صحة وعيادات"        : "Health & Clinics",
     beauty:     lang === "ar" ? "صالونات تجميل"      : "Beauty Salons",
     marketing:  lang === "ar" ? "وكالات التسويق"     : "Marketing Agencies",
+    ai:         lang === "ar" ? "ذكاء اصطناعي"       : "AI Solutions",
   };
 
   const trustBadges = [
@@ -471,7 +514,7 @@ export default function Systems() {
           <p className="text-center text-xs font-semibold text-black/30 dark:text-white/30 uppercase tracking-widest mb-4">
             {lang === "ar" ? "اختر نوع مشروعك" : "Choose Your Project Type"}
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5" data-testid="segment-selector">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5" data-testid="segment-selector">
             {SEGMENTS.map((seg) => {
               const Icon = seg.icon;
               const isActive = segment === seg.key;
