@@ -341,11 +341,14 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
   const [whatsapp, setWhatsapp] = useState("966500000000");
   const chatRef = useRef<HTMLDivElement>(null);
 
-  useQuery<any>({
+  const { data: modalSettings } = useQuery<any>({
     queryKey: ["/api/public/settings"],
     staleTime: 60_000,
-    select: (d: any) => { if (d?.whatsapp) setWhatsapp(d.whatsapp.replace(/\D/g,"")); return d; },
   });
+  useEffect(() => {
+    const wa = modalSettings?.whatsapp || modalSettings?.contactPhone || "";
+    if (wa) setWhatsapp(wa.replace(/\D/g, ""));
+  }, [modalSettings]);
 
   useEffect(() => { chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }); }, [chatHistory]);
 
@@ -575,7 +578,7 @@ export default function Prices() {
 
   function openCustom(sec: string, label: string, dur?: string) {
     setCustomSector(sec); setCustomSectorLabel(label);
-    setCustomDuration(dur || period === "multiyear" ? `${years}y` : period);
+    setCustomDuration(dur || (period === "multiyear" ? `${years}y` : period));
     setCustomOpen(true);
   }
 
