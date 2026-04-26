@@ -575,7 +575,7 @@ export default function Prices() {
 
   function openCustom(sec: string, label: string, dur?: string) {
     setCustomSector(sec); setCustomSectorLabel(label);
-    setCustomDuration(dur || period === "multiyear" ? `${years}y` : period);
+    setCustomDuration(dur || (period === "multiyear" ? `${years}y` : period));
     setCustomOpen(true);
   }
 
