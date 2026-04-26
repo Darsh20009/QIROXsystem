@@ -115,6 +115,8 @@ const OTHER_SECTORS = [
   { key: "fitness",      icon: Dumbbell,      ar: "لياقة وجيم" },
   { key: "beauty",       icon: Sparkles,      ar: "تجميل وصالونات" },
   { key: "events",       icon: Calendar,      ar: "فعاليات ومناسبات" },
+  { key: "marketing",    icon: TrendingUp,    ar: "وكالات التسويق" },
+  { key: "ai",           icon: Bot,           ar: "ذكاء اصطناعي" },
   { key: "other",        icon: Globe,         ar: "قطاع آخر" },
 ];
 
@@ -731,7 +733,7 @@ export default function Prices() {
               </div>
 
               {/* Sub-sector grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                 {OTHER_SECTORS.map(s => {
                   const Icon = s.icon;
                   const active = otherSector === s.key;
