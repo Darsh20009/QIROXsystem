@@ -363,7 +363,7 @@ export async function testMailConnection(creds: {
 export async function seedDefaultAccounts(): Promise<void> {
   const defaults = [
     {
-      emailAddress: "m.aldbani@qirox.online",
+      emailAddress: "m.adbani@qirox.online",
       password: "ASDqwe@12345678",
       displayName: "محمد الدباني",
       jobTitle: "المدير التنفيذي - CEO",
@@ -396,11 +396,13 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
   ];
 
-  // Remove stale accounts from old domain
+  // Remove stale accounts from old domain or with old typo email
   const validEmails = defaults.map(d => d.emailAddress);
   await MailAccountModel.deleteMany({
     emailAddress: { $regex: /qiroxstudio\.online$/i, $nin: validEmails },
   }).catch(() => {});
+  // Remove old typo version of Mohammed's account
+  await MailAccountModel.deleteOne({ emailAddress: "m.aldbani@qirox.online" }).catch(() => {});
 
   for (const acc of defaults) {
     const { password, ...rest } = acc;
@@ -422,9 +424,9 @@ export async function seedDefaultAccounts(): Promise<void> {
       mailEmail: "y.business@qirox.online",
     },
     {
-      patterns: [/m\.aldbani/i, /maldbani/i, /الدباني/i, /aldbani/i],
+      patterns: [/m\.adbani/i, /madbani/i, /m\.aldbani/i, /maldbani/i, /الدباني/i, /aldbani/i, /adbani/i],
       jobTitle: "المدير التنفيذي · CEO",
-      mailEmail: "m.aldbani@qirox.online",
+      mailEmail: "m.adbani@qirox.online",
     },
   ];
 
