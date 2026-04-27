@@ -1,0 +1,144 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+5:56:38 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.aldbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 16 cron jobs
+5:57:00 PM [express] POST /api/internal/push/promotional 401 in 15ms
+5:57:07 PM [express] GET /api/user 401 in 1ms
+5:57:07 PM [express] GET /api/auth/google/status 200 in 1ms :: {"enabled":true}
+5:57:07 PM [express] GET /api/auth/github/status 200 in 1ms :: {"enabled":false}
+5:57:07 PM [express] GET /api/auth/apple/status 200 in 1ms :: {"enabled":true}
+5:58:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+5:59:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:00:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:01:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:02:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:03:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:04:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:05:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:06:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:07:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:08:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:09:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:10:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:11:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:12:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:13:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:14:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:15:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:16:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:17:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:18:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:19:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:20:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:21:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:22:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:23:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:24:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:25:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:26:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+6:27:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:28:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:28:40 PM [express] GET /api/user 304 in 74ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":f…
+6:28:41 PM [express] GET /api/public/settings 304 in 282ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+6:28:41 PM [express] GET /api/notifications/unread-count 304 in 292ms :: {"count":3}
+6:28:41 PM [express] GET /api/notifications 304 in 175ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:28:41 PM [express] GET /api/inbox/unread-count 304 in 147ms :: {"count":0}
+6:28:41 PM [express] GET /api/orders/pending-count 304 in 144ms :: {"count":0}
+6:28:41 PM [express] GET /api/attendance/status 304 in 732ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+6:28:42 PM [express] GET /api/badges 304 in 1142ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:28:42 PM [express] GET /api/mail/accounts 200 in 144ms :: [{"_id":"69ee30fca71bd187a9aaa112","emailAddress":"info@qirox.online","__v":0,"assignedUserId":null,"createdAt":"2026-04-26T15:36:28.174Z","displayName":"QIROX I…
+6:28:43 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa112 304 in 735ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:28:45 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 304 in 2443ms :: [{"uid":3,"subject":"Mail delivery failed: returning message to sender","from":"\"Mail Delivery System\" <Mailer-Daemon@server222.web-host…
+6:28:49 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa113 304 in 719ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:28:50 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 304 in 2156ms :: [{"uid":1,"subject":"[qirox.online] Client configuration settings for “support@qirox.online”.","from":"\"cPanel on qirox.online\" <cpanel@…
+6:28:58 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 304 in 745ms :: []
+6:29:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:29:00 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 304 in 1025ms :: []
+6:29:01 PM [express] GET /api/notifications 304 in 137ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:29:11 PM [express] GET /api/notifications/unread-count 304 in 139ms :: {"count":3}
+6:29:11 PM [express] GET /api/inbox/unread-count 304 in 73ms :: {"count":0}
+6:29:12 PM [express] GET /api/orders/pending-count 304 in 137ms :: {"count":0}
+6:29:12 PM [express] GET /api/badges 304 in 75ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:29:22 PM [express] GET /api/notifications 304 in 139ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:29:42 PM [express] GET /api/notifications/unread-count 304 in 146ms :: {"count":3}
+6:29:42 PM [express] GET /api/inbox/unread-count 304 in 140ms :: {"count":0}
+6:29:42 PM [express] GET /api/orders/pending-count 304 in 137ms :: {"count":0}
+6:29:42 PM [express] GET /api/badges 304 in 149ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:29:43 PM [express] GET /api/notifications 304 in 139ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:30:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:30:03 PM [express] GET /api/notifications 304 in 142ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:30:12 PM [express] GET /api/notifications/unread-count 304 in 143ms :: {"count":3}
+6:30:12 PM [express] GET /api/inbox/unread-count 304 in 74ms :: {"count":0}
+6:30:12 PM [express] GET /api/orders/pending-count 304 in 140ms :: {"count":0}
+6:30:13 PM [express] GET /api/badges 304 in 78ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:30:24 PM [express] GET /api/notifications 304 in 174ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:30:37 PM [express] POST /api/mail/send 200 in 745ms :: {"ok":true}
+6:30:40 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 304 in 753ms :: []
+6:30:42 PM [express] GET /api/notifications/unread-count 304 in 143ms :: {"count":3}
+6:30:43 PM [express] GET /api/inbox/unread-count 304 in 140ms :: {"count":0}
+6:30:43 PM [express] GET /api/orders/pending-count 304 in 141ms :: {"count":0}
+6:30:44 PM [express] GET /api/badges 304 in 551ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:30:44 PM [express] GET /api/notifications 304 in 137ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:30:44 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 304 in 2186ms :: [{"uid":1,"subject":"[qirox.online] Client configuration settings for “support@qirox.online”.","from":"\"cPanel on qirox.online\" <cpanel@…
+6:31:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:31:04 PM [express] GET /api/notifications 304 in 139ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:31:13 PM [express] GET /api/notifications/unread-count 304 in 146ms :: {"count":3}
+6:31:13 PM [express] GET /api/inbox/unread-count 304 in 75ms :: {"count":0}
+6:31:14 PM [express] GET /api/orders/pending-count 304 in 138ms :: {"count":0}
+6:31:14 PM [express] GET /api/badges 304 in 74ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:32:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:32:50 PM [express] GET /api/user 304 in 74ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":f…
+6:32:50 PM [express] GET /api/notifications/unread-count 304 in 138ms :: {"count":3}
+6:32:50 PM [express] GET /api/attendance/status 304 in 139ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+6:32:50 PM [express] GET /api/public/settings 304 in 158ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+6:32:50 PM [express] GET /api/badges 304 in 158ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:32:50 PM [express] GET /api/notifications 304 in 183ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:32:51 PM [express] GET /api/orders/pending-count 304 in 139ms :: {"count":0}
+6:32:51 PM [express] GET /api/inbox/unread-count 304 in 151ms :: {"count":0}
+6:32:51 PM [express] GET /api/mail/accounts 304 in 138ms :: [{"_id":"69ee30fca71bd187a9aaa112","emailAddress":"info@qirox.online","__v":0,"assignedUserId":null,"createdAt":"2026-04-26T15:36:28.174Z","displayName":"QIROX I…
+6:32:52 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa112 304 in 712ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:32:54 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 304 in 2383ms :: [{"uid":3,"subject":"Mail delivery failed: returning message to sender","from":"\"Mail Delivery System\" <Mailer-Daemon@server222.web-host…
+6:33:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:34:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:34:48 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+6:35:00 PM [express] POST /api/internal/push/promotional 401 in 1ms

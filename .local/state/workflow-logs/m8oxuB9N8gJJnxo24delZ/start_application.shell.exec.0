@@ -1,0 +1,153 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+6:35:14 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Mail] Auto-assigned y.business@qirox.online → darsh
+Initialized 16 cron jobs
+[Mail] Auto-assigned m.aldbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+6:35:58 PM [express] GET /api/notifications 304 in 212ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:36:03 PM [express] POST /api/internal/push/promotional 401 in 2ms
+6:36:07 PM [express] GET /api/user 200 in 74ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"workEmail":"","instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","p…
+6:36:08 PM [express] GET /api/attendance/status 304 in 160ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+6:36:08 PM [express] GET /api/notifications/unread-count 304 in 161ms :: {"count":3}
+6:36:08 PM [express] GET /api/public/settings 304 in 165ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+6:36:08 PM [express] GET /api/notifications 304 in 138ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:36:08 PM [express] GET /api/inbox/unread-count 304 in 138ms :: {"count":0}
+6:36:08 PM [express] GET /api/orders/pending-count 304 in 144ms :: {"count":0}
+6:36:08 PM [express] GET /api/badges 304 in 593ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:36:09 PM [express] GET /api/mail/accounts 200 in 139ms :: [{"_id":"69ee30fca71bd187a9aaa112","emailAddress":"info@qirox.online","__v":0,"assignedUserId":null,"createdAt":"2026-04-26T15:36:28.174Z","displayName":"QIROX I…
+6:36:10 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa112 304 in 719ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:36:11 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 304 in 2431ms :: [{"uid":3,"subject":"Mail delivery failed: returning message to sender","from":"\"Mail Delivery System\" <Mailer-Daemon@server222.web-host…
+6:36:21 PM [express] GET /api/user 401 in 1ms
+6:36:25 PM [express] GET /api/user 401 in 1ms
+6:36:27 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+6:36:27 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+6:36:27 PM [express] GET /api/auth/apple/status 304 in 0ms :: {"enabled":true}
+6:37:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:38:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:38:03 PM [express] POST /api/login 401 in 149ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+6:38:04 PM [express] POST /api/login 401 in 135ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+6:39:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:39:21 PM [express] POST /api/login 401 in 108ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+6:39:22 PM [express] POST /api/login 401 in 114ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+6:39:27 PM [express] POST /api/login 200 in 412ms :: {"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBalance":…
+6:39:28 PM [express] GET /api/attendance/status 200 in 228ms :: {"location":{"lat":0,"lng":0},"userId":"698a441902c00da9923744f7","checkIn":"2026-03-08T20:45:18.079Z","ipAddress":"fetching...","locationHistory":[{"lat":0,…
+6:39:28 PM [express] GET /api/badges 200 in 225ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:39:28 PM [express] GET /api/inbox/unread-count 200 in 227ms :: {"count":0}
+6:39:28 PM [express] GET /api/notifications/unread-count 200 in 238ms :: {"count":11}
+6:39:28 PM [express] GET /api/public/settings 304 in 139ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+6:39:28 PM [express] GET /api/orders/pending-count 200 in 154ms :: {"count":0}
+6:39:28 PM [express] GET /api/notifications 200 in 693ms :: [{"_id":"69dc1022c6263fde611c048d","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:39:29 PM [express] GET /api/admin/system-overview 200 in 914ms :: {"overview":{"totalClients":48,"totalEmployees":3,"totalRevenue":3499,"totalOrders":29,"pendingOrders":0,"inProgressOrders":1,"completedOrders":1,"totalI…
+6:39:43 PM [express] GET /api/mail/accounts 200 in 164ms :: [{"_id":"69ee30fca71bd187a9aaa110","emailAddress":"m.aldbani@qirox.online","__v":0,"assignedUserId":"699b8d5ff9656b6e9941838a","createdAt":"2026-04-26T15:36:28.0…
+[Mail] inbox error: Command failed
+6:39:46 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa110 200 in 2433ms :: ["INBOX","Sent","Drafts","Trash","Junk"]
+6:39:46 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa110 200 in 2490ms :: []
+6:39:46 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa111 200 in 988ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:39:46 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa111 200 in 1590ms :: [{"uid":1,"subject":"[qirox.online] Client configuration settings for “y.business@qirox.online”.","from":"\"cPanel on qirox.online\" <cpan…
+6:39:49 PM [express] GET /api/notifications 304 in 181ms :: [{"_id":"69dc1022c6263fde611c048d","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:39:54 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa113 200 in 726ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:39:56 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 200 in 2179ms :: [{"uid":1,"subject":"[qirox.online] Client configuration settings for “support@qirox.online”.","from":"\"cPanel on qirox.online\" <cpanel@…
+6:39:58 PM [express] GET /api/badges 304 in 73ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:39:58 PM [express] GET /api/inbox/unread-count 304 in 74ms :: {"count":0}
+6:39:58 PM [express] GET /api/notifications/unread-count 304 in 151ms :: {"count":11}
+6:39:59 PM [express] GET /api/orders/pending-count 304 in 138ms :: {"count":0}
+6:39:59 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa112 200 in 733ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+6:40:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:40:00 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 200 in 2369ms :: [{"uid":3,"subject":"Mail delivery failed: returning message to sender","from":"\"Mail Delivery System\" <Mailer-Daemon@server222.web-host…
+6:40:02 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 200 in 925ms :: [{"uid":2,"subject":"ewcf","from":"info@qirox.online","to":"qiroxsystem@gmail.com","date":"2026-04-26T15:22:56.000Z","seen":true,"html":"",…
+6:40:06 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa113 200 in 762ms :: []
+6:40:09 PM [express] GET /api/notifications 304 in 179ms :: [{"_id":"69dc1022c6263fde611c048d","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:40:11 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa111 200 in 866ms :: []
+6:40:27 PM [express] GET /api/groups 200 in 141ms :: []
+6:40:28 PM [express] GET /api/inbox/unread-count 304 in 138ms :: {"count":0}
+6:40:28 PM [express] GET /api/badges 304 in 146ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:40:29 PM [express] GET /api/notifications/unread-count 304 in 146ms :: {"count":11}
+6:40:29 PM [express] GET /api/orders/pending-count 304 in 139ms :: {"count":0}
+6:40:29 PM [express] GET /api/admin/consultation/bookings 200 in 150ms :: [{"clientId":"69c98dd37eeba5b2f45dc147","clientName":"Merlis Rodriguez","clientEmail":"merlisrodriguez602@gmail.com","clientPhone":"+584249174169",…
+6:40:29 PM [express] GET /api/notifications 304 in 138ms :: [{"_id":"69dc1022c6263fde611c048d","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:40:33 PM [express] GET /api/admin/contact-messages 200 in 143ms :: [{"_id":"69e6049dc3948629040491d6","name":"علي أحمد المشهور","email":"a.mashhoor@fodoapps.com","phone":"0593094466","subject":"شراكة استراتيجية","messag…
+6:40:44 PM [express] POST /api/attendance/check-out 200 in 491ms :: {"location":{"lat":0,"lng":0},"userId":"698a441902c00da9923744f7","checkIn":"2026-03-08T20:45:18.079Z","ipAddress":"fetching...","locationHistory":[{"lat…
+6:40:44 PM [express] GET /api/attendance/status 200 in 152ms :: {"location":{"lat":0,"lng":0},"userId":"698a441902c00da9923744f7","checkIn":"2026-03-08T20:45:18.079Z","ipAddress":"fetching...","locationHistory":[{"lat":0,…
+6:40:50 PM [express] GET /api/notifications 304 in 138ms :: [{"_id":"69dc1022c6263fde611c048d","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+6:40:59 PM [express] GET /api/inbox/unread-count 304 in 74ms :: {"count":0}
+6:40:59 PM [express] GET /api/badges 304 in 72ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+6:40:59 PM [express] GET /api/notifications/unread-count 304 in 157ms :: {"count":11}
+6:40:59 PM [express] GET /api/orders/pending-count 304 in 147ms :: {"count":0}
+6:41:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:41:03 PM [express] GET /api/admin/contact-messages 304 in 139ms :: [{"_id":"69e6049dc3948629040491d6","name":"علي أحمد المشهور","email":"a.mashhoor@fodoapps.com","phone":"0593094466","subject":"شراكة استراتيجية","messag…
+6:41:12 PM [express] GET /api/user 200 in 111ms :: {"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBalance":0,…
+6:41:13 PM [express] GET /api/public/settings 304 in 215ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+6:41:14 PM [express] GET /api/app-downloads 304 in 141ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+6:41:14 PM [express] GET /api/partners 304 in 202ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+6:41:14 PM [express] GET /api/pricing 200 in 204ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetim…
+6:41:14 PM [express] GET /api/templates 200 in 266ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+6:42:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:43:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:44:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:45:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:46:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:47:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:48:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:49:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:50:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+6:51:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:52:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:53:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:54:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:55:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:56:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:57:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+6:58:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+6:59:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:00:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+7:01:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:02:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+7:03:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:04:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:05:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:06:00 PM [express] POST /api/internal/push/promotional 401 in 0ms
+7:07:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:08:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:09:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+7:10:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:10:42 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m
+7:10:45 PM [express] GET /api/app-downloads 304 in 138ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+7:10:45 PM [express] GET /api/public/settings 304 in 148ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
