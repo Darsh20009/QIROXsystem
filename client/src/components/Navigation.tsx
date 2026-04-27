@@ -9,6 +9,7 @@ import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useQuery } from "@tanstack/react-query";
+import RegisterModal from "@/components/RegisterModal";
 
 function NavCartDropdown({ onClose }: { onClose: () => void }) {
   const { data: cartData } = useQuery<any>({ queryKey: ["/api/cart"] });
@@ -187,6 +188,7 @@ export default function Navigation() {
   const { data: user } = useUser();
   const { mutate: logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const { t, lang, dir, setLang } = useI18n();
@@ -323,12 +325,15 @@ export default function Navigation() {
                         {t("nav.login")}
                       </Button>
                     </Link>
-                    <Link href="/register">
-                      <Button size="sm" className="premium-btn rounded-xl px-5 text-sm font-semibold gap-1.5" data-testid="button-register-nav">
-                        {t("nav.startProject")}
-                        {dir === "rtl" ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                      </Button>
-                    </Link>
+                    <Button
+                      size="sm"
+                      onClick={() => setRegisterOpen(true)}
+                      className="premium-btn rounded-xl px-5 text-sm font-semibold gap-1.5"
+                      data-testid="button-register-nav"
+                    >
+                      {t("nav.startProject")}
+                      {dir === "rtl" ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                    </Button>
                   </>
                 )}
               </div>
@@ -422,9 +427,13 @@ export default function Navigation() {
                     <Link href="/login" onClick={() => setIsOpen(false)}>
                       <Button variant="outline" className="w-full border-black/[0.08] dark:border-white/[0.08] text-black/60 dark:text-white/60 rounded-xl h-12">{t("nav.login")}</Button>
                     </Link>
-                    <Link href="/register" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full premium-btn rounded-xl h-12">{t("nav.startProject")}</Button>
-                    </Link>
+                    <Button
+                      onClick={() => { setIsOpen(false); setRegisterOpen(true); }}
+                      className="w-full premium-btn rounded-xl h-12"
+                      data-testid="button-register-nav-mobile"
+                    >
+                      {t("nav.startProject")}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -439,6 +448,9 @@ export default function Navigation() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quick Registration Modal */}
+      <RegisterModal open={registerOpen} onOpenChange={setRegisterOpen} />
     </>
   );
 }

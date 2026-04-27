@@ -26,18 +26,18 @@ import { Input } from "@/components/ui/input";
    (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
    with sm (6-month), yr (annual) and life (lifetime) prices. */
 const PRICES = {
-  restaurant: { lite: { sm: 699,  yr: 1299, life: 6499  }, pro: { sm: 1199, yr: 2199, life: 10999 }, infinity: { sm: 2199, yr: 3999, life: 19999 } },
-  ecommerce:  { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
-  education:  { lite: { sm: 1299, yr: 2299, life: 11499 }, pro: { sm: 2199, yr: 3999, life: 19999 }, infinity: { sm: 3899, yr: 6999, life: 34999 } },
-  healthcare: { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
-  realestate: { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
-  corporate:  { lite: { sm: 1699, yr: 2999, life: 14999 }, pro: { sm: 3299, yr: 5999, life: 29999 }, infinity: { sm: 6599, yr: 11999,life: 59999 } },
-  fitness:    { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
-  beauty:     { lite: { sm: 699,  yr: 1299, life: 6499  }, pro: { sm: 1199, yr: 2199, life: 10999 }, infinity: { sm: 2199, yr: 3999, life: 19999 } },
-  events:     { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
-  marketing:  { lite: { sm: 1299, yr: 2299, life: 11499 }, pro: { sm: 2199, yr: 3999, life: 19999 }, infinity: { sm: 3899, yr: 6999, life: 34999 } },
-  ai:         { lite: { sm: 1699, yr: 2999, life: 14999 }, pro: { sm: 3299, yr: 5999, life: 29999 }, infinity: { sm: 6599, yr: 11999,life: 59999 } },
-  other:      { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  restaurant: { lite: { sm: 599,  yr: 1099, life: 5499  }, pro: { sm: 999,  yr: 1899, life: 9499  }, infinity: { sm: 1899, yr: 3499, life: 17499 } },
+  ecommerce:  { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
+  education:  { lite: { sm: 1099, yr: 1949, life: 9799  }, pro: { sm: 1899, yr: 3399, life: 16999 }, infinity: { sm: 3299, yr: 5999, life: 29999 } },
+  healthcare: { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
+  realestate: { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
+  corporate:  { lite: { sm: 1449, yr: 2599, life: 12999 }, pro: { sm: 2799, yr: 5099, life: 25499 }, infinity: { sm: 5599, yr: 10199,life: 50999 } },
+  fitness:    { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
+  beauty:     { lite: { sm: 599,  yr: 1099, life: 5499  }, pro: { sm: 999,  yr: 1899, life: 9499  }, infinity: { sm: 1899, yr: 3499, life: 17499 } },
+  events:     { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
+  marketing:  { lite: { sm: 1099, yr: 1949, life: 9799  }, pro: { sm: 1899, yr: 3399, life: 16999 }, infinity: { sm: 3299, yr: 5999, life: 29999 } },
+  ai:         { lite: { sm: 1449, yr: 2599, life: 12999 }, pro: { sm: 2799, yr: 5099, life: 25499 }, infinity: { sm: 5599, yr: 10199,life: 50999 } },
+  other:      { lite: { sm: 0,    yr: 0,    life: 0     }, pro: { sm: 0,    yr: 0,    life: 0     }, infinity: { sm: 0,    yr: 0,    life: 0     } },
 } as const;
 type SectorKey = keyof typeof PRICES;
 function multiYearPrice(annual: number, years: number) {
@@ -255,7 +255,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow} ${isPro ? "lg:scale-[1.04] lg:z-10 ring-1 ring-blue-500/30" : ""} ${isInfinity ? "ring-1 ring-amber-500/15" : ""}`}
+      className={`relative flex flex-col h-full rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow} ${isPro ? "ring-1 ring-blue-500/30" : ""} ${isInfinity ? "ring-1 ring-amber-500/15" : ""}`}
       data-testid={`card-plan-${tier}`}
     >
       {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
@@ -675,6 +675,208 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
   );
 }
 
+/* ─── Custom Inline Form (for "قطاع آخر" — no price, direct to staff) ── */
+function CustomInlineForm({ sector, sectorLabel, initialDuration }: {
+  sector: string; sectorLabel: string; initialDuration?: string;
+}) {
+  const { toast } = useToast();
+  const { user } = useUser();
+  const [chatHistory, setChatHistory] = useState<ChatMsg[]>([
+    { role: "assistant", content: `أهلاً بك 👋 — أخبرني عن مشروعك:\n• ما نوع نشاطك؟\n• ما الميزات الأساسية التي تحتاجها؟\n• هل لديك مرجع أو موقع يعجبك؟\n\nسأساعدك في صياغة المتطلبات ثم نرفعها مباشرة لفريق كيروكس.` },
+  ]);
+  const [input, setInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [requirements, setRequirements] = useState("");
+  const [contactName, setContactName] = useState((user as any)?.fullName || "");
+  const [contactPhone, setContactPhone] = useState((user as any)?.phone || "");
+  const [contactEmail, setContactEmail] = useState((user as any)?.email || "");
+  const [duration, setDuration] = useState(initialDuration || "annual");
+  const [submitting, setSubmitting] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [whatsapp, setWhatsapp] = useState("966500000000");
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  const { data: modalSettings } = useQuery<any>({
+    queryKey: ["/api/public/settings"], staleTime: 60_000,
+  });
+  useEffect(() => {
+    const wa = modalSettings?.whatsapp || modalSettings?.contactPhone || "";
+    if (wa) setWhatsapp(wa.replace(/\D/g, ""));
+  }, [modalSettings]);
+
+  useEffect(() => { chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }); }, [chatHistory]);
+
+  async function sendAiMsg() {
+    if (!input.trim()) return;
+    const userMsg = input.trim();
+    setInput("");
+    const updated: ChatMsg[] = [...chatHistory, { role: "user", content: userMsg }];
+    setChatHistory(updated);
+    setAiLoading(true);
+    try {
+      const r = await fetch("/api/price-request/ai-help", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg, history: updated.slice(0, -1) }),
+      });
+      const d = await r.json();
+      setChatHistory(prev => [...prev, { role: "assistant", content: d.reply || "..." }]);
+    } catch {
+      setChatHistory(prev => [...prev, { role: "assistant", content: "اكتب احتياجاتك مباشرة في الحقل أسفل المحادثة وسنتولى الباقي." }]);
+    }
+    setAiLoading(false);
+  }
+
+  function useAsRequirements(content: string) {
+    setRequirements(content);
+    toast({ title: "تم نقل الوصف ✓", description: "يمكنك تعديله قبل الإرسال" });
+  }
+
+  async function handleSubmit() {
+    if (!contactName || !contactPhone || !requirements) {
+      toast({ title: "يرجى ملء جميع الحقول المطلوبة", variant: "destructive" }); return;
+    }
+    setSubmitting(true);
+    try {
+      const r = await fetch("/api/price-request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sector, sectorLabel, duration, requirements, contactName, contactPhone, contactEmail }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "فشل الإرسال");
+      setTicketNumber(d.ticketNumber);
+      setSubmitted(true);
+      toast({ title: "تم رفع طلبك للموظفين ✓", description: `رقم تذكرتك: ${d.ticketNumber}` });
+    } catch (e: any) {
+      toast({ title: "فشل الإرسال", description: e.message, variant: "destructive" });
+    }
+    setSubmitting(false);
+  }
+
+  if (submitted) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl border-2 border-emerald-200 dark:border-emerald-700/30 bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-emerald-950/20 dark:via-[#0d0d18] dark:to-emerald-950/10 p-10 text-center" data-testid="custom-inline-success">
+        <div className="w-20 h-20 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto mb-5">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500"/>
+        </div>
+        <h3 className="text-2xl font-black text-black dark:text-white mb-2">تم رفع طلبك للموظفين ✓</h3>
+        <p className="text-sm text-black/50 dark:text-white/50 mb-1">رقم تذكرتك:</p>
+        <div className="flex items-center gap-2 justify-center mb-5">
+          <span className="text-3xl font-black text-violet-600 dark:text-violet-400 font-mono">{ticketNumber}</span>
+          <button onClick={()=>{navigator.clipboard.writeText(ticketNumber);toast({title:"تم النسخ ✓"});}} className="p-2 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"><Copy className="w-4 h-4 text-black/40 dark:text-white/40"/></button>
+        </div>
+        <div className="max-w-md mx-auto p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20 text-sm text-emerald-700 dark:text-emerald-300 space-y-1 mb-5">
+          <p>✓ وصل طلبك مباشرةً للفريق المختص</p>
+          <p>✓ سيتواصل معك أحد الموظفين خلال ساعات</p>
+        </div>
+        <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} — ${sectorLabel}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] hover:bg-[#20c05c] text-white text-sm font-black transition"
+          data-testid="button-inline-whatsapp">
+          <MessageSquare className="w-4 h-4"/> تواصل واتساب برقم التذكرة
+        </a>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className="rounded-3xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-violet-950/20 dark:via-[#0d0d18] dark:to-purple-950/10 overflow-hidden"
+      data-testid="custom-inline-form">
+
+      {/* Header */}
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-violet-200/50 dark:border-violet-700/20 bg-gradient-to-l from-violet-100/50 to-transparent dark:from-violet-900/20">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <Sparkles className="w-6 h-6 text-white"/>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-black text-black dark:text-white">قطاع آخر — اطلب نظامك المخصص</h3>
+            <span className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+              <Bot className="w-2.5 h-2.5"/> AI
+            </span>
+          </div>
+          <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">اوصف نظامك بدون التزام بسعر — سيرفع الطلب مباشرةً للفريق المختص</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2">
+        {/* ── Left: AI Chat ── */}
+        <div className="flex flex-col border-b lg:border-b-0 lg:border-l border-violet-200/40 dark:border-violet-700/20">
+          <div ref={chatRef} className="h-[300px] overflow-y-auto p-4 space-y-3">
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role==="user"?"justify-start":"justify-end"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${msg.role==="user"?"bg-black/[0.05] dark:bg-white/[0.06]":"bg-violet-600 text-white"}`}>
+                  <p className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.role==="user"?"text-black dark:text-white":"text-white"}`}>{msg.content}</p>
+                  {msg.role==="assistant" && i > 0 && <button onClick={()=>useAsRequirements(msg.content)} className="mt-1.5 text-[9px] text-white/70 hover:text-white flex items-center gap-1"><ClipboardList className="w-3 h-3"/>استخدم كوصف</button>}
+                </div>
+              </div>
+            ))}
+            {aiLoading && <div className="flex justify-end"><div className="bg-violet-600 rounded-2xl px-4 py-3"><div className="flex gap-1">{[0,1,2].map(i=><div key={i} className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</div></div></div>}
+          </div>
+          <div className="border-t border-violet-200/40 dark:border-violet-700/20 p-3 flex gap-2 bg-white/40 dark:bg-black/20">
+            <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&sendAiMsg()} placeholder="اكتب احتياجاتك..." className="flex-1 bg-white dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none placeholder:text-black/25 dark:placeholder:text-white/25 text-black dark:text-white border border-black/[0.05] dark:border-white/[0.05]" data-testid="input-inline-ai-chat"/>
+            <button onClick={sendAiMsg} disabled={!input.trim()||aiLoading} className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 flex items-center justify-center transition" data-testid="button-inline-send-ai">
+              {aiLoading?<Loader2 className="w-4 h-4 text-white animate-spin"/>:<Send className="w-4 h-4 text-white"/>}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Right: Form ── */}
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">الوصف النهائي لمتطلباتك *</label>
+            <textarea value={requirements} onChange={e=>setRequirements(e.target.value)} rows={5} placeholder="اكتب أو انقل الوصف هنا — كلما كان أوضح، كان عرض السعر أدق..." className="w-full bg-white dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none resize-none placeholder:text-black/25 dark:placeholder:text-white/25 text-black dark:text-white border border-black/[0.06] dark:border-white/[0.05]" data-testid="textarea-inline-requirements"/>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">مدة المشروع</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {DURATION_OPTS.map(({key,ar,icon:Icon})=>(
+                <button key={key} onClick={()=>setDuration(key)} className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold transition ${duration===key?"bg-violet-600 text-white":"bg-black/[0.04] dark:bg-white/[0.04] text-black/60 dark:text-white/60 hover:bg-black/[0.08] dark:hover:bg-white/[0.08]"}`} data-testid={`button-inline-duration-${key}`}>
+                  <Icon className="w-3 h-3"/>{ar}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">الاسم *</label>
+              <div className="relative">
+                <User className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+                <Input value={contactName} onChange={e=>setContactName(e.target.value)} className="pr-9 h-9 text-sm" placeholder="اسمك الكريم" data-testid="input-inline-name"/>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">الهاتف *</label>
+              <div className="relative">
+                <Phone className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+                <Input value={contactPhone} onChange={e=>setContactPhone(e.target.value)} className="pr-9 h-9 text-sm" placeholder="+966 5XX XXX XXX" dir="ltr" data-testid="input-inline-phone"/>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">البريد (اختياري)</label>
+            <div className="relative">
+              <Mail className="absolute top-1/2 -translate-y-1/2 right-3 w-3.5 h-3.5 text-black/25 dark:text-white/25 pointer-events-none"/>
+              <Input value={contactEmail} onChange={e=>setContactEmail(e.target.value)} className="pr-9 h-9 text-sm" placeholder="email@example.com" dir="ltr" data-testid="input-inline-email"/>
+            </div>
+          </div>
+
+          <button onClick={handleSubmit} disabled={submitting||!contactName||!contactPhone||!requirements} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 disabled:opacity-40 text-white text-sm font-black transition shadow-lg shadow-purple-500/20" data-testid="button-inline-submit">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4"/>}
+            {submitting ? "جارٍ الرفع للموظفين..." : "ارفع الطلب للموظفين الآن"}
+          </button>
+          <p className="text-[10px] text-center text-black/40 dark:text-white/40">سيصل طلبك مباشرة لفريق كيروكس وسيتم التواصل معك في أقرب وقت</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Main Page ───────────────────────────────────────────────────────── */
 const SEGMENT_TO_SECTOR: Record<string, Sector> = {
   restaurant: "restaurant",
@@ -823,12 +1025,10 @@ export default function Prices() {
                 )}
               </div>
 
-              {/* Plan cards — 3 col grid, Pro slightly elevated */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+              {/* Plan cards — 3 col grid, equal heights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
                 <PlanCard tier="lite"     period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
-                <div className="md:mt-[-14px]">
-                  <PlanCard tier="pro"   period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
-                </div>
+                <PlanCard tier="pro"      period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 <PlanCard tier="infinity" period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
               </div>
 
@@ -910,14 +1110,20 @@ export default function Prices() {
                 )}
               </div>
 
-              {/* Plan cards for the selected sub-sector */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-                <PlanCard tier="lite"     period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
-                <div className="md:mt-[-14px]">
-                  <PlanCard tier="pro"   period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
+              {/* Plan cards for the selected sub-sector — or inline custom form for "قطاع آخر" */}
+              {otherSector === "other" ? (
+                <CustomInlineForm
+                  sector="other"
+                  sectorLabel={OTHER_SECTORS.find(s=>s.key==="other")?.ar || "قطاع آخر"}
+                  initialDuration={period === "multiyear" ? `${years}y` : period}
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+                  <PlanCard tier="lite"     period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
+                  <PlanCard tier="pro"      period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
+                  <PlanCard tier="infinity" period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
                 </div>
-                <PlanCard tier="infinity" period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
-              </div>
+              )}
 
               {/* Custom banner */}
               <CustomBanner onOpen={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector, period==="multiyear"?`${years}y`:period)}/>

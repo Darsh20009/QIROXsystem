@@ -1770,6 +1770,15 @@ These are pre-set in render.yaml and don't need manual entry:
 - **Services Page Rebuilt**: New expandable card design with category filter pills, hero, features list by category (stores get storeFeatures, restaurants get restaurantFeatures, customizable categories show "custom" message), add-to-cart for logged-in users, related products display.
 - **Employee Specs Form**: Added "مواصفات" button on each order row in EmployeeDashboard. Opens a dialog with fields: techStack, database (select), hosting (select), domain, notes. Saves to `/api/admin/orders/:id/specs`.
 
+## Recent Changes (Apr 2026)
+
+- **PRICING UX OVERHAUL + QUICK REGISTRATION MODAL**:
+  - `Prices.tsx`: All 3 plan cards (Lite / Pro / Infinity) now equal-sized — removed `lg:scale-[1.04]` and `md:mt-[-14px]` Pro elevation; added `h-full` + `items-stretch`. Reduced PRICES table by ~10–15% across every sector. The "قطاع آخر" sub-sector renders the new `CustomInlineForm` component (no plan cards) — AI chat on the left, requirements + contact form on the right, posts directly to `/api/price-request` so employees handle it as a regular custom request.
+  - `server/routes.ts`: Synced SEGMENTS seed prices to match the frontend (restaurant pro annual = 1899 etc.). Reseed gate updated to trigger when restaurant-pro annual ≠ 1899 so new prices propagate to the employee/admin pricing panels.
+  - `EmployeeProfile.tsx`: Front and back of the employee ID card now wrap the QIROX logo in a white pill (`bg-white/95` + ring) so the logo is always visible against the dark gradient — uses `qiroxLogoNoBgPath` (the transparent variant) instead of the `brightness-0 invert` filter.
+  - `RegisterModal.tsx` (NEW): Lightweight popup that uses `useRegister()` directly — Name / Email / Phone / Password fields, validates locally, then redirects to `/login?verify=<email>` to continue the existing OTP flow. Uses `useI18n` for direction.
+  - `Navigation.tsx`: Both desktop and mobile "ابدأ مشروعك" buttons now open `RegisterModal` instead of navigating to `/register`. Login still routes to `/login` so existing flow is preserved.
+
 ## Recent Changes (Feb 2026)
 
 - **AUTH UI LUXURY REDESIGN + PHONE/COUNTRY INPUTS**:

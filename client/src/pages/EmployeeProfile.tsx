@@ -689,11 +689,12 @@ export default function EmployeeProfile() {
                     <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-zinc-800 border border-white/20 shadow-inner" />
 
                     <div className="relative z-10 flex flex-col items-center pt-8 pb-5 px-5 h-full" dir="rtl">
-                      {/* Logo */}
-                      <div className="flex items-center gap-2 mb-1">
-                        <img src={qiroxLogoPath} alt="QIROX" data-white-logo="true" className="h-7 w-auto object-contain brightness-0 invert" crossOrigin="anonymous" />
+                      {/* Logo — wrapped in a subtle white pill so it's always visible */}
+                      <div className="flex items-center gap-2 mb-1 px-3 py-1.5 rounded-xl bg-white/95 shadow-md ring-1 ring-white/40">
+                        <img src={qiroxLogoNoBgPath} alt="QIROX" className="h-6 w-auto object-contain" crossOrigin="anonymous" />
+                        <span className="text-[10px] font-black tracking-[0.3em] text-black/80">QIROX</span>
                       </div>
-                      <div className="text-[9px] tracking-[0.4em] text-white/50 font-medium mb-5" dir="ltr">EMPLOYEE</div>
+                      <div className="text-[9px] tracking-[0.4em] text-white/50 font-medium mb-5 mt-1" dir="ltr">EMPLOYEE</div>
 
                       {/* Photo with silver ring */}
                       <div className="relative mb-4">
@@ -807,8 +808,11 @@ export default function EmployeeProfile() {
                     <div className="relative z-10 flex flex-col items-center justify-between pt-7 pb-5 px-5 h-full" dir="rtl">
                       {/* Header */}
                       <div className="flex flex-col items-center">
-                        <img src={qiroxLogoPath} alt="QIROX" data-white-logo="true" crossOrigin="anonymous" className="h-6 w-auto object-contain brightness-0 invert opacity-95" />
-                        <div className="mt-1 text-[9px] tracking-[0.5em] text-white/55 font-semibold" dir="ltr">IDENTIFICATION</div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/95 shadow-md ring-1 ring-white/40">
+                          <img src={qiroxLogoNoBgPath} alt="QIROX" crossOrigin="anonymous" className="h-5 w-auto object-contain" />
+                          <span className="text-[10px] font-black tracking-[0.3em] text-black/80">QIROX</span>
+                        </div>
+                        <div className="mt-1.5 text-[9px] tracking-[0.5em] text-white/55 font-semibold" dir="ltr">IDENTIFICATION</div>
                       </div>
 
                       {/* Watermark ID */}
