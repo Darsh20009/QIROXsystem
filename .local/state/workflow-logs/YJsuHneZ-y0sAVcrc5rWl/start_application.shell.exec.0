@@ -1,0 +1,449 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+8:36:20 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Mail] Auto-assigned y.business@qirox.online → darsh
+Initialized 16 cron jobs
+[Mail] Auto-assigned m.aldbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+8:36:33 PM [express] GET /api/user 401 in 2ms
+8:36:34 PM [express] GET /api/app-downloads 200 in 67ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+8:36:34 PM [express] GET /api/public/settings 200 in 69ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+8:36:51 PM [express] GET /api/user 401 in 1ms
+8:36:51 PM [express] GET /api/app-downloads 304 in 67ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+8:36:51 PM [express] GET /api/public/settings 304 in 92ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+8:37:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:37:08 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Systems.tsx, /src/index.css[22m
+8:37:17 PM [express] GET /api/user 401 in 1ms
+8:37:17 PM [express] GET /api/app-downloads 304 in 66ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+8:37:17 PM [express] GET /api/public/settings 304 in 67ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+8:37:58 PM [express] GET /api/user 304 in 76ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"workEmail":"","instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","p…
+8:37:59 PM [express] GET /api/user 304 in 97ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"workEmail":"","instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","p…
+8:37:59 PM [express] GET /api/public/settings 304 in 218ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+8:37:59 PM [express] GET /api/notifications/unread-count 304 in 249ms :: {"count":3}
+8:37:59 PM [express] GET /api/attendance/status 304 in 139ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+8:37:59 PM [express] GET /api/badges 304 in 156ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:37:59 PM [express] GET /api/public/settings 304 in 143ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+8:37:59 PM [express] GET /api/notifications 304 in 148ms :: [{"_id":"69dc1022c6263fde611c048e","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Sultan (sul…
+8:37:59 PM [express] GET /api/inbox/unread-count 304 in 152ms :: {"count":0}
+8:37:59 PM [express] GET /api/orders/pending-count 304 in 144ms :: {"count":0}
+8:38:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+8:38:00 PM [express] GET /api/mail/accounts 200 in 151ms :: [{"_id":"69ee30fca71bd187a9aaa112","emailAddress":"info@qirox.online","__v":0,"assignedUserId":null,"createdAt":"2026-04-26T15:36:28.174Z","displayName":"QIROX I…
+8:38:00 PM [express] GET /api/templates 304 in 150ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+8:38:00 PM [express] GET /api/partners 304 in 153ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+8:38:00 PM [express] GET /api/app-downloads 304 in 153ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+8:38:00 PM [express] GET /api/pricing 304 in 154ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetim…
+8:38:01 PM [express] GET /api/mail/folders/69ee30fca71bd187a9aaa112 304 in 748ms :: ["INBOX","INBOX.Sent","INBOX.Drafts","INBOX.Archive","INBOX.spam","INBOX.Trash","INBOX.Junk"]
+8:38:02 PM [express] GET /api/mail/inbox/69ee30fca71bd187a9aaa112 304 in 2427ms :: [{"uid":3,"subject":"Mail delivery failed: returning message to sender","from":"\"Mail Delivery System\" <Mailer-Daemon@server222.web-host…
+8:39:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:39:13 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Systems.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:39:38 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Systems.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:39:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Systems.tsx, /src/index.css[22m [33m(x4)[39m
+8:40:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:40:07 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:40:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:40:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Systems.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:40:40 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m
