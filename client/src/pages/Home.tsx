@@ -14,7 +14,7 @@ import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
-  Check, Star, Infinity, ChevronRight, TrendingUp, Bot,
+  Check, Star, Infinity, ChevronRight, TrendingUp, Bot, Globe,
 } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
 
@@ -388,70 +388,6 @@ export default function Home() {
               })}
             </motion.div>
 
-            {/* Templates grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 max-w-2xl mx-auto">
-              {visibleTemplates.length === 0
-                ? CURRENT_SECTORS.map((s: any, i) => {
-                    const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
-                    return (
-                      <motion.div key={i} {...fade(i)}>
-                        <Link href={`/prices?segment=${s.segment}`}>
-                          <div className="group aspect-[4/5] rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] overflow-hidden cursor-pointer hover:bg-black/[0.06] dark:hover:bg-white/[0.07] transition-all duration-300 hover:scale-[1.02]" data-testid={`card-template-placeholder-${i}`}>
-                            <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/30 dark:text-white/30 p-6">
-                              {IllustrationComponent ? <IllustrationComponent /> : <Layers className="w-10 h-10" />}
-                            </div>
-                            <div className="p-3.5 md:p-4">
-                              <div className="font-bold text-sm">{ar ? s.arName : s.enName}</div>
-                              <div className="text-[11px] text-black/45 dark:text-white/45 mt-0.5 flex items-center gap-1">
-                                {ar ? "اضغط للاستعراض" : "Tap to explore"}
-                                <ChevronRight className="w-3 h-3" />
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    );
-                  })
-                : visibleTemplates.map((tpl: any, i: number) => {
-                    const tplCat = (tpl.category || tpl.sector || "").toLowerCase();
-                    const CATEGORY_TO_SEGMENT: Record<string, string> = { food: "restaurant", cafe: "restaurant", dining: "restaurant", store: "ecommerce", shop: "ecommerce" };
-                    const resolvedSegment = CATEGORY_TO_SEGMENT[tplCat] || tplCat;
-                    const matchedSector = SECTORS.find(s =>
-                      s.segment === resolvedSegment ||
-                      s.segment === tplCat ||
-                      s.enName.toLowerCase().replace(/[^a-z]/g, "").includes(tplCat.replace(/[^a-z]/g, "")) ||
-                      s.arName.includes(tpl.category || "")
-                    );
-                    const IllComp = matchedSector ? SECTOR_ILLUSTRATIONS[matchedSector.arName] : null;
-                    const catLabel = matchedSector ? (ar ? matchedSector.arName : matchedSector.enName) : (tpl.category || "");
-                    return (
-                      <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
-                        <Link href={`/templates/${tpl.slug || tpl._id}`}>
-                          <div className="group aspect-[4/5] rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] overflow-hidden cursor-pointer hover-elevate active-elevate-2 transition-all" data-testid={`card-template-${tpl._id || i}`}>
-                            <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/25 dark:text-white/25" style={tpl.heroColor && !tpl.coverImage && !IllComp ? { background: `linear-gradient(135deg, ${tpl.heroColor}22 0%, ${tpl.heroColor}44 100%)` } : {}}>
-                              {tpl.coverImage ? (
-                                <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              ) : IllComp ? (
-                                <div className="w-full h-full p-6"><IllComp /></div>
-                              ) : (
-                                <div className="flex flex-col items-center gap-3">
-                                  {matchedSector && (() => { const Icon = matchedSector.icon; return <Icon className="w-10 h-10" style={tpl.heroColor ? { color: tpl.heroColor } : {}} />; })()}
-                                  {!matchedSector && <Layers className="w-10 h-10" />}
-                                  <span className="text-xs font-medium text-black/40 dark:text-white/40">{catLabel}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-3.5 md:p-4">
-                              <div className="font-bold text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
-                              <div className="text-[11px] text-black/45 dark:text-white/45 mt-0.5 truncate">{catLabel}</div>
-                            </div>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-            </div>
-
             <div className="text-center mt-12">
               <Link href="/systems">
                 <Button variant="outline" className="border-black/15 dark:border-white/15 rounded-xl h-11 px-6 font-bold gap-2" data-testid="button-view-all-systems">
@@ -680,6 +616,145 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </div>
+        </section>
+
+        {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
+        <section className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
+          {/* Decorative grid background */}
+          <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.05] pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
+            <motion.div {...fade(0)} className="mb-12 text-center max-w-2xl mx-auto">
+              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-violet-300/40 dark:border-violet-700/40 bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-300 text-[11px] font-black uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                {ar ? "عرض حي · DEMO" : "Live Preview · DEMO"}
+              </span>
+              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
+                {ar ? "جرّب نماذج جاهزة" : "Try ready-made templates"}
+                <br />
+                <span className="text-black/35 dark:text-white/35">{ar ? "قبل ما تطلب" : "before you order"}</span>
+              </h2>
+              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed">
+                {ar
+                  ? "هذه نماذج تجريبية لمشاريع حقيقية بنيناها — اضغط واستكشف قبل اختيار باقتك."
+                  : "Live demo templates from real projects — click and explore before picking a plan."}
+              </p>
+            </motion.div>
+
+            {/* Browser-style frame around templates */}
+            <motion.div {...fade(1)} className="relative max-w-5xl mx-auto rounded-3xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] via-transparent to-violet-500/[0.04] border border-black/[0.08] dark:border-white/[0.08] p-4 md:p-6 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_60px_-20px_rgba(255,255,255,0.06)]">
+              {/* Window chrome */}
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06] text-[10px] font-mono text-black/50 dark:text-white/50">
+                  <Globe className="w-3 h-3" />
+                  qiroxstudio.online/demo
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-600 text-white tracking-wider">
+                  DEMO
+                </span>
+              </div>
+
+              {/* Templates grid inside frame */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                {visibleTemplates.length === 0
+                  ? CURRENT_SECTORS.map((s: any, i) => {
+                      const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
+                      return (
+                        <motion.div key={i} {...fade(i)}>
+                          <Link href={`/prices?segment=${s.segment}`}>
+                            <div className="group relative aspect-[4/5] rounded-2xl bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-xl transition-all duration-300" data-testid={`card-template-placeholder-${i}`}>
+                              {/* DEMO ribbon */}
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-600 text-white tracking-wider">DEMO</span>
+                              </div>
+                              <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/30 dark:text-white/30 p-6 bg-gradient-to-br from-violet-50/30 to-transparent dark:from-violet-950/10">
+                                {IllustrationComponent ? <IllustrationComponent /> : <Layers className="w-10 h-10" />}
+                              </div>
+                              <div className="p-3 md:p-3.5 border-t border-black/[0.06] dark:border-white/[0.06]">
+                                <div className="font-bold text-xs md:text-sm">{ar ? s.arName : s.enName}</div>
+                                <div className="text-[10px] text-black/45 dark:text-white/45 mt-0.5 flex items-center gap-1">
+                                  {ar ? "افتح المعاينة" : "Open preview"}
+                                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      );
+                    })
+                  : visibleTemplates.slice(0, 6).map((tpl: any, i: number) => {
+                      const tplCat = (tpl.category || tpl.sector || "").toLowerCase();
+                      const CATEGORY_TO_SEGMENT: Record<string, string> = { food: "restaurant", cafe: "restaurant", dining: "restaurant", store: "ecommerce", shop: "ecommerce" };
+                      const resolvedSegment = CATEGORY_TO_SEGMENT[tplCat] || tplCat;
+                      const matchedSector = SECTORS.find(s =>
+                        s.segment === resolvedSegment ||
+                        s.segment === tplCat ||
+                        s.enName.toLowerCase().replace(/[^a-z]/g, "").includes(tplCat.replace(/[^a-z]/g, "")) ||
+                        s.arName.includes(tpl.category || "")
+                      );
+                      const IllComp = matchedSector ? SECTOR_ILLUSTRATIONS[matchedSector.arName] : null;
+                      const catLabel = matchedSector ? (ar ? matchedSector.arName : matchedSector.enName) : (tpl.category || "");
+                      return (
+                        <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
+                          <Link href={`/templates/${tpl.slug || tpl._id}`}>
+                            <div className="group relative aspect-[4/5] rounded-2xl bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-xl transition-all duration-300" data-testid={`card-template-${tpl._id || i}`}>
+                              {/* DEMO ribbon */}
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-600 text-white tracking-wider shadow-md">DEMO</span>
+                              </div>
+                              <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/25 dark:text-white/25 bg-gradient-to-br from-violet-50/30 to-transparent dark:from-violet-950/10" style={tpl.heroColor && !tpl.coverImage && !IllComp ? { background: `linear-gradient(135deg, ${tpl.heroColor}22 0%, ${tpl.heroColor}44 100%)` } : {}}>
+                                {tpl.coverImage ? (
+                                  <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                ) : IllComp ? (
+                                  <div className="w-full h-full p-6"><IllComp /></div>
+                                ) : (
+                                  <div className="flex flex-col items-center gap-3">
+                                    {matchedSector && (() => { const Icon = matchedSector.icon; return <Icon className="w-10 h-10" style={tpl.heroColor ? { color: tpl.heroColor } : {}} />; })()}
+                                    {!matchedSector && <Layers className="w-10 h-10" />}
+                                    <span className="text-xs font-medium text-black/40 dark:text-white/40">{catLabel}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-3 md:p-3.5 border-t border-black/[0.06] dark:border-white/[0.06]">
+                                <div className="font-bold text-xs md:text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
+                                <div className="text-[10px] text-black/45 dark:text-white/45 mt-0.5 flex items-center gap-1 truncate">
+                                  <span className="truncate">{catLabel}</span>
+                                  <ChevronRight className="w-3 h-3 shrink-0 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      );
+                    })}
+              </div>
+
+              {/* Caption inside frame */}
+              <div className="mt-5 flex items-center justify-center gap-3 text-[11px] text-black/45 dark:text-white/45">
+                <div className="h-px flex-1 bg-black/[0.08] dark:bg-white/[0.08] max-w-[80px]" />
+                <span className="font-medium">
+                  {ar ? "كل النماذج للاستعراض فقط · ستُخصّص بالكامل لمشروعك" : "All templates are previews · fully customized for your project"}
+                </span>
+                <div className="h-px flex-1 bg-black/[0.08] dark:bg-white/[0.08] max-w-[80px]" />
+              </div>
+            </motion.div>
+
+            <div className="text-center mt-10">
+              <Link href="/systems">
+                <Button className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-xl h-12 px-7 font-bold gap-2" data-testid="button-explore-all-demos">
+                  <Layers className="w-4 h-4" />
+                  {ar ? "استكشف كل النماذج" : "Explore all templates"}
+                  <Arrow className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
 

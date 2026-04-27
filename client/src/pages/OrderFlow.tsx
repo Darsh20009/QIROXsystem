@@ -294,6 +294,7 @@ export default function OrderFlow() {
     return result;
   }, [sectorTemplates]);
   const { data: bankSettings }        = useQuery<typeof DEFAULT_BANK>({ queryKey: ["/api/bank-settings"] });
+  const { data: settings }            = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 60_000 });
   const bank = bankSettings || DEFAULT_BANK;
   const { data: walletData }          = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
     queryKey: ["/api/wallet"], enabled: !!user,
@@ -695,6 +696,60 @@ export default function OrderFlow() {
           )}
         </motion.div>
         )}
+
+        {/* WhatsApp continuation — auto-built message with order #, package, requirements */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="mt-6 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 rounded-3xl border border-emerald-200/60 dark:border-emerald-800/30 p-6 shadow-sm">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+              <SiWhatsapp className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-black text-black dark:text-white">تواصل مع فريقنا عبر واتساب</p>
+              <p className="text-xs text-black/55 dark:text-white/55 mt-0.5">سترسل رقم طلبك وتفاصيل الباقة تلقائياً ليتم متابعتك بسرعة</p>
+            </div>
+          </div>
+          {(() => {
+            const sup = settings?.whatsapp || settings?.contactPhone || "966554656670";
+            const num = String(sup).replace(/\D/g, "");
+            const lines = [
+              `مرحباً 👋 لقد أتممت طلبي على QIROX Studio`,
+              `📌 رقم الطلب: ${submittedOrder.id}`,
+              `📦 الباقة: ${PLAN_LABELS[selectedPlan] || selectedPlan}`,
+              segmentFromUrl ? `🏷️ القطاع: ${SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl}` : "",
+              periodFromUrl ? `🕒 المدة: ${PERIOD_LABELS_TR[periodFromUrl] || periodFromUrl}` : "",
+              `💵 الإجمالي: ${grandTotal.toLocaleString()} ر.س`,
+              submittedOrder.walletUsed > 0 ? `👛 خُصم من المحفظة: ${submittedOrder.walletUsed.toLocaleString()} ر.س` : "",
+              "",
+              `🧩 المتطلبات:`,
+              formData.businessName ? `• اسم النشاط: ${formData.businessName}` : "",
+              formData.targetAudience ? `• الجمهور المستهدف: ${formData.targetAudience}` : "",
+              formData.brandColor ? `• اللون المفضل: ${formData.brandColor}` : "",
+              formData.inspirationSites ? `• مواقع مرجعية: ${formData.inspirationSites}` : "",
+              formData.requiredFunctions ? `• ميزات إضافية: ${formData.requiredFunctions}` : "",
+              formData.needsPayment ? "• يحتاج بوابة دفع إلكتروني" : "",
+              formData.needsBooking ? "• يحتاج نظام حجز مسبق" : "",
+              formData.hasContent ? "• المحتوى جاهز" : "",
+              "",
+              !(submittedOrder.walletUsed >= grandTotal - 0.01)
+                ? `📎 سأرسل لكم إيصال التحويل البنكي خلال دقائق.`
+                : `✅ تم سداد كامل المبلغ من المحفظة.`,
+            ].filter(Boolean).join("\n");
+            const url = `https://wa.me/${num}?text=${encodeURIComponent(lines)}`;
+            return (
+              <a href={url} target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-black transition-all shadow-lg shadow-emerald-500/25"
+                data-testid="link-whatsapp-followup">
+                <SiWhatsapp className="w-4 h-4" />
+                إرسال تفاصيل الطلب عبر واتساب
+                <ArrowLeft className="w-4 h-4" />
+              </a>
+            );
+          })()}
+          <p className="text-[10px] text-center mt-3 text-black/40 dark:text-white/40">
+            ينصح بإرسال الرسالة لتأكيد الطلب وإرسال إيصال الدفع لفريقنا مباشرة
+          </p>
+        </motion.div>
 
         <div className="mt-6 text-center">
           <Button variant="outline" onClick={() => setLocation("/dashboard")} className="gap-2 rounded-xl" data-testid="button-go-dashboard">

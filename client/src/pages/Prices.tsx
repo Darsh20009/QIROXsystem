@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -22,8 +23,8 @@ import { Input } from "@/components/ui/input";
 
 /* ─── Pricing Data ────────────────────────────────────────────────────── */
 const PRICES = {
-  restaurant: { lite: { sm: 399, yr: 699, life: 3999 }, pro: { sm: 599, yr: 999, life: 5999 }, infinity: { sm: 899, yr: 1499, life: 8999 } },
-  ecommerce:  { lite: { sm: 399, yr: 699, life: 3999 }, pro: { sm: 599, yr: 999, life: 5999 }, infinity: { sm: 899, yr: 1499, life: 8999 } },
+  restaurant: { lite: { sm: 399, yr: 699, life: 5999 }, pro: { sm: 599, yr: 999, life: 8999 }, infinity: { sm: 1798, yr: 2998, life: 26997 } },
+  ecommerce:  { lite: { sm: 399, yr: 699, life: 5999 }, pro: { sm: 599, yr: 999, life: 8999 }, infinity: { sm: 1798, yr: 2998, life: 26997 } },
 };
 function multiYearPrice(annual: number, years: number) {
   let total = 0;
@@ -59,7 +60,7 @@ const RESTAURANT_FEATURES = {
   infinity: [
     { icon: Star,           ar: "كل مميزات برو ✦✦" },
     { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
-    { icon: Apple,          ar: "تطبيق App Store (سنوي/مدى الحياة)" },
+    { icon: Apple,          ar: "تطبيق App Store (سنوي فقط)" },
     { icon: Mail,           ar: "5 بريد باسم المطعم/الكافيه" },
     { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
     { icon: Building2,      ar: "توافق نظام الحضور والإدارة المؤسسية" },
@@ -92,7 +93,7 @@ const ECOMMERCE_FEATURES = {
   infinity: [
     { icon: Star,           ar: "كل مميزات برو ✦✦" },
     { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
-    { icon: Apple,          ar: "تطبيق App Store (سنوي/مدى الحياة)" },
+    { icon: Apple,          ar: "تطبيق App Store (سنوي فقط)" },
     { icon: Mail,           ar: "5 بريد باسم المتجر" },
     { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
     { icon: Database,       ar: "نظام مخزون متكامل متقدم" },
@@ -158,9 +159,9 @@ const TIER_STYLES: Record<Tier, { bg: string; border: string; headerBg: string; 
   },
 };
 
-function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
+function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   tier: Tier; period: Period; years: number; sector: "restaurant"|"ecommerce";
-  onCustom: ()=>void; whatsapp: string;
+  onCustom: ()=>void; onOrder: (info: { tier: Tier; period: Period; years: number; sector: string; price: number; label: string })=>void;
 }) {
   const st = TIER_STYLES[tier];
   const prices = PRICES[sector][tier];
@@ -258,15 +259,17 @@ function PlanCard({ tier, period, years, sector, onCustom, whatsapp }: {
 
       {/* CTA */}
       <div className={`px-6 pb-6 pt-4 ${isInfinity ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
-        <a
-          href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في باقة ${tierNames[tier]} لـ ${period === "sixmonth" ? "6 أشهر" : period === "annual" ? "سنة" : period === "multiyear" ? `${years} سنوات` : "مدى الحياة"} بسعر ${fmt(price)} ريال`)}`}
-          target="_blank" rel="noopener noreferrer"
+        <button
+          onClick={() => onOrder({ tier, period, years, sector, price, label })}
           className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black transition-all ${st.btnBg}`}
           data-testid={`button-subscribe-${tier}`}
         >
-          <MessageSquare className="w-4 h-4"/>
-          ابدأ الآن عبر واتساب
-        </a>
+          <Rocket className="w-4 h-4"/>
+          أكمل الطلب الآن
+        </button>
+        <p className="text-[10px] text-center mt-2 opacity-50">
+          {isInfinity || isPro ? "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب" : "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب"}
+        </p>
       </div>
     </motion.div>
   );
@@ -575,13 +578,34 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
 }
 
 /* ─── Main Page ───────────────────────────────────────────────────────── */
+const SEGMENT_TO_SECTOR: Record<string, Sector> = {
+  restaurant: "restaurant",
+  ecommerce: "ecommerce",
+};
+const NON_PRIMARY_SEGMENTS = ["education","healthcare","realestate","corporate","fitness","beauty","events","marketing","ai","other"];
+
 export default function Prices() {
   const { L } = useI18n();
   const { user } = useUser();
-  const [sector, setSector] = useState<Sector>("restaurant");
+  const [, setLocation] = useLocation();
+
+  // Read URL parameters (?segment=…) once on mount
+  const initialSegment = (() => {
+    if (typeof window === "undefined") return null;
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get("segment");
+  })();
+  const initialSector: Sector = initialSegment && SEGMENT_TO_SECTOR[initialSegment]
+    ? SEGMENT_TO_SECTOR[initialSegment]
+    : (initialSegment && NON_PRIMARY_SEGMENTS.includes(initialSegment))
+      ? "other"
+      : "restaurant";
+  const initialOtherSector = initialSegment && NON_PRIMARY_SEGMENTS.includes(initialSegment) ? initialSegment : "education";
+
+  const [sector, setSector] = useState<Sector>(initialSector);
   const [period, setPeriod] = useState<Period>("annual");
   const [years, setYears] = useState(2);
-  const [otherSector, setOtherSector] = useState("education");
+  const [otherSector, setOtherSector] = useState(initialOtherSector);
   const [otherDuration, setOtherDuration] = useState("annual");
   const [customOpen, setCustomOpen] = useState(false);
   const [customSector, setCustomSector] = useState("restaurant");
@@ -590,6 +614,16 @@ export default function Prices() {
 
   const { data: settings } = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 60_000 });
   const whatsapp = (settings?.whatsapp || settings?.contactPhone || "").replace(/\D/g, "") || "966500000000";
+
+  function startOrder(info: { tier: Tier; period: Period; years: number; sector: string; price: number; label: string }) {
+    const params = new URLSearchParams({
+      plan: info.tier,
+      segment: info.sector,
+      period: info.period === "multiyear" ? `${info.years}y` : info.period,
+      price: String(info.price),
+    });
+    setLocation(`/order?${params.toString()}`);
+  }
 
   const SECTORS_DATA = [
     { key: "restaurant" as Sector, icon: UtensilsCrossed, ar: "مطاعم ومقاهي", en: "Restaurants", color: "from-orange-500 to-amber-500" },
@@ -693,11 +727,11 @@ export default function Prices() {
 
               {/* Plan cards — 3 col grid, Pro slightly elevated */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-                <PlanCard tier="lite"     period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <PlanCard tier="lite"     period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 <div className="md:mt-[-14px]">
-                  <PlanCard tier="pro"   period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                  <PlanCard tier="pro"   period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 </div>
-                <PlanCard tier="infinity" period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} whatsapp={whatsapp}/>
+                <PlanCard tier="infinity" period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
               </div>
 
               {/* Custom banner — below main cards */}

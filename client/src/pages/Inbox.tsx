@@ -727,7 +727,7 @@ export default function Inbox() {
                 >
                   <option value="">{L ? "+ رسالة للفريق" : "+ Message team member"}</option>
                   {employees.filter((e: any) => e.id !== me.id).map((e: any) => (
-                    <option key={e.id} value={e.id}>{e.fullName || e.username} ({roleLabel(e.role, L)})</option>
+                    <option key={e.id} value={e.id}>{e.employeeCode ? `[${e.employeeCode}] ` : ""}{e.fullName || e.username} ({roleLabel(e.role, L)})</option>
                   ))}
                 </select>
               )}
@@ -783,7 +783,10 @@ export default function Inbox() {
                       <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" profilePhotoUrl={c.profilePhotoUrl} avatarConfig={c.avatarConfig} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
-                          <p className={`text-xs font-bold truncate ${isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-gray-800 dark:text-gray-100"}`}>{c.fullName}</p>
+                          <p className={`text-xs font-bold truncate ${isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-gray-800 dark:text-gray-100"}`}>
+                            {c.fullName}
+                            {c.employeeCode && <span className="ml-1 text-[9px] font-mono text-violet-600 dark:text-violet-400">[{c.employeeCode}]</span>}
+                          </p>
                           <span className="text-[9px] text-gray-400 flex-shrink-0 mr-1">{timeAgo(c.lastAt, L)}</span>
                         </div>
                         <div className="flex items-center justify-between">

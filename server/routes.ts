@@ -5928,8 +5928,8 @@ export async function registerRoutes(
           $or: [{ fromUserId: uid }, { toUserId: uid }],
           deletedBy: { $ne: uid },
         })
-          .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
-          .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig")
+          .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode")
+          .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode")
           .sort({ createdAt: -1 })
           .limit(100);
       }, CACHE_TTL.INBOX);
@@ -6035,7 +6035,7 @@ export async function registerRoutes(
     const msgs = await InboxMessageModel.find({
       $or: [{ fromUserId: me, toUserId: other }, { fromUserId: other, toUserId: me }],
       deletedBy: { $ne: me },
-    }).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig").sort({ createdAt: 1 }).limit(200);
+    }).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode").sort({ createdAt: 1 }).limit(200);
     await InboxMessageModel.updateMany({ fromUserId: other, toUserId: me, read: false }, { read: true });
     cache.invalidate(`inbox:unread:${me}`);
     cache.invalidate(`badges:${me}`);
@@ -6044,50 +6044,63 @@ export async function registerRoutes(
 
   app.post("/api/inbox", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { InboxMessageModel, NotificationModel, UserModel } = await import("./models");
-    const { pushToUser } = await import("./ws");
-    const { toUserId, body, orderId, attachmentUrl, attachmentType, attachmentName, attachmentSize } = req.body;
-    if (!toUserId || (!body?.trim() && !attachmentUrl)) return res.status(400).json({ error: "المستقبل مطلوب وإما رسالة أو مرفق" });
-    const me = req.user as any;
-    const msgData: any = {
-      fromUserId: me.id, toUserId,
-      body: body?.trim() || "",
-      orderId: orderId || undefined,
-    };
-    if (attachmentUrl) {
-      msgData.attachmentUrl = attachmentUrl;
-      msgData.attachmentType = attachmentType || "file";
-      msgData.attachmentName = attachmentName || "مرفق";
-      if (attachmentSize) msgData.attachmentSize = attachmentSize;
+    try {
+      const mongooseLib = await import("mongoose");
+      const { InboxMessageModel, NotificationModel, UserModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const { toUserId, body, orderId, attachmentUrl, attachmentType, attachmentName, attachmentSize } = req.body;
+      if (!toUserId || (!body?.trim() && !attachmentUrl)) return res.status(400).json({ error: "المستقبل مطلوب وإما رسالة أو مرفق" });
+      if (!mongooseLib.default.Types.ObjectId.isValid(String(toUserId))) {
+        return res.status(400).json({ error: "معرّف المستقبل غير صالح" });
+      }
+      const me = req.user as any;
+      const msgData: any = {
+        fromUserId: me.id, toUserId,
+        body: body?.trim() || "",
+        orderId: orderId && mongooseLib.default.Types.ObjectId.isValid(String(orderId)) ? orderId : undefined,
+      };
+      if (attachmentUrl) {
+        msgData.attachmentUrl = attachmentUrl;
+        msgData.attachmentType = attachmentType || "file";
+        msgData.attachmentName = attachmentName || "مرفق";
+        if (attachmentSize) msgData.attachmentSize = attachmentSize;
+      }
+      const msg = await InboxMessageModel.create(msgData);
+      // Create notification for receiver
+      const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
+      try {
+        await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: notifBody.slice(0, 100), link: '/inbox', icon: '💬' });
+      } catch (notifErr) {
+        console.error("[inbox] notification create failed:", notifErr);
+      }
+      // Only send email if recipient is a CLIENT (not between employees)
+      const toUser = await UserModel.findById(toUserId).select("email fullName username role");
+      if (toUser?.email && toUser.role === "client") {
+        sendMessageNotificationEmail(toUser.email, toUser.fullName || toUser.username, me.fullName || me.username, notifBody).catch(console.error);
+      }
+      const populated = await InboxMessageModel.findById(msg._id)
+        .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode")
+        .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode");
+      // Push via WebSocket for real-time delivery
+      try { pushToUser(String(toUserId), { type: "new_message", message: populated }); } catch {}
+      // Push device notification (works when app is closed)
+      sendPushToUser(String(toUserId), {
+        title: `💬 رسالة من ${me.fullName || me.username}`,
+        body: notifBody.slice(0, 120),
+        icon: "/icon-192.png", badge: "/favicon-32.png",
+        tag: `msg-${me.id}`,
+        data: { url: "/inbox" },
+      }).catch(() => {});
+      cache.invalidate(`inbox:${me.id}`);
+      cache.invalidate(`inbox:${toUserId}`);
+      cache.invalidate(`inbox:unread:${toUserId}`);
+      cache.invalidate(`badges:${me.id}`);
+      cache.invalidate(`badges:${toUserId}`);
+      res.status(201).json(populated);
+    } catch (err: any) {
+      console.error("[POST /api/inbox] failed:", err?.message, err?.stack);
+      res.status(500).json({ error: err?.message || "تعذّر إرسال الرسالة" });
     }
-    const msg = await InboxMessageModel.create(msgData);
-    // Create notification for receiver
-    const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
-    await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: notifBody.slice(0, 100), link: '/inbox', icon: '💬' });
-    // Only send email if recipient is a CLIENT (not between employees)
-    const toUser = await UserModel.findById(toUserId).select("email fullName username role");
-    if (toUser?.email && toUser.role === "client") {
-      sendMessageNotificationEmail(toUser.email, toUser.fullName || toUser.username, me.fullName || me.username, notifBody).catch(console.error);
-    }
-    const populated = await InboxMessageModel.findById(msg._id)
-      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
-      .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig");
-    // Push via WebSocket for real-time delivery
-    pushToUser(String(toUserId), { type: "new_message", message: populated });
-    // Push device notification (works when app is closed)
-    sendPushToUser(String(toUserId), {
-      title: `💬 رسالة من ${me.fullName || me.username}`,
-      body: notifBody.slice(0, 120),
-      icon: "/icon-192.png", badge: "/favicon-32.png",
-      tag: `msg-${me.id}`,
-      data: { url: "/inbox" },
-    }).catch(() => {});
-    cache.invalidate(`inbox:${me.id}`);
-    cache.invalidate(`inbox:${toUserId}`);
-    cache.invalidate(`inbox:unread:${toUserId}`);
-    cache.invalidate(`badges:${me.id}`);
-    cache.invalidate(`badges:${toUserId}`);
-    res.status(201).json(populated);
   });
 
   // Admin can get all users to send messages to
@@ -6104,7 +6117,7 @@ export async function registerRoutes(
       if (fid !== String(me.id)) userIds.add(fid);
       if (tid !== String(me.id)) userIds.add(tid);
     }
-    const users = await UserModel.find({ _id: { $in: [...userIds] } }).select("username fullName role id");
+    const users = await UserModel.find({ _id: { $in: [...userIds] } }).select("username fullName role id employeeCode");
     res.json(users);
   });
 
@@ -6261,7 +6274,7 @@ export async function registerRoutes(
     if (!session) return res.sendStatus(404);
     if (me.role === 'client' && String(session.clientId) !== String(me.id)) return res.sendStatus(403);
     const msgs = await InboxMessageModel.find({ csSessionId: session._id })
-      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
+      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode")
       .sort({ createdAt: 1 }).limit(300);
     // Mark messages from other party as read
     const otherId = me.role === 'client' ? session.agentId : session.clientId;
@@ -6305,7 +6318,7 @@ export async function registerRoutes(
       const msg = await InboxMessageModel.create(msgData);
       session.lastMessageAt = new Date();
       await session.save();
-      const populated = await InboxMessageModel.findById(msg._id).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig");
+      const populated = await InboxMessageModel.findById(msg._id).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode");
       // Push via WebSocket
       const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
       if (toUserId) {
@@ -8462,7 +8475,7 @@ export async function registerRoutes(
         ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
         { role: "user" as const, content: message },
       ];
-      const completion = await groq.chat.completions.create({ model: "llama-3.1-70b-versatile", messages: msgs, max_tokens: 400, temperature: 0.7 });
+      const completion = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: msgs, max_tokens: 400, temperature: 0.7 });
       res.json({ reply: completion.choices[0]?.message?.content || "..." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

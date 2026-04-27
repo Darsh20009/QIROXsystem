@@ -496,6 +496,11 @@ export default function AdminEmployees() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-black dark:text-white truncate">{emp.fullName}</p>
                     <p className="text-[10px] text-black/30 truncate">@{emp.username}</p>
+                    {(emp as any).employeeCode && (
+                      <p className="text-[10px] font-mono font-bold text-violet-600 dark:text-violet-400 truncate" data-testid={`text-empcode-${emp.id}`}>
+                        {(emp as any).employeeCode}
+                      </p>
+                    )}
                     <Badge className={`mt-1.5 text-[10px] border ${roleColors[emp.role] || roleColors.client}`}>
                       {roleLabels[emp.role] || emp.role}
                     </Badge>
@@ -569,7 +574,14 @@ export default function AdminEmployees() {
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-black dark:text-white truncate">{emp.fullName}</p>
+                    <p className="text-xs font-bold text-black dark:text-white truncate">
+                      {emp.fullName}
+                      {(emp as any).employeeCode && (
+                        <span className="ml-2 text-[10px] font-mono text-violet-600 dark:text-violet-400" data-testid={`text-empcode-list-${emp.id}`}>
+                          [{(emp as any).employeeCode}]
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-black/30">@{emp.username} · {emp.email}</p>
                   </div>
                   <Badge className={`text-[10px] border hidden md:flex ${roleColors[emp.role] || roleColors.client}`}>{roleLabels[emp.role] || emp.role}</Badge>

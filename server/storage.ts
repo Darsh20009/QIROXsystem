@@ -180,7 +180,18 @@ export class MongoStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const user = await UserModel.create(insertUser);
+    const data: any = { ...insertUser };
+    if (data.role && data.role !== "client" && !data.employeeCode) {
+      const last = await UserModel.findOne({ employeeCode: { $regex: /^EMP-\d+$/ } })
+        .sort({ employeeCode: -1 })
+        .select("employeeCode")
+        .lean();
+      const lastNum = last && (last as any).employeeCode
+        ? parseInt(String((last as any).employeeCode).replace("EMP-", ""), 10) || 0
+        : 0;
+      data.employeeCode = `EMP-${String(lastNum + 1).padStart(3, "0")}`;
+    }
+    const user = await UserModel.create(data);
     return { ...user.toObject(), id: user._id.toString() } as any;
   }
 
