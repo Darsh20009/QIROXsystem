@@ -251,10 +251,10 @@ export default function Home() {
           />
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             <motion.div {...fade(0)} className="flex flex-col items-center text-center">
-              <img src={qiroxLogo} alt="QIROX" className="h-12 md:h-14 w-auto mb-5 dark:invert" />
+              <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto mb-5 dark:invert" />
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
                 <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
-                {ar ? "QIROX Studio · شريكك التقني" : "QIROX Studio · Your tech partner"}
+                {ar ? "مصنع الأنظمة الرقمية · شريكك التقني" : "Digital Systems Factory · Your tech partner"}
               </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
                 {ar ? "نحوّل فكرتك" : "We turn your idea"}
