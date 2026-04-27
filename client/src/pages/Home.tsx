@@ -136,6 +136,23 @@ const SECTOR_ILLUSTRATIONS: Record<string, React.FC> = {
   "ابدأ فكرتك الخاصة": IdeaIllustration,
 };
 
+// Soft, premium color theme per sector. Each entry has:
+//   bg:     top-area background (soft tint, calm)
+//   strip:  bottom title-strip background (slightly stronger tint)
+//   accent: icon / illustration color
+//   text:   bottom title color (always high-contrast on the strip)
+const SECTOR_COLORS: Record<string, { bg: string; strip: string; accent: string; text: string }> = {
+  "متاجر إلكترونية": { bg: "bg-emerald-50 dark:bg-emerald-500/10",   strip: "bg-emerald-100 dark:bg-emerald-500/20 border-t border-emerald-200/60 dark:border-emerald-500/20",   accent: "text-emerald-600 dark:text-emerald-300",   text: "text-emerald-900 dark:text-emerald-100" },
+  "مطاعم ومقاهي":     { bg: "bg-amber-50 dark:bg-amber-500/10",       strip: "bg-amber-100 dark:bg-amber-500/20 border-t border-amber-200/60 dark:border-amber-500/20",         accent: "text-amber-600 dark:text-amber-300",       text: "text-amber-900 dark:text-amber-100" },
+  "منصات تعليمية":    { bg: "bg-sky-50 dark:bg-sky-500/10",           strip: "bg-sky-100 dark:bg-sky-500/20 border-t border-sky-200/60 dark:border-sky-500/20",                 accent: "text-sky-600 dark:text-sky-300",           text: "text-sky-900 dark:text-sky-100" },
+  "شركات ومؤسسات":    { bg: "bg-indigo-50 dark:bg-indigo-500/10",     strip: "bg-indigo-100 dark:bg-indigo-500/20 border-t border-indigo-200/60 dark:border-indigo-500/20",     accent: "text-indigo-600 dark:text-indigo-300",     text: "text-indigo-900 dark:text-indigo-100" },
+  "صحة وعيادات":      { bg: "bg-rose-50 dark:bg-rose-500/10",         strip: "bg-rose-100 dark:bg-rose-500/20 border-t border-rose-200/60 dark:border-rose-500/20",             accent: "text-rose-600 dark:text-rose-300",         text: "text-rose-900 dark:text-rose-100" },
+  "عقارات":            { bg: "bg-teal-50 dark:bg-teal-500/10",         strip: "bg-teal-100 dark:bg-teal-500/20 border-t border-teal-200/60 dark:border-teal-500/20",             accent: "text-teal-600 dark:text-teal-300",         text: "text-teal-900 dark:text-teal-100" },
+  "صالونات تجميل":     { bg: "bg-pink-50 dark:bg-pink-500/10",         strip: "bg-pink-100 dark:bg-pink-500/20 border-t border-pink-200/60 dark:border-pink-500/20",             accent: "text-pink-600 dark:text-pink-300",         text: "text-pink-900 dark:text-pink-100" },
+  "وكالات التسويق":    { bg: "bg-violet-50 dark:bg-violet-500/10",     strip: "bg-violet-100 dark:bg-violet-500/20 border-t border-violet-200/60 dark:border-violet-500/20",     accent: "text-violet-600 dark:text-violet-300",     text: "text-violet-900 dark:text-violet-100" },
+  "ذكاء اصطناعي":      { bg: "bg-cyan-50 dark:bg-cyan-500/10",         strip: "bg-cyan-100 dark:bg-cyan-500/20 border-t border-cyan-200/60 dark:border-cyan-500/20",             accent: "text-cyan-600 dark:text-cyan-300",         text: "text-cyan-900 dark:text-cyan-100" },
+};
+
 const SECTORS = [
   { icon: ShoppingBag, arName: "متاجر إلكترونية",    enName: "E-Commerce",        segment: "ecommerce" },
   { icon: Coffee,      arName: "مطاعم ومقاهي",       enName: "Restaurants",       segment: "restaurant" },
@@ -343,28 +360,37 @@ export default function Home() {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                 const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;
                 const Icon = s.icon;
+                const theme = SECTOR_COLORS[s.arName];
                 return (
                   <Link key={i} href={sectorHref}>
                     <div
-                      className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] ${
+                      className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] ${
                         s.custom
                           ? "bg-black dark:bg-white"
-                          : "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
+                          : (theme?.bg || "bg-black/[0.04] dark:bg-white/[0.06]")
                       }`}
                       data-testid={`card-sector-${i}`}
                     >
-                      {/* Illustration top 70% */}
-                      <div className={`absolute inset-0 bottom-[30%] flex items-center justify-center p-3 ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
-                        {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-8 h-8 opacity-30" />}
+                      {/* Illustration top 70% — tinted with sector accent color */}
+                      <div className={`absolute inset-0 bottom-[30%] flex items-center justify-center p-3 ${
+                        s.custom
+                          ? "text-white dark:text-black"
+                          : (theme?.accent || "text-black dark:text-white")
+                      }`}>
+                        {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-8 h-8 opacity-60" />}
                       </div>
 
-                      {/* Bottom title strip — solid, always readable */}
+                      {/* Bottom title strip — colored & always readable */}
                       <div className={`absolute bottom-0 inset-x-0 h-[30%] flex flex-col items-center justify-center gap-0.5 px-2 ${
                         s.custom
                           ? "bg-black/80 dark:bg-white/80"
-                          : "bg-black/[0.06] dark:bg-white/[0.07] border-t border-black/[0.06] dark:border-white/[0.07]"
+                          : (theme?.strip || "bg-black/[0.06] dark:bg-white/[0.07] border-t border-black/[0.06] dark:border-white/[0.07]")
                       }`}>
-                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight ${s.custom ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
+                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight ${
+                          s.custom
+                            ? "text-white dark:text-black"
+                            : (theme?.text || "text-black dark:text-white")
+                        }`}>
                           {ar ? s.arName : s.enName}
                         </div>
                         {s.custom && (
@@ -372,11 +398,11 @@ export default function Home() {
                         )}
                       </div>
 
-                      {/* Hover arrow */}
+                      {/* Hover arrow — picks up the sector accent color */}
                       {!s.custom && (
                         <div className="absolute top-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
-                            <ChevronRight className="w-3 h-3 text-black/60 dark:text-white/60" />
+                          <div className={`w-5 h-5 rounded-full bg-white/70 dark:bg-black/30 flex items-center justify-center backdrop-blur-sm`}>
+                            <ChevronRight className={`w-3 h-3 ${theme?.accent || "text-black/60 dark:text-white/60"}`} />
                           </div>
                         </div>
                       )}
