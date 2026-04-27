@@ -48,6 +48,7 @@ const contactLimiter = rateLimit({
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
+import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -119,45 +120,10 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-// ── Universal notification helper: internal DB + real-time WS + external web-push ──
-async function fireNotify(
-  userId: string,
-  title: string,
-  body: string,
-  opts: { type?: string; link?: string; icon?: string; tag?: string } = {}
-) {
-  const link = opts.link || "/dashboard";
-  try {
-    const { NotificationModel } = await import("./models");
-    await NotificationModel.create({ userId, type: opts.type || "info", title, body, link, icon: opts.icon || "🔔" });
-  } catch (_) {}
-  pushToUser(userId, { type: "notification", title, body, link });
-  sendPushToUser(userId, {
-    title, body,
-    icon: "/icon-192.png",
-    badge: "/favicon-32.png",
-    tag: opts.tag || `notif-${Date.now()}`,
-    data: { url: link },
-  }).catch(() => {});
-}
-
-async function fireNotifyAdmins(
-  title: string,
-  body: string,
-  opts: { type?: string; link?: string; icon?: string } = {}
-) {
-  try {
-    const { UserModel, NotificationModel } = await import("./models");
-    const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }, { _id: 1 }).lean();
-    const link = opts.link || "/admin";
-    await Promise.all(admins.map(async (a: any) => {
-      const uid = String(a._id);
-      try { await NotificationModel.create({ userId: uid, type: opts.type || "info", title, body, link, icon: opts.icon || "🔔" }); } catch (_) {}
-      pushToUser(uid, { type: "notification", title, body, link });
-      sendPushToUser(uid, { title, body, icon: "/icon-192.png", badge: "/favicon-32.png", tag: `admin-notif-${Date.now()}`, data: { url: link } }).catch(() => {});
-    }));
-  } catch (_) {}
-}
+// ── Universal notification helpers (re-exported from ./notify) ──
+const fireNotify = _fireNotify as any;
+const fireNotifyAdmins = _fireNotifyAdmins as any;
+const fireNotifyMany = _fireNotifyMany as any;
 
 function translateError(err: any): string {
   const msg: string = err?.message || err?.toString() || "";
@@ -3733,6 +3699,29 @@ export async function registerRoutes(
       content: req.body.content,
       isInternal: req.body.isInternal || false,
     });
+    // Notify project owner + members (excluding sender)
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await (ProjectModel as any)
+        .findById(req.params.projectId)
+        .select("clientId members name");
+      if (project) {
+        const recipients = new Set<string>();
+        if (String(project.clientId) !== String(user.id)) recipients.add(String(project.clientId));
+        (project.members || []).forEach((m: any) => {
+          const mid = String(m._id || m);
+          if (mid !== String(user.id)) recipients.add(mid);
+        });
+        const senderName = (user as any).fullName || (user as any).username || "شخص";
+        const preview = (req.body.content || "").substring(0, 80);
+        fireNotifyMany(
+          [...recipients],
+          `💬 رسالة في ${project.name || "المشروع"}`,
+          `${senderName}: ${preview}`,
+          { type: "message", link: `/projects/${req.params.projectId}`, icon: "💬", tag: `proj-msg-${req.params.projectId}` }
+        ).catch(() => {});
+      }
+    } catch (_) {}
     res.status(201).json(message);
   });
 
@@ -5891,18 +5880,20 @@ export async function registerRoutes(
     const senderName = (populated as any)?.fromUserId?.fullName || (populated as any)?.fromUserId?.username || "أحد الأعضاء";
     const groupName = (group as any).name || "المجموعة";
     const msgPreview = (body?.trim() || (attachmentType === "image" ? "📷 صورة" : attachmentType === "voice" ? "🎙️ رسالة صوتية" : "📎 مرفق")).slice(0, 100);
+    const recipients: string[] = [];
     for (const memberId of (group as any).memberIds || []) {
       if (String(memberId) !== uid) {
+        // Realtime new-message event (separate from the notification toast)
         pushToUser(String(memberId), { type: 'group_message', message: populated, groupId: req.params.id });
-        sendPushToUser(String(memberId), {
-          title: `💬 ${groupName}: ${senderName}`,
-          body: msgPreview,
-          icon: "/icon-192.png", badge: "/favicon-32.png",
-          tag: `group-${req.params.id}`,
-          data: { url: "/groups" },
-        }).catch(() => {});
+        recipients.push(String(memberId));
       }
     }
+    fireNotifyMany(
+      recipients,
+      `💬 ${groupName}: ${senderName}`,
+      msgPreview,
+      { type: "message", link: "/groups", icon: "💬", tag: `group-${req.params.id}` }
+    ).catch(() => {});
     res.status(201).json(populated);
   });
 
@@ -6066,13 +6057,7 @@ export async function registerRoutes(
         if (attachmentSize) msgData.attachmentSize = attachmentSize;
       }
       const msg = await InboxMessageModel.create(msgData);
-      // Create notification for receiver
       const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
-      try {
-        await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: notifBody.slice(0, 100), link: '/inbox', icon: '💬' });
-      } catch (notifErr) {
-        console.error("[inbox] notification create failed:", notifErr);
-      }
       // Only send email if recipient is a CLIENT (not between employees)
       const toUser = await UserModel.findById(toUserId).select("email fullName username role");
       if (toUser?.email && toUser.role === "client") {
@@ -6081,16 +6066,15 @@ export async function registerRoutes(
       const populated = await InboxMessageModel.findById(msg._id)
         .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode")
         .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig employeeCode");
-      // Push via WebSocket for real-time delivery
+      // Realtime new-message event for the chat UI (separate from the notification toast)
       try { pushToUser(String(toUserId), { type: "new_message", message: populated }); } catch {}
-      // Push device notification (works when app is closed)
-      sendPushToUser(String(toUserId), {
-        title: `💬 رسالة من ${me.fullName || me.username}`,
-        body: notifBody.slice(0, 120),
-        icon: "/icon-192.png", badge: "/favicon-32.png",
-        tag: `msg-${me.id}`,
-        data: { url: "/inbox" },
-      }).catch(() => {});
+      // Universal notification (DB + in-app toast + high-urgency push that wakes the device)
+      fireNotify(
+        String(toUserId),
+        `💬 رسالة من ${me.fullName || me.username}`,
+        notifBody.slice(0, 120),
+        { type: "message", link: "/inbox", icon: "💬", tag: `msg-${me.id}` }
+      ).catch(() => {});
       cache.invalidate(`inbox:${me.id}`);
       cache.invalidate(`inbox:${toUserId}`);
       cache.invalidate(`inbox:unread:${toUserId}`);
@@ -6322,15 +6306,15 @@ export async function registerRoutes(
       // Push via WebSocket
       const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
       if (toUserId) {
+        // Realtime new-message event (separate from the notification toast)
         pushToUser(toUserId, { type: 'new_message', message: populated, csSessionId: String(session._id) });
-        await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: notifBody.slice(0, 100), link: '/cs-chat', icon: '💬' });
-        sendPushToUser(toUserId, {
-          title: `💬 رسالة من ${me.fullName || me.username}`,
-          body: notifBody.slice(0, 120),
-          icon: "/icon-192.png", badge: "/favicon-32.png",
-          tag: `cs-${String(session._id)}`,
-          data: { url: "/cs-chat" },
-        }).catch(() => {});
+        // Universal notification (DB + in-app toast + high-urgency push)
+        fireNotify(
+          toUserId,
+          `💬 رسالة من ${me.fullName || me.username}`,
+          notifBody.slice(0, 120),
+          { type: "message", link: "/cs-chat", icon: "💬", tag: `cs-${String(session._id)}` }
+        ).catch(() => {});
       }
       pushToUser(String(me.id), { type: 'cs_session_update', action: 'message', sessionId: String(session._id) });
       res.status(201).json(populated);

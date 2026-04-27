@@ -179,7 +179,7 @@ function ReadReceipt({ read }: { read: boolean }) {
 // ─────────────────────────────────────────────────────────
 // Message Bubble
 // ─────────────────────────────────────────────────────────
-function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boolean; contact: any; onDelete?: (id: string) => void }) {
+function MessageBubble({ msg, isMe, contact, onDelete, L = true }: { msg: any; isMe: boolean; contact: any; onDelete?: (id: string) => void; L?: boolean }) {
   const [hovered, setHovered] = useState(false);
   const hasText = !!msg.body;
   const hasAttachment = !!msg.attachmentUrl;
@@ -960,6 +960,7 @@ export default function Inbox() {
                                 isMe={isMe}
                                 contact={activeContact}
                                 onDelete={(id) => deleteMutation.mutate(id)}
+                                L={L}
                               />
                             );
                           })}
