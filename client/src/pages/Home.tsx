@@ -10,6 +10,8 @@ import { useI18n } from "@/lib/i18n";
 import { useTemplates } from "@/hooks/use-templates";
 import type { Partner } from "@shared/schema";
 import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
+import demoEcommerceImg from "@assets/Screenshot_2026-04-27_at_1.59.10_PM_1777302518834.png";
+import demoRestaurantImg from "@assets/Screenshot_2026-04-27_at_1.59.42_PM_1777302518837.png";
 import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
@@ -662,26 +664,37 @@ export default function Home() {
               </div>
 
               {/* Templates grid inside frame */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {visibleTemplates.length === 0
                   ? CURRENT_SECTORS.map((s: any, i) => {
-                      const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
+                      const heroImg = s.segment === "ecommerce" ? demoEcommerceImg : demoRestaurantImg;
                       return (
                         <motion.div key={i} {...fade(i)}>
                           <Link href={`/prices?segment=${s.segment}`}>
-                            <div className="group relative aspect-[4/5] rounded-2xl bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-xl transition-all duration-300" data-testid={`card-template-placeholder-${i}`}>
+                            <div className="group relative aspect-[16/10] rounded-2xl bg-black border border-white/[0.08] overflow-hidden cursor-pointer hover:scale-[1.015] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-all duration-300" data-testid={`card-template-placeholder-${i}`}>
+                              {/* Hero image with side shadow */}
+                              <img
+                                src={heroImg}
+                                alt={s.arName}
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                                loading="lazy"
+                              />
+                              {/* Side shadow gradients (left + right + bottom) for depth */}
+                              <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-black/70 via-black/25 to-transparent pointer-events-none" />
+                              <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-black/55 via-black/15 to-transparent pointer-events-none" />
+                              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
+
                               {/* DEMO ribbon */}
-                              <div className="absolute top-2 left-2 z-10">
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-600 text-white tracking-wider">DEMO</span>
+                              <div className="absolute top-3 left-3 z-10">
+                                <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-violet-600 text-white tracking-wider shadow-lg shadow-violet-500/30">DEMO</span>
                               </div>
-                              <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/30 dark:text-white/30 p-6 bg-gradient-to-br from-violet-50/30 to-transparent dark:from-violet-950/10">
-                                {IllustrationComponent ? <IllustrationComponent /> : <Layers className="w-10 h-10" />}
-                              </div>
-                              <div className="p-3 md:p-3.5 border-t border-black/[0.06] dark:border-white/[0.06]">
-                                <div className="font-bold text-xs md:text-sm">{ar ? s.arName : s.enName}</div>
-                                <div className="text-[10px] text-black/45 dark:text-white/45 mt-0.5 flex items-center gap-1">
-                                  {ar ? "افتح المعاينة" : "Open preview"}
-                                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+
+                              {/* Bottom info */}
+                              <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-10 text-right" dir="rtl">
+                                <div className="font-black text-lg md:text-2xl text-white drop-shadow-lg">{ar ? s.arName : s.enName}</div>
+                                <div className="text-xs md:text-sm text-white/75 mt-1.5 flex items-center justify-end gap-1.5">
+                                  {ar ? "افتح المعاينة الحية" : "Open live preview"}
+                                  <ChevronRight className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform rotate-180" />
                                 </div>
                               </div>
                             </div>
