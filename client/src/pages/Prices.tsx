@@ -26,18 +26,18 @@ import { Input } from "@/components/ui/input";
    (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
    with sm (6-month), yr (annual) and life (lifetime) prices. */
 const PRICES = {
-  restaurant: { lite: { sm: 380,  yr: 699,  life: 3499  }, pro: { sm: 650,  yr: 1199, life: 5999  }, infinity: { sm: 1100, yr: 1999, life: 9999  } },
-  ecommerce:  { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
-  education:  { lite: { sm: 750,  yr: 1299, life: 5999  }, pro: { sm: 1300, yr: 2299, life: 10999 }, infinity: { sm: 2300, yr: 3999, life: 19999 } },
-  healthcare: { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
-  realestate: { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
-  corporate:  { lite: { sm: 950,  yr: 1699, life: 7999  }, pro: { sm: 1900, yr: 3299, life: 15999 }, infinity: { sm: 3800, yr: 6599, life: 29999 } },
-  fitness:    { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
-  beauty:     { lite: { sm: 380,  yr: 699,  life: 3499  }, pro: { sm: 650,  yr: 1199, life: 5999  }, infinity: { sm: 1100, yr: 1999, life: 9999  } },
-  events:     { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
-  marketing:  { lite: { sm: 750,  yr: 1299, life: 5999  }, pro: { sm: 1300, yr: 2299, life: 10999 }, infinity: { sm: 2300, yr: 3999, life: 19999 } },
-  ai:         { lite: { sm: 950,  yr: 1699, life: 7999  }, pro: { sm: 1900, yr: 3299, life: 15999 }, infinity: { sm: 3800, yr: 6599, life: 29999 } },
-  other:      { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  restaurant: { lite: { sm: 699,  yr: 1299, life: 6499  }, pro: { sm: 1199, yr: 2199, life: 10999 }, infinity: { sm: 2199, yr: 3999, life: 19999 } },
+  ecommerce:  { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  education:  { lite: { sm: 1299, yr: 2299, life: 11499 }, pro: { sm: 2199, yr: 3999, life: 19999 }, infinity: { sm: 3899, yr: 6999, life: 34999 } },
+  healthcare: { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  realestate: { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  corporate:  { lite: { sm: 1699, yr: 2999, life: 14999 }, pro: { sm: 3299, yr: 5999, life: 29999 }, infinity: { sm: 6599, yr: 11999,life: 59999 } },
+  fitness:    { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  beauty:     { lite: { sm: 699,  yr: 1299, life: 6499  }, pro: { sm: 1199, yr: 2199, life: 10999 }, infinity: { sm: 2199, yr: 3999, life: 19999 } },
+  events:     { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
+  marketing:  { lite: { sm: 1299, yr: 2299, life: 11499 }, pro: { sm: 2199, yr: 3999, life: 19999 }, infinity: { sm: 3899, yr: 6999, life: 34999 } },
+  ai:         { lite: { sm: 1699, yr: 2999, life: 14999 }, pro: { sm: 3299, yr: 5999, life: 29999 }, infinity: { sm: 6599, yr: 11999,life: 59999 } },
+  other:      { lite: { sm: 999,  yr: 1799, life: 8999  }, pro: { sm: 1699, yr: 2999, life: 14999 }, infinity: { sm: 2999, yr: 5499, life: 27999 } },
 } as const;
 type SectorKey = keyof typeof PRICES;
 function multiYearPrice(annual: number, years: number) {
@@ -234,6 +234,18 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   }
   else { price = prices.life; label = "مدى الحياة"; sublabel = "دفعة واحدة للأبد"; }
 
+  // Monthly equivalent + savings
+  const monthlyEquiv =
+    period === "sixmonth"  ? Math.round(prices.sm / 6) :
+    period === "annual"    ? Math.round(prices.yr / 12) :
+    period === "multiyear" ? Math.round(price / (12 * years)) :
+                             null;
+  const annualizedSixMo = prices.sm * 2;
+  const savingsVsSixMo =
+    period === "annual"    ? Math.max(0, Math.round((1 - prices.yr / annualizedSixMo) * 100)) :
+    period === "multiyear" ? Math.max(0, Math.round((1 - (price / years) / annualizedSixMo) * 100)) :
+                             0;
+
   const icons = { lite: Zap, pro: Star, infinity: InfinityIcon };
   const TIcon = icons[tier];
 
@@ -243,7 +255,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow}`}
+      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${st.bg} ${st.border} ${st.glow} ${isPro ? "lg:scale-[1.04] lg:z-10 ring-1 ring-blue-500/30" : ""} ${isInfinity ? "ring-1 ring-amber-500/15" : ""}`}
       data-testid={`card-plan-${tier}`}
     >
       {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
@@ -277,17 +289,50 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
       </div>
 
       {/* Price */}
-      <div className={`px-6 py-5 ${isPro ? "bg-white/[0.04] border-t border-white/10" : isInfinity ? "bg-white/[0.02] border-t border-white/[0.06]" : "bg-gray-50 dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800"}`}>
+      <div className={`px-6 py-5 relative ${isPro ? "bg-white/[0.04] border-t border-white/10" : isInfinity ? "bg-white/[0.02] border-t border-white/[0.06]" : "bg-gray-50 dark:bg-[#111827] border-t border-gray-100 dark:border-slate-800"}`}>
+        {savingsVsSixMo > 0 && (
+          <span className={`absolute top-3 left-3 text-[10px] font-black px-2 py-0.5 rounded-full ${
+            isInfinity ? "bg-amber-500/15 text-amber-300 border border-amber-500/25" :
+            isPro      ? "bg-emerald-400/15 text-emerald-300 border border-emerald-400/25" :
+                         "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/40"
+          }`}>
+            وفّر {savingsVsSixMo}%
+          </span>
+        )}
+        {isLifetime && (
+          <span className={`absolute top-3 left-3 text-[10px] font-black px-2 py-0.5 rounded-full ${
+            isInfinity ? "bg-amber-500/15 text-amber-300 border border-amber-500/25" :
+            isPro      ? "bg-white/15 text-white border border-white/20" :
+                         "bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800/40"
+          }`}>
+            للأبد
+          </span>
+        )}
         <AnimatePresence mode="wait">
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{fmt(price)}</span>
               <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>ريال</span>
             </div>
-            <p className={`text-xs mt-1 ${isPro ? "text-blue-300/50" : isInfinity ? "text-amber-400/40" : "text-gray-400"}`}>
+            <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>
               {period === "sixmonth" ? "كل 6 أشهر" : period === "annual" ? "سنوياً — دفعة واحدة" : period === "multiyear" ? `${years} سنوات (خصم ${multiYearDiscount(years)}%)` : "مرة واحدة — للأبد"}
             </p>
-            {period === "sixmonth" && <p className={`text-[10px] mt-0.5 ${isPro || isInfinity ? "text-white/25" : "text-gray-400/70"}`}>ما يعادل {fmt(prices.sm * 2)} ريال / سنة</p>}
+            {monthlyEquiv !== null && (
+              <div className={`mt-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${
+                isInfinity ? "bg-amber-500/[0.06] border border-amber-500/15" :
+                isPro      ? "bg-white/[0.06] border border-white/10" :
+                             "bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50"
+              }`}>
+                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>≈</span>
+                <span className={`text-sm font-black ${st.textColor}`}>{fmt(monthlyEquiv)}</span>
+                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>ريال / شهر</span>
+              </div>
+            )}
+            {period === "sixmonth" && (
+              <p className={`text-[10px] mt-1.5 ${isPro || isInfinity ? "text-white/35" : "text-gray-400/80"}`}>
+                يساوي <span className="line-through">{fmt(prices.sm * 2)}</span> ريال سنوياً
+              </p>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

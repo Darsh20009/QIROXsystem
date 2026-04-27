@@ -14032,15 +14032,17 @@ export async function seedDatabase() {
     }
   } catch (e) { console.error("[Migration] E-Commerce template update failed:", e); }
 
-  // Seed Pricing Plans — Segment × Tier system (v5)
+  // Seed Pricing Plans — Segment × Tier system (v6 — raised pricing)
   const existingPlans = await storage.getPricingPlans();
   const restaurantLite = existingPlans.find((p: any) => p.slug === "restaurant-lite");
+  const restaurantPro  = existingPlans.find((p: any) => p.slug === "restaurant-pro");
   const beautyLite = existingPlans.find((p: any) => p.slug === "beauty-lite");
   const needsReseed =
     !restaurantLite ||
     !(restaurantLite as any).segment ||
     !beautyLite ||
-    existingPlans.some((p: any) => p.slug === "ecommerce" || p.slug === "lite");
+    existingPlans.some((p: any) => p.slug === "ecommerce" || p.slug === "lite") ||
+    (restaurantPro && Number((restaurantPro as any).annualPrice) < 2000);
 
   if (needsReseed) {
     for (const p of existingPlans) {
@@ -14058,78 +14060,78 @@ export async function seedDatabase() {
       {
         segment: "restaurant",
         plans: [
-          { tier: "lite", monthly: 199, sixmo: 380, annual: 699, lifetime: 3499, popular: false,
+          { tier: "lite", monthly: 349, sixmo: 699, annual: 1299, lifetime: 6499, popular: false,
             featuresAr: ["موقع مطعم احترافي", "قائمة طعام رقمية", "نموذج حجز طاولة", "ربط خرائط Google", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهر واحد"] },
-          { tier: "pro",     monthly: 349, sixmo: 650, annual: 1199, lifetime: 5999, popular: true,
+          { tier: "pro",     monthly: 599, sixmo: 1199, annual: 2199, lifetime: 10999, popular: true,
             featuresAr: ["كل مزايا لايت", "طلب عبر QR Code", "إدارة الطاولات", "نظام الطلبات والمطبخ", "تقارير المبيعات", "إشعارات فورية", "دعم توصيل واستلام", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 599, sixmo: 1100, annual: 1999, lifetime: 9999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال للمطعم", "بوابة دفع إلكتروني", "نظام ولاء ونقاط", "تكامل POS", "لوحة تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1099, sixmo: 2199, annual: 3999, lifetime: 19999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام مخزون متقدم", "بوابة دفع إلكتروني", "نظام ولاء ونقاط", "تكامل POS", "لوحة تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "ecommerce",
         plans: [
-          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+          { tier: "lite", monthly: 499, sixmo: 999, annual: 1799, lifetime: 8999, popular: false,
             featuresAr: ["متجر إلكتروني أساسي", "حتى 100 منتج", "سلة تسوق", "إدارة الطلبات", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+          { tier: "pro",     monthly: 849, sixmo: 1699, annual: 2999, lifetime: 14999, popular: true,
             featuresAr: ["كل مزايا لايت", "منتجات غير محدودة", "تكامل بوابات الدفع", "إدارة المخزون", "كوبونات وخصومات", "تقارير المبيعات", "SEO احترافي", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال iOS وAndroid", "نظام ولاء ونقاط", "تكامل ERP", "تقارير متقدمة", "دعم متعدد العملات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1499, sixmo: 2999, annual: 5499, lifetime: 27999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام مخزون متعدد الفروع", "نظام ولاء ونقاط", "تكامل ERP", "تقارير متقدمة", "دعم متعدد العملات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "education",
         plans: [
-          { tier: "lite", monthly: 399, sixmo: 750, annual: 1299, lifetime: 5999, popular: false,
+          { tier: "lite", monthly: 649, sixmo: 1299, annual: 2299, lifetime: 11499, popular: false,
             featuresAr: ["منصة تعليمية أساسية", "حتى 5 كورسات", "إدارة الطلاب", "اختبارات بسيطة", "شهادات إتمام", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 699, sixmo: 1300, annual: 2299, lifetime: 10999, popular: true,
+          { tier: "pro",     monthly: 1099, sixmo: 2199, annual: 3999, lifetime: 19999, popular: true,
             featuresAr: ["كل مزايا لايت", "كورسات غير محدودة", "فصول مباشرة Live", "نظام تقييم متقدم", "بوابة أولياء الأمور", "تقارير تفصيلية", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 1199, sixmo: 2300, annual: 3999, lifetime: 19999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال", "بوابة دفع إلكتروني", "نظام منح ومنح دراسية", "تكامل Zoom/Meet", "لوحة تحليلات تعليمية", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1949, sixmo: 3899, annual: 6999, lifetime: 34999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام إدارة شامل", "بوابة دفع إلكتروني", "نظام منح ومنح دراسية", "تكامل Zoom/Meet", "لوحة تحليلات تعليمية", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "corporate",
         plans: [
-          { tier: "lite", monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: false,
+          { tier: "lite", monthly: 849, sixmo: 1699, annual: 2999, lifetime: 14999, popular: false,
             featuresAr: ["موقع شركة احترافي", "صفحات تعريفية", "نموذج تواصل", "خريطة المكاتب", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 999, sixmo: 1900, annual: 3299, lifetime: 15999, popular: true,
+          { tier: "pro",     monthly: 1649, sixmo: 3299, annual: 5999, lifetime: 29999, popular: true,
             featuresAr: ["كل مزايا لايت", "لوحة تحكم متكاملة", "إدارة الفريق", "بوابة العملاء", "مدونة الشركة", "SEO احترافي", "تقارير شهرية", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 1999, sixmo: 3800, annual: 6599, lifetime: 29999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال", "نظام ERP مبسط", "API مخصص", "تكاملات خارجية", "تقارير متقدمة", "دعم أولوية 24/7", "تدريب الفريق", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 3299, sixmo: 6599, annual: 11999, lifetime: 59999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام إدارة متكامل", "نظام ERP مبسط", "API مخصص", "تكاملات خارجية", "تقارير متقدمة", "دعم أولوية 24/7", "تدريب الفريق", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "realestate",
         plans: [
-          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+          { tier: "lite", monthly: 499, sixmo: 999, annual: 1799, lifetime: 8999, popular: false,
             featuresAr: ["موقع عقاري احترافي", "قوائم العقارات", "بحث وفلترة", "نموذج تواصل", "خرائط تفاعلية", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+          { tier: "pro",     monthly: 849, sixmo: 1699, annual: 2999, lifetime: 14999, popular: true,
             featuresAr: ["كل مزايا لايت", "إدارة العقارات غير محدودة", "جدولة المعاينات", "حاسبة التقسيط", "بوابة المالك", "تقارير السوق", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال", "نظام CRM عقاري", "تكامل موالشي/إيجار", "تحليلات السوق", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1499, sixmo: 2999, annual: 5499, lifetime: 27999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام إدارة عقاري", "نظام CRM عقاري", "تكامل موالشي/إيجار", "تحليلات السوق", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "healthcare",
         plans: [
-          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+          { tier: "lite", monthly: 499, sixmo: 999, annual: 1799, lifetime: 8999, popular: false,
             featuresAr: ["موقع عيادة احترافي", "صفحة الأطباء", "حجز مواعيد بسيط", "معلومات الخدمات", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+          { tier: "pro",     monthly: 849, sixmo: 1699, annual: 2999, lifetime: 14999, popular: true,
             featuresAr: ["كل مزايا لايت", "نظام حجز متكامل", "ملف المريض", "إشعارات المواعيد", "تقارير العيادة", "بوابة المريض", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال", "سجل طبي إلكتروني", "وصفة طبية رقمية", "تكامل مختبرات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1499, sixmo: 2999, annual: 5499, lifetime: 27999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام إدارة متكامل", "سجل طبي إلكتروني", "وصفة طبية رقمية", "تكامل مختبرات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
       {
         segment: "beauty",
         plans: [
-          { tier: "lite", monthly: 199, sixmo: 380, annual: 699, lifetime: 3499, popular: false,
+          { tier: "lite", monthly: 349, sixmo: 699, annual: 1299, lifetime: 6499, popular: false,
             featuresAr: ["موقع صالون احترافي", "معرض الأعمال", "حجز مواعيد أونلاين", "قائمة الخدمات والأسعار", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 349, sixmo: 650, annual: 1199, lifetime: 5999, popular: true,
+          { tier: "pro",     monthly: 599, sixmo: 1199, annual: 2199, lifetime: 10999, popular: true,
             featuresAr: ["كل مزايا لايت", "نظام حجز ذكي مع تذكيرات", "إدارة الفريق والمواعيد", "بوابة العميل", "برنامج ولاء ونقاط", "تقارير الإيرادات", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 599, sixmo: 1100, annual: 1999, lifetime: 9999, popular: false,
-            featuresAr: ["كل مزايا برو", "تطبيق جوال للصالون", "بوابة دفع إلكتروني", "نظام CRM للعملاء", "حملات تسويقية مدمجة", "تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+          { tier: "infinite", monthly: 1099, sixmo: 2199, annual: 3999, lifetime: 19999, popular: false,
+            featuresAr: ["كل مزايا برو", "نظام إدارة متكامل", "بوابة دفع إلكتروني", "نظام CRM للعملاء", "حملات تسويقية مدمجة", "تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
     ];
@@ -14177,7 +14179,7 @@ export async function seedDatabase() {
         status: "active",
       } as any);
     }
-    console.log(`${allPlans.length} segment-tier plans seeded (v5)`);
+    console.log(`${allPlans.length} segment-tier plans seeded (v6)`);
   }
 
   // ── Auto-seed Extra Addons ────────────────────────────────────────────────
