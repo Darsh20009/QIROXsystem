@@ -10,7 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTemplates } from "@/hooks/use-templates";
 import type { Partner } from "@shared/schema";
 import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
-import demoEcommerceImg from "@assets/Screenshot_2026-04-27_at_1.59.10_PM_1777302518834.png";
+import demoEcommerceImg from "@assets/Screenshot_2026-04-27_at_6.23.57_PM_1777303494183.png";
 import demoRestaurantImg from "@assets/Screenshot_2026-04-27_at_1.59.42_PM_1777302518837.png";
 import {
   ArrowRight, ArrowLeft, Sparkles, Zap, Shield, Cpu,
