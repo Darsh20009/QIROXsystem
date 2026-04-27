@@ -1951,9 +1951,10 @@ const mailAccountSchema = new mongoose.Schema({
   imapPort:       { type: Number, default: 993 },
   smtpHost:       { type: String, default: "server222.web-hosting.com" },
   smtpPort:       { type: Number, default: 465 },
-  assignedUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-  isShared:       { type: Boolean, default: false },
-  sharedWith:     [{ type: String }], // roles that can see this inbox: "admin","ceo","cto"
+  assignedUserId:  { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // legacy single-assignee
+  assignedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],               // new multi-assignee list
+  isShared:        { type: Boolean, default: false },
+  sharedWith:      [{ type: String }], // roles that can see this inbox: "admin","ceo","cto"
 }, { timestamps: true });
 mailAccountSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.password; ret.id = ret._id?.toString(); return ret; } });
 export const MailAccountModel = mongoose.models.MailAccount || mongoose.model("MailAccount", mailAccountSchema);

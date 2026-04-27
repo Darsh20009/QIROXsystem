@@ -13446,7 +13446,10 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       const role = user.role || "client";
       const uid = (user._id || user.id || "").toString();
       if (role === "admin") return true;
+      // Legacy single-assignee
       if (account.assignedUserId && account.assignedUserId.toString() === uid) return true;
+      // New multi-assignee list
+      if (Array.isArray(account.assignedUserIds) && account.assignedUserIds.some((x: any) => String(x) === uid)) return true;
       if (account.isShared && account.sharedWith?.includes(role)) return true;
       // CEO/CTO can see shared inboxes
       if (["ceo","cto","manager"].includes(role) && account.isShared) return true;
@@ -13465,6 +13468,7 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
         const filtered = all.filter(a => {
           if (role === "admin") return true;
           if (a.assignedUserId && a.assignedUserId.toString() === uid) return true;
+          if (Array.isArray(a.assignedUserIds) && a.assignedUserIds.some((x: any) => String(x) === uid)) return true;
           if (a.isShared && a.sharedWith?.includes(role)) return true;
           if (["ceo","cto","manager"].includes(role) && a.isShared) return true;
           return false;
@@ -13482,15 +13486,22 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
       try {
         const all = await MailAccountModel.find().lean() as any[];
-        // Get assigned user names
+        // Get assigned user names (supports both legacy single + new multi list)
         const withUsers = await Promise.all(all.map(async (a) => {
-          let assignedUser = null;
-          if (a.assignedUserId) {
-            const u = await UserModel.findById(a.assignedUserId).select("fullName username role").lean() as any;
-            if (u) assignedUser = { id: u._id.toString(), fullName: u.fullName || u.username, role: u.role };
+          // Combine legacy assignedUserId with new assignedUserIds (deduped)
+          const idSet = new Set<string>();
+          if (a.assignedUserId) idSet.add(String(a.assignedUserId));
+          (a.assignedUserIds || []).forEach((x: any) => idSet.add(String(x)));
+          const ids = [...idSet];
+          let assignedUsers: any[] = [];
+          if (ids.length) {
+            const users = await UserModel.find({ _id: { $in: ids } }).select("fullName username role").lean() as any[];
+            assignedUsers = users.map(u => ({ id: u._id.toString(), fullName: u.fullName || u.username, role: u.role }));
           }
+          // Keep `assignedUser` for backward compatibility (first user)
+          const assignedUser = assignedUsers[0] || null;
           const { password, ...rest } = a;
-          return { ...rest, id: a._id.toString(), assignedUser };
+          return { ...rest, id: a._id.toString(), assignedUserIds: ids, assignedUser, assignedUsers };
         }));
         res.json(withUsers);
       } catch (err: any) {
@@ -13502,9 +13513,20 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
     app.post("/api/mail/accounts", async (req, res) => {
       if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
       try {
-        const { emailAddress, password, displayName, jobTitle, imapHost, imapPort, smtpHost, smtpPort, isShared, sharedWith } = req.body;
+        const { emailAddress, password, displayName, jobTitle, imapHost, imapPort, smtpHost, smtpPort, isShared, sharedWith, assignedUserIds } = req.body;
         if (!emailAddress || !password) return res.status(400).json({ error: "emailAddress and password required" });
-        const account = await MailAccountModel.create({ emailAddress, password, displayName: displayName || "", jobTitle: jobTitle || "", imapHost: imapHost || "server222.web-hosting.com", imapPort: imapPort || 993, smtpHost: smtpHost || "server222.web-hosting.com", smtpPort: smtpPort || 465, isShared: !!isShared, sharedWith: sharedWith || [] });
+        const account = await MailAccountModel.create({
+          emailAddress, password,
+          displayName: displayName || "",
+          jobTitle: jobTitle || "",
+          imapHost: imapHost || "server222.web-hosting.com",
+          imapPort: imapPort || 993,
+          smtpHost: smtpHost || "server222.web-hosting.com",
+          smtpPort: smtpPort || 465,
+          isShared: !!isShared,
+          sharedWith: sharedWith || [],
+          assignedUserIds: Array.isArray(assignedUserIds) ? assignedUserIds : [],
+        });
         const { password: _pw, ...safe } = (account.toObject() as any);
         res.json({ ...safe, id: account._id.toString() });
       } catch (err: any) {
@@ -13516,9 +13538,14 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
     app.put("/api/mail/accounts/:id", async (req, res) => {
       if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
       try {
-        const { assignedUserId, displayName, jobTitle, isShared, sharedWith, password } = req.body;
+        const { assignedUserId, assignedUserIds, displayName, jobTitle, isShared, sharedWith, password } = req.body;
         const update: any = {};
         if (assignedUserId !== undefined) update.assignedUserId = assignedUserId || null;
+        if (assignedUserIds !== undefined) {
+          update.assignedUserIds = Array.isArray(assignedUserIds) ? assignedUserIds : [];
+          // Clear legacy field once we move to the array model so the UI is the single source of truth
+          update.assignedUserId = null;
+        }
         if (displayName !== undefined) update.displayName = displayName;
         if (jobTitle !== undefined) update.jobTitle = jobTitle;
         if (isShared !== undefined) update.isShared = isShared;

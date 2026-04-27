@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Mail, Plus, Pencil, Trash2, Loader2, User, Users,
-  Shield, CheckCircle2, XCircle, Wifi, X
+  Shield, CheckCircle2, XCircle, Wifi, X, Check, Search
 } from "lucide-react";
 
+interface AssignedUser { id: string; fullName: string; role: string }
 interface MailAccount {
   id: string;
   emailAddress: string;
@@ -21,7 +21,9 @@ interface MailAccount {
   isShared: boolean;
   sharedWith: string[];
   assignedUserId: string | null;
-  assignedUser?: { id: string; fullName: string; role: string } | null;
+  assignedUserIds?: string[];
+  assignedUser?: AssignedUser | null;
+  assignedUsers?: AssignedUser[];
 }
 
 interface Employee {
@@ -51,6 +53,7 @@ export default function AdminMailAccounts() {
   const [form, setForm] = useState<Partial<MailAccount & { password: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number }>>({});
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [empSearch, setEmpSearch] = useState("");
 
   const { data: accounts = [], isLoading } = useQuery<MailAccount[]>({
     queryKey: ["/api/mail/accounts/all"],
@@ -125,13 +128,26 @@ export default function AdminMailAccounts() {
     setEditingId(account.id);
     setCreating(false);
     setTestResult(null);
+    setEmpSearch("");
+    // Combine new + legacy assignment so old data still shows up
+    const ids = new Set<string>(account.assignedUserIds || []);
+    if (account.assignedUserId) ids.add(account.assignedUserId);
     setForm({
       displayName: account.displayName,
       jobTitle: account.jobTitle,
-      assignedUserId: account.assignedUserId || undefined,
+      assignedUserIds: [...ids],
       isShared: account.isShared,
       sharedWith: account.sharedWith,
     });
+  }
+
+  function toggleEmployee(empId: string) {
+    const current = form.assignedUserIds || [];
+    if (current.includes(empId)) {
+      setForm(f => ({ ...f, assignedUserIds: current.filter(x => x !== empId) }));
+    } else {
+      setForm(f => ({ ...f, assignedUserIds: [...current, empId] }));
+    }
   }
 
   function toggleRole(role: string) {
@@ -287,16 +303,23 @@ export default function AdminMailAccounts() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-black/50 dark:text-white/50">
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-black/50 dark:text-white/50 flex-wrap">
                       <span>{account.jobTitle}</span>
-                      {account.assignedUser && (
-                        <span className="flex items-center gap-1">
+                      {(account.assignedUsers && account.assignedUsers.length > 0) ? (
+                        <span className="flex items-center gap-1.5 flex-wrap">
                           <User className="w-3 h-3" />
-                          {account.assignedUser.fullName}
+                          {account.assignedUsers.map((u, i) => (
+                            <span key={u.id} className="inline-flex items-center gap-1">
+                              <span data-testid={`text-assigned-${account.id}-${u.id}`}>{u.fullName}</span>
+                              {i < (account.assignedUsers!.length - 1) && <span className="text-black/30 dark:text-white/30">،</span>}
+                            </span>
+                          ))}
+                          <Badge className="text-[10px] bg-black/5 dark:bg-white/5 text-black/60 dark:text-white/60 border-0 ml-1">
+                            {account.assignedUsers.length} {L ? "موظف" : "users"}
+                          </Badge>
                         </span>
-                      )}
-                      {!account.assignedUser && !account.isShared && (
-                        <span className="text-orange-500">{L ? "غير معيّن" : "Unassigned"}</span>
+                      ) : (
+                        !account.isShared && <span className="text-orange-500">{L ? "غير معيّن" : "Unassigned"}</span>
                       )}
                       {account.isShared && account.sharedWith.length > 0 && (
                         <span className="flex items-center gap-1">
@@ -353,24 +376,84 @@ export default function AdminMailAccounts() {
                         </label>
                         <Input type="password" value={form.password || ""} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" dir="ltr" data-testid="input-edit-password" />
                       </div>
-                      <div>
-                        <label className="text-xs font-medium block mb-1">{L ? "تعيين للموظف" : "Assign to Employee"}</label>
-                        <Select
-                          value={form.assignedUserId || "__none__"}
-                          onValueChange={v => setForm(f => ({ ...f, assignedUserId: v === "__none__" ? undefined : v }))}
-                        >
-                          <SelectTrigger data-testid="select-assign-employee">
-                            <SelectValue placeholder={L ? "اختر موظفاً" : "Select employee"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">{L ? "بدون تعيين" : "No assignment"}</SelectItem>
-                            {employees.map(emp => (
-                              <SelectItem key={emp._id} value={emp._id}>
-                                {emp.fullName || emp.username} — {emp.role}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="col-span-2">
+                        <label className="text-xs font-medium block mb-1.5 flex items-center justify-between">
+                          <span>{L ? "تعيين للموظفين (يمكن اختيار أكثر من موظف)" : "Assign to Employees (multi-select)"}</span>
+                          <span className="text-[11px] text-black/40 dark:text-white/40 font-normal">
+                            {(form.assignedUserIds?.length || 0)} {L ? "محدّد" : "selected"}
+                          </span>
+                        </label>
+
+                        {/* Selected chips */}
+                        {(form.assignedUserIds && form.assignedUserIds.length > 0) && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {form.assignedUserIds.map(eid => {
+                              const emp = employees.find(e => e._id === eid);
+                              if (!emp) return null;
+                              return (
+                                <button
+                                  key={eid}
+                                  onClick={() => toggleEmployee(eid)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition-opacity"
+                                  data-testid={`chip-assigned-${eid}`}
+                                >
+                                  {emp.fullName || emp.username}
+                                  <X className="w-3 h-3" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Search + employee list */}
+                        <div className="relative mb-2">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40 dark:text-white/40 pointer-events-none" />
+                          <Input
+                            value={empSearch}
+                            onChange={e => setEmpSearch(e.target.value)}
+                            placeholder={L ? "ابحث عن موظف..." : "Search employee..."}
+                            className="pl-8 h-9 text-sm"
+                            dir={L ? "rtl" : "ltr"}
+                            data-testid="input-employee-search"
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto rounded-xl border border-black/10 dark:border-white/10 divide-y divide-black/5 dark:divide-white/5">
+                          {employees
+                            .filter(emp => {
+                              if (!empSearch) return true;
+                              const q = empSearch.toLowerCase();
+                              return (
+                                (emp.fullName || "").toLowerCase().includes(q) ||
+                                (emp.username || "").toLowerCase().includes(q) ||
+                                (emp.email || "").toLowerCase().includes(q) ||
+                                (emp.role || "").toLowerCase().includes(q)
+                              );
+                            })
+                            .map(emp => {
+                              const checked = (form.assignedUserIds || []).includes(emp._id);
+                              return (
+                                <button
+                                  key={emp._id}
+                                  onClick={() => toggleEmployee(emp._id)}
+                                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors text-left ${checked ? "bg-black/[0.04] dark:bg-white/[0.04]" : ""}`}
+                                  data-testid={`row-employee-${emp._id}`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-black dark:bg-white border-black dark:border-white" : "border-black/30 dark:border-white/30"}`}>
+                                      {checked && <Check className="w-3 h-3 text-white dark:text-black" />}
+                                    </div>
+                                    <span className="font-medium truncate">{emp.fullName || emp.username}</span>
+                                    <span className="text-black/40 dark:text-white/40 truncate">{emp.role}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          {employees.length === 0 && (
+                            <div className="px-3 py-4 text-center text-xs text-black/40 dark:text-white/40">
+                              {L ? "لا يوجد موظفون" : "No employees"}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
