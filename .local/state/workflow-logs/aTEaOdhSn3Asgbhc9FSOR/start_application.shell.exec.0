@@ -1,0 +1,53 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:15:00 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 16 cron jobs
+1:15:11 PM [express] GET /api/user 401 in 2ms
+1:15:11 PM [express] GET /api/app-downloads 200 in 27ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:15:11 PM [express] GET /api/public/settings 200 in 28ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+1:15:30 PM [express] GET /api/user 401 in 2ms
+1:15:30 PM [express] GET /api/app-downloads 304 in 24ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:15:30 PM [express] GET /api/public/settings 304 in 53ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+1:16:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:17:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:18:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:19:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:20:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:21:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:22:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:23:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:24:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:25:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:26:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:27:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:28:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:29:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:30:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:31:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:32:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:33:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:34:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:35:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:36:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:37:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+1:38:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:39:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:40:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+1:41:00 PM [express] POST /api/internal/push/promotional 401 in 1ms

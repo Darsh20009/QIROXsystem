@@ -1,0 +1,52 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+10:08:44 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 16 cron jobs
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+10:09:37 PM [express] GET /api/user 401 in 1ms
+10:09:37 PM [express] GET /api/public/settings 200 in 206ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+10:09:39 PM [express] GET /api/templates 200 in 207ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+10:09:39 PM [express] GET /api/app-downloads 200 in 226ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+10:09:39 PM [express] GET /api/partners 200 in 406ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+10:09:40 PM [express] GET /api/pricing 200 in 586ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetim…
+10:10:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:11:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:12:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:13:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:14:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:15:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:16:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:17:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:18:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:19:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:20:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:20:14 PM [express] GET /api/user 401 in 1ms
+10:20:14 PM [express] GET /api/public/settings 304 in 246ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+10:20:15 PM [express] GET /api/pricing 304 in 0ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime"…
+10:20:15 PM [express] GET /api/partners 304 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+10:20:16 PM [express] GET /api/app-downloads 304 in 209ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+10:20:16 PM [express] GET /api/templates 304 in 341ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+10:21:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:21:35 PM [express] GET /api/user 401 in 1ms
+10:21:35 PM [express] GET /api/public/settings 200 in 213ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+10:21:35 PM [express] GET /api/partners 200 in 4ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+10:21:35 PM [express] GET /api/pricing 200 in 2ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime"…
+10:21:36 PM [express] GET /api/templates 200 in 216ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+10:21:36 PM [express] GET /api/app-downloads 200 in 219ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+10:22:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
