@@ -22,10 +22,24 @@ import {
 import { Input } from "@/components/ui/input";
 
 /* ─── Pricing Data ────────────────────────────────────────────────────── */
+/* These prices match the original prices used in the employee/admin system
+   (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
+   with sm (6-month), yr (annual) and life (lifetime) prices. */
 const PRICES = {
-  restaurant: { lite: { sm: 399, yr: 699, life: 5999 }, pro: { sm: 599, yr: 999, life: 8999 }, infinity: { sm: 1798, yr: 2998, life: 26997 } },
-  ecommerce:  { lite: { sm: 399, yr: 699, life: 5999 }, pro: { sm: 599, yr: 999, life: 8999 }, infinity: { sm: 1798, yr: 2998, life: 26997 } },
-};
+  restaurant: { lite: { sm: 380,  yr: 699,  life: 3499  }, pro: { sm: 650,  yr: 1199, life: 5999  }, infinity: { sm: 1100, yr: 1999, life: 9999  } },
+  ecommerce:  { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  education:  { lite: { sm: 750,  yr: 1299, life: 5999  }, pro: { sm: 1300, yr: 2299, life: 10999 }, infinity: { sm: 2300, yr: 3999, life: 19999 } },
+  healthcare: { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  realestate: { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  corporate:  { lite: { sm: 950,  yr: 1699, life: 7999  }, pro: { sm: 1900, yr: 3299, life: 15999 }, infinity: { sm: 3800, yr: 6599, life: 29999 } },
+  fitness:    { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  beauty:     { lite: { sm: 380,  yr: 699,  life: 3499  }, pro: { sm: 650,  yr: 1199, life: 5999  }, infinity: { sm: 1100, yr: 1999, life: 9999  } },
+  events:     { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+  marketing:  { lite: { sm: 750,  yr: 1299, life: 5999  }, pro: { sm: 1300, yr: 2299, life: 10999 }, infinity: { sm: 2300, yr: 3999, life: 19999 } },
+  ai:         { lite: { sm: 950,  yr: 1699, life: 7999  }, pro: { sm: 1900, yr: 3299, life: 15999 }, infinity: { sm: 3800, yr: 6599, life: 29999 } },
+  other:      { lite: { sm: 550,  yr: 999,  life: 4999  }, pro: { sm: 950,  yr: 1699, life: 7999  }, infinity: { sm: 1700, yr: 2999, life: 14999 } },
+} as const;
+type SectorKey = keyof typeof PRICES;
 function multiYearPrice(annual: number, years: number) {
   let total = 0;
   for (let i = 0; i < years; i++) total += annual * Math.max(1 - i * 0.05, 0.6);
@@ -59,11 +73,11 @@ const RESTAURANT_FEATURES = {
   ],
   infinity: [
     { icon: Star,           ar: "كل مميزات برو ✦✦" },
-    { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
-    { icon: Apple,          ar: "تطبيق App Store (سنوي فقط)" },
     { icon: Mail,           ar: "5 بريد باسم المطعم/الكافيه" },
     { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
     { icon: Building2,      ar: "توافق نظام الحضور والإدارة المؤسسية" },
+    { icon: Database,       ar: "نظام مخزون وتقارير متقدمة" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
     { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
   ],
 };
@@ -92,11 +106,11 @@ const ECOMMERCE_FEATURES = {
   ],
   infinity: [
     { icon: Star,           ar: "كل مميزات برو ✦✦" },
-    { icon: PlayCircle,     ar: "تطبيق Google Play (سنوي/مدى الحياة)" },
-    { icon: Apple,          ar: "تطبيق App Store (سنوي فقط)" },
     { icon: Mail,           ar: "5 بريد باسم المتجر" },
     { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
     { icon: Database,       ar: "نظام مخزون متكامل متقدم" },
+    { icon: BarChart3,      ar: "تقارير وتحليلات متقدمة" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
     { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
   ],
 };
@@ -108,7 +122,7 @@ const LIFETIME_PERKS = [
   { icon: Clock,    ar: "متابعة شخصية بعد 3 سنوات بـ 100 ريال/سنة فقط" },
 ];
 
-const OTHER_SECTORS = [
+const OTHER_SECTORS: { key: SectorKey; icon: any; ar: string }[] = [
   { key: "education",    icon: GraduationCap, ar: "تعليم وأكاديميات" },
   { key: "healthcare",   icon: Heart,         ar: "صحة وعيادات" },
   { key: "realestate",   icon: Home,          ar: "عقارات" },
@@ -120,6 +134,45 @@ const OTHER_SECTORS = [
   { key: "ai",           icon: Bot,           ar: "ذكاء اصطناعي" },
   { key: "other",        icon: Globe,         ar: "قطاع آخر" },
 ];
+
+/* ─── Generic Features for "Other" Sectors ────────────────────────────── */
+/* Used by sectors that don't have bespoke restaurant/ecommerce feature lists. */
+const GENERIC_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع احترافي مخصص للقطاع" },
+    { icon: LayoutDashboard, ar: "لوحة تحكم متكاملة" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+    { icon: Smartphone,      ar: "تصميم متجاوب لكل الأجهزة" },
+    { icon: Shield,          ar: "SSL مجاني وحماية كاملة" },
+    { icon: CheckCircle2,    ar: "دعم فني شهرين بعد التسليم" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: BarChart3,      ar: "نظام تقارير وتحليلات" },
+    { icon: Users,          ar: "إدارة العملاء المتكاملة" },
+    { icon: Award,          ar: "نظام الولاء والنقاط" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم النشاط" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Database,       ar: "نظام بيانات وتقارير متقدمة" },
+    { icon: Building2,      ar: "توافق نظام الإدارة المؤسسية" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+function featuresFor(sector: SectorKey, tier: "lite"|"pro"|"infinity") {
+  if (sector === "restaurant") return RESTAURANT_FEATURES[tier];
+  if (sector === "ecommerce")  return ECOMMERCE_FEATURES[tier];
+  return GENERIC_FEATURES[tier];
+}
 
 const DURATION_OPTS = [
   { key: "sixmonth", ar: "6 أشهر", icon: CalendarRange },
@@ -160,12 +213,12 @@ const TIER_STYLES: Record<Tier, { bg: string; border: string; headerBg: string; 
 };
 
 function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
-  tier: Tier; period: Period; years: number; sector: "restaurant"|"ecommerce";
+  tier: Tier; period: Period; years: number; sector: SectorKey;
   onCustom: ()=>void; onOrder: (info: { tier: Tier; period: Period; years: number; sector: string; price: number; label: string })=>void;
 }) {
   const st = TIER_STYLES[tier];
   const prices = PRICES[sector][tier];
-  const features = sector === "restaurant" ? RESTAURANT_FEATURES[tier] : ECOMMERCE_FEATURES[tier];
+  const features = featuresFor(sector, tier);
   const isPro = tier === "pro";
   const isInfinity = tier === "infinity";
   const isLifetime = period === "lifetime";
@@ -727,11 +780,11 @@ export default function Prices() {
 
               {/* Plan cards — 3 col grid, Pro slightly elevated */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-                <PlanCard tier="lite"     period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                <PlanCard tier="lite"     period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 <div className="md:mt-[-14px]">
-                  <PlanCard tier="pro"   period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                  <PlanCard tier="pro"   period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 </div>
-                <PlanCard tier="infinity" period={period} years={years} sector={sector as "restaurant"|"ecommerce"} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                <PlanCard tier="infinity" period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
               </div>
 
               {/* Custom banner — below main cards */}
@@ -760,14 +813,14 @@ export default function Prices() {
 
           {/* Other Sectors */}
           {sector === "other" && (
-            <div className="max-w-2xl mx-auto">
-              <div className="text-center mb-8">
+            <>
+              <div className="text-center mb-6">
                 <h2 className="text-2xl font-black text-black dark:text-white mb-2">قطاعات أخرى</h2>
-                <p className="text-sm text-black/40 dark:text-white/40">اختر قطاعك، حدد المدة، وسنعدّ لك عرضاً مخصصاً</p>
+                <p className="text-sm text-black/40 dark:text-white/40">اختر قطاعك واختر المدة المناسبة</p>
               </div>
 
               {/* Sub-sector grid */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+              <div className="max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                 {OTHER_SECTORS.map(s => {
                   const Icon = s.icon;
                   const active = otherSector === s.key;
@@ -783,37 +836,66 @@ export default function Prices() {
                 })}
               </div>
 
-              {/* Duration */}
-              <div className="mb-6">
-                <p className="text-[10px] font-black uppercase tracking-wider text-black/30 dark:text-white/30 mb-2">المدة المطلوبة</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {DURATION_OPTS.map(({ key, ar, icon: Icon }) => {
-                    const active = otherDuration === key;
+              {/* Period switcher (same component as restaurant/ecommerce) */}
+              <div className="flex flex-col items-center mb-8 gap-3">
+                <div className="flex gap-1.5 p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl">
+                  {PERIODS_LIST.map(p => {
+                    const Icon = p.icon;
+                    const active = period === p.key;
                     return (
-                      <button key={key} onClick={() => setOtherDuration(key)}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all ${active ? "border-violet-400 bg-violet-50 dark:bg-violet-900/10 text-violet-700 dark:text-violet-300" : "border-black/[0.06] dark:border-white/[0.06] text-black/40 dark:text-white/40 hover:border-violet-200"}`}
-                        data-testid={`button-other-duration-${key}`}
+                      <button key={p.key} onClick={() => setPeriod(p.key)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all ${active ? "bg-white dark:bg-[#1a1a2e] text-black dark:text-white shadow-sm" : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"}`}
+                        data-testid={`button-other-period-${p.key}`}
                       >
-                        <Icon className="w-3.5 h-3.5"/>{ar}
+                        <Icon className="w-3.5 h-3.5"/>{p.ar}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Multi-year picker */}
+                {period === "multiyear" && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-800/20">
+                    <span className="text-xs font-bold text-violet-700 dark:text-violet-300">عدد السنوات:</span>
+                    <button onClick={() => setYears(y => Math.max(2, y - 1))} className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center hover:bg-violet-500 transition"><Minus className="w-3 h-3"/></button>
+                    <span className="text-lg font-black text-violet-700 dark:text-violet-300 w-6 text-center">{years}</span>
+                    <button onClick={() => setYears(y => Math.min(10, y + 1))} className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center hover:bg-violet-500 transition"><Plus className="w-3 h-3"/></button>
+                    <span className="text-xs font-bold text-violet-500 dark:text-violet-400">خصم {multiYearDiscount(years)}% على السنوات الإضافية</span>
+                  </motion.div>
+                )}
               </div>
 
-              <button
-                onClick={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector, otherDuration)}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white text-base font-black transition shadow-lg shadow-purple-500/20"
-                data-testid="button-other-custom-open"
-              >
-                <Sparkles className="w-5 h-5"/>
-                احصل على عرض سعر مخصص
-              </button>
-
-              <div className="mt-4 text-center text-xs text-black/30 dark:text-white/30">
-                جميع باقات مدى الحياة تشمل نطاقاً مجانياً 3 سنوات + دعم 3 سنوات + استضافة دائمة على خوادم كيروكس
+              {/* Plan cards for the selected sub-sector */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                <PlanCard tier="lite"     period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
+                <div className="md:mt-[-14px]">
+                  <PlanCard tier="pro"   period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
+                </div>
+                <PlanCard tier="infinity" period={period} years={years} sector={otherSector as SectorKey} onCustom={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector)} onOrder={startOrder}/>
               </div>
-            </div>
+
+              {/* Custom banner */}
+              <CustomBanner onOpen={() => openCustom(otherSector, OTHER_SECTORS.find(s=>s.key===otherSector)?.ar||otherSector, period==="multiyear"?`${years}y`:period)}/>
+
+              {/* Lifetime perks */}
+              {period === "lifetime" && <LifetimePerks/>}
+
+              {/* Multi-year note */}
+              {period === "multiyear" && (
+                <div className="mt-6 text-center text-xs text-black/30 dark:text-white/30">
+                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+                </div>
+              )}
+
+              {/* Lifetime note */}
+              {period !== "lifetime" && (
+                <div className="mt-6 text-center">
+                  <p className="text-xs text-black/30 dark:text-white/30">
+                    جميع باقات مدى الحياة تشمل نطاقاً مجانياً لمدة 3 سنوات + دعم تقني 3 سنوات + استضافة على خوادم كيروكس مدى الحياة
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
         </div>
