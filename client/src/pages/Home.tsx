@@ -702,51 +702,48 @@ export default function Home() {
                         </motion.div>
                       );
                     })
-                  : visibleTemplates.slice(0, 6).map((tpl: any, i: number) => {
-                      const tplCat = (tpl.category || tpl.sector || "").toLowerCase();
-                      const CATEGORY_TO_SEGMENT: Record<string, string> = { food: "restaurant", cafe: "restaurant", dining: "restaurant", store: "ecommerce", shop: "ecommerce" };
-                      const resolvedSegment = CATEGORY_TO_SEGMENT[tplCat] || tplCat;
-                      const matchedSector = SECTORS.find(s =>
-                        s.segment === resolvedSegment ||
-                        s.segment === tplCat ||
-                        s.enName.toLowerCase().replace(/[^a-z]/g, "").includes(tplCat.replace(/[^a-z]/g, "")) ||
-                        s.arName.includes(tpl.category || "")
-                      );
-                      const IllComp = matchedSector ? SECTOR_ILLUSTRATIONS[matchedSector.arName] : null;
-                      const catLabel = matchedSector ? (ar ? matchedSector.arName : matchedSector.enName) : (tpl.category || "");
-                      return (
-                        <motion.div key={tpl._id || tpl.id || i} {...fade(i)}>
-                          <Link href={`/templates/${tpl.slug || tpl._id}`}>
-                            <div className="group relative aspect-[4/5] rounded-2xl bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-xl transition-all duration-300" data-testid={`card-template-${tpl._id || i}`}>
+                  : (() => {
+                      // Show only restaurant + ecommerce hero demos on the homepage
+                      const restTpl = visibleTemplates.find((t: any) => /food|cafe|restaurant|dining/i.test(t.category || t.sector || t.slug || ""));
+                      const ecomTpl = visibleTemplates.find((t: any) => /ecom|shop|store/i.test(t.category || t.sector || t.slug || ""));
+                      const heroes = [
+                        { tpl: restTpl, segment: "restaurant", arName: "مطاعم ومقاهي",   enName: "Restaurants & Cafes", img: demoRestaurantImg },
+                        { tpl: ecomTpl, segment: "ecommerce",  arName: "متاجر إلكترونية", enName: "E-Commerce Stores",   img: demoEcommerceImg  },
+                      ];
+                      return heroes.map((h, i) => (
+                        <motion.div key={i} {...fade(i)}>
+                          <Link href={h.tpl ? `/templates/${h.tpl.slug || h.tpl._id}` : `/prices?segment=${h.segment}`}>
+                            <div className="group relative aspect-[16/10] rounded-2xl bg-black border border-white/[0.08] overflow-hidden cursor-pointer hover:scale-[1.015] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-all duration-300" data-testid={`card-template-${h.tpl?._id || i}`}>
+                              {/* Hero image with side shadow */}
+                              <img
+                                src={h.img}
+                                alt={h.arName}
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                                loading="lazy"
+                              />
+                              {/* Side shadow gradients (left + right + bottom) for depth */}
+                              <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-black/70 via-black/25 to-transparent pointer-events-none" />
+                              <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-black/55 via-black/15 to-transparent pointer-events-none" />
+                              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
+
                               {/* DEMO ribbon */}
-                              <div className="absolute top-2 left-2 z-10">
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-600 text-white tracking-wider shadow-md">DEMO</span>
+                              <div className="absolute top-3 left-3 z-10">
+                                <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-violet-600 text-white tracking-wider shadow-lg shadow-violet-500/30">DEMO</span>
                               </div>
-                              <div className="h-3/4 flex items-center justify-center overflow-hidden text-black/25 dark:text-white/25 bg-gradient-to-br from-violet-50/30 to-transparent dark:from-violet-950/10" style={tpl.heroColor && !tpl.coverImage && !IllComp ? { background: `linear-gradient(135deg, ${tpl.heroColor}22 0%, ${tpl.heroColor}44 100%)` } : {}}>
-                                {tpl.coverImage ? (
-                                  <img src={tpl.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                ) : IllComp ? (
-                                  <div className="w-full h-full p-6"><IllComp /></div>
-                                ) : (
-                                  <div className="flex flex-col items-center gap-3">
-                                    {matchedSector && (() => { const Icon = matchedSector.icon; return <Icon className="w-10 h-10" style={tpl.heroColor ? { color: tpl.heroColor } : {}} />; })()}
-                                    {!matchedSector && <Layers className="w-10 h-10" />}
-                                    <span className="text-xs font-medium text-black/40 dark:text-white/40">{catLabel}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="p-3 md:p-3.5 border-t border-black/[0.06] dark:border-white/[0.06]">
-                                <div className="font-bold text-xs md:text-sm truncate">{ar ? tpl.nameAr || tpl.name : tpl.name}</div>
-                                <div className="text-[10px] text-black/45 dark:text-white/45 mt-0.5 flex items-center gap-1 truncate">
-                                  <span className="truncate">{catLabel}</span>
-                                  <ChevronRight className="w-3 h-3 shrink-0 group-hover:translate-x-1 transition-transform" />
+
+                              {/* Bottom info */}
+                              <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-10 text-right" dir="rtl">
+                                <div className="font-black text-lg md:text-2xl text-white drop-shadow-lg">{ar ? (h.tpl?.nameAr || h.arName) : (h.tpl?.name || h.enName)}</div>
+                                <div className="text-xs md:text-sm text-white/75 mt-1.5 flex items-center justify-end gap-1.5">
+                                  {ar ? "افتح المعاينة الحية" : "Open live preview"}
+                                  <ChevronRight className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform rotate-180" />
                                 </div>
                               </div>
                             </div>
                           </Link>
                         </motion.div>
-                      );
-                    })}
+                      ));
+                    })()}
               </div>
 
               {/* Caption inside frame */}
