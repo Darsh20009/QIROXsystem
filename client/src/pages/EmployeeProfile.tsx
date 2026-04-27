@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download, Instagram, Twitter, Linkedin, Youtube, Music2, Globe, RotateCw, IdCard } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import qiroxLogoNoBgPath from "@assets/qirox_without_background_1771716363944.png";
 import { BiometricManager } from "@/components/BiometricManager";
@@ -97,6 +97,9 @@ export default function EmployeeProfile() {
       setDownloading(side);
       const html2canvas = (await import("html2canvas")).default;
 
+      // Wait for web fonts (Cairo / IBM Plex Sans Arabic) so mobile + desktop produce identical output
+      try { await (document as any).fonts?.ready; } catch {}
+
       // Pre-render white logo data URL for canvas (html2canvas ignores CSS filters)
       const whiteLogoUrl = await toWhiteDataUrl(qiroxLogoPath);
 
@@ -109,13 +112,31 @@ export default function EmployeeProfile() {
       // Allow layout/paint flush
       await new Promise(r => requestAnimationFrame(() => r(null)));
 
+      // Card is designed at 280×440 — lock those exact pixel dimensions so the
+      // downloaded PNG looks identical regardless of phone/laptop viewport.
+      const CARD_W = 280;
+      const CARD_H = 440;
+
       const canvas = await html2canvas(node, {
         backgroundColor: null,
-        scale: 3,
+        scale: 3,                  // 840×1320 output
         useCORS: true,
         allowTaint: false,
         logging: false,
+        width: CARD_W,
+        height: CARD_H,
+        windowWidth: 1280,         // force a desktop-sized layout viewport for the clone
+        windowHeight: 900,
         onclone: (_doc, element) => {
+          // Lock the cloned card to design dimensions (fights any responsive scaling)
+          element.style.width = CARD_W + "px";
+          element.style.height = CARD_H + "px";
+          element.style.transform = "none";
+          element.style.position = "relative";
+          element.style.inset = "auto";
+          // Force a known font stack so the download never falls back to system fonts
+          element.style.fontFamily = "'Cairo','IBM Plex Sans Arabic',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif";
+
           // Fix Arabic text direction (inherited dir="ltr" from outer wrapper)
           element.style.direction = "rtl";
           element.querySelectorAll("[data-dir-auto]").forEach(el => {
@@ -126,6 +147,24 @@ export default function EmployeeProfile() {
           element.querySelectorAll("img[data-white-logo]").forEach(el => {
             (el as HTMLImageElement).src = whiteLogoUrl;
             (el as HTMLImageElement).style.filter = "none";
+          });
+
+          // html2canvas does NOT support conic-gradient — convert each occurrence to
+          // a visually-similar linear-gradient so the silver photo ring + QR ring render.
+          const SILVER_LINEAR = "linear-gradient(135deg,#ffffff 0%,#d4d4d8 25%,#71717a 50%,#a1a1aa 75%,#ffffff 100%)";
+          element.querySelectorAll<HTMLElement>("*").forEach(el => {
+            const inline = el.getAttribute("style") || "";
+            if (inline.includes("conic-gradient")) {
+              el.setAttribute(
+                "style",
+                inline.replace(/conic-gradient\([^)]*\)/g, SILVER_LINEAR)
+              );
+            }
+            // Also catch computed background that came from CSS classes
+            const bg = el.style.background || el.style.backgroundImage;
+            if (bg && bg.includes("conic-gradient")) {
+              el.style.background = SILVER_LINEAR;
+            }
           });
         },
       });
@@ -838,8 +877,8 @@ export default function EmployeeProfile() {
                             <span className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white rounded-br-md" />
 
                             <div className="relative">
-                              <QRCodeSVG
-                                id="qr-login-svg"
+                              <QRCodeCanvas
+                                id="qr-login-canvas"
                                 value={qrLoginUrl}
                                 size={150}
                                 level="H"
