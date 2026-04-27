@@ -157,10 +157,11 @@ const PILLARS = [
 ];
 
 const TABS = [
-  { id: "systems", ar: "الأنظمة", en: "Systems" },
-  { id: "pricing", ar: "الباقات", en: "Plans" },
-  { id: "process", ar: "كيف نعمل", en: "How We Work" },
-  { id: "partners", ar: "شركاؤنا", en: "Partners" },
+  { id: "systems",   ar: "الأنظمة",  en: "Systems" },
+  { id: "templates", ar: "النماذج",  en: "Templates" },
+  { id: "pricing",   ar: "الباقات",  en: "Plans" },
+  { id: "process",   ar: "كيف نعمل", en: "How We Work" },
+  { id: "partners",  ar: "شركاؤنا",  en: "Partners" },
 ];
 
 const PROCESS_STEPS = [
@@ -302,8 +303,8 @@ export default function Home() {
 
         {/* ─── TAB BAR ─── */}
         <div className="sticky top-16 z-30 -mt-4 mb-2">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <div className="mx-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-white/85 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12)]">
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl flex justify-center">
+            <div className="inline-flex items-center gap-1 p-1.5 rounded-full bg-white/85 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12)]">
               {TABS.map((t) => {
                 const active = tab === t.id;
                 return (
@@ -622,7 +623,7 @@ export default function Home() {
         </section>
 
         {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
-        <section className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
+        <section id="tab-templates" className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
           {/* Decorative grid background */}
           <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.05] pointer-events-none"
             style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "24px 24px" }} />
