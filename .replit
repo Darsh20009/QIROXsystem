@@ -74,6 +74,7 @@ GROQ_API_KEYS = "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,gsk_zE
 [agent]
 expertMode = true
 integrations = ["google-sheet:1.0.0"]
+stack = "FULLSTACK_JS"
 
 [postMerge]
 path = "scripts/post-merge.sh"
