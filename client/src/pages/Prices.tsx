@@ -26,17 +26,17 @@ import { Input } from "@/components/ui/input";
    (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
    with sm (6-month), yr (annual) and life (lifetime) prices. */
 const PRICES = {
-  restaurant: { lite: { sm: 599,  yr: 1099, life: 5499  }, pro: { sm: 999,  yr: 1899, life: 9499  }, infinity: { sm: 1899, yr: 3499, life: 17499 } },
-  ecommerce:  { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
-  education:  { lite: { sm: 1099, yr: 1949, life: 9799  }, pro: { sm: 1899, yr: 3399, life: 16999 }, infinity: { sm: 3299, yr: 5999, life: 29999 } },
-  healthcare: { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
-  realestate: { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
-  corporate:  { lite: { sm: 1449, yr: 2599, life: 12999 }, pro: { sm: 2799, yr: 5099, life: 25499 }, infinity: { sm: 5599, yr: 10199,life: 50999 } },
-  fitness:    { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
-  beauty:     { lite: { sm: 599,  yr: 1099, life: 5499  }, pro: { sm: 999,  yr: 1899, life: 9499  }, infinity: { sm: 1899, yr: 3499, life: 17499 } },
-  events:     { lite: { sm: 849,  yr: 1549, life: 7799  }, pro: { sm: 1449, yr: 2599, life: 12999 }, infinity: { sm: 2599, yr: 4699, life: 23999 } },
-  marketing:  { lite: { sm: 1099, yr: 1949, life: 9799  }, pro: { sm: 1899, yr: 3399, life: 16999 }, infinity: { sm: 3299, yr: 5999, life: 29999 } },
-  ai:         { lite: { sm: 1449, yr: 2599, life: 12999 }, pro: { sm: 2799, yr: 5099, life: 25499 }, infinity: { sm: 5599, yr: 10199,life: 50999 } },
+  restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
+  ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  education:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
+  healthcare: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  realestate: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
+  fitness:    { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  beauty:     { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
+  events:     { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  marketing:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
+  ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
   other:      { lite: { sm: 0,    yr: 0,    life: 0     }, pro: { sm: 0,    yr: 0,    life: 0     }, infinity: { sm: 0,    yr: 0,    life: 0     } },
 } as const;
 type SectorKey = keyof typeof PRICES;
