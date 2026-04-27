@@ -136,21 +136,19 @@ const SECTOR_ILLUSTRATIONS: Record<string, React.FC> = {
   "ابدأ فكرتك الخاصة": IdeaIllustration,
 };
 
-// Soft, premium color theme per sector. Each entry has:
-//   bg:     top-area background (soft tint, calm)
-//   strip:  bottom title-strip background (slightly stronger tint)
-//   accent: icon / illustration color
-//   text:   bottom title color (always high-contrast on the strip)
-const SECTOR_COLORS: Record<string, { bg: string; strip: string; accent: string; text: string }> = {
-  "متاجر إلكترونية": { bg: "bg-emerald-50 dark:bg-emerald-500/10",   strip: "bg-emerald-100 dark:bg-emerald-500/20 border-t border-emerald-200/60 dark:border-emerald-500/20",   accent: "text-emerald-600 dark:text-emerald-300",   text: "text-emerald-900 dark:text-emerald-100" },
-  "مطاعم ومقاهي":     { bg: "bg-amber-50 dark:bg-amber-500/10",       strip: "bg-amber-100 dark:bg-amber-500/20 border-t border-amber-200/60 dark:border-amber-500/20",         accent: "text-amber-600 dark:text-amber-300",       text: "text-amber-900 dark:text-amber-100" },
-  "منصات تعليمية":    { bg: "bg-sky-50 dark:bg-sky-500/10",           strip: "bg-sky-100 dark:bg-sky-500/20 border-t border-sky-200/60 dark:border-sky-500/20",                 accent: "text-sky-600 dark:text-sky-300",           text: "text-sky-900 dark:text-sky-100" },
-  "شركات ومؤسسات":    { bg: "bg-indigo-50 dark:bg-indigo-500/10",     strip: "bg-indigo-100 dark:bg-indigo-500/20 border-t border-indigo-200/60 dark:border-indigo-500/20",     accent: "text-indigo-600 dark:text-indigo-300",     text: "text-indigo-900 dark:text-indigo-100" },
-  "صحة وعيادات":      { bg: "bg-rose-50 dark:bg-rose-500/10",         strip: "bg-rose-100 dark:bg-rose-500/20 border-t border-rose-200/60 dark:border-rose-500/20",             accent: "text-rose-600 dark:text-rose-300",         text: "text-rose-900 dark:text-rose-100" },
-  "عقارات":            { bg: "bg-teal-50 dark:bg-teal-500/10",         strip: "bg-teal-100 dark:bg-teal-500/20 border-t border-teal-200/60 dark:border-teal-500/20",             accent: "text-teal-600 dark:text-teal-300",         text: "text-teal-900 dark:text-teal-100" },
-  "صالونات تجميل":     { bg: "bg-pink-50 dark:bg-pink-500/10",         strip: "bg-pink-100 dark:bg-pink-500/20 border-t border-pink-200/60 dark:border-pink-500/20",             accent: "text-pink-600 dark:text-pink-300",         text: "text-pink-900 dark:text-pink-100" },
-  "وكالات التسويق":    { bg: "bg-violet-50 dark:bg-violet-500/10",     strip: "bg-violet-100 dark:bg-violet-500/20 border-t border-violet-200/60 dark:border-violet-500/20",     accent: "text-violet-600 dark:text-violet-300",     text: "text-violet-900 dark:text-violet-100" },
-  "ذكاء اصطناعي":      { bg: "bg-cyan-50 dark:bg-cyan-500/10",         strip: "bg-cyan-100 dark:bg-cyan-500/20 border-t border-cyan-200/60 dark:border-cyan-500/20",             accent: "text-cyan-600 dark:text-cyan-300",         text: "text-cyan-900 dark:text-cyan-100" },
+// Premium brand-aligned signature accents — monochrome cards stay true to QIROX
+// black/white identity; each sector earns a single jewel-tone "glow blob"
+// + matching hover ring. Subtle on light mode, luminous on dark mode.
+const SECTOR_ACCENT: Record<string, { glow: string; ring: string }> = {
+  "متاجر إلكترونية": { glow: "bg-emerald-500/30 dark:bg-emerald-400/40",   ring: "ring-emerald-500/40 dark:ring-emerald-400/50" },
+  "مطاعم ومقاهي":     { glow: "bg-orange-500/30 dark:bg-orange-400/40",     ring: "ring-orange-500/40 dark:ring-orange-400/50" },
+  "منصات تعليمية":    { glow: "bg-sky-500/30 dark:bg-sky-400/40",           ring: "ring-sky-500/40 dark:ring-sky-400/50" },
+  "شركات ومؤسسات":    { glow: "bg-indigo-500/30 dark:bg-indigo-400/40",     ring: "ring-indigo-500/40 dark:ring-indigo-400/50" },
+  "صحة وعيادات":      { glow: "bg-rose-500/30 dark:bg-rose-400/40",         ring: "ring-rose-500/40 dark:ring-rose-400/50" },
+  "عقارات":            { glow: "bg-teal-500/30 dark:bg-teal-400/40",         ring: "ring-teal-500/40 dark:ring-teal-400/50" },
+  "صالونات تجميل":     { glow: "bg-fuchsia-500/30 dark:bg-fuchsia-400/40",   ring: "ring-fuchsia-500/40 dark:ring-fuchsia-400/50" },
+  "وكالات التسويق":    { glow: "bg-violet-500/30 dark:bg-violet-400/40",     ring: "ring-violet-500/40 dark:ring-violet-400/50" },
+  "ذكاء اصطناعي":      { glow: "bg-cyan-500/30 dark:bg-cyan-400/40",         ring: "ring-cyan-500/40 dark:ring-cyan-400/50" },
 };
 
 const SECTORS = [
@@ -354,61 +352,89 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Sector illustrated cards grid */}
+            {/* Sector illustrated cards grid — premium brand-aligned design */}
             <motion.div {...fade(1)} className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-14">
               {SECTORS.map((s: any, i) => {
                 const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
                 const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;
                 const Icon = s.icon;
-                const theme = SECTOR_COLORS[s.arName];
+                const accent = SECTOR_ACCENT[s.arName];
+                const num = String(i + 1).padStart(2, "0");
                 return (
                   <Link key={i} href={sectorHref}>
                     <div
-                      className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] ${
+                      className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.98] ring-1 ring-inset ${
                         s.custom
-                          ? "bg-black dark:bg-white"
-                          : (theme?.bg || "bg-black/[0.04] dark:bg-white/[0.06]")
+                          ? "bg-gradient-to-br from-neutral-900 via-black to-neutral-900 dark:from-white dark:via-neutral-100 dark:to-white ring-white/10 dark:ring-black/10 hover:ring-white/30 dark:hover:ring-black/30"
+                          : `bg-gradient-to-br from-white to-neutral-100 dark:from-neutral-900 dark:to-black ring-black/5 dark:ring-white/5 hover:ring-2 ${accent?.ring || "hover:ring-black/20 dark:hover:ring-white/20"}`
                       }`}
                       data-testid={`card-sector-${i}`}
                     >
-                      {/* Illustration top 70% — tinted with sector accent color */}
-                      <div className={`absolute inset-0 bottom-[30%] flex items-center justify-center p-3 ${
-                        s.custom
-                          ? "text-white dark:text-black"
-                          : (theme?.accent || "text-black dark:text-white")
+                      {/* Signature glow blob (sector accent) — soft, premium */}
+                      {!s.custom && accent && (
+                        <div
+                          className={`absolute -top-8 -right-8 w-28 h-28 rounded-full blur-2xl ${accent.glow} transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 opacity-60`}
+                          aria-hidden="true"
+                        />
+                      )}
+
+                      {/* Subtle grid texture overlay for depth (brand pattern) */}
+                      <div
+                        className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06] pointer-events-none"
+                        style={{
+                          backgroundImage:
+                            s.custom
+                              ? "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)"
+                              : "radial-gradient(circle, currentColor 1px, transparent 1px)",
+                          backgroundSize: "14px 14px",
+                        }}
+                        aria-hidden="true"
+                      />
+
+                      {/* Top-corner sector number — typographic accent, brand-feel */}
+                      <div className={`absolute top-2.5 right-3 text-[10px] font-mono font-bold tracking-wider ${
+                        s.custom ? "text-white/30 dark:text-black/30" : "text-black/25 dark:text-white/25"
                       }`}>
-                        {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-8 h-8 opacity-60" />}
+                        {num}
                       </div>
 
-                      {/* Bottom title strip — colored & always readable */}
-                      <div className={`absolute bottom-0 inset-x-0 h-[30%] flex flex-col items-center justify-center gap-0.5 px-2 ${
-                        s.custom
-                          ? "bg-black/80 dark:bg-white/80"
-                          : (theme?.strip || "bg-black/[0.06] dark:bg-white/[0.07] border-t border-black/[0.06] dark:border-white/[0.07]")
+                      {/* Illustration zone — top 65% — bigger, bolder, lifted on hover */}
+                      <div className={`absolute inset-0 bottom-[35%] flex items-center justify-center p-3 transition-transform duration-500 group-hover:scale-110 ${
+                        s.custom ? "text-white dark:text-black" : "text-black dark:text-white"
                       }`}>
-                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight ${
-                          s.custom
-                            ? "text-white dark:text-black"
-                            : (theme?.text || "text-black dark:text-white")
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-10 h-10" />}
+                        </div>
+                      </div>
+
+                      {/* Bottom title strip — premium solid black/white with crisp typography */}
+                      <div className={`absolute bottom-0 inset-x-0 h-[35%] flex flex-col items-center justify-center gap-1 px-2 ${
+                        s.custom
+                          ? "bg-black/40 dark:bg-white/40 backdrop-blur-sm"
+                          : "bg-black dark:bg-white"
+                      }`}>
+                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight tracking-tight ${
+                          s.custom ? "text-white dark:text-black" : "text-white dark:text-black"
                         }`}>
                           {ar ? s.arName : s.enName}
                         </div>
-                        {s.custom && (
-                          <div className="text-[9px] text-white/60 dark:text-black/60 font-medium">{ar ? "ابدأ فكرتك" : "Start your idea"}</div>
+                        {s.custom ? (
+                          <div className="text-[9px] text-white/70 dark:text-black/70 font-medium flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5" />
+                            {ar ? "ابدأ فكرتك" : "Start your idea"}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[9px] text-white/60 dark:text-black/60 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {ar ? "اعرف المزيد" : "Learn more"}
+                            <ChevronRight className="w-2.5 h-2.5 rtl:rotate-180" />
+                          </div>
                         )}
                       </div>
 
-                      {/* Hover arrow — picks up the sector accent color */}
-                      {!s.custom && (
-                        <div className="absolute top-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className={`w-5 h-5 rounded-full bg-white/70 dark:bg-black/30 flex items-center justify-center backdrop-blur-sm`}>
-                            <ChevronRight className={`w-3 h-3 ${theme?.accent || "text-black/60 dark:text-white/60"}`} />
-                          </div>
-                        </div>
-                      )}
+                      {/* Custom card sparkle badge */}
                       {s.custom && (
-                        <div className="absolute top-2.5 right-2.5">
-                          <Lightbulb className="w-3.5 h-3.5 text-white/70 dark:text-black/70" />
+                        <div className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20 dark:ring-black/20">
+                          <Lightbulb className="w-3.5 h-3.5 text-white dark:text-black" />
                         </div>
                       )}
                     </div>
