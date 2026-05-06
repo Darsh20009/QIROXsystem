@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Loader2, Plus, Edit2, Trash2, Handshake, ExternalLink,
   CheckCircle2, XCircle, Star, Globe, Layers, ChevronDown,
-  CheckCheck, X, ToggleLeft, ToggleRight, Eye, EyeOff
+  CheckCheck, X, ToggleLeft, ToggleRight, Eye, EyeOff,
+  Copy, Search, Sparkles, ChevronUp
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Partner } from "@shared/schema";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -78,12 +79,38 @@ export default function AdminPartners() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [copyPanelOpen, setCopyPanelOpen] = useState(false);
+  const [copySearch, setCopySearch] = useState("");
+  const [copiedFrom, setCopiedFrom] = useState<string | null>(null);
 
   const { data: partners, isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
   });
 
   const set = (k: keyof FormData, v: any) => setFormData(f => ({ ...f, [k]: v }));
+
+  const copyFromPartner = (partner: Partner) => {
+    setFormData({
+      name: partner.name,
+      nameAr: partner.nameAr || "",
+      logoUrl: partner.logoUrl,
+      websiteUrl: partner.websiteUrl || "",
+      category: partner.category || "",
+      sortOrder: partner.sortOrder?.toString() || "0",
+      isActive: partner.isActive ?? true,
+      description: partner.description || "",
+      descriptionAr: partner.descriptionAr || "",
+      features: [...(partner.features || [])],
+      featuresAr: [...(partner.featuresAr || [])],
+      relatedService: partner.relatedService || "",
+      featureInput: "",
+      featureArInput: "",
+    });
+    setCopiedFrom(partner.nameAr || partner.name);
+    setCopyPanelOpen(false);
+    setCopySearch("");
+    toast({ title: L ? `✅ تم استيراد بيانات "${partner.nameAr || partner.name}" — عدّل ما تحتاجه` : `✅ Imported from "${partner.name}" — edit as needed` });
+  };
 
   const toPayload = (data: FormData) => ({
     name: data.name,
@@ -360,7 +387,7 @@ export default function AdminPartners() {
       )}
 
       {/* Dialog */}
-      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditingId(null); setFormData(emptyForm); } }}>
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditingId(null); setFormData(emptyForm); setCopyPanelOpen(false); setCopySearch(""); setCopiedFrom(null); } }}>
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
@@ -372,6 +399,101 @@ export default function AdminPartners() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5 mt-2">
+
+            {/* ── Copy from existing partner (create mode only) ── */}
+            {!editingId && (partners || []).length > 0 && (
+              <div className="rounded-2xl border border-dashed border-black/15 dark:border-white/15 overflow-hidden">
+                <button type="button"
+                  onClick={() => { setCopyPanelOpen(o => !o); setCopySearch(""); }}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all"
+                  data-testid="button-copy-from-partner">
+                  <span className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] flex items-center justify-center">
+                      <Copy className="w-3.5 h-3.5" />
+                    </div>
+                    {L ? "استيراد بيانات من شريك موجود" : "Import data from existing partner"}
+                    {copiedFrom && !copyPanelOpen && (
+                      <span className="text-[10px] font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full">
+                        {L ? "من:" : "from:"} {copiedFrom}
+                      </span>
+                    )}
+                  </span>
+                  {copyPanelOpen
+                    ? <ChevronUp className="w-4 h-4 opacity-40" />
+                    : <ChevronDown className="w-4 h-4 opacity-40" />}
+                </button>
+
+                {copyPanelOpen && (
+                  <div className="border-t border-black/[0.06] dark:border-white/[0.06] p-3 space-y-2 bg-black/[0.01] dark:bg-white/[0.01]">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30 absolute right-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        autoFocus
+                        value={copySearch}
+                        onChange={e => setCopySearch(e.target.value)}
+                        placeholder={L ? "ابحث عن شريك..." : "Search partner..."}
+                        className="w-full h-9 pr-9 pl-3 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-900 text-sm outline-none focus:border-black/25 dark:focus:border-white/25 transition"
+                        data-testid="input-copy-search"
+                      />
+                    </div>
+
+                    {/* Partner list */}
+                    <div className="max-h-52 overflow-y-auto space-y-1 pr-0.5">
+                      {(partners || [])
+                        .filter(p => {
+                          if (!copySearch.trim()) return true;
+                          const q = copySearch.toLowerCase();
+                          return (p.name?.toLowerCase().includes(q) || p.nameAr?.includes(copySearch) || p.category?.toLowerCase().includes(q));
+                        })
+                        .map(p => (
+                          <button key={p.id} type="button"
+                            onClick={() => copyFromPartner(p)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-right transition-colors group"
+                            data-testid={`button-copy-partner-${p.id}`}>
+                            <div className="w-9 h-9 rounded-lg border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
+                              <img src={p.logoUrl} alt={p.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                              <p className="text-sm font-semibold text-black dark:text-white truncate">{p.nameAr || p.name}</p>
+                              {p.category && <p className="text-xs text-black/40 dark:text-white/40 truncate">{p.category}</p>}
+                            </div>
+                            <span className="text-[10px] font-bold text-black/30 dark:text-white/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-1">
+                              <Copy className="w-3 h-3" /> {L ? "استيراد" : "Import"}
+                            </span>
+                          </button>
+                        ))}
+                      {(partners || []).filter(p => {
+                        if (!copySearch.trim()) return true;
+                        const q = copySearch.toLowerCase();
+                        return (p.name?.toLowerCase().includes(q) || p.nameAr?.includes(copySearch) || p.category?.toLowerCase().includes(q));
+                      }).length === 0 && (
+                        <p className="text-xs text-black/30 dark:text-white/30 text-center py-4">{L ? "لا توجد نتائج" : "No results"}</p>
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-black/30 dark:text-white/30 px-1">
+                      {L ? "سيتم ملء جميع الحقول تلقائياً — يمكنك التعديل بعدها بحرية" : "All fields will be pre-filled — you can edit freely after"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Copied-from indicator ── */}
+            {copiedFrom && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]">
+                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40 shrink-0" />
+                <p className="text-xs text-black/50 dark:text-white/50 flex-1">
+                  {L ? `تم الاستيراد من "${copiedFrom}" — الحقول جاهزة للتعديل` : `Imported from "${copiedFrom}" — fields ready to edit`}
+                </p>
+                <button type="button" onClick={() => { setCopiedFrom(null); setFormData(emptyForm); }}
+                  className="text-[10px] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.04] px-2 py-1 rounded-lg transition">
+                  {L ? "مسح" : "Clear"}
+                </button>
+              </div>
+            )}
+
             {/* Names */}
             <div className="grid grid-cols-2 gap-4">
               <div>
