@@ -5233,25 +5233,6 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/orders/:id/proof", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    try {
-      const { paymentProofUrl } = req.body;
-      const { OrderModel } = await import("./models");
-      const order = await OrderModel.findOneAndUpdate(
-        { _id: req.params.id, userId: (req.user as any).id },
-        { $set: { paymentProofUrl, status: "pending" } },
-        { returnDocument: "after" }
-      );
-      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
-      res.json(order);
-    } catch (err) {
-      console.error("[Order] proof upload error:", err);
-      res.status(500).json({ error: "حدث خطأ أثناء حفظ الإيصال" });
-    }
-  });
-
-
   app.post("/api/auth/verify-device", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;

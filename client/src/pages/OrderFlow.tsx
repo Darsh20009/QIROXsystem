@@ -18,7 +18,7 @@ import {
   ShoppingCart, BadgeCheck, Crown, Layers, Smartphone, Map,
   Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash, LayoutGrid,
   Users, Calendar, Palette, ChevronDown, ChevronUp, MessageCircle,
-  MonitorSmartphone, BookOpen, Brush, Clock
+  MonitorSmartphone, BookOpen, Brush, Clock, Eye, EyeOff,
 } from "lucide-react";
 import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -312,6 +312,8 @@ export default function OrderFlow() {
   const [copiedIban, setCopiedIban]       = useState(false);
   const [useWallet, setUseWallet]         = useState(false);
   const [walletAmount, setWalletAmount]   = useState(0);
+  const [walletPin, setWalletPin]         = useState("");
+  const [showWalletPin, setShowWalletPin] = useState(false);
   const [usePaymob, setUsePaymob]         = useState(false);
 
   const [formData, setFormData] = useState({
@@ -445,6 +447,7 @@ export default function OrderFlow() {
         requiredFunctions: formData.requiredFunctions, files: filesStructured,
         addons: orderAddons, devices: orderDevices, paymentMethod,
         walletAmountUsed: effectiveWalletAmt > 0 ? effectiveWalletAmt : undefined,
+        walletPayPin: effectiveWalletAmt > 0 && walletPin ? walletPin : undefined,
         items: [
           { name: `Package ${PLAN_LABELS[selectedPlan]}`, nameAr: `باقة ${PLAN_LABELS[selectedPlan]}`, price: planPrice, qty: 1 },
           ...(paymobFee > 0 ? [{ name: "Paymob Payment Gateway", nameAr: "بوابة Paymob للدفع", price: paymobFee, qty: 1 }] : []),
@@ -1239,12 +1242,31 @@ export default function OrderFlow() {
                       </div>
                     </div>
                     {useWallet && (
-                      <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 dark:border-black dark:border-white">
-                        <Label className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 mb-2 block">{lang === "ar" ? `المبلغ من المحفظة (الحد الأقصى ${maxWalletUsable.toLocaleString()} ر.س)` : `Wallet Amount (max ${maxWalletUsable.toLocaleString()} SAR)`}</Label>
-                        <Input type="number" min={0} max={maxWalletUsable} value={walletAmount}
-                          onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                          className="rounded-xl h-10 text-sm border-black/15 dark:border-white/15 dark:border-black dark:border-white"
-                          onClick={e => e.stopPropagation()} data-testid="input-wallet-amount" />
+                      <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 space-y-3" onClick={e => e.stopPropagation()}>
+                        <div>
+                          <Label className="text-xs text-black dark:text-white mb-2 block">{lang === "ar" ? `المبلغ من المحفظة (الحد الأقصى ${maxWalletUsable.toLocaleString()} ر.س)` : `Wallet Amount (max ${maxWalletUsable.toLocaleString()} SAR)`}</Label>
+                          <Input type="number" min={0} max={maxWalletUsable} value={walletAmount}
+                            onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
+                            className="rounded-xl h-10 text-sm border-black/15 dark:border-white/15"
+                            data-testid="input-wallet-amount" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-black dark:text-white mb-2 block">{lang === "ar" ? "كلمة مرور المحفظة (إن كانت مضبوطة)" : "Wallet PIN (if set)"}</Label>
+                          <div className="relative">
+                            <Input
+                              type={showWalletPin ? "text" : "password"}
+                              value={walletPin}
+                              onChange={e => setWalletPin(e.target.value)}
+                              placeholder={lang === "ar" ? "أدخل كلمة مرور المحفظة" : "Enter wallet PIN"}
+                              className="rounded-xl h-10 text-sm border-black/15 dark:border-white/15 pr-4 pl-10"
+                              data-testid="input-wallet-pin"
+                            />
+                            <button type="button" onClick={() => setShowWalletPin(p => !p)}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 dark:text-white/30 dark:hover:text-white/60">
+                              {showWalletPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

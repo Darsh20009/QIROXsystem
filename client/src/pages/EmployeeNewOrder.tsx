@@ -209,7 +209,7 @@ export default function EmployeeNewOrder() {
       newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
-      existingClientMutation.mutate({ clientId: selectedClient.id, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank" });
+      existingClientMutation.mutate({ clientId: selectedClient.id, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer" });
     }
   }
 
