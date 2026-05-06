@@ -1976,7 +1976,9 @@ export async function registerRoutes(
       if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
       const allowed = ["businessName","phone","sector","targetAudience","visualStyle","siteLanguage",
         "whatsappIntegration","socialIntegration","hasLogo","needsLogoDesign","requiredFunctions",
-        "brandColor","inspirationSites","needsPayment","needsBooking","hasContent"];
+        "brandColor","inspirationSites","needsPayment","needsBooking","hasContent",
+        "logoUrl","commercialRegUrl","taxRegUrl","nationalIdUrl","ibanCertUrl",
+        "targetAudience","brandIdentityUrl","filesUrl"];
       for (const key of allowed) {
         if (req.body[key] !== undefined) (order as any)[key] = req.body[key];
       }

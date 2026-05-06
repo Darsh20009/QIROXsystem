@@ -128,6 +128,10 @@ const orderSchema = new mongoose.Schema({
   imagesUrl: String,
   videoUrl: String,
   accessCredentials: String,
+  commercialRegUrl: String,
+  taxRegUrl: String,
+  nationalIdUrl: String,
+  ibanCertUrl: String,
   files: { type: mongoose.Schema.Types.Mixed },
   // Shipping
   shippingCompanyId: String,
