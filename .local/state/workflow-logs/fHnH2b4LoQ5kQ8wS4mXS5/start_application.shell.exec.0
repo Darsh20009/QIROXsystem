@@ -1,0 +1,304 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+7:30:37 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.aldbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 16 cron jobs
+7:30:47 PM [express] GET /api/user 401 in 2ms
+7:30:47 PM [express] GET /api/app-downloads 304 in 67ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+7:30:47 PM [express] GET /api/public/settings 304 in 86ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+7:31:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:31:17 PM [express] GET /api/user 401 in 1ms
+7:31:18 PM [express] GET /api/app-downloads 304 in 70ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+7:31:18 PM [express] GET /api/public/settings 304 in 71ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+7:32:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+7:32:12 PM [express] GET /api/user 401 in 1ms
+7:32:12 PM [express] GET /api/public/settings 304 in 68ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company/…
+7:32:12 PM [express] GET /api/app-downloads 304 in 79ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+7:33:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:33:01 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:33:08 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:33:46 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m [33m(x3)[39m
+7:34:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:34:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:34:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:34:38 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m [33m(x6)[39m
