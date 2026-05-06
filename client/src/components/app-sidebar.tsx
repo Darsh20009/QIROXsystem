@@ -128,6 +128,7 @@ export function AppSidebar() {
     // Employee — tools (الأدوات)
     { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
     { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools" },
+    { title: ar ? "دليل القطاعات" : "Sector Guide", icon: Layers, url: "/employee/sector-guide", group: "employee", section: "tools" },
     { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "tools" },
     // Employee — account (حسابي)
     { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "account" },

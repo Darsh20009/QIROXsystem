@@ -53,7 +53,7 @@ Qirox is a SaaS "Systems Factory" platform that showcases industry-specific webs
 - **Public Pages**: Home (8 sectors showcase), Portfolio, Pricing, About, Contact, Switch Reminder, Qirox AI Wizard, Order Tracking.
 - **Admin Features**: Templates/Pricing/Services/Orders/Finance/Employees management, Sales Reports, AI Sessions, Cron Jobs, MongoDB Atlas integration, App Publishing, Modification Quota, Push Notifications, Quotations, Installments, Lead Auto-Assignment.
 - **Client Features**: Dashboard, Project tracking, Order flow (5-step), Wallet (Qirox Pay), Loyalty program, Digital Contracts, Client Data Requests, My Tools (50+ utilities), Profile management (avatar builder), Client Group announcements.
-- **Employee Features**: QMeet (WebRTC video conferencing), Employee Mail, System Builder (Cloud IDE), Role-specific dashboards, Changelog/Employee Guide.
+- **Employee Features**: QMeet (WebRTC video conferencing), Employee Mail, System Builder (Cloud IDE), Role-specific dashboards, Changelog/Employee Guide, **Sector Technical Guide** (`/employee/sector-guide` — 10 sectors with modules, unique features, tech specs, comparison matrix).
 - **Core Systems**: Full i18n (Arabic/English, RTL/LTR), Dark/Light mode, Comprehensive notification system (in-app, email, push, WS), Device 2FA, Multiple 2FA methods (TOTP, email OTP, passphrase, push approval).
 - **E-commerce Store**: Embedded Qirox Store module with product management and API proxies.
 

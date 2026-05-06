@@ -141,6 +141,7 @@ const Demos = lazy(() => import("@/pages/Demos"));
 const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
 const EmployeeChangelog = lazy(() => import("@/pages/EmployeeChangelog"));
+const SectorGuide = lazy(() => import("@/pages/SectorGuide"));
 const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
 const SystemBuilder = lazy(() => import("@/pages/SystemBuilder"));
 const SystemBuilderIDE = lazy(() => import("@/pages/SystemBuilderIDE"));
@@ -303,6 +304,7 @@ function AdminRouter() {
         <Route path="/employee/checklist" component={DevChecklist} />
         <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
         <Route path="/employee/changelog" component={EmployeeChangelog} />
+        <Route path="/employee/sector-guide" component={SectorGuide} />
         <Route path="/employee/system-builder/:id" component={SystemBuilderIDE} />
         <Route path="/employee/system-builder" component={SystemBuilder} />
         <Route path="/admin/kanban" component={AdminKanban} />
