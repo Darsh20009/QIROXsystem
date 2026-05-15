@@ -18,6 +18,9 @@ import {
   Server, LayoutDashboard, Dumbbell, Store, Users, MessageCircle,
   Minus, Plus, ScanLine, ClipboardList, ReceiptText, Printer, Truck,
   CreditCard, Award, Apple, PlayCircle, Gift, Clock, ChevronLeft,
+  QrCode, ChefHat, BookOpen, Video, MapPin, CalendarCheck, Stethoscope,
+  Pill, Activity, Package, Coffee, Utensils, Code2, Briefcase, FileText,
+  ShoppingCart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -1113,7 +1116,182 @@ export default function Prices() {
         />
       )}
 
+      {/* ── Systems Showcase Section ── */}
+      <SystemsShowcase sector={sector === "other" ? "restaurant" : sector as any} />
+
       <Footer/>
     </div>
+  );
+}
+
+/* ─── Systems Showcase ────────────────────────────────────────────────── */
+const SECTOR_SYSTEMS: Record<string, { icon: any; title: string; description: string; features: string[]; badge?: string; highlight?: boolean; locked?: boolean }[]> = {
+  restaurant: [
+    { icon: ChefHat, title: "نظام إدارة المطعم", description: "منصة متكاملة لإدارة القائمة والطلبات والطاولات بلحظة واحدة", features: ["قائمة رقمية تفاعلية", "إدارة الطلبات لحظة بلحظة", "نظام الطاولات والحجوزات", "تقارير المبيعات اليومية"], badge: "الأكثر طلباً", highlight: true },
+    { icon: QrCode, title: "قائمة QR كود", description: "منيو رقمي يُفتح بمسح كيو آر — بدون تطبيق", features: ["تحديث فوري للأسعار", "صور عالية الجودة", "متعدد اللغات", "تخصيص كامل"] },
+    { icon: ShoppingCart, title: "نظام الطلب الإلكتروني", description: "استقبل الطلبات مباشرة من موقعك دون وسيط", features: ["طلب للتوصيل والاستلام", "تكامل مع WhatsApp", "دفع إلكتروني", "تتبع الطلب"] },
+    { icon: BarChart3, title: "لوحة تحكم المبيعات", description: "تقارير وإحصائيات شاملة لفهم أداء مطعمك", features: ["تقارير الأداء اليومي", "أكثر الأطباق مبيعاً", "كشف أوقات الذروة", "مقارنة الفروع"] },
+    { icon: Coffee, title: "نظام الاشتراكات والولاء", description: "بناء قاعدة عملاء وفية عبر نقاط المكافآت", features: ["بطاقة الولاء الرقمية", "نقاط المكافآت", "باقات الاشتراك", "إشعارات العروض"] },
+  ],
+  ecommerce: [
+    { icon: ShoppingBag, title: "متجر إلكتروني متكامل", description: "متجر احترافي بتجربة تسوق سلسة ومحرك بحث ذكي", features: ["عرض المنتجات بالفئات", "محرك بحث وفلترة", "سلة التسوق الذكية", "متعدد العملات"], badge: "الأكثر طلباً", highlight: true },
+    { icon: CreditCard, title: "بوابة الدفع الإلكتروني", description: "تكامل مع كل طرق الدفع السعودية والعالمية", features: ["مدى وApple Pay", "Stripe وPayPal", "تقسيط تمارا وتابي", "حماية من الاحتيال"] },
+    { icon: Package, title: "نظام إدارة المخزون", description: "تتبع المخزون والشحن تلقائياً مع تنبيهات", features: ["تتبع المخزون اللحظي", "باركود للمنتجات", "مستودعات الشحن", "تقارير المخزون"] },
+    { icon: TrendingUp, title: "أدوات التسويق الرقمي", description: "أدوات مدمجة لزيادة المبيعات وتحسين الظهور", features: ["SEO متقدم", "كوبونات الخصم", "بيع متقاطع ذكي", "تكامل Meta وGoogle"] },
+    { icon: Bot, title: "مساعد ذكاء اصطناعي", description: "روبوت دردشة ذكي يرد على استفسارات العملاء", features: ["إجابات فورية", "تتبع الطلبات", "إحالة للدعم", "تعلم تلقائي"], badge: "جديد" },
+  ],
+  education: [
+    { icon: BookOpen, title: "منصة التعليم الإلكتروني", description: "نظام إدارة محتوى تعليمي كامل مع تجربة طالب متميزة", features: ["رفع الدروس والمحاضرات", "تقدم الطالب والشهادات", "اختبارات تفاعلية", "لوحة المعلم"], badge: "الأكثر طلباً", highlight: true },
+    { icon: Video, title: "البث المباشر والدروس المسجلة", description: "بث الدروس مباشرة أو تسجيلها للمشاهدة", features: ["بث مباشر متكامل", "تسجيل تلقائي", "غرفة الأسئلة", "خدمة التقطير"] },
+    { icon: Award, title: "نظام الشهادات الرقمية", description: "إصدار شهادات إتمام إلكترونية موثقة", features: ["شهادات قابلة للتحقق", "رفع على LinkedIn", "تصميم بهويتك", "أرشيف كامل"] },
+    { icon: CalendarCheck, title: "نظام حجز الجلسات", description: "احجز جلسات تدريبية فردية مع المدربين", features: ["تقويم المدرب", "إشعارات الحصص", "تكامل Zoom", "دفع قبل الحجز"] },
+  ],
+  healthcare: [
+    { icon: Stethoscope, title: "نظام إدارة العيادات", description: "نظام طبي متكامل لإدارة المرضى والمواعيد", features: ["ملف المريض الرقمي", "إدارة المواعيد", "الوصفات الطبية", "تقارير إحصائية"], badge: "الأكثر طلباً", highlight: true },
+    { icon: CalendarCheck, title: "حجز المواعيد أونلاين", description: "بوابة حجز ذكية للمرضى مع تذكيرات تلقائية", features: ["حجز عبر الموقع", "تذكير SMS/واتساب", "تأكيد تلقائي", "لائحة انتظار ذكية"] },
+    { icon: Pill, title: "إدارة الصيدلية والأدوية", description: "تتبع المخزون الدوائي وإدارة الوصفات", features: ["مخزون الأدوية", "تنبيهات الانتهاء", "الوصفات الرقمية", "تقارير الصرف"] },
+    { icon: Activity, title: "لوحة التحليل الصحي", description: "تحليلات شاملة لأداء العيادة والمرضى", features: ["إحصائيات المرضى", "تحليل الأمراض الشائعة", "تقارير الأطباء", "مؤشرات الأداء"] },
+  ],
+  realestate: [
+    { icon: Home, title: "موقع عرض العقارات", description: "منصة احترافية لعرض وبيع وتأجير العقارات", features: ["بحث متقدم بالموقع", "معرض صور وفيديو 360°", "خريطة تفاعلية", "نماذج استفسار ذكية"], badge: "الأكثر طلباً", highlight: true },
+    { icon: MapPin, title: "نظام إدارة العقارات", description: "نظام داخلي لإدارة محفظتك العقارية كاملاً", features: ["إدارة الوحدات", "عقود الإيجار الرقمية", "تتبع المدفوعات", "صيانة وبلاغات"] },
+    { icon: CalendarCheck, title: "نظام حجز المعاينات", description: "جدولة المعاينات العقارية بشكل منظم", features: ["حجز المعاينات", "جدول الوكلاء", "تذكيرات تلقائية", "تقارير المعاينات"] },
+    { icon: FileText, title: "العقود الرقمية", description: "إعداد وتوقيع عقود البيع والإيجار إلكترونياً", features: ["عقود قابلة للتوقيع", "أرشيف العقود", "تنبيهات التجديد", "حماية قانونية"] },
+  ],
+  corporate: [
+    { icon: Building2, title: "موقع الشركة الاحترافي", description: "حضور رقمي قوي يعكس هوية ومكانة شركتك", features: ["هوية بصرية متكاملة", "صفحات الخدمات", "نماذج التواصل", "SEO متقدم"], badge: "الأكثر طلباً", highlight: true },
+    { icon: Users, title: "نظام إدارة الموظفين HR", description: "نظام شامل لإدارة الموارد البشرية والرواتب", features: ["ملفات الموظفين", "الحضور والإجازات", "كشف الرواتب", "تقييمات الأداء"] },
+    { icon: Briefcase, title: "نظام إدارة العملاء CRM", description: "تتبع العملاء المحتملين وصفقاتك", features: ["خط المبيعات", "متابعة العملاء", "تذكيرات المهام", "تقارير الأداء"] },
+    { icon: Database, title: "نظام ERP مؤسسي", description: "نظام متكامل يربط المبيعات والمخزون والمحاسبة", features: ["المبيعات والمشتريات", "المحاسبة والفواتير", "إدارة المخزون", "لوحات التحليل"], locked: true },
+  ],
+  fitness: [
+    { icon: Dumbbell, title: "نظام إدارة الصالة", description: "نظام شامل لإدارة العضويات والحضور والمدربين", features: ["إدارة العضويات", "نظام الحضور", "جدول التمارين", "تقارير الأداء"], badge: "الأكثر طلباً", highlight: true },
+    { icon: CreditCard, title: "الاشتراكات والمدفوعات", description: "إدارة باقات الاشتراك والمدفوعات تلقائياً", features: ["باقات متعددة", "تجديد تلقائي", "إشعار انتهاء الاشتراك", "تاريخ الدفعات"] },
+    { icon: Users, title: "إدارة المدربين", description: "نظام لجدولة المدربين ومتابعة أدائهم", features: ["جدول المدرب", "عدد الجلسات", "تقييم العملاء", "العمولات"] },
+    { icon: Smartphone, title: "تطبيق الأعضاء", description: "تطبيق PWA للأعضاء لمتابعة تقدمهم", features: ["خطة التمرين", "تتبع التقدم", "حجز الجلسات", "إشعارات المدرب"] },
+  ],
+  beauty: [
+    { icon: Sparkles, title: "نظام إدارة الصالون", description: "نظام متكامل لإدارة المواعيد والعملاء والموظفين", features: ["حجز المواعيد", "ملفات العميلات", "إدارة الخدمات", "تقارير الأداء"], badge: "الأكثر طلباً", highlight: true },
+    { icon: CalendarCheck, title: "الحجز الإلكتروني", description: "بوابة حجز أونلاين متاحة 24/7 للعميلات", features: ["حجز بدون مكالمات", "تذكيرات تلقائية", "تأكيد فوري", "إلغاء سهل"] },
+    { icon: Award, title: "برنامج الولاء والنقاط", description: "برنامج مكافآت يشجع العميلات على العودة", features: ["نقاط مع كل زيارة", "مكافآت قابلة للاستبدال", "مستويات VIP", "عروض حصرية"] },
+    { icon: Users, title: "إدارة الموظفين والعمولات", description: "تتبع أداء الموظفين وحساب العمولات", features: ["أداء كل موظف", "العمولات التلقائية", "تقييم العملاء", "جدول الورديات"] },
+  ],
+  events: [
+    { icon: Calendar, title: "منصة إدارة الفعاليات", description: "نظام شامل لتنظيم وإدارة الفعاليات والمناسبات", features: ["إدارة التذاكر", "تسجيل المشاركين", "برنامج الفعالية", "تقارير الحضور"], badge: "الأكثر طلباً", highlight: true },
+    { icon: CreditCard, title: "بيع التذاكر أونلاين", description: "منصة بيع تذاكر متكاملة مع دفع إلكتروني", features: ["باركود التذاكر", "تذاكر مجانية ومدفوعة", "إدارة الطاقة الاستيعابية", "إحصائيات المبيعات"] },
+    { icon: Users, title: "إدارة الضيوف والمتحدثين", description: "إدارة قوائم الضيوف والمتحدثين بسهولة", features: ["قوائم VIP", "بوابة المتحدث", "تسجيل وصول QR", "إشعارات مخصصة"] },
+    { icon: Globe, title: "موقع الفعالية الاحترافي", description: "صفحة هبوط مخصصة لكل فعالية", features: ["تصميم احترافي", "عد تنازلي", "خريطة الموقع", "نماذج التسجيل"] },
+  ],
+  marketing: [
+    { icon: TrendingUp, title: "موقع الوكالة التسويقية", description: "حضور رقمي احترافي يعرض خدماتك وأعمالك", features: ["محفظة الأعمال", "صفحات الخدمات", "نماذج الاستفسار", "مدونة المحتوى"], badge: "الأكثر طلباً", highlight: true },
+    { icon: BarChart3, title: "لوحة تقارير العملاء", description: "لوحة تقارير احترافية لعرض نتائج حملاتك", features: ["إحصائيات مخصصة", "تقارير PDF", "مقاييس الأداء", "تصدير البيانات"] },
+    { icon: Users, title: "إدارة العملاء CRM", description: "نظام لإدارة عملاء الوكالة ومشاريعهم", features: ["ملفات العملاء", "متابعة المشاريع", "تسجيل المهام", "فواتير وعروض أسعار"] },
+    { icon: MessageSquare, title: "إدارة السوشيال ميديا", description: "جدولة ونشر المحتوى عبر منصات متعددة", features: ["جدولة المنشورات", "تعدد المنصات", "تقارير التفاعل", "مكتبة المحتوى"] },
+  ],
+  ai: [
+    { icon: Bot, title: "منصة خدمات الذكاء الاصطناعي", description: "منصة متكاملة لتقديم خدمات وحلول الذكاء الاصطناعي", features: ["واجهة المستخدم الذكية", "تكامل النماذج اللغوية", "لوحة إدارة المشاريع", "API للمطورين"], badge: "الأكثر طلباً", highlight: true },
+    { icon: MessageSquare, title: "روبوت المحادثة الذكي", description: "شاتبوت مدرَّب على بيانات نشاطك التجاري", features: ["إجابات تلقائية ذكية", "تكامل مع WhatsApp", "تعلم مستمر", "إحصائيات المحادثات"] },
+    { icon: Code2, title: "واجهة API للمطورين", description: "بوابة API لتوصيل خدمات الذكاء الاصطناعي", features: ["توثيق API شامل", "مفاتيح API آمنة", "Rate Limiting", "Sandbox للاختبار"] },
+    { icon: BarChart3, title: "لوحة التحليلات الذكية", description: "تحليلات مدعومة بالذكاء الاصطناعي لفهم بياناتك", features: ["تنبؤات المبيعات", "تحليل سلوك المستخدم", "كشف الشذوذ", "تقارير ذكية"] },
+  ],
+};
+
+function SystemsShowcase({ sector }: { sector: string }) {
+  const systems = SECTOR_SYSTEMS[sector] || SECTOR_SYSTEMS.restaurant;
+
+  return (
+    <section className="px-4 py-16 bg-black/[0.02] dark:bg-white/[0.01] border-t border-black/[0.04] dark:border-white/[0.04]">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-black/25 dark:text-white/25 mb-3">
+            <Layers className="w-3 h-3" /> ماذا يشمل نظامك
+          </span>
+          <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white mb-3">
+            الأنظمة المتضمنة في باقتك
+          </h2>
+          <p className="text-sm text-black/40 dark:text-white/40 max-w-lg mx-auto">
+            كل باقة تأتي مع منظومة متكاملة من الأنظمة المتخصصة لقطاعك — مُصمَّمة خصيصاً لتلبية احتياجاتك
+          </p>
+        </div>
+
+        {/* System cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {systems.map((sys, i) => {
+            const Icon = sys.icon;
+            return (
+              <motion.div
+                key={i}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={{ hidden: { opacity: 0, y: 16 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }) }}
+                className={`relative bg-white dark:bg-[#0f172a] border rounded-2xl p-5 transition-all hover:-translate-y-1 hover:shadow-md ${
+                  sys.highlight
+                    ? "border-black/15 dark:border-white/10 shadow-sm"
+                    : "border-black/[0.06] dark:border-white/[0.06]"
+                } ${sys.locked ? "opacity-60" : ""}`}
+                data-testid={`system-card-${i}`}
+              >
+                {sys.badge && (
+                  <div className="absolute -top-2.5 right-4">
+                    <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${sys.highlight ? "bg-black text-white dark:bg-white dark:text-black" : "bg-black/[0.07] dark:bg-white/[0.07] text-black/70 dark:text-white/70"}`}>
+                      {sys.badge}
+                    </span>
+                  </div>
+                )}
+                {sys.locked && (
+                  <div className="absolute top-3 left-3">
+                    <Lock className="w-3.5 h-3.5 text-black/25 dark:text-white/25" />
+                  </div>
+                )}
+
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${sys.highlight ? "bg-black dark:bg-white" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
+                    <Icon className={`w-5 h-5 ${sys.highlight ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-black dark:text-white text-sm leading-tight">{sys.title}</h3>
+                    <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5 leading-relaxed line-clamp-2">{sys.description}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  {sys.features.map((feat, j) => (
+                    <div key={j} className="flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                        <Check className="w-2 h-2 text-black/50 dark:text-white/50" />
+                      </div>
+                      <span className="text-[11px] text-black/50 dark:text-white/50">{feat}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {sys.locked && (
+                  <div className="mt-3 pt-2.5 border-t border-black/[0.05] dark:border-white/[0.05]">
+                    <span className="text-[10px] text-black/30 dark:text-white/30 font-medium">متاح في باقة إنفينتي فقط</span>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center">
+          <p className="text-xs text-black/30 dark:text-white/30 mb-4">
+            جميع الأنظمة تأتي مُعدَّة ومُخصَّصة بهويتك التجارية — التسليم بين 7-21 يوم
+          </p>
+          <Button
+            variant="outline"
+            className="border-black/10 dark:border-white/10 text-sm"
+            onClick={() => window.open("/systems", "_blank")}
+            data-testid="button-explore-systems"
+          >
+            استكشف جميع الأنظمة <ExternalLink className="w-3.5 h-3.5 mr-2" />
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle, LayoutGrid, List } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle, LayoutGrid, List, GitBranch, ChevronDown, ChevronRight, Fingerprint, Crown, BadgeCheck, Code2, Palette, Headphones, Truck, BarChart3, CreditCard } from "lucide-react";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
@@ -25,6 +25,166 @@ function getRoleLabels(L: boolean): Record<string, string> {
     admin: "System Admin", manager: "Manager", accountant: "Accountant", sales_manager: "Sales Manager",
     sales: "Sales", developer: "Developer", designer: "Designer", support: "Support", merchant: "Delivery", client: "Client",
   };
+}
+
+/* ─── ERP Hierarchy Config ─────────────────────────────────────────────── */
+const ROLE_HIERARCHY: { roles: string[]; level: number; icon: any; color: string; bg: string; label: string; labelEn: string }[] = [
+  { roles: ["admin"],                       level: 0, icon: Crown,      color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200/60 dark:border-amber-700/30", label: "الإدارة العليا",   labelEn: "Executive" },
+  { roles: ["manager"],                     level: 1, icon: BadgeCheck, color: "text-slate-700 dark:text-slate-300",   bg: "bg-slate-50 dark:bg-slate-900/30 border-slate-200/60 dark:border-slate-700/30", label: "الإدارة الوسطى",  labelEn: "Management" },
+  { roles: ["sales_manager", "accountant"], level: 2, icon: BarChart3,  color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50/60 dark:bg-blue-900/20 border-blue-200/50 dark:border-blue-700/30", label: "رؤساء الأقسام",   labelEn: "Department Heads" },
+  { roles: ["developer", "designer"],       level: 3, icon: Code2,      color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50/50 dark:bg-violet-900/15 border-violet-200/50 dark:border-violet-700/30", label: "التقنية والتصميم", labelEn: "Tech & Design" },
+  { roles: ["sales", "support", "merchant"],level: 4, icon: Headphones, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50/50 dark:bg-emerald-900/15 border-emerald-200/50 dark:border-emerald-700/30", label: "الفريق التشغيلي", labelEn: "Operations" },
+];
+
+function getSystemId(emp: User, index: number): string {
+  if ((emp as any).employeeCode) return (emp as any).employeeCode;
+  return `QRX-EMP-${String(index + 1).padStart(3, "0")}`;
+}
+
+function getRoleIcon(role: string) {
+  if (role === "admin") return Crown;
+  if (role === "manager") return BadgeCheck;
+  if (role === "sales_manager") return BarChart3;
+  if (role === "accountant") return CreditCard;
+  if (role === "developer") return Code2;
+  if (role === "designer") return Palette;
+  if (role === "sales") return BarChart3;
+  if (role === "support") return Headphones;
+  if (role === "merchant") return Truck;
+  return Users;
+}
+
+function OrgChartView({ employees, roleLabels, L, onEdit }: { employees: User[]; roleLabels: Record<string, string>; L: boolean; onEdit: (emp: User) => void }) {
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({0: true, 1: true, 2: true, 3: true, 4: true});
+
+  const toggle = (level: number) => setExpanded(prev => ({ ...prev, [level]: !prev[level] }));
+
+  return (
+    <div className="space-y-3" data-testid="org-chart-view">
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        {ROLE_HIERARCHY.map(tier => {
+          const Icon = tier.icon;
+          const count = employees.filter(e => tier.roles.includes(e.role)).length;
+          if (count === 0) return null;
+          return (
+            <span key={tier.level} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${tier.bg} ${tier.color}`}>
+              <Icon className="w-3 h-3" />
+              {L ? tier.label : tier.labelEn}
+              <span className="opacity-60">·{count}</span>
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Hierarchy tiers */}
+      {ROLE_HIERARCHY.map(tier => {
+        const tierEmps = employees.filter(e => tier.roles.includes(e.role));
+        if (tierEmps.length === 0) return null;
+        const Icon = tier.icon;
+        const isOpen = expanded[tier.level] !== false;
+
+        return (
+          <div key={tier.level} className={`border rounded-2xl overflow-hidden ${tier.bg}`}>
+            {/* Tier header */}
+            <button
+              onClick={() => toggle(tier.level)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left"
+              data-testid={`button-tier-${tier.level}`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-black/30 flex-shrink-0`}>
+                <Icon className={`w-4 h-4 ${tier.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={`text-xs font-black ${tier.color}`}>{L ? tier.label : tier.labelEn}</span>
+                <span className="text-[10px] text-black/30 dark:text-white/30 mr-2">— {tierEmps.length} {L ? "أعضاء" : "members"}</span>
+              </div>
+              <div className="flex-shrink-0">
+                {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-black/30 dark:text-white/30" /> : <ChevronRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />}
+              </div>
+            </button>
+
+            {/* Tier employees */}
+            {isOpen && (
+              <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 border-t border-black/[0.05] dark:border-white/[0.05] pt-3">
+                {tierEmps.map((emp, idx) => {
+                  const empIndex = employees.indexOf(emp);
+                  const systemId = getSystemId(emp, empIndex);
+                  const RoleIcon = getRoleIcon(emp.role);
+
+                  return (
+                    <motion.div
+                      key={emp.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.04 }}
+                      className="bg-white/70 dark:bg-black/20 rounded-xl p-3 flex items-center gap-3 border border-black/[0.06] dark:border-white/[0.06] hover:border-black/15 dark:hover:border-white/15 transition-all"
+                      data-testid={`orgchart-emp-${emp.id}`}
+                    >
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                        {(emp as any).avatarUrl
+                          ? <img src={(emp as any).avatarUrl} alt={emp.fullName} className="w-full h-full object-cover" />
+                          : <span className="text-sm font-bold text-black/40 dark:text-white/40">{emp.fullName?.charAt(0)}</span>
+                        }
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-black dark:text-white truncate">{emp.fullName}</p>
+                        {(emp as any).jobTitle
+                          ? <p className="text-[10px] text-black/40 dark:text-white/40 truncate">{(emp as any).jobTitle}</p>
+                          : <p className="text-[10px] text-black/30 dark:text-white/30 truncate">@{emp.username}</p>
+                        }
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/[0.05] dark:bg-white/[0.06] text-black/50 dark:text-white/50 border border-black/[0.06] dark:border-white/[0.06]" data-testid={`text-sysid-${emp.id}`}>
+                            <Fingerprint className="w-2.5 h-2.5" />
+                            {systemId}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Edit btn */}
+                      <button
+                        onClick={() => onEdit(emp)}
+                        className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+                        data-testid={`button-orgchart-edit-${emp.id}`}
+                      >
+                        <Edit2 className="w-3 h-3 text-black/40 dark:text-white/40" />
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* ERP Summary */}
+      <div className="mt-2 pt-4 border-t border-black/[0.05] dark:border-white/[0.05]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: L ? "مستوى التنفيذية" : "Executive Level", count: employees.filter(e => ["admin"].includes(e.role)).length, icon: Crown, color: "text-amber-600" },
+            { label: L ? "مستوى الإدارة" : "Management Level", count: employees.filter(e => ["manager", "sales_manager", "accountant"].includes(e.role)).length, icon: BadgeCheck, color: "text-blue-600" },
+            { label: L ? "مستوى التقنية" : "Technical Level", count: employees.filter(e => ["developer", "designer"].includes(e.role)).length, icon: Code2, color: "text-violet-600" },
+            { label: L ? "مستوى التشغيل" : "Operations Level", count: employees.filter(e => ["sales", "support", "merchant"].includes(e.role)).length, icon: Headphones, color: "text-emerald-600" },
+          ].map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div key={i} className="bg-white dark:bg-black/20 border border-black/[0.06] dark:border-white/[0.06] rounded-xl p-3 flex items-center gap-2.5">
+                <Icon className={`w-4 h-4 ${s.color} flex-shrink-0`} />
+                <div>
+                  <p className="text-base font-black text-black dark:text-white">{s.count}</p>
+                  <p className="text-[9px] text-black/35 dark:text-white/35 leading-tight">{s.label}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const roleColors: Record<string, string> = {
@@ -230,7 +390,7 @@ export default function AdminEmployees() {
     toast({ title: L ? `تم نسخ ${label}` : `Copied ${label}` });
   };
 
-  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "list" | "orgchart">("cards");
 
   const employees = users?.filter(u => u.role !== 'client') || [];
   const clients = users?.filter(u => u.role === 'client') || [];
@@ -433,11 +593,14 @@ export default function AdminEmployees() {
           </SelectContent>
         </Select>
         <div className="flex border border-black/[0.08] rounded-lg overflow-hidden h-9 shrink-0">
-          <button onClick={() => setViewMode("cards")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors ${viewMode === "cards" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-cards">
+          <button onClick={() => setViewMode("cards")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors ${viewMode === "cards" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-cards" title={L ? "عرض البطاقات" : "Card View"}>
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setViewMode("list")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors border-r border-black/[0.08] ${viewMode === "list" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-list">
+          <button onClick={() => setViewMode("list")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors border-r border-black/[0.08] ${viewMode === "list" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-list" title={L ? "عرض القائمة" : "List View"}>
             <List className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => setViewMode("orgchart")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors border-r border-black/[0.08] ${viewMode === "orgchart" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-orgchart" title={L ? "الهيكل التنظيمي" : "Org Chart"}>
+            <GitBranch className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -461,12 +624,14 @@ export default function AdminEmployees() {
         ))}
       </div>
 
-      {/* Employee Cards */}
+      {/* Employee Views */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-black/25">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p className="text-sm">{L ? "لا يوجد نتائج" : "No results"}</p>
         </div>
+      ) : viewMode === "orgchart" ? (
+        <OrgChartView employees={employees} roleLabels={roleLabels} L={L} onEdit={startEdit} />
       ) : viewMode === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((emp) => (
