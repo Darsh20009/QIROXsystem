@@ -284,6 +284,19 @@ export default function AdminOrders() {
     },
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("DELETE", `/api/admin/orders/${id}`);
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setSelectedOrder(null);
+      toast({ title: L ? "تم حذف المشروع/الطلب بنجاح" : "Project deleted successfully" });
+    },
+    onError: (e: any) => toast({ title: L ? "فشل الحذف" : "Delete failed", description: e.message, variant: "destructive" }),
+  });
+
   const convertToProjectMutation = useMutation({
     mutationFn: async (order: OrderData) => {
       const res = await apiRequest("POST", "/api/admin/projects", {
@@ -570,6 +583,13 @@ export default function AdminOrders() {
                             </Button>
                           </>
                         )}
+                        <Button size="icon" variant="ghost" className="text-black/30 hover:text-black w-8 h-8"
+                          onClick={() => { if (confirm(L ? "هل أنت متأكد من حذف هذا المشروع/الطلب نهائياً؟" : "Permanently delete this project/order?")) deleteOrderMutation.mutate(order.id); }}
+                          disabled={deleteOrderMutation.isPending}
+                          data-testid={`button-delete-order-${order.id}`}
+                          title={L ? "حذف المشروع" : "Delete project"}>
+                          {deleteOrderMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </Button>
                       </div>
                     </td>
                   </tr>

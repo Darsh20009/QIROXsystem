@@ -1982,3 +1982,15 @@ mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.
 export const MailCacheModel = mongoose.models.MailCache || mongoose.model("MailCache", mailCacheSchema);
 
 export const PriceRequestModel = mongoose.models.PriceRequest || mongoose.model("PriceRequest", priceRequestSchema);
+
+const operationalExpenseSchema = new mongoose.Schema({
+  category: { type: String, enum: ["operational", "marketing", "admin", "product", "other"], default: "operational" },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
+  month: { type: String },
+  notes: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+operationalExpenseSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const OperationalExpenseModel = mongoose.models.OperationalExpense || mongoose.model("OperationalExpense", operationalExpenseSchema);

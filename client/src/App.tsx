@@ -172,6 +172,8 @@ const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
 const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
 const TrackOrder = lazy(() => import("@/pages/TrackOrder"));
 const AdminSalesReports = lazy(() => import("@/pages/AdminSalesReports"));
+const AdminKimiAI = lazy(() => import("@/pages/AdminKimiAI"));
+const AdminSystemDashboards = lazy(() => import("@/pages/AdminSystemDashboards"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track"];
 
 
@@ -257,6 +259,8 @@ function AdminRouter() {
         <Route path="/admin/attendance" component={AdminAttendance} />
         <Route path="/admin/profit-report" component={AdminProfitReport} />
         <Route path="/admin/sales-reports" component={AdminSalesReports} />
+        <Route path="/admin/kimi-ai" component={AdminKimiAI} />
+        <Route path="/admin/system-dashboards" component={AdminSystemDashboards} />
         <Route path="/admin/invoices" component={AdminInvoices} />
         <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
         <Route path="/admin/receipts" component={AdminReceipts} />

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Printer, Mail, Trash2, X, Search, FileText, Send, Check, XCircle, Pencil, Copy } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Trash2, X, Search, FileText, Send, Check, XCircle, Pencil, Copy, Receipt } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -538,6 +538,22 @@ export default function AdminQuotations() {
     onError: () => toast({ title: L ? "فشل نسخ العرض" : "Failed to duplicate", variant: "destructive" }),
   });
 
+  const convertToInvoiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("POST", `/api/quotations/${id}/convert-to-invoice`, {});
+      return r.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["/api/quotations"] });
+      qc.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: L ? `✅ تم إنشاء الفاتورة ${data.invoiceNumber}` : `✅ Invoice ${data.invoiceNumber} created`,
+        description: L ? "يمكنك الآن العثور عليها في قسم الفواتير" : "Find it in the invoices section",
+      });
+    },
+    onError: (e: any) => toast({ title: L ? "فشل إنشاء الفاتورة" : "Invoice creation failed", description: e.message, variant: "destructive" }),
+  });
+
   const filtered = (quotations || []).filter(q => {
     const client = typeof q.userId === "object" ? q.userId : null;
     const matchSearch = !search ||
@@ -675,6 +691,15 @@ export default function AdminQuotations() {
                       onClick={() => setLocation(`/admin/quotation-print/${q.id}`)}
                       data-testid={`button-print-quotation-${q.id}`}>
                       <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs gap-1 border-black/[0.12] text-black hover:bg-black/[0.04]"
+                      onClick={() => { if (confirm(L ? "هل تريد إنشاء فاتورة من هذا العرض؟" : "Create invoice from this quotation?")) convertToInvoiceMutation.mutate(q.id); }}
+                      disabled={convertToInvoiceMutation.isPending}
+                      data-testid={`button-convert-invoice-${q.id}`}
+                      title={L ? "إصدار فاتورة من عرض السعر" : "Issue invoice from quotation"}>
+                      {convertToInvoiceMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Receipt className="w-3 h-3" />}
+                      {L ? "فاتورة" : "Invoice"}
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"

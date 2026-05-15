@@ -1430,6 +1430,24 @@ export async function registerRoutes(
     res.json(order);
   });
 
+  // DELETE /api/admin/orders/:id — hard delete order/project (admin only)
+  app.delete("/api/admin/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const { OrderModel, InvoiceModel, NotificationModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      await Promise.all([
+        OrderModel.findByIdAndDelete(req.params.id),
+        InvoiceModel.deleteMany({ orderId: req.params.id }),
+        NotificationModel.deleteMany({ link: { $regex: req.params.id } }),
+      ]);
+      res.json({ ok: true, message: "تم حذف المشروع/الطلب بنجاح" });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Admin: reject bank transfer payment proof
   // ── Schedule meeting from client's preferred slots ─────────────────────────
   app.post("/api/admin/orders/:id/schedule-meeting", async (req, res) => {
@@ -6913,6 +6931,40 @@ export async function registerRoutes(
     res.json({ ok: true, orderId: order._id, message: "تم تحويل عرض السعر إلى طلب بنجاح" });
   });
 
+  // POST /api/quotations/:id/convert-to-invoice — generate invoice from quotation
+  app.post("/api/quotations/:id/convert-to-invoice", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager", "accountant"].includes(user.role)) return res.sendStatus(403);
+    const { QuotationModel, InvoiceModel } = await import("./models");
+    const q = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
+    if (!q) return res.status(404).json({ error: "العرض غير موجود" });
+    const now = new Date();
+    const prefix = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const count = await InvoiceModel.countDocuments({ invoiceNumber: new RegExp(`^${prefix}`) });
+    let invNum = `${prefix}-${String(count + 1).padStart(3, "0")}`;
+    while (await InvoiceModel.exists({ invoiceNumber: invNum })) {
+      invNum = `${prefix}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    }
+    const invoice = await (InvoiceModel as any).create({
+      invoiceNumber: invNum,
+      userId: (q as any).userId?._id || (q as any).userId || undefined,
+      quotationId: q._id,
+      amount: (q as any).amount,
+      vatRate: (q as any).vatRate,
+      vatAmount: (q as any).vatAmount,
+      totalAmount: (q as any).totalAmount,
+      items: (q as any).items,
+      notes: (q as any).notes,
+      status: "unpaid",
+      externalName: (q as any).externalName,
+      externalEmail: (q as any).externalEmail,
+      externalCompany: (q as any).externalCompany,
+      createdBy: user.id,
+    });
+    res.status(201).json({ ok: true, invoiceId: String(invoice._id), invoiceNumber: invNum, message: "تم إنشاء الفاتورة بنجاح" });
+  });
+
   app.get("/api/admin/finance/summary", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel, OrderModel, UserModel } = await import("./models");
@@ -6956,6 +7008,159 @@ export async function registerRoutes(
       activeClients,
       monthlyBreakdown,
     });
+  });
+
+  // GET /api/admin/finance/reports?period=daily|weekly|biweekly|monthly|quarterly|semiannual|annual
+  app.get("/api/admin/finance/reports", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel } = await import("./models");
+    const { period = "monthly" } = req.query as any;
+    const now = new Date();
+    const arMonths = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    let points: { label: string; start: Date; end: Date }[] = [];
+
+    if (period === "daily") {
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now); d.setDate(d.getDate() - i);
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const end = new Date(start); end.setDate(end.getDate() + 1);
+        points.push({ label: `${d.getDate()}/${d.getMonth() + 1}`, start, end });
+      }
+    } else if (period === "weekly") {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now); d.setDate(d.getDate() - i * 7);
+        const dayOfWeek = d.getDay();
+        const start = new Date(d); start.setDate(d.getDate() - dayOfWeek);
+        const end = new Date(start); end.setDate(end.getDate() + 7);
+        points.push({ label: `أسبوع ${12 - i}`, start, end });
+      }
+    } else if (period === "biweekly") {
+      for (let i = 7; i >= 0; i--) {
+        const d = new Date(now); d.setDate(d.getDate() - i * 14);
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+        const end = new Date(start); end.setDate(end.getDate() + 14);
+        points.push({ label: `أسبوعان ${8 - i}`, start, end });
+      }
+    } else if (period === "monthly") {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        points.push({ label: arMonths[d.getMonth()], start: d, end });
+      }
+    } else if (period === "quarterly") {
+      for (let i = 7; i >= 0; i--) {
+        const totalM = now.getMonth() + now.getFullYear() * 12 - i * 3;
+        const year = Math.floor(totalM / 12); const month = totalM % 12;
+        const start = new Date(year, month, 1); const end = new Date(year, month + 3, 1);
+        points.push({ label: `ر${Math.floor(month / 3) + 1} ${year}`, start, end });
+      }
+    } else if (period === "semiannual") {
+      for (let i = 5; i >= 0; i--) {
+        const totalM = now.getMonth() + now.getFullYear() * 12 - i * 6;
+        const year = Math.floor(totalM / 12); const month = totalM % 12;
+        const start = new Date(year, month, 1); const end = new Date(year, month + 6, 1);
+        points.push({ label: `${month < 6 ? "ن١" : "ن٢"} ${year}`, start, end });
+      }
+    } else if (period === "annual") {
+      for (let i = 4; i >= 0; i--) {
+        const year = now.getFullYear() - i;
+        points.push({ label: `${year}`, start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) });
+      }
+    }
+
+    const data = await Promise.all(points.map(async ({ label, start, end }) => {
+      const [revAgg, cnt] = await Promise.all([
+        InvoiceModel.aggregate([{ $match: { status: "paid", paidAt: { $gte: start, $lt: end } } }, { $group: { _id: null, total: { $sum: "$totalAmount" } } }]),
+        InvoiceModel.countDocuments({ status: "paid", paidAt: { $gte: start, $lt: end } }),
+      ]);
+      return { name: label, value: revAgg[0]?.total || 0, count: cnt };
+    }));
+
+    res.json({ period, data });
+  });
+
+  // GET /api/admin/finance/projects-payments — projects with remaining amounts
+  app.get("/api/admin/finance/projects-payments", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OrderModel, InvoiceModel } = await import("./models");
+    const orders = await OrderModel.find({ status: { $nin: ["cancelled", "rejected"] }, totalAmount: { $gt: 0 } })
+      .populate("userId", "fullName username email").sort({ createdAt: -1 }).limit(100).lean();
+    const result = await Promise.all(orders.map(async (order: any) => {
+      const paidAgg = await InvoiceModel.aggregate([
+        { $match: { orderId: order._id, status: "paid" } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+      ]);
+      const totalPaid = paidAgg[0]?.total || 0;
+      const totalAmount = order.totalAmount || 0;
+      return {
+        id: String(order._id), orderNumber: order.orderNumber,
+        businessName: order.businessName || order.projectType || "مشروع",
+        clientName: order.userId?.fullName || order.userId?.username || "—",
+        totalAmount, totalPaid, remaining: Math.max(0, totalAmount - totalPaid),
+        status: order.status, createdAt: order.createdAt,
+      };
+    }));
+    const withRemaining = result.filter(r => r.remaining > 0);
+    res.json({ projects: result, totalRemaining: withRemaining.reduce((s, r) => s + r.remaining, 0), count: withRemaining.length });
+  });
+
+  // GET /api/admin/finance/operational-expenses
+  app.get("/api/admin/finance/operational-expenses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OperationalExpenseModel } = await import("./models");
+    const { month } = req.query as any;
+    const query: any = {};
+    if (month) query.month = month;
+    const expenses = await OperationalExpenseModel.find(query).sort({ createdAt: -1 }).lean();
+    const total = (expenses as any[]).reduce((s, e) => s + (e.amount || 0), 0);
+    res.json({ expenses, total });
+  });
+
+  // POST /api/admin/finance/operational-expenses
+  app.post("/api/admin/finance/operational-expenses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OperationalExpenseModel } = await import("./models");
+    const { category, description, amount, date, notes } = req.body;
+    if (!description || !amount) return res.status(400).json({ error: "البيانات ناقصة" });
+    const d = date ? new Date(date) : new Date();
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const expense = await OperationalExpenseModel.create({
+      category: category || "operational", description, amount: Number(amount), date: d, month, notes, createdBy: (req.user as any).id,
+    });
+    res.status(201).json(expense);
+  });
+
+  // DELETE /api/admin/finance/operational-expenses/:id
+  app.delete("/api/admin/finance/operational-expenses/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OperationalExpenseModel } = await import("./models");
+    await OperationalExpenseModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // POST /api/ai/kimi — Kimi AI (Moonshot) proxy
+  app.post("/api/ai/kimi", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const apiKey = process.env.KIMI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "KIMI_API_KEY غير مُعدَّ" });
+    const { messages, systemPrompt, model = "moonshot-v1-8k" } = req.body;
+    try {
+      const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt || "أنت Kimi، مساعد ذكاء اصطناعي متخصص لمنصة Qirox. تساعد الموظفين والمديرين والعملاء. تتحدث بالعربية افتراضياً وتقدم إجابات دقيقة ومفيدة وعملية." },
+            ...(messages || []),
+          ],
+          temperature: 0.7,
+        }),
+      });
+      if (!response.ok) { const err = await response.text(); return res.status(response.status).json({ error: err }); }
+      const data = await response.json();
+      res.json(data);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   // ═══════════════════════════════════════════════════════════
