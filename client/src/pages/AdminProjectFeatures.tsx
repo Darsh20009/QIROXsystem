@@ -250,6 +250,27 @@ export default function AdminProjectFeatures() {
                     <p className={`text-xs font-bold truncate ${isSelected ? "text-white" : "text-black dark:text-white"}`}>{p.stagingUrl || `مشروع #${String(pid).slice(-6)}`}</p>
                     <p className={`text-[10px] ${isSelected ? "text-white/50" : "text-black/40 dark:text-white/30"}`}>{p.status}</p>
                   </div>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm(`هل تريد حذف هذا المشروع؟ سيتم حذف جميع المهام والأعضاء والمميزات المرتبطة به نهائياً.`)) return;
+                      try {
+                        const r = await apiRequest("DELETE", `/api/admin/projects/${pid}`, undefined);
+                        const data = await r.json();
+                        if (!r.ok) throw new Error(data.error || "فشل الحذف");
+                        toast({ title: data.message || "تم حذف المشروع" });
+                        if (selectedProjectId === pid) setSelectedProjectId(null);
+                        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                      } catch (err: any) {
+                        toast({ title: "فشل حذف المشروع", description: err.message, variant: "destructive" });
+                      }
+                    }}
+                    className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${isSelected ? "text-white/60 hover:text-white hover:bg-white/10" : "text-black/30 dark:text-white/30 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"}`}
+                    title="حذف المشروع"
+                    data-testid={`button-delete-project-${pid}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                   {isSelected && <ChevronRight className="w-3.5 h-3.5 text-white/60" />}
                 </div>
               );

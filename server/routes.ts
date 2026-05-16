@@ -733,7 +733,7 @@ export async function registerRoutes(
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
@@ -6526,17 +6526,21 @@ export async function registerRoutes(
     res.status(201).json(dup);
   });
 
-  // Send invoice by email
+  // Send invoice by email (supports external recipients via externalEmail / clientSnapshot)
   app.post("/api/invoices/:id/send-email", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { InvoiceModel, UserModel } = await import("./models");
-      const invoice = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username");
+      const { InvoiceModel } = await import("./models");
+      const invoice: any = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username");
       if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
-      const user = (invoice as any).userId;
-      if (!user?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
+      const snap = invoice.clientSnapshot || {};
+      const u = invoice.userId || {};
+      // Optional override from body (admin can target a specific email)
+      const targetEmail = (req.body?.toEmail) || invoice.externalEmail || snap.email || u.email;
+      const targetName = (req.body?.toName) || invoice.externalName || snap.fullName || u.fullName || u.username || "عميل";
+      if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للمستلم" });
       const { sendInvoiceEmail } = await import("./email");
-      await sendInvoiceEmail(user.email, user.fullName || user.username, {
+      await sendInvoiceEmail(targetEmail, targetName, {
         invoiceNumber: (invoice as any).invoiceNumber,
         amount: (invoice as any).amount,
         vatAmount: 0,
@@ -6798,7 +6802,7 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const quotation = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
+    const quotation = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username phone address city taxNumber organizationName commercialRegistration");
     if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
 
     const { externalEmail, externalName, companyName } = req.body || {};
@@ -6821,11 +6825,18 @@ export async function registerRoutes(
 
     let pdfBytes: Uint8Array | undefined;
     try {
+      const cu: any = (quotation as any).userId || {};
       pdfBytes = await generateQuotationPdf({
         quotationNumber: quotation.quotationNumber,
         title: (quotation as any).title,
-        clientName: targetCompany ? `${targetName} — ${targetCompany}` : targetName,
+        clientName: targetName,
         clientEmail: targetEmail,
+        clientPhone: cu.phone,
+        clientAddress: cu.address,
+        clientCity: cu.city,
+        clientTaxNumber: cu.taxNumber,
+        clientOrganization: targetCompany || cu.organizationName,
+        clientCommercialReg: cu.commercialRegistration,
         totalAmount: (quotation as any).totalAmount,
         vatRate: (quotation as any).vatRate,
         vatAmount: (quotation as any).vatAmount,
@@ -6875,20 +6886,26 @@ export async function registerRoutes(
     const { QuotationModel } = await import("./models");
     const user = req.user as any;
     const quotation = await QuotationModel.findById(req.params.id)
-      .populate("userId", "fullName email username phone country");
+      .populate("userId", "fullName email username phone country address city taxNumber organizationName commercialRegistration");
     if (!quotation) return res.sendStatus(404);
     if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
     const { generateQuotationPdf } = await import("./pdf");
     const client = (quotation as any).userId as any;
     const clientName = (quotation as any).externalName || client?.fullName || client?.username || "العميل";
     const clientEmail = (quotation as any).externalEmail || client?.email || "";
-    const clientCompany = (quotation as any).externalCompany || "";
+    const clientCompany = (quotation as any).externalCompany || client?.organizationName || "";
     try {
       const pdfBytes = await generateQuotationPdf({
         quotationNumber: (quotation as any).quotationNumber,
         title: (quotation as any).title,
-        clientName: clientCompany ? `${clientName} — ${clientCompany}` : clientName,
+        clientName,
         clientEmail,
+        clientPhone: client?.phone,
+        clientAddress: client?.address,
+        clientCity: client?.city,
+        clientTaxNumber: client?.taxNumber,
+        clientOrganization: clientCompany,
+        clientCommercialReg: client?.commercialRegistration,
         totalAmount: (quotation as any).totalAmount,
         vatRate: (quotation as any).vatRate,
         vatAmount: (quotation as any).vatAmount,
@@ -6937,7 +6954,10 @@ export async function registerRoutes(
     const user = req.user as any;
     if (!["admin", "manager", "accountant"].includes(user.role)) return res.sendStatus(403);
     const { QuotationModel, InvoiceModel } = await import("./models");
-    const q = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
+    const q = await QuotationModel.findById(req.params.id).populate(
+      "userId",
+      "fullName email username phone address city taxNumber organizationName commercialRegistration",
+    );
     if (!q) return res.status(404).json({ error: "العرض غير موجود" });
     const now = new Date();
     const prefix = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -6946,10 +6966,23 @@ export async function registerRoutes(
     while (await InvoiceModel.exists({ invoiceNumber: invNum })) {
       invNum = `${prefix}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     }
+    // Build client snapshot from registered user (or external info)
+    const clientUser: any = (q as any).userId || null;
+    const clientSnapshot = {
+      fullName: clientUser?.fullName || (q as any).externalName || "",
+      email: clientUser?.email || (q as any).externalEmail || "",
+      phone: clientUser?.phone || "",
+      address: clientUser?.address || "",
+      city: clientUser?.city || "",
+      taxNumber: clientUser?.taxNumber || "",
+      organizationName: clientUser?.organizationName || (q as any).externalCompany || "",
+      commercialRegistration: clientUser?.commercialRegistration || "",
+    };
     const invoice = await (InvoiceModel as any).create({
       invoiceNumber: invNum,
-      userId: (q as any).userId?._id || (q as any).userId || undefined,
+      userId: clientUser?._id || (q as any).userId || undefined,
       quotationId: q._id,
+      title: (q as any).title || "",
       amount: (q as any).amount,
       vatRate: (q as any).vatRate,
       vatAmount: (q as any).vatAmount,
@@ -6961,8 +6994,91 @@ export async function registerRoutes(
       externalEmail: (q as any).externalEmail,
       externalCompany: (q as any).externalCompany,
       createdBy: user.id,
+      clientSnapshot,
     });
     res.status(201).json({ ok: true, invoiceId: String(invoice._id), invoiceNumber: invNum, message: "تم إنشاء الفاتورة بنجاح" });
+  });
+
+  // GET /api/invoices/:id/pdf — formal invoice PDF download
+  app.get("/api/invoices/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { InvoiceModel } = await import("./models");
+      const invoice: any = await InvoiceModel.findById(req.params.id)
+        .populate("userId", "fullName email username phone address city taxNumber organizationName commercialRegistration");
+      if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
+      const u = req.user as any;
+      const ownerId = invoice.userId?._id ? String(invoice.userId._id) : String(invoice.userId || "");
+      // Only owner, admin, manager, accountant, or sales_manager may download (PDF contains tax/legal PII)
+      const privileged = ["admin", "manager", "accountant", "sales_manager"].includes(u.role);
+      if (!privileged && ownerId !== String(u.id)) return res.sendStatus(403);
+      const snap = invoice.clientSnapshot || {};
+      const client = invoice.userId || {};
+      const { generateInvoicePdf } = await import("./pdf");
+      const pdfBytes = await generateInvoicePdf({
+        invoiceNumber: invoice.invoiceNumber,
+        title: invoice.title,
+        clientName: snap.fullName || client.fullName || invoice.externalName || "—",
+        clientEmail: snap.email || client.email || invoice.externalEmail,
+        clientPhone: snap.phone || client.phone,
+        clientAddress: snap.address || client.address,
+        clientCity: snap.city || client.city,
+        clientTaxNumber: snap.taxNumber || client.taxNumber,
+        clientOrganization: snap.organizationName || client.organizationName || invoice.externalCompany,
+        clientCommercialReg: snap.commercialRegistration || client.commercialRegistration,
+        totalAmount: invoice.totalAmount,
+        vatRate: invoice.vatRate,
+        vatAmount: invoice.vatAmount,
+        amount: invoice.amount,
+        dueDate: invoice.dueDate,
+        status: invoice.status,
+        items: invoice.items,
+        notes: invoice.notes,
+        createdAt: invoice.createdAt,
+      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      console.error("[INVOICE PDF] error:", err);
+      res.status(500).json({ error: "فشل توليد PDF" });
+    }
+  });
+
+  // DELETE /api/admin/projects/:id — delete a project and cascade related records
+  app.delete("/api/admin/projects/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const models: any = await import("./models");
+      const { ProjectModel } = models;
+      const project = await ProjectModel.findById(req.params.id);
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const pid = project._id;
+      // Cascade-delete related collections (using real model exports)
+      const cascadeModels = [
+        "TaskModel", "MessageModel", "MeetingRequestModel", "TimeLogModel",
+        "ProjectVaultModel", "ProjectMemberModel", "ProjectFeatureModel",
+        "ProjectIssueModel", "ProjectCommentModel",
+      ];
+      const errors: string[] = [];
+      for (const name of cascadeModels) {
+        const m = models[name];
+        if (!m || typeof m.deleteMany !== "function") continue;
+        try { await m.deleteMany({ projectId: pid }); }
+        catch (e: any) { errors.push(`${name}: ${e.message}`); }
+      }
+      if (errors.length) {
+        console.error("[DELETE PROJECT cascade errors]", errors);
+        return res.status(500).json({ error: "فشل حذف بعض البيانات المرتبطة بالمشروع", details: errors });
+      }
+      await ProjectModel.findByIdAndDelete(pid);
+      res.json({ ok: true, message: "تم حذف المشروع وجميع البيانات المرتبطة به" });
+    } catch (err: any) {
+      console.error("[DELETE PROJECT] error:", err);
+      res.status(500).json({ error: err.message || "فشل حذف المشروع" });
+    }
   });
 
   app.get("/api/admin/finance/summary", async (req, res) => {
@@ -7141,11 +7257,11 @@ export async function registerRoutes(
   // POST /api/ai/kimi — Kimi AI (Moonshot) proxy
   app.post("/api/ai/kimi", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const apiKey = process.env.KIMI_API_KEY;
-    if (!apiKey) return res.status(503).json({ error: "KIMI_API_KEY غير مُعدَّ" });
-    const { messages, systemPrompt, model = "moonshot-v1-8k" } = req.body;
+    const apiKey = process.env.MOONSHOT_API_KEY || process.env.KIMI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "MOONSHOT_API_KEY غير مُعدَّ" });
+    const { messages, systemPrompt, model = "kimi-k2-0905-preview" } = req.body;
     try {
-      const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+      const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
         body: JSON.stringify({

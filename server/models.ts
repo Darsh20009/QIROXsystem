@@ -16,6 +16,12 @@ const userSchema = new mongoose.Schema({
   phone: String,
   country: String,
   businessType: String,
+  // ── Billing/legal fields (used on quotations & invoices) ──
+  address: { type: String, default: "" },
+  city: { type: String, default: "" },
+  taxNumber: { type: String, default: "" },
+  organizationName: { type: String, default: "" },
+  commercialRegistration: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false },
   whatsappNumber: String,
   logoUrl: String,
@@ -578,10 +584,14 @@ csSessionSchema.index({ clientId: 1, status: 1 });
 csSessionSchema.index({ agentId: 1, status: 1 });
 
 const invoiceSchema = new mongoose.Schema({
-  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   invoiceNumber: { type: String, required: true, unique: true },
+  title: { type: String, default: "" },
   amount: { type: Number, required: true },
+  vatRate: { type: Number, default: 15 },
   vatAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   status: { type: String, enum: ['unpaid', 'paid', 'cancelled'], default: 'unpaid' },
@@ -589,6 +599,21 @@ const invoiceSchema = new mongoose.Schema({
   paidAt: Date,
   notes: String,
   items: [{ name: String, qty: Number, unitPrice: Number, total: Number }],
+  // External recipient (when invoice is for a non-registered client)
+  externalName: { type: String, default: "" },
+  externalEmail: { type: String, default: "" },
+  externalCompany: { type: String, default: "" },
+  // Snapshot of client billing info at issue time (legal record)
+  clientSnapshot: {
+    fullName: { type: String, default: "" },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    city: { type: String, default: "" },
+    taxNumber: { type: String, default: "" },
+    organizationName: { type: String, default: "" },
+    commercialRegistration: { type: String, default: "" },
+  },
 }, { timestamps: true });
 
 const activityLogSchema = new mongoose.Schema({
