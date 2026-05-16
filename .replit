@@ -55,25 +55,8 @@ SMTP2GO_SENDER = "noreply@qiroxstudio.online"
 SMTP2GO_SENDER_NAME = "Qirox"
 EMAIL_LOGO_URL = "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png"
 EMAIL_SITE_URL = "https://qiroxstudio.online"
-SMTP2GO_API_KEY = "api-9494CBB84EAC4F5EA0F269C9D1AC9BD2"
-MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM"
-GOOGLE_CLIENT_ID = "982269596237-69s9ue2hfnsvah1em2t76sovaj5htkrf.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
-PAYPAL_CLIENT_ID = "AXjzQSCwpCaGAYv6sM7ZNbIUgf4rHZQV_WIDt4cpzYcePKX7cXt6lQbrN_NWIfBkAT8PGZQ-8jN6ld5N"
-PAYPAL_CLIENT_SECRET = "EAMgxuwMDMxoLbmOeazA32q4PmwnqtkVQjkMIT2Ieg2549ihiWAgeBH91bbXQOBnahaCSLVHHeNWsj7a"
 TELEGRAM_BOT_USERNAME = "QIROX_BOT"
-GROQ_API_KEY = "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"
-APPLE_CLIENT_ID = "V4K6RM59LS.online.qiroxstudio.qirox"
-APPLE_TEAM_ID = "V4K6RM59LS"
-APPLE_KEY_ID = "8J92ZKSZ3Q"
-APPLE_PRIVATE_KEY = """
------BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgGo+s41QzAaXYngSN
-zW+mVsTW54Pj716Y62DO9eG2qHugCgYIKoZIzj0DAQehRANCAAT66XjA8uWem+Gz
-dcfqqmIC/seRaxnGgbiFh1zBgrJS9njqumH9ggI/R0TddwkpR5O4QltpFuHgkhHw
-L1k8/lWB
------END PRIVATE KEY-----"""
-GROQ_API_KEYS = "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,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,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,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,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,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,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,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,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,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"
+PORT = "5000"
 
 [agent]
 expertMode = true
