@@ -1,0 +1,39 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+9:52:27 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=auth.qiroxstudio.online teamID=V4K6RM59LS keyID=X2KTZG88K9 callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=1 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 19 cron jobs
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+9:53:01 PM [express] POST /api/internal/push/promotional 401 in 15ms
+9:54:00 PM [express] POST /api/internal/push/promotional 401 in 8ms
+9:55:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+9:56:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+9:57:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+9:58:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+9:59:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:00:00 PM [express] POST /api/internal/push/promotional 401 in 3ms
+10:01:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:02:00 PM [express] POST /api/internal/push/promotional 401 in 4ms
+10:03:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:04:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:05:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:06:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:07:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:08:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
+10:09:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+10:10:00 PM [express] POST /api/internal/push/promotional 401 in 2ms

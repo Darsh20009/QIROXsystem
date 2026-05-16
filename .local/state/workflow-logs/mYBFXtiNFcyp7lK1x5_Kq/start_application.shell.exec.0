@@ -1,0 +1,29 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Groq pool (10 keys) ⚡
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+9:50:17 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=auth.qiroxstudio.online teamID=V4K6RM59LS keyID=X2KTZG88K9 callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=1 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 19 cron jobs
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+9:50:42 PM [express] GET /api/user 401 in 2ms
+9:50:43 PM [express] GET /api/public/settings 200 in 225ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+9:50:43 PM [express] GET /api/templates 200 in 227ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+9:50:43 PM [express] GET /api/app-downloads 200 in 230ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+9:50:43 PM [express] GET /api/pricing 200 in 458ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":5299,"currency":"SAR","billingCycle":"lifetim…
+9:50:43 PM [express] GET /api/partners 200 in 459ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+9:51:00 PM [express] POST /api/internal/push/promotional 401 in 2ms
+9:52:00 PM [express] POST /api/internal/push/promotional 401 in 1ms
