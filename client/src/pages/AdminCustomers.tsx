@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Loader2, Users, Mail, Phone, Calendar, Search, Trash2,
   AlertTriangle, MessageCircle, X, PhoneOff, CheckCircle2,
-  Clock, ChevronDown, ChevronUp, Send, Download,
+  Clock, ChevronDown, ChevronUp, Send, Download, Building2, MapPin, Hash, Edit2, UserCheck,
 } from "lucide-react";
 import { SiTelegram, SiWhatsapp } from "react-icons/si";
 import { type User } from "@shared/schema";
@@ -45,9 +46,15 @@ export default function Customers() {
   const L = lang === "ar";
   const { data: user } = useUser();
   const isAdmin = user && ["admin", "manager"].includes((user as any).role);
+  const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [salesFilter, setSalesFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ address: "", city: "", taxNumber: "", organizationName: "", commercialRegistration: "" });
+  const [assignTarget, setAssignTarget] = useState<User | null>(null);
+  const [assignSalesRepId, setAssignSalesRepId] = useState("");
 
   const [phoneReqTarget, setPhoneReqTarget] = useState<User | null>(null);
   const [phoneReqNotes, setPhoneReqNotes] = useState("");
@@ -78,6 +85,19 @@ export default function Customers() {
     onError: (err: any) => toast({ title: L ? "فشل الحذف" : "Delete failed", description: err.message, variant: "destructive" }),
   });
 
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, string> }) => {
+      const r = await apiRequest("PATCH", `/api/admin/users/${id}`, data);
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/customers"] });
+      toast({ title: L ? "تم تحديث بيانات العميل" : "Customer data updated" });
+      setEditTarget(null);
+    },
+    onError: (err: any) => toast({ title: L ? "فشل التحديث" : "Update failed", description: err.message, variant: "destructive" }),
+  });
+
   const phoneReqMutation = useMutation({
     mutationFn: (data: { clientId: string; notes: string }) =>
       apiRequest("POST", "/api/phone-requests", data),
@@ -103,15 +123,49 @@ export default function Customers() {
     onError: (err: any) => toast({ title: L ? "فشل" : "Failed", description: err.message, variant: "destructive" }),
   });
 
+  const assignSalesMutation = useMutation({
+    mutationFn: ({ id, salesRepId }: { id: string; salesRepId: string }) =>
+      apiRequest("PATCH", `/api/admin/customers/${id}/assign-sales`, { salesRepId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/customers"] });
+      toast({ title: L ? "تم تعيين المندوب بنجاح" : "Sales rep assigned successfully" });
+      setAssignTarget(null);
+      setAssignSalesRepId("");
+    },
+    onError: (err: any) => toast({ title: L ? "فشل التعيين" : "Assignment failed", description: err.message, variant: "destructive" }),
+  });
+
+  // Fetch sales reps for assign dropdown (admin/manager only)
+  const { data: salesRepsList } = useQuery<{ id: string; fullName: string; username: string; role: string }[]>({
+    queryKey: ["/api/admin/employees", "sales"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/employees?roles=sales,sales_manager", { credentials: "include" });
+      return r.json();
+    },
+    enabled: !!isAdmin,
+  });
+
+  // Extract unique sales reps from customers (for filter dropdown)
+  const salesReps = Array.from(
+    new Map(
+      (customers || [])
+        .filter((c: any) => c.assignedSalesName || c.assignedSalesUsername)
+        .map((c: any) => [c.assignedSalesId || c.assignedSalesUsername, { id: c.assignedSalesId || c.assignedSalesUsername, name: c.assignedSalesName || c.assignedSalesUsername }])
+    ).values()
+  );
+
   const filtered = (customers || []).filter(c => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
+    const q = search.toLowerCase().trim();
+    const matchesSearch = !q || (
       (c.fullName || "").toLowerCase().includes(q) ||
       (c.username || "").toLowerCase().includes(q) ||
       (c.email || "").toLowerCase().includes(q) ||
       (c.phone || "").includes(q)
     );
+    const matchesSales = salesFilter === "all" ? true
+      : salesFilter === "unassigned" ? !(c as any).assignedSalesId
+      : ((c as any).assignedSalesId === salesFilter || (c as any).assignedSalesUsername === salesFilter);
+    return matchesSearch && matchesSales;
   });
 
   const noPhone = filtered.filter(c => !c.phone);
@@ -142,8 +196,8 @@ export default function Customers() {
             <p className="text-sm text-foreground/40">{customers?.length || 0} {L ? "عميل مسجل" : "registered customers"}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-72">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
             <Input
               value={search}
@@ -153,6 +207,19 @@ export default function Customers() {
               data-testid="input-customer-search"
             />
           </div>
+          {/* Sales rep filter */}
+          <select
+            value={salesFilter}
+            onChange={e => setSalesFilter(e.target.value)}
+            className="h-9 px-3 text-xs rounded-md border border-foreground/10 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+            data-testid="select-sales-filter"
+          >
+            <option value="all">{L ? "كل المندوبين" : "All Reps"}</option>
+            <option value="unassigned">{L ? "غير مُسند" : "Unassigned"}</option>
+            {salesReps.map((r: any) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
           <Button
             variant="outline"
             size="sm"
@@ -365,14 +432,54 @@ export default function Customers() {
                     </td>
 
                     <td className="p-4">
-                      <button
-                        onClick={() => setDeleteTarget(customer)}
-                        className="p-2 rounded-lg text-foreground/20 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
-                        title={L ? "حذف العميل" : "Delete customer"}
-                        data-testid={`button-delete-customer-${customer.id}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setAssignTarget(customer);
+                              setAssignSalesRepId((customer as any).assignedSalesId || "");
+                            }}
+                            className="p-2 rounded-lg transition-colors text-foreground/20 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                            title={L ? "تعيين مندوب مبيعات" : "Assign sales rep"}
+                            data-testid={`button-assign-sales-${customer.id}`}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditTarget(customer);
+                            setEditForm({
+                              address: (customer as any).address || "",
+                              city: (customer as any).city || "",
+                              taxNumber: (customer as any).taxNumber || "",
+                              organizationName: (customer as any).organizationName || "",
+                              commercialRegistration: (customer as any).commercialRegistration || "",
+                            });
+                          }}
+                          className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                          title={L ? "تعديل بيانات العميل" : "Edit customer data"}
+                          data-testid={`button-edit-customer-${customer.id}`}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(customer)}
+                          className="p-2 rounded-lg text-foreground/20 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          title={L ? "حذف العميل" : "Delete customer"}
+                          data-testid={`button-delete-customer-${customer.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {/* Show assigned sales rep badge */}
+                      {(customer as any).assignedSalesName && (
+                        <div className="mt-1">
+                          <span className="text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-700/40 rounded-md px-1.5 py-0.5 font-semibold">
+                            {(customer as any).assignedSalesName}
+                          </span>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -389,6 +496,129 @@ export default function Customers() {
           </table>
         </div>
       </Card>
+
+      {/* ── Edit client data dialog ── */}
+      <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
+        <DialogContent dir={dir} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              {L ? "بيانات الفوترة والمؤسسة" : "Billing & Organization Data"}
+            </DialogTitle>
+            <DialogDescription>
+              {editTarget?.fullName} — {L ? "هذه البيانات تُستخدم في الفواتير وعروض الأسعار" : "Used in invoices & quotations"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                  <Building2 className="w-3 h-3" /> {L ? "اسم المؤسسة" : "Organization"}
+                </Label>
+                <Input value={editForm.organizationName} onChange={e => setEditForm(p => ({ ...p, organizationName: e.target.value }))}
+                  placeholder={L ? "اسم الشركة أو المنشأة" : "Company name"}
+                  className="h-9 text-sm border-foreground/10" data-testid="input-org-name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                  <Hash className="w-3 h-3" /> {L ? "الرقم الضريبي" : "Tax Number"}
+                </Label>
+                <Input value={editForm.taxNumber} onChange={e => setEditForm(p => ({ ...p, taxNumber: e.target.value }))}
+                  placeholder="3XXXXXXXXXX3" dir="ltr"
+                  className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-tax-number" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                <Hash className="w-3 h-3" /> {L ? "السجل التجاري" : "Commercial Registration"}
+              </Label>
+              <Input value={editForm.commercialRegistration} onChange={e => setEditForm(p => ({ ...p, commercialRegistration: e.target.value }))}
+                placeholder="1XXXXXXXXX" dir="ltr"
+                className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-commercial-reg" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {L ? "العنوان" : "Address"}
+                </Label>
+                <Input value={editForm.address} onChange={e => setEditForm(p => ({ ...p, address: e.target.value }))}
+                  placeholder={L ? "الشارع والحي" : "Street & district"}
+                  className="h-9 text-sm border-foreground/10" data-testid="input-address" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {L ? "المدينة" : "City"}
+                </Label>
+                <Input value={editForm.city} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))}
+                  placeholder={L ? "الرياض، جدة..." : "Riyadh, Jeddah..."}
+                  className="h-9 text-sm border-foreground/10" data-testid="input-city" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEditTarget(null)} className="h-9">{L ? "إلغاء" : "Cancel"}</Button>
+              <Button
+                className="bg-black dark:bg-white text-white dark:text-black h-9 gap-2"
+                onClick={() => editTarget && updateClientMutation.mutate({ id: String(editTarget.id), data: editForm })}
+                disabled={updateClientMutation.isPending}
+                data-testid="button-save-client-data"
+              >
+                {updateClientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {L ? "حفظ البيانات" : "Save Data"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Assign Sales Rep dialog (B4) ── */}
+      <Dialog open={!!assignTarget} onOpenChange={open => !open && setAssignTarget(null)}>
+        <DialogContent dir={dir} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4" />
+              {L ? "تعيين مندوب مبيعات" : "Assign Sales Rep"}
+            </DialogTitle>
+            <DialogDescription>
+              {assignTarget?.fullName} — {L ? "اختر المندوب المسؤول عن هذا العميل" : "Choose the rep responsible for this client"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">
+                {L ? "المندوب" : "Sales Rep"}
+              </label>
+              <select
+                value={assignSalesRepId}
+                onChange={e => setAssignSalesRepId(e.target.value)}
+                className="w-full h-9 px-3 text-sm rounded-md border border-foreground/10 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                data-testid="select-assign-sales-rep"
+              >
+                <option value="unassigned">{L ? "بدون مندوب" : "No rep assigned"}</option>
+                {(salesRepsList || []).map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.fullName || r.username}</option>
+                ))}
+              </select>
+            </div>
+            {assignTarget && (assignTarget as any).assignedSalesName && (
+              <p className="text-xs text-foreground/40 bg-foreground/[0.03] rounded-lg px-3 py-2">
+                {L ? "المندوب الحالي:" : "Current rep:"} <span className="font-semibold text-foreground/60">{(assignTarget as any).assignedSalesName}</span>
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAssignTarget(null)} className="h-9">{L ? "إلغاء" : "Cancel"}</Button>
+              <Button
+                className="bg-black dark:bg-white text-white dark:text-black h-9 gap-2"
+                onClick={() => assignTarget && assignSalesMutation.mutate({ id: String(assignTarget.id), salesRepId: assignSalesRepId })}
+                disabled={assignSalesMutation.isPending}
+                data-testid="button-confirm-assign-sales"
+              >
+                {assignSalesMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                {L ? "حفظ التعيين" : "Save Assignment"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Delete confirmation dialog ── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>

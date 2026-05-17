@@ -14,7 +14,7 @@ import {
   Loader2, Wallet, TrendingUp, Users, CreditCard, Clock, Ban, Plus, Trash2,
   BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Area } from "recharts";
 
 type Period = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannual" | "annual";
 
@@ -44,6 +44,7 @@ export default function AdminFinance() {
   const [newExp, setNewExp] = useState({ category: "operational", description: "", amount: "", date: "", notes: "" });
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [expMonth, setExpMonth] = useState(currentMonth);
+  const [projectFilter, setProjectFilter] = useState<"pending" | "all" | "paid">("pending");
 
   // Queries
   const { data: summary } = useQuery<{
@@ -298,10 +299,41 @@ export default function AdminFinance() {
               </div>
             </div>
           )}
+
+          {/* Revenue vs Expenses summary row */}
+          {expensesData && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? `مصاريف ${expMonth}` : `${expMonth} Expenses`}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "مبالغ معلقة" : "Pending"}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {(summary?.unpaidTotal || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className={`border rounded-xl p-4 text-center ${netProfit >= 0 ? "bg-black border-black" : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"}`}>
+                <p className={`text-[10px] mb-1 ${netProfit >= 0 ? "text-white/60" : "text-red-400"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+                <p className={`text-base font-black flex items-center justify-center gap-1 ${netProfit >= 0 ? "text-white" : "text-red-600"}`}>
+                  {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* === TAB: Project Payments === */}
+
       {activeTab === "projects" && (
         <div className="space-y-4">
           {projectsData && (
@@ -321,45 +353,78 @@ export default function AdminFinance() {
             </div>
           )}
 
+          {/* Project filter tabs */}
+          <div className="flex gap-1 border-b border-black/[0.06] dark:border-white/[0.06] mb-3">
+            {[
+              { key: "pending", label: L ? "متبقية فقط" : "Pending Only" },
+              { key: "all",     label: L ? "كل المشاريع" : "All Projects" },
+              { key: "paid",    label: L ? "مدفوعة بالكامل" : "Fully Paid" },
+            ].map(t => (
+              <button key={t.key} onClick={() => setProjectFilter(t.key as any)}
+                className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${projectFilter === t.key ? "border-black dark:border-white text-black dark:text-white" : "border-transparent text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60"}`}
+                data-testid={`tab-project-filter-${t.key}`}>
+                {t.label}
+                {projectsData && (
+                  <span className="mr-1.5 text-[9px] bg-black/[0.06] dark:bg-white/[0.08] rounded-full px-1.5 py-0.5">
+                    {t.key === "pending" ? (projectsData.projects || []).filter((p: any) => p.remaining > 0).length
+                      : t.key === "paid" ? (projectsData.projects || []).filter((p: any) => p.remaining <= 0).length
+                      : (projectsData.projects || []).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-2">
             {!projectsData ? (
-              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
-            ) : (projectsData.projects || []).filter((p: any) => p.remaining > 0).length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle className="w-10 h-10 text-black/15 mx-auto mb-3" />
-                <p className="text-black/30 text-sm">{L ? "جميع المشاريع مدفوعة بالكامل" : "All projects are fully paid"}</p>
-              </div>
-            ) : (
-              (projectsData.projects || []).filter((p: any) => p.remaining > 0).map((project: any) => (
-                <div key={project.id} className="border border-black/[0.08] rounded-2xl p-4 flex items-center justify-between gap-4"
-                  data-testid={`project-payment-row-${project.id}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-black text-sm truncate">{project.businessName}</span>
-                      <Badge variant="outline" className="text-[10px] border-black/10">{project.status}</Badge>
-                    </div>
-                    <p className="text-xs text-black/40 mt-0.5">{project.clientName} · #{project.orderNumber || project.id.slice(-6)}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="flex items-center gap-1 text-sm font-black text-black">
-                      {project.remaining.toLocaleString()} <SARIcon size={11} className="opacity-60" />
-                    </div>
-                    <div className="text-[10px] text-black/30">
-                      {L ? "من" : "of"} {project.totalAmount.toLocaleString()} · {L ? "مدفوع" : "paid"}: {project.totalPaid.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="w-20 flex-shrink-0">
-                    <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
-                      <div className="h-full bg-black rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (project.totalPaid / project.totalAmount) * 100)}%` }} />
-                    </div>
-                    <p className="text-[10px] text-black/30 text-center mt-0.5">
-                      {Math.round((project.totalPaid / project.totalAmount) * 100)}%
-                    </p>
-                  </div>
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
+            ) : (() => {
+              const filtered = (projectsData.projects || []).filter((p: any) =>
+                projectFilter === "pending" ? p.remaining > 0 :
+                projectFilter === "paid" ? p.remaining <= 0 : true
+              );
+              if (filtered.length === 0) return (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-10 h-10 text-black/15 dark:text-white/15 mx-auto mb-3" />
+                  <p className="text-black/30 dark:text-white/30 text-sm">
+                    {projectFilter === "pending" ? (L ? "جميع المشاريع مدفوعة بالكامل" : "All projects are fully paid") : (L ? "لا توجد مشاريع" : "No projects found")}
+                  </p>
                 </div>
-              ))
-            )}
+              );
+              return filtered.map((project: any) => {
+                const paidPct = project.totalAmount > 0 ? Math.min(100, Math.round((project.totalPaid / project.totalAmount) * 100)) : 0;
+                const isPaid = project.remaining <= 0;
+                return (
+                  <div key={project.id} className={`border rounded-2xl p-4 flex items-center justify-between gap-4 transition-colors ${isPaid ? "border-black/[0.04] dark:border-white/[0.04] opacity-60" : "border-black/[0.08] dark:border-white/[0.08]"}`}
+                    data-testid={`project-payment-row-${project.id}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-black dark:text-white text-sm truncate">{project.businessName}</span>
+                        <Badge variant="outline" className={`text-[10px] ${isPaid ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400" : "border-black/10 dark:border-white/10"}`}>
+                          {isPaid ? (L ? "مدفوع ✓" : "Paid ✓") : project.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{project.clientName} · #{project.orderNumber || project.id.slice(-6)}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className={`flex items-center gap-1 text-sm font-black ${isPaid ? "text-emerald-600 dark:text-emerald-400" : "text-black dark:text-white"}`}>
+                        {isPaid ? (L ? "مكتمل" : "Complete") : <>{project.remaining.toLocaleString()} <SARIcon size={11} className="opacity-60" /></>}
+                      </div>
+                      <div className="text-[10px] text-black/30 dark:text-white/30">
+                        {L ? "من" : "of"} {project.totalAmount.toLocaleString()} · {L ? "مدفوع" : "paid"}: {project.totalPaid.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="w-20 flex-shrink-0">
+                      <div className="h-1.5 bg-black/[0.06] dark:bg-white/[0.07] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${isPaid ? "bg-emerald-500" : "bg-black dark:bg-white"}`}
+                          style={{ width: `${paidPct}%` }} />
+                      </div>
+                      <p className="text-[10px] text-black/30 dark:text-white/30 text-center mt-0.5">{paidPct}%</p>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       )}
@@ -374,40 +439,76 @@ export default function AdminFinance() {
               className="h-8 w-40 text-xs border-black/10" data-testid="input-expense-month" />
           </div>
 
-          {/* Category breakdown */}
-          {expensesData && expensesData.total > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {Object.entries(expByCategory).map(([cat, amt]) => (
-                <div key={cat} className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-black/40 mb-1">{EXPENSE_CATS[cat]?.label || cat}</p>
-                  <p className="text-sm font-black text-black flex items-center justify-center gap-0.5">
-                    {(amt as number).toLocaleString()} <SARIcon size={9} className="opacity-50" />
+          {/* Net Profit Summary — A4 */}
+          {expensesData && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{L ? "كل الفواتير المدفوعة" : "All paid invoices"}</p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? `مصاريف ${expMonth}` : `${expMonth} Expenses`}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{(expensesData.expenses || []).length} {L ? "بند" : "items"}</p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "مبالغ معلقة" : "Pending"}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {(summary?.unpaidTotal || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{L ? "لم تُحصَّل بعد" : "Not yet collected"}</p>
+              </div>
+              <div className={`rounded-2xl p-4 border ${netProfit >= 0 ? "bg-black border-black" : "bg-red-950/20 border-red-700/40"}`}>
+                <p className={`text-[10px] mb-1 ${netProfit >= 0 ? "text-white/50" : "text-red-400"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+                <p className={`text-lg font-black flex items-center gap-1 ${netProfit >= 0 ? "text-white" : "text-red-400"}`}>
+                  {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </p>
+                {(summary?.totalRevenue || 0) > 0 && (
+                  <p className={`text-[10px] mt-0.5 font-bold ${netProfit >= 0 ? "text-white/40" : "text-red-500/70"}`}>
+                    {Math.round((netProfit / (summary?.totalRevenue || 1)) * 100)}% {L ? "هامش" : "margin"}
                   </p>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
           )}
 
-          {/* Net Profit Card */}
-          {expensesData && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-black/[0.03] border border-black/[0.06] rounded-xl p-3 text-center">
-                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Revenue"}</p>
-                <p className="text-base font-black text-black flex items-center justify-center gap-1">
-                  {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
-                </p>
-              </div>
-              <div className="bg-black/[0.03] border border-black/[0.06] rounded-xl p-3 text-center">
-                <p className="text-[10px] text-black/40 mb-1">{L ? `مصاريف ${expMonth}` : `Expenses ${expMonth}`}</p>
-                <p className="text-base font-black text-black flex items-center justify-center gap-1">
-                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-50" />
-                </p>
-              </div>
-              <div className={`border rounded-xl p-3 text-center ${netProfit >= 0 ? "bg-black border-black" : "bg-black/[0.08] border-black/20"}`}>
-                <p className={`text-[10px] mb-1 ${netProfit >= 0 ? "text-white/60" : "text-black/40"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
-                <p className={`text-base font-black flex items-center justify-center gap-1 ${netProfit >= 0 ? "text-white" : "text-black"}`}>
-                  {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
-                </p>
+          {/* Category breakdown with visual bars — A4 */}
+          {expensesData && expensesData.total > 0 && (
+            <div className="border border-black/[0.07] rounded-2xl p-4 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                {L ? "توزيع المصاريف حسب الفئة" : "Expense Breakdown by Category"}
+              </p>
+              {Object.entries(expByCategory)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([cat, amt]) => {
+                  const pct = totalExpenses > 0 ? Math.round(((amt as number) / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-black/70">{EXPENSE_CATS[cat]?.label || cat}</span>
+                          <span className="text-[10px] text-black/30">{pct}%</span>
+                        </div>
+                        <span className="text-xs font-black text-black flex items-center gap-0.5">
+                          {(amt as number).toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                        <div className="h-full bg-black rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              <div className="flex justify-between items-center pt-2 border-t border-black/[0.06]">
+                <span className="text-[10px] font-bold text-black/40">{L ? "الإجمالي" : "Total"}</span>
+                <span className="text-sm font-black text-black flex items-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </span>
               </div>
             </div>
           )}

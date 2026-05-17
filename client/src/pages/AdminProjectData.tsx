@@ -10,8 +10,12 @@ import {
   CheckCircle2, XCircle, Clock, Package, FolderOpen,
   Pen, AlertCircle, Star, Image as ImageIcon,
   Loader2, Layers, TrendingUp, Copy, Check, Video, Send,
-  Server, Code2, Database, KeyRound, Globe, Lock, Link2, Terminal
+  Server, Code2, Database, KeyRound, Globe, Lock, Link2, Terminal, Trash2
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -175,8 +179,24 @@ function OrderCard({ order: initialOrder }: { order: any }) {
   const [showMeetForm, setShowMeetForm] = useState(false);
   const [specs, setSpecs] = useState<any>(null);
   const [specsLoading, setSpecsLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: currentUser } = useUser();
+  const isAdmin = currentUser && ["admin"].includes((currentUser as any).role);
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("DELETE", `/api/admin/orders/${order._id || order.id}`);
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "تم حذف المشروع بنجاح" });
+      setConfirmDelete(false);
+    },
+    onError: (e: any) => toast({ title: "فشل الحذف", description: e.message, variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (expanded && !specs && !specsLoading) {
@@ -256,14 +276,47 @@ function OrderCard({ order: initialOrder }: { order: any }) {
           </div>
         </div>
 
-        <button
-          onClick={() => setExpanded(e => !e)}
-          className="w-9 h-9 rounded-xl border border-black/[0.06] dark:border-white/[0.07] flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-all shrink-0"
-          data-testid={`btn-expand-${order._id}`}
-        >
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isAdmin && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="w-9 h-9 rounded-xl border border-red-100 dark:border-red-900/30 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+              title="حذف المشروع"
+              data-testid={`btn-delete-order-${order._id}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="w-9 h-9 rounded-xl border border-black/[0.06] dark:border-white/[0.07] flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-all"
+            data-testid={`btn-expand-${order._id}`}
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف المشروع</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف مشروع <span className="font-bold">{name}</span>؟ سيتم حذف جميع الفواتير والإشعارات المرتبطة به ولا يمكن التراجع.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid={`btn-confirm-delete-order-${order._id}`}
+            >
+              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حذف نهائياً"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Collapsed summary bar ── */}
       {!expanded && (

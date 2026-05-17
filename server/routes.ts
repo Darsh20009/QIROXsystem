@@ -4135,9 +4135,51 @@ export async function registerRoutes(
 
   // === ADMIN CUSTOMERS API ===
   app.get("/api/admin/customers", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const caller = req.user as any;
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const allowedRoles = ["admin", "manager", "sales_manager", "sales", "accountant"];
+    if (!allowedRoles.includes(caller.role)) return res.sendStatus(403);
     const users = await storage.getUsers();
-    res.json(sanitizeUser(users.filter((u: any) => u.role === "client")));
+    const clients = users.filter((u: any) => u.role === "client");
+    // Sales reps see only their assigned clients
+    if (caller.role === "sales") {
+      const scopedClients = clients.filter((c: any) =>
+        c.assignedSalesId === String(caller.id || caller._id) ||
+        c.assignedSalesUsername === caller.username
+      );
+      return res.json(sanitizeUser(scopedClients));
+    }
+    res.json(sanitizeUser(clients));
+  });
+
+  // PATCH /api/admin/customers/:id/assign-sales — assign a sales rep to a client (B4)
+  app.patch("/api/admin/customers/:id/assign-sales", async (req, res) => {
+    const caller = req.user as any;
+    if (!req.isAuthenticated() || !["admin", "manager", "sales_manager"].includes(caller.role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { salesRepId } = req.body;
+      let updateFields: any;
+      if (!salesRepId || salesRepId === "unassigned") {
+        updateFields = { assignedSalesId: null, assignedSalesName: null, assignedSalesUsername: null };
+      } else {
+        const rep = await UserModel.findById(salesRepId).lean() as any;
+        if (!rep || !["sales", "sales_manager"].includes(rep.role)) {
+          return res.status(400).json({ error: "المندوب غير صالح" });
+        }
+        updateFields = {
+          assignedSalesId: String(rep._id),
+          assignedSalesName: rep.fullName || rep.username,
+          assignedSalesUsername: rep.username,
+        };
+      }
+      const updated = await UserModel.findByIdAndUpdate(req.params.id, { $set: updateFields }, { new: true }).lean();
+      if (!updated) return res.sendStatus(404);
+      invalidateUserCache(req.params.id);
+      res.json(sanitizeUser(updated));
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
   });
 
   // === MARKETING POSTS API ===
@@ -9550,6 +9592,103 @@ export async function registerRoutes(
         consultationType: found.consultationType,
         employeeName: found.employeeName || null,
         adminNotes: found.adminNotes || null,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "حدث خطأ" });
+    }
+  });
+
+  // GET /api/admin/sales-reports/period — sales leads by time period
+  app.get("/api/admin/sales-reports/period", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const allowed = ["admin", "manager", "sales_manager", "sales"];
+    if (!allowed.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { ConsultationBookingModel } = await import("./models");
+      const period = (req.query.period as string) || "monthly";
+      const now = new Date();
+      let data: { name: string; count: number }[] = [];
+
+      const allLeads = await ConsultationBookingModel.find({ notes: /QIROX AI Wizard/ }).lean();
+
+      if (period === "daily") {
+        // Last 30 days
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+          const label = d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+          const count = (allLeads as any[]).filter((b: any) => {
+            const bd = new Date(b.createdAt);
+            return bd.getFullYear() === d.getFullYear() && bd.getMonth() === d.getMonth() && bd.getDate() === d.getDate();
+          }).length;
+          data.push({ name: label, count });
+        }
+      } else if (period === "weekly") {
+        // Last 12 weeks
+        for (let i = 11; i >= 0; i--) {
+          const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7 - now.getDay());
+          const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+          const label = `${weekStart.toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}`;
+          const count = (allLeads as any[]).filter((b: any) => {
+            const bd = new Date(b.createdAt);
+            return bd >= weekStart && bd <= weekEnd;
+          }).length;
+          data.push({ name: label, count });
+        }
+      } else if (period === "monthly") {
+        // Last 12 months
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const label = d.toLocaleDateString("ar-SA", { month: "short", year: "2-digit" });
+          const count = (allLeads as any[]).filter((b: any) => {
+            const bd = new Date(b.createdAt);
+            return bd.getFullYear() === d.getFullYear() && bd.getMonth() === d.getMonth();
+          }).length;
+          data.push({ name: label, count });
+        }
+      } else if (period === "quarterly") {
+        // Last 8 quarters
+        for (let i = 7; i >= 0; i--) {
+          const qOffset = Math.floor(now.getMonth() / 3) - i;
+          const year = now.getFullYear() + Math.floor(qOffset / 4);
+          const quarter = ((qOffset % 4) + 4) % 4;
+          const qStart = new Date(year, quarter * 3, 1);
+          const qEnd = new Date(year, quarter * 3 + 3, 0);
+          const label = `Q${quarter + 1} ${year}`;
+          const count = (allLeads as any[]).filter((b: any) => {
+            const bd = new Date(b.createdAt);
+            return bd >= qStart && bd <= qEnd;
+          }).length;
+          data.push({ name: label, count });
+        }
+      } else if (period === "semiannual") {
+        // Last 6 half-years
+        for (let i = 5; i >= 0; i--) {
+          const halfOffset = Math.floor(now.getMonth() / 6) - i;
+          const year = now.getFullYear() + Math.floor(halfOffset / 2);
+          const half = ((halfOffset % 2) + 2) % 2;
+          const hStart = new Date(year, half * 6, 1);
+          const hEnd = new Date(year, half * 6 + 6, 0);
+          const label = `H${half + 1} ${year}`;
+          const count = (allLeads as any[]).filter((b: any) => {
+            const bd = new Date(b.createdAt);
+            return bd >= hStart && bd <= hEnd;
+          }).length;
+          data.push({ name: label, count });
+        }
+      } else if (period === "annual") {
+        // Last 5 years
+        for (let i = 4; i >= 0; i--) {
+          const year = now.getFullYear() - i;
+          const count = (allLeads as any[]).filter((b: any) => new Date(b.createdAt).getFullYear() === year).length;
+          data.push({ name: String(year), count });
+        }
+      }
+
+      return res.json({
+        period,
+        data,
+        total: data.reduce((s, d) => s + d.count, 0),
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "حدث خطأ" });

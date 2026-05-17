@@ -73,6 +73,10 @@ const userSchema = new mongoose.Schema({
   // ── QR / Barcode Login ──
   qrLoginToken: { type: String, sparse: true, index: true },
   qrLoginTokenCreatedAt: { type: Date, default: null },
+  // ── Sales Rep Assignment ──
+  assignedSalesId: { type: String, default: null },
+  assignedSalesName: { type: String, default: null },
+  assignedSalesUsername: { type: String, default: null },
 }, { timestamps: true });
 userSchema.index({ role: 1 });
 userSchema.index({ role: 1, createdAt: -1 });
