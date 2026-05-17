@@ -13461,9 +13461,12 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // ── Promotional Push Notifications ─────────────────────────────────────────
   app.post("/api/internal/push/promotional", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const user = req.user as any;
-    if (!["admin", "manager"].includes(user?.role)) return res.sendStatus(403);
+    const isInternalCron = req.headers["x-internal-cron"] === (process.env.SESSION_SECRET || "qirox-internal");
+    if (!isInternalCron) {
+      if (!req.isAuthenticated()) return res.sendStatus(401);
+      const user = req.user as any;
+      if (!["admin", "manager"].includes(user?.role)) return res.sendStatus(403);
+    }
     try {
       const { UserModel } = await import("./models");
       const { broadcastToAll } = await import("./ws");

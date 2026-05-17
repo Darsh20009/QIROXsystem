@@ -1,7 +1,7 @@
 {
-  "name": "مصنع الأنظمة الرقمية",
-  "short_name": "مصنع الأنظمة",
-  "description": "مصنع الأنظمة الرقمية — منصة متكاملة لبناء الأنظمة والمواقع والتطبيقات الاحترافية. نبني أنظمة، نبقى بشراً.",
+  "name": "Qirox Studio | كيروكس استوديو",
+  "short_name": "كيروكس",
+  "description": "كيروكس استوديو — مصنع الأنظمة الرقمية. نبني مواقع وتطبيقات وأنظمة إدارة احترافية للمطاعم والمتاجر والمؤسسات.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "id": "qirox-studio-pwa-v1",
@@ -38,14 +38,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "لوحة تحكم مصنع الأنظمة الرقمية على الجوال"
+      "label": "لوحة تحكم كيروكس استوديو على الجوال"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "لوحة تحكم مصنع الأنظمة الرقمية على سطح المكتب"
+      "label": "لوحة تحكم كيروكس استوديو على سطح المكتب"
     }
   ],
 
@@ -74,7 +74,7 @@
     {
       "name": "تواصل معنا",
       "short_name": "تواصل",
-      "description": "التواصل مع فريق مصنع الأنظمة",
+      "description": "التواصل مع فريق كيروكس استوديو",
       "url": "/contact?source=shortcut",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
@@ -150,9 +150,9 @@
 
   "widgets": [
     {
-      "name": "لوحة مصنع الأنظمة",
-      "short_name": "مصنع الأنظمة",
-      "description": "عرض إحصائيات لوحة تحكم مصنع الأنظمة الرقمية",
+      "name": "لوحة كيروكس استوديو",
+      "short_name": "كيروكس",
+      "description": "عرض إحصائيات لوحة تحكم كيروكس استوديو",
       "tag": "qirox-dashboard-widget",
       "template": "qirox-widget-template",
       "ms_ac_template": "/widget-template.json",
@@ -162,7 +162,7 @@
         {
           "src": "/icon-310x150.png",
           "sizes": "310x150",
-          "label": "معاينة لوحة مصنع الأنظمة"
+          "label": "معاينة لوحة كيروكس استوديو"
         }
       ],
       "icons": [
