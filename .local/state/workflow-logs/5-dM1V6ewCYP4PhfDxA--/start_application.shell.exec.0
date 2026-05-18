@@ -1,0 +1,29 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[AI] Provider: Pollinations AI (openai)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+[Startup] ❌ MongoDB connection failed: MONGODB_URI must be set. MongoDB is now the primary database.
+[Startup] ⚠️  Server running without DB — check MongoDB Atlas Network Access
+[Startup]    → Atlas → Network Access → Add IP → 0.0.0.0/0 (Allow All)
+2:00:48 PM [express] serving on port 5000
+MongooseError: Operation `modplanconfigs.countDocuments()` buffering timed out after 10000ms
+    at Timeout._onTimeout [90m(/home/runner/workspace/[39mnode_modules/[4mmongoose[24m/lib/drivers/node-mongodb-native/collection.js:131:25[90m)[39m
+[90m    at listOnTimeout (node:internal/timers:581:17)[39m
+[90m    at process.processTimers (node:internal/timers:519:7)[39m
+[UnhandledRejection] Unhandled promise rejection: Operation `users.findOne()` buffering timed out after 10000ms at: Promise {
+  [36m<rejected>[39m MongooseError: Operation `users.findOne()` buffering timed out after 10000ms
+      at Timeout._onTimeout [90m(/home/runner/workspace/[39mnode_modules/[4mmongoose[24m/lib/drivers/node-mongodb-native/collection.js:131:25[90m)[39m
+  [90m    at listOnTimeout (node:internal/timers:581:17)[39m
+  [90m    at process.processTimers (node:internal/timers:519:7)[39m
+}
+[SubscriptionReminder] error: MongooseError: Operation `users.find()` buffering timed out after 10000ms
+    at Timeout._onTimeout [90m(/home/runner/workspace/[39mnode_modules/[4mmongoose[24m/lib/drivers/node-mongodb-native/collection.js:131:25[90m)[39m
+[90m    at listOnTimeout (node:internal/timers:581:17)[39m
+[90m    at process.processTimers (node:internal/timers:519:7)[39m
+[AddonExpiry] error: MongooseError: Operation `projectaddonsubscriptions.find()` buffering timed out after 10000ms
+    at Timeout._onTimeout [90m(/home/runner/workspace/[39mnode_modules/[4mmongoose[24m/lib/drivers/node-mongodb-native/collection.js:131:25[90m)[39m
+[90m    at listOnTimeout (node:internal/timers:581:17)[39m
+[90m    at process.processTimers (node:internal/timers:519:7)[39m
