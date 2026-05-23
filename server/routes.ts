@@ -59,7 +59,6 @@ async function getPending2FA(tempToken: string) {
   return { userId: doc.userId, methods: doc.methods as string[], expiresAt: doc.expiresAt.getTime(), pushApproved: doc.pushApproved };
 }
 async function setPending2FA(tempToken: string, data: { userId: string; methods: string[]; expiresAt: number }) {
-  const { Pending2FAModel } = await import("./models");
   await Pending2FAModel.findOneAndUpdate(
     { tempToken },
     { tempToken, userId: data.userId, methods: data.methods, expiresAt: new Date(data.expiresAt), pushApproved: false },
@@ -67,7 +66,6 @@ async function setPending2FA(tempToken: string, data: { userId: string; methods:
   );
 }
 async function deletePending2FA(tempToken: string) {
-  const { Pending2FAModel } = await import("./models");
   await Pending2FAModel.deleteOne({ tempToken });
 }
 
@@ -80,7 +78,6 @@ async function getPushChallenge(challengeId: string) {
   return { userId: doc.userId, number: doc.number, status: doc.status as "pending"|"approved"|"denied", tempToken: doc.tempToken, expiresAt: doc.expiresAt.getTime(), deviceInfo: doc.deviceInfo };
 }
 async function setPushChallenge(challengeId: string, data: { userId: string; number: number; status: "pending"|"approved"|"denied"; tempToken: string; expiresAt: number; deviceInfo?: string }) {
-  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.findOneAndUpdate(
     { challengeId },
     { challengeId, ...data, expiresAt: new Date(data.expiresAt) },
@@ -88,11 +85,9 @@ async function setPushChallenge(challengeId: string, data: { userId: string; num
   );
 }
 async function updatePushChallengeStatus(challengeId: string, status: "approved"|"denied") {
-  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.updateOne({ challengeId }, { status });
 }
 async function deletePushChallenge(challengeId: string) {
-  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.deleteOne({ challengeId });
 }
 
@@ -190,7 +185,6 @@ async function atomicWalletCredit(userId: string, amount: number): Promise<void>
 }
 
 async function atomicWalletDebit(userId: string, amount: number): Promise<boolean> {
-  const { UserModel } = await import("./models");
   const result = await UserModel.findOneAndUpdate(
     { _id: userId, walletBalance: { $gte: amount - 0.005 } },
     { $inc: { walletBalance: -amount } }
@@ -199,7 +193,6 @@ async function atomicWalletDebit(userId: string, amount: number): Promise<boolea
 }
 
 async function getWalletBalance(userId: string): Promise<number> {
-  const { UserModel } = await import("./models");
   const user = await UserModel.findById(userId).select("walletBalance");
   return Math.max(0, (user as any)?.walletBalance ?? 0);
 }
@@ -235,7 +228,6 @@ export async function registerRoutes(
           { clientID: GOOGLE_CLIENT_ID!, clientSecret: GOOGLE_CLIENT_SECRET!, callbackURL: CALLBACK_URL },
           async (_accessToken, _refreshToken, profile, done) => {
             try {
-              const { UserModel } = await import("./models");
               const email = profile.emails?.[0]?.value?.toLowerCase().trim();
               if (!email) return done(new Error("لم يتم الحصول على البريد الإلكتروني من Google"));
 
@@ -1892,7 +1884,6 @@ export async function registerRoutes(
     // Push device notification to all admins/managers for new order
     (async () => {
       try {
-        const { UserModel } = await import("./models");
         const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
         const orderItems = items.slice(0, 2).join("، ") + (items.length > 2 ? ` +${items.length - 2}` : "");
         for (const admin of admins) {
@@ -1909,7 +1900,6 @@ export async function registerRoutes(
 
     // Auto-create shipment for each physical product item
     try {
-      const { DeviceShipmentModel, NotificationModel } = await import("./models");
       const physicalTypes = ["product", "gift"];
       const physicalItems = (req.body.items || []).filter((it: any) => physicalTypes.includes(it.type));
       for (const item of physicalItems) {
@@ -2085,7 +2075,6 @@ export async function registerRoutes(
     try {
       const statusChanged = input.status && oldProject?.status !== input.status;
       if (statusChanged && input.status === "delivery" && (project as any).clientId) {
-        const { UserModel, NotificationModel } = await import("./models");
         const client = await UserModel.findById((project as any).clientId);
         if (client && (client as any).subscriptionPeriod && !(client as any).subscriptionStartDate) {
           // Calculate duration based on plan
@@ -4569,7 +4558,6 @@ export async function registerRoutes(
   seedModPlanConfigs().catch(console.error);
 
   async function getQuotaForOrder(order: any) {
-    const { ModPlanConfigModel, ModificationRequestModel, ModQuotaAddonModel } = await import("./models");
     const planTier = order.planTier?.toLowerCase();
     const planPeriod = order.planPeriod?.toLowerCase();
     if (planPeriod === 'lifetime') return { isLifetime: true };
@@ -6175,7 +6163,6 @@ export async function registerRoutes(
   const CS_AGENT_ROLES = ['support', 'admin', 'manager'];
 
   async function populateSession(session: any) {
-    const { UserModel } = await import("./models");
     const obj = session.toJSON ? session.toJSON() : session;
     const [client, agent] = await Promise.all([
       UserModel.findById(obj.clientId).select("username fullName email phone country role").lean(),
@@ -9972,9 +9959,9 @@ export async function registerRoutes(
   });
 
   // ─── System Features & Extra Addons ──────────────────────────────────────────
-  const { SystemFeatureModel, ExtraAddonModel } = await import("./models");
 
   app.get("/api/system-features", async (_req, res) => {
+    const { SystemFeatureModel } = await import("./models");
     try {
       const features = await SystemFeatureModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
       res.json(features);
@@ -9984,6 +9971,7 @@ export async function registerRoutes(
   app.get("/api/admin/system-features", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { SystemFeatureModel } = await import("./models");
       const features = await SystemFeatureModel.find().sort({ sortOrder: 1, createdAt: 1 });
       res.json(features);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -9992,6 +9980,7 @@ export async function registerRoutes(
   app.post("/api/admin/system-features", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { SystemFeatureModel } = await import("./models");
       const f = await SystemFeatureModel.create(req.body);
       res.json(f);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10000,6 +9989,7 @@ export async function registerRoutes(
   app.put("/api/admin/system-features/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { SystemFeatureModel } = await import("./models");
       const f = await SystemFeatureModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(f);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10008,6 +9998,7 @@ export async function registerRoutes(
   app.delete("/api/admin/system-features/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { SystemFeatureModel } = await import("./models");
       await SystemFeatureModel.findByIdAndDelete(req.params.id);
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10028,6 +10019,7 @@ export async function registerRoutes(
           ...(currentClientId ? [{ isCustom: true, clientId: currentClientId }] : []),
         ];
       }
+      const { ExtraAddonModel } = await import("./models");
       const addons = await ExtraAddonModel.find(query).sort({ sortOrder: 1, createdAt: 1 });
       const filtered = addons.filter((a: any) => {
         const segOk = !a.segments?.length || !segment || a.segments.includes(segment);
@@ -10047,6 +10039,7 @@ export async function registerRoutes(
   app.get("/api/admin/extra-addons", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { ExtraAddonModel } = await import("./models");
       const addons = await ExtraAddonModel.find().sort({ sortOrder: 1, createdAt: 1 });
       res.json(addons);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10055,6 +10048,7 @@ export async function registerRoutes(
   app.post("/api/admin/extra-addons", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { ExtraAddonModel } = await import("./models");
       const a = await ExtraAddonModel.create(req.body);
       res.json(a);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10063,6 +10057,7 @@ export async function registerRoutes(
   app.put("/api/admin/extra-addons/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { ExtraAddonModel } = await import("./models");
       const a = await ExtraAddonModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(a);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10071,6 +10066,7 @@ export async function registerRoutes(
   app.delete("/api/admin/extra-addons/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { ExtraAddonModel } = await import("./models");
       const deleted = await ExtraAddonModel.findByIdAndDelete(req.params.id);
       if (!deleted) {
         console.warn(`[ExtraAddon] Delete failed — document not found: ${req.params.id}`);
@@ -10088,6 +10084,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       // Keep custom client features intact, only wipe standard catalog
+      const { ExtraAddonModel } = await import("./models");
       await ExtraAddonModel.deleteMany({ isCustom: { $ne: true } });
       const cat = [
         // ── البريد الاحترافي على نطاقك ─────────────────────────────────
@@ -10151,6 +10148,7 @@ export async function registerRoutes(
     try {
       const { clientId, nameAr, name, descriptionAr, price, cost, billingType, icon } = req.body || {};
       if (!clientId || !nameAr || !price) return res.status(400).json({ error: "clientId, nameAr, price مطلوبة" });
+      const { ExtraAddonModel } = await import("./models");
       const a = await ExtraAddonModel.create({
         nameAr, name: name || nameAr, descriptionAr: descriptionAr || "",
         price: Number(price), cost: Number(cost || 0),
@@ -10168,6 +10166,7 @@ export async function registerRoutes(
   app.patch("/api/admin/extra-addons/:id/promote", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { ExtraAddonModel } = await import("./models");
       const a = await ExtraAddonModel.findByIdAndUpdate(
         req.params.id,
         { isCustom: false, clientId: null, promotedToStandardAt: new Date() },
@@ -10223,6 +10222,7 @@ export async function registerRoutes(
     try {
       let added = 0;
       for (const d of defaults) {
+        const { ExtraAddonModel } = await import("./models");
         const exists = await ExtraAddonModel.findOne({ nameAr: d.nameAr });
         if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true, currency: "SAR" }); added++; }
       }
@@ -10231,11 +10231,10 @@ export async function registerRoutes(
   });
 
   // ─── Cron Jobs ───────────────────────────────────────────────────────────────
-  const { scheduleCronJob, stopCronJob, runJobNow, testJobConnection } = await import("./cron");
-  const { CronJobModel, AtlasConfigModel, AtlasDbUserModel, AppPublishConfigModel } = await import("./models");
 
   app.get("/api/admin/cron-jobs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { CronJobModel } = await import("./models");
     const jobs = await CronJobModel.find().sort({ createdAt: -1 });
     res.json(jobs);
   });
@@ -10247,6 +10246,8 @@ export async function registerRoutes(
       if (!name || !url || !schedule) return res.status(400).json({ error: "اسم، رابط، والجدول مطلوبة" });
       const nodeCron = await import("node-cron");
       if (!nodeCron.default.validate(schedule)) return res.status(400).json({ error: "جدول cron غير صالح" });
+      const { CronJobModel } = await import("./models");
+      const { scheduleCronJob } = await import("./cron");
       const job = await CronJobModel.create({
         name, nameAr: nameAr||"", description: description||"", url, method: method||"GET",
         headers: headers||{}, body: body||"", schedule, isActive: true,
@@ -10260,6 +10261,8 @@ export async function registerRoutes(
   app.patch("/api/admin/cron-jobs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { CronJobModel } = await import("./models");
+      const { scheduleCronJob, stopCronJob } = await import("./cron");
       const job = await CronJobModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!job) return res.status(404).json({ error: "غير موجود" });
       if (job.isActive) scheduleCronJob(String(job._id), job.schedule);
@@ -10270,6 +10273,8 @@ export async function registerRoutes(
 
   app.delete("/api/admin/cron-jobs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { CronJobModel } = await import("./models");
+    const { stopCronJob } = await import("./cron");
     stopCronJob(req.params.id);
     await CronJobModel.findByIdAndDelete(req.params.id);
     res.json({ ok: true });
@@ -10277,6 +10282,8 @@ export async function registerRoutes(
 
   app.post("/api/admin/cron-jobs/:id/run", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { CronJobModel } = await import("./models");
+    const { runJobNow } = await import("./cron");
     await runJobNow(req.params.id);
     const job = await CronJobModel.findById(req.params.id);
     res.json(job);
@@ -10284,6 +10291,7 @@ export async function registerRoutes(
 
   app.get("/api/admin/cron-jobs/:id/logs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { CronJobModel } = await import("./models");
     const job = await CronJobModel.findById(req.params.id).select("runLogs name nameAr");
     if (!job) return res.sendStatus(404);
     const logs = [...(job.runLogs || [])].reverse().slice(0, 100);
@@ -10294,15 +10302,16 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { url, method, headers, body } = req.body;
     if (!url) return res.status(400).json({ error: "الرابط مطلوب" });
+    const { testJobConnection } = await import("./cron");
     const result = await testJobConnection(url, method||"GET", headers||{}, body||"");
     res.json(result);
   });
 
   // ─── MongoDB Atlas Config ─────────────────────────────────────────────────────
-  const { atlasTestConnection, atlasListProjects, atlasListClusters, atlasCreateDbUser, atlasGetConnectionString, atlasListDbUsers, atlasDeleteDbUser } = await import("./atlas");
 
   app.get("/api/admin/atlas/configs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AtlasConfigModel } = await import("./models");
     const configs = await AtlasConfigModel.find().sort({ createdAt: -1 }).lean();
     const safe = configs.map(c => ({ ...c, privateKey: "***" }));
     res.json(safe);
@@ -10313,6 +10322,7 @@ export async function registerRoutes(
     try {
       const { label, publicKey, privateKey, orgId, projectId, projectName, clusterName, isDefault } = req.body;
       if (!label || !publicKey || !privateKey) return res.status(400).json({ error: "التسمية والمفاتيح مطلوبة" });
+      const { AtlasConfigModel } = await import("./models");
       if (isDefault) await AtlasConfigModel.updateMany({}, { isDefault: false });
       const config = await AtlasConfigModel.create({
         label, publicKey, privateKey, orgId: orgId||"", projectId: projectId||"",
@@ -10327,6 +10337,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { isDefault, ...rest } = req.body;
+      const { AtlasConfigModel } = await import("./models");
       if (isDefault) await AtlasConfigModel.updateMany({}, { isDefault: false });
       const c = await AtlasConfigModel.findByIdAndUpdate(req.params.id, { ...rest, ...(isDefault !== undefined ? { isDefault } : {}) }, { returnDocument: "after" });
       res.json({ ...c?.toJSON(), privateKey: "***" });
@@ -10335,6 +10346,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/atlas/configs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AtlasConfigModel } = await import("./models");
     await AtlasConfigModel.findByIdAndDelete(req.params.id);
     res.json({ ok: true });
   });
@@ -10343,6 +10355,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { publicKey, privateKey } = req.body;
     if (!publicKey || !privateKey) return res.status(400).json({ error: "المفاتيح مطلوبة" });
+    const { atlasTestConnection } = await import("./atlas");
     const result = await atlasTestConnection(publicKey, privateKey);
     res.json(result);
   });
@@ -10350,6 +10363,8 @@ export async function registerRoutes(
   app.get("/api/admin/atlas/projects", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { configId } = req.query as any;
+    const { AtlasConfigModel } = await import("./models");
+    const { atlasListProjects } = await import("./atlas");
     const config = await AtlasConfigModel.findById(configId);
     if (!config) return res.status(404).json({ error: "الإعداد غير موجود" });
     try {
@@ -10361,6 +10376,8 @@ export async function registerRoutes(
   app.get("/api/admin/atlas/clusters", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { configId, projectId } = req.query as any;
+    const { AtlasConfigModel } = await import("./models");
+    const { atlasListClusters } = await import("./atlas");
     const config = await AtlasConfigModel.findById(configId);
     if (!config) return res.status(404).json({ error: "الإعداد غير موجود" });
     try {
@@ -10372,6 +10389,7 @@ export async function registerRoutes(
   app.get("/api/admin/atlas/db-users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { configId } = req.query as any;
+    const { AtlasDbUserModel } = await import("./models");
     const dbUsers = await AtlasDbUserModel.find(configId ? { configId } : {}).sort({ createdAt: -1 });
     res.json(dbUsers);
   });
@@ -10381,6 +10399,8 @@ export async function registerRoutes(
     try {
       const { configId, clientId, clientName, username, password, databaseName, notes } = req.body;
       if (!configId || !username || !password || !databaseName) return res.status(400).json({ error: "بيانات ناقصة" });
+      const { AtlasConfigModel, AtlasDbUserModel } = await import("./models");
+      const { atlasCreateDbUser, atlasGetConnectionString } = await import("./atlas");
       const config = await AtlasConfigModel.findById(configId);
       if (!config) return res.status(404).json({ error: "الإعداد غير موجود" });
 
@@ -10400,6 +10420,8 @@ export async function registerRoutes(
   app.delete("/api/admin/atlas/db-users/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { AtlasConfigModel, AtlasDbUserModel } = await import("./models");
+      const { atlasDeleteDbUser } = await import("./atlas");
       const dbUser = await AtlasDbUserModel.findById(req.params.id);
       if (!dbUser) return res.status(404).json({ error: "غير موجود" });
       const config = await AtlasConfigModel.findById(dbUser.configId);
@@ -10580,12 +10602,14 @@ export async function registerRoutes(
   // ─── App Publish Config ───────────────────────────────────────────────────────
   app.get("/api/admin/app-configs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AppPublishConfigModel } = await import("./models");
     const configs = await AppPublishConfigModel.find().sort({ createdAt: -1 });
     res.json(configs);
   });
 
   app.get("/api/admin/app-configs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AppPublishConfigModel } = await import("./models");
     const config = await AppPublishConfigModel.findById(req.params.id);
     if (!config) return res.status(404).json({ error: "غير موجود" });
     res.json(config);
@@ -10594,6 +10618,7 @@ export async function registerRoutes(
   app.post("/api/admin/app-configs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { AppPublishConfigModel } = await import("./models");
       const config = await AppPublishConfigModel.create({
         ...req.body,
         createdBy: (req.user as any).username,
@@ -10605,6 +10630,7 @@ export async function registerRoutes(
   app.put("/api/admin/app-configs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
+      const { AppPublishConfigModel } = await import("./models");
       const config = await AppPublishConfigModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(config);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10612,12 +10638,14 @@ export async function registerRoutes(
 
   app.delete("/api/admin/app-configs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AppPublishConfigModel } = await import("./models");
     await AppPublishConfigModel.findByIdAndDelete(req.params.id);
     res.json({ ok: true });
   });
 
   app.get("/api/admin/app-configs/:id/export", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { AppPublishConfigModel } = await import("./models");
     const config = await AppPublishConfigModel.findById(req.params.id);
     if (!config) return res.status(404).json({ error: "غير موجود" });
     const { format = "json" } = req.query as any;
@@ -10646,6 +10674,7 @@ export async function registerRoutes(
   // ─── Client App Publish Config (public view for clients) ──────────────────────
   app.get("/api/my-app-config", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { AppPublishConfigModel } = await import("./models");
     const config = await AppPublishConfigModel.findOne({ clientId: String((req.user as any)._id) });
     res.json(config || null);
   });
@@ -11474,8 +11503,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   // ─── Addon Subscription Expiry Checker ──────────────────────────────────────
   async function checkAddonExpiry() {
     try {
-      const { ProjectAddonSubscriptionModel, NotificationModel } = await import("./models");
       const { pushToUser } = await import("./ws");
+      const { ProjectAddonSubscriptionModel } = await import("./models");
       const now = new Date();
       const expiredSubs = await (ProjectAddonSubscriptionModel as any).find({
         status: "active",
@@ -11493,7 +11522,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
           pushToUser(String(clientId), { type: "notification", title: "انتهاء خدمة", body: name });
         }
         // Notify managers
-        const { UserModel } = await import("./models");
         const managers = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").limit(3);
         for (const mgr of managers) {
           await NotificationModel.create({ userId: mgr._id, type: "warning", title: `خدمة منتهية: ${name}`, body: `اشتراك في مشروع منتهي الصلاحية`, link: `/admin/addon-subscriptions` }).catch(() => {});
@@ -11506,8 +11534,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   setTimeout(() => checkAddonExpiry().catch(() => {}), 8000);
   setInterval(() => checkAddonExpiry().catch(() => {}), 6 * 60 * 60 * 1000);
 
-  // Initialize seed data
-  await seedDatabase();
+  // Initialize seed data (deferred — don't block Vite startup)
+  seedDatabase().catch((e: any) => console.error("[Seed] error:", e.message));
 
   // ═══════════════════════════════════════════════════════════════════
   // ══ QiroxAuth — TOTP-as-a-Service for External Websites ═══════════
@@ -13882,7 +13910,6 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
   // ─── Corporate Mail Routes ────────────────────────────────────────────────
   {
     const { fetchInbox, fetchFolders, markSeen, deleteMessage, sendMail, seedDefaultAccounts } = await import("./mail-imap");
-    const { MailAccountModel, MailCacheModel, UserModel } = await import("./models");
 
     // Seed default accounts on startup
     seedDefaultAccounts().catch(console.error);
@@ -14159,7 +14186,6 @@ export async function seedDatabase() {
     console.log("Admin account migrated: admin_qirox → qadmin");
   }
 
-  const { UserModel } = await import("./models");
   const existingAdmin = await storage.getUserByUsername(adminUsername);
   if (!existingAdmin) {
     const hashedPassword = await hashPassword("qadmin");
@@ -14461,7 +14487,6 @@ export async function seedDatabase() {
 
   // ── E-Commerce template migration: ensure demoUrl, category, and featuresAr are set ──
   try {
-    const { SectorTemplateModel } = await import("./models");
     const ecTemplate = await (SectorTemplateModel as any).findOne({ slug: "ecommerce-store" });
     if (ecTemplate) {
       const updates: any = {};
@@ -14684,8 +14709,6 @@ export async function seedDatabase() {
    قسط عبر كيروكس — Installment System Routes
    ═══════════════════════════════════════════════════════════════════════════ */
 export async function registerInstallmentRoutes(app: Express) {
-  const { InstallmentOfferModel, InstallmentApplicationModel, InstallmentPaymentModel, WalletTransactionModel, UserModel, NotificationModel } = await import("./models");
-
   const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
 
   function serviceFeeByPeriod(period: string): number {
@@ -15062,7 +15085,6 @@ export async function registerInstallmentRoutes(app: Express) {
 }
 
 export async function runInstallmentLateCheck() {
-  const { InstallmentApplicationModel, InstallmentPaymentModel, UserModel, NotificationModel } = await import("./models");
   const now = new Date();
   const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
