@@ -57,6 +57,7 @@ EMAIL_LOGO_URL = "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/
 EMAIL_SITE_URL = "https://qiroxstudio.online"
 TELEGRAM_BOT_USERNAME = "QIROX_BOT"
 PORT = "5000"
+MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM"
 
 [agent]
 expertMode = true
