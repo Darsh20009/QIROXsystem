@@ -894,6 +894,71 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ─── SOCIAL MEDIA POSTS ─── */}
+        <section className="py-16 md:py-20 bg-gray-50/80 dark:bg-gray-950/80">
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+            {/* Section header */}
+            <div className="flex items-center justify-between gap-4 mb-8" dir="rtl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-black dark:bg-white flex items-center justify-center shadow-md">
+                  <img src="/qirox-icon.png" alt="Q" className="w-6 h-6 object-contain invert dark:invert-0" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
+                    {ar ? "من حساباتنا" : "From Our Socials"}
+                  </h2>
+                  <p className="text-xs text-black/40 dark:text-white/35 font-medium mt-0.5">@qirox.sa · @qiroxStudiosa</p>
+                </div>
+              </div>
+              <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer"
+                className="text-xs font-bold text-black/50 dark:text-white/40 hover:text-black dark:hover:text-white transition border border-black/10 dark:border-white/10 rounded-full px-4 py-1.5 hover:border-black/30 dark:hover:border-white/30 flex-shrink-0">
+                {ar ? "تابعنا ↗" : "Follow ↗"}
+              </a>
+            </div>
+
+            {/* Posts grid — images fully visible, not cropped */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" dir="rtl">
+              {[
+                { src: "/post-1.png",  text: "مصنع الأنظمة الرقمية — نبني أنظمة احترافية لكل قطاع" },
+                { src: "/post-2.png",  text: "شريكك الموثوق في رحلة التحول الرقمي" },
+                { src: "/post-3.png",  text: "من فكرة بسيطة إلى نظام متكامل — مع كيروكس" },
+                { src: "/post-4.png",  text: "تصاميم عصرية وأداء سريع لكل مشروع" },
+                { src: "/post-5.png",  text: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال" },
+                { src: "/post-6.png",  text: "خدمة متكاملة من التصميم حتى الإطلاق" },
+                { src: "/post-7.png",  text: "أكثر من 50 مشروع منجز في قطاعات متعددة" },
+                { src: "/post-8.png",  text: "الإدارة الذكية تبدأ من نظام ذكي مبني لك" },
+                { src: "/post-9.png",  text: "التحول الرقمي صار ضرورة لا خيار — ابدأ الآن" },
+                { src: "/post-10.png", text: "دعم فني متواصل وفريق احترافي بجانبك دائماً" },
+                { src: "/post-11.png", text: "باقات مرنة تناسب كل ميزانية وكل مشروع" },
+                { src: "/post-12.png", text: "لما تكون بياناتك مرتبة قراراتك تصير أسرع" },
+              ].map((p, i) => (
+                <motion.div key={i}
+                  initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: (i % 4) * 0.07 }}
+                  className="group bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] overflow-hidden hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 transition-all duration-300 cursor-pointer"
+                >
+                  {/* Image — object-contain so nothing is cut */}
+                  <div className="bg-gray-50 dark:bg-gray-800 flex items-center justify-center p-2" style={{ height: 150 }}>
+                    <img
+                      src={p.src} alt={p.text}
+                      className="max-w-full max-h-full object-contain rounded-xl group-hover:scale-[1.02] transition-transform duration-300"
+                      style={{ maxHeight: 134 }}
+                    />
+                  </div>
+                  {/* Text below */}
+                  <div className="px-3 pt-2.5 pb-3">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-white/85 leading-snug line-clamp-2">{p.text}</p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <img src="/qirox-icon.png" alt="" className="w-3 h-3 object-contain opacity-40" />
+                      <span className="text-[10px] text-black/30 dark:text-white/25 font-medium">@qirox.sa</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ─── CTA ─── */}
         <div className="h-24 bg-gradient-to-b from-transparent to-black dark:to-white" aria-hidden />
         <section className="bg-black text-white dark:bg-white dark:text-black pt-8 pb-24 md:pb-28">

@@ -404,35 +404,38 @@ export default function ClientDashboardSimple({ user }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
 
-      {/* ── Hero Banner ── */}
-      <div className="bg-black relative overflow-hidden">
-        {/* Animated grid */}
-        <div className="absolute inset-0 opacity-[0.05]"
-          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "28px 28px" }} />
-        {/* Glow accents */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/[0.02] rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent" />
+      {/* ── Hero Banner — Video Background ── */}
+      <div className="bg-black relative overflow-hidden" style={{ minHeight: 220 }}>
+        {/* Brand video background */}
+        <video
+          autoPlay muted loop playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.35 }}
+          src="/qirox-brand.mp4"
+        />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/60" />
+        <div className="absolute top-0 right-0 w-72 h-72 bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent z-10" />
 
-        <div className="max-w-2xl mx-auto px-4 pt-8 pb-16 relative">
+        <div className="max-w-2xl mx-auto px-4 pt-8 pb-16 relative z-10">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Logo mark */}
             <div className="flex items-center gap-2 mb-4">
-              <img src="/qirox-icon.png" alt="Qirox" className="w-8 h-8 object-contain" />
-              <span className="text-white/30 text-xs font-bold tracking-widest uppercase">Qirox</span>
+              <img src="/qirox-icon.png" alt="Qirox" className="w-8 h-8 object-contain drop-shadow-lg" />
+              <span className="text-white/50 text-xs font-bold tracking-widest uppercase">Qirox · Dashboard</span>
             </div>
 
-            <p className="text-white/40 text-sm mb-1">{getGreeting()}،</p>
-            <h1 className="text-3xl font-black text-white mb-4" data-testid="text-client-greeting">{firstName}</h1>
+            <p className="text-white/50 text-sm mb-1">{getGreeting()}،</p>
+            <h1 className="text-3xl font-black text-white mb-4 drop-shadow-lg" data-testid="text-client-greeting">{firstName}</h1>
 
             <div className="flex items-center gap-3 flex-wrap">
               <Link href="/prices">
-                <Button size="sm" className="bg-white text-black hover:bg-white/90 rounded-full h-10 px-5 font-bold gap-2 shadow-lg border-0" data-testid="button-new-order">
+                <Button size="sm" className="bg-white text-black hover:bg-white/90 rounded-full h-10 px-5 font-bold gap-2 shadow-xl border-0" data-testid="button-new-order">
                   <Plus className="w-4 h-4" /> طلب جديد
                 </Button>
               </Link>
               <Link href="/cs-chat">
-                <Button size="sm" variant="outline" className="rounded-full h-10 px-4 border-white/20 text-white/70 bg-white/[0.07] hover:bg-white/[0.14] hover:text-white gap-2">
+                <Button size="sm" variant="outline" className="rounded-full h-10 px-4 border-white/30 text-white/80 bg-white/[0.1] hover:bg-white/[0.2] hover:text-white gap-2 backdrop-blur-sm">
                   <MessageSquare className="w-3.5 h-3.5" /> تواصل معنا
                 </Button>
               </Link>
