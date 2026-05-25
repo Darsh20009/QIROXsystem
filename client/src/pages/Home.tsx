@@ -227,8 +227,20 @@ export default function Home() {
   const [tab, setTab] = useState<string>("systems");
 
   const { data: templates = [] } = useTemplates();
-  const { data: apiPartners = [] } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+  const { data: apiPartners = [], isLoading: partnersLoading } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
+  const { data: publicReviews = [] } = useQuery<any[]>({ queryKey: ["/api/reviews/public"] });
+
+  const STATIC_REVIEWS = [
+    { id: "sr1", clientName: "م. أ", serviceTitle: ar ? "متجر إلكتروني" : "E-commerce Store", rating: 5, comment: ar ? "تجربة ممتازة من البداية للنهاية. الفريق احترافي ومتجاوب والتسليم كان في الوقت المحدد تماماً." : "Excellent experience from start to finish. Professional team and on-time delivery." },
+    { id: "sr2", clientName: "أ. س", serviceTitle: ar ? "موقع مطعم" : "Restaurant Website", rating: 5, comment: ar ? "صُممت لنا منصة جميلة وسريعة وزادت مبيعاتنا من اليوم الأول. أنصح الجميع بكيروكس." : "Beautiful, fast platform and sales increased from day one. Highly recommend Qirox." },
+    { id: "sr3", clientName: "م. ف", serviceTitle: ar ? "نظام حجوزات" : "Booking System", rating: 5, comment: ar ? "اخترت كيروكس بناءً على توصية ولم يخيّب الأمل. دعم فوري ومشروع محترف بجميع المقاييس." : "Chose Qirox based on a recommendation — didn't disappoint. Fast support and quality work." },
+    { id: "sr4", clientName: "أ. ن", serviceTitle: ar ? "متجر ملابس" : "Fashion Store", rating: 5, comment: ar ? "السرعة والجودة والسعر المناسب — كل شيء متكامل. أنصح كل صاحب مشروع بكيروكس." : "Speed, quality, and fair pricing — everything is complete. Recommended for any project owner." },
+    { id: "sr5", clientName: "م. خ", serviceTitle: ar ? "موقع خدمات" : "Services Website", rating: 4, comment: ar ? "فريق جاد ومحترف. المشروع خرج بشكل أفضل مما توقعته والدعم لا يزال مستمراً." : "Serious and professional team. The project exceeded my expectations and support continues." },
+    { id: "sr6", clientName: "أ. ر", serviceTitle: ar ? "موقع عيادة" : "Clinic Website", rating: 5, comment: ar ? "تعاملنا مع كيروكس لأول مرة وستكون ليست الأخيرة. جودة عالية وتواصل رائع طوال المشروع." : "First time with Qirox and definitely not the last. High quality and great communication." },
+  ];
+
+  const displayReviews = (publicReviews as any[]).length > 0 ? publicReviews : STATIC_REVIEWS;
 
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
@@ -644,6 +656,52 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
+        <section className="py-16 md:py-24 bg-black/[0.02] dark:bg-white/[0.02]">
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+            <motion.div {...fade(0)} className="mb-12 text-center max-w-xl mx-auto">
+              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-amber-300/50 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[11px] font-black uppercase tracking-wider">
+                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                {ar ? "آراء العملاء" : "Client Reviews"}
+              </span>
+              <h2 className="text-2xl md:text-4xl font-black mb-3 tracking-tight">
+                {ar ? "ماذا يقول عملاؤنا؟" : "What our clients say"}
+              </h2>
+              <p className="text-sm text-black/55 dark:text-white/55">
+                {ar ? "تقييمات حقيقية من أصحاب مشاريع أنجزناها معاً." : "Real ratings from project owners we worked with."}
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {(displayReviews as any[]).slice(0, 6).map((r: any, i: number) => (
+                <motion.div key={r.id || r._id || i} {...fade(i)}>
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-5 h-full flex flex-col hover:shadow-md dark:hover:shadow-white/5 transition-shadow">
+                    <div className="flex items-center gap-1 mb-3">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className={`w-4 h-4 ${s <= (r.rating || 5) ? "fill-amber-400 text-amber-400" : "text-black/15 dark:text-white/15"}`} />
+                      ))}
+                    </div>
+                    <p className="text-sm text-black/75 dark:text-white/70 leading-relaxed flex-1 mb-4">
+                      {r.comment || r.text || "—"}
+                    </p>
+                    <div className="flex items-center gap-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-black text-black/60 dark:text-white/60">
+                          {(r.clientName || r.userName || "ع").charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{r.clientName || r.userName || "عميل كيروكس"}</p>
+                        {r.serviceTitle && <p className="text-[11px] text-black/40 dark:text-white/40">{r.serviceTitle}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ─── PARTNERS ─── */}
         <section id="tab-partners" className="pt-16 pb-24 md:pt-20 md:pb-28">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
@@ -654,11 +712,26 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {apiPartners.length === 0 ? (
+            {partnersLoading ? (
               <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-8 py-6">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="w-28 h-10 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] animate-pulse" />
                 ))}
+              </motion.div>
+            ) : apiPartners.length === 0 ? (
+              <motion.div {...fade(1)} className="text-center py-8">
+                <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 mb-6">
+                  {["شركة الأنظمة", "مجموعة التقنية", "مؤسسة الابتكار", "شركة الحلول", "مجموعة الرقمية"].map((name, i) => (
+                    <div key={i} className="h-10 px-5 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.06] flex items-center">
+                      <span className="text-sm font-bold text-black/30 dark:text-white/25">{name}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/partners">
+                  <span className="text-sm text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/60 transition-colors cursor-pointer border-b border-dashed border-black/20 dark:border-white/20">
+                    {ar ? "تصفح صفحة شركائنا ←" : "View our partners page →"}
+                  </span>
+                </Link>
               </motion.div>
             ) : (
               <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">

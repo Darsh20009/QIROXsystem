@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import SARIcon from "@/components/SARIcon";
 import {
   Clock, CheckCircle2, AlertCircle, Activity, Plus,
@@ -13,7 +14,7 @@ import {
   Headphones, Check, CreditCard,
   RefreshCw, ShoppingBag, Rocket, ClipboardList,
   ArrowRight, CircleDot, Circle, CheckCircle, PlayCircle,
-  Star, ChevronLeft
+  Star, ChevronLeft, X
 } from "lucide-react";
 
 function getGreeting() {
@@ -353,6 +354,9 @@ interface Props {
 export default function ClientDashboardSimple({ user }: Props) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"projects" | "orders">("projects");
+  const [reviewModal, setReviewModal] = useState<{ orderId: string; serviceTitle: string } | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<any[]>({
     queryKey: ["/api/orders"],
@@ -376,6 +380,19 @@ export default function ClientDashboardSimple({ user }: Props) {
       toast({ title: "✅ تم رفع سند التحويل — سيراجعه الفريق قريباً" });
     },
     onError: () => toast({ title: "فشل رفع السند، حاول مجدداً", variant: "destructive" }),
+  });
+
+  const submitReview = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/orders/${reviewModal?.orderId}/review`, {
+      rating: reviewRating,
+      comment: reviewComment,
+      isPublic: true,
+    }),
+    onSuccess: () => {
+      setReviewModal(null); setReviewRating(5); setReviewComment("");
+      toast({ title: "✅ شكراً لتقييمك! سيساعد الآخرين في اختيار كيروكس." });
+    },
+    onError: (e: any) => toast({ title: "لم يتم إرسال التقييم", description: "ربما قيّمت هذا الطلب مسبقاً", variant: "destructive" }),
   });
 
   const activeProjects = (projects as any[]).filter((p: any) => p.status !== "completed" && p.status !== "closed");
@@ -678,6 +695,16 @@ export default function ClientDashboardSimple({ user }: Props) {
                                   <Check className="w-3 h-3" /> تم رفع الإيصال — بانتظار التحقق
                                 </p>
                               )}
+
+                              {order.status === "completed" && (
+                                <button
+                                  onClick={() => { setReviewModal({ orderId: order.id, serviceTitle: order.businessName || order.projectType || "الخدمة" }); setReviewRating(5); setReviewComment(""); }}
+                                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-xl border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors w-fit"
+                                  data-testid={`button-review-order-${order.id}`}
+                                >
+                                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> قيّم مشروعك
+                                </button>
+                              )}
                             </div>
                           </div>
                         </motion.div>
@@ -749,6 +776,63 @@ export default function ClientDashboardSimple({ user }: Props) {
         </motion.div>
 
       </div>
+
+      {/* ── Review Modal ── */}
+      <AnimatePresence>
+        {reviewModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+            onClick={() => setReviewModal(null)}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-black text-gray-900 dark:text-white text-lg">قيّم مشروعك</h3>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{reviewModal.serviceTitle}</p>
+                </div>
+                <button onClick={() => setReviewModal(null)} className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center">
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="flex justify-center gap-2 mb-3">
+                {[1,2,3,4,5].map(s => (
+                  <button key={s} onClick={() => setReviewRating(s)} data-testid={`star-${s}`}>
+                    <Star className={`w-9 h-9 transition-all ${s <= reviewRating ? "fill-amber-400 text-amber-400 scale-110" : "text-gray-200 dark:text-slate-600"}`} />
+                  </button>
+                ))}
+              </div>
+              <p className="text-center text-sm font-bold text-gray-700 dark:text-slate-300 mb-4">
+                {reviewRating === 5 ? "ممتاز! 🌟" : reviewRating === 4 ? "جيد جداً 👍" : reviewRating === 3 ? "جيد 👌" : reviewRating === 2 ? "مقبول 🤔" : "ضعيف 😞"}
+              </p>
+
+              <Textarea
+                value={reviewComment}
+                onChange={e => setReviewComment(e.target.value)}
+                placeholder="شاركنا رأيك في الخدمة والتجربة... (اختياري)"
+                className="mb-4 bg-gray-50 dark:bg-white/5 border-black/10 dark:border-white/10 rounded-xl resize-none text-sm"
+                rows={3}
+                data-testid="input-review-comment"
+              />
+
+              <Button
+                onClick={() => submitReview.mutate()}
+                disabled={submitReview.isPending}
+                className="w-full bg-gradient-to-r from-amber-400 to-amber-500 text-white font-bold rounded-xl h-11 border-0 hover:from-amber-500 hover:to-amber-600"
+                data-testid="button-submit-review"
+              >
+                {submitReview.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إرسال التقييم"}
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
