@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import {
   Headphones, Check, CreditCard,
   RefreshCw, ShoppingBag, Rocket, ClipboardList,
   ArrowRight, CircleDot, Circle, CheckCircle, PlayCircle,
-  Star
+  Star, ChevronLeft
 } from "lucide-react";
 
 function getGreeting() {
@@ -44,6 +44,120 @@ function getPhaseLabel(progress: number) {
   if (progress >= 100) return PROJECT_PHASES[4].label;
   const phase = [...PROJECT_PHASES].reverse().find(p => progress >= p.min);
   return phase?.label || "التخطيط";
+}
+
+/* ── Social Media Posts Data ── */
+const SOCIAL_POSTS = [
+  { src: "/post-1.png",  caption: "تقنية مصممة خصيصًا ونتائج حقيقية" },
+  { src: "/post-2.png",  caption: "شريكك الموثوق في التحول الرقمي" },
+  { src: "/post-3.png",  caption: "فريق واحد ورؤية واحدة وإمكانيات بلا حدود" },
+  { src: "/post-4.png",  caption: "من نحن — كيروكس شريكك التقني الكامل" },
+  { src: "/post-5.png",  caption: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال" },
+  { src: "/post-6.png",  caption: "نصنع تجارب ذكية للأعمال الحديثة" },
+  { src: "/post-7.png",  caption: "استثمر في نظام يبني نمو مشروعك" },
+  { src: "/post-8.png",  caption: "الإدارة الذكية تبدأ من نظام ذكي" },
+  { src: "/post-9.png",  caption: "التحول الرقمي صار ضرورة لا خيار" },
+  { src: "/post-10.png", caption: "الحل الصحيح يبدأ بمفتاح يفهم أعمالك" },
+  { src: "/post-11.png", caption: "خسارة الوقت تبدأ من الإدارة التقليدية" },
+  { src: "/post-12.png", caption: "لما تكون بياناتك مرتبة قراراتك تصير أسرع" },
+];
+
+/* ── Social Posts Carousel ── */
+function SocialPostsCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setCurrent(prev => (prev + 1) % SOCIAL_POSTS.length);
+    }, 3500);
+    return () => clearInterval(t);
+  }, [paused]);
+
+  const prev = () => { setPaused(true); setCurrent(c => (c - 1 + SOCIAL_POSTS.length) % SOCIAL_POSTS.length); };
+  const next = () => { setPaused(true); setCurrent(c => (c + 1) % SOCIAL_POSTS.length); };
+
+  return (
+    <div className="mt-5" data-testid="social-posts-carousel">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="font-black text-gray-900 dark:text-white text-sm">كيروكس في عالمك</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500">آخر منشوراتنا لك</p>
+        </div>
+        <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer"
+          className="text-xs font-bold text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors flex items-center gap-1"
+        >
+          تابعنا <ArrowUpRight className="w-3 h-3" />
+        </a>
+      </div>
+
+      <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-lg"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.4 }}
+            className="w-full"
+          >
+            <img
+              src={SOCIAL_POSTS[current].src}
+              alt={SOCIAL_POSTS[current].caption}
+              className="w-full object-cover rounded-2xl"
+              style={{ maxHeight: "480px", objectPosition: "top" }}
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Caption overlay */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-4 py-4 rounded-b-2xl">
+          <p className="text-white text-sm font-bold">{SOCIAL_POSTS[current].caption}</p>
+          <p className="text-white/50 text-xs mt-0.5">@qirox.sa</p>
+        </div>
+
+        {/* Nav arrows */}
+        <button onClick={prev}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
+          data-testid="social-prev"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <button onClick={next}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
+          data-testid="social-next"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Dots */}
+        <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-1.5">
+          {SOCIAL_POSTS.map((_, i) => (
+            <button key={i} onClick={() => { setPaused(true); setCurrent(i); }}
+              className={`rounded-full transition-all ${i === current ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
+              data-testid={`dot-${i}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Grid preview — small thumbnails */}
+      <div className="grid grid-cols-4 gap-2 mt-3">
+        {SOCIAL_POSTS.slice(0, 4).map((post, i) => (
+          <button key={i} onClick={() => { setPaused(true); setCurrent(i); }}
+            className={`relative rounded-xl overflow-hidden aspect-square transition-all ${i === current ? "ring-2 ring-black dark:ring-white" : "opacity-60 hover:opacity-100"}`}
+            data-testid={`thumb-${i}`}
+          >
+            <img src={post.src} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ── Journey Guide ── */
@@ -275,12 +389,22 @@ export default function ClientDashboardSimple({ user }: Props) {
 
       {/* ── Hero Banner ── */}
       <div className="bg-black relative overflow-hidden">
+        {/* Animated grid */}
         <div className="absolute inset-0 opacity-[0.05]"
           style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+        {/* Glow accents */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/[0.02] rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
         <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent" />
 
         <div className="max-w-2xl mx-auto px-4 pt-8 pb-16 relative">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Logo mark */}
+            <div className="flex items-center gap-2 mb-4">
+              <img src="/qirox-icon.png" alt="Qirox" className="w-8 h-8 object-contain" />
+              <span className="text-white/30 text-xs font-bold tracking-widest uppercase">Qirox</span>
+            </div>
+
             <p className="text-white/40 text-sm mb-1">{getGreeting()}،</p>
             <h1 className="text-3xl font-black text-white mb-4" data-testid="text-client-greeting">{firstName}</h1>
 
@@ -317,9 +441,9 @@ export default function ClientDashboardSimple({ user }: Props) {
         {/* ── Stats row ── */}
         <div className="grid grid-cols-3 gap-3 mt-4">
           {[
-            { label: "طلباتي", value: (orders as any[]).length, color: "text-blue-600", bg: "bg-blue-50", icon: FileText },
-            { label: "مشاريع نشطة", value: activeProjects.length, color: "text-violet-600", bg: "bg-violet-50", icon: Activity },
-            { label: "رصيد المحفظة", value: walletBalance > 0 ? `${walletBalance.toLocaleString()} ر.س` : "0", color: "text-green-600", bg: "bg-green-50", icon: CreditCard },
+            { label: "طلباتي", value: (orders as any[]).length, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-500/10", icon: FileText },
+            { label: "مشاريع نشطة", value: activeProjects.length, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-500/10", icon: Activity },
+            { label: "رصيد المحفظة", value: walletBalance > 0 ? `${walletBalance.toLocaleString()} ر.س` : "0", color: "text-green-600", bg: "bg-green-50 dark:bg-green-500/10", icon: CreditCard },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-4 text-center">
@@ -332,6 +456,11 @@ export default function ClientDashboardSimple({ user }: Props) {
             </motion.div>
           ))}
         </div>
+
+        {/* ── Social Media Posts Carousel ── */}
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <SocialPostsCarousel />
+        </motion.div>
 
         {/* ── Tabs: Projects / Orders ── */}
         <div className="mt-6">
@@ -584,6 +713,40 @@ export default function ClientDashboardSimple({ user }: Props) {
             </motion.div>
           ))}
         </div>
+
+        {/* ── Brand Trust Section ── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+          className="mt-6 bg-black rounded-2xl p-5 text-white relative overflow-hidden"
+          data-testid="brand-trust-section"
+        >
+          <div className="absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/qirox-icon.png" alt="Qirox" className="w-6 h-6 object-contain" />
+              <span className="text-white/50 text-xs font-bold tracking-wider">QIROX</span>
+            </div>
+            <p className="text-white font-black text-lg mb-1">شريكك الموثوق في التحول الرقمي</p>
+            <p className="text-white/40 text-xs mb-4">Your Complete Technology Partner</p>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {[
+                { label: "مشروع منجز", value: "50+" },
+                { label: "قطاع مخدوم", value: "10+" },
+                { label: "عميل راضٍ", value: "95%" },
+              ].map((s, i) => (
+                <div key={i} className="bg-white/[0.06] rounded-xl py-2 px-1">
+                  <p className="text-white font-black text-lg">{s.value}</p>
+                  <p className="text-white/40 text-[10px] font-medium">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-4 text-white/30 text-xs">
+              <span>@qirox.sa</span>
+              <span>·</span>
+              <span>@qiroxStudiosa</span>
+            </div>
+          </div>
+        </motion.div>
 
       </div>
     </div>

@@ -411,6 +411,32 @@ export default function ClientProfile() {
                 </div>
               </div>
 
+              {/* ── Legal / Business Info ── */}
+              <div className="border-t border-black/5 dark:border-white/5 pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="w-4 h-4 text-black dark:text-white" />
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{L ? "المعلومات القانونية والتجارية" : "Legal & Business Info"}</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "اسم المؤسسة / الشركة" : "Organization Name"}</label>
+                    <Input value={(form as any).organizationName ?? ""} onChange={e => setForm(p => ({ ...p, organizationName: e.target.value }))} placeholder={L ? "اسم الشركة أو المنشأة التجارية" : "Company legal name"} className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10" data-testid="input-org-name" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "السجل التجاري" : "Commercial Reg."}</label>
+                    <Input value={(form as any).commercialRegistration ?? ""} onChange={e => setForm(p => ({ ...p, commercialRegistration: e.target.value }))} placeholder="1XXXXXXXXX" dir="ltr" className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10 font-mono text-sm" data-testid="input-commercial-reg" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "الرقم الضريبي" : "Tax Number"}</label>
+                    <Input value={(form as any).taxNumber ?? ""} onChange={e => setForm(p => ({ ...p, taxNumber: e.target.value }))} placeholder="3XXXXXXXXXX3" dir="ltr" className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10 font-mono text-sm" data-testid="input-tax-number" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "العنوان الوطني" : "National Address"}</label>
+                    <Input value={(form as any).nationalAddress ?? ""} onChange={e => setForm(p => ({ ...p, nationalAddress: e.target.value }))} placeholder={L ? "مثال: RHHJ3894 أو الرياض، حي النخيل..." : "e.g. RHHJ3894"} className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10" data-testid="input-national-address" />
+                  </div>
+                </div>
+              </div>
+
               <div className="border-t border-black/5 dark:border-white/5 pt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Link2 className="w-4 h-4 text-black dark:text-white" />

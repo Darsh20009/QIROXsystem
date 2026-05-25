@@ -52,7 +52,7 @@ export default function Customers() {
   const [salesFilter, setSalesFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [editTarget, setEditTarget] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ address: "", city: "", taxNumber: "", organizationName: "", commercialRegistration: "" });
+  const [editForm, setEditForm] = useState({ address: "", city: "", taxNumber: "", organizationName: "", commercialRegistration: "", nationalAddress: "" });
   const [assignTarget, setAssignTarget] = useState<User | null>(null);
   const [assignSalesRepId, setAssignSalesRepId] = useState("");
 
@@ -455,6 +455,7 @@ export default function Customers() {
                               taxNumber: (customer as any).taxNumber || "",
                               organizationName: (customer as any).organizationName || "",
                               commercialRegistration: (customer as any).commercialRegistration || "",
+                              nationalAddress: (customer as any).nationalAddress || "",
                             });
                           }}
                           className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
@@ -535,6 +536,14 @@ export default function Customers() {
               <Input value={editForm.commercialRegistration} onChange={e => setEditForm(p => ({ ...p, commercialRegistration: e.target.value }))}
                 placeholder="1XXXXXXXXX" dir="ltr"
                 className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-commercial-reg" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> {L ? "العنوان الوطني" : "National Address"}
+              </Label>
+              <Input value={editForm.nationalAddress} onChange={e => setEditForm(p => ({ ...p, nationalAddress: e.target.value }))}
+                placeholder={L ? "مثال: RHHJ3894 أو الرياض، حي النخيل، شارع..." : "e.g. RHHJ3894"}
+                className="h-9 text-sm border-foreground/10" data-testid="input-national-address" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

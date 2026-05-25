@@ -2,8 +2,8 @@ import SARIcon from "@/components/SARIcon";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -798,6 +798,52 @@ function SupportDashboard() {
   );
 }
 
+// ── QIROX POSTS BANNER ────────────────────────────────────────────────────────
+const POSTS = [
+  { src: "/post-2.png",  text: "شريكك الموثوق في التحول الرقمي" },
+  { src: "/post-5.png",  text: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال" },
+  { src: "/post-8.png",  text: "الإدارة الذكية تبدأ من نظام ذكي" },
+  { src: "/post-9.png",  text: "التحول الرقمي صار ضرورة لا خيار" },
+  { src: "/post-12.png", text: "لما تكون بياناتك مرتبة قراراتك تصير أسرع" },
+];
+
+function QiroxPostsBanner() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % POSTS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <motion.div {...{ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.25 } }} className="mt-4">
+      <div className="relative rounded-2xl overflow-hidden bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.06]">
+        <AnimatePresence mode="wait">
+          <motion.div key={idx}
+            initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative"
+          >
+            <img src={POSTS[idx].src} alt={POSTS[idx].text} className="w-full object-cover rounded-2xl" style={{ maxHeight: 340, objectPosition: "top" }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl" />
+            <div className="absolute bottom-0 left-0 right-0 px-4 py-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-white font-bold text-sm">{POSTS[idx].text}</p>
+                <p className="text-white/40 text-xs">@qirox.sa</p>
+              </div>
+              <div className="flex gap-1.5">
+                {POSTS.map((_, i) => (
+                  <button key={i} onClick={() => setIdx(i)}
+                    className={`rounded-full transition-all ${i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/30"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
   const { lang, dir } = useI18n();
@@ -833,6 +879,7 @@ export default function EmployeeRoleDashboard() {
     <div className="relative overflow-hidden">
       <PageGraphics variant="dashboard" />
       {roleDashboard}
+      <QiroxPostsBanner />
       <AbandonedCartsWidget />
       <UpcomingMeetingsWidget />
       <motion.div {...fade(0.3)} className="mt-4">

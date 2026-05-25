@@ -725,7 +725,7 @@ export async function registerRoutes(
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
@@ -11177,7 +11177,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { UserModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
-      const allowed = ["fullName", "bio", "jobTitle", "phone", "whatsappNumber", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree"];
+      const allowed = ["fullName", "bio", "jobTitle", "phone", "whatsappNumber", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "organizationName", "commercialRegistration", "taxNumber", "nationalAddress"];
       const update: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) update[key] = req.body[key];
