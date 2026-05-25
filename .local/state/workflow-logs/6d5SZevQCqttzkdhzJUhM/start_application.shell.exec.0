@@ -1,0 +1,19 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K[AI] Provider: Pollinations AI (openai)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+3:01:23 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] error: UserModel is not defined
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 19 cron jobs
