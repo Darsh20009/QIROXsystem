@@ -298,6 +298,8 @@ const featureDetailSchema = new mongoose.Schema({
   title:   { type: String, default: "" },
   descAr:  { type: String, default: "" },
   icon:    { type: String, default: "✨" },
+  // Which pricing tiers include this feature (empty = all tiers)
+  tiers:   { type: [String], default: ["lite", "pro", "infinite"] },
 }, { _id: false });
 
 const sectorTemplateSchema = new mongoose.Schema({

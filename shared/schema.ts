@@ -213,6 +213,7 @@ export interface FeatureDetail {
   title: string;
   descAr: string;
   icon: string;
+  tiers?: ("lite" | "pro" | "infinite")[];
 }
 
 export interface TemplateFile {

@@ -19,7 +19,8 @@ import {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe, Star, BadgePercent,
   Sparkles, Tag, Check, UtensilsCrossed, ShoppingBag, Building2, Home, Infinity, Zap,
-  X, ExternalLink, Link2, ListChecks, Video, FileText, BookOpenCheck
+  X, ExternalLink, Link2, ListChecks, Video, FileText, BookOpenCheck,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import type { SectorTemplate, PricingPlan, FeatureDetail, TemplateFile } from "@shared/schema";
 
@@ -77,7 +78,14 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
   const [templateFiles, setTemplateFiles] = useState<TemplateFile[]>(
     template?.templateFiles?.length ? template.templateFiles : []
   );
-  const addFeatureDetail = () => setFeaturesDetails(f => [...f, { titleAr: "", title: "", descAr: "", icon: "✨" }]);
+  const addFeatureDetail = () => setFeaturesDetails(f => [...f, { titleAr: "", title: "", descAr: "", icon: "✨", tiers: ["lite", "pro", "infinite"] }]);
+  const toggleFeatureTier = (i: number, tier: "lite" | "pro" | "infinite") =>
+    setFeaturesDetails(f => f.map((fd, idx) => {
+      if (idx !== i) return fd;
+      const current = (fd as any).tiers as string[] ?? ["lite", "pro", "infinite"];
+      const next = current.includes(tier) ? current.filter(t => t !== tier) : [...current, tier];
+      return { ...fd, tiers: next };
+    }));
   const removeFeatureDetail = (i: number) => setFeaturesDetails(f => f.filter((_, idx) => idx !== i));
   const updateFeatureDetail = (i: number, key: keyof FeatureDetail, val: string) =>
     setFeaturesDetails(f => f.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
@@ -218,19 +226,48 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
             <Plus className="w-3 h-3" /> إضافة ميزة
           </Button>
         </div>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-          {featuresDetails.map((fd, i) => (
-            <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06] relative" data-testid={`feature-detail-${i}`}>
-              <button type="button" onClick={() => removeFeatureDetail(i)} className="absolute top-2 left-2 w-5 h-5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center">
-                <X className="w-3 h-3 text-black dark:text-white" />
-              </button>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <Input value={fd.icon} onChange={e => updateFeatureDetail(i, "icon", e.target.value)} placeholder="✨" className="h-8 text-center text-lg" title="Emoji أو رمز" />
-                <Input value={fd.titleAr} onChange={e => updateFeatureDetail(i, "titleAr", e.target.value)} placeholder="اسم الميزة (عربي)" className="h-8 text-xs col-span-2" />
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {featuresDetails.map((fd, i) => {
+            const fdTiers = (fd as any).tiers as string[] ?? ["lite", "pro", "infinite"];
+            return (
+              <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06] relative" data-testid={`feature-detail-${i}`}>
+                <button type="button" onClick={() => removeFeatureDetail(i)} className="absolute top-2 left-2 w-5 h-5 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] rounded-full flex items-center justify-center">
+                  <X className="w-3 h-3 text-black dark:text-white" />
+                </button>
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <Input value={fd.icon} onChange={e => updateFeatureDetail(i, "icon", e.target.value)} placeholder="✨" className="h-8 text-center text-lg" title="Emoji أو رمز" />
+                  <Input value={fd.titleAr} onChange={e => updateFeatureDetail(i, "titleAr", e.target.value)} placeholder="اسم الميزة (عربي)" className="h-8 text-xs col-span-2" />
+                </div>
+                <Textarea value={fd.descAr} onChange={e => updateFeatureDetail(i, "descAr", e.target.value)} placeholder="كيفية استخدام هذه الميزة..." rows={2} className="text-xs mb-2" />
+                {/* Tier availability toggles */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-black/30 dark:text-white/30 font-semibold ml-1">متاحة في:</span>
+                  {(["lite", "pro", "infinite"] as const).map(tier => {
+                    const included = fdTiers.includes(tier);
+                    const labels: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينيت" };
+                    return (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => toggleFeatureTier(i, tier)}
+                        data-testid={`feature-tier-toggle-${i}-${tier}`}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${
+                          included
+                            ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white"
+                            : "border-black/[0.1] dark:border-white/[0.1] text-black/30 dark:text-white/30 hover:border-black/20"
+                        }`}
+                      >
+                        {labels[tier]}
+                      </button>
+                    );
+                  })}
+                  {fdTiers.length === 0 && (
+                    <span className="text-[10px] text-black/25 italic">غير متاحة في أي باقة</span>
+                  )}
+                </div>
               </div>
-              <Textarea value={fd.descAr} onChange={e => updateFeatureDetail(i, "descAr", e.target.value)} placeholder="كيفية استخدام هذه الميزة..." rows={2} className="text-xs" />
-            </div>
-          ))}
+            );
+          })}
           {featuresDetails.length === 0 && (
             <p className="text-center text-[11px] text-black/30 py-3">لم يتم إضافة تفاصيل للمميزات بعد</p>
           )}
@@ -247,6 +284,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
 
 function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: PricingPlan; onClose: () => void; templates?: SectorTemplate[]; defaultSegment?: string }) {
   const { toast } = useToast();
+  const [showTemplateFeatures, setShowTemplateFeatures] = useState(false);
   const firstSegment = templates?.[0]?.category || defaultSegment || "restaurant";
   const [formData, setFormData] = useState({
     name: (plan as any)?.name || "",
@@ -416,6 +454,85 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
           <Input value={formData.offerLabel} onChange={e => setFormData(f => ({...f, offerLabel: e.target.value}))} placeholder="الأوفر / الأشهر / لفترة محدودة" />
         </div>
       </div>
+
+      {/* ── System features link: import from matching template ── */}
+      {(() => {
+        const matchedTemplate = templates?.find(t => t.category === formData.segment);
+        const allDetails = matchedTemplate?.featuresDetails ?? [];
+        const tierFeatures = allDetails.filter(fd => {
+          const fdTiers = (fd as any).tiers as string[] | undefined;
+          if (!fdTiers || fdTiers.length === 0) return true; // default: all tiers
+          return fdTiers.includes(formData.tier);
+        });
+        if (!matchedTemplate) return null;
+        return (
+          <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowTemplateFeatures(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] transition-colors"
+              data-testid="button-toggle-template-features"
+            >
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-black/40 dark:text-white/40" />
+                <span className="text-xs font-bold text-black/60 dark:text-white/60">
+                  مميزات نظام {matchedTemplate.nameAr} في باقة {formData.tier === "lite" ? "لايت" : formData.tier === "pro" ? "برو" : formData.tier === "infinite" ? "إنفينيت" : formData.tier}
+                </span>
+                <span className="text-[10px] bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full font-bold">{tierFeatures.length} ميزة</span>
+              </div>
+              {showTemplateFeatures
+                ? <ChevronUp className="w-4 h-4 text-black/30 dark:text-white/30" />
+                : <ChevronDown className="w-4 h-4 text-black/30 dark:text-white/30" />
+              }
+            </button>
+            {showTemplateFeatures && (
+              <div className="p-4 border-t border-black/[0.06] dark:border-white/[0.06] space-y-3">
+                {tierFeatures.length === 0 ? (
+                  <p className="text-xs text-black/30 dark:text-white/30 text-center py-2">لا توجد مميزات مرتبطة بهذه الباقة في النموذج</p>
+                ) : (
+                  <>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {tierFeatures.map((fd, i) => (
+                        <div key={i} className="flex items-center gap-2 py-1 px-2 rounded-lg bg-black/[0.01] dark:bg-white/[0.01] border border-black/[0.04] dark:border-white/[0.04]">
+                          <span className="text-base flex-shrink-0">{fd.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-black dark:text-white truncate">{fd.titleAr || fd.title}</p>
+                            {fd.descAr && <p className="text-[10px] text-black/40 dark:text-white/40 truncate">{fd.descAr}</p>}
+                          </div>
+                          {/* Show which tiers include this feature */}
+                          <div className="flex gap-0.5 flex-shrink-0">
+                            {((fd as any).tiers as string[] ?? ["lite","pro","infinite"]).map((t: string) => {
+                              const tl: Record<string,string> = { lite: "L", pro: "P", infinite: "∞" };
+                              return <span key={t} className="text-[9px] bg-black/[0.07] dark:bg-white/[0.1] text-black/50 dark:text-white/50 rounded px-1 font-bold">{tl[t] ?? t}</span>;
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Import button */}
+                    <button
+                      type="button"
+                      data-testid="button-import-template-features"
+                      onClick={() => {
+                        const imported = tierFeatures.map(fd => `${fd.icon} ${fd.titleAr || fd.title}`).join("\n");
+                        setFormData(f => ({
+                          ...f,
+                          featuresAr: f.featuresAr ? `${f.featuresAr}\n${imported}` : imported,
+                        }));
+                        toast({ title: `تم استيراد ${tierFeatures.length} ميزة من النظام` });
+                      }}
+                      className="w-full h-8 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-black/[0.15] dark:border-white/[0.15] text-xs font-bold text-black/50 dark:text-white/50 hover:border-black/30 hover:text-black dark:hover:text-white transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      استيراد {tierFeatures.length} ميزة كمميزات الباقة
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Features */}
       <div>
