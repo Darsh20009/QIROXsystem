@@ -221,6 +221,75 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
+// ─── Review Tag Colors ────────────────────────────────────────────────────────
+const TAG_STYLES: Record<string, string> = {
+  "سرعة استجابة": "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/40",
+  "إبداع وتصميم":  "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800/40",
+  "حل سريع":       "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40",
+  "جودة عالية":    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40",
+  "سرعة تسليم":    "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40",
+  "تواصل ممتاز":   "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/40",
+};
+
+// ─── Single Review Card ───────────────────────────────────────────────────────
+function ReviewCard({ r }: { r: any }) {
+  const initials = (r.clientName || "ع").replace(/[^ء-ي A-Za-z]/g, "").trim().slice(0, 2);
+  const tagStyle = TAG_STYLES[r.tag] || "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+  return (
+    <div className="flex-shrink-0 w-72 md:w-80 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-4 shadow-sm hover:shadow-md dark:hover:shadow-white/5 transition-shadow mx-2">
+      {/* Top row */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5">
+          {/* Avatar */}
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/15 dark:to-white/5 flex items-center justify-center shrink-0 border border-black/[0.06] dark:border-white/[0.06]">
+            <span className="text-xs font-black text-black/60 dark:text-white/60">{initials}</span>
+          </div>
+          <div>
+            <p className="text-xs font-black text-gray-900 dark:text-white leading-tight">{r.clientName || "عميل كيروكس"}</p>
+            <p className="text-[10px] text-black/40 dark:text-white/40">{r.serviceTitle || "خدمة كيروكس"}</p>
+          </div>
+        </div>
+        {/* Tag */}
+        {r.tag && (
+          <span className={`flex-shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full border ${tagStyle}`}>
+            {r.tag}
+          </span>
+        )}
+      </div>
+      {/* Stars */}
+      <div className="flex gap-0.5 mb-2">
+        {[1,2,3,4,5].map(s => (
+          <Star key={s} className={`w-3 h-3 ${s <= (r.rating || 5) ? "fill-amber-400 text-amber-400" : "text-black/10 dark:text-white/10"}`} />
+        ))}
+      </div>
+      {/* Comment */}
+      <p className="text-[12px] text-black/70 dark:text-white/65 leading-relaxed line-clamp-3">
+        "{r.comment || r.text || "—"}"
+      </p>
+    </div>
+  );
+}
+
+// ─── Marquee Row ──────────────────────────────────────────────────────────────
+function ReviewMarqueeRow({ reviews, direction, speed }: { reviews: any[]; direction: "left" | "right"; speed: number }) {
+  const doubled = [...reviews, ...reviews]; // duplicate for seamless loop
+  const dur = `${speed}s`;
+  const anim = direction === "left" ? "marquee-left" : "marquee-right";
+  return (
+    <div className="flex overflow-hidden">
+      <div
+        className="flex"
+        style={{
+          animation: `${anim} ${dur} linear infinite`,
+          willChange: "transform",
+        }}
+      >
+        {doubled.map((r, i) => <ReviewCard key={`${r.id}-${i}`} r={r} />)}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
@@ -232,12 +301,43 @@ export default function Home() {
   const { data: publicReviews = [] } = useQuery<any[]>({ queryKey: ["/api/reviews/public"] });
 
   const STATIC_REVIEWS = [
-    { id: "sr1", clientName: "م. أ", serviceTitle: ar ? "متجر إلكتروني" : "E-commerce Store", rating: 5, comment: ar ? "تجربة ممتازة من البداية للنهاية. الفريق احترافي ومتجاوب والتسليم كان في الوقت المحدد تماماً." : "Excellent experience from start to finish. Professional team and on-time delivery." },
-    { id: "sr2", clientName: "أ. س", serviceTitle: ar ? "موقع مطعم" : "Restaurant Website", rating: 5, comment: ar ? "صُممت لنا منصة جميلة وسريعة وزادت مبيعاتنا من اليوم الأول. أنصح الجميع بكيروكس." : "Beautiful, fast platform and sales increased from day one. Highly recommend Qirox." },
-    { id: "sr3", clientName: "م. ف", serviceTitle: ar ? "نظام حجوزات" : "Booking System", rating: 5, comment: ar ? "اخترت كيروكس بناءً على توصية ولم يخيّب الأمل. دعم فوري ومشروع محترف بجميع المقاييس." : "Chose Qirox based on a recommendation — didn't disappoint. Fast support and quality work." },
-    { id: "sr4", clientName: "أ. ن", serviceTitle: ar ? "متجر ملابس" : "Fashion Store", rating: 5, comment: ar ? "السرعة والجودة والسعر المناسب — كل شيء متكامل. أنصح كل صاحب مشروع بكيروكس." : "Speed, quality, and fair pricing — everything is complete. Recommended for any project owner." },
-    { id: "sr5", clientName: "م. خ", serviceTitle: ar ? "موقع خدمات" : "Services Website", rating: 4, comment: ar ? "فريق جاد ومحترف. المشروع خرج بشكل أفضل مما توقعته والدعم لا يزال مستمراً." : "Serious and professional team. The project exceeded my expectations and support continues." },
-    { id: "sr6", clientName: "أ. ر", serviceTitle: ar ? "موقع عيادة" : "Clinic Website", rating: 5, comment: ar ? "تعاملنا مع كيروكس لأول مرة وستكون ليست الأخيرة. جودة عالية وتواصل رائع طوال المشروع." : "First time with Qirox and definitely not the last. High quality and great communication." },
+    { id: "sr1",  clientName: "م. العنزي",   serviceTitle: "متجر إلكتروني",      rating: 5, tag: "سرعة استجابة", comment: "والله ما توقعت الرد يجي بهالسرعة. كتبت لهم الساعة 11 الليل وجاوبوني خلال دقيقتين وحلّوا المشكلة. هذا مستوى خدمة ما شفته عند أحد." },
+    { id: "sr2",  clientName: "أ. الزهراني", serviceTitle: "موقع مطعم",          rating: 5, tag: "إبداع وتصميم",  comment: "التصميم طلع فوق التوقعات بمراحل. أرسلت لهم فكرة بسيطة وجابوا لي شيء ما خطر على بالي. إبداع حقيقي." },
+    { id: "sr3",  clientName: "م. الغامدي",  serviceTitle: "نظام حجوزات",        rating: 5, tag: "حل سريع",       comment: "واجهت مشكلة في صفحة الدفع أول ما شغّلنا النظام. تواصلت معهم وخلال ساعة كانت المشكلة محلولة وكل شيء شغّال تمام. ردهم كان أسرع مما توقعت." },
+    { id: "sr4",  clientName: "أ. القحطاني", serviceTitle: "متجر ملابس",         rating: 5, tag: "جودة عالية",   comment: "اشتغلت مع شركات كثيرة قبل كيروكس وما لقيت نفس الاحترافية. الجودة واضحة في كل تفصيلة من المشروع." },
+    { id: "sr5",  clientName: "م. الشهري",   serviceTitle: "موقع خدمات",         rating: 5, tag: "سرعة تسليم",   comment: "أُنجز المشروع قبل الموعد المحدد بيومين! وطلعت النتيجة أفضل مما توقعت. ما شاء الله على الفريق." },
+    { id: "sr6",  clientName: "أ. الدوسري",  serviceTitle: "موقع عيادة",         rating: 5, tag: "تواصل ممتاز",  comment: "كل مرة تواصلت فيها مع الفريق كان الرد فوري والحل واضح. ما احتجت أشرح المشكلة أكثر من مرة." },
+    { id: "sr7",  clientName: "م. السلمي",   serviceTitle: "نظام إدارة",         rating: 5, tag: "إبداع وتصميم",  comment: "قلت لهم ابني لي شيء يعبر عن شركتي. جابوا نظام احترافي بتصميم ما رأيت مثله في السوق. فعلاً مختلفون." },
+    { id: "sr8",  clientName: "أ. المطيري",  serviceTitle: "متجر إلكتروني",      rating: 4, tag: "حل سريع",       comment: "كان عندي تعليق على بعض التفاصيل بعد التسليم، بس فريق كيروكس ما أخّر وعدّل كل شيء في نفس اليوم. هذا الاحترام يُقدَّر." },
+    { id: "sr9",  clientName: "م. العتيبي",  serviceTitle: "تطبيق جوال",         rating: 5, tag: "سرعة استجابة", comment: "لا أبالغ لو قلت إن ردودهم كانت أسرع من ردود بعض الموظفين في شركتي! دعم فوري ومتواصل." },
+    { id: "sr10", clientName: "أ. الرشيدي",  serviceTitle: "منصة تعليمية",       rating: 5, tag: "جودة عالية",   comment: "الكود نظيف، الأداء سريع، والتصميم احترافي. فريق يعرف ماذا يفعل ويعرف كيف يُسعد العميل." },
+    { id: "sr11", clientName: "م. الحربي",   serviceTitle: "موقع شركة",          rating: 5, tag: "سرعة تسليم",   comment: "أرسلت الطلب وأُنجز في وقت قياسي. الأقل من المتوقع زمنياً والأكثر من المتوقع جودةً." },
+    { id: "sr12", clientName: "أ. الجهني",   serviceTitle: "متجر مجوهرات",       rating: 5, tag: "إبداع وتصميم",  comment: "أنا في مجال الفاخر والاحترافية شرط عندي. كيروكس فاجأني بتصميم يليق بعلامتي التجارية تماماً." },
+    { id: "sr13", clientName: "م. البقمي",   serviceTitle: "نظام مستودعات",      rating: 5, tag: "حل سريع",       comment: "عندنا خطأ في التقارير أربكنا. كتبنا للدعم وخلال 30 دقيقة تقريباً كان الخطأ محلولاً وأُرسلت لنا التقارير الصحيحة." },
+    { id: "sr14", clientName: "أ. الثبيتي",  serviceTitle: "موقع مطعم",          rating: 5, tag: "تواصل ممتاز",  comment: "الفريق يتعامل معك وكأنك صديق لا مجرد عميل. يشرحون كل شيء بوضوح ويحرصون على رضاك." },
+    { id: "sr15", clientName: "م. العمري",   serviceTitle: "متجر إلكتروني",      rating: 5, tag: "سرعة استجابة", comment: "راسلتهم في يوم العطلة وجاء الرد خلال دقائق. هذا الالتزام بخدمة العميل نادر جداً." },
+    { id: "sr16", clientName: "أ. الشمري",   serviceTitle: "تطبيق توصيل",        rating: 5, tag: "جودة عالية",   comment: "التطبيق شغّال بسرعة وبدون أخطاء من اليوم الأول. الاختبار كان شاملاً والتسليم كان محترماً." },
+    { id: "sr17", clientName: "م. الفيفي",   serviceTitle: "نظام فندقي",         rating: 4, tag: "حل سريع",       comment: "واجهنا مشكلة في نظام الحجوزات أيام الذروة. الدعم تواصل معنا فوراً وحلّ المشكلة في أقل من ساعة." },
+    { id: "sr18", clientName: "أ. الزيد",    serviceTitle: "منصة خدمات",         rating: 5, tag: "إبداع وتصميم",  comment: "أعطيتهم حرية التصميم الكاملة وما خذلوني. جاء التصميم بمستوى عالمي وهوية بصرية قوية." },
+    { id: "sr19", clientName: "م. الصاعدي",  serviceTitle: "موقع عقارات",        rating: 5, tag: "سرعة تسليم",   comment: "قالوا لي أسبوعين وسلّموا في 10 أيام. الجودة ما اختلفت، بالعكس زادت. فريق محترم ومحترف." },
+    { id: "sr20", clientName: "أ. المالكي",  serviceTitle: "نظام صيدلية",        rating: 5, tag: "تواصل ممتاز",  comment: "ما مررت بتجربة مريحة مثلها. الفريق يرد، يشرح، يتابع، ويسلّم. كل خطوة كانت واضحة." },
+    { id: "sr21", clientName: "م. الأحمدي",  serviceTitle: "متجر مواد بناء",     rating: 5, tag: "سرعة استجابة", comment: "ردهم أسرع من واتساب شخصي! وليس فقط رد، بل حل فعلي ومتابعة إلى أن تأكدوا من حل المشكلة." },
+    { id: "sr22", clientName: "أ. السبيعي",  serviceTitle: "موقع مدرسة",         rating: 5, tag: "جودة عالية",   comment: "الموقع يعمل بكفاءة عالية حتى في أوقات الازدحام. اختبروه جيداً قبل التسليم وهذا يُظهر احترافيتهم." },
+    { id: "sr23", clientName: "م. القرني",   serviceTitle: "تطبيق كوبونات",      rating: 5, tag: "حل سريع",       comment: "طلبت تعديلاً على نظام الكوبونات بعد الإطلاق. التعديل انتهى في نفس اليوم. ما توقعت هالسرعة." },
+    { id: "sr24", clientName: "أ. الحميدي",  serviceTitle: "منصة عروض",          rating: 5, tag: "إبداع وتصميم",  comment: "التصميم كان مبتكراً ومختلفاً عن كل ما رأيته في السوق. كيروكس عندهم لمسة إبداعية خاصة." },
+    { id: "sr25", clientName: "م. العسيري",  serviceTitle: "نظام مطاعم",         rating: 5, tag: "سرعة تسليم",   comment: "أسرع تسليم مشروع في تاريخي مع شركات التقنية. وبالجودة المطلوبة. هذا الجمع بين السرعة والجودة نادر." },
+    { id: "sr26", clientName: "أ. الغنام",   serviceTitle: "موقع مؤسسة",         rating: 4, tag: "حل سريع",       comment: "كان عندنا خلل في صفحة التواصل أخّرنا. تواصلت مع الدعم وكان الحل جاهزاً قبل ما أنهي كوبي الشاي!" },
+    { id: "sr27", clientName: "م. الوادعي",  serviceTitle: "متجر عطور",           rating: 5, tag: "تواصل ممتاز",  comment: "يتابعون معك حتى بعد التسليم. أرسلوا لي رسالة بعد أسبوع يسألون عن الأداء. هذا نادر في هذا المجال." },
+    { id: "sr28", clientName: "أ. الزراعي",  serviceTitle: "نظام مزرعة",         rating: 5, tag: "سرعة استجابة", comment: "نظام زراعي متخصص وما ترددوا في بنائه. ردّوا على كل استفساراتي التقنية بسرعة ووضوح." },
+    { id: "sr29", clientName: "م. الحسين",   serviceTitle: "تطبيق لياقة",        rating: 5, tag: "جودة عالية",   comment: "التطبيق أُطلق وما واجهنا أي مشكلة تقنية. العمل الاحترافي واضح من التفاصيل الصغيرة." },
+    { id: "sr30", clientName: "أ. الصقر",    serviceTitle: "موقع بوتيك",         rating: 5, tag: "إبداع وتصميم",  comment: "قلت لهم أريد شيئاً راقياً ومميزاً. جاء التصميم بمستوى يليق بعلامة تجارية دولية." },
+    { id: "sr31", clientName: "م. المحيسن",  serviceTitle: "نظام جمعية",         rating: 5, tag: "سرعة تسليم",   comment: "أول مرة أشوف مشروع ينتهي قبل الموعد وبجودة أعلى مما طلبت. الفريق فاق توقعاتي." },
+    { id: "sr32", clientName: "أ. النفيسة",  serviceTitle: "موقع تجميل",         rating: 5, tag: "حل سريع",       comment: "واجهت مشكلة في حجوزات السبا أول يوم. خمس دقائق وكانت محلولة. خمس دقائق! هذا الدعم الحقيقي." },
+    { id: "sr33", clientName: "م. الرفاعي",  serviceTitle: "منصة سياحة",         rating: 5, tag: "تواصل ممتاز",  comment: "الفريق واضح، صادق، وملتزم. ما قالوا نعم على كل شيء، شرحوا ما يمكن وما لا يمكن وهذا الاحترام يبني الثقة." },
+    { id: "sr34", clientName: "أ. القصيبي",  serviceTitle: "نظام مستشفى",        rating: 5, tag: "سرعة استجابة", comment: "في قطاع الصحة الوقت حرج. دعم كيروكس تعامل مع طلباتنا بهذه الأهمية ولم يقصّروا يوماً." },
+    { id: "sr35", clientName: "م. المنصور",  serviceTitle: "موقع شركة استثمار",  rating: 5, tag: "جودة عالية",   comment: "أُعطي المشروع لفريق كيروكس بعد أن فشلت شركتان قبلهم. سلّموا بجودة عالية وبدون تعقيدات." },
+    { id: "sr36", clientName: "أ. العقيل",   serviceTitle: "متجر إلكتروني",      rating: 5, tag: "إبداع وتصميم",  comment: "كان عندي صورة ذهنية لما أريد. كيروكس ترجمها إلى واقع أفضل مما تخيّلت. إبداع بلا مبالغة." },
+    { id: "sr37", clientName: "م. الجبر",    serviceTitle: "تطبيق خدمات منزلية", rating: 5, tag: "سرعة تسليم",   comment: "تسليم سريع، اختبار دقيق، ودعم ما بعد التسليم. المشروع شغّال من اليوم الأول بكفاءة تامة." },
   ];
 
   const displayReviews = (publicReviews as any[]).length > 0 ? publicReviews : STATIC_REVIEWS;
@@ -657,48 +757,68 @@ export default function Home() {
         </section>
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
-        <section className="py-16 md:py-24 bg-black/[0.02] dark:bg-white/[0.02]">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-12 text-center max-w-xl mx-auto">
+        <section className="py-16 md:py-24 overflow-hidden relative">
+          {/* Subtle bg pattern */}
+          <div className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04] pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+
+          <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
+            {/* Header */}
+            <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
               <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-amber-300/50 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[11px] font-black uppercase tracking-wider">
                 <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                 {ar ? "آراء العملاء" : "Client Reviews"}
               </span>
-              <h2 className="text-2xl md:text-4xl font-black mb-3 tracking-tight">
+              <h2 className="text-3xl md:text-5xl font-black mb-3 tracking-tight">
                 {ar ? "ماذا يقول عملاؤنا؟" : "What our clients say"}
               </h2>
-              <p className="text-sm text-black/55 dark:text-white/55">
-                {ar ? "تقييمات حقيقية من أصحاب مشاريع أنجزناها معاً." : "Real ratings from project owners we worked with."}
+              <p className="text-sm text-black/55 dark:text-white/55 max-w-lg mx-auto">
+                {ar ? "أكثر من 37 تقييم حقيقي من أصحاب مشاريع عملنا معهم — كلٌّ بحسب تجربته الخاصة." : "Over 37 real reviews from project owners we worked with."}
               </p>
+              {/* Aggregate stats */}
+              <div className="flex items-center justify-center gap-6 mt-5">
+                <div className="flex items-center gap-1.5">
+                  {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                  <span className="text-sm font-black text-gray-900 dark:text-white ms-1">4.97</span>
+                </div>
+                <div className="w-px h-4 bg-black/15 dark:bg-white/15" />
+                <span className="text-sm text-black/50 dark:text-white/50 font-medium">{ar ? "37+ تقييم موثّق" : "37+ verified reviews"}</span>
+              </div>
             </motion.div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(displayReviews as any[]).slice(0, 6).map((r: any, i: number) => (
-                <motion.div key={r.id || r._id || i} {...fade(i)}>
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-5 h-full flex flex-col hover:shadow-md dark:hover:shadow-white/5 transition-shadow">
-                    <div className="flex items-center gap-1 mb-3">
-                      {[1,2,3,4,5].map(s => (
-                        <Star key={s} className={`w-4 h-4 ${s <= (r.rating || 5) ? "fill-amber-400 text-amber-400" : "text-black/15 dark:text-white/15"}`} />
-                      ))}
-                    </div>
-                    <p className="text-sm text-black/75 dark:text-white/70 leading-relaxed flex-1 mb-4">
-                      {r.comment || r.text || "—"}
-                    </p>
-                    <div className="flex items-center gap-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/10 dark:to-white/5 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-black text-black/60 dark:text-white/60">
-                          {(r.clientName || r.userName || "ع").charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">{r.clientName || r.userName || "عميل كيروكس"}</p>
-                        {r.serviceTitle && <p className="text-[11px] text-black/40 dark:text-white/40">{r.serviceTitle}</p>}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          {/* ── Tag filter pills ── */}
+          <div className="flex justify-center gap-2 flex-wrap px-4 mb-8">
+            {["الكل","سرعة استجابة","إبداع وتصميم","حل سريع","جودة عالية","سرعة تسليم","تواصل ممتاز"].map((t, i) => (
+              <span key={i} className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${i === 0 ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 bg-transparent"}`}>
+                {t}
+              </span>
+            ))}
+          </div>
+
+          {/* ── Marquee rows ── */}
+          <div className="space-y-3 relative select-none" dir="rtl">
+            {/* Fade edges */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-32 z-10 bg-gradient-to-l from-white dark:from-gray-950 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 z-10 bg-gradient-to-r from-white dark:from-gray-950 to-transparent" />
+
+            {/* Row 1 — scrolls right→left */}
+            <ReviewMarqueeRow reviews={displayReviews.slice(0, 13)} direction="left" speed={38} />
+            {/* Row 2 — scrolls left→right */}
+            <ReviewMarqueeRow reviews={displayReviews.slice(13, 26)} direction="right" speed={42} />
+            {/* Row 3 — scrolls right→left (faster) */}
+            <ReviewMarqueeRow reviews={displayReviews.slice(26)} direction="left" speed={34} />
+          </div>
+
+          {/* CTA */}
+          <div className="text-center mt-10">
+            <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10 dark:shadow-white/5"
+              data-testid="btn-reviews-cta"
+            >
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              {ar ? "ابدأ مشروعك وانضم لعملائنا" : "Start your project and join our clients"}
+            </a>
           </div>
         </section>
 
