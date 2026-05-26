@@ -87,9 +87,12 @@ export default function Footer() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           <div className="md:col-span-5">
-            <div className="flex items-center gap-2.5 mb-6">
-              <img src={qiroxLogoPath} alt="Q" className="h-8 w-8 object-contain" />
-              <span className="text-base font-black tracking-tight text-black dark:text-white">QIROX</span>
+            <div className="mb-6">
+              <Link href="/">
+                <div className="inline-block bg-black rounded-2xl px-5 py-3 hover:opacity-90 transition-opacity shadow-lg shadow-black/10">
+                  <img src="/qirox-logo-full.png" alt="QIROX" className="h-9 w-auto object-contain" />
+                </div>
+              </Link>
             </div>
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">
               {t("footer.description")}

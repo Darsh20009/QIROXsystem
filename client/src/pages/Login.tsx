@@ -516,7 +516,7 @@ export default function Login() {
         {/* Brand */}
         <div className="relative z-10">
           <Link href="/">
-            <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
+            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
           </Link>
         </div>
 

@@ -1084,7 +1084,12 @@ export default function Home() {
         <section className="bg-black text-white dark:bg-white dark:text-black pt-8 pb-24 md:pb-28">
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <motion.div {...fade(0)}>
-              <img src={qiroxLogo} alt="QIROX" className="h-12 w-auto mx-auto mb-6 invert dark:invert-0" />
+              {/* Full logo — always on dark bg in light mode; wrapped in dark pill for dark mode */}
+              <div className="inline-block mb-6">
+                <div className="bg-black rounded-2xl px-6 py-3 shadow-xl shadow-black/30">
+                  <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain" />
+                </div>
+              </div>
               <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
                 {ar ? "جاهز تبدأ؟" : "Ready to start?"}
               </h2>

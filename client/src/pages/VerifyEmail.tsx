@@ -136,7 +136,7 @@ export default function VerifyEmail() {
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
         <div className="relative z-10">
           <Link href="/">
-            <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
+            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
           </Link>
         </div>
         <div className="relative z-10">
