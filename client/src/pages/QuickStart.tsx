@@ -14,7 +14,7 @@ import {
   MessageSquare, Truck, Lock, Zap, Phone, Video, Check,
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
-import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
+const qiroxLogo = "/qirox-icon.png";
 
 /* ─── Data ─── */
 const SECTORS_AR = [

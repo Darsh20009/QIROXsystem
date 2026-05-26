@@ -49,113 +49,129 @@ function getPhaseLabel(progress: number) {
 
 /* ── Social Media Posts Data ── */
 const SOCIAL_POSTS = [
-  { src: "/post-1.png",  caption: "تقنية مصممة خصيصًا ونتائج حقيقية" },
-  { src: "/post-2.png",  caption: "شريكك الموثوق في التحول الرقمي" },
-  { src: "/post-3.png",  caption: "فريق واحد ورؤية واحدة وإمكانيات بلا حدود" },
-  { src: "/post-4.png",  caption: "من نحن — كيروكس شريكك التقني الكامل" },
-  { src: "/post-5.png",  caption: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال" },
-  { src: "/post-6.png",  caption: "نصنع تجارب ذكية للأعمال الحديثة" },
-  { src: "/post-7.png",  caption: "استثمر في نظام يبني نمو مشروعك" },
-  { src: "/post-8.png",  caption: "الإدارة الذكية تبدأ من نظام ذكي" },
-  { src: "/post-9.png",  caption: "التحول الرقمي صار ضرورة لا خيار" },
-  { src: "/post-10.png", caption: "الحل الصحيح يبدأ بمفتاح يفهم أعمالك" },
-  { src: "/post-11.png", caption: "خسارة الوقت تبدأ من الإدارة التقليدية" },
-  { src: "/post-12.png", caption: "لما تكون بياناتك مرتبة قراراتك تصير أسرع" },
+  { src: "/post-1.png",  caption: "تقنية مصممة خصيصًا ونتائج حقيقية",         tag: "نتائج حقيقية" },
+  { src: "/post-2.png",  caption: "شريكك الموثوق في التحول الرقمي",             tag: "تحول رقمي" },
+  { src: "/post-3.png",  caption: "فريق واحد ورؤية واحدة وإمكانيات بلا حدود", tag: "من نحن" },
+  { src: "/post-4.png",  caption: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال", tag: "تكنولوجيا" },
+  { src: "/post-5.png",  caption: "نصنع تجارب ذكية للأعمال الحديثة",           tag: "تجارب ذكية" },
+  { src: "/post-6.png",  caption: "استثمر في نظام يبني نمو مشروعك",            tag: "استثمار" },
+  { src: "/post-7.png",  caption: "الإدارة الذكية تبدأ من نظام ذكي",           tag: "إدارة ذكية" },
+  { src: "/post-8.png",  caption: "التحول الرقمي صار ضرورة لا خيار",           tag: "رقمنة" },
+  { src: "/post-9.png",  caption: "الحل الصحيح يبدأ بمفتاح يفهم أعمالك",     tag: "حلول مخصصة" },
+  { src: "/post-10.png", caption: "خسارة الوقت تبدأ من الإدارة التقليدية",    tag: "توفير الوقت" },
+  { src: "/post-11.png", caption: "لما تكون بياناتك مرتبة قراراتك تصير أسرع", tag: "بيانات منظمة" },
 ];
 
-/* ── Social Posts Carousel ── */
-function SocialPostsCarousel() {
-  const [current, setCurrent] = useState(0);
+/* ── Social Posts Section ── */
+function SocialPostsSection() {
+  const [featured, setFeatured] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (paused) return;
     const t = setInterval(() => {
-      setCurrent(prev => (prev + 1) % SOCIAL_POSTS.length);
-    }, 3500);
+      setFeatured(prev => (prev + 1) % SOCIAL_POSTS.length);
+    }, 4000);
     return () => clearInterval(t);
   }, [paused]);
 
-  const prev = () => { setPaused(true); setCurrent(c => (c - 1 + SOCIAL_POSTS.length) % SOCIAL_POSTS.length); };
-  const next = () => { setPaused(true); setCurrent(c => (c + 1) % SOCIAL_POSTS.length); };
-
   return (
-    <div className="mt-5" data-testid="social-posts-carousel">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mt-6" data-testid="social-posts-section">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div>
           <p className="font-black text-gray-900 dark:text-white text-sm">كيروكس في عالمك</p>
-          <p className="text-xs text-gray-400 dark:text-slate-500">آخر منشوراتنا لك</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500">منشوراتنا الأخيرة — تابعنا على السوشيال</p>
         </div>
         <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer"
-          className="text-xs font-bold text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors flex items-center gap-1"
+          className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-pink-500 to-orange-400 text-white px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
         >
-          تابعنا <ArrowUpRight className="w-3 h-3" />
+          <span>@qirox.sa</span>
+          <ArrowUpRight className="w-3 h-3" />
         </a>
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 shadow-lg"
+      {/* Featured Post (large) */}
+      <div className="relative rounded-2xl overflow-hidden bg-gray-900 shadow-xl mb-3"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
         <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            initial={{ opacity: 0, scale: 1.03 }}
+          <motion.img
+            key={featured}
+            src={SOCIAL_POSTS[featured].src}
+            alt={SOCIAL_POSTS[featured].caption}
+            initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.4 }}
-            className="w-full"
-          >
-            <img
-              src={SOCIAL_POSTS[current].src}
-              alt={SOCIAL_POSTS[current].caption}
-              className="w-full object-cover rounded-2xl"
-              style={{ maxHeight: "480px", objectPosition: "top" }}
-            />
-          </motion.div>
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.45 }}
+            className="w-full object-cover"
+            style={{ maxHeight: 400, objectPosition: "top" }}
+          />
         </AnimatePresence>
 
-        {/* Caption overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-4 py-4 rounded-b-2xl">
-          <p className="text-white text-sm font-bold">{SOCIAL_POSTS[current].caption}</p>
-          <p className="text-white/50 text-xs mt-0.5">@qirox.sa</p>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pointer-events-none">
+          <span className="inline-block bg-white/20 backdrop-blur-sm text-white/80 text-[9px] font-bold px-2 py-0.5 rounded-full mb-1.5 uppercase tracking-wider">
+            {SOCIAL_POSTS[featured].tag}
+          </span>
+          <p className="text-white font-black text-sm leading-snug">{SOCIAL_POSTS[featured].caption}</p>
+          <p className="text-white/40 text-[10px] mt-0.5 flex items-center gap-1">
+            <img src="/qirox-icon.png" alt="" className="w-3 h-3 object-contain opacity-60" />
+            QIROX · @qirox.sa
+          </p>
         </div>
 
-        {/* Nav arrows */}
-        <button onClick={prev}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
+        {/* Arrows */}
+        <button onClick={() => { setPaused(true); setFeatured(c => (c - 1 + SOCIAL_POSTS.length) % SOCIAL_POSTS.length); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
           data-testid="social-prev"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <button onClick={next}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
+        ><ChevronRight className="w-4 h-4" /></button>
+        <button onClick={() => { setPaused(true); setFeatured(c => (c + 1) % SOCIAL_POSTS.length); }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
           data-testid="social-next"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
+        ><ChevronLeft className="w-4 h-4" /></button>
 
-        {/* Dots */}
-        <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-1.5">
+        {/* Progress dots */}
+        <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-1">
           {SOCIAL_POSTS.map((_, i) => (
-            <button key={i} onClick={() => { setPaused(true); setCurrent(i); }}
-              className={`rounded-full transition-all ${i === current ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40"}`}
+            <button key={i} onClick={() => { setPaused(true); setFeatured(i); }}
+              className={`rounded-full transition-all duration-300 ${i === featured ? "w-6 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/30 hover:bg-white/60"}`}
               data-testid={`dot-${i}`}
             />
           ))}
         </div>
       </div>
 
-      {/* Grid preview — small thumbnails */}
-      <div className="grid grid-cols-4 gap-2 mt-3">
-        {SOCIAL_POSTS.slice(0, 4).map((post, i) => (
-          <button key={i} onClick={() => { setPaused(true); setCurrent(i); }}
-            className={`relative rounded-xl overflow-hidden aspect-square transition-all ${i === current ? "ring-2 ring-black dark:ring-white" : "opacity-60 hover:opacity-100"}`}
+      {/* Grid — all posts as small cards */}
+      <div className="grid grid-cols-3 gap-2">
+        {SOCIAL_POSTS.map((post, i) => (
+          <button
+            key={i}
+            onClick={() => { setPaused(true); setFeatured(i); }}
+            className={`relative rounded-xl overflow-hidden aspect-[3/4] transition-all duration-300 group ${i === featured ? "ring-2 ring-black dark:ring-white shadow-lg scale-[1.02]" : "opacity-70 hover:opacity-100 hover:scale-[1.01]"}`}
             data-testid={`thumb-${i}`}
           >
-            <img src={post.src} alt="" className="w-full h-full object-cover" />
+            <img src={post.src} alt={post.caption} className="w-full h-full object-cover object-top" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute bottom-0 left-0 right-0 px-1.5 pb-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-white text-[8px] font-bold leading-tight line-clamp-2">{post.caption}</p>
+            </div>
+            {i === featured && (
+              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full shadow-lg" />
+            )}
           </button>
         ))}
+      </div>
+
+      {/* Social links footer */}
+      <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-400 dark:text-slate-500 font-medium">
+        <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">📸 @qirox.sa</a>
+        <span>·</span>
+        <a href="https://x.com/qiroxStudiosa" target="_blank" rel="noopener noreferrer" className="hover:text-sky-500 transition-colors">𝕏 @qiroxStudiosa</a>
+        <span>·</span>
+        <a href="https://www.tiktok.com/@qirox.sa" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 dark:hover:text-white transition-colors">🎵 @qirox.sa</a>
       </div>
     </div>
   );
@@ -477,9 +493,9 @@ export default function ClientDashboardSimple({ user }: Props) {
           ))}
         </div>
 
-        {/* ── Social Media Posts Carousel ── */}
+        {/* ── Social Media Posts ── */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <SocialPostsCarousel />
+          <SocialPostsSection />
         </motion.div>
 
         {/* ── Tabs: Projects / Orders ── */}

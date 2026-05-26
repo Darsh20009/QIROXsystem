@@ -11039,8 +11039,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { QiroxSystemSettingsModel } = await import("./models");
       let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
       if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
-      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr } = settings;
-      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId } = settings;
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId });
     } catch { res.json({}); }
   });
 

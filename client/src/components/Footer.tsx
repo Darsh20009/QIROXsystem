@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxLogoPath = "/qirox-icon.png";
 import { ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
@@ -88,7 +88,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           <div className="md:col-span-5">
             <div className="flex items-center gap-2.5 mb-6">
-              <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain dark:invert" />
+              <img src={qiroxLogoPath} alt="Q" className="h-8 w-8 object-contain" />
+              <span className="text-base font-black tracking-tight text-black dark:text-white">QIROX</span>
             </div>
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">
               {t("footer.description")}

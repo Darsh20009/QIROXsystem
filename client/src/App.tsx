@@ -22,6 +22,7 @@ import { PageHintCard } from "@/components/PageHintCard";
 import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import PixelTracking from "@/components/PixelTracking";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -1000,6 +1001,7 @@ function App() {
           <I18nProvider>
             <AntiDevTools />
             <OfflineBanner />
+            <PixelTracking />
             <AppInner />
           </I18nProvider>
         </ThemeProvider>

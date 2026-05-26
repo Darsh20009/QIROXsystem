@@ -5,7 +5,7 @@ import SARIcon from "@/components/SARIcon";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxLogoPath = "/qirox-icon.png";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useQuery } from "@tanstack/react-query";
@@ -242,8 +242,8 @@ export default function Navigation() {
           }`}>
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="flex items-center gap-2 group shrink-0" data-testid="link-logo">
-                <img src={"/qirox-icon.png"} alt="Q" className="h-8 w-8 object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
-                <img src={qiroxLogoPath} alt="QIROX" className={`h-6 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity ${isOnDarkHero ? "invert" : "dark:invert"}`} />
+                <img src={qiroxLogoPath} alt="Q" className="h-8 w-8 object-contain opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-sm" />
+                <span className={`text-base font-black tracking-tight transition-opacity opacity-80 group-hover:opacity-100 ${isOnDarkHero ? "text-white" : "text-black dark:text-white"}`}>QIROX</span>
               </Link>
 
               <div className="hidden lg:flex items-center gap-1">

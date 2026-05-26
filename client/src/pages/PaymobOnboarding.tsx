@@ -17,7 +17,7 @@ import {
   Zap, Check
 } from "lucide-react";
 import paymobLogo from "@assets/download_1774503289938.png";
-import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
+const qiroxLogo = "/qirox-icon.png";
 
 const STEPS = [
   { icon: Building2, key: "business" },

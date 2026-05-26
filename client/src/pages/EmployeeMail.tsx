@@ -11,7 +11,7 @@ import {
   ExternalLink, Settings, Maximize2, Minimize2, Tag, Archive,
   ChevronDown,
 } from "lucide-react";
-import qiroxLogo from "@assets/qirox_without_background_1771716363944.png";
+const qiroxLogo = "/qirox-icon.png";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 interface MailAccount { id: string; emailAddress: string; displayName: string; jobTitle: string; isShared: boolean; sharedWith: string[]; }

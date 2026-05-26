@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxLogoPath = "/qirox-icon.png";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { SiInstagram, SiWhatsapp, SiX, SiSnapchat, SiTiktok, SiYoutube, SiLinkedin, SiLinktree } from "react-icons/si";

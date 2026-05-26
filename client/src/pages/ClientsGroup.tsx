@@ -15,7 +15,7 @@ import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxLogoPath = "/qirox-icon.png";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface NewsItem {
@@ -141,7 +141,7 @@ export default function ClientsGroup() {
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-black dark:bg-white flex items-center justify-center">
-              <img src={qiroxLogoPath} alt="QIROX" className="w-7 h-7 object-contain dark:invert" />
+              <img src={qiroxLogoPath} alt="QIROX" className="w-7 h-7 object-contain" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-black dark:bg-white border-2 border-white dark:border-gray-900 rounded-full" />
           </div>
@@ -211,7 +211,7 @@ export default function ClientsGroup() {
                   >
                     {/* QIROX Avatar */}
                     <div className="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 mb-0.5">
-                      <img src={qiroxLogoPath} alt="Q" className="w-5 h-5 object-contain dark:invert" />
+                      <img src={qiroxLogoPath} alt="Q" className="w-5 h-5 object-contain" />
                     </div>
 
                     {/* Message Bubble */}
@@ -353,7 +353,7 @@ export default function ClientsGroup() {
                   <span className="mx-1">·</span>
                   <div className="flex items-center gap-1">
                     <div className="w-4 h-4 rounded-full bg-black dark:bg-white flex items-center justify-center">
-                      <img src={qiroxLogoPath} alt="Q" className="w-3 h-3 object-contain dark:invert" />
+                      <img src={qiroxLogoPath} alt="Q" className="w-3 h-3 object-contain" />
                     </div>
                     QIROX
                   </div>

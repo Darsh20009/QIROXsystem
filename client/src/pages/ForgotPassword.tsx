@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, KeyRound, ShieldCheck, ArrowLeft, Eye, EyeOff, CheckCircle2, RefreshCw, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxLogoPath = "/qirox-icon.png";
 import { useI18n } from "@/lib/i18n";
 
 type Step = "email" | "otp" | "reset" | "done";

@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2, Radar
 } from "lucide-react";
 import { SiWhatsapp, SiGoogleplay, SiApple, SiLinktree } from "react-icons/si";
 
@@ -28,6 +28,7 @@ type Settings = {
   foundedYear: number; teamSize: number;
   systemValuation: number; currency: string;
   profitDistribution: { roleType: string; percentage: number; label: string }[];
+  metaPixelId: string; tiktokPixelId: string; snapPixelId: string; ga4Id: string; gtmId: string;
 };
 
 const EMPTY: Settings = {
@@ -40,6 +41,7 @@ const EMPTY: Settings = {
   taxNumber: "", commercialReg: "", foundedYear: 2024, teamSize: 1,
   systemValuation: 0, currency: "SAR",
   profitDistribution: [],
+  metaPixelId: "", tiktokPixelId: "", snapPixelId: "", ga4Id: "", gtmId: "",
 };
 
 type StoreConfig = {
@@ -54,7 +56,7 @@ const EMPTY_STORE: StoreConfig = {
   msStoreUrl: "",   msStoreEnabled: false,
 };
 
-type Section = "company" | "contact" | "social" | "financial" | "distribution" | "appdownload";
+type Section = "company" | "contact" | "social" | "financial" | "distribution" | "appdownload" | "tracking";
 
 export default function AdminQiroxSettings() {
   const { toast } = useToast();
@@ -128,6 +130,7 @@ export default function AdminQiroxSettings() {
     { id: "company", label: L ? "معلومات الشركة" : "Company Info", icon: Building2, color: "text-black dark:text-white" },
     { id: "contact", label: L ? "التواصل والعنوان" : "Contact & Address", icon: Phone, color: "text-black dark:text-white" },
     { id: "social", label: L ? "السوشيال ميديا" : "Social Media", icon: Globe, color: "text-black dark:text-white" },
+    { id: "tracking", label: L ? "تتبع & تحليلات" : "Tracking & Analytics", icon: Radar, color: "text-black dark:text-white" },
     { id: "financial", label: L ? "التقييم المالي" : "Financial Valuation", icon: DollarSign, color: "text-black dark:text-white" },
     { id: "distribution", label: L ? "توزيع الأرباح" : "Profit Distribution", icon: BarChart3, color: "text-black dark:text-white" },
     { id: "appdownload", label: L ? "تحميل التطبيق" : "App Downloads", icon: Smartphone, color: "text-black dark:text-white" },
@@ -427,7 +430,41 @@ export default function AdminQiroxSettings() {
               </div>
             </div>
           )}
-        </motion.div>
+
+          {/* Tracking Section */}
+          {section === "tracking" && (
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-6 bg-white dark:bg-gray-900">
+              <div>
+                <h3 className="font-bold text-black dark:text-white flex items-center gap-2 mb-1"><Radar className="w-4 h-4" /> {L ? "Pixel التتبع والتحليلات" : "Tracking Pixels & Analytics"}</h3>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "أضف معرّفات بكسل التتبع لتحليل سلوك الزوار وتحسين الإعلانات" : "Add pixel IDs to track visitors and optimize ad campaigns"}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { k: "metaPixelId", label: "Meta / Facebook Pixel ID", placeholder: "e.g. 123456789012345", hint: L ? "من Facebook Ads Manager → Events Manager" : "From Facebook Ads Manager → Events Manager" },
+                  { k: "tiktokPixelId", label: "TikTok Pixel ID", placeholder: "e.g. ABCDE1234567890ABCDE", hint: L ? "من TikTok Ads Manager → Library → Web Events" : "From TikTok Ads Manager → Library → Web Events" },
+                  { k: "snapPixelId", label: "Snapchat Pixel ID", placeholder: "e.g. xxxxxxxx-xxxx-xxxx-xxxx", hint: L ? "من Snapchat Ads Manager → Business → Pixels" : "From Snapchat Ads Manager → Business → Pixels" },
+                  { k: "ga4Id", label: "Google Analytics 4 (GA4) Measurement ID", placeholder: "e.g. G-XXXXXXXXXX", hint: L ? "من Google Analytics → Admin → Data Streams → Web" : "From Google Analytics → Admin → Data Streams → Web" },
+                  { k: "gtmId", label: "Google Tag Manager (GTM) Container ID", placeholder: "e.g. GTM-XXXXXXX", hint: L ? "من Google Tag Manager → Container ID في الأعلى" : "From Google Tag Manager → Container ID at top" },
+                ].map(({ k, label, placeholder, hint }) => (
+                  <div key={k} className="space-y-1.5">
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/60">{label}</label>
+                    <Input
+                      value={(form as any)[k] || ""}
+                      onChange={e => set(k as keyof Settings, e.target.value)}
+                      placeholder={placeholder}
+                      dir="ltr"
+                      data-testid={`input-${k}`}
+                    />
+                    <p className="text-[11px] text-black/30 dark:text-white/30">{hint}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-700/30 rounded-xl p-4 text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-bold">{L ? "ملاحظة: " : "Note: "}</span>
+                {L ? "بكسلات التتبع تُحمَّل تلقائياً في متصفح الزوار بعد حفظ الإعدادات. لا يمكن اختبارها في بيئة التطوير." : "Tracking pixels load automatically in visitor browsers after saving. They cannot be tested in development mode."}
+              </div>
+            </div>
+          )}
 
         {/* Save Button — only for non-appdownload sections */}
         {section !== "appdownload" && (

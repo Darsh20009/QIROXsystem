@@ -1331,6 +1331,12 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   // TURN Server (WebRTC NAT traversal)
   turnEnabled:        { type: Boolean, default: false },
   turnServers:        { type: [{ url: String, username: String, credential: String }], default: [] },
+  // Pixel Tracking & Analytics
+  metaPixelId:        { type: String, default: "" },
+  tiktokPixelId:      { type: String, default: "" },
+  snapPixelId:        { type: String, default: "" },
+  ga4Id:              { type: String, default: "" },
+  gtmId:              { type: String, default: "" },
   // Modification Tracking
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });

@@ -1,0 +1,2 @@
+- [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer).
+- [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.

@@ -738,33 +738,64 @@ function EmployeeDashboard({ user }: { user: any }) {
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="employee-dashboard" dir={dir}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
-      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5">
-        <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <h1 className="text-xl font-bold text-black dark:text-white font-heading">مرحباً، {user.fullName || user.username}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-black/[0.06] text-black/60 dark:text-white/60 border-0 text-xs px-3 py-1.5">
-              {employeeRoleLabels[user.role] || user.role}
-            </Badge>
-            <div className="flex items-center gap-2 bg-black/[0.02] dark:bg-white/[0.04] p-1.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08]">
-              {!attendanceStatus || attendanceStatus.checkOut ? (
-                <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs h-8 px-4" onClick={handleCheckIn} disabled={checkInMutation.isPending} data-testid="button-check-in">
-                  <LogIn className="w-3.5 h-3.5 ml-1.5" />تسجيل حضور
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" className="border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] text-xs h-8 px-4" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
-                  <LogOut className="w-3.5 h-3.5 ml-1.5" />تسجيل انصراف
-                </Button>
-              )}
-              {attendanceStatus && !attendanceStatus.checkOut && (
-                <div className="px-3 py-1 text-[10px] font-bold text-black/40 dark:text-white/40 flex items-center gap-1.5">
-                  <Timer className="w-3 h-3 text-black dark:text-white animate-pulse" />
-                  {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+
+      {/* ── Cinematic Employee Banner ── */}
+      <div className="relative overflow-hidden bg-black" style={{ minHeight: 200 }}>
+        {/* Video background */}
+        <video
+          autoPlay muted loop playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.22 }}
+          src="/qirox-brand.mp4"
+        />
+        {/* Layered gradients */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/60 to-black/80" />
+        <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+        {/* Accent glow */}
+        <div className="absolute top-0 left-1/3 w-96 h-96 bg-white/[0.03] rounded-full -translate-y-1/2 blur-3xl pointer-events-none" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#f8f8f8] dark:from-gray-950 to-transparent z-10" />
+
+        <div className="max-w-[1300px] mx-auto px-6 pt-7 pb-12 relative z-10">
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center gap-2.5 mb-3">
+                <img src="/qirox-icon.png" alt="Qirox" className="w-9 h-9 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]" />
+                <div>
+                  <span className="text-white/30 text-[9px] font-bold tracking-[0.2em] uppercase block">QIROX STUDIO</span>
+                  <span className="text-white/50 text-[10px] font-medium">لوحة تحكم الموظفين</span>
                 </div>
-              )}
-            </div>
+              </div>
+              <p className="text-white/40 text-sm mb-1">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <h1 className="text-2xl font-black text-white drop-shadow-lg font-heading">
+                مرحباً، {user.fullName?.split(' ')[0] || user.username} 👋
+              </h1>
+              <Badge className="mt-2 bg-white/10 text-white/70 border border-white/20 text-[10px] px-2.5 py-0.5 backdrop-blur-sm">
+                {employeeRoleLabels[user.role] || user.role}
+              </Badge>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+              className="flex items-center gap-2 self-start mt-1"
+            >
+              <div className="flex items-center gap-2 bg-white/[0.06] backdrop-blur-sm p-1.5 rounded-xl border border-white/10">
+                {!attendanceStatus || attendanceStatus.checkOut ? (
+                  <Button size="sm" className="bg-white text-black hover:bg-white/90 text-xs h-9 px-4 font-bold gap-1.5 rounded-lg" onClick={handleCheckIn} disabled={checkInMutation.isPending} data-testid="button-check-in">
+                    <LogIn className="w-3.5 h-3.5" />تسجيل حضور
+                  </Button>
+                ) : (
+                  <Button size="sm" className="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs h-9 px-4 font-bold gap-1.5 rounded-lg" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
+                    <LogOut className="w-3.5 h-3.5" />تسجيل انصراف
+                  </Button>
+                )}
+                {attendanceStatus && !attendanceStatus.checkOut && (
+                  <div className="px-3 py-1 text-[10px] font-bold text-white/50 flex items-center gap-1.5">
+                    <Timer className="w-3 h-3 text-green-400 animate-pulse" />
+                    {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
