@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Wallet, TrendingUp, Users, CreditCard, Clock, Ban, Plus, Trash2,
   BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail,
-  TrendingDown, Percent, ChevronDown, ChevronUp, Search,
+  TrendingDown, Percent, ChevronDown, ChevronUp, Search, Globe, Layers,
+  UtensilsCrossed, GraduationCap, Heart, Coffee, Home, Dumbbell, ShoppingCart,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Area } from "recharts";
 
@@ -38,7 +39,8 @@ export default function AdminFinance() {
   const L = lang === "ar";
   const qc = useQueryClient();
   const [period, setPeriod] = useState<Period>("monthly");
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "profits" | "expenses" | "email">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "profits" | "expenses" | "email">("overview");
+  const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
   const [testEmail, setTestEmail] = useState("");
   const [emailType, setEmailType] = useState("welcome");
   const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -74,10 +76,15 @@ export default function AdminFinance() {
     queryFn: async () => { const r = await fetch(`/api/admin/finance/reports?period=${period}`, { credentials: "include" }); return r.json(); },
   });
 
-  const { data: projectsData } = useQuery<{ projects: any[]; totalRemaining: number; count: number }>({
+  const { data: projectsData } = useQuery<{
+    projects: any[];
+    totalRemaining: number;
+    count: number;
+    bySystem: { segment: string; projects: any[]; totalAmount: number; totalPaid: number; totalRemaining: number }[];
+  }>({
     queryKey: ["/api/admin/finance/projects-payments"],
     queryFn: async () => { const r = await fetch("/api/admin/finance/projects-payments", { credentials: "include" }); return r.json(); },
-    enabled: activeTab === "projects",
+    enabled: activeTab === "projects" || activeTab === "systems",
   });
 
   const { data: expensesData, isLoading: expLoading } = useQuery<{ expenses: any[]; total: number }>({
@@ -141,10 +148,24 @@ export default function AdminFinance() {
   const tabs = [
     { key: "overview", label: L ? "نظرة عامة" : "Overview", icon: BarChart3 },
     { key: "projects", label: L ? "دفعات المشاريع" : "Project Payments", icon: FileText },
-    { key: "profits", label: L ? "أرباح المشاريع" : "Project Profits", icon: TrendingUp },
+    { key: "systems",  label: L ? "حسب النظام" : "By System", icon: Layers },
+    { key: "profits",  label: L ? "أرباح المشاريع" : "Project Profits", icon: TrendingUp },
     { key: "expenses", label: L ? "المصاريف" : "Expenses", icon: ShoppingBag },
-    { key: "email", label: L ? "نظام البريد" : "Email System", icon: Mail },
+    { key: "email",    label: L ? "نظام البريد" : "Email System", icon: Mail },
   ];
+
+  // Segment label + icon map (mirrors AdminTemplates.tsx SEGMENT_META)
+  const SEG_META: Record<string, { labelAr: string; icon: any }> = {
+    restaurant:   { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed },
+    clinic:       { labelAr: "عيادات وصحة",      icon: Heart },
+    education:    { labelAr: "تعليم وتدريب",     icon: GraduationCap },
+    ecommerce:    { labelAr: "متاجر إلكترونية",  icon: ShoppingCart },
+    realestate:   { labelAr: "عقارات",           icon: Home },
+    gym:          { labelAr: "رياضة ولياقة",     icon: Dumbbell },
+    hotel:        { labelAr: "فنادق وسياحة",     icon: Building2 },
+    cafe:         { labelAr: "مقاهي",            icon: Coffee },
+    other:        { labelAr: "أخرى",             icon: Globe },
+  };
 
   // Profit report helpers
   const profitOrders: any[] = profitData?.orders || [];
@@ -458,6 +479,168 @@ export default function AdminFinance() {
               });
             })()}
           </div>
+        </div>
+      )}
+
+      {/* === TAB: By System === */}
+      {activeTab === "systems" && (
+        <div className="space-y-4">
+          {/* Header KPIs */}
+          {!projectsData ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : (
+            <>
+              {/* Top summary bar */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-black rounded-2xl p-4 text-white col-span-1">
+                  <p className="text-[10px] text-white/50 mb-1">إجمالي الدفعات المتبقية في السوق</p>
+                  <p className="text-2xl font-black flex items-center gap-1">
+                    {(projectsData.totalRemaining || 0).toLocaleString()}
+                    <SARIcon size={13} className="opacity-70" />
+                  </p>
+                  <p className="text-[10px] text-white/40 mt-1">{projectsData.count} مشروع بدفعات لم تُسدَّد</p>
+                </div>
+                <div className="border border-black/[0.07] rounded-2xl p-4">
+                  <p className="text-[10px] text-black/40 mb-1">إجمالي المشاريع</p>
+                  <p className="text-2xl font-black text-black">{(projectsData.projects || []).length}</p>
+                  <p className="text-[10px] text-black/30 mt-1">موزّعة على {(projectsData.bySystem || []).length} أنظمة</p>
+                </div>
+                <div className="border border-black/[0.07] rounded-2xl p-4">
+                  <p className="text-[10px] text-black/40 mb-1">إجمالي العقود</p>
+                  <p className="text-2xl font-black text-black">
+                    {(projectsData.projects || []).reduce((s: number, p: any) => s + p.totalAmount, 0).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-black/30 mt-1 flex items-center gap-0.5">
+                    مدفوع: {(projectsData.projects || []).reduce((s: number, p: any) => s + p.totalPaid, 0).toLocaleString()}
+                    <SARIcon size={9} className="opacity-40 mr-0.5" />
+                  </p>
+                </div>
+              </div>
+
+              {/* Systems list */}
+              <div className="space-y-3">
+                {(projectsData.bySystem || []).map((sys) => {
+                  const meta = SEG_META[sys.segment] || SEG_META["other"];
+                  const Icon = meta.icon;
+                  const isExpanded = expandedSegment === sys.segment;
+                  const paidPct = sys.totalAmount > 0 ? Math.min(100, Math.round((sys.totalPaid / sys.totalAmount) * 100)) : 0;
+                  const pendingProjects = sys.projects.filter((p: any) => p.remaining > 0);
+
+                  return (
+                    <div key={sys.segment} className="border border-black/[0.08] rounded-2xl overflow-hidden" data-testid={`system-finance-${sys.segment}`}>
+                      {/* System header row */}
+                      <button
+                        onClick={() => setExpandedSegment(isExpanded ? null : sys.segment)}
+                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-black/[0.01] transition-colors text-right"
+                        data-testid={`button-expand-system-${sys.segment}`}
+                      >
+                        {/* Icon */}
+                        <div className="w-10 h-10 rounded-xl bg-black/[0.05] flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-5 h-5 text-black/60" />
+                        </div>
+
+                        {/* Name + counts */}
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="font-black text-sm text-black">{meta.labelAr || sys.segment}</p>
+                          <p className="text-[10px] text-black/35 mt-0.5">
+                            {sys.projects.length} مشروع إجمالي ·{" "}
+                            <span className={pendingProjects.length > 0 ? "text-black font-bold" : "text-black/30"}>
+                              {pendingProjects.length} بدفعات متبقية
+                            </span>
+                          </p>
+                        </div>
+
+                        {/* Amounts */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px] text-black/35 mb-0.5">إجمالي العقود</p>
+                          <p className="text-sm font-bold text-black/70 flex items-center gap-0.5 justify-end">
+                            {sys.totalAmount.toLocaleString()} <SARIcon size={9} className="opacity-40" />
+                          </p>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px] text-black/35 mb-0.5">مدفوع</p>
+                          <p className="text-sm font-bold text-black/50 flex items-center gap-0.5 justify-end">
+                            {sys.totalPaid.toLocaleString()} <SARIcon size={9} className="opacity-30" />
+                          </p>
+                        </div>
+
+                        {/* Remaining pill */}
+                        <div className={`rounded-xl px-3 py-2 flex-shrink-0 text-right min-w-[90px] ${sys.totalRemaining > 0 ? "bg-black" : "bg-black/[0.04] border border-black/[0.07]"}`}>
+                          <p className={`text-[9px] mb-0.5 ${sys.totalRemaining > 0 ? "text-white/50" : "text-black/30"}`}>متبقي</p>
+                          <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${sys.totalRemaining > 0 ? "text-white" : "text-black/30"}`}>
+                            {sys.totalRemaining > 0 ? <>{sys.totalRemaining.toLocaleString()} <SARIcon size={9} className="opacity-70" /></> : "✓ مكتمل"}
+                          </p>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-20 flex-shrink-0">
+                          <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${paidPct >= 100 ? "bg-black/40" : "bg-black"}`} style={{ width: `${paidPct}%` }} />
+                          </div>
+                          <p className="text-[9px] text-black/30 text-center mt-0.5">{paidPct}%</p>
+                        </div>
+
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-black/30 flex-shrink-0" />}
+                      </button>
+
+                      {/* Expanded: project list for this system */}
+                      {isExpanded && (
+                        <div className="border-t border-black/[0.06] bg-black/[0.01] divide-y divide-black/[0.04]">
+                          {sys.projects.length === 0 ? (
+                            <p className="text-center text-xs text-black/30 py-4">لا توجد مشاريع</p>
+                          ) : sys.projects.map((project: any) => {
+                            const ppct = project.totalAmount > 0 ? Math.min(100, Math.round((project.totalPaid / project.totalAmount) * 100)) : 0;
+                            const isPaid = project.remaining <= 0;
+                            return (
+                              <div key={project.id} className="flex items-center gap-3 px-5 py-3" data-testid={`system-project-${project.id}`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-xs text-black">{project.businessName}</span>
+                                    {project.planTier && (
+                                      <span className="text-[9px] bg-black/[0.06] text-black/50 rounded-full px-1.5 py-0.5 font-bold uppercase">{project.planTier}</span>
+                                    )}
+                                    {isPaid && <span className="text-[9px] text-black/30 font-bold">✓ مكتمل</span>}
+                                  </div>
+                                  <p className="text-[10px] text-black/35 mt-0.5">{project.clientName} · #{project.orderNumber || project.id.slice(-6)}</p>
+                                </div>
+                                {/* Mini progress */}
+                                <div className="w-16 flex-shrink-0">
+                                  <div className="h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${isPaid ? "bg-black/30" : "bg-black"}`} style={{ width: `${ppct}%` }} />
+                                  </div>
+                                  <p className="text-[9px] text-black/25 text-center">{ppct}%</p>
+                                </div>
+                                {/* Remaining amount */}
+                                <div className="text-right flex-shrink-0 min-w-[80px]">
+                                  {isPaid ? (
+                                    <p className="text-xs text-black/25 font-bold">مدفوع ✓</p>
+                                  ) : (
+                                    <p className="text-xs font-black text-black flex items-center gap-0.5 justify-end">
+                                      {project.remaining.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                    </p>
+                                  )}
+                                  <p className="text-[9px] text-black/25">من {project.totalAmount.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {(projectsData.bySystem || []).length === 0 && (
+                  <div className="text-center py-16">
+                    <Layers className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                    <p className="text-black/30 text-sm">لا توجد مشاريع مربوطة بأنظمة بعد</p>
+                    <p className="text-black/20 text-xs mt-1">تأكد من تحديد حقل "قطاع النظام" عند إنشاء الطلبات</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

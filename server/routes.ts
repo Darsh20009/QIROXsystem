@@ -7241,7 +7241,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { OrderModel, InvoiceModel } = await import("./models");
     const orders = await OrderModel.find({ status: { $nin: ["cancelled", "rejected"] }, totalAmount: { $gt: 0 } })
-      .populate("userId", "fullName username email").sort({ createdAt: -1 }).limit(100).lean();
+      .populate("userId", "fullName username email").sort({ createdAt: -1 }).limit(200).lean();
     const result = await Promise.all(orders.map(async (order: any) => {
       const paidAgg = await InvoiceModel.aggregate([
         { $match: { orderId: order._id, status: "paid" } },
@@ -7253,12 +7253,33 @@ export async function registerRoutes(
         id: String(order._id), orderNumber: order.orderNumber,
         businessName: order.businessName || order.projectType || "مشروع",
         clientName: order.userId?.fullName || order.userId?.username || "—",
+        clientEmail: order.userId?.email || "",
         totalAmount, totalPaid, remaining: Math.max(0, totalAmount - totalPaid),
         status: order.status, createdAt: order.createdAt,
+        planSegment: order.planSegment || order.serviceType || "",
+        planTier: order.planTier || "",
+        projectType: order.projectType || "",
       };
     }));
     const withRemaining = result.filter(r => r.remaining > 0);
-    res.json({ projects: result, totalRemaining: withRemaining.reduce((s, r) => s + r.remaining, 0), count: withRemaining.length });
+
+    // Group by planSegment for the "by-system" view
+    const bySystem: Record<string, any> = {};
+    for (const p of result) {
+      const seg = p.planSegment || "other";
+      if (!bySystem[seg]) bySystem[seg] = { segment: seg, projects: [], totalAmount: 0, totalPaid: 0, totalRemaining: 0 };
+      bySystem[seg].projects.push(p);
+      bySystem[seg].totalAmount += p.totalAmount;
+      bySystem[seg].totalPaid += p.totalPaid;
+      bySystem[seg].totalRemaining += p.remaining;
+    }
+
+    res.json({
+      projects: result,
+      totalRemaining: withRemaining.reduce((s, r) => s + r.remaining, 0),
+      count: withRemaining.length,
+      bySystem: Object.values(bySystem).sort((a: any, b: any) => b.totalRemaining - a.totalRemaining),
+    });
   });
 
   // GET /api/admin/finance/operational-expenses
