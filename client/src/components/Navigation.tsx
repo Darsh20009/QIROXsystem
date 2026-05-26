@@ -5,7 +5,6 @@ import SARIcon from "@/components/SARIcon";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-const qiroxLogoPath = "/qirox-icon.png";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useQuery } from "@tanstack/react-query";
@@ -241,9 +240,25 @@ export default function Navigation() {
               : "bg-transparent max-w-6xl"
           }`}>
             <div className="flex justify-between items-center h-16">
-              <Link href="/" className="flex items-center gap-2 group shrink-0" data-testid="link-logo">
-                <img src={qiroxLogoPath} alt="Q" className="h-8 w-8 object-contain opacity-90 group-hover:opacity-100 transition-opacity drop-shadow-sm" />
-                <span className={`text-base font-black tracking-tight transition-opacity opacity-80 group-hover:opacity-100 ${isOnDarkHero ? "text-white" : "text-black dark:text-white"}`}>QIROX</span>
+              <Link href="/" className="flex items-center group shrink-0" data-testid="link-logo">
+                <div
+                  className="relative transition-all duration-300 group-hover:scale-105 group-hover:brightness-110 rounded-xl px-3 py-1.5"
+                  style={{
+                    background: isOnDarkHero ? "transparent" : "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)",
+                    boxShadow: isOnDarkHero ? "none" : "0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <img
+                    src="/qirox-logo-full.png"
+                    alt="QIROX"
+                    className="h-7 w-auto object-contain"
+                    style={{
+                      filter: isOnDarkHero
+                        ? "brightness(1.15) drop-shadow(0 0 10px rgba(255,255,255,0.3)) drop-shadow(0 0 28px rgba(255,255,255,0.12))"
+                        : "brightness(1.2) drop-shadow(0 0 6px rgba(255,255,255,0.15))",
+                    }}
+                  />
+                </div>
               </Link>
 
               <div className="hidden lg:flex items-center gap-1">

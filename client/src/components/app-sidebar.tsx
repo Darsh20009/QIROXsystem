@@ -27,7 +27,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
-const qiroxLogoPath = "/qirox-icon.png";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp, SiLinktree } from "react-icons/si";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];
@@ -406,10 +405,7 @@ export function AppSidebar() {
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={qiroxLogoPath} alt="Q" className="h-7 w-7 object-contain drop-shadow-sm" />
-            <span className="text-sm font-black tracking-tight text-black dark:text-white">QIROX</span>
-          </Link>
+          <div />
           {user && <NotificationBell />}
         </div>
       </SidebarHeader>
