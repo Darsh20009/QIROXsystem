@@ -39,8 +39,12 @@ export default function AdminFinance() {
   const L = lang === "ar";
   const qc = useQueryClient();
   const [period, setPeriod] = useState<Period>("monthly");
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "profits" | "expenses" | "email">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "ledger" | "profits" | "expenses" | "email">("overview");
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
+  const [ledgerMonth, setLedgerMonth] = useState(currentMonth);
+  const [quickExp, setQuickExp] = useState({ orderId: "", category: "other", description: "", amount: "" });
+  const [ledgerProjectSearch, setLedgerProjectSearch] = useState("");
+  const [newOpExp, setNewOpExp] = useState({ category: "operational", description: "", amount: "" });
   const [testEmail, setTestEmail] = useState("");
   const [emailType, setEmailType] = useState("welcome");
   const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -91,6 +95,41 @@ export default function AdminFinance() {
     queryKey: ["/api/admin/finance/operational-expenses", expMonth],
     queryFn: async () => { const r = await fetch(`/api/admin/finance/operational-expenses?month=${expMonth}`, { credentials: "include" }); return r.json(); },
     enabled: activeTab === "expenses",
+  });
+
+  const { data: plData, isLoading: plLoading, refetch: plRefetch } = useQuery<any>({
+    queryKey: ["/api/admin/finance/monthly-pl", ledgerMonth],
+    queryFn: async () => { const r = await fetch(`/api/admin/finance/monthly-pl?month=${ledgerMonth}`, { credentials: "include" }); return r.json(); },
+    enabled: activeTab === "ledger",
+  });
+
+  const addQuickExpMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", `/api/admin/orders/${quickExp.orderId}/expenses`, {
+        category: quickExp.category, description: quickExp.description, amount: Number(quickExp.amount),
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/monthly-pl"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/profit-report"] });
+      setQuickExp(q => ({ ...q, description: "", amount: "" }));
+      toast({ title: "تم تسجيل المصروف وتحديث الأرباح تلقائياً" });
+    },
+    onError: () => toast({ title: "فشل تسجيل المصروف", variant: "destructive" }),
+  });
+
+  const addQuickOpExpMutation = useMutation({
+    mutationFn: async (data: { category: string; description: string; amount: number; date?: string }) => {
+      const r = await apiRequest("POST", "/api/admin/finance/operational-expenses", { ...data, notes: "" });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/monthly-pl"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/operational-expenses"] });
+      toast({ title: "تم تسجيل المصروف التشغيلي" });
+    },
+    onError: () => toast({ title: "فشل التسجيل", variant: "destructive" }),
   });
 
   const addExpMutation = useMutation({
@@ -146,12 +185,13 @@ export default function AdminFinance() {
   }, {});
 
   const tabs = [
-    { key: "overview", label: L ? "نظرة عامة" : "Overview", icon: BarChart3 },
-    { key: "projects", label: L ? "دفعات المشاريع" : "Project Payments", icon: FileText },
-    { key: "systems",  label: L ? "حسب النظام" : "By System", icon: Layers },
-    { key: "profits",  label: L ? "أرباح المشاريع" : "Project Profits", icon: TrendingUp },
-    { key: "expenses", label: L ? "المصاريف" : "Expenses", icon: ShoppingBag },
-    { key: "email",    label: L ? "نظام البريد" : "Email System", icon: Mail },
+    { key: "overview", label: L ? "نظرة عامة" : "Overview",         icon: BarChart3 },
+    { key: "ledger",   label: L ? "السجل المالي" : "Ledger",         icon: CreditCard },
+    { key: "projects", label: L ? "دفعات المشاريع" : "Payments",     icon: FileText },
+    { key: "systems",  label: L ? "حسب النظام" : "By System",        icon: Layers },
+    { key: "profits",  label: L ? "أرباح المشاريع" : "Profits",      icon: TrendingUp },
+    { key: "expenses", label: L ? "المصاريف" : "Expenses",           icon: ShoppingBag },
+    { key: "email",    label: L ? "نظام البريد" : "Email System",    icon: Mail },
   ];
 
   // Segment label + icon map (mirrors AdminTemplates.tsx SEGMENT_META)
@@ -643,6 +683,264 @@ export default function AdminFinance() {
           )}
         </div>
       )}
+
+      {/* === TAB: Financial Ledger (السجل المالي) === */}
+      {activeTab === "ledger" && (() => {
+        const ORDER_EXP_CATS: Record<string, string> = {
+          hosting: "استضافة", domain: "دومين", freelancer: "مستقل", license: "ترخيص",
+          ads: "إعلانات", design: "تصميم", salary: "راتب", commission: "عمولة", other: "أخرى",
+        };
+        const OP_EXP_CATS: Record<string, string> = {
+          operational: "تشغيلية", marketing: "تسويقية", admin: "إدارية", product: "منتج", other: "أخرى",
+        };
+        const ordersList: any[] = plData?.ordersList || [];
+        const filteredProjects: any[] = (plData?.perProject || []).filter((p: any) =>
+          !ledgerProjectSearch || p.businessName?.includes(ledgerProjectSearch) || p.clientName?.includes(ledgerProjectSearch)
+        );
+
+        const plRows = [
+          { label: "المقبوض من العملاء",       value: plData?.revenue        || 0, sign: 1,  bold: false, note: `${plData?.invoiceCount || 0} فاتورة مدفوعة` },
+          { label: "مصاريف تكاليف المشاريع",  value: plData?.totalProjExp   || 0, sign: -1, bold: false, note: Object.entries(plData?.projExpByCat || {}).map(([k,v]) => `${ORDER_EXP_CATS[k] || k}: ${(v as number).toLocaleString()}`).join(" · ") || "—" },
+          { label: "ربح المشاريع الخام",       value: plData?.grossProjectProfit || 0, sign: 1, bold: true, note: "الإيرادات ناقص تكاليف المشاريع" },
+          { label: "مصاريف تشغيلية",          value: plData?.opCosts        || 0, sign: -1, bold: false, note: "إيجار، خدمات، طاقة..." },
+          { label: "مصاريف تسويقية",          value: plData?.mktCosts       || 0, sign: -1, bold: false, note: "إعلانات، سوشيال ميديا..." },
+          { label: "مصاريف إدارية",           value: plData?.adminCosts     || 0, sign: -1, bold: false, note: "رواتب، مستلزمات مكتب..." },
+          { label: "مصاريف أخرى",            value: plData?.otherCosts     || 0, sign: -1, bold: false, note: "منتجات، أخرى..." },
+        ];
+
+        return (
+          <div className="space-y-5">
+            {/* Month selector */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-black/40" />
+                <span className="text-sm font-bold text-black/60">السجل المالي الشهري</span>
+              </div>
+              <input
+                type="month" value={ledgerMonth} onChange={e => setLedgerMonth(e.target.value)}
+                className="h-8 px-3 border border-black/[0.1] rounded-xl text-xs font-mono outline-none focus:border-black/20 bg-transparent"
+                data-testid="input-ledger-month"
+              />
+              {plLoading && <Loader2 className="w-4 h-4 animate-spin text-black/30" />}
+            </div>
+
+            {/* P&L Waterfall */}
+            <div className="border border-black/[0.08] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 bg-black/[0.02] border-b border-black/[0.06]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">قائمة الأرباح والخسائر — {ledgerMonth}</p>
+              </div>
+              <div className="divide-y divide-black/[0.04]">
+                {plRows.map((row, i) => {
+                  const isNeg = row.value < 0 || (row.sign === -1 && row.value > 0);
+                  const displayVal = row.value;
+                  return (
+                    <div key={i} className={`flex items-center gap-4 px-5 py-3 ${row.bold ? "bg-black/[0.02]" : ""}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs ${row.bold ? "font-black text-black" : "font-medium text-black/60"}`}>{row.label}</p>
+                        {row.note && <p className="text-[10px] text-black/25 mt-0.5 truncate">{row.note}</p>}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${row.bold ? "text-black" : row.sign === -1 && displayVal > 0 ? "text-black/50" : "text-black"}`}>
+                          {row.sign === -1 && displayVal > 0 ? "−" : "+"} {displayVal.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Net Profit final row */}
+                <div className={`flex items-center gap-4 px-5 py-4 ${(plData?.netMonthlyProfit || 0) >= 0 ? "bg-black" : "bg-red-950/20"}`}>
+                  <div className="flex-1">
+                    <p className={`font-black text-sm ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white" : "text-red-400"}`}>صافي الربح الشهري</p>
+                    <p className={`text-[10px] mt-0.5 ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white/40" : "text-red-400/60"}`}>
+                      بعد خصم كافة المصاريف · هامش {plData?.profitMargin || 0}%
+                    </p>
+                  </div>
+                  <p className={`text-2xl font-black flex items-center gap-1 ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white" : "text-red-400"}`}>
+                    {(plData?.netMonthlyProfit || 0).toLocaleString()} <SARIcon size={14} className="opacity-70" />
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Two-column entry forms */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Form 1: Project expense entry */}
+              <div className="border border-dashed border-black/[0.12] rounded-2xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">تسجيل مصروف على مشروع</p>
+                <Select value={quickExp.orderId} onValueChange={v => setQuickExp(q => ({ ...q, orderId: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-quick-exp-order">
+                    <SelectValue placeholder="اختر المشروع..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ordersList.map((o: any) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.businessName} — {o.clientName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={quickExp.category} onValueChange={v => setQuickExp(q => ({ ...q, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-quick-exp-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ORDER_EXP_CATS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="وصف المصروف *" value={quickExp.description}
+                    onChange={e => setQuickExp(q => ({ ...q, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-quick-exp-desc" />
+                  <Input type="number" placeholder="المبلغ *" value={quickExp.amount}
+                    onChange={e => setQuickExp(q => ({ ...q, amount: e.target.value }))}
+                    className="h-8 text-xs border-black/10" dir="ltr" data-testid="input-quick-exp-amount" />
+                  <Button className="h-8 text-xs bg-black text-white gap-1" onClick={() => addQuickExpMutation.mutate()}
+                    disabled={addQuickExpMutation.isPending || !quickExp.orderId || !quickExp.description || !quickExp.amount}
+                    data-testid="button-add-quick-exp">
+                    {addQuickExpMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    تسجيل
+                  </Button>
+                </div>
+                <p className="text-[9px] text-black/25">سيتم احتساب هذا المصروف تلقائياً من ربح المشروع وصافي الشهر</p>
+              </div>
+
+              {/* Form 2: Operational/marketing/admin expense entry */}
+              <div className="border border-dashed border-black/[0.12] rounded-2xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">تسجيل مصروف تشغيلي / تسويقي / إداري</p>
+                <Select value={newOpExp.category} onValueChange={v => setNewOpExp(p => ({ ...p, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-op-exp-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(OP_EXP_CATS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="وصف المصروف *" value={newOpExp.description}
+                    onChange={e => setNewOpExp(p => ({ ...p, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-op-exp-desc" />
+                  <Input type="number" placeholder="المبلغ *" value={newOpExp.amount}
+                    onChange={e => setNewOpExp(p => ({ ...p, amount: e.target.value }))}
+                    className="h-8 text-xs border-black/10" dir="ltr" data-testid="input-op-exp-amount" />
+                  <Button className="h-8 text-xs bg-black text-white gap-1"
+                    onClick={() => {
+                      addQuickOpExpMutation.mutate({ category: newOpExp.category, description: newOpExp.description, amount: Number(newOpExp.amount) });
+                      setNewOpExp(p => ({ ...p, description: "", amount: "" }));
+                    }}
+                    disabled={addQuickOpExpMutation.isPending || !newOpExp.description || !newOpExp.amount}
+                    data-testid="button-add-op-exp">
+                    {addQuickOpExpMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    تسجيل
+                  </Button>
+                </div>
+                <p className="text-[9px] text-black/25">يُخصم تلقائياً من صافي الربح الشهري لـ {ledgerMonth}</p>
+              </div>
+            </div>
+
+            {/* Per-project breakdown */}
+            {(plData?.perProject || []).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-black/30">صافي المشاريع — {ledgerMonth}</p>
+                  <div className="relative">
+                    <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-black/25 pointer-events-none" />
+                    <input value={ledgerProjectSearch} onChange={e => setLedgerProjectSearch(e.target.value)}
+                      placeholder="بحث..." className="h-7 pr-7 pl-3 text-[11px] border border-black/[0.08] rounded-xl outline-none bg-transparent" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {filteredProjects.map((p: any) => {
+                    const netColor = p.allTimeNet >= 0 ? "text-black" : "text-red-500";
+                    const paidPct = p.totalAmount > 0 ? Math.min(100, Math.round((p.totalPaid / p.totalAmount) * 100)) : 0;
+                    return (
+                      <div key={p.id} className="border border-black/[0.07] rounded-xl px-4 py-3 flex items-center gap-4" data-testid={`ledger-project-${p.id}`}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-black truncate">{p.businessName}</p>
+                          <p className="text-[10px] text-black/35">{p.clientName} · #{p.orderNumber || p.id.slice(-6)}</p>
+                        </div>
+                        {/* Mini collection progress */}
+                        <div className="text-center flex-shrink-0">
+                          <p className="text-[9px] text-black/30 mb-0.5">تحصيل</p>
+                          <div className="w-14 h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                            <div className="h-full bg-black rounded-full" style={{ width: `${paidPct}%` }} />
+                          </div>
+                          <p className="text-[9px] text-black/30">{paidPct}%</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[9px] text-black/30">مقبوض</p>
+                          <p className="text-xs font-bold text-black/70 flex items-center gap-0.5 justify-end">
+                            {p.totalPaid.toLocaleString()} <SARIcon size={8} className="opacity-40" />
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[9px] text-black/30">تكاليف</p>
+                          <p className="text-xs font-bold text-black/50 flex items-center gap-0.5 justify-end">
+                            {p.totalExpenses.toLocaleString()} <SARIcon size={8} className="opacity-30" />
+                          </p>
+                        </div>
+                        <div className={`rounded-xl px-3 py-1.5 flex-shrink-0 text-right ${p.allTimeNet >= 0 ? "bg-black" : "bg-red-950/20 border border-red-700/30"}`}>
+                          <p className={`text-[9px] mb-0.5 ${p.allTimeNet >= 0 ? "text-white/50" : "text-red-400/60"}`}>صافي</p>
+                          <p className={`text-xs font-black flex items-center gap-0.5 justify-end ${p.allTimeNet >= 0 ? "text-white" : "text-red-400"}`}>
+                            {p.allTimeNet.toLocaleString()} <SARIcon size={8} className="opacity-70" />
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Expense log for the month */}
+            {((plData?.projExpLog || []).length > 0 || (plData?.opExpLog || []).length > 0) && (
+              <div className="border border-black/[0.07] rounded-2xl overflow-hidden">
+                <div className="px-5 py-3 bg-black/[0.02] border-b border-black/[0.05]">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                    سجل المصاريف — {ledgerMonth} ({(plData?.projExpLog || []).length + (plData?.opExpLog || []).length} بند)
+                  </p>
+                </div>
+                <div className="divide-y divide-black/[0.04] max-h-72 overflow-y-auto">
+                  {[...(plData?.projExpLog || []).map((e: any) => ({ ...e, _type: "project" })),
+                    ...(plData?.opExpLog || []).map((e: any) => ({ ...e, _type: "operational" }))]
+                    .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+                    .map((e: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 px-5 py-2.5">
+                        <Badge className={`text-[9px] flex-shrink-0 ${e._type === "project"
+                          ? "bg-black/[0.05] text-black/60 border-0"
+                          : "bg-black/[0.1] text-black/70 border-0"}`}>
+                          {e._type === "project" ? (ORDER_EXP_CATS[e.category] || e.category) : (OP_EXP_CATS[e.category] || e.category)}
+                        </Badge>
+                        <span className="flex-1 text-xs text-black/70 truncate">{e.description}</span>
+                        {e._type === "project" && e.orderId && (
+                          <span className="text-[10px] text-black/30 truncate max-w-[100px]">
+                            {e.orderId?.businessName || e.orderId?.projectType || "مشروع"}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-black/30 flex-shrink-0">
+                          {new Date(e.createdAt || e.date).toLocaleDateString("ar-SA")}
+                        </span>
+                        <span className="text-xs font-black text-black flex items-center gap-0.5 flex-shrink-0">
+                          {e.amount.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {!plData && !plLoading && (
+              <div className="text-center py-16">
+                <CreditCard className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                <p className="text-black/30 text-sm">لا بيانات لهذا الشهر</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* === TAB: Project Profits === */}
       {activeTab === "profits" && (

@@ -7282,6 +7282,125 @@ export async function registerRoutes(
     });
   });
 
+  // GET /api/admin/finance/monthly-pl — Full P&L for a given month
+  app.get("/api/admin/finance/monthly-pl", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OrderExpenseModel, OperationalExpenseModel, InvoiceModel, OrderModel } = await import("./models");
+    const { month } = req.query as any;
+    const m = month || new Date().toISOString().slice(0, 7);
+    const [year, mo] = m.split("-").map(Number);
+    const start = new Date(year, mo - 1, 1);
+    const end   = new Date(year, mo, 1);
+
+    // 1. Revenue: paid invoices this month
+    const paidAgg = await InvoiceModel.aggregate([
+      { $match: { status: "paid", paidAt: { $gte: start, $lt: end } } },
+      { $group: { _id: null, total: { $sum: "$totalAmount" }, count: { $sum: 1 } } },
+    ]);
+    const revenue = paidAgg[0]?.total || 0;
+    const invoiceCount = paidAgg[0]?.count || 0;
+
+    // 2. Project expenses added this month (per-order costs)
+    const projExpRaw: any[] = await (OrderExpenseModel as any).find({
+      createdAt: { $gte: start, $lt: end },
+    }).populate("orderId", "businessName projectType").populate("addedBy", "fullName username").lean();
+
+    const projExpByCat: Record<string, number> = {};
+    let totalProjExp = 0;
+    for (const e of projExpRaw) {
+      projExpByCat[e.category] = (projExpByCat[e.category] || 0) + e.amount;
+      totalProjExp += e.amount;
+    }
+
+    // 3. Operational expenses this month
+    const opExpRaw: any[] = await OperationalExpenseModel.find({ month: m }).lean();
+    const opExpByCat: Record<string, number> = {};
+    let totalOpExp = 0;
+    for (const e of opExpRaw) {
+      opExpByCat[(e as any).category] = (opExpByCat[(e as any).category] || 0) + (e as any).amount;
+      totalOpExp += (e as any).amount;
+    }
+
+    // 4. Per-project breakdown (active orders that had activity)
+    const activeOrders: any[] = await (OrderModel as any).find({
+      status: { $nin: ["cancelled", "rejected"] },
+      totalAmount: { $gt: 0 },
+    }).populate("userId", "fullName username").sort({ createdAt: -1 }).limit(150).lean();
+
+    const perProject = (await Promise.all(activeOrders.map(async (order: any) => {
+      const [monthRevAgg, allRevAgg, orderExpRaw] = await Promise.all([
+        InvoiceModel.aggregate([
+          { $match: { orderId: order._id, status: "paid", paidAt: { $gte: start, $lt: end } } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        ]),
+        InvoiceModel.aggregate([
+          { $match: { orderId: order._id, status: "paid" } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        ]),
+        (OrderExpenseModel as any).find({ orderId: order._id }).lean(),
+      ]);
+      const monthRevenue  = monthRevAgg[0]?.total  || 0;
+      const totalPaid     = allRevAgg[0]?.total     || 0;
+      const totalExpenses = orderExpRaw.reduce((s: number, e: any) => s + (e.amount || 0), 0);
+      const monthExpenses = projExpRaw
+        .filter((e: any) => String(e.orderId?._id || e.orderId) === String(order._id))
+        .reduce((s: number, e: any) => s + e.amount, 0);
+
+      if (monthRevenue === 0 && monthExpenses === 0 && totalPaid === 0) return null;
+      return {
+        id: String(order._id),
+        orderNumber: order.orderNumber,
+        businessName: order.businessName || order.projectType || "مشروع",
+        clientName: order.userId?.fullName || order.userId?.username || "—",
+        totalAmount: order.totalAmount || 0,
+        totalPaid,
+        remaining: Math.max(0, (order.totalAmount || 0) - totalPaid),
+        totalExpenses,
+        allTimeNet: totalPaid - totalExpenses,
+        monthRevenue,
+        monthExpenses,
+        status: order.status,
+        planSegment: order.planSegment || "",
+        planTier: order.planTier || "",
+        expenses: orderExpRaw,
+      };
+    }))).filter(Boolean);
+
+    // All active orders (for quick-entry dropdown)
+    const allActiveOrders: any[] = await (OrderModel as any).find({
+      status: { $nin: ["cancelled", "rejected"] },
+      totalAmount: { $gt: 0 },
+    }).populate("userId", "fullName username").sort({ createdAt: -1 }).lean();
+    const ordersList = allActiveOrders.map((o: any) => ({
+      id: String(o._id),
+      businessName: o.businessName || o.projectType || "مشروع",
+      clientName: o.userId?.fullName || o.userId?.username || "—",
+      totalAmount: o.totalAmount || 0,
+    }));
+
+    const grossProjectProfit = revenue - totalProjExp;
+    const opCosts    = opExpByCat["operational"] || 0;
+    const mktCosts   = opExpByCat["marketing"]   || 0;
+    const adminCosts = opExpByCat["admin"]        || 0;
+    const otherCosts = (opExpByCat["product"] || 0) + (opExpByCat["other"] || 0);
+    const netMonthlyProfit = revenue - totalProjExp - totalOpExp;
+    const profitMargin = revenue > 0 ? Math.round((netMonthlyProfit / revenue) * 100) : 0;
+
+    res.json({
+      month: m,
+      revenue, invoiceCount,
+      totalProjExp, projExpByCat,
+      totalOpExp, opExpByCat,
+      grossProjectProfit,
+      opCosts, mktCosts, adminCosts, otherCosts,
+      netMonthlyProfit, profitMargin,
+      perProject,
+      ordersList,
+      projExpLog: projExpRaw,
+      opExpLog: opExpRaw,
+    });
+  });
+
   // GET /api/admin/finance/operational-expenses
   app.get("/api/admin/finance/operational-expenses", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
