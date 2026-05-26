@@ -13,6 +13,7 @@ import {
   Package, Briefcase, Copy, Check, Eye, EyeOff, Search, Users,
   Crown, Smartphone, Star, Zap, Sparkles, Tag, Percent, Scissors,
   Globe2, Code2, Shield, Database, Monitor, Wifi, PlusCircle, Layers,
+  Hash, MapPin, Scale,
 } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -104,6 +105,13 @@ export default function EmployeeNewOrder() {
   const [password, setPassword] = useState(generatePassword());
   const [businessType, setBusinessType] = useState("");
   const [country, setCountry] = useState("SA");
+
+  /* ── Legal / billing fields ── */
+  const [organizationName, setOrganizationName] = useState("");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [commercialRegistration, setCommercialRegistration] = useState("");
+  const [nationalAddress, setNationalAddress] = useState("");
+  const [showLegal, setShowLegal] = useState(false);
 
   /* ── Existing client search ── */
   const [clientSearch, setClientSearch] = useState("");
@@ -206,7 +214,7 @@ export default function EmployeeNewOrder() {
       if (!fullName || !email || !username || !password) {
         toast({ title: L ? "أكمل بيانات العميل أولاً" : "Complete client info first", variant: "destructive" }); return;
       }
-      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
+      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, organizationName, taxNumber, commercialRegistration, nationalAddress, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
       existingClientMutation.mutate({ clientId: selectedClient.id, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer" });
@@ -348,6 +356,111 @@ export default function EmployeeNewOrder() {
                     </select>
                   </div>
                 </div>
+
+                {/* ── Legal / Billing Information (collapsible) ── */}
+                <div className="mt-4 border border-black/[0.07] rounded-2xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowLegal(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-black/[0.02] hover:bg-black/[0.04] transition-colors"
+                    data-testid="button-toggle-legal"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-black/40" />
+                      <span className="text-sm font-bold text-black/60">{L ? "المعلومات القانونية والفوترة" : "Legal & Billing Info"}</span>
+                      <span className="text-[10px] bg-black/[0.05] text-black/40 px-2 py-0.5 rounded-full font-medium">{L ? "اختياري" : "Optional"}</span>
+                      {(organizationName || taxNumber || commercialRegistration || nationalAddress) && (
+                        <span className="w-2 h-2 rounded-full bg-black/40 shrink-0" />
+                      )}
+                    </div>
+                    {showLegal
+                      ? <ChevronUp className="w-4 h-4 text-black/30" />
+                      : <ChevronDown className="w-4 h-4 text-black/30" />
+                    }
+                  </button>
+
+                  <AnimatePresence>
+                    {showLegal && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-black/[0.06]">
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1">
+                              <Building2 className="w-3 h-3" />
+                              {L ? "اسم المؤسسة / الشركة" : "Organization / Company Name"}
+                            </label>
+                            <div className="relative">
+                              <Building2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                              <input
+                                value={organizationName}
+                                onChange={e => setOrganizationName(e.target.value)}
+                                placeholder={L ? "مؤسسة الأمانة للتجارة" : "ABC Trading Company"}
+                                className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
+                                data-testid="input-org-name"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1">
+                              <Hash className="w-3 h-3" />
+                              {L ? "رقم السجل التجاري" : "Commercial Registration No."}
+                            </label>
+                            <div className="relative">
+                              <Hash className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                              <input
+                                value={commercialRegistration}
+                                onChange={e => setCommercialRegistration(e.target.value)}
+                                placeholder="1XXXXXXXXX"
+                                dir="ltr"
+                                className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm font-mono outline-none focus:border-black/25 transition-colors"
+                                data-testid="input-commercial-reg"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1">
+                              <Hash className="w-3 h-3" />
+                              {L ? "الرقم الضريبي" : "Tax / VAT Number"}
+                            </label>
+                            <div className="relative">
+                              <Hash className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                              <input
+                                value={taxNumber}
+                                onChange={e => setTaxNumber(e.target.value)}
+                                placeholder="3XXXXXXXXXX3"
+                                dir="ltr"
+                                className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm font-mono outline-none focus:border-black/25 transition-colors"
+                                data-testid="input-tax-number"
+                              />
+                            </div>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {L ? "العنوان الوطني" : "National Address"}
+                            </label>
+                            <div className="relative">
+                              <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                              <input
+                                value={nationalAddress}
+                                onChange={e => setNationalAddress(e.target.value)}
+                                placeholder={L ? "مثال: RHHJ3894 أو الرياض، حي النخيل، شارع الملك فهد" : "e.g. RHHJ3894 or Riyadh, Al Nakheel District"}
+                                className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
+                                data-testid="input-national-address"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <div className="mt-6">
                   <Button onClick={() => { if (!clientValid) { toast({ title: L ? "أكمل الحقول المطلوبة" : "Complete the required fields", variant: "destructive" }); return; } setStep("order"); }} className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2" data-testid="button-next-order">
                     {L ? "التالي: تفاصيل الطلب" : "Next: Order Details"} <ArrowLeft className="w-4 h-4" />

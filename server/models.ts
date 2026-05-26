@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
   taxNumber: { type: String, default: "" },
   organizationName: { type: String, default: "" },
   commercialRegistration: { type: String, default: "" },
+  nationalAddress: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false },
   whatsappNumber: String,
   logoUrl: String,

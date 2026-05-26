@@ -7494,6 +7494,8 @@ export async function registerRoutes(
         // Client info
         fullName, email, phone, username, password,
         businessType, country,
+        // Legal info
+        organizationName, taxNumber, commercialRegistration, nationalAddress,
         // Order info
         projectType, sector, idea, services, totalAmount, notes,
       } = req.body;
@@ -7531,6 +7533,10 @@ export async function registerRoutes(
         role: "client",
         businessType: businessType || "",
         country: country || "",
+        organizationName: organizationName || "",
+        taxNumber: taxNumber || "",
+        commercialRegistration: commercialRegistration || "",
+        nationalAddress: nationalAddress || "",
       });
 
       // Send welcome email with credentials
