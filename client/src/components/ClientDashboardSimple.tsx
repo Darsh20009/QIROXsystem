@@ -63,116 +63,341 @@ const SOCIAL_POSTS = [
 ];
 
 /* ── Social Posts Section ── */
+const PLATFORM_COLORS = [
+  { from: "#f43f5e", to: "#fb923c" }, // instagram warm
+  { from: "#8b5cf6", to: "#6366f1" }, // purple
+  { from: "#0ea5e9", to: "#06b6d4" }, // twitter/sky
+  { from: "#22c55e", to: "#10b981" }, // green
+  { from: "#f59e0b", to: "#f97316" }, // amber
+  { from: "#ec4899", to: "#a855f7" }, // pink-purple
+];
+
 function SocialPostsSection() {
-  const [featured, setFeatured] = useState(0);
+  const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (paused) return;
     const t = setInterval(() => {
-      setFeatured(prev => (prev + 1) % SOCIAL_POSTS.length);
-    }, 4000);
+      setActive(prev => (prev + 1) % SOCIAL_POSTS.length);
+    }, 3500);
     return () => clearInterval(t);
   }, [paused]);
 
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    const card = el.querySelector(`[data-strip="${active}"]`) as HTMLElement;
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [active]);
+
+  const col = PLATFORM_COLORS[active % PLATFORM_COLORS.length];
+
   return (
-    <div className="mt-6" data-testid="social-posts-section">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="font-black text-gray-900 dark:text-white text-sm">كيروكس في عالمك</p>
-          <p className="text-xs text-gray-400 dark:text-slate-500">منشوراتنا الأخيرة — تابعنا على السوشيال</p>
+    <div className="mt-6 select-none" data-testid="social-posts-section">
+
+      {/* ── Branded Header ── */}
+      <div className="relative mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Avatar ring */}
+          <div className="relative">
+            <div className="absolute -inset-0.5 rounded-full blur-sm opacity-80 transition-all duration-700"
+              style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }} />
+            <div className="relative w-10 h-10 rounded-full bg-black dark:bg-white p-1.5 flex items-center justify-center shadow-lg">
+              <img src="/qirox-icon.png" alt="Q" className="w-full h-full object-contain dark:invert" />
+            </div>
+          </div>
+          <div>
+            <p className="font-black text-sm text-gray-900 dark:text-white leading-tight">من حساباتنا</p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 leading-tight">@qirox.sa · @qiroxStudiosa</p>
+          </div>
         </div>
         <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-pink-500 to-orange-400 text-white px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 text-[11px] font-bold text-white px-3 py-1.5 rounded-full transition-all hover:scale-105 hover:shadow-lg shadow-md"
+          style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}
+          data-testid="btn-follow-instagram"
         >
-          <span>@qirox.sa</span>
+          <span>تابعنا</span>
           <ArrowUpRight className="w-3 h-3" />
         </a>
       </div>
 
-      {/* Featured Post (large) */}
-      <div className="relative rounded-2xl overflow-hidden bg-gray-900 shadow-xl mb-3"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={featured}
-            src={SOCIAL_POSTS[featured].src}
-            alt={SOCIAL_POSTS[featured].caption}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.45 }}
-            className="w-full object-cover"
-            style={{ maxHeight: 400, objectPosition: "top" }}
-          />
-        </AnimatePresence>
+      {/* ── Main Mosaic Grid ── */}
+      <div className="relative">
+        {/* SVG Connection Lines Background */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" aria-hidden="true" style={{ overflow: "visible" }}>
+          <defs>
+            <marker id="dot-marker" markerWidth="4" markerHeight="4" refX="2" refY="2">
+              <circle cx="2" cy="2" r="1.5" fill={col.from} />
+            </marker>
+            <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={col.from} stopOpacity="0.6" />
+              <stop offset="100%" stopColor={col.to} stopOpacity="0.1" />
+            </linearGradient>
+          </defs>
+          {/* Diagonal connector lines */}
+          <motion.line x1="33%" y1="0" x2="0" y2="50%" stroke="url(#line-grad)" strokeWidth="1"
+            strokeDasharray="4 6" markerEnd="url(#dot-marker)"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.5 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }} />
+          <motion.line x1="66%" y1="0" x2="100%" y2="50%" stroke="url(#line-grad)" strokeWidth="1"
+            strokeDasharray="4 6" markerEnd="url(#dot-marker)"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.5 }}
+            transition={{ duration: 1.2, delay: 0.2, ease: "easeInOut" }} />
+          <motion.line x1="50%" y1="0" x2="50%" y2="100%" stroke="url(#line-grad)" strokeWidth="0.5"
+            strokeDasharray="3 8"
+            initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.3 }}
+            transition={{ duration: 1.5, delay: 0.4, ease: "easeInOut" }} />
+        </svg>
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pointer-events-none">
-          <span className="inline-block bg-white/20 backdrop-blur-sm text-white/80 text-[9px] font-bold px-2 py-0.5 rounded-full mb-1.5 uppercase tracking-wider">
-            {SOCIAL_POSTS[featured].tag}
-          </span>
-          <p className="text-white font-black text-sm leading-snug">{SOCIAL_POSTS[featured].caption}</p>
-          <p className="text-white/40 text-[10px] mt-0.5 flex items-center gap-1">
-            <img src="/qirox-icon.png" alt="" className="w-3 h-3 object-contain opacity-60" />
-            QIROX · @qirox.sa
-          </p>
+        {/* Magazine Mosaic — Row 1: 1 large + 2 small */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {/* Large card (spans 2 cols) */}
+          <motion.button
+            className="col-span-2 relative rounded-2xl overflow-hidden group cursor-pointer"
+            style={{ aspectRatio: "16/10" }}
+            onClick={() => { setPaused(true); setActive(0); }}
+            onMouseEnter={() => { setPaused(true); setHovered(0); }}
+            onMouseLeave={() => { setPaused(false); setHovered(null); }}
+            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+            data-testid="post-main-0"
+          >
+            <img src={SOCIAL_POSTS[0].src} alt={SOCIAL_POSTS[0].caption} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+            {/* Corner dot active indicator */}
+            {active === 0 && (
+              <motion.div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full shadow-glow"
+                style={{ background: col.from }} layoutId="active-dot"
+                transition={{ type: "spring", stiffness: 400, damping: 25 }} />
+            )}
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <span className="inline-block text-[9px] font-bold text-white/70 uppercase tracking-widest mb-1 px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
+                {SOCIAL_POSTS[0].tag}
+              </span>
+              <p className="text-white text-xs font-black leading-snug line-clamp-2">{SOCIAL_POSTS[0].caption}</p>
+            </div>
+            {/* Gradient border on hover */}
+            <div className="absolute inset-0 rounded-2xl ring-0 group-hover:ring-2 transition-all duration-300"
+              style={{ boxShadow: hovered === 0 ? `0 0 0 2px ${col.from}` : "none" }} />
+          </motion.button>
+
+          {/* 2 small cards stacked */}
+          <div className="flex flex-col gap-2">
+            {[1, 2].map((i) => (
+              <motion.button
+                key={i}
+                className="relative rounded-xl overflow-hidden group cursor-pointer flex-1"
+                onClick={() => { setPaused(true); setActive(i); }}
+                onMouseEnter={() => { setPaused(true); setHovered(i); }}
+                onMouseLeave={() => { setPaused(false); setHovered(null); }}
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                data-testid={`post-sm-${i}`}
+              >
+                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption} className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                {active === i && (
+                  <motion.div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+                    style={{ background: col.from }} layoutId="active-dot"
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }} />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
+                  <p className="text-white text-[9px] font-bold line-clamp-2 leading-tight opacity-0 group-hover:opacity-100 transition-opacity duration-200">{SOCIAL_POSTS[i].caption}</p>
+                </div>
+              </motion.button>
+            ))}
+          </div>
         </div>
 
-        {/* Arrows */}
-        <button onClick={() => { setPaused(true); setFeatured(c => (c - 1 + SOCIAL_POSTS.length) % SOCIAL_POSTS.length); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
-          data-testid="social-prev"
-        ><ChevronRight className="w-4 h-4" /></button>
-        <button onClick={() => { setPaused(true); setFeatured(c => (c + 1) % SOCIAL_POSTS.length); }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
-          data-testid="social-next"
-        ><ChevronLeft className="w-4 h-4" /></button>
+        {/* Row 2: 3 equal cards */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {[3, 4, 5].map((i) => (
+            <motion.button
+              key={i}
+              className="relative rounded-xl overflow-hidden group cursor-pointer"
+              style={{ aspectRatio: "3/4" }}
+              onClick={() => { setPaused(true); setActive(i); }}
+              onMouseEnter={() => { setPaused(true); setHovered(i); }}
+              onMouseLeave={() => { setPaused(false); setHovered(null); }}
+              whileHover={{ scale: 1.03, zIndex: 10 }} whileTap={{ scale: 0.97 }}
+              data-testid={`post-mid-${i}`}
+            >
+              <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption}
+                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              {/* Tag chip */}
+              <div className="absolute top-2 right-2">
+                <motion.span
+                  className="text-[8px] font-black px-1.5 py-0.5 rounded-full text-white"
+                  style={{ background: `linear-gradient(135deg, ${PLATFORM_COLORS[i % PLATFORM_COLORS.length].from}, ${PLATFORM_COLORS[i % PLATFORM_COLORS.length].to})` }}
+                  animate={{ opacity: active === i ? 1 : 0.7 }}
+                >
+                  {SOCIAL_POSTS[i].tag}
+                </motion.span>
+              </div>
+              {active === i && (
+                <motion.div className="absolute inset-0 rounded-xl pointer-events-none"
+                  style={{ boxShadow: `inset 0 0 0 2.5px ${col.from}` }}
+                  layoutId="active-border"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+              )}
+              <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
+                <p className="text-white text-[8px] font-bold line-clamp-3 leading-snug">{SOCIAL_POSTS[i].caption}</p>
+              </div>
+            </motion.button>
+          ))}
+        </div>
 
-        {/* Progress dots */}
-        <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-1">
-          {SOCIAL_POSTS.map((_, i) => (
-            <button key={i} onClick={() => { setPaused(true); setFeatured(i); }}
-              className={`rounded-full transition-all duration-300 ${i === featured ? "w-6 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/30 hover:bg-white/60"}`}
-              data-testid={`dot-${i}`}
-            />
+        {/* Row 3: 2 medium + 1 small side */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-2 grid grid-cols-2 gap-2">
+            {[6, 7].map((i) => (
+              <motion.button
+                key={i}
+                className="relative rounded-xl overflow-hidden group cursor-pointer"
+                style={{ aspectRatio: "1/1" }}
+                onClick={() => { setPaused(true); setActive(i); }}
+                onMouseEnter={() => { setPaused(true); setHovered(i); }}
+                onMouseLeave={() => { setPaused(false); setHovered(null); }}
+                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                data-testid={`post-bot-${i}`}
+              >
+                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption}
+                  className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                {active === i && (
+                  <motion.div className="absolute inset-0 rounded-xl pointer-events-none"
+                    style={{ boxShadow: `inset 0 0 0 2px ${col.from}` }} layoutId="active-border"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
+                  <p className="text-white text-[8px] font-bold line-clamp-2 leading-tight">{SOCIAL_POSTS[i].caption}</p>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+          {/* Tall card */}
+          <motion.button
+            className="relative rounded-xl overflow-hidden group cursor-pointer"
+            onClick={() => { setPaused(true); setActive(8); }}
+            onMouseEnter={() => { setPaused(true); setHovered(8); }}
+            onMouseLeave={() => { setPaused(false); setHovered(null); }}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            data-testid="post-tall-8"
+          >
+            <img src={SOCIAL_POSTS[8].src} alt={SOCIAL_POSTS[8].caption}
+              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            {active === 8 && (
+              <motion.div className="absolute inset-0 rounded-xl pointer-events-none"
+                style={{ boxShadow: `inset 0 0 0 2px ${col.from}` }} layoutId="active-border"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }} />
+            )}
+            <div className="absolute bottom-0 left-0 right-0 px-2 pb-3">
+              <span className="inline-block text-[8px] font-black px-1.5 py-0.5 rounded-full text-white mb-1"
+                style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}>
+                {SOCIAL_POSTS[8].tag}
+              </span>
+              <p className="text-white text-[9px] font-bold leading-snug line-clamp-3">{SOCIAL_POSTS[8].caption}</p>
+            </div>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* ── Active Post Caption Card ── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.3 }}
+          className="mt-3 rounded-2xl overflow-hidden relative"
+          style={{ background: `linear-gradient(135deg, ${col.from}18, ${col.to}10)` }}
+        >
+          <div className="flex items-center gap-3 p-3">
+            <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 border border-white/20 dark:border-white/10">
+              <img src={SOCIAL_POSTS[active].src} alt="" className="w-full h-full object-cover object-top" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-black text-gray-900 dark:text-white leading-snug line-clamp-2">{SOCIAL_POSTS[active].caption}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full"
+                  style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }}>
+                  {SOCIAL_POSTS[active].tag}
+                </span>
+                <span className="text-[9px] text-gray-400 dark:text-slate-500">@qirox.sa</span>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 tabular-nums">{active + 1}/{SOCIAL_POSTS.length}</span>
+              <div className="w-16 h-1 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                <motion.div className="h-full rounded-full"
+                  style={{ background: `linear-gradient(90deg, ${col.from}, ${col.to})` }}
+                  animate={{ width: `${((active + 1) / SOCIAL_POSTS.length) * 100}%` }}
+                  transition={{ duration: 0.4, ease: "easeOut" }} />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Horizontal Strip Carousel ── */}
+      <div className="mt-3 -mx-1">
+        <div ref={scrollRef}
+          className="flex gap-2 overflow-x-auto pb-1 px-1 snap-x snap-mandatory"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {SOCIAL_POSTS.map((post, i) => (
+            <motion.button
+              key={i}
+              data-strip={i}
+              onClick={() => { setPaused(true); setActive(i); }}
+              className={`relative flex-shrink-0 rounded-xl overflow-hidden snap-center transition-all duration-300`}
+              style={{
+                width: active === i ? 72 : 52,
+                height: 72,
+                boxShadow: active === i ? `0 0 0 2.5px ${col.from}, 0 4px 16px ${col.from}40` : "none",
+              }}
+              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
+              data-testid={`strip-${i}`}
+            >
+              <img src={post.src} alt={post.caption} className="w-full h-full object-cover object-top" />
+              {active === i && (
+                <div className="absolute inset-0 bg-black/30" />
+              )}
+              {active === i && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div className="w-2.5 h-2.5 rounded-full bg-white shadow-lg"
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} />
+                </div>
+              )}
+            </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Grid — all posts as small cards */}
-      <div className="grid grid-cols-3 gap-2">
-        {SOCIAL_POSTS.map((post, i) => (
-          <button
-            key={i}
-            onClick={() => { setPaused(true); setFeatured(i); }}
-            className={`relative rounded-xl overflow-hidden aspect-[3/4] transition-all duration-300 group ${i === featured ? "ring-2 ring-black dark:ring-white shadow-lg scale-[1.02]" : "opacity-70 hover:opacity-100 hover:scale-[1.01]"}`}
-            data-testid={`thumb-${i}`}
+      {/* ── Social Platform Links ── */}
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {[
+          { href: "https://www.instagram.com/qirox.sa", label: "إنستغرام", handle: "@qirox.sa", emoji: "📸", from: "#f43f5e", to: "#fb923c" },
+          { href: "https://x.com/qiroxStudiosa", label: "تويتر / X", handle: "@qiroxStudiosa", emoji: "𝕏", from: "#0ea5e9", to: "#6366f1" },
+          { href: "https://www.tiktok.com/@qirox.sa", label: "تيك توك", handle: "@qirox.sa", emoji: "🎵", from: "#1a1a1a", to: "#6366f1" },
+        ].map(({ href, label, handle, emoji, from, to }) => (
+          <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+            className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 hover:scale-[1.03] hover:shadow-md transition-all duration-200 group"
+            data-testid={`link-social-${label}`}
           >
-            <img src={post.src} alt={post.caption} className="w-full h-full object-cover object-top" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute bottom-0 left-0 right-0 px-1.5 pb-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <p className="text-white text-[8px] font-bold leading-tight line-clamp-2">{post.caption}</p>
-            </div>
-            {i === featured && (
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full shadow-lg" />
-            )}
-          </button>
+            <span className="text-lg leading-none">{emoji}</span>
+            <span className="text-[9px] font-black text-gray-700 dark:text-gray-200">{label}</span>
+            <span className="text-[8px] text-gray-400 dark:text-slate-500 truncate w-full text-center">{handle}</span>
+          </a>
         ))}
       </div>
 
-      {/* Social links footer */}
-      <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-400 dark:text-slate-500 font-medium">
-        <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">📸 @qirox.sa</a>
-        <span>·</span>
-        <a href="https://x.com/qiroxStudiosa" target="_blank" rel="noopener noreferrer" className="hover:text-sky-500 transition-colors">𝕏 @qiroxStudiosa</a>
-        <span>·</span>
-        <a href="https://www.tiktok.com/@qirox.sa" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 dark:hover:text-white transition-colors">🎵 @qirox.sa</a>
-      </div>
     </div>
   );
 }

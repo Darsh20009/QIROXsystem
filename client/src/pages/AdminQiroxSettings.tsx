@@ -466,6 +466,8 @@ export default function AdminQiroxSettings() {
             </div>
           )}
 
+        </motion.div>
+
         {/* Save Button — only for non-appdownload sections */}
         {section !== "appdownload" && (
         <div className="flex justify-end pb-8">
