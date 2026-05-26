@@ -7112,14 +7112,12 @@ export async function registerRoutes(
 
   app.get("/api/admin/finance/summary", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const { InvoiceModel, OrderModel, UserModel } = await import("./models");
+    const { InvoiceModel, OrderModel, UserModel, OrderExpenseModel, OperationalExpenseModel } = await import("./models");
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // build last 6 months range
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [totalRevenue, monthRevenue, unpaidTotal, cancelledTotal, totalOrders, activeClients, monthlyRaw] = await Promise.all([
+    const [totalRevenue, monthRevenue, unpaidTotal, cancelledTotal, totalOrders, activeClients, monthlyRaw, projectCostsAgg, opExpensesAgg] = await Promise.all([
       InvoiceModel.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'paid', paidAt: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'unpaid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
@@ -7130,7 +7128,11 @@ export async function registerRoutes(
         { $match: { status: 'paid', paidAt: { $gte: sixMonthsAgo } } },
         { $group: { _id: { year: { $year: '$paidAt' }, month: { $month: '$paidAt' } }, total: { $sum: '$totalAmount' } } },
         { $sort: { '_id.year': 1, '_id.month': 1 } }
-      ])
+      ]),
+      // Total project-level costs (OrderExpenseModel — per-order expenses like hosting, freelancer, etc.)
+      (OrderExpenseModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
+      // Total operational expenses (all time)
+      (OperationalExpenseModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
 
     const arMonths = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -7144,14 +7146,24 @@ export async function registerRoutes(
       return { name: arMonths[d.getMonth()], value: monthlyMap[key] || 0 };
     });
 
+    const rev = totalRevenue[0]?.total || 0;
+    const projCosts = projectCostsAgg[0]?.total || 0;
+    const opCosts = opExpensesAgg[0]?.total || 0;
+    const totalCosts = projCosts + opCosts;
+
     res.json({
-      totalRevenue: totalRevenue[0]?.total || 0,
+      totalRevenue: rev,
       monthRevenue: monthRevenue[0]?.total || 0,
       unpaidTotal: unpaidTotal[0]?.total || 0,
       cancelledTotal: cancelledTotal[0]?.total || 0,
       totalOrders,
       activeClients,
       monthlyBreakdown,
+      totalProjectCosts: projCosts,
+      totalOperationalCosts: opCosts,
+      totalCosts,
+      trueNetProfit: rev - totalCosts,
+      profitMargin: rev > 0 ? Math.round(((rev - totalCosts) / rev) * 100 * 10) / 10 : 0,
     });
   });
 

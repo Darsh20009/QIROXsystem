@@ -12,7 +12,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Wallet, TrendingUp, Users, CreditCard, Clock, Ban, Plus, Trash2,
-  BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail
+  BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail,
+  TrendingDown, Percent, ChevronDown, ChevronUp, Search,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Area } from "recharts";
 
@@ -37,7 +38,7 @@ export default function AdminFinance() {
   const L = lang === "ar";
   const qc = useQueryClient();
   const [period, setPeriod] = useState<Period>("monthly");
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "expenses" | "email">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "profits" | "expenses" | "email">("overview");
   const [testEmail, setTestEmail] = useState("");
   const [emailType, setEmailType] = useState("welcome");
   const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -45,15 +46,27 @@ export default function AdminFinance() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [expMonth, setExpMonth] = useState(currentMonth);
   const [projectFilter, setProjectFilter] = useState<"pending" | "all" | "paid">("pending");
+  const [profitSearch, setProfitSearch] = useState("");
+  const [profitSort, setProfitSort] = useState<"profit" | "revenue" | "margin">("profit");
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   // Queries
   const { data: summary } = useQuery<{
     totalRevenue: number; monthRevenue: number; unpaidTotal: number;
     cancelledTotal: number; totalOrders: number; activeClients: number;
     monthlyBreakdown?: { name: string; value: number }[];
+    totalProjectCosts: number; totalOperationalCosts: number;
+    totalCosts: number; trueNetProfit: number; profitMargin: number;
   }>({
     queryKey: ["/api/admin/finance/summary"],
     queryFn: async () => { const r = await fetch("/api/admin/finance/summary", { credentials: "include" }); return r.json(); },
+  });
+
+  const { data: profitData, isLoading: profitLoading } = useQuery<any>({
+    queryKey: ["/api/admin/profit-report"],
+    queryFn: async () => { const r = await fetch("/api/admin/profit-report", { credentials: "include" }); if (!r.ok) throw new Error("Failed"); return r.json(); },
+    enabled: activeTab === "profits",
+    refetchInterval: 60000,
   });
 
   const { data: reports, isLoading: reportsLoading } = useQuery<{ period: string; data: { name: string; value: number; count: number }[] }>({
@@ -128,9 +141,24 @@ export default function AdminFinance() {
   const tabs = [
     { key: "overview", label: L ? "نظرة عامة" : "Overview", icon: BarChart3 },
     { key: "projects", label: L ? "دفعات المشاريع" : "Project Payments", icon: FileText },
+    { key: "profits", label: L ? "أرباح المشاريع" : "Project Profits", icon: TrendingUp },
     { key: "expenses", label: L ? "المصاريف" : "Expenses", icon: ShoppingBag },
     { key: "email", label: L ? "نظام البريد" : "Email System", icon: Mail },
   ];
+
+  // Profit report helpers
+  const profitOrders: any[] = profitData?.orders || [];
+  const profitTotals = profitData?.totals || { revenue: 0, expenses: 0, netProfit: 0 };
+  const filteredProfitOrders = profitOrders
+    .filter(o => !profitSearch || o.businessName?.toLowerCase().includes(profitSearch.toLowerCase()) || o.client?.fullName?.toLowerCase().includes(profitSearch.toLowerCase()))
+    .sort((a, b) => profitSort === "profit" ? b.netProfit - a.netProfit : profitSort === "revenue" ? b.revenue - a.revenue : b.margin - a.margin);
+  const PROFIT_CAT_LABELS: Record<string, string> = {
+    hosting: L ? "استضافة" : "Hosting", domain: L ? "دومين" : "Domain",
+    freelancer: L ? "مستقل" : "Freelancer", license: L ? "ترخيص" : "License",
+    ads: L ? "إعلانات" : "Ads", design: L ? "تصميم" : "Design",
+    salary: L ? "راتب" : "Salary", commission: L ? "عمولة" : "Commission",
+    other: L ? "أخرى" : "Other",
+  };
 
   return (
     <div className="relative overflow-hidden space-y-6" dir={dir}>
@@ -151,7 +179,7 @@ export default function AdminFinance() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-black/60">{L ? "إجمالي الأرباح" : "Total Revenue"}</CardTitle>
+            <CardTitle className="text-xs font-medium text-black/60">{L ? "إجمالي الإيرادات" : "Total Revenue"}</CardTitle>
             <TrendingUp className="h-4 w-4 text-black" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -164,14 +192,16 @@ export default function AdminFinance() {
 
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-black/60">{L ? "هذا الشهر" : "This Month"}</CardTitle>
-            <Users className="h-4 w-4 text-black" />
+            <CardTitle className="text-xs font-medium text-black/60">{L ? "إجمالي التكاليف" : "Total Costs"}</CardTitle>
+            <TrendingDown className="h-4 w-4 text-black/60" />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-month-revenue">
-              {(summary?.monthRevenue || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-costs">
+              {(summary?.totalCosts || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
             </div>
-            <p className="text-xs text-black/30 mt-1">{summary?.activeClients || 0} {L ? "عميل نشط" : "active clients"}</p>
+            <p className="text-xs text-black/30 mt-1">
+              {L ? "مشاريع" : "Projects"}: {(summary?.totalProjectCosts || 0).toLocaleString()} · {L ? "تشغيل" : "Ops"}: {(summary?.totalOperationalCosts || 0).toLocaleString()}
+            </p>
           </CardContent>
         </Card>
 
@@ -188,16 +218,18 @@ export default function AdminFinance() {
           </CardContent>
         </Card>
 
-        <Card className="border-black/10 shadow-none rounded-2xl bg-black/[0.04]">
+        <Card className={`shadow-none rounded-2xl border ${(summary?.trueNetProfit || 0) >= 0 ? "bg-black border-black" : "bg-black/[0.04] border-black/10"}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-black">{L ? "ملغاة/مرفوضة" : "Cancelled"}</CardTitle>
-            <Ban className="h-4 w-4 text-black/70" />
+            <CardTitle className={`text-xs font-medium ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/60" : "text-black/60"}`}>{L ? "صافي الربح" : "Net Profit"}</CardTitle>
+            <Percent className={`h-4 w-4 ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/70" : "text-black/50"}`} />
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-cancelled-amount">
-              {(summary?.cancelledTotal || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            <div className={`text-2xl font-black flex items-center gap-1 ${(summary?.trueNetProfit || 0) >= 0 ? "text-white" : "text-black"}`} data-testid="text-net-profit">
+              {(summary?.trueNetProfit || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
             </div>
-            <p className="text-xs text-black/60 mt-1">{L ? "لا تُحتسب في الأرباح" : "Not in revenue"}</p>
+            <p className={`text-xs mt-1 font-bold ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/40" : "text-black/40"}`}>
+              {summary?.profitMargin || 0}% {L ? "هامش ربح" : "margin"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -426,6 +458,168 @@ export default function AdminFinance() {
               });
             })()}
           </div>
+        </div>
+      )}
+
+      {/* === TAB: Project Profits === */}
+      {activeTab === "profits" && (
+        <div className="space-y-4">
+          {/* Summary KPIs */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              <p className="text-xl font-black text-black flex items-center justify-center gap-1">
+                {profitTotals.revenue.toLocaleString()} <SARIcon size={11} className="opacity-50" />
+              </p>
+            </div>
+            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-black/40 mb-1">{L ? "تكاليف المشاريع" : "Project Costs"}</p>
+              <p className="text-xl font-black text-black flex items-center justify-center gap-1">
+                {profitTotals.expenses.toLocaleString()} <SARIcon size={11} className="opacity-50" />
+              </p>
+            </div>
+            <div className={`rounded-2xl p-4 text-center border ${profitTotals.netProfit >= 0 ? "bg-black border-black" : "bg-black/[0.04] border-black/10"}`}>
+              <p className={`text-[10px] mb-1 ${profitTotals.netProfit >= 0 ? "text-white/50" : "text-black/40"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+              <p className={`text-xl font-black flex items-center justify-center gap-1 ${profitTotals.netProfit >= 0 ? "text-white" : "text-black"}`}>
+                {profitTotals.netProfit.toLocaleString()} <SARIcon size={11} className="opacity-60" />
+              </p>
+              {profitTotals.revenue > 0 && (
+                <p className={`text-[10px] font-bold mt-0.5 ${profitTotals.netProfit >= 0 ? "text-white/40" : "text-black/40"}`}>
+                  {Math.round((profitTotals.netProfit / profitTotals.revenue) * 100)}% {L ? "هامش" : "margin"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Search + Sort */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 pointer-events-none" />
+              <input
+                value={profitSearch} onChange={e => setProfitSearch(e.target.value)}
+                placeholder={L ? "بحث بالمشروع أو العميل..." : "Search project or client..."}
+                className="w-full h-8 pr-9 pl-3 border border-black/[0.08] rounded-xl text-xs outline-none focus:border-black/20 bg-transparent"
+                data-testid="input-profit-search"
+              />
+            </div>
+            <div className="flex gap-1">
+              {[
+                { key: "profit", label: L ? "الأعلى ربحاً" : "Top Profit" },
+                { key: "revenue", label: L ? "الأعلى إيراداً" : "Top Revenue" },
+                { key: "margin", label: L ? "أعلى هامش" : "Best Margin" },
+              ].map(s => (
+                <button key={s.key} onClick={() => setProfitSort(s.key as any)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${profitSort === s.key ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.07]"}`}
+                  data-testid={`button-profit-sort-${s.key}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Orders list */}
+          {profitLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : filteredProfitOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-8 h-8 text-black/15 mx-auto mb-2" />
+              <p className="text-black/30 text-sm">{L ? "لا توجد مشاريع بعد" : "No projects yet"}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredProfitOrders.map((order: any) => {
+                const isExpanded = expandedOrder === order.orderId;
+                const isProfit = order.netProfit >= 0;
+                const margin = order.margin || 0;
+                return (
+                  <div key={order.orderId} className="border border-black/[0.08] rounded-2xl overflow-hidden"
+                    data-testid={`profit-order-${order.orderId}`}>
+                    {/* Row header */}
+                    <button
+                      onClick={() => setExpandedOrder(isExpanded ? null : order.orderId)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black/[0.01] transition-colors text-right"
+                    >
+                      {/* Project name */}
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="font-bold text-sm text-black truncate">{order.businessName || "—"}</p>
+                        <p className="text-[10px] text-black/35 mt-0.5">
+                          {order.client?.fullName || "—"} · #{order.orderId?.slice(-6)}
+                          {order.status && <span className="mr-1 text-black/25">· {order.status}</span>}
+                        </p>
+                      </div>
+
+                      {/* Revenue */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-black/35 mb-0.5">{L ? "الإيراد" : "Revenue"}</p>
+                        <p className="text-sm font-black text-black flex items-center gap-0.5 justify-end">
+                          {order.revenue.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                        </p>
+                      </div>
+
+                      {/* Costs */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-black/35 mb-0.5">{L ? "التكاليف" : "Costs"}</p>
+                        <p className="text-sm font-bold text-black/60 flex items-center gap-0.5 justify-end">
+                          {order.totalExpenses.toLocaleString()} <SARIcon size={9} className="opacity-40" />
+                        </p>
+                      </div>
+
+                      {/* Net Profit */}
+                      <div className={`rounded-xl px-3 py-1.5 flex-shrink-0 text-right ${isProfit ? "bg-black" : "bg-black/[0.06]"}`}>
+                        <p className={`text-[10px] mb-0.5 ${isProfit ? "text-white/50" : "text-black/40"}`}>{L ? "صافي" : "Net"}</p>
+                        <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${isProfit ? "text-white" : "text-black/60"}`}>
+                          {order.netProfit.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                        </p>
+                      </div>
+
+                      {/* Margin */}
+                      <div className="w-16 flex-shrink-0">
+                        <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${isProfit ? "bg-black" : "bg-black/30"}`}
+                            style={{ width: `${Math.min(Math.abs(margin), 100)}%` }} />
+                        </div>
+                        <p className="text-[10px] text-black/30 text-center mt-0.5">{margin}%</p>
+                      </div>
+
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />}
+                    </button>
+
+                    {/* Expanded: expense breakdown */}
+                    {isExpanded && (
+                      <div className="border-t border-black/[0.06] bg-black/[0.01] px-4 py-3 space-y-2">
+                        {(order.expenses || []).length === 0 ? (
+                          <p className="text-xs text-black/30 text-center py-2">{L ? "لا تكاليف مسجلة لهذا المشروع" : "No costs recorded for this project"}</p>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/25 mb-2">
+                              {L ? "تفاصيل التكاليف" : "Cost Breakdown"}
+                            </p>
+                            {(order.expenses || []).map((e: any) => (
+                              <div key={e.id || e._id} className="flex items-center justify-between gap-2">
+                                <Badge className="text-[10px] bg-black/[0.05] text-black border-0 flex-shrink-0">
+                                  {PROFIT_CAT_LABELS[e.category] || e.category}
+                                </Badge>
+                                <span className="flex-1 text-xs text-black/60 truncate">{e.description}</span>
+                                <span className="text-xs font-bold text-black flex-shrink-0 flex items-center gap-0.5">
+                                  {(e.amount || 0).toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between items-center pt-2 border-t border-black/[0.06]">
+                              <span className="text-[10px] text-black/40 font-bold">{L ? "إجمالي التكاليف" : "Total Costs"}</span>
+                              <span className="text-xs font-black text-black flex items-center gap-0.5">
+                                {order.totalExpenses.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
