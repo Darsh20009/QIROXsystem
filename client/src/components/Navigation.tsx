@@ -248,7 +248,6 @@ export default function Navigation() {
                     className="h-7 w-auto object-contain"
                     style={{
                       filter: isOnDarkHero ? "none" : "invert(1)",
-                      mixBlendMode: isOnDarkHero ? "screen" : "multiply",
                     }}
                   />
                 </div>

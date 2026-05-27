@@ -507,13 +507,13 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 export function QiroxLogo({ className = "" }: { className?: string }) {
   return (
     <div className={`relative inline-flex items-center gap-2 ${className}`}>
-      <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen" />
+      <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain invert dark:invert-0" />
     </div>
   );
 }
 
 export function QiroxIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
-    <img src={qiroxLogoPath} alt="QIROX" className={`object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen ${className}`} />
+    <img src={qiroxLogoPath} alt="QIROX" className={`object-contain invert dark:invert-0 ${className}`} />
   );
 }
