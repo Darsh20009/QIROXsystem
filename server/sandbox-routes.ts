@@ -211,12 +211,12 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
 
 async function getOpenAIClient() {
   const OpenAI = (await import("openai")).default;
-  const groqKey = process.env.GROQ_API_KEY;
   return {
-    client: new OpenAI(groqKey ? {
-      apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1",
-    } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" }),
-    model: groqKey ? "llama-3.3-70b-versatile" : "openai",
+    client: new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || "",
+      baseURL: "https://api.moonshot.ai/v1",
+    }),
+    model: "kimi-k2-0905-preview",
   };
 }
 

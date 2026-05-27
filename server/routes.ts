@@ -8933,10 +8933,11 @@ export async function registerRoutes(
     const { message, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: "message required" });
     try {
-      const Groq = (await import("groq-sdk")).default;
-      const key = process.env.GROQ_API_KEY;
-      if (!key) return res.status(503).json({ error: "AI unavailable" });
-      const groq = new Groq({ apiKey: key });
+      const OpenAI = (await import("openai")).default;
+      const groq = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "",
+        baseURL: "https://api.moonshot.ai/v1",
+      });
       const systemPrompt = `أنت مساعد ذكي تابع لشركة كيروكس (QIROX Studio) لتطوير الأنظمة والتطبيقات.
 مهمتك مساعدة العميل على صياغة احتياجاته التقنية بشكل واضح ودقيق حتى يتمكن الفريق من تقديم عرض سعر مناسب.
 قواعد صارمة:
@@ -8950,7 +8951,7 @@ export async function registerRoutes(
         ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
         { role: "user" as const, content: message },
       ];
-      const completion = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: msgs, max_tokens: 400, temperature: 0.7 });
+      const completion = await groq.chat.completions.create({ model: "kimi-k2-0905-preview", messages: msgs, max_tokens: 400, temperature: 0.7 });
       res.json({ reply: completion.choices[0]?.message?.content || "..." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -13857,11 +13858,11 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
       const OpenAI = (await import("openai")).default;
-      const groqKey = process.env.GROQ_API_KEY;
-      const openai = new OpenAI(groqKey ? {
-        apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1",
-      } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" });
-      const contractModel = groqKey ? "llama-3.3-70b-versatile" : "openai";
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "",
+        baseURL: "https://api.moonshot.ai/v1",
+      });
+      const contractModel = "kimi-k2-0905-preview";
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
 
@@ -13908,15 +13909,11 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (mode === "improve" && !String(text || "").trim()) return res.status(400).json({ error: "النص مطلوب للتعديل" });
 
       const OpenAI = (await import("openai")).default;
-      const groqKey = process.env.GROQ_API_KEY;
-      const openai = new OpenAI(groqKey ? {
-        apiKey: groqKey,
-        baseURL: "https://api.groq.com/openai/v1",
-      } : {
-        apiKey: "pollinations",
-        baseURL: "https://text.pollinations.ai/openai",
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "",
+        baseURL: "https://api.moonshot.ai/v1",
       });
-      const model = groqKey ? "llama-3.3-70b-versatile" : "openai";
+      const model = "kimi-k2-0905-preview";
       const safeText = String(text || "").slice(0, 12000);
       const safeInstructions = String(instructions || "").slice(0, 3000);
       const docLabel = documentType === "contract" ? "عقد" : "فاتورة";

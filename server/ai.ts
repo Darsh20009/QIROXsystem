@@ -1,114 +1,28 @@
 // @ts-nocheck
 /**
  * QIROX AI — Agentic Intelligence
- * Uses Groq (ultra-fast, free) if GROQ_API_KEY is set,
- * falls back to Pollinations AI (no key needed).
+ * Powered by Kimi (Moonshot AI) — kimi-k2-0905-preview
  */
 import type { Express } from "express";
 import OpenAI from "openai";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
 
-/* ─── AI Provider — Groq pool (fast, multi-key rotation) or Pollinations fallback ─── */
-const GROQ_KEYS_RAW = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || "")
-  .split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
-const USE_GROQ = GROQ_KEYS_RAW.length > 0;
-
-// Round-robin index + per-key cooldown for rate-limited keys
-let _keyIdx = 0;
-const _keyCooldownUntil = new Map<string, number>();
-const _clientCache = new Map<string, OpenAI>();
-
-function pickGroqKey(): string {
-  const now = Date.now();
-  for (let i = 0; i < GROQ_KEYS_RAW.length; i++) {
-    const idx = (_keyIdx + i) % GROQ_KEYS_RAW.length;
-    const k = GROQ_KEYS_RAW[idx];
-    const until = _keyCooldownUntil.get(k) || 0;
-    if (now >= until) {
-      _keyIdx = (idx + 1) % GROQ_KEYS_RAW.length;
-      return k;
-    }
-  }
-  // All keys are cooling down — pick the one with the earliest cooldown end
-  const k = GROQ_KEYS_RAW.reduce((a, b) =>
-    (_keyCooldownUntil.get(a)! < _keyCooldownUntil.get(b)! ? a : b)
-  );
-  _keyIdx = (GROQ_KEYS_RAW.indexOf(k) + 1) % GROQ_KEYS_RAW.length;
-  return k;
-}
-
-function clientFor(key: string): OpenAI {
-  let c = _clientCache.get(key);
-  if (!c) {
-    c = new OpenAI({ apiKey: key, baseURL: "https://api.groq.com/openai/v1" });
-    _clientCache.set(key, c);
-  }
-  return c;
-}
-
-let _pollinations: OpenAI | null = null;
-function pollinationsClient(): OpenAI {
-  if (!_pollinations) {
-    _pollinations = new OpenAI({ apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" });
-  }
-  return _pollinations;
-}
-
-function getOpenAI(): OpenAI {
-  if (USE_GROQ) return clientFor(pickGroqKey());
-  return pollinationsClient();
-}
-
-// Mark a key as rate-limited / failing for `seconds` seconds
-function cooldownKey(key: string, seconds = 30) {
-  _keyCooldownUntil.set(key, Date.now() + seconds * 1000);
-}
+/* ─── AI Provider — Kimi (Moonshot AI) ─── */
+const _kimiClient = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "",
+  baseURL: "https://api.moonshot.ai/v1",
+});
 
 const openai = new Proxy({} as OpenAI, {
   get(_target, prop) {
-    if (prop === "chat") {
-      const live = getOpenAI();
-      const chat = (live as any).chat;
-      // Wrap completions.create to retry across keys on 429/5xx
-      return {
-        ...chat,
-        completions: {
-          ...chat.completions,
-          create: async (params: any) => {
-            if (!USE_GROQ) return chat.completions.create(params);
-            const tried = new Set<string>();
-            let lastErr: any;
-            for (let attempt = 0; attempt < Math.min(GROQ_KEYS_RAW.length, 5); attempt++) {
-              const key = pickGroqKey();
-              if (tried.has(key)) continue;
-              tried.add(key);
-              try {
-                return await clientFor(key).chat.completions.create(params);
-              } catch (err: any) {
-                lastErr = err;
-                const status = err?.status || err?.response?.status;
-                if (status === 429 || status === 503) {
-                  cooldownKey(key, 60);
-                  continue; // try next key
-                }
-                if (status >= 500) { cooldownKey(key, 15); continue; }
-                throw err; // non-retryable
-              }
-            }
-            throw lastErr;
-          }
-        }
-      };
-    }
-    return (getOpenAI() as any)[prop];
+    return (_kimiClient as any)[prop];
   },
 });
 
-// Groq: llama-3.3-70b-versatile — smart, fast, supports tool calling
-const AI_MODEL = USE_GROQ ? "llama-3.3-70b-versatile" : "openai";
+const AI_MODEL = "kimi-k2-0905-preview";
 
-console.log(`[AI] Provider: ${USE_GROQ ? `Groq pool (${GROQ_KEYS_RAW.length} keys) ⚡` : "Pollinations AI (openai)"}`);
+console.log(`[AI] Provider: Kimi k2 (Moonshot AI)`);;
 
 /* ─── Serper.dev web search ─── */
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";

@@ -1090,11 +1090,11 @@ export function registerQMeetRoutes(app: Express) {
       const meeting = await QMeetingModel.findById(req.params.id);
       if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
       const OpenAI = (await import("openai")).default;
-      const groqKey = process.env.GROQ_API_KEY;
-      const openai = new OpenAI(groqKey ? {
-        apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1",
-      } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" });
-      const aiModel = groqKey ? "llama-3.3-70b-versatile" : "openai";
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "",
+        baseURL: "https://api.moonshot.ai/v1",
+      });
+      const aiModel = "kimi-k2-0905-preview";
       const m = meeting as any;
       const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
 
@@ -1140,11 +1140,11 @@ export function registerQMeetRoutes(app: Express) {
     try {
       const { chat = [], captions = [], title = "اجتماع" } = req.body;
       const OpenAI = (await import("openai")).default;
-      const groqKey2 = process.env.GROQ_API_KEY;
-      const openai = new OpenAI(groqKey2 ? {
-        apiKey: groqKey2, baseURL: "https://api.groq.com/openai/v1",
-      } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" });
-      const aiModel2 = groqKey2 ? "llama-3.3-70b-versatile" : "openai";
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "",
+        baseURL: "https://api.moonshot.ai/v1",
+      });
+      const aiModel2 = "kimi-k2-0905-preview";
 
       const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");
       const captionText = captions.map((c: any) => `${c.name}: ${c.text}`).join("\n");
