@@ -405,14 +405,12 @@ export function AppSidebar() {
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="shrink-0">
-            <div className="bg-black rounded-xl px-3 py-1.5 hover:opacity-85 transition-opacity shadow-md shadow-black/10">
-              <img
-                src="/qirox-logo-full.png"
-                alt="QIROX"
-                className="h-6 w-auto object-contain"
-              />
-            </div>
+          <Link href="/" className="shrink-0 hover:opacity-80 transition-opacity">
+            <img
+              src="/qirox-logo-full.png"
+              alt="QIROX"
+              className="h-6 w-auto object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen"
+            />
           </Link>
           {user && <NotificationBell />}
         </div>

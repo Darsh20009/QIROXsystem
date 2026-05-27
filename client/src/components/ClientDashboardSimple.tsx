@@ -662,7 +662,7 @@ export default function ClientDashboardSimple({ user }: Props) {
         <div className="max-w-2xl mx-auto px-4 pt-8 pb-16 relative z-10">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-2 mb-4">
-              <img src="/qirox-icon.png" alt="Qirox" className="w-8 h-8 object-contain drop-shadow-lg" />
+              <img src="/qirox-icon.png" alt="Qirox" className="w-8 h-8 object-contain mix-blend-screen" />
               <span className="text-white/50 text-xs font-bold tracking-widest uppercase">Qirox · Dashboard</span>
             </div>
 
@@ -994,7 +994,7 @@ export default function ClientDashboardSimple({ user }: Props) {
             style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
-              <img src="/qirox-icon.png" alt="Qirox" className="w-6 h-6 object-contain" />
+              <img src="/qirox-icon.png" alt="Qirox" className="w-6 h-6 object-contain mix-blend-screen" />
               <span className="text-white/50 text-xs font-bold tracking-wider">QIROX</span>
             </div>
             <p className="text-white font-black text-lg mb-1">شريكك الموثوق في التحول الرقمي</p>

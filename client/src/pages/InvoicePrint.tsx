@@ -5,7 +5,7 @@ import { Loader2, Printer, ArrowRight, Mail, Building2, EyeOff } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-icon.png";
+const qiroxLogoPath = "/qirox-logo-full.png";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 
@@ -126,7 +126,7 @@ export default function InvoicePrint() {
           {/* Header */}
           <div className="bg-black px-10 py-8 flex items-center justify-between">
             <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain invert opacity-90" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain opacity-90" />
               <p className="text-white/40 text-xs mt-1">qiroxstudio.online</p>
             </div>
             <div className="text-left">

@@ -156,7 +156,7 @@ export default function ForgotPassword() {
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
         <div className="relative z-10 text-center">
           <Link href="/">
-            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 mx-auto mb-12 w-auto object-contain opacity-90 hover:opacity-100 transition cursor-pointer" />
+            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 mx-auto mb-12 w-auto object-contain opacity-90 hover:opacity-100 transition cursor-pointer mix-blend-screen" />
           </Link>
           <div className="w-20 h-20 bg-white/[0.07] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/[0.08]">
             <ShieldCheck className="w-10 h-10 text-white/60" />
@@ -187,8 +187,8 @@ export default function ForgotPassword() {
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
           <Link href="/">
-            <div className="inline-block bg-black rounded-xl px-4 py-2 hover:opacity-85 transition-opacity shadow-lg shadow-black/10">
-              <img src="/qirox-logo-full.png" alt="QIROX" className="h-7 w-auto object-contain" />
+            <div className="inline-block hover:opacity-85 transition-opacity">
+              <img src="/qirox-logo-full.png" alt="QIROX" className="h-7 w-auto object-contain invert mix-blend-multiply" />
             </div>
           </Link>
         </div>

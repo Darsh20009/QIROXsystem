@@ -4,7 +4,7 @@ import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-icon.png";
+const qiroxLogoPath = "/qirox-logo-full.png";
 import { useI18n } from "@/lib/i18n";
 
 const METHOD_LABELS: Record<string, string> = {
@@ -103,7 +103,7 @@ export default function ReceiptPrint() {
           {/* Header */}
           <div className="bg-black px-8 py-6 flex items-center justify-between">
             <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain invert opacity-90" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain opacity-90" />
               <p className="text-white/40 text-xs mt-1">qiroxstudio.online</p>
             </div>
             <div className="text-left">

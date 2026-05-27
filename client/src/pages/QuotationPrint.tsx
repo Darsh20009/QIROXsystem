@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-icon.png";
+const qiroxLogoPath = "/qirox-logo-full.png";
 import { useI18n } from "@/lib/i18n";
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
@@ -289,7 +289,7 @@ export default function QuotationPrint() {
           {/* Header */}
           <div className="bg-black px-10 py-8 flex items-start justify-between">
             <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 invert opacity-90" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 opacity-90" />
               <p className="text-white/40 text-xs">qiroxstudio.online</p>
             </div>
             <div className="text-left">

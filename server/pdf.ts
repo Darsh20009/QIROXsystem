@@ -62,8 +62,9 @@ function loadArabicFont(): Buffer | null {
 function loadLogo(): Buffer | null {
   try {
     const paths = [
+      path.resolve(process.cwd(), "public/qirox-logo-full.png"),
+      path.resolve(process.cwd(), "public/qirox-icon.png"),
       path.resolve(process.cwd(), "attached_assets/qirox_1771715726312.png"),
-      path.resolve(process.cwd(), "client/public/logo.png"),
       path.resolve(process.cwd(), "public/logo.png"),
     ];
     for (const p of paths) if (fs.existsSync(p)) return fs.readFileSync(p);

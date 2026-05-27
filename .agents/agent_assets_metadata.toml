@@ -6,3 +6,15 @@ id = "Q0-XRgw_eLcpTngyhHDuk"
 uri = "file://ROADMAP.md"
 type = "text"
 title = "خطة تطوير Qirox Systems — نحو الريادة"
+
+[[outputs]]
+id = "m0kjdsmWgNksU6TrGENzM"
+uri = "file://public/qirox-logo-nobg.png"
+type = "image"
+title = "Full Logo (no bg)"
+
+[[outputs]]
+id = "B5o3DVkj3d1YEaGX6c83R"
+uri = "file://public/qirox-icon-nobg.png"
+type = "image"
+title = "Icon (no bg)"

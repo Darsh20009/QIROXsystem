@@ -378,8 +378,8 @@ export default function Home() {
           />
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             <motion.div {...fade(0)} className="flex flex-col items-center text-center">
-              <div className="inline-block bg-black rounded-2xl p-2 mb-5 shadow-xl shadow-black/15">
-                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain" />
+              <div className="inline-block mb-5">
+                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen" />
               </div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
                 <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
@@ -1022,8 +1022,8 @@ export default function Home() {
             {/* Section header */}
             <div className="flex items-center justify-between gap-4 mb-8" dir="rtl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-black dark:bg-white flex items-center justify-center shadow-md">
-                  <img src="/qirox-icon.png" alt="Q" className="w-6 h-6 object-contain invert dark:invert-0" />
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center">
+                  <img src="/qirox-icon.png" alt="Q" className="w-8 h-8 object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
@@ -1086,11 +1086,8 @@ export default function Home() {
         <section className="bg-black text-white dark:bg-white dark:text-black pt-8 pb-24 md:pb-28">
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <motion.div {...fade(0)}>
-              {/* Full logo — always on dark bg in light mode; wrapped in dark pill for dark mode */}
               <div className="inline-block mb-6">
-                <div className="bg-black rounded-2xl px-6 py-3 shadow-xl shadow-black/30">
-                  <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain" />
-                </div>
+                <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain mix-blend-screen dark:invert dark:mix-blend-multiply" />
               </div>
               <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
                 {ar ? "جاهز تبدأ؟" : "Ready to start?"}

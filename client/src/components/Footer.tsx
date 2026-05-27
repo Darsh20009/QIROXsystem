@@ -88,10 +88,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           <div className="md:col-span-5">
             <div className="mb-6">
-              <Link href="/">
-                <div className="inline-block bg-black rounded-2xl px-5 py-3 hover:opacity-90 transition-opacity shadow-lg shadow-black/10">
-                  <img src="/qirox-logo-full.png" alt="QIROX" className="h-9 w-auto object-contain" />
-                </div>
+              <Link href="/" className="hover:opacity-80 transition-opacity inline-block">
+                <img src="/qirox-logo-full.png" alt="QIROX" className="h-9 w-auto object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen" />
               </Link>
             </div>
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">

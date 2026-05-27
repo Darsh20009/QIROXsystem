@@ -760,7 +760,7 @@ function EmployeeDashboard({ user }: { user: any }) {
           <div className="flex items-start justify-between flex-wrap gap-4">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-center gap-2.5 mb-3">
-                <img src="/qirox-icon.png" alt="Qirox" className="w-9 h-9 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]" />
+                <img src="/qirox-icon.png" alt="Qirox" className="w-9 h-9 object-contain mix-blend-screen" />
                 <div>
                   <span className="text-white/30 text-[9px] font-bold tracking-[0.2em] uppercase block">QIROX STUDIO</span>
                   <span className="text-white/50 text-[10px] font-medium">لوحة تحكم الموظفين</span>
