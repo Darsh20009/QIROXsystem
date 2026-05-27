@@ -5,10 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Calendar, Clock, CheckCircle, XCircle, Eye, Video, Phone, MapPin, Users, CalendarClock, AlertCircle, MessageSquare, Bell } from "lucide-react";
+import {
+  Loader2, Calendar, Clock, CheckCircle, XCircle, Eye, Video, Phone, MapPin,
+  Users, CalendarClock, AlertCircle, MessageSquare, Bell, Sparkles, Copy, Check,
+  Mail, Send, RefreshCw,
+} from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useUser } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -16,11 +20,11 @@ import { useI18n } from "@/lib/i18n";
 
 function getBookingStatusConfig(L: boolean): Record<string, { label: string; color: string }> {
   return {
-    pending:   { label: L ? "في انتظار تحديد الموعد" : "Awaiting Scheduling", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
-    confirmed: { label: L ? "تم تأكيد الموعد" : "Confirmed", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
-    rejected:  { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    pending:   { label: L ? "في انتظار تحديد الموعد" : "Awaiting Scheduling", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    confirmed: { label: L ? "تم تأكيد الموعد" : "Confirmed", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
+    rejected:  { label: L ? "مرفوض" : "Rejected", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
     cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700" },
-    completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border-black/10 dark:border-white/10 dark:border-black dark:border-white" },
+    completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10" },
   };
 }
 
@@ -32,6 +36,15 @@ function getTypeConfig(L: boolean): Record<string, { label: string; icon: any }>
     any:       { label: L ? "أي نوع" : "Any Type", icon: Calendar },
   };
 }
+
+const AI_EMAIL_TYPES = [
+  { key: "welcome",      labelAr: "ترحيب باستلام الطلب",     labelEn: "Welcome / Acknowledgment" },
+  { key: "followup",     labelAr: "متابعة وملخص الاحتياجات", labelEn: "Follow-up & Needs Summary" },
+  { key: "confirmation", labelAr: "تأكيد الموعد بالتفاصيل",  labelEn: "Appointment Confirmation" },
+  { key: "proposal",     labelAr: "عرض مبدئي للمشروع",       labelEn: "Initial Project Proposal" },
+  { key: "reminder",     labelAr: "تذكير بالموعد القادم",    labelEn: "Appointment Reminder" },
+  { key: "rejection",    labelAr: "رفض لبق مع بديل",         labelEn: "Polite Rejection + Alternative" },
+];
 
 const emptyAssign = {
   date: "", startTime: "10:00", endTime: "11:00",
@@ -58,6 +71,101 @@ export default function AdminConsultation() {
   const [reminderForm, setReminderForm] = useState({
     currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "",
   });
+
+  // AI Email Writer state
+  const [aiEmailBooking, setAiEmailBooking] = useState<any>(null);
+  const [aiEmailType, setAiEmailType] = useState("followup");
+  const [aiEmailContent, setAiEmailContent] = useState("");
+  const [aiEmailGenerating, setAiEmailGenerating] = useState(false);
+  const [aiEmailCopied, setAiEmailCopied] = useState(false);
+  const [aiEmailSending, setAiEmailSending] = useState(false);
+
+  const openAiEmail = (b: any) => {
+    setAiEmailBooking(b);
+    setAiEmailType("followup");
+    setAiEmailContent("");
+    setAiEmailCopied(false);
+  };
+
+  const generateAiEmail = useCallback(async () => {
+    if (!aiEmailBooking) return;
+    setAiEmailGenerating(true);
+    setAiEmailContent("");
+    try {
+      const r = await fetch("/api/ai/consultation-email", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailType: aiEmailType,
+          clientName:      aiEmailBooking.clientName,
+          clientEmail:     aiEmailBooking.clientEmail,
+          clientPhone:     aiEmailBooking.clientPhone,
+          topic:           aiEmailBooking.topic,
+          notes:           aiEmailBooking.notes,
+          date:            aiEmailBooking.date,
+          startTime:       aiEmailBooking.startTime,
+          endTime:         aiEmailBooking.endTime,
+          consultationType: aiEmailBooking.consultationType,
+          employeeName:    aiEmailBooking.employeeName,
+          meetingLink:     aiEmailBooking.meetingLink,
+          language: L ? "ar" : "en",
+        }),
+      });
+      const data = await r.json();
+      if (data.email) {
+        setAiEmailContent(data.email);
+      } else {
+        toast({ title: L ? "تعذّر توليد البريد" : "Failed to generate email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: L ? "خطأ في الاتصال بالذكاء الاصطناعي" : "AI connection error", variant: "destructive" });
+    }
+    setAiEmailGenerating(false);
+  }, [aiEmailBooking, aiEmailType, L, toast]);
+
+  const copyEmail = () => {
+    if (!aiEmailContent) return;
+    navigator.clipboard.writeText(aiEmailContent).then(() => {
+      setAiEmailCopied(true);
+      setTimeout(() => setAiEmailCopied(false), 2000);
+    });
+  };
+
+  const sendEmail = async () => {
+    if (!aiEmailBooking?.clientEmail || !aiEmailContent) return;
+    setAiEmailSending(true);
+    try {
+      const lines = aiEmailContent.split("\n");
+      const subjectLine = lines.find(l => l.startsWith("الموضوع:") || l.startsWith("Subject:"));
+      const subject = subjectLine
+        ? subjectLine.replace(/^(الموضوع:|Subject:)\s*/i, "").trim()
+        : (L ? `استشارة QIROX Studio — ${aiEmailBooking.clientName}` : `QIROX Studio Consultation — ${aiEmailBooking.clientName}`);
+      const body = lines.filter(l => !l.startsWith("الموضوع:") && !l.startsWith("Subject:")).join("\n").trim();
+
+      const r = await fetch("/api/admin/send-email", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: aiEmailBooking.clientEmail,
+          toName: aiEmailBooking.clientName,
+          subject,
+          body,
+        }),
+      });
+      const data = await r.json();
+      if (data.ok || data.success) {
+        toast({ title: L ? "تم إرسال البريد بنجاح ✓" : "Email sent successfully ✓" });
+        setAiEmailBooking(null);
+      } else {
+        toast({ title: data.error || (L ? "فشل الإرسال" : "Send failed"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: L ? "خطأ في إرسال البريد" : "Email send error", variant: "destructive" });
+    }
+    setAiEmailSending(false);
+  };
 
   const createReminderMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -180,13 +288,13 @@ export default function AdminConsultation() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: L ? "إجمالي الطلبات" : "Total Requests", value: stats.total,     icon: Calendar,     color: "text-black dark:text-white" },
-          { label: L ? "قيد الانتظار" : "Pending",   value: stats.pending,   icon: Clock,        color: "text-black dark:text-white" },
-          { label: L ? "مؤكدة" : "Confirmed",          value: stats.confirmed, icon: CheckCircle,  color: "text-black dark:text-white" },
-          { label: L ? "مكتملة" : "Completed",         value: stats.completed, icon: Users,        color: "text-black dark:text-white" },
+          { label: L ? "إجمالي الطلبات" : "Total Requests", value: stats.total,     icon: Calendar },
+          { label: L ? "قيد الانتظار" : "Pending",           value: stats.pending,   icon: Clock },
+          { label: L ? "مؤكدة" : "Confirmed",                value: stats.confirmed, icon: CheckCircle },
+          { label: L ? "مكتملة" : "Completed",               value: stats.completed, icon: Users },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
+            <div className="text-2xl font-black text-black dark:text-white">{s.value}</div>
             <div className="text-xs text-black/40 dark:text-white/40 mt-1">{s.label}</div>
           </div>
         ))}
@@ -243,7 +351,6 @@ export default function AdminConsultation() {
                         <MessageSquare className="w-3 h-3" />{b.topic}
                       </p>
                     )}
-                    {/* Appointment if confirmed */}
                     {b.date && b.startTime && (
                       <div className="flex items-center gap-3 mt-2 text-xs text-black/50 dark:text-white/50">
                         <span className="flex items-center gap-1">
@@ -271,7 +378,7 @@ export default function AdminConsultation() {
                           <CalendarClock className="w-3.5 h-3.5" />{L ? "تحديد موعد" : "Schedule"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => { setRejectBooking(b); setRejectNotes(""); }}
-                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]"
+                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04]"
                           data-testid={`button-reject-${b.id || b._id}`}>
                           <XCircle className="w-3.5 h-3.5" />{L ? "رفض" : "Reject"}
                         </Button>
@@ -286,7 +393,7 @@ export default function AdminConsultation() {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleComplete(b)}
                           disabled={updateBookingMutation.isPending}
-                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06]"
+                          className="rounded-xl text-xs h-8 text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04]"
                           data-testid={`button-complete-${b.id || b._id}`}>
                           <CheckCircle className="w-3 h-3" />{L ? "مكتمل" : "Complete"}
                         </Button>
@@ -297,9 +404,15 @@ export default function AdminConsultation() {
                       data-testid={`button-view-${b.id || b._id}`}>
                       <Eye className="w-3 h-3" />{L ? "عرض" : "View"}
                     </Button>
+                    {/* AI Email Writer button */}
+                    <Button size="sm" variant="outline" onClick={() => openAiEmail(b)}
+                      className="rounded-xl text-xs h-8 gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04]"
+                      data-testid={`button-ai-email-${b.id || b._id}`}>
+                      <Sparkles className="w-3 h-3" />{L ? "بريد AI" : "AI Email"}
+                    </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => { setReminderBooking(b); setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" }); }}
-                      className="rounded-xl text-xs h-8 gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
+                      className="rounded-xl text-xs h-8 gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04]"
                       data-testid={`button-reminder-${b.id || b._id}`}>
                       <Bell className="w-3 h-3" />{L ? "تذكير" : "Remind"}
                     </Button>
@@ -310,6 +423,172 @@ export default function AdminConsultation() {
           })}
         </div>
       )}
+
+      {/* ══════════════════════════════════════
+          AI EMAIL WRITER DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={!!aiEmailBooking} onOpenChange={v => !v && setAiEmailBooking(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 text-black dark:text-white">
+              <Sparkles className="w-5 h-5" />
+              {L ? "كاتب البريد الإلكتروني بالذكاء الاصطناعي" : "AI Email Writer"}
+            </DialogTitle>
+          </DialogHeader>
+          {aiEmailBooking && (
+            <div className="space-y-4">
+              {/* Client Summary */}
+              <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.06]">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="font-bold text-sm text-black dark:text-white">{aiEmailBooking.clientName}</p>
+                    <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">
+                      {aiEmailBooking.clientEmail && <span className="me-3">{aiEmailBooking.clientEmail}</span>}
+                      {aiEmailBooking.clientPhone && <span>{aiEmailBooking.clientPhone}</span>}
+                    </p>
+                    {aiEmailBooking.topic && (
+                      <p className="text-xs text-black/60 dark:text-white/60 mt-1">{aiEmailBooking.topic}</p>
+                    )}
+                  </div>
+                  <Badge className="text-[10px] border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white">
+                    {getBookingStatusConfig(L)[aiEmailBooking.status]?.label || aiEmailBooking.status}
+                  </Badge>
+                </div>
+                {/* Context details */}
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-black/50 dark:text-white/50">
+                  {aiEmailBooking.date && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(aiEmailBooking.date).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" })}
+                      {aiEmailBooking.startTime && ` ${aiEmailBooking.startTime}`}
+                    </span>
+                  )}
+                  {aiEmailBooking.consultationType && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      {getTypeConfig(L)[aiEmailBooking.consultationType]?.label || aiEmailBooking.consultationType}
+                    </span>
+                  )}
+                  {aiEmailBooking.employeeName && (
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />{aiEmailBooking.employeeName}
+                    </span>
+                  )}
+                </div>
+                {aiEmailBooking.notes && (
+                  <div className="mt-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.06]">
+                    <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">{L ? "ملاحظات العميل:" : "Client notes:"}</p>
+                    <p className="text-xs text-black/60 dark:text-white/60 leading-relaxed line-clamp-3">{aiEmailBooking.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Email Type Selector */}
+              <div>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">
+                  {L ? "نوع البريد الإلكتروني" : "Email Type"}
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {AI_EMAIL_TYPES.map(t => (
+                    <button
+                      key={t.key}
+                      onClick={() => { setAiEmailType(t.key); setAiEmailContent(""); }}
+                      className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all text-start ${
+                        aiEmailType === t.key
+                          ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black"
+                          : "border-black/10 dark:border-white/10 text-black dark:text-white hover:border-black/25 dark:hover:border-white/25 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                      }`}
+                      data-testid={`ai-email-type-${t.key}`}
+                    >
+                      {L ? t.labelAr : t.labelEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <Button
+                onClick={generateAiEmail}
+                disabled={aiEmailGenerating}
+                className="w-full h-11 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold gap-2"
+                data-testid="button-generate-ai-email"
+              >
+                {aiEmailGenerating
+                  ? <><Loader2 className="w-4 h-4 animate-spin" />{L ? "الذكاء الاصطناعي يكتب البريد…" : "AI is writing the email…"}</>
+                  : aiEmailContent
+                    ? <><RefreshCw className="w-4 h-4" />{L ? "إعادة التوليد" : "Regenerate"}</>
+                    : <><Sparkles className="w-4 h-4" />{L ? "توليد البريد بالذكاء الاصطناعي" : "Generate Email with AI"}</>
+                }
+              </Button>
+
+              {/* AI Generating skeleton */}
+              {aiEmailGenerating && (
+                <div className="space-y-2 animate-pulse">
+                  {[100, 90, 95, 80, 88, 70, 85].map((w, i) => (
+                    <div key={i} className="h-3 rounded-full bg-black/[0.07] dark:bg-white/[0.07]" style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              )}
+
+              {/* Generated Email Preview/Editor */}
+              {aiEmailContent && !aiEmailGenerating && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/60">
+                      {L ? "البريد المُولَّد — يمكنك التعديل قبل الإرسال" : "Generated Email — edit before sending"}
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={copyEmail}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-black/10 dark:border-white/10 text-[11px] font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition"
+                        data-testid="button-copy-email"
+                      >
+                        {aiEmailCopied
+                          ? <><Check className="w-3 h-3 text-emerald-500" />{L ? "تم النسخ" : "Copied"}</>
+                          : <><Copy className="w-3 h-3" />{L ? "نسخ" : "Copy"}</>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={aiEmailContent}
+                    onChange={e => setAiEmailContent(e.target.value)}
+                    className="min-h-[280px] text-xs font-mono bg-black/[0.02] dark:bg-white/[0.03] border-black/10 dark:border-white/10 rounded-xl resize-none leading-relaxed"
+                    dir="rtl"
+                    data-testid="textarea-ai-email-content"
+                  />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" onClick={() => setAiEmailBooking(null)} className="flex-1 rounded-xl">
+                  {L ? "إغلاق" : "Close"}
+                </Button>
+                {aiEmailContent && aiEmailBooking?.clientEmail && (
+                  <Button
+                    onClick={sendEmail}
+                    disabled={aiEmailSending || !aiEmailContent}
+                    className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-2 font-bold"
+                    data-testid="button-send-ai-email"
+                  >
+                    {aiEmailSending
+                      ? <><Loader2 className="w-4 h-4 animate-spin" />{L ? "جارٍ الإرسال…" : "Sending…"}</>
+                      : <><Send className="w-4 h-4" />{L ? `إرسال إلى ${aiEmailBooking.clientEmail}` : `Send to ${aiEmailBooking.clientEmail}`}</>
+                    }
+                  </Button>
+                )}
+                {aiEmailContent && !aiEmailBooking?.clientEmail && (
+                  <p className="text-xs text-black/40 dark:text-white/40 flex items-center gap-1 flex-1">
+                    <Mail className="w-3 h-3" />
+                    {L ? "لا يوجد بريد إلكتروني للعميل — انسخ البريد يدوياً" : "No client email — copy manually"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Appointment Dialog */}
       <Dialog open={!!assignBooking} onOpenChange={v => !v && setAssignBooking(null)}>
@@ -322,7 +601,6 @@ export default function AdminConsultation() {
           </DialogHeader>
           {assignBooking && (
             <div className="space-y-4">
-              {/* Client Info Summary */}
               <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-sm">
                 <p className="font-bold text-black dark:text-white">{assignBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{assignBooking.clientEmail}</p>
@@ -410,7 +688,7 @@ export default function AdminConsultation() {
           </DialogHeader>
           {rejectBooking && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10">
                 <p className="font-bold text-sm text-black dark:text-white">{rejectBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{rejectBooking.clientEmail}</p>
               </div>
@@ -424,7 +702,7 @@ export default function AdminConsultation() {
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setRejectBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
                 <Button onClick={handleReject} disabled={updateBookingMutation.isPending}
-                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-1.5"
+                  className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-1.5"
                   data-testid="button-confirm-reject">
                   {updateBookingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" />{L ? "تأكيد الرفض" : "Confirm Rejection"}</>}
                 </Button>
@@ -445,10 +723,9 @@ export default function AdminConsultation() {
           </DialogHeader>
           {reminderBooking && (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white text-sm">
+              <div className="p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-sm">
                 <p className="font-bold text-black dark:text-white">{reminderBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{reminderBooking.clientEmail}{reminderBooking.clientPhone ? ` · ${reminderBooking.clientPhone}` : ""}</p>
-                <p className="text-[11px] text-black dark:text-white mt-1">{L ? "سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً" : "This client will be automatically added to the switch reminders list"}</p>
               </div>
 
               <div>
@@ -510,17 +787,12 @@ export default function AdminConsultation() {
                 />
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setReminderBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
-                <Button
-                  onClick={handleCreateReminder}
-                  disabled={createReminderMutation.isPending}
-                  className="flex-1 bg-black dark:bg-white hover:bg-black dark:bg-white text-white rounded-xl gap-2"
-                  data-testid="button-confirm-reminder"
-                >
-                  {createReminderMutation.isPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <><Bell className="w-4 h-4" />{L ? "جدولة التذكير" : "Schedule Reminder"}</>}
+                <Button onClick={handleCreateReminder} disabled={createReminderMutation.isPending}
+                  className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-1.5"
+                  data-testid="button-confirm-reminder">
+                  {createReminderMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Bell className="w-4 h-4" />{L ? "جدولة التذكير" : "Schedule Reminder"}</>}
                 </Button>
               </div>
             </div>
@@ -539,14 +811,14 @@ export default function AdminConsultation() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
                   [L ? "العميل" : "Client",         viewBooking.clientName],
-                  [L ? "البريد" : "Email",         viewBooking.clientEmail],
-                  [L ? "الهاتف" : "Phone",         viewBooking.clientPhone || "—"],
-                  [L ? "النوع المفضل" : "Preferred Type",   getTypeConfig(L)[viewBooking.consultationType]?.label || viewBooking.consultationType],
-                  [L ? "الموضوع" : "Topic",        viewBooking.topic || "—"],
-                  [L ? "تاريخ الطلب" : "Request Date",    new Date(viewBooking.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")],
+                  [L ? "البريد" : "Email",          viewBooking.clientEmail || "—"],
+                  [L ? "الهاتف" : "Phone",          viewBooking.clientPhone || "—"],
+                  [L ? "النوع المفضل" : "Preferred", getTypeConfig(L)[viewBooking.consultationType]?.label || viewBooking.consultationType],
+                  [L ? "الموضوع" : "Topic",         viewBooking.topic || "—"],
+                  [L ? "تاريخ الطلب" : "Request Date", new Date(viewBooking.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")],
                   ...(viewBooking.date ? [
                     [L ? "الموعد المحدد" : "Scheduled", `${new Date(viewBooking.date).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" })}`],
-                    [L ? "الوقت" : "Time",         `${viewBooking.startTime} — ${viewBooking.endTime}`],
+                    [L ? "الوقت" : "Time", `${viewBooking.startTime} — ${viewBooking.endTime}`],
                   ] : []),
                   ...(viewBooking.employeeName ? [[L ? "المستشار" : "Consultant", viewBooking.employeeName]] : []),
                 ].map(([k, v]) => (
@@ -576,6 +848,11 @@ export default function AdminConsultation() {
               )}
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" onClick={() => setViewBooking(null)} className="flex-1 rounded-xl">{L ? "إغلاق" : "Close"}</Button>
+                <Button variant="outline" onClick={() => { setViewBooking(null); openAiEmail(viewBooking); }}
+                  className="flex-1 rounded-xl gap-1.5 text-xs border-black/10 dark:border-white/10"
+                  data-testid="button-view-ai-email">
+                  <Sparkles className="w-3.5 h-3.5" />{L ? "كتابة بريد AI" : "AI Email"}
+                </Button>
                 {viewBooking.status === "pending" && (
                   <Button onClick={() => { setViewBooking(null); openAssign(viewBooking); }}
                     className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-1.5 text-xs">

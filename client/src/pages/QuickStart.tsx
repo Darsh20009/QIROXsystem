@@ -122,6 +122,24 @@ export default function QuickStart() {
   const [refNumber, setRefNumber]   = useState("");
   const [error, setError]           = useState("");
 
+  /* AI state */
+  const [enhancing, setEnhancing]   = useState(false);
+
+  async function enhanceIdea() {
+    if (idea.trim().length < 5) return;
+    setEnhancing(true);
+    try {
+      const r = await fetch("/api/ai/enhance-idea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: idea.trim(), sector, features }),
+      });
+      const data = await r.json();
+      if (data.enhanced) setIdea(data.enhanced);
+    } catch (_) {}
+    setEnhancing(false);
+  }
+
   const progressPct = step === 0 ? 0 : Math.round((step / TOTAL_STEPS) * 100);
 
   function toggleFeature(key: string) {
@@ -396,10 +414,30 @@ export default function QuickStart() {
                     className="min-h-[160px] text-sm bg-black/[0.02] dark:bg-white/[0.04] border-black/12 dark:border-white/12 rounded-2xl resize-none"
                     data-testid="textarea-idea"
                   />
-                  <p className={`text-xs mt-2 transition-colors ${idea.trim().length < 5 ? "text-black/30 dark:text-white/30" : "text-emerald-500"}`}>
-                    {idea.trim().length} {ar ? "حرف" : "characters"}
-                    {idea.trim().length >= 5 && " ✓"}
-                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className={`text-xs transition-colors ${idea.trim().length < 5 ? "text-black/30 dark:text-white/30" : "text-emerald-500"}`}>
+                      {idea.trim().length} {ar ? "حرف" : "characters"}
+                      {idea.trim().length >= 5 && " ✓"}
+                    </p>
+                    {idea.trim().length >= 5 && (
+                      <button
+                        onClick={enhanceIdea}
+                        disabled={enhancing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/15 dark:border-white/15 text-xs font-bold hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition disabled:opacity-50"
+                        data-testid="button-enhance-idea"
+                      >
+                        {enhancing
+                          ? <><Loader2 className="w-3 h-3 animate-spin" /> {ar ? "جارٍ التحسين…" : "Enhancing…"}</>
+                          : <><Sparkles className="w-3 h-3" /> {ar ? "حسّن فكرتي بالذكاء الاصطناعي" : "Enhance with AI"}</>
+                        }
+                      </button>
+                    )}
+                  </div>
+                  {enhancing && (
+                    <p className="text-xs text-black/40 dark:text-white/40 mt-2">
+                      {ar ? "الذكاء الاصطناعي يطور فكرتك ويجعلها أوضح للفريق التقني…" : "AI is enhancing your idea for the technical team…"}
+                    </p>
+                  )}
                 </div>
               )}
 

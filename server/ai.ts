@@ -1854,6 +1854,146 @@ async function handleProjectChecklist(req: Request, res: Response) {
   }
 }
 
+/* ─── Consultation Email Writer ─── */
+async function handleConsultationEmail(req: any, res: any) {
+  const {
+    emailType = "followup",
+    clientName, clientEmail, clientPhone,
+    topic, notes, sector, features, budget,
+    date, startTime, endTime, consultationType,
+    employeeName, meetingLink,
+    language = "ar",
+  } = req.body;
+
+  const typePrompts: Record<string, string> = {
+    confirmation: language === "ar"
+      ? "اكتب بريداً إلكترونياً رسمياً مميزاً يؤكد موعد الاستشارة للعميل ويتضمن كل التفاصيل الكاملة (التاريخ، الوقت، نوع الاجتماع، اسم المستشار، رابط الاجتماع إن وجد). يجب أن يكون البريد دافئاً ومحترفاً ويجعل العميل يشعر بالترحيب والثقة بـ QIROX."
+      : "Write a professional email confirming the consultation appointment with full details (date, time, type, consultant name, meeting link if any).",
+    followup: language === "ar"
+      ? "اكتب بريداً إلكترونياً للمتابعة بعد طلب الاستشارة. يشمل ما يلي: شكر العميل على اهتمامه، ملخص لما ذكره العميل عن مشروعه، إشارة لباقات QIROX المناسبة، وتوضيح الخطوات التالية. أسلوب ودود ومحترف."
+      : "Write a professional follow-up email after the consultation request. Include a summary of the client's needs and next steps.",
+    proposal: language === "ar"
+      ? "اكتب بريداً إلكترونياً يقدم عرضاً مبدئياً للمشروع. يشمل: مقدمة عن QIROX Studio، فهمنا لاحتياجات العميل، الباقة المقترحة مع السعر التقريبي والجدول الزمني، لماذا QIROX الخيار الأمثل، والخطوات التالية للمضي قدماً."
+      : "Write a professional email with an initial project proposal including suggested package, timeline, and pricing.",
+    rejection: language === "ar"
+      ? "اكتب بريداً إلكترونياً يرفض طلب الاستشارة بأسلوب لبق ومحترم مع الاعتذار، وتقديم بديل مناسب (مثل: إعادة الجدولة، أو الإحالة لخدمة أخرى، أو الاشتراك في القائمة البريدية لمعرفة آخر العروض)."
+      : "Write a polite rejection email for the consultation request with an alternative suggestion.",
+    reminder: language === "ar"
+      ? "اكتب بريداً إلكترونياً للتذكير بموعد الاستشارة القادم. يشمل كل التفاصيل (التاريخ، الوقت، نوع الاجتماع، الرابط إن وجد) وتشجيع العميل على الاستعداد بأسئلته وأفكاره مسبقاً."
+      : "Write a reminder email for the upcoming consultation appointment with full details.",
+    welcome: language === "ar"
+      ? "اكتب بريداً إلكترونياً ترحيبياً يشكر العميل على تقديم طلب الاستشارة، يُعرّفه بـ QIROX Studio وقيمنا، ويُعلمه أن الفريق سيتواصل معه قريباً لتحديد الموعد المناسب."
+      : "Write a welcome email thanking the client for submitting the consultation request and introducing QIROX Studio.",
+  };
+
+  const basePrompt = typePrompts[emailType] || typePrompts.followup;
+
+  const dateFormatted = date
+    ? new Date(date).toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    : null;
+
+  const contextLines = [
+    `اسم العميل: ${clientName || "غير محدد"}`,
+    clientEmail ? `البريد الإلكتروني: ${clientEmail}` : null,
+    clientPhone ? `رقم الهاتف: ${clientPhone}` : null,
+    topic ? `موضوع الاستشارة: ${topic}` : null,
+    sector ? `القطاع / نوع النشاط: ${sector}` : null,
+    features ? `الميزات / المتطلبات: ${Array.isArray(features) ? features.join("، ") : features}` : null,
+    budget ? `الميزانية التقريبية: ${budget}` : null,
+    dateFormatted ? `تاريخ الموعد: ${dateFormatted}` : null,
+    startTime && endTime ? `وقت الاجتماع: من ${startTime} إلى ${endTime}` : null,
+    consultationType ? `نوع الاستشارة: ${consultationType === "video" ? "مكالمة فيديو" : consultationType === "phone" ? "مكالمة هاتفية" : consultationType === "in_person" ? "حضوري" : consultationType}` : null,
+    employeeName ? `المستشار المسؤول: ${employeeName}` : null,
+    meetingLink ? `رابط الاجتماع: ${meetingLink}` : null,
+    notes ? `ملاحظات إضافية من العميل:\n${notes}` : null,
+  ].filter(Boolean).join("\n");
+
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `أنت كاتب بريد إلكتروني محترف ومتميز لـ QIROX Studio، الوكالة التقنية السعودية الرائدة في بناء الأنظمة والمواقع الإلكترونية للسوق العربي.
+
+أسلوبك: احترافي، دافئ، ثقة، إيجابي. تكتب بالعربية الفصحى المبسطة.
+
+تنسيق البريد:
+- **الموضوع**: سطر يبدأ بـ "الموضوع:" ثم موضوع البريد
+- **سطر فارغ**
+- **التحية**: خطاب شخصي باسم العميل
+- **الجسم**: محتوى البريد الكامل بكل التفاصيل المطلوبة مع فقرات منظمة
+- **الخاتمة**: توقيع احترافي:
+  فريق QIROX Studio
+  www.qirox.online
+  واتساب: 966554656670+
+
+قواعد مهمة:
+- استخدم كل المعلومات المتاحة دون استثناء
+- إذا كانت هناك تفاصيل تقنية عن المشروع، اذكرها بدقة
+- اجعل البريد شاملاً ومفصّلاً — ليس مختصراً
+- لا تضع أي تعليق أو شرح — فقط البريد نفسه`,
+        },
+        {
+          role: "user",
+          content: `${basePrompt}\n\nمعلومات الاستشارة:\n${contextLines}`,
+        },
+      ],
+      temperature: 0.72,
+      max_tokens: 1200,
+    });
+
+    const emailContent = comp.choices[0]?.message?.content?.trim() || "";
+    res.json({ success: true, email: emailContent });
+  } catch (err: any) {
+    console.error("[AI ConsultationEmail]", err.message);
+    res.status(500).json({ error: err.message || "تعذّر توليد البريد الإلكتروني" });
+  }
+}
+
+/* ─── QuickStart Idea Enhancer ─── */
+async function handleEnhanceIdea(req: any, res: any) {
+  const { idea, sector, features } = req.body;
+  if (!idea?.trim()) return res.status(400).json({ error: "الفكرة مطلوبة" });
+
+  const featuresText = Array.isArray(features) && features.length > 0
+    ? features.join("، ")
+    : (typeof features === "string" && features) ? features : null;
+
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `أنت مستشار أعمال تقني في QIROX Studio. مهمتك تحسين وتطوير فكرة العميل وصياغتها بشكل احترافي وواضح ومفصّل يساعد الفريق التقني على فهم المشروع فوراً.
+
+قواعد الرد:
+- 3 إلى 5 جمل قوية ومحددة
+- تتضمن: ما يفعله النظام، من يستخدمه، المشكلة التي يحلها، القيمة التي يضيفها
+- لا مقدمات ولا تعليق — فقط الفكرة المحسّنة مباشرةً`,
+        },
+        {
+          role: "user",
+          content: `القطاع: ${sector || "غير محدد"}
+${featuresText ? `الميزات المطلوبة: ${featuresText}` : ""}
+فكرة العميل الأصلية: ${idea.trim()}
+
+حسّن هذه الفكرة واجعلها أوضح وأكثر تفصيلاً واحترافية:`,
+        },
+      ],
+      temperature: 0.72,
+      max_tokens: 400,
+    });
+
+    const enhanced = comp.choices[0]?.message?.content?.trim() || idea;
+    res.json({ success: true, enhanced });
+  } catch (err: any) {
+    console.error("[AI EnhanceIdea]", err.message);
+    res.status(500).json({ error: err.message || "تعذّر تحسين الفكرة" });
+  }
+}
+
 /* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
   app.post("/api/ai/message", handleChat);
@@ -1874,6 +2014,8 @@ export function registerAiRoutes(app: Express) {
   app.post("/api/ai/batch-translate", handleBatchTranslate);
   app.post("/api/ai/describe-project", handleDescribeProject);
   app.post("/api/ai/project-checklist", handleProjectChecklist);
+  app.post("/api/ai/consultation-email", handleConsultationEmail);
+  app.post("/api/ai/enhance-idea", handleEnhanceIdea);
   app.delete("/api/ai/session/:id", (req, res) => {
     sessions.delete(req.params.id);
     finderSessions.delete(req.params.id);
