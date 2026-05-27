@@ -378,7 +378,9 @@ export default function Home() {
           />
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             <motion.div {...fade(0)} className="flex flex-col items-center text-center">
-              <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto mb-5 dark:invert" />
+              <div className="inline-block bg-black rounded-2xl p-2 mb-5 shadow-xl shadow-black/15">
+                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain" />
+              </div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
                 <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
                 {ar ? "مصنع الأنظمة الرقمية · شريكك التقني" : "Digital Systems Factory · Your tech partner"}

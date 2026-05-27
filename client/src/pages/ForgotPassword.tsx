@@ -185,9 +185,11 @@ export default function ForgotPassword() {
       {/* Right content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
-        <div className="lg:hidden mb-8">
+        <div className="lg:hidden mb-8 text-center">
           <Link href="/">
-            <img src={qiroxLogoPath} alt="QIROX" className="h-9 mx-auto" />
+            <div className="inline-block bg-black rounded-xl px-4 py-2 hover:opacity-85 transition-opacity shadow-lg shadow-black/10">
+              <img src="/qirox-logo-full.png" alt="QIROX" className="h-7 w-auto object-contain" />
+            </div>
           </Link>
         </div>
 

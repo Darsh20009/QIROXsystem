@@ -401,11 +401,19 @@ export function AppSidebar() {
   return (
     <Sidebar side={lang === "ar" ? "right" : "left"} className={`bg-white dark:bg-gray-950 ${lang === "ar" ? "border-l" : "border-r"} border-black/[0.06] dark:border-white/[0.06]`}>
       <SidebarHeader
-        className="px-4 pb-4 border-b border-black/[0.06]"
+        className="px-4 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}
       >
-        <div className="flex items-center justify-between">
-          <div />
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" className="shrink-0">
+            <div className="bg-black rounded-xl px-3 py-1.5 hover:opacity-85 transition-opacity shadow-md shadow-black/10">
+              <img
+                src="/qirox-logo-full.png"
+                alt="QIROX"
+                className="h-6 w-auto object-contain"
+              />
+            </div>
+          </Link>
           {user && <NotificationBell />}
         </div>
       </SidebarHeader>
