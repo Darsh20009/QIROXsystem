@@ -1278,3 +1278,23 @@
   100% { transform: translateX(0); }
 }
 
+@keyframes badge-flow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.badge-animated {
+  background: linear-gradient(135deg, #0a0a0a 0%, #3a3a3a 20%, #6b6b6b 40%, #a3a3a3 60%, #6b6b6b 80%, #1a1a1a 100%);
+  background-size: 300% 300%;
+  animation: badge-flow 6s ease infinite;
+  color: white;
+}
+
+.dark .badge-animated {
+  background: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 20%, #8a8a8a 40%, #606060 60%, #8a8a8a 80%, #e5e5e5 100%);
+  background-size: 300% 300%;
+  animation: badge-flow 6s ease infinite;
+  color: #0a0a0a;
+}
+

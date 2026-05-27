@@ -221,51 +221,67 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
-// ─── Review Tag Colors ────────────────────────────────────────────────────────
-const TAG_STYLES: Record<string, string> = {
-  "سرعة استجابة": "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/40",
-  "إبداع وتصميم":  "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800/40",
-  "حل سريع":       "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40",
-  "جودة عالية":    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40",
-  "سرعة تسليم":    "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40",
-  "تواصل ممتاز":   "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/40",
+// ─── Review Badge Animation Delays ───────────────────────────────────────────
+const TAG_ANIM: Record<string, { delay: string; dur: string }> = {
+  "سرعة استجابة": { delay: "0s",    dur: "5s"  },
+  "إبداع وتصميم": { delay: "1.4s",  dur: "7s"  },
+  "حل سريع":      { delay: "0.6s",  dur: "4.5s"},
+  "جودة عالية":   { delay: "2.1s",  dur: "6.5s"},
+  "سرعة تسليم":   { delay: "0.3s",  dur: "5.5s"},
+  "تواصل ممتاز":  { delay: "1.8s",  dur: "6s"  },
 };
 
 // ─── Single Review Card ───────────────────────────────────────────────────────
 function ReviewCard({ r }: { r: any }) {
   const initials = (r.clientName || "ع").replace(/[^ء-ي A-Za-z]/g, "").trim().slice(0, 2);
-  const tagStyle = TAG_STYLES[r.tag] || "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+  const anim = TAG_ANIM[r.tag] || { delay: "0s", dur: "6s" };
   return (
-    <div className="flex-shrink-0 w-72 md:w-80 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-4 shadow-sm hover:shadow-md dark:hover:shadow-white/5 transition-shadow mx-2">
-      {/* Top row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5">
-          {/* Avatar */}
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-black/10 to-black/5 dark:from-white/15 dark:to-white/5 flex items-center justify-center shrink-0 border border-black/[0.06] dark:border-white/[0.06]">
-            <span className="text-xs font-black text-black/60 dark:text-white/60">{initials}</span>
+    <div className="flex-shrink-0 w-[280px] md:w-[300px] bg-gray-50 dark:bg-gray-900/90 rounded-2xl p-5 mx-2 border border-black/[0.04] dark:border-white/[0.04]">
+      {/* Decorative large quote */}
+      <div
+        className="text-[56px] font-black leading-none select-none -mt-1 -mb-2 font-serif"
+        style={{ color: "transparent", WebkitTextStroke: "1px rgba(0,0,0,0.07)" }}
+        aria-hidden
+      >"</div>
+      {/* Comment */}
+      <p className="text-[12.5px] text-black/68 dark:text-white/62 leading-[1.78] line-clamp-3 mb-4 mt-2">
+        {r.comment || r.text || "—"}
+      </p>
+      {/* Separator */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.08] dark:via-white/[0.08] to-transparent mb-4" />
+      {/* Footer: avatar + name + badge */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-black/[0.06] dark:bg-white/[0.07] flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-black text-black/45 dark:text-white/45">{initials}</span>
           </div>
           <div>
-            <p className="text-xs font-black text-gray-900 dark:text-white leading-tight">{r.clientName || "عميل كيروكس"}</p>
-            <p className="text-[10px] text-black/40 dark:text-white/40">{r.serviceTitle || "خدمة كيروكس"}</p>
+            <p className="text-[11px] font-black text-gray-900 dark:text-white leading-tight">{r.clientName || "عميل كيروكس"}</p>
+            <p className="text-[9.5px] text-black/32 dark:text-white/32 mt-0.5">{r.serviceTitle || "خدمة كيروكس"}</p>
           </div>
         </div>
-        {/* Tag */}
         {r.tag && (
-          <span className={`flex-shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full border ${tagStyle}`}>
+          <span
+            className="badge-animated flex-shrink-0 text-[9px] font-bold px-2.5 py-[5px] rounded-full tracking-wide whitespace-nowrap"
+            style={{ animationDelay: anim.delay, animationDuration: anim.dur }}
+          >
             {r.tag}
           </span>
         )}
       </div>
-      {/* Stars */}
-      <div className="flex gap-0.5 mb-2">
+      {/* Stars — monochromatic dots */}
+      <div className="flex gap-[3px] mt-3">
         {[1,2,3,4,5].map(s => (
-          <Star key={s} className={`w-3 h-3 ${s <= (r.rating || 5) ? "fill-amber-400 text-amber-400" : "text-black/10 dark:text-white/10"}`} />
+          <div
+            key={s}
+            className={`w-[7px] h-[7px] rounded-full transition-colors ${
+              s <= (r.rating || 5)
+                ? "bg-black/22 dark:bg-white/35"
+                : "bg-black/07 dark:bg-white/07"
+            }`}
+          />
         ))}
       </div>
-      {/* Comment */}
-      <p className="text-[12px] text-black/70 dark:text-white/65 leading-relaxed line-clamp-3">
-        "{r.comment || r.text || "—"}"
-      </p>
     </div>
   );
 }
@@ -767,24 +783,26 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             {/* Header */}
             <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-amber-300/50 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[11px] font-black uppercase tracking-wider">
-                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] text-black/55 dark:text-white/55 text-[11px] font-black uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-black/40 dark:bg-white/40" />
                 {ar ? "آراء العملاء" : "Client Reviews"}
               </span>
               <h2 className="text-3xl md:text-5xl font-black mb-3 tracking-tight">
                 {ar ? "ماذا يقول عملاؤنا؟" : "What our clients say"}
               </h2>
-              <p className="text-sm text-black/55 dark:text-white/55 max-w-lg mx-auto">
+              <p className="text-sm text-black/45 dark:text-white/45 max-w-lg mx-auto">
                 {ar ? "أكثر من 37 تقييم حقيقي من أصحاب مشاريع عملنا معهم — كلٌّ بحسب تجربته الخاصة." : "Over 37 real reviews from project owners we worked with."}
               </p>
               {/* Aggregate stats */}
               <div className="flex items-center justify-center gap-6 mt-5">
                 <div className="flex items-center gap-1.5">
-                  {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
-                  <span className="text-sm font-black text-gray-900 dark:text-white ms-1">4.97</span>
+                  {[1,2,3,4,5].map(s => (
+                    <div key={s} className="w-3.5 h-3.5 rounded-full bg-black/20 dark:bg-white/30" />
+                  ))}
+                  <span className="text-sm font-black text-gray-900 dark:text-white ms-2">4.97</span>
                 </div>
-                <div className="w-px h-4 bg-black/15 dark:bg-white/15" />
-                <span className="text-sm text-black/50 dark:text-white/50 font-medium">{ar ? "37+ تقييم موثّق" : "37+ verified reviews"}</span>
+                <div className="w-px h-4 bg-black/12 dark:bg-white/12" />
+                <span className="text-sm text-black/40 dark:text-white/40 font-medium">{ar ? "37+ تقييم موثّق" : "37+ verified reviews"}</span>
               </div>
             </motion.div>
           </div>
