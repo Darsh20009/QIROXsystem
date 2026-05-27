@@ -395,7 +395,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             <motion.div {...fade(0)} className="flex flex-col items-center text-center">
               <div className="inline-block mb-5">
-                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain invert dark:invert-0" />
+                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain dark:invert" />
               </div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
                 <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
@@ -1041,7 +1041,7 @@ export default function Home() {
             <div className="flex items-center justify-between gap-4 mb-8" dir="rtl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center">
-                  <img src="/qirox-icon.png" alt="Q" className="w-8 h-8 object-contain invert mix-blend-multiply dark:invert-0 dark:mix-blend-screen" />
+                  <img src="/qirox-icon.png" alt="Q" className="w-8 h-8 object-contain dark:invert dark:mix-blend-screen" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
@@ -1105,7 +1105,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <motion.div {...fade(0)}>
               <div className="inline-block mb-6">
-                <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain dark:invert" />
+                <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
               </div>
               <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
                 {ar ? "جاهز تبدأ؟" : "Ready to start?"}

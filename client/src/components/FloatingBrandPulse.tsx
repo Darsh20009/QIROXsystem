@@ -178,7 +178,7 @@ export function FloatingBrandPulse() {
                   transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <div className="relative flex items-center gap-3 bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] shadow-xl shadow-black/[0.08] rounded-2xl px-4 py-3">
-                  <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain invert dark:invert-0" />
+                  <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
                   <div className="w-px h-5 bg-black/[0.08] dark:bg-white/[0.08]" />
                   <div>
                     <p className="text-[11px] font-bold text-black/35 dark:text-white/35 whitespace-nowrap leading-tight">وكالة رقمية متكاملة</p>

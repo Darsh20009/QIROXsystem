@@ -408,7 +408,7 @@ export function AppSidebar() {
             <img
               src="/qirox-logo-full.png"
               alt="QIROX"
-              className="h-6 w-auto object-contain invert dark:invert-0"
+              className="h-6 w-auto object-contain dark:invert"
             />
           </Link>
           {user && <NotificationBell />}

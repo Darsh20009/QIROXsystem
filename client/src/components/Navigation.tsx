@@ -245,10 +245,7 @@ export default function Navigation() {
                   <img
                     src="/qirox-logo-full.png"
                     alt="QIROX"
-                    className="h-7 w-auto object-contain"
-                    style={{
-                      filter: isOnDarkHero ? "none" : "invert(1)",
-                    }}
+                    className="h-7 w-auto object-contain dark:invert"
                   />
                 </div>
               </Link>
