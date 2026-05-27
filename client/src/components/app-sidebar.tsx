@@ -93,7 +93,7 @@ export function AppSidebar() {
 
     // Employee — main
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee", section: "main" },
-    { title: ar ? "لوحتي المتخصصة" : "My Role Board", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", section: "main", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
+    { title: ar ? "مركزي" : "My Hub", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", section: "main" },
     // Employee — clients (قسم العملاء)
     { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "clients" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: UserPlus, url: "/employee/new-order", group: "employee", section: "clients" },
@@ -129,7 +129,6 @@ export function AppSidebar() {
     { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools" },
     { title: "Kimi AI", icon: Bot, url: "/admin/kimi-ai", group: "employee", section: "tools" },
     { title: ar ? "دليل القطاعات" : "Sector Guide", icon: Layers, url: "/employee/sector-guide", group: "employee", section: "tools" },
-    { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "tools" },
     // Employee — account (حسابي)
     { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "account" },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "account" },

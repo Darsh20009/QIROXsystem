@@ -82,7 +82,7 @@ const AdminPayroll = lazy(() => import("@/pages/AdminPayroll"));
 const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
 const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
-const EmployeeProfile = lazy(() => import("@/pages/EmployeeProfile"));
+const EmployeeHub = lazy(() => import("@/pages/EmployeeHub"));
 const EmployeeMail = lazy(() => import("@/pages/EmployeeMail"));
 const AdminMailAccounts = lazy(() => import("@/pages/AdminMailAccounts"));
 const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
@@ -94,7 +94,6 @@ const AdminInvoices = lazy(() => import("@/pages/AdminInvoices"));
 const InvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
 const AdminReceipts = lazy(() => import("@/pages/AdminReceipts"));
 const ReceiptPrint = lazy(() => import("@/pages/ReceiptPrint"));
-const EmployeeRoleDashboard = lazy(() => import("@/pages/EmployeeRoleDashboard"));
 const SalesMarketing = lazy(() => import("@/pages/SalesMarketing"));
 const DevPortal = lazy(() => import("@/pages/DevPortal"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -141,7 +140,6 @@ const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
 const Demos = lazy(() => import("@/pages/Demos"));
 const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
-const EmployeeChangelog = lazy(() => import("@/pages/EmployeeChangelog"));
 const SectorGuide = lazy(() => import("@/pages/SectorGuide"));
 const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
 const SystemBuilder = lazy(() => import("@/pages/SystemBuilder"));
@@ -299,7 +297,7 @@ function AdminRouter() {
         <Route path="/admin/api-keys" component={AdminApiKeys} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
-        <Route path="/employee/profile" component={EmployeeProfile} />
+        <Route path="/employee/profile" component={EmployeeHub} />
         <Route path="/employee/mail" component={EmployeeMail} />
         <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
         <Route path="/employee/demos" component={EmployeeDemos} />
@@ -307,8 +305,8 @@ function AdminRouter() {
         <Route path="/employee/new-order" component={EmployeeNewOrder} />
         <Route path="/employee/subscriptions" component={EmployeeSubscriptions} />
         <Route path="/employee/checklist" component={DevChecklist} />
-        <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
-        <Route path="/employee/changelog" component={EmployeeChangelog} />
+        <Route path="/employee/role-dashboard" component={EmployeeHub} />
+        <Route path="/employee/changelog" component={EmployeeHub} />
         <Route path="/employee/sector-guide" component={SectorGuide} />
         <Route path="/employee/system-builder/:id" component={SystemBuilderIDE} />
         <Route path="/employee/system-builder" component={SystemBuilder} />
