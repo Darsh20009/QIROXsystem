@@ -1,0 +1,56 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development node --import tsx/esm server/index.ts
+
+[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+7:27:26 AM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] error: UserModel is not defined
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 20 cron jobs
+7:27:54 AM [express] GET /api/user 401 in 3ms
+7:27:54 AM [express] GET /api/public/settings 304 in 141ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+7:28:00 AM [express] POST /api/internal/push/promotional 200 in 41ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:28:12 AM [express] GET /api/templates 304 in 35ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academie…
+7:28:12 AM [express] GET /api/app-downloads 304 in 40ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+7:28:12 AM [express] GET /api/pricing 304 in 62ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":5299,"currency":"SAR","billingCycle":"lifetime…
+7:28:12 AM [express] GET /api/partners 304 in 68ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+7:28:12 AM [express] GET /api/reviews/public 304 in 32ms :: []
+7:29:00 AM [express] POST /api/internal/push/promotional 200 in 64ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:30:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:31:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:32:00 AM [express] POST /api/internal/push/promotional 200 in 35ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:33:00 AM [express] POST /api/internal/push/promotional 200 in 35ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:34:00 AM [express] POST /api/internal/push/promotional 200 in 34ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:35:00 AM [express] POST /api/internal/push/promotional 200 in 35ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:36:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:37:00 AM [express] POST /api/internal/push/promotional 200 in 33ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:38:00 AM [express] POST /api/internal/push/promotional 200 in 31ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:39:00 AM [express] POST /api/internal/push/promotional 200 in 40ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:40:00 AM [express] POST /api/internal/push/promotional 200 in 47ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:41:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:42:00 AM [express] POST /api/internal/push/promotional 200 in 47ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:43:00 AM [express] POST /api/internal/push/promotional 200 in 35ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:44:00 AM [express] POST /api/internal/push/promotional 200 in 45ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:45:00 AM [express] POST /api/internal/push/promotional 200 in 64ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:46:00 AM [express] POST /api/internal/push/promotional 200 in 60ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:47:00 AM [express] POST /api/internal/push/promotional 200 in 34ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:48:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:49:00 AM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:50:00 AM [express] POST /api/internal/push/promotional 200 in 35ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:51:00 AM [express] POST /api/internal/push/promotional 200 in 39ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:52:00 AM [express] POST /api/internal/push/promotional 200 in 45ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:53:00 AM [express] POST /api/internal/push/promotional 200 in 43ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:54:00 AM [express] POST /api/internal/push/promotional 200 in 40ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:55:00 AM [express] POST /api/internal/push/promotional 200 in 37ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:56:00 AM [express] POST /api/internal/push/promotional 200 in 40ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:57:00 AM [express] POST /api/internal/push/promotional 200 in 46ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
