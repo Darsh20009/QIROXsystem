@@ -221,8 +221,8 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
-// ─── Graphic Divider — scroll-triggered SVG lines ────────────────────────────
-function GraphicDivider({ variant = 1, dark = false }: { variant?: number; dark?: boolean }) {
+// ─── Graphic Divider — transparent, scroll-triggered, continuously animated ──
+function GraphicDivider({ variant = 1 }: { variant?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
 
@@ -231,159 +231,212 @@ function GraphicDivider({ variant = 1, dark = false }: { variant?: number; dark?
     if (!el) return;
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVis(true); io.disconnect(); } },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
   const ease = [0.22, 1, 0.36, 1] as const;
-  const p = (delay = 0) => ({
+
+  // Path draw-on animation
+  const draw = (delay = 0, dur = 1.5) => ({
     initial: { pathLength: 0, opacity: 0 },
     animate: vis ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
-    transition: { duration: 1.5, ease, delay },
-  });
-  const lp = (delay = 0) => ({
-    initial: { pathLength: 0, opacity: 0 },
-    animate: vis ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
-    transition: { duration: 1.2, ease, delay },
+    transition: { duration: dur, ease, delay },
   });
 
-  const bg   = dark ? "bg-black"   : "bg-white dark:bg-gray-950";
-  const s1   = dark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.11)";
-  const s2   = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)";
-  const acc  = dark ? "rgba(255,255,255,0.40)" : "rgba(0,0,0,0.22)";
+  // Colour tokens — adapts to dark/light mode via CSS var trick
+  const s1  = "rgba(128,128,128,0.18)";
+  const s2  = "rgba(128,128,128,0.07)";
+  const acc = "rgba(128,128,128,0.38)";
 
   return (
-    <div ref={ref} className={`relative w-full overflow-hidden select-none pointer-events-none ${bg}`} style={{ height: 68 }}>
-      <svg viewBox="0 0 1440 68" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" fill="none">
+    <div ref={ref} className="relative w-full overflow-visible select-none pointer-events-none dark:[--gd-acc:rgba(255,255,255,0.38)] [--gd-acc:rgba(0,0,0,0.38)]" style={{ height: 96 }}>
+      <svg viewBox="0 0 1440 96" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" fill="none">
 
-        {/* ── V1: Diagonal slash lines + sweeping bezier (after Hero) ── */}
+        {/* ── V1: Diagonal slashes + twin bezier arcs + drifting dots ── */}
         {variant === 1 && <>
-          {Array.from({ length: 16 }, (_, i) => (
+          {Array.from({ length: 18 }, (_, i) => (
             <motion.line key={i}
-              x1={i * 100} y1={0} x2={i * 100 - 68} y2={68}
+              x1={i * 90} y1={0} x2={i * 90 - 96} y2={96}
               stroke={s2} strokeWidth="1"
-              {...lp(i * 0.035)}
+              {...draw(i * 0.028, 0.9)}
             />
           ))}
           <motion.path
-            d="M-80 50 C200 5 500 65 760 34 C1020 3 1240 62 1520 18"
-            stroke={s1} strokeWidth="1.5" strokeLinecap="round"
-            {...p(0.2)}
+            d="M-80 70 C200 8 530 90 780 48 C1040 6 1250 80 1540 22"
+            stroke={s1} strokeWidth="1.6" strokeLinecap="round"
+            {...draw(0.22, 1.5)}
           />
           <motion.path
-            d="M-80 28 C280 68 620 0 920 50 C1160 88 1350 22 1520 42"
-            stroke={acc} strokeWidth="0.8" strokeLinecap="round"
-            {...p(0.45)}
+            d="M-80 30 C300 96 680 0 980 64 C1180 100 1370 28 1540 60"
+            stroke={acc} strokeWidth="1" strokeLinecap="round"
+            {...draw(0.48, 1.5)}
           />
+          {/* Drifting dots along arcs */}
+          {[180, 420, 660, 900, 1140, 1320].map((cx, i) => (
+            <motion.circle key={i} cx={cx} cy={48} r={2.5}
+              fill={i % 2 === 0 ? "currentColor" : "transparent"}
+              stroke="currentColor" strokeWidth="1"
+              className="text-black/20 dark:text-white/20"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={vis ? {
+                opacity: [0, 0.7, 0.3, 0.7, 0],
+                y: [0, -(8 + i * 2), 0, (8 + i * 2), 0],
+                scale: [0, 1, 1, 1, 0],
+              } : {}}
+              transition={{ duration: 3.5 + i * 0.3, repeat: Infinity, delay: 1.4 + i * 0.28, ease: "easeInOut" }}
+            />
+          ))}
         </>}
 
-        {/* ── V2: Zigzag chevron wave (after Pricing) ── */}
+        {/* ── V2: Triple zigzag + sparks at peaks ── */}
         {variant === 2 && <>
           <motion.path
-            d="M0 34 L90 10 L180 58 L270 10 L360 58 L450 10 L540 58 L630 10 L720 58 L810 10 L900 58 L990 10 L1080 58 L1170 10 L1260 58 L1350 10 L1440 34"
-            stroke={acc} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-            {...p(0)}
+            d="M0 48 L80 16 L160 80 L240 16 L320 80 L400 16 L480 80 L560 16 L640 80 L720 16 L800 80 L880 16 L960 80 L1040 16 L1120 80 L1200 16 L1280 80 L1360 16 L1440 48"
+            stroke={acc} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+            {...draw(0, 1.4)}
           />
           <motion.path
-            d="M0 50 L90 26 L180 68 L270 26 L360 68 L450 26 L540 68 L630 26 L720 68 L810 26 L900 68 L990 26 L1080 68 L1170 26 L1260 68 L1350 26 L1440 50"
-            stroke={s2} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
-            {...p(0.18)}
+            d="M0 64 L80 32 L160 96 L240 32 L320 96 L400 32 L480 96 L560 32 L640 96 L720 32 L800 96 L880 32 L960 96 L1040 32 L1120 96 L1200 32 L1280 96 L1360 32 L1440 64"
+            stroke={s1} strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round"
+            {...draw(0.2, 1.4)}
           />
           <motion.path
-            d="M0 18 L90 -6 L180 42 L270 -6 L360 42 L450 -6 L540 42 L630 -6 L720 42 L810 -6 L900 42 L990 -6 L1080 42 L1170 -6 L1260 42 L1350 -6 L1440 18"
-            stroke={s2} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
-            {...p(0.36)}
+            d="M0 32 L80 0 L160 64 L240 0 L320 64 L400 0 L480 64 L560 0 L640 64 L720 0 L800 64 L880 0 L960 64 L1040 0 L1120 64 L1200 0 L1280 64 L1360 0 L1440 32"
+            stroke={s2} strokeWidth="0.7" strokeLinecap="round" strokeLinejoin="round"
+            {...draw(0.4, 1.4)}
           />
+          {/* Sparks at every other peak */}
+          {[80, 240, 400, 560, 720, 880, 1040, 1200, 1360].map((cx, i) => (
+            <motion.circle key={i} cx={cx} cy={16} r={3.5}
+              className="text-black/25 dark:text-white/25"
+              fill="currentColor"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={vis ? { opacity: [0, 0.8, 0], scale: [0, 1.6, 0] } : {}}
+              transition={{ duration: 1.4, repeat: Infinity, delay: 1.5 + i * 0.22, ease: "easeOut" }}
+            />
+          ))}
         </>}
 
-        {/* ── V3: Lines converging from edges to centre dot (after Process) ── */}
+        {/* ── V3: Converging fans + pulsing bullseye ── */}
         {variant === 3 && <>
-          {[-22, 0, 22].map((off, i) => (
+          {[-32, -18, -6, 6, 18, 32].map((off, i) => (
             <motion.line key={`L${i}`}
-              x1={0} y1={34 + off} x2={720} y2={34}
-              stroke={i === 1 ? acc : s1} strokeWidth={i === 1 ? "1.5" : "0.8"}
-              {...lp(i * 0.1)}
+              x1={0} y1={48 + off} x2={720} y2={48}
+              stroke={i === 2 || i === 3 ? acc : i === 1 || i === 4 ? s1 : s2}
+              strokeWidth={i === 2 || i === 3 ? "1.5" : i === 1 || i === 4 ? "0.9" : "0.5"}
+              {...draw(i * 0.07, 1.2)}
             />
           ))}
-          {[-22, 0, 22].map((off, i) => (
+          {[-32, -18, -6, 6, 18, 32].map((off, i) => (
             <motion.line key={`R${i}`}
-              x1={1440} y1={34 + off} x2={720} y2={34}
-              stroke={i === 1 ? acc : s1} strokeWidth={i === 1 ? "1.5" : "0.8"}
-              {...lp(i * 0.1 + 0.08)}
+              x1={1440} y1={48 + off} x2={720} y2={48}
+              stroke={i === 2 || i === 3 ? acc : i === 1 || i === 4 ? s1 : s2}
+              strokeWidth={i === 2 || i === 3 ? "1.5" : i === 1 || i === 4 ? "0.9" : "0.5"}
+              {...draw(i * 0.07 + 0.06, 1.2)}
             />
           ))}
-          <motion.circle cx={720} cy={34} r={5}
-            stroke={acc} strokeWidth="1.5"
-            {...p(0.55)}
-          />
-          <motion.circle cx={720} cy={34} r={14}
-            stroke={s1} strokeWidth="0.8"
-            {...p(0.7)}
-          />
-          <motion.circle cx={720} cy={34} r={26}
-            stroke={s2} strokeWidth="0.6"
-            {...p(0.85)}
+          {/* Bullseye rings — appear then breathe */}
+          {[5, 13, 24, 38].map((r, i) => (
+            <motion.circle key={i} cx={720} cy={48} r={r}
+              stroke={i === 0 ? acc : i === 1 ? s1 : s2}
+              strokeWidth={i === 0 ? "1.8" : "0.8"}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={vis ? {
+                opacity: 1, scale: 1,
+                ...(i < 2 ? { r: [r, r + 4, r] } : {}),
+              } : {}}
+              transition={{
+                opacity: { duration: 0.5, delay: 1.1 + i * 0.18, ease },
+                scale:   { duration: 0.5, delay: 1.1 + i * 0.18, ease },
+                r:       { duration: 2.5, repeat: Infinity, delay: 1.8 + i * 0.3, ease: "easeInOut" },
+              }}
+            />
+          ))}
+          {/* Solid centre dot that pulses */}
+          <motion.circle cx={720} cy={48} r={5}
+            className="text-black/40 dark:text-white/40" fill="currentColor"
+            animate={vis ? { r: [5, 8, 5], opacity: [0.4, 0.1, 0.4] } : {}}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 1.9 }}
           />
         </>}
 
-        {/* ── V4: Smooth S-curve sine waves (after Reviews) ── */}
+        {/* ── V4: Layered sine waves + dots riding the crest ── */}
         {variant === 4 && <>
-          <motion.path
-            d="M0 34 C160 34 320 8 480 34 C640 60 800 8 960 34 C1120 60 1280 34 1440 34"
-            stroke={acc} strokeWidth="1.5" strokeLinecap="round"
-            {...p(0)}
-          />
-          <motion.path
-            d="M0 46 C160 46 320 20 480 46 C640 72 800 20 960 46 C1120 72 1280 46 1440 46"
-            stroke={s1} strokeWidth="0.9" strokeLinecap="round"
-            {...p(0.2)}
-          />
-          <motion.path
-            d="M0 22 C160 22 320 -4 480 22 C640 48 800 -4 960 22 C1120 48 1280 22 1440 22"
-            stroke={s1} strokeWidth="0.9" strokeLinecap="round"
-            {...p(0.2)}
-          />
-          <motion.path
-            d="M0 58 C160 58 320 32 480 58 C640 84 800 32 960 58 C1120 84 1280 58 1440 58"
-            stroke={s2} strokeWidth="0.6" strokeLinecap="round"
-            {...p(0.38)}
-          />
-          <motion.path
-            d="M0 10 C160 10 320 -16 480 10 C640 36 800 -16 960 10 C1120 36 1280 10 1440 10"
-            stroke={s2} strokeWidth="0.6" strokeLinecap="round"
-            {...p(0.38)}
-          />
+          <motion.path d="M0 48 C160 48 320 16 480 48 C640 80 800 16 960 48 C1120 80 1280 48 1440 48"
+            stroke={acc} strokeWidth="1.8" strokeLinecap="round" {...draw(0, 1.5)} />
+          <motion.path d="M0 60 C160 60 320 28 480 60 C640 92 800 28 960 60 C1120 92 1280 60 1440 60"
+            stroke={s1} strokeWidth="1.1" strokeLinecap="round" {...draw(0.2, 1.5)} />
+          <motion.path d="M0 36 C160 36 320 4 480 36 C640 68 800 4 960 36 C1120 68 1280 36 1440 36"
+            stroke={s1} strokeWidth="1.1" strokeLinecap="round" {...draw(0.2, 1.5)} />
+          <motion.path d="M0 72 C160 72 320 40 480 72 C640 104 800 40 960 72 C1120 104 1280 72 1440 72"
+            stroke={s2} strokeWidth="0.6" strokeLinecap="round" {...draw(0.4, 1.5)} />
+          <motion.path d="M0 24 C160 24 320 -8 480 24 C640 56 800 -8 960 24 C1120 56 1280 24 1440 24"
+            stroke={s2} strokeWidth="0.6" strokeLinecap="round" {...draw(0.4, 1.5)} />
+          {/* Dots that ride the top wave's crests and troughs */}
+          {[0, 1, 2, 3, 4].map((i) => {
+            const baseX = i * 320;
+            const isUp = i % 2 === 0;
+            return (
+              <motion.circle key={i} r={3}
+                className="text-black/30 dark:text-white/30" fill="currentColor"
+                initial={{ cx: baseX, cy: 48, opacity: 0 }}
+                animate={vis ? {
+                  cx: [baseX, baseX + 160, baseX + 320],
+                  cy: isUp ? [48, 16, 48] : [48, 80, 48],
+                  opacity: [0, 0.7, 0.7, 0],
+                } : {}}
+                transition={{ duration: 4.5, repeat: Infinity, delay: 1.6 + i * 0.45, ease: "easeInOut" }}
+              />
+            );
+          })}
         </>}
 
-        {/* ── V5: Radial burst from centre + extending horizontals (after Partners) ── */}
+        {/* ── V5: Full radial burst + rotating dashed ring + pulsing core ── */}
         {variant === 5 && <>
-          {Array.from({ length: 18 }, (_, i) => {
-            const angle  = (i / 18) * Math.PI * 2;
-            const cx = 720, cy = 34;
-            const r1 = 14, r2 = 60 + (i % 4) * 18;
+          {Array.from({ length: 22 }, (_, i) => {
+            const angle = (i / 22) * Math.PI * 2;
+            const cx = 720, cy = 48;
+            const r1 = 12, r2 = 58 + (i % 5) * 12;
             return (
               <motion.line key={i}
                 x1={cx + Math.cos(angle) * r1} y1={cy + Math.sin(angle) * r1}
                 x2={cx + Math.cos(angle) * r2} y2={cy + Math.sin(angle) * r2}
-                stroke={i % 3 === 0 ? acc : s1}
-                strokeWidth={i % 2 === 0 ? "1" : "0.5"}
-                {...lp(i * 0.028)}
+                stroke={i % 4 === 0 ? acc : i % 2 === 0 ? s1 : s2}
+                strokeWidth={i % 4 === 0 ? "1.3" : i % 2 === 0 ? "0.8" : "0.4"}
+                {...draw(i * 0.022, 1.1)}
               />
             );
           })}
-          <motion.line x1={0} y1={34} x2={640} y2={34}
-            stroke={s1} strokeWidth="0.8"
-            {...lp(0.35)}
+          <motion.line x1={0} y1={48} x2={635} y2={48} stroke={s1} strokeWidth="0.9" {...draw(0.38, 1.0)} />
+          <motion.line x1={805} y1={48} x2={1440} y2={48} stroke={s1} strokeWidth="0.9" {...draw(0.38, 1.0)} />
+          {/* Static inner rings */}
+          {[8, 18, 30].map((r, i) => (
+            <motion.circle key={i} cx={720} cy={48} r={r}
+              stroke={i === 0 ? acc : s1} strokeWidth={i === 0 ? "1.8" : "0.8"}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={vis ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.55, delay: 1.0 + i * 0.18, ease }}
+            />
+          ))}
+          {/* Rotating outer dashed ring */}
+          <motion.circle cx={720} cy={48} r={48}
+            stroke={s2} strokeWidth="0.6" strokeDasharray="8 6"
+            initial={{ opacity: 0 }}
+            animate={vis ? { opacity: 1, rotate: 360 } : {}}
+            transition={{
+              opacity: { duration: 0.4, delay: 1.7 },
+              rotate:  { duration: 18, repeat: Infinity, ease: "linear", delay: 1.7 },
+            }}
+            style={{ transformOrigin: "720px 48px" }}
           />
-          <motion.line x1={800} y1={34} x2={1440} y2={34}
-            stroke={s1} strokeWidth="0.8"
-            {...lp(0.35)}
-          />
-          <motion.circle cx={720} cy={34} r={8}
-            stroke={acc} strokeWidth="1.5"
-            {...p(0.6)}
+          {/* Pulsing core dot */}
+          <motion.circle cx={720} cy={48} r={5}
+            className="text-black/45 dark:text-white/45" fill="currentColor"
+            animate={vis ? { r: [5, 8, 5], opacity: [0.45, 0.1, 0.45] } : {}}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 2.0 }}
           />
         </>}
 
