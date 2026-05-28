@@ -7435,6 +7435,39 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  // POST /api/ai/enhance-idea — public AI route for QuickStart wizard
+  app.post("/api/ai/enhance-idea", async (req, res) => {
+    const apiKey = process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || process.env.KIMI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "خدمة الذكاء الاصطناعي غير متاحة حالياً" });
+    const { idea, sector, features } = req.body || {};
+    if (!idea || String(idea).trim().length < 5) return res.status(400).json({ error: "الفكرة قصيرة جداً" });
+    const featuresStr = Array.isArray(features) && features.length ? features.join("، ") : "غير محددة";
+    const sectorStr = sector || "غير محدد";
+    const systemPrompt = `أنت مستشار تقني خبير في بناء الأنظمة الرقمية والمتاجر وتطبيقات الجوال للسوق العربي.
+مهمتك: تطوير فكرة المستخدم وصياغتها بوضوح وإيجاز (3-4 جمل فقط) دون إطالة.
+اجعل الفكرة أكثر وضوحاً ودقة من الناحية التقنية وتجارية. لا تضف قائمة أو نقاط — فقرة واحدة متماسكة.`;
+    const userMessage = `القطاع: ${sectorStr}\nالمميزات المطلوبة: ${featuresStr}\nالفكرة الأصلية: ${idea}`;
+    try {
+      const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "kimi-k2-0905-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          temperature: 0.65,
+          max_tokens: 300,
+        }),
+      });
+      if (!response.ok) { const err = await response.text(); return res.status(response.status).json({ error: err }); }
+      const data = await response.json();
+      const enhanced = data.choices?.[0]?.message?.content?.trim() || "";
+      res.json({ enhanced });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // POST /api/ai/kimi — Kimi AI (Moonshot) proxy
   app.post("/api/ai/kimi", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

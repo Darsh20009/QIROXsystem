@@ -18,7 +18,8 @@ import {
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
   Check, Star, Infinity, ChevronRight, TrendingUp, Bot, Globe,
 } from "lucide-react";
-import { SiWhatsapp, SiInstagram, SiX, SiLinkedin } from "react-icons/si";
+import { SiWhatsapp, SiInstagram, SiX, SiLinkedin, SiGoogle, SiApple } from "react-icons/si";
+import { useUser } from "@/hooks/use-auth";
 
 // ─── Sector SVG Illustrations ────────────────────────────────────────────────
 function EcommerceIllustration() {
@@ -624,6 +625,15 @@ export default function Home() {
   const ar = lang === "ar";
   const [tab, setTab] = useState<string>("systems");
 
+  const { data: user } = useUser();
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [appleEnabled, setAppleEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/google/status").then(r => r.json()).then(d => setGoogleEnabled(!!d.enabled)).catch(() => {});
+    fetch("/api/auth/apple/status").then(r => r.json()).then(d => setAppleEnabled(!!d.enabled)).catch(() => {});
+  }, []);
+
   const { data: templates = [] } = useTemplates();
   const { data: apiPartners = [], isLoading: partnersLoading } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
@@ -739,6 +749,42 @@ export default function Home() {
                   </Button>
                 </a>
               </div>
+
+              {/* ── OAuth quick-login strip — shown only to guests ── */}
+              {!user && (googleEnabled || appleEnabled) && (
+                <motion.div {...fade(0.6)} className="mt-6 flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-3 w-full max-w-xs">
+                    <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                    <span className="text-[11px] font-bold text-black/35 dark:text-white/35 whitespace-nowrap">
+                      {ar ? "أو سجّل الدخول بـ" : "or sign in with"}
+                    </span>
+                    <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                  </div>
+                  <div className="flex gap-2">
+                    {googleEnabled && (
+                      <button
+                        onClick={() => { window.location.href = "/api/auth/google"; }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/12 dark:border-white/12 bg-white dark:bg-white/[0.04] hover:bg-black/[0.03] dark:hover:bg-white/[0.08] transition-colors text-sm font-bold text-black dark:text-white shadow-sm shadow-black/5"
+                        data-testid="btn-hero-google-login"
+                      >
+                        <SiGoogle className="w-4 h-4 text-[#4285F4]" />
+                        Google
+                      </button>
+                    )}
+                    {appleEnabled && (
+                      <button
+                        onClick={() => { window.location.href = "/api/auth/apple"; }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/12 dark:border-white/12 bg-white dark:bg-black hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors text-sm font-bold text-black dark:text-white shadow-sm shadow-black/5"
+                        data-testid="btn-hero-apple-login"
+                      >
+                        <SiApple className="w-4 h-4" />
+                        Apple
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               <Link href="/prices" className="mt-4 text-xs text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white transition" data-testid="link-hero-manual">
                 {ar ? "أو تصفح الباقات بنفسك" : "or browse plans on your own"}
               </Link>
