@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-logo-full.png";
+const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {

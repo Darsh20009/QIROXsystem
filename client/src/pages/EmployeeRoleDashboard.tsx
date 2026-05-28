@@ -822,7 +822,7 @@ function QiroxPostsBanner() {
     >
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-3 px-1">
-        <img src="/qirox-icon.png" alt="Q" className="w-5 h-5 object-contain opacity-70" />
+        <img src="/qirox-icon-nobg.png" alt="Q" className="w-5 h-5 object-contain opacity-70 dark:invert" />
         <span className="text-[11px] font-black text-black/40 dark:text-white/35 tracking-[0.15em] uppercase">Qirox · Social Feed</span>
         <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
         <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer"

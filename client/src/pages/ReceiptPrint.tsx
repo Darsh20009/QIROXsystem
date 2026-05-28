@@ -4,7 +4,7 @@ import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-logo-full.png";
+const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
 
 const METHOD_LABELS: Record<string, string> = {

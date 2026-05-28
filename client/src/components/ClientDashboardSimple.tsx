@@ -106,7 +106,7 @@ function SocialPostsSection() {
             <div className="absolute -inset-0.5 rounded-full blur-sm opacity-80 transition-all duration-700"
               style={{ background: `linear-gradient(135deg, ${col.from}, ${col.to})` }} />
             <div className="relative w-10 h-10 rounded-full bg-black dark:bg-white p-1.5 flex items-center justify-center shadow-lg">
-              <img src="/qirox-icon.png" alt="Q" className="w-full h-full object-contain dark:invert" />
+              <img src="/qirox-icon-nobg.png" alt="Q" className="w-full h-full object-contain dark:invert" />
             </div>
           </div>
           <div>

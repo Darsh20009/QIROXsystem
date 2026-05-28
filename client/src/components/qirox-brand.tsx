@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-const qiroxLogoPath = "/qirox-icon.png";
+const qiroxLogoPath = "/qirox-icon-nobg.png";
 const qiroxNoBgPath = qiroxLogoPath;
 
 const BAR_DATA = [38, 55, 42, 70, 58, 85, 63, 92, 74, 100, 82, 96];

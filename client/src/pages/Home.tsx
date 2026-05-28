@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useTemplates } from "@/hooks/use-templates";
 import type { Partner } from "@shared/schema";
-const qiroxLogo = "/qirox-icon.png";
+const qiroxLogo = "/qirox-icon-nobg.png";
 import demoEcommerceImg from "@assets/Screenshot_2026-04-27_at_6.23.57_PM_1777303494183.png";
 import demoRestaurantImg from "@assets/Screenshot_2026-04-27_at_1.59.42_PM_1777302518837.png";
 import {
@@ -241,33 +241,33 @@ function ReviewCard({ r }: { r: any }) {
       <div className="flex items-start justify-between mb-2">
         <div
           className="text-[44px] font-black leading-none select-none font-serif"
-          style={{ color: "transparent", WebkitTextStroke: "1.5px rgba(0,0,0,0.1)" }}
+          style={{ color: "transparent", WebkitTextStroke: "1.5px rgba(0,0,0,0.12)" }}
           aria-hidden
         >"</div>
-        {/* Qirox badge */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06]">
-          <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3.5 h-3.5 object-contain dark:invert opacity-60" />
-          <span className="text-[9px] font-black text-black/40 dark:text-white/40 tracking-wide">QIROX</span>
+        {/* Qirox badge — no background */}
+        <div className="flex items-center gap-1">
+          <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3.5 h-3.5 object-contain dark:invert opacity-40" />
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-wide">QIROX</span>
         </div>
       </div>
 
       {/* Comment */}
-      <p className="text-[12.5px] text-black/65 dark:text-white/60 leading-[1.75] line-clamp-3 flex-1">
+      <p className="text-[12.5px] text-gray-700 dark:text-gray-300 leading-[1.75] line-clamp-3 flex-1">
         {r.comment || r.text || "—"}
       </p>
 
       {/* Separator */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.07] dark:via-white/[0.07] to-transparent my-3.5" />
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent my-3.5" />
 
       {/* Footer: avatar + name + tag */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-black/[0.07] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-black text-black/50 dark:text-white/50">{initials}</span>
+          <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-black text-gray-500 dark:text-gray-400">{initials}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-black text-gray-900 dark:text-white leading-tight truncate">{r.clientName || "عميل كيروكس"}</p>
-            <p className="text-[9.5px] text-black/35 dark:text-white/35 mt-0.5 truncate">{r.serviceTitle || "خدمة كيروكس"}</p>
+            <p className="text-[11px] font-black text-gray-800 dark:text-gray-200 leading-tight truncate">{r.clientName || "عميل كيروكس"}</p>
+            <p className="text-[9.5px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">{r.serviceTitle || "خدمة كيروكس"}</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -408,7 +408,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             <motion.div {...fade(0)} className="flex flex-col items-center text-center">
               <div className="inline-block mb-5">
-                <img src={qiroxLogo} alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain dark:invert" />
+                <img src="/qirox-icon.png" alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain dark:invert" />
               </div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
                 <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
@@ -1054,7 +1054,7 @@ export default function Home() {
             <div className="flex items-center justify-between gap-4 mb-8" dir="rtl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center">
-                  <img src="/qirox-icon.png" alt="Q" className="w-8 h-8 object-contain dark:invert dark:mix-blend-screen" />
+                  <img src="/qirox-icon-nobg.png" alt="Q" className="w-8 h-8 object-contain dark:invert" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
@@ -1102,7 +1102,7 @@ export default function Home() {
                   <div className="px-3 pt-2.5 pb-3">
                     <p className="text-xs font-semibold text-gray-800 dark:text-white/85 leading-snug line-clamp-2">{p.text}</p>
                     <div className="flex items-center gap-1.5 mt-2">
-                      <img src="/qirox-icon.png" alt="" className="w-3 h-3 object-contain opacity-40" />
+                      <img src="/qirox-icon-nobg.png" alt="" className="w-3 h-3 object-contain opacity-40 dark:invert" />
                       <span className="text-[10px] text-black/30 dark:text-white/25 font-medium">@qirox.sa</span>
                     </div>
                   </div>
@@ -1118,7 +1118,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <motion.div {...fade(0)}>
               <div className="inline-block mb-6">
-                <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
+                <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
               </div>
               <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
                 {ar ? "جاهز تبدأ؟" : "Ready to start?"}

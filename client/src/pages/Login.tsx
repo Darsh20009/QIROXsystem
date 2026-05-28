@@ -17,7 +17,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
-const qiroxLogoPath = "/qirox-icon.png";
+const qiroxLogoPath = "/qirox-icon-nobg.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -516,7 +516,7 @@ export default function Login() {
         {/* Brand */}
         <div className="relative z-10">
           <Link href="/">
-            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
+            <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-10 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
           </Link>
         </div>
 
@@ -638,7 +638,7 @@ export default function Login() {
         <div className="lg:hidden mb-8 text-center">
           <Link href="/">
             <div className="inline-block hover:opacity-85 transition-opacity">
-              <img src="/qirox-logo-full.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
+              <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
             </div>
           </Link>
         </div>

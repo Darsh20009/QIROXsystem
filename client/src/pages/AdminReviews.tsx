@@ -135,10 +135,10 @@ export default function AdminReviews() {
                       <Badge variant="outline" className={review.isPublic ? "border-black/15 dark:border-white/15 text-black dark:text-white" : "border-black/20 text-black/40"}>
                         {review.isPublic ? (L ? "ظاهر" : "Public") : (L ? "مخفي" : "Hidden")}
                       </Badge>
-                      {/* Qirox brand badge */}
-                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.07] ms-auto">
-                        <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3 h-3 object-contain dark:invert opacity-50" />
-                        <span className="text-[9px] font-black text-black/35 dark:text-white/35 tracking-wide">QIROX</span>
+                      {/* Qirox brand badge — no background */}
+                      <div className="flex items-center gap-1 ms-auto">
+                        <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3 h-3 object-contain dark:invert opacity-35" />
+                        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-wide">QIROX</span>
                       </div>
                     </div>
                     {review.serviceTitle && <div className="text-xs text-black/40 bg-black/5 px-2 py-0.5 rounded w-fit">{review.serviceTitle}</div>}
