@@ -353,7 +353,7 @@ function ReviewCard({ r }: { r: any }) {
         >"</div>
         {/* Qirox badge — no background */}
         <div className="flex items-center gap-1">
-          <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3.5 h-3.5 object-contain dark:invert opacity-40" />
+          <img src="/qirox-icon.png" alt="Qirox" className="w-3.5 h-3.5 object-contain opacity-40" />
           <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-wide">QIROX</span>
         </div>
       </div>
