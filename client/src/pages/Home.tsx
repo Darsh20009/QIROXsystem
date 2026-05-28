@@ -598,22 +598,22 @@ function ReviewCard({ r }: { r: any }) {
   );
 }
 
-// ─── Marquee Row ──────────────────────────────────────────────────────────────
-function ReviewMarqueeRow({ reviews, direction, speed }: { reviews: any[]; direction: "left" | "right"; speed: number }) {
-  // ensure at least 12 items so the row always looks full
-  const base = reviews.length < 6 ? [...reviews, ...reviews, ...reviews] : [...reviews, ...reviews];
-  const dur = `${speed}s`;
-  const anim = direction === "left" ? "marquee-left" : "marquee-right";
+// ─── Single Seamless Review Track ────────────────────────────────────────────
+// Duplicates the reviews so translateX(-50%) lands exactly back at the start.
+function ReviewTrack({ reviews }: { reviews: any[] }) {
+  const enough = reviews.length < 8 ? [...reviews, ...reviews, ...reviews, ...reviews] : reviews;
+  const items = [...enough, ...enough];           // 2× → loop at -50%
+  const dur = `${Math.max(enough.length * 3.2, 44)}s`;
   return (
-    <div className="flex overflow-hidden">
+    <div
+      className="flex overflow-hidden"
+      style={{ WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)", maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)" }}
+    >
       <div
-        className="flex"
-        style={{
-          animation: `${anim} ${dur} linear infinite`,
-          willChange: "transform",
-        }}
+        className="flex shrink-0"
+        style={{ animation: `marquee-left ${dur} linear infinite`, willChange: "transform" }}
       >
-        {base.map((r, i) => <ReviewCard key={`${r.id}-${i}`} r={r} />)}
+        {items.map((r, i) => <ReviewCard key={`${r.id}-${i}`} r={r} />)}
       </div>
     </div>
   );
@@ -1142,18 +1142,9 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Marquee rows ── */}
-          <div className="space-y-3 relative select-none" dir="rtl">
-            {/* Fade edges */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-32 z-10 bg-gradient-to-l from-white dark:from-gray-950 to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 z-10 bg-gradient-to-r from-white dark:from-gray-950 to-transparent" />
-
-            {/* Row 1 — scrolls right→left */}
-            <ReviewMarqueeRow reviews={displayReviews.slice(0, 13)} direction="left" speed={38} />
-            {/* Row 2 — scrolls left→right */}
-            <ReviewMarqueeRow reviews={displayReviews.slice(13, 26)} direction="right" speed={42} />
-            {/* Row 3 — scrolls right→left (faster) */}
-            <ReviewMarqueeRow reviews={displayReviews.slice(26)} direction="left" speed={34} />
+          {/* ── Single seamless review track ── */}
+          <div className="relative select-none" dir="rtl">
+            <ReviewTrack reviews={displayReviews} />
           </div>
 
           {/* CTA */}
