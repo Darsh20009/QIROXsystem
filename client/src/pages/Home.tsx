@@ -524,7 +524,7 @@ export default function Home() {
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
                 {ar ? "نحوّل فكرتك" : "We turn your idea"}
                 <br />
-                <span className="text-black/40 dark:text-white/40">{ar ? "إلى موقع أو نظام جاهز" : "into a real working system"}</span>
+                <span className="text-black/40 dark:text-white/40">{ar ? "إلى موقع أو نظام مخصص" : "into a real working system"}</span>
               </h1>
               <p className="text-base md:text-lg text-black/60 dark:text-white/60 max-w-2xl mb-9 leading-relaxed">
                 {ar
