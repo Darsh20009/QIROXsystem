@@ -136,7 +136,7 @@ export default function VerifyEmail() {
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
         <div className="relative z-10">
           <Link href="/">
-            <img src="/qirox-logo-full.svg" alt="QIROX" className="h-10 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
+            <img src="/qirox-logo-full.png" alt="QIROX" className="h-10 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
           </Link>
         </div>
         <div className="relative z-10">
@@ -157,7 +157,7 @@ export default function VerifyEmail() {
         <div className="lg:hidden mb-8 text-center">
           <Link href="/">
             <div className="inline-block hover:opacity-85 transition-opacity">
-              <img src="/qirox-logo-full.svg" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
+              <img src="/qirox-logo-full.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
             </div>
           </Link>
         </div>

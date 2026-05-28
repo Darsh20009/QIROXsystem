@@ -243,7 +243,7 @@ export default function Navigation() {
               <Link href="/" className="flex items-center group shrink-0" data-testid="link-logo">
                 <div className="relative transition-all duration-300 group-hover:scale-105 group-hover:opacity-80 rounded-xl px-3 py-1.5">
                   <img
-                    src="/qirox-logo-full.svg"
+                    src="/qirox-logo-full.png"
                     alt="QIROX"
                     className="h-7 w-auto object-contain dark:invert"
                   />

@@ -1105,7 +1105,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
             <motion.div {...fade(0)}>
               <div className="inline-block mb-6">
-                <img src="/qirox-logo-full.svg" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
+                <img src="/qirox-logo-full.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
               </div>
               <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
                 {ar ? "جاهز تبدأ؟" : "Ready to start?"}

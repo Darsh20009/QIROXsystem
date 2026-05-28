@@ -10,7 +10,7 @@ import axios from "axios";
 
 /* ─── AI Provider — Kimi (Moonshot AI) ─── */
 const _kimiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
   baseURL: "https://api.moonshot.ai/v1",
 });
 
