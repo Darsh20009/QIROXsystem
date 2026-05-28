@@ -536,7 +536,7 @@ function ReviewCard({ r }: { r: any }) {
   const initials = (r.clientName || "ع").replace(/[^ء-ي A-Za-z]/g, "").trim().slice(0, 2);
   const anim = TAG_ANIM[r.tag] || { delay: "0s", dur: "6s" };
   return (
-    <div className="flex-shrink-0 w-[280px] md:w-[300px] bg-white dark:bg-gray-900 rounded-2xl p-5 mx-2 border border-black/[0.06] dark:border-white/[0.06] shadow-sm flex flex-col">
+    <div dir="rtl" className="flex-shrink-0 w-[280px] md:w-[300px] bg-white dark:bg-gray-900 rounded-2xl p-5 mx-2 border border-black/[0.06] dark:border-white/[0.06] shadow-sm flex flex-col">
       {/* Top row: quote mark + Qirox brand */}
       <div className="flex items-start justify-between mb-2">
         <div
@@ -1143,7 +1143,7 @@ export default function Home() {
           </div>
 
           {/* ── Single seamless review track ── */}
-          <div className="relative select-none" dir="rtl">
+          <div className="relative select-none" dir="ltr">
             <ReviewTrack reviews={displayReviews} />
           </div>
 
