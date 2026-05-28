@@ -1,3 +1,4 @@
 - [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer).
 - [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.
 - [Kimi AI integration](kimi-ai.md) — All AI calls use Kimi (Moonshot AI) kimi-k2-0905-preview via OPENAI_API_KEY; baseURL https://api.moonshot.ai/v1. Four files updated.
+- [Vite public directory](vite-public-dir.md) — Static files must be in client/public/ NOT root public/; Vite root is client/ so publicDir is client/public/.
