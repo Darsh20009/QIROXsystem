@@ -1,4 +1,4 @@
-import { useState, useMemo, type ElementType } from "react";
+import { useState, useMemo, useRef, useEffect, type ElementType } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -221,33 +221,173 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
-// ─── Full-Width Ticker Strip ──────────────────────────────────────────────────
-type TickerItem = { icon: ElementType; text: string; color: string };
-function TickerStrip({ items, dark = true, reverse = false }: { items: TickerItem[]; dark?: boolean; reverse?: boolean }) {
-  const doubled = [...items, ...items, ...items];
-  const dur = reverse ? "42s" : "34s";
+// ─── Graphic Divider — scroll-triggered SVG lines ────────────────────────────
+function GraphicDivider({ variant = 1, dark = false }: { variant?: number; dark?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVis(true); io.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const ease = [0.22, 1, 0.36, 1] as const;
+  const p = (delay = 0) => ({
+    initial: { pathLength: 0, opacity: 0 },
+    animate: vis ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
+    transition: { duration: 1.5, ease, delay },
+  });
+  const lp = (delay = 0) => ({
+    initial: { pathLength: 0, opacity: 0 },
+    animate: vis ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
+    transition: { duration: 1.2, ease, delay },
+  });
+
+  const bg   = dark ? "bg-black"   : "bg-white dark:bg-gray-950";
+  const s1   = dark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.11)";
+  const s2   = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)";
+  const acc  = dark ? "rgba(255,255,255,0.40)" : "rgba(0,0,0,0.22)";
+
   return (
-    <div className={`overflow-hidden py-3 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-white dark:bg-gray-950 border-black/[0.07] dark:border-white/[0.07]"}`}>
-      <div
-        className="flex whitespace-nowrap items-center"
-        style={{ animation: `${reverse ? "marquee-right" : "marquee-left"} ${dur} linear infinite` }}
-      >
-        {doubled.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-3 select-none mx-3">
-            <span className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border ${
-              dark
-                ? "border-white/20 bg-white/10"
-                : "border-black/15 bg-black/[0.06] dark:border-white/20 dark:bg-white/10"
-            }`}>
-              <item.icon className={`w-4 h-4 flex-shrink-0 ${item.color}`} />
-              <span className={`text-sm font-bold tracking-wide ${dark ? "text-white/90" : "text-black/80 dark:text-white/90"}`}>
-                {item.text}
-              </span>
-            </span>
-            <span className={`text-sm font-bold ${dark ? "text-white/30" : "text-black/20 dark:text-white/30"}`}>✦</span>
-          </span>
-        ))}
-      </div>
+    <div ref={ref} className={`relative w-full overflow-hidden select-none pointer-events-none ${bg}`} style={{ height: 68 }}>
+      <svg viewBox="0 0 1440 68" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" fill="none">
+
+        {/* ── V1: Diagonal slash lines + sweeping bezier (after Hero) ── */}
+        {variant === 1 && <>
+          {Array.from({ length: 16 }, (_, i) => (
+            <motion.line key={i}
+              x1={i * 100} y1={0} x2={i * 100 - 68} y2={68}
+              stroke={s2} strokeWidth="1"
+              {...lp(i * 0.035)}
+            />
+          ))}
+          <motion.path
+            d="M-80 50 C200 5 500 65 760 34 C1020 3 1240 62 1520 18"
+            stroke={s1} strokeWidth="1.5" strokeLinecap="round"
+            {...p(0.2)}
+          />
+          <motion.path
+            d="M-80 28 C280 68 620 0 920 50 C1160 88 1350 22 1520 42"
+            stroke={acc} strokeWidth="0.8" strokeLinecap="round"
+            {...p(0.45)}
+          />
+        </>}
+
+        {/* ── V2: Zigzag chevron wave (after Pricing) ── */}
+        {variant === 2 && <>
+          <motion.path
+            d="M0 34 L90 10 L180 58 L270 10 L360 58 L450 10 L540 58 L630 10 L720 58 L810 10 L900 58 L990 10 L1080 58 L1170 10 L1260 58 L1350 10 L1440 34"
+            stroke={acc} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            {...p(0)}
+          />
+          <motion.path
+            d="M0 50 L90 26 L180 68 L270 26 L360 68 L450 26 L540 68 L630 26 L720 68 L810 26 L900 68 L990 26 L1080 68 L1170 26 L1260 68 L1350 26 L1440 50"
+            stroke={s2} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+            {...p(0.18)}
+          />
+          <motion.path
+            d="M0 18 L90 -6 L180 42 L270 -6 L360 42 L450 -6 L540 42 L630 -6 L720 42 L810 -6 L900 42 L990 -6 L1080 42 L1170 -6 L1260 42 L1350 -6 L1440 18"
+            stroke={s2} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+            {...p(0.36)}
+          />
+        </>}
+
+        {/* ── V3: Lines converging from edges to centre dot (after Process) ── */}
+        {variant === 3 && <>
+          {[-22, 0, 22].map((off, i) => (
+            <motion.line key={`L${i}`}
+              x1={0} y1={34 + off} x2={720} y2={34}
+              stroke={i === 1 ? acc : s1} strokeWidth={i === 1 ? "1.5" : "0.8"}
+              {...lp(i * 0.1)}
+            />
+          ))}
+          {[-22, 0, 22].map((off, i) => (
+            <motion.line key={`R${i}`}
+              x1={1440} y1={34 + off} x2={720} y2={34}
+              stroke={i === 1 ? acc : s1} strokeWidth={i === 1 ? "1.5" : "0.8"}
+              {...lp(i * 0.1 + 0.08)}
+            />
+          ))}
+          <motion.circle cx={720} cy={34} r={5}
+            stroke={acc} strokeWidth="1.5"
+            {...p(0.55)}
+          />
+          <motion.circle cx={720} cy={34} r={14}
+            stroke={s1} strokeWidth="0.8"
+            {...p(0.7)}
+          />
+          <motion.circle cx={720} cy={34} r={26}
+            stroke={s2} strokeWidth="0.6"
+            {...p(0.85)}
+          />
+        </>}
+
+        {/* ── V4: Smooth S-curve sine waves (after Reviews) ── */}
+        {variant === 4 && <>
+          <motion.path
+            d="M0 34 C160 34 320 8 480 34 C640 60 800 8 960 34 C1120 60 1280 34 1440 34"
+            stroke={acc} strokeWidth="1.5" strokeLinecap="round"
+            {...p(0)}
+          />
+          <motion.path
+            d="M0 46 C160 46 320 20 480 46 C640 72 800 20 960 46 C1120 72 1280 46 1440 46"
+            stroke={s1} strokeWidth="0.9" strokeLinecap="round"
+            {...p(0.2)}
+          />
+          <motion.path
+            d="M0 22 C160 22 320 -4 480 22 C640 48 800 -4 960 22 C1120 48 1280 22 1440 22"
+            stroke={s1} strokeWidth="0.9" strokeLinecap="round"
+            {...p(0.2)}
+          />
+          <motion.path
+            d="M0 58 C160 58 320 32 480 58 C640 84 800 32 960 58 C1120 84 1280 58 1440 58"
+            stroke={s2} strokeWidth="0.6" strokeLinecap="round"
+            {...p(0.38)}
+          />
+          <motion.path
+            d="M0 10 C160 10 320 -16 480 10 C640 36 800 -16 960 10 C1120 36 1280 10 1440 10"
+            stroke={s2} strokeWidth="0.6" strokeLinecap="round"
+            {...p(0.38)}
+          />
+        </>}
+
+        {/* ── V5: Radial burst from centre + extending horizontals (after Partners) ── */}
+        {variant === 5 && <>
+          {Array.from({ length: 18 }, (_, i) => {
+            const angle  = (i / 18) * Math.PI * 2;
+            const cx = 720, cy = 34;
+            const r1 = 14, r2 = 60 + (i % 4) * 18;
+            return (
+              <motion.line key={i}
+                x1={cx + Math.cos(angle) * r1} y1={cy + Math.sin(angle) * r1}
+                x2={cx + Math.cos(angle) * r2} y2={cy + Math.sin(angle) * r2}
+                stroke={i % 3 === 0 ? acc : s1}
+                strokeWidth={i % 2 === 0 ? "1" : "0.5"}
+                {...lp(i * 0.028)}
+              />
+            );
+          })}
+          <motion.line x1={0} y1={34} x2={640} y2={34}
+            stroke={s1} strokeWidth="0.8"
+            {...lp(0.35)}
+          />
+          <motion.line x1={800} y1={34} x2={1440} y2={34}
+            stroke={s1} strokeWidth="0.8"
+            {...lp(0.35)}
+          />
+          <motion.circle cx={720} cy={34} r={8}
+            stroke={acc} strokeWidth="1.5"
+            {...p(0.6)}
+          />
+        </>}
+
+      </svg>
     </div>
   );
 }
@@ -566,17 +706,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Ticker after Hero ── */}
-        <TickerStrip dark items={[
-          { icon: Sparkles,      text: ar ? "تصميم احترافي"   : "Professional Design",  color: "text-yellow-400" },
-          { icon: Cpu,           text: ar ? "تطوير متكامل"    : "Full-Stack Dev",        color: "text-blue-400"   },
-          { icon: Zap,           text: ar ? "إطلاق سريع"      : "Fast Delivery",         color: "text-green-400"  },
-          { icon: Shield,        text: ar ? "حماية وأمان"     : "Secure & Protected",    color: "text-purple-400" },
-          { icon: Bot,           text: ar ? "ذكاء اصطناعي"    : "AI-Powered",            color: "text-pink-400"   },
-          { icon: Globe,         text: ar ? "وصول عالمي"      : "Global Reach",          color: "text-cyan-400"   },
-          { icon: Star,          text: ar ? "جودة لا تُساوَم" : "Top Quality",           color: "text-amber-400"  },
-          { icon: Layers,        text: ar ? "أنظمة متكاملة"   : "Integrated Systems",    color: "text-indigo-400" },
-        ]} />
+        {/* ── Graphic Divider after Hero ── */}
+        <GraphicDivider variant={1} dark />
 
         {/* ─── TAB BAR ─── */}
         <div className="sticky top-16 z-30 -mt-4 mb-2">
@@ -881,17 +1012,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Ticker between Pricing and Process ── */}
-        <TickerStrip dark={false} reverse items={[
-          { icon: ShoppingBag,   text: ar ? "باقة لايت"           : "Lite Plan",           color: "text-emerald-500" },
-          { icon: Zap,           text: ar ? "باقة برو"             : "Pro Plan",            color: "text-blue-500"    },
-          { icon: Infinity,      text: ar ? "باقة انفينيتي"        : "Infinity Plan",       color: "text-purple-500"  },
-          { icon: Shield,        text: ar ? "بدون رسوم خفية"       : "No Hidden Fees",      color: "text-green-500"   },
-          { icon: Zap,           text: ar ? "تسليم 7–21 يوم"       : "7-21 Day Delivery",   color: "text-orange-500"  },
-          { icon: Globe,         text: ar ? "SSL مجاني مدى الحياة" : "Free SSL Forever",    color: "text-cyan-500"    },
-          { icon: Star,          text: ar ? "دعم مستمر على مدار الساعة" : "24/7 Support",  color: "text-amber-500"   },
-          { icon: Check,         text: ar ? "ضمان رضا العميل"      : "Satisfaction Guarantee", color: "text-teal-500" },
-        ]} />
+        {/* ── Graphic Divider between Pricing and Process ── */}
+        <GraphicDivider variant={2} />
 
         {/* ─── PROCESS ─── */}
         <section id="tab-process" className="pt-16 pb-24 md:pt-20 md:pb-28">
@@ -922,17 +1044,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Ticker between Process and Reviews ── */}
-        <TickerStrip dark items={[
-          { icon: Sparkles,     text: ar ? "فكرة"          : "Idea",            color: "text-yellow-400"  },
-          { icon: ArrowRight,   text: ar ? "تصميم"         : "Design",          color: "text-blue-400"    },
-          { icon: Cpu,          text: ar ? "تطوير"         : "Build",           color: "text-purple-400"  },
-          { icon: Zap,          text: ar ? "إطلاق"         : "Launch",          color: "text-green-400"   },
-          { icon: Check,        text: ar ? "4 خطوات فقط"  : "4 Steps Only",    color: "text-emerald-400" },
-          { icon: TrendingUp,   text: ar ? "نمو مستمر"    : "Continuous Growth", color: "text-pink-400"  },
-          { icon: Shield,       text: ar ? "جودة مضمونة"  : "Quality Guaranteed", color: "text-cyan-400" },
-          { icon: Globe,        text: ar ? "من الصفر للإطلاق" : "Zero to Live", color: "text-indigo-400" },
-        ]} />
+        {/* ── Graphic Divider between Process and Reviews ── */}
+        <GraphicDivider variant={3} dark />
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
         <section className="py-16 md:py-24 overflow-hidden relative">
@@ -1002,17 +1115,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Ticker between Reviews and Partners ── */}
-        <TickerStrip dark={false} items={[
-          { icon: Star,         text: ar ? "4.97 متوسط التقييم"          : "4.97 Avg. Rating",       color: "text-amber-500"   },
-          { icon: Check,        text: ar ? "37+ تقييم حقيقي موثّق"       : "37+ Verified Reviews",   color: "text-green-500"   },
-          { icon: Globe,        text: ar ? "عملاء من السعودية والخليج"   : "GCC Clients",            color: "text-blue-500"    },
-          { icon: Shield,       text: ar ? "خدمة موثوقة 100%"            : "100% Trusted Service",   color: "text-purple-500"  },
-          { icon: TrendingUp,   text: ar ? "نتائج حقيقية وملموسة"        : "Real Results",           color: "text-emerald-500" },
-          { icon: Heart,        text: ar ? "عملاء سعداء دائماً"          : "Happy Clients",          color: "text-pink-500"    },
-          { icon: Zap,          text: ar ? "دعم ما بعد التسليم"          : "Post-Launch Support",    color: "text-orange-500"  },
-          { icon: Bot,          text: ar ? "بناء علاقات طويلة الأمد"     : "Long-Term Partnership",  color: "text-cyan-500"    },
-        ]} />
+        {/* ── Graphic Divider between Reviews and Partners ── */}
+        <GraphicDivider variant={4} />
 
         {/* ─── PARTNERS ─── */}
         <section id="tab-partners" className="pt-16 pb-24 md:pt-20 md:pb-28">
@@ -1059,17 +1163,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Dark ticker between Partners and Templates ── */}
-        <TickerStrip dark reverse items={[
-          { icon: ShoppingBag,   text: ar ? "متجر إلكتروني"       : "E-Commerce Store",     color: "text-orange-400"  },
-          { icon: Coffee,        text: ar ? "نظام مطعم وكافيه"    : "Restaurant System",    color: "text-amber-400"   },
-          { icon: HomeIcon,      text: ar ? "منصة عقارات"         : "Real Estate Platform", color: "text-blue-400"    },
-          { icon: GraduationCap, text: ar ? "نظام تعليمي"         : "Education System",     color: "text-purple-400"  },
-          { icon: Heart,         text: ar ? "موقع عيادة طبية"     : "Healthcare Site",      color: "text-pink-400"    },
-          { icon: Building2,     text: ar ? "موقع شركة"           : "Corporate Website",    color: "text-cyan-400"    },
-          { icon: Scissors,      text: ar ? "صالون ومركز تجميل"   : "Beauty & Salon",       color: "text-rose-400"    },
-          { icon: Bot,           text: ar ? "جرّب النماذج مجاناً" : "Try Demos Free",       color: "text-green-400"   },
-        ]} />
+        {/* ── Graphic Divider between Partners and Templates ── */}
+        <GraphicDivider variant={5} dark />
 
         {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
         <section id="tab-templates" className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
