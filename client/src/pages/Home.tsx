@@ -221,6 +221,108 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
+// ─── Full-Width Ticker Strip ──────────────────────────────────────────────────
+function TickerStrip({ items, dark = true, reverse = false }: { items: string[]; dark?: boolean; reverse?: boolean }) {
+  const doubled = [...items, ...items];
+  const dur = reverse ? "38s" : "30s";
+  return (
+    <div className={`overflow-hidden py-[14px] border-y ${dark ? "bg-black border-white/[0.06]" : "bg-gray-50 dark:bg-gray-950 border-black/[0.05] dark:border-white/[0.05]"}`}>
+      <div
+        className="flex whitespace-nowrap"
+        style={{ animation: `${reverse ? "marquee-right" : "marquee-left"} ${dur} linear infinite` }}
+      >
+        {doubled.map((item, i) => (
+          <span
+            key={i}
+            className={`inline-flex items-center gap-2.5 mx-7 text-[10.5px] font-black tracking-[0.22em] uppercase select-none ${
+              dark ? "text-white/40" : "text-black/25 dark:text-white/22"
+            }`}
+          >
+            <span className={`w-[5px] h-[5px] rounded-full flex-shrink-0 ${dark ? "bg-white/20" : "bg-black/15 dark:bg-white/15"}`} />
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Stats Bar ────────────────────────────────────────────────────────────────
+function StatsBar({ ar }: { ar: boolean }) {
+  const stats = [
+    { num: "37+",    arLabel: "مشروع مكتمل",       enLabel: "Projects delivered" },
+    { num: "9+",     arLabel: "قطاع تخصصي",         enLabel: "Industry sectors" },
+    { num: "4.97",   arLabel: "متوسط تقييم العملاء", enLabel: "Client rating avg." },
+    { num: "21",     arLabel: "يوم أقصى للتسليم",    enLabel: "Days max. delivery" },
+  ];
+  return (
+    <div className="bg-black dark:bg-white text-white dark:text-black overflow-hidden relative">
+      {/* subtle grid texture */}
+      <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+      <div className="relative grid grid-cols-2 md:grid-cols-4 divide-x divide-white/[0.08] dark:divide-black/[0.08] rtl:divide-x-reverse">
+        {stats.map((s, i) => (
+          <motion.div key={i} {...fade(i)} className="text-center py-10 px-6">
+            <div className="text-4xl md:text-5xl font-black tracking-tight leading-none mb-2">{s.num}</div>
+            <div className="text-[11px] font-medium tracking-[0.12em] uppercase text-white/35 dark:text-black/35">
+              {ar ? s.arLabel : s.enLabel}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Graphic Divider Banner ───────────────────────────────────────────────────
+function GraphicBanner({ ar }: { ar: boolean }) {
+  const icons = [
+    { Icon: ShoppingBag,    label: ar ? "متاجر" : "Stores" },
+    { Icon: Coffee,         label: ar ? "مطاعم" : "Cafés" },
+    { Icon: GraduationCap,  label: ar ? "تعليم" : "Edu" },
+    { Icon: Heart,          label: ar ? "صحة" : "Health" },
+    { Icon: HomeIcon,       label: ar ? "عقارات" : "Real Estate" },
+    { Icon: Building2,      label: ar ? "شركات" : "Corp." },
+    { Icon: Scissors,       label: ar ? "تجميل" : "Beauty" },
+    { Icon: Bot,            label: ar ? "ذكاء اصطناعي" : "AI" },
+  ];
+  return (
+    <div className="relative overflow-hidden bg-gray-50 dark:bg-gray-950 border-y border-black/[0.05] dark:border-white/[0.05]">
+      {/* Background dot grid */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+      <div className="container mx-auto px-5 md:px-8 max-w-6xl py-12 relative">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          {/* Left: headline */}
+          <div className="text-center md:text-start flex-shrink-0 max-w-xs">
+            <div className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/25 mb-3">
+              {ar ? "نغطي كل القطاعات" : "Every industry covered"}
+            </div>
+            <div className="text-2xl md:text-3xl font-black leading-tight text-gray-900 dark:text-white">
+              {ar ? "نظام لكل قطاع\nبهوية خاصة به" : "A system for every\nsector & brand"}
+            </div>
+          </div>
+          {/* Right: icon grid */}
+          <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+            {icons.map(({ Icon, label }, i) => (
+              <motion.div
+                key={i}
+                {...fade(i * 0.5)}
+                className="flex flex-col items-center gap-1.5 w-16"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-black/[0.05] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-black/50 dark:text-white/45" />
+                </div>
+                <span className="text-[9px] font-bold text-black/35 dark:text-white/30 text-center leading-tight">{label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Review Badge Animation Delays ───────────────────────────────────────────
 const TAG_ANIM: Record<string, { delay: string; dur: string }> = {
   "سرعة استجابة": { delay: "0s",    dur: "5s"  },
@@ -459,6 +561,13 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Ticker after Hero ── */}
+        <TickerStrip dark items={[
+          "تصميم احترافي", "تطوير متكامل", "إطلاق سريع", "QIROX STUDIO",
+          "أنظمة ذكية", "تجارب مميزة", "كود نظيف", "دعم مستمر",
+          "Professional Design", "Smart Systems", "Fast Delivery", "Clean Code",
+        ]} />
+
         {/* ─── TAB BAR ─── */}
         <div className="sticky top-16 z-30 -mt-4 mb-2">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl flex justify-center">
@@ -596,6 +705,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── Stats + Graphic after Systems ── */}
+        <StatsBar ar={ar} />
+        <GraphicBanner ar={ar} />
 
         {/* ─── PRICING ─── */}
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-black/[0.02] dark:bg-white/[0.02]">
@@ -758,6 +871,13 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Ticker between Pricing and Process ── */}
+        <TickerStrip dark={false} reverse items={[
+          "لايت · لايت · برو", "نظام كامل", "بدون رسوم خفية", "تسليم 7–21 يوم",
+          "SSL مجاني", "حماية كاملة", "دعم مستمر", "Lite · Pro · Infinity",
+          "No Hidden Fees", "Full System", "7-21 Day Delivery", "24/7 Support",
+        ]} />
+
         {/* ─── PROCESS ─── */}
         <section id="tab-process" className="pt-16 pb-24 md:pt-20 md:pb-28">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
@@ -786,6 +906,13 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── Ticker between Process and Reviews ── */}
+        <TickerStrip dark items={[
+          "فكرة · تصميم · تطوير · إطلاق", "4 خطوات فقط", "من الصفر للإطلاق",
+          "Idea · Design · Build · Launch", "4 Steps Only", "Zero to Live",
+          "بناء أنظمة", "تسليم في الوقت", "جودة لا تُساوَم",
+        ]} />
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
         <section className="py-16 md:py-24 overflow-hidden relative">
@@ -855,6 +982,13 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Ticker between Reviews and Partners ── */}
+        <TickerStrip dark={false} items={[
+          "37+ تقييم حقيقي", "4.97 متوسط التقييم", "عملاء من السعودية والخليج",
+          "37+ Real Reviews", "4.97 Rating", "Clients Across GCC",
+          "ثقة العملاء", "جودة موثّقة", "نتائج حقيقية",
+        ]} />
+
         {/* ─── PARTNERS ─── */}
         <section id="tab-partners" className="pt-16 pb-24 md:pt-20 md:pb-28">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
@@ -899,6 +1033,13 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {/* ── Dark ticker between Partners and Templates ── */}
+        <TickerStrip dark reverse items={[
+          "نماذج جاهزة للإطلاق", "مطاعم · عقارات · تجارة", "جرّب مجاناً",
+          "Ready-Made Templates", "Restaurants · Real Estate · Commerce", "Try For Free",
+          "Demo Live", "تجربة حية", "انطلق اليوم",
+        ]} />
 
         {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
         <section id="tab-templates" className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
