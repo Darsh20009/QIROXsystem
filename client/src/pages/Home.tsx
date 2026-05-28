@@ -236,51 +236,63 @@ function ReviewCard({ r }: { r: any }) {
   const initials = (r.clientName || "ع").replace(/[^ء-ي A-Za-z]/g, "").trim().slice(0, 2);
   const anim = TAG_ANIM[r.tag] || { delay: "0s", dur: "6s" };
   return (
-    <div className="flex-shrink-0 w-[280px] md:w-[300px] bg-gray-50 dark:bg-gray-900/90 rounded-2xl p-5 mx-2 border border-black/[0.04] dark:border-white/[0.04]">
-      {/* Decorative large quote */}
-      <div
-        className="text-[56px] font-black leading-none select-none -mt-1 -mb-2 font-serif"
-        style={{ color: "transparent", WebkitTextStroke: "1px rgba(0,0,0,0.07)" }}
-        aria-hidden
-      >"</div>
+    <div className="flex-shrink-0 w-[280px] md:w-[300px] bg-white dark:bg-gray-900 rounded-2xl p-5 mx-2 border border-black/[0.06] dark:border-white/[0.06] shadow-sm flex flex-col">
+      {/* Top row: quote mark + Qirox brand */}
+      <div className="flex items-start justify-between mb-2">
+        <div
+          className="text-[44px] font-black leading-none select-none font-serif"
+          style={{ color: "transparent", WebkitTextStroke: "1.5px rgba(0,0,0,0.1)" }}
+          aria-hidden
+        >"</div>
+        {/* Qirox badge */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.05] dark:border-white/[0.06]">
+          <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3.5 h-3.5 object-contain dark:invert opacity-60" />
+          <span className="text-[9px] font-black text-black/40 dark:text-white/40 tracking-wide">QIROX</span>
+        </div>
+      </div>
+
       {/* Comment */}
-      <p className="text-[12.5px] text-black/68 dark:text-white/62 leading-[1.78] line-clamp-3 mb-4 mt-2">
+      <p className="text-[12.5px] text-black/65 dark:text-white/60 leading-[1.75] line-clamp-3 flex-1">
         {r.comment || r.text || "—"}
       </p>
+
       {/* Separator */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.08] dark:via-white/[0.08] to-transparent mb-4" />
-      {/* Footer: avatar + name + badge */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.07] dark:via-white/[0.07] to-transparent my-3.5" />
+
+      {/* Footer: avatar + name + tag */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-black/[0.06] dark:bg-white/[0.07] flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-black text-black/45 dark:text-white/45">{initials}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-full bg-black/[0.07] dark:bg-white/[0.08] flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-black text-black/50 dark:text-white/50">{initials}</span>
           </div>
-          <div>
-            <p className="text-[11px] font-black text-gray-900 dark:text-white leading-tight">{r.clientName || "عميل كيروكس"}</p>
-            <p className="text-[9.5px] text-black/32 dark:text-white/32 mt-0.5">{r.serviceTitle || "خدمة كيروكس"}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-black text-gray-900 dark:text-white leading-tight truncate">{r.clientName || "عميل كيروكس"}</p>
+            <p className="text-[9.5px] text-black/35 dark:text-white/35 mt-0.5 truncate">{r.serviceTitle || "خدمة كيروكس"}</p>
           </div>
         </div>
-        {r.tag && (
-          <span
-            className="badge-animated flex-shrink-0 text-[9px] font-bold px-2.5 py-[5px] rounded-full tracking-wide whitespace-nowrap"
-            style={{ animationDelay: anim.delay, animationDuration: anim.dur }}
-          >
-            {r.tag}
-          </span>
-        )}
-      </div>
-      {/* Stars — monochromatic dots */}
-      <div className="flex gap-[3px] mt-3">
-        {[1,2,3,4,5].map(s => (
-          <div
-            key={s}
-            className={`w-[7px] h-[7px] rounded-full transition-colors ${
-              s <= (r.rating || 5)
-                ? "bg-black/22 dark:bg-white/35"
-                : "bg-black/07 dark:bg-white/07"
-            }`}
-          />
-        ))}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {r.tag && (
+            <span
+              className="badge-animated text-[9px] font-bold px-2 py-[4px] rounded-full tracking-wide whitespace-nowrap"
+              style={{ animationDelay: anim.delay, animationDuration: anim.dur }}
+            >
+              {r.tag}
+            </span>
+          )}
+          {/* Stars */}
+          <div className="flex gap-[3px]">
+            {[1,2,3,4,5].map(s => (
+              <div
+                key={s}
+                className={`w-[6px] h-[6px] rounded-full ${
+                  s <= (r.rating || 5)
+                    ? "bg-amber-400"
+                    : "bg-black/10 dark:bg-white/10"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -288,7 +300,8 @@ function ReviewCard({ r }: { r: any }) {
 
 // ─── Marquee Row ──────────────────────────────────────────────────────────────
 function ReviewMarqueeRow({ reviews, direction, speed }: { reviews: any[]; direction: "left" | "right"; speed: number }) {
-  const doubled = [...reviews, ...reviews]; // duplicate for seamless loop
+  // ensure at least 12 items so the row always looks full
+  const base = reviews.length < 6 ? [...reviews, ...reviews, ...reviews] : [...reviews, ...reviews];
   const dur = `${speed}s`;
   const anim = direction === "left" ? "marquee-left" : "marquee-right";
   return (
@@ -300,7 +313,7 @@ function ReviewMarqueeRow({ reviews, direction, speed }: { reviews: any[]; direc
           willChange: "transform",
         }}
       >
-        {doubled.map((r, i) => <ReviewCard key={`${r.id}-${i}`} r={r} />)}
+        {base.map((r, i) => <ReviewCard key={`${r.id}-${i}`} r={r} />)}
       </div>
     </div>
   );

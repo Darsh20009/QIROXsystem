@@ -123,7 +123,7 @@ export default function AdminReviews() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center text-sm font-bold">
                         {review.client?.fullName?.[0] || "؟"}
                       </div>
@@ -135,6 +135,11 @@ export default function AdminReviews() {
                       <Badge variant="outline" className={review.isPublic ? "border-black/15 dark:border-white/15 text-black dark:text-white" : "border-black/20 text-black/40"}>
                         {review.isPublic ? (L ? "ظاهر" : "Public") : (L ? "مخفي" : "Hidden")}
                       </Badge>
+                      {/* Qirox brand badge */}
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.07] ms-auto">
+                        <img src="/qirox-icon-nobg.png" alt="Qirox" className="w-3 h-3 object-contain dark:invert opacity-50" />
+                        <span className="text-[9px] font-black text-black/35 dark:text-white/35 tracking-wide">QIROX</span>
+                      </div>
                     </div>
                     {review.serviceTitle && <div className="text-xs text-black/40 bg-black/5 px-2 py-0.5 rounded w-fit">{review.serviceTitle}</div>}
                     {review.comment && <p className="text-sm text-black/70 bg-black/5 rounded-lg p-3">{review.comment}</p>}
