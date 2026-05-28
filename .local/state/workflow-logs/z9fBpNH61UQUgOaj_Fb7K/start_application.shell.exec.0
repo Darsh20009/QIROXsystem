@@ -1,0 +1,21 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development node --import tsx/esm server/index.ts
+
+[1G[0K⠙[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:22:01 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] error: UserModel is not defined
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 20 cron jobs
+1:23:00 PM [express] POST /api/internal/push/promotional 200 in 82ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:24:00 PM [express] POST /api/internal/push/promotional 200 in 38ms :: {"ok":true,"sent":59,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
