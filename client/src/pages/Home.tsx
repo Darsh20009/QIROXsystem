@@ -224,27 +224,27 @@ const fade = (i = 0) => ({
 // ─── Full-Width Ticker Strip ──────────────────────────────────────────────────
 type TickerItem = { icon: ElementType; text: string; color: string };
 function TickerStrip({ items, dark = true, reverse = false }: { items: TickerItem[]; dark?: boolean; reverse?: boolean }) {
-  const doubled = [...items, ...items];
+  const doubled = [...items, ...items, ...items];
   const dur = reverse ? "42s" : "34s";
   return (
-    <div className={`overflow-hidden py-4 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-white dark:bg-gray-950 border-black/[0.07] dark:border-white/[0.07]"}`}>
+    <div className={`overflow-hidden py-3 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-white dark:bg-gray-950 border-black/[0.07] dark:border-white/[0.07]"}`}>
       <div
         className="flex whitespace-nowrap items-center"
         style={{ animation: `${reverse ? "marquee-right" : "marquee-left"} ${dur} linear infinite` }}
       >
         {doubled.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-2.5 select-none mx-2">
-            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border ${
+          <span key={i} className="inline-flex items-center gap-3 select-none mx-3">
+            <span className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border ${
               dark
-                ? "border-white/10 bg-white/[0.05]"
-                : "border-black/[0.08] bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.04]"
+                ? "border-white/20 bg-white/10"
+                : "border-black/15 bg-black/[0.06] dark:border-white/20 dark:bg-white/10"
             }`}>
-              <item.icon className={`w-3.5 h-3.5 flex-shrink-0 ${item.color}`} />
-              <span className={`text-[13px] font-bold ${dark ? "text-white/75" : "text-black/65 dark:text-white/65"}`}>
+              <item.icon className={`w-4 h-4 flex-shrink-0 ${item.color}`} />
+              <span className={`text-sm font-bold tracking-wide ${dark ? "text-white/90" : "text-black/80 dark:text-white/90"}`}>
                 {item.text}
               </span>
             </span>
-            <span className={`text-base ${dark ? "text-white/12" : "text-black/10 dark:text-white/10"}`}>✦</span>
+            <span className={`text-sm font-bold ${dark ? "text-white/30" : "text-black/20 dark:text-white/30"}`}>✦</span>
           </span>
         ))}
       </div>
