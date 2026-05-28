@@ -20,7 +20,7 @@ import {
   CreditCard, Award, Apple, PlayCircle, Gift, Clock, ChevronLeft,
   QrCode, ChefHat, BookOpen, Video, MapPin, CalendarCheck, Stethoscope,
   Pill, Activity, Package, Coffee, Utensils, Code2, Briefcase, FileText,
-  ShoppingCart,
+  ShoppingCart, Wrench,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -138,8 +138,306 @@ const OTHER_SECTORS: { key: SectorKey; icon: any; ar: string }[] = [
   { key: "other",        icon: Globe,         ar: "قطاع آخر" },
 ];
 
-/* ─── Generic Features for "Other" Sectors ────────────────────────────── */
-/* Used by sectors that don't have bespoke restaurant/ecommerce feature lists. */
+/* ─── Sector-Specific Feature Lists ──────────────────────────────────── */
+
+const EDUCATION_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع أكاديمية/مدرسة احترافي" },
+    { icon: Users,           ar: "إدارة الطلاب والمجموعات" },
+    { icon: ClipboardList,   ar: "نظام الحضور والغياب" },
+    { icon: BookOpen,        ar: "إدارة المناهج والمحتوى" },
+    { icon: CalendarDays,    ar: "جداول الحصص الذكية" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: CreditCard,     ar: "نظام الفواتير والرسوم الدراسية" },
+    { icon: MessageSquare,  ar: "بوابة أولياء الأمور" },
+    { icon: Award,          ar: "شهادات رقمية تلقائية" },
+    { icon: BarChart3,      ar: "تقارير أداء الطلاب التفصيلية" },
+    { icon: ClipboardList,  ar: "نظام الواجبات والتقييمات" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم الأكاديمية" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Video,          ar: "نظام LMS للدراسة الأونلاين" },
+    { icon: Database,       ar: "أرشيف رقمي كامل للطلاب" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const HEALTHCARE_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع عيادة/مركز طبي احترافي" },
+    { icon: FileText,        ar: "الملف الطبي الإلكتروني للمرضى" },
+    { icon: Calendar,        ar: "نظام الحجز والمواعيد الذكي" },
+    { icon: Stethoscope,     ar: "وصفات إلكترونية قابلة للطباعة" },
+    { icon: Users,           ar: "إدارة الأطباء والأخصائيين" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: CreditCard,     ar: "نظام الفواتير والتأمين الطبي" },
+    { icon: Users,          ar: "قائمة انتظار ذكية بالوقت المتبقي" },
+    { icon: Bell,           ar: "تذكيرات المواعيد التلقائية" },
+    { icon: Activity,       ar: "متابعة الحالة الصحية للمرضى" },
+    { icon: BarChart3,      ar: "تقارير الإشغال والأداء" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم العيادة/المركز" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Package,        ar: "إدارة مستودع الأدوية والمستلزمات" },
+    { icon: Database,       ar: "تشفير كامل وأرشفة بيانات المرضى" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const REALESTATE_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع عقاري احترافي" },
+    { icon: Building2,       ar: "إدارة العقارات والوحدات" },
+    { icon: FileText,        ar: "إدارة العقود والإيجارات" },
+    { icon: Users,           ar: "ملفات المستأجرين والملاك" },
+    { icon: MapPin,          ar: "خريطة وتفاصيل العقارات" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: BarChart3,      ar: "تقارير العائد والإشغال (ROI)" },
+    { icon: Globe,          ar: "بوابة المالك والمستأجر" },
+    { icon: Bell,           ar: "تنبيهات انتهاء العقود والدفع" },
+    { icon: CreditCard,     ar: "نظام تحصيل الإيجارات الذكي" },
+    { icon: Wrench,         ar: "طلبات الصيانة والمتابعة" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم الشركة العقارية" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Database,       ar: "تكامل مع منصة إيجار الحكومية" },
+    { icon: Building2,      ar: "إدارة محافظ عقارية متعددة" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const CORPORATE_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع شركة/مؤسسة احترافي" },
+    { icon: Users,           ar: "إدارة الموظفين والأقسام" },
+    { icon: Briefcase,       ar: "نظام إدارة المشاريع والمهام" },
+    { icon: Code2,           ar: "قاعدة بيانات العملاء (CRM)" },
+    { icon: FileText,        ar: "إدارة المستندات والعقود" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: BarChart3,      ar: "نظام الفواتير والمحاسبة" },
+    { icon: TrendingUp,     ar: "تقارير الأداء والمبيعات" },
+    { icon: Clock,          ar: "نظام الحضور والإجازات" },
+    { icon: Calendar,       ar: "إدارة المواعيد والاجتماعات" },
+    { icon: Award,          ar: "بوابة العملاء الذاتية" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد مؤسسي باسم الشركة" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Database,       ar: "نظام ERP وإدارة مؤسسية متكاملة" },
+    { icon: Building2,      ar: "إدارة الفروع والمكاتب المتعددة" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const FITNESS_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع جيم/نادي رياضي احترافي" },
+    { icon: CreditCard,      ar: "إدارة العضويات والباقات" },
+    { icon: CalendarDays,    ar: "جدولة الحصص الجماعية" },
+    { icon: Users,           ar: "ملفات الأعضاء الصحية" },
+    { icon: QrCode,          ar: "دخول ذكي بـ QR/باركود" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: Activity,       ar: "تتبع قياسات اللياقة والأهداف" },
+    { icon: Users,          ar: "لوحة المدرب الشخصي وعملائه" },
+    { icon: Award,          ar: "نظام الولاء والمكافآت" },
+    { icon: Bell,           ar: "تذكيرات التجديد والحصص" },
+    { icon: BarChart3,      ar: "تقارير الحضور والإيرادات" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم النادي/الجيم" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Lock,           ar: "تحكم بالبوابات الإلكترونية" },
+    { icon: Building2,      ar: "إدارة متعددة الفروع والأندية" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const BEAUTY_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع صالون/سبا احترافي" },
+    { icon: CalendarCheck,   ar: "نظام الحجوزات الذكي أونلاين" },
+    { icon: Users,           ar: "إدارة الفنيين والغرف" },
+    { icon: FileText,        ar: "ملف العميل والتفضيلات التفصيلية" },
+    { icon: Tag,             ar: "كتالوج الخدمات والأسعار" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: Bell,           ar: "تذكيرات المواعيد التلقائية (SMS/واتساب)" },
+    { icon: BarChart3,      ar: "حساب عمولة الفنيين تلقائياً" },
+    { icon: Package,        ar: "مخزون منتجات الصالون" },
+    { icon: Award,          ar: "نظام الولاء والعروض الخاصة" },
+    { icon: Star,           ar: "تقارير الفنيين والخدمات الأكثر طلباً" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم الصالون" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Building2,      ar: "إدارة متعددة الفروع والصالونات" },
+    { icon: Database,       ar: "تقارير وتحليلات متقدمة للأعمال" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const EVENTS_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع فعاليات/مناسبات احترافي" },
+    { icon: Calendar,        ar: "إدارة الفعاليات والمواعيد" },
+    { icon: Tag,             ar: "نظام تذاكر وحجوزات أونلاين" },
+    { icon: Users,           ar: "إدارة قوائم الضيوف والمدعوين" },
+    { icon: MapPin,          ar: "إدارة الأماكن والقاعات" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: QrCode,         ar: "دخول الضيوف بـ QR بدون طابور" },
+    { icon: Briefcase,      ar: "إدارة الرعاة والشركاء" },
+    { icon: BarChart3,      ar: "تقارير الفعالية والحضور" },
+    { icon: ReceiptText,    ar: "نظام الفواتير والعروض المالية" },
+    { icon: Bell,           ar: "تذكيرات وإشعارات المدعوين" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم الشركة/الفعالية" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Video,          ar: "نظام RSVP وإدارة الردود المتقدمة" },
+    { icon: Database,       ar: "تقارير تحليلية شاملة للفعاليات" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const MARKETING_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع وكالة تسويق احترافي" },
+    { icon: Users,           ar: "بوابة عملاء مخصصة" },
+    { icon: TrendingUp,      ar: "إدارة الحملات التسويقية" },
+    { icon: CalendarDays,    ar: "تقويم المحتوى والنشر" },
+    { icon: BarChart3,       ar: "تقارير الأداء الأساسية" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: Code2,          ar: "نظام CRM وإدارة العملاء" },
+    { icon: Globe,          ar: "أدوات SEO ومحركات البحث" },
+    { icon: BarChart3,      ar: "لوحة تحليلات التسويق الشاملة" },
+    { icon: FileText,       ar: "إدارة التقارير الشهرية للعملاء" },
+    { icon: Award,          ar: "نظام المهام والتسليمات" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم الوكالة" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Sparkles,       ar: "تقارير ذكاء اصطناعي ومتقدمة" },
+    { icon: Database,       ar: "داشبورد White-Label للعملاء" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+const AI_FEATURES = {
+  lite: [
+    { icon: Globe,           ar: "موقع منصة ذكاء اصطناعي احترافي" },
+    { icon: Bot,             ar: "روبوت محادثة مخصص (AI Chatbot)" },
+    { icon: Database,        ar: "قاعدة معرفة ذكية قابلة للتدريب" },
+    { icon: BarChart3,       ar: "لوحة إحصائيات المحادثات" },
+    { icon: Lock,            ar: "إدارة المستخدمين والصلاحيات" },
+    { icon: Layers,          ar: "الميزات الأساسية للنظام" },
+  ],
+  pro: [
+    { icon: Zap,            ar: "كل مميزات لايت ✦" },
+    { icon: Sparkles,       ar: "نماذج AI مخصصة للقطاع" },
+    { icon: Layers,         ar: "تكامل مع أنظمة خارجية (API)" },
+    { icon: BarChart3,      ar: "تحليلات متقدمة للمحادثات والأداء" },
+    { icon: Users,          ar: "لوحة تحكم متعددة المستخدمين" },
+    { icon: Shield,         ar: "تشفير كامل وحماية البيانات" },
+    { icon: CreditCard,     ar: "بوابة دفع إلكترونية" },
+    { icon: Smartphone,     ar: "تطبيق PWA (ويب تطبيق)" },
+    { icon: Bell,           ar: "إشعارات فورية (Push)" },
+    { icon: Mail,           ar: "1,000 رسالة بريدية شهرياً" },
+    { icon: CheckCircle2,   ar: "5 تعديلات ما بعد التسليم" },
+  ],
+  infinity: [
+    { icon: Star,           ar: "كل مميزات برو ✦✦" },
+    { icon: Mail,           ar: "5 بريد باسم المنصة" },
+    { icon: MessageCircle,  ar: "10,000 رسالة بريدية شهرياً" },
+    { icon: Bot,            ar: "تدريب نماذج مخصصة غير محدود" },
+    { icon: Server,         ar: "استضافة نماذج AI خاصة" },
+    { icon: Shield,         ar: "دعم أولوية 24/7 ومدير حساب مخصص" },
+    { icon: Rocket,         ar: "20 تطوير/ميزة ما بعد التسليم" },
+  ],
+};
+
+/* ─── Generic Features for "Other" Sector ─────────────────────────────── */
 const GENERIC_FEATURES = {
   lite: [
     { icon: Globe,           ar: "موقع احترافي مخصص للقطاع" },
@@ -174,6 +472,15 @@ const GENERIC_FEATURES = {
 function featuresFor(sector: SectorKey, tier: "lite"|"pro"|"infinity") {
   if (sector === "restaurant") return RESTAURANT_FEATURES[tier];
   if (sector === "ecommerce")  return ECOMMERCE_FEATURES[tier];
+  if (sector === "education")  return EDUCATION_FEATURES[tier];
+  if (sector === "healthcare") return HEALTHCARE_FEATURES[tier];
+  if (sector === "realestate") return REALESTATE_FEATURES[tier];
+  if (sector === "corporate")  return CORPORATE_FEATURES[tier];
+  if (sector === "fitness")    return FITNESS_FEATURES[tier];
+  if (sector === "beauty")     return BEAUTY_FEATURES[tier];
+  if (sector === "events")     return EVENTS_FEATURES[tier];
+  if (sector === "marketing")  return MARKETING_FEATURES[tier];
+  if (sector === "ai")         return AI_FEATURES[tier];
   return GENERIC_FEATURES[tier];
 }
 
