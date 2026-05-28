@@ -406,7 +406,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-between gap-2">
           <Link href="/" className="shrink-0 hover:opacity-80 transition-opacity">
             <img
-              src="/qirox-logo-full.png"
+              src="/qirox-logo-full.svg"
               alt="QIROX"
               className="h-6 w-auto object-contain dark:invert"
             />

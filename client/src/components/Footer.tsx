@@ -89,7 +89,7 @@ export default function Footer() {
           <div className="md:col-span-5">
             <div className="mb-6">
               <Link href="/" className="hover:opacity-80 transition-opacity inline-block">
-                <img src="/qirox-logo-full.png" alt="QIROX" className="h-9 w-auto object-contain dark:invert" />
+                <img src="/qirox-logo-full.svg" alt="QIROX" className="h-9 w-auto object-contain dark:invert" />
               </Link>
             </div>
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">
