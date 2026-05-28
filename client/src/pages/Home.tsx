@@ -226,20 +226,20 @@ function TickerStrip({ items, dark = true, reverse = false }: { items: string[];
   const doubled = [...items, ...items];
   const dur = reverse ? "38s" : "30s";
   return (
-    <div className={`overflow-hidden py-[14px] border-y ${dark ? "bg-black border-white/[0.06]" : "bg-gray-50 dark:bg-gray-950 border-black/[0.05] dark:border-white/[0.05]"}`}>
+    <div className={`overflow-hidden py-3 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-gray-50 dark:bg-gray-950 border-black/[0.06] dark:border-white/[0.06]"}`}>
       <div
-        className="flex whitespace-nowrap"
+        className="flex whitespace-nowrap items-center"
         style={{ animation: `${reverse ? "marquee-right" : "marquee-left"} ${dur} linear infinite` }}
       >
         {doubled.map((item, i) => (
           <span
             key={i}
-            className={`inline-flex items-center gap-2.5 mx-7 text-[10.5px] font-black tracking-[0.22em] uppercase select-none ${
-              dark ? "text-white/40" : "text-black/25 dark:text-white/22"
-            }`}
+            className={`inline-flex items-center gap-3 select-none`}
           >
-            <span className={`w-[5px] h-[5px] rounded-full flex-shrink-0 ${dark ? "bg-white/20" : "bg-black/15 dark:bg-white/15"}`} />
-            {item}
+            <span className={`text-sm font-bold px-4 ${dark ? "text-white/60" : "text-black/45 dark:text-white/45"}`}>
+              {item}
+            </span>
+            <span className={`text-lg font-thin ${dark ? "text-white/20" : "text-black/15 dark:text-white/15"}`}>◆</span>
           </span>
         ))}
       </div>
