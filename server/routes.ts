@@ -8935,7 +8935,7 @@ export async function registerRoutes(
     try {
       const OpenAI = (await import("openai")).default;
       const groq = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "",
+        apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
       const systemPrompt = `أنت مساعد ذكي تابع لشركة كيروكس (QIROX Studio) لتطوير الأنظمة والتطبيقات.
@@ -13859,7 +13859,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "",
+        apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
       const contractModel = "kimi-k2-0905-preview";
@@ -13910,7 +13910,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "",
+        apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
       const model = "kimi-k2-0905-preview";
