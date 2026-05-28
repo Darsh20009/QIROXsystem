@@ -258,13 +258,13 @@ export class MongoStorage implements IStorage {
   }
 
   async getOrdersWithUsers(): Promise<any[]> {
-    const orders = await OrderModel.find({}).populate('userId', 'fullName email phone username').lean();
+    const orders = await OrderModel.find({}).populate('userId', 'fullName email phone username taxNumber organizationName commercialRegistration nationalAddress address city').lean();
     return orders.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
   }
 
   async getOrderWithUser(id: string): Promise<any | undefined> {
     try {
-      const order = await OrderModel.findById(id).populate('userId', 'fullName email phone username').lean();
+      const order = await OrderModel.findById(id).populate('userId', 'fullName email phone username taxNumber organizationName commercialRegistration nationalAddress address city').lean();
       if (!order) return undefined;
       const o = order as any;
       return { ...o, id: o._id.toString(), client: o.userId };

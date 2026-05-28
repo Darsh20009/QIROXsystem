@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send, Package, Sparkles, ClipboardList, Wand2, RefreshCw, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send, Package, Sparkles, ClipboardList, Wand2, RefreshCw, Check, ChevronDown, ChevronUp, FolderOpen, Building2, Hash, MapPin, FileUp, Paperclip } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,12 @@ interface OrderData {
     username?: string;
     email?: string;
     phone?: string;
+    taxNumber?: string;
+    organizationName?: string;
+    commercialRegistration?: string;
+    nationalAddress?: string;
+    address?: string;
+    city?: string;
   };
 }
 
@@ -131,6 +137,8 @@ export default function AdminOrders() {
   const [editProjectForm, setEditProjectForm] = useState({
     businessName: "", projectType: "", sector: "", status: "", adminNotes: "", totalAmount: "",
   });
+  const [newProjectFile, setNewProjectFile] = useState({ title: "", url: "", fileType: "custom" });
+  const [projectFileUploading, setProjectFileUploading] = useState(false);
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -417,6 +425,27 @@ export default function AdminOrders() {
     onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
   });
 
+  const addProjectFileMutation = useMutation({
+    mutationFn: ({ projectId, file }: { projectId: string; file: { title: string; url: string; fileType: string } }) =>
+      apiRequest("POST", `/api/admin/projects/${projectId}/files`, file).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      setNewProjectFile({ title: "", url: "", fileType: "custom" });
+      toast({ title: L ? "✅ تم إضافة الملف" : "✅ File added" });
+    },
+    onError: () => toast({ title: L ? "فشل إضافة الملف" : "Failed to add file", variant: "destructive" }),
+  });
+
+  const deleteProjectFileMutation = useMutation({
+    mutationFn: ({ projectId, fileId }: { projectId: string; fileId: string }) =>
+      apiRequest("DELETE", `/api/admin/projects/${projectId}/files/${fileId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      toast({ title: L ? "تم حذف الملف" : "File deleted" });
+    },
+    onError: () => toast({ title: L ? "فشل حذف الملف" : "Failed to delete file", variant: "destructive" }),
+  });
+
   const openOrder = (order: OrderData) => {
     setSelectedOrder(order);
     setActiveTab("details");
@@ -667,6 +696,9 @@ export default function AdminOrders() {
                   <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
                     <DollarSign className="w-3 h-3" />{L ? "التكاليف والأرباح" : "Costs & Profits"}
                   </TabsTrigger>
+                  <TabsTrigger value="files" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                    <Paperclip className="w-3 h-3" />{L ? "ملفات المشروع" : "Project Files"}
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Tab 1: Details */}
@@ -835,6 +867,63 @@ export default function AdminOrders() {
                                     <PhoneOff className="w-3 h-3" />
                                     {L ? "الرقم خطأ؟" : "Wrong number?"}
                                   </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Client Legal / Billing Info */}
+                      {selectedOrder.client && (selectedOrder.client.organizationName || selectedOrder.client.taxNumber || selectedOrder.client.commercialRegistration || selectedOrder.client.nationalAddress) && (
+                        <div>
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Building2 className="w-3.5 h-3.5" />
+                            {L ? "بيانات الفوترة والمؤسسة" : "Billing & Organization Info"}
+                          </p>
+                          <div className="bg-black/[0.02] rounded-xl p-4 space-y-2.5 border border-black/[0.04]">
+                            {selectedOrder.client.organizationName && (
+                              <div className="flex items-start gap-2">
+                                <Building2 className="w-3.5 h-3.5 text-black/30 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] text-black/40 mb-0.5">{L ? "اسم المؤسسة" : "Organization"}</p>
+                                  <p className="text-xs font-medium text-black/80">{selectedOrder.client.organizationName}</p>
+                                </div>
+                              </div>
+                            )}
+                            {selectedOrder.client.taxNumber && (
+                              <div className="flex items-start gap-2">
+                                <Hash className="w-3.5 h-3.5 text-black/30 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] text-black/40 mb-0.5">{L ? "الرقم الضريبي" : "Tax Number"}</p>
+                                  <p className="text-xs font-mono text-black/80">{selectedOrder.client.taxNumber}</p>
+                                </div>
+                              </div>
+                            )}
+                            {selectedOrder.client.commercialRegistration && (
+                              <div className="flex items-start gap-2">
+                                <Hash className="w-3.5 h-3.5 text-black/30 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] text-black/40 mb-0.5">{L ? "السجل التجاري" : "Commercial Reg."}</p>
+                                  <p className="text-xs font-mono text-black/80">{selectedOrder.client.commercialRegistration}</p>
+                                </div>
+                              </div>
+                            )}
+                            {selectedOrder.client.nationalAddress && (
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-black/30 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] text-black/40 mb-0.5">{L ? "العنوان الوطني" : "National Address"}</p>
+                                  <p className="text-xs text-black/80">{selectedOrder.client.nationalAddress}</p>
+                                </div>
+                              </div>
+                            )}
+                            {(selectedOrder.client.address || selectedOrder.client.city) && (
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-black/30 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] text-black/40 mb-0.5">{L ? "العنوان" : "Address"}</p>
+                                  <p className="text-xs text-black/80">{[selectedOrder.client.address, selectedOrder.client.city].filter(Boolean).join("، ")}</p>
                                 </div>
                               </div>
                             )}
@@ -1622,6 +1711,176 @@ export default function AdminOrders() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Tab 5: Project Files */}
+                <TabsContent value="files" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5 space-y-6">
+                      {!orderProject ? (
+                        <div className="py-16 text-center">
+                          <FolderOpen className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                          <p className="text-sm font-semibold text-black/30">{L ? "لا يوجد مشروع مرتبط بهذا الطلب" : "No project linked to this order"}</p>
+                          <p className="text-xs text-black/20 mt-1">{L ? "أنشئ المشروع أولاً من تبويب إدارة الطلب" : "Create the project first from the Manage Order tab"}</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Upload new file */}
+                          <div>
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                              <FileUp className="w-3.5 h-3.5" />
+                              {L ? "إضافة ملف جديد" : "Add New File"}
+                            </p>
+                            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-black/40">{L ? "عنوان الملف" : "File Title"}</label>
+                                  <Input
+                                    value={newProjectFile.title}
+                                    onChange={e => setNewProjectFile(p => ({ ...p, title: e.target.value }))}
+                                    placeholder={L ? "مثال: بطاقة الهوية" : "e.g. National ID"}
+                                    className="h-8 text-xs border-black/[0.10]"
+                                    data-testid="input-project-file-title"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-black/40">{L ? "نوع الملف" : "File Type"}</label>
+                                  <select
+                                    value={newProjectFile.fileType}
+                                    onChange={e => setNewProjectFile(p => ({ ...p, fileType: e.target.value }))}
+                                    className="w-full h-8 px-2 text-xs rounded-md border border-black/[0.10] bg-background text-foreground focus:outline-none"
+                                    data-testid="select-project-file-type"
+                                  >
+                                    <option value="identity">{L ? "هوية" : "Identity"}</option>
+                                    <option value="logo">{L ? "شعار" : "Logo"}</option>
+                                    <option value="commercial_reg">{L ? "سجل تجاري" : "Commercial Reg."}</option>
+                                    <option value="tax_reg">{L ? "شهادة ضريبية" : "Tax Certificate"}</option>
+                                    <option value="iban">{L ? "IBAN" : "IBAN"}</option>
+                                    <option value="contract">{L ? "عقد" : "Contract"}</option>
+                                    <option value="payment_proof">{L ? "إيصال دفع" : "Payment Proof"}</option>
+                                    <option value="custom">{L ? "أخرى" : "Other"}</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-semibold text-black/40">{L ? "رفع الملف" : "Upload File"}</label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={newProjectFile.url}
+                                    onChange={e => setNewProjectFile(p => ({ ...p, url: e.target.value }))}
+                                    placeholder={L ? "رابط الملف أو اضغط لرفع ملف..." : "File URL or upload below..."}
+                                    className="h-8 text-xs border-black/[0.10] flex-1"
+                                    dir="ltr"
+                                    data-testid="input-project-file-url"
+                                  />
+                                  <label
+                                    className="h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded-md border border-black/[0.10] bg-black/[0.02] hover:bg-black/[0.04] cursor-pointer transition-colors text-black/60"
+                                    data-testid="label-project-file-upload"
+                                  >
+                                    {projectFileUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                    {L ? "رفع" : "Upload"}
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setProjectFileUploading(true);
+                                        try {
+                                          const fd = new FormData();
+                                          fd.append("file", file);
+                                          const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+                                          const data = await res.json();
+                                          if (data.url) setNewProjectFile(p => ({ ...p, url: data.url }));
+                                        } catch {
+                                          toast({ title: L ? "فشل رفع الملف" : "Upload failed", variant: "destructive" });
+                                        } finally {
+                                          setProjectFileUploading(false);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                className="w-full h-8 text-xs bg-black text-white hover:bg-black/80 gap-2"
+                                disabled={!newProjectFile.title || !newProjectFile.url || addProjectFileMutation.isPending}
+                                onClick={() => {
+                                  if (!orderProject?.id) return;
+                                  addProjectFileMutation.mutate({ projectId: orderProject.id, file: newProjectFile });
+                                }}
+                                data-testid="button-add-project-file"
+                              >
+                                {addProjectFileMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                                {L ? "إضافة الملف" : "Add File"}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Files list */}
+                          <div>
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                              <Paperclip className="w-3.5 h-3.5" />
+                              {L ? "الملفات المرفوعة" : "Uploaded Files"} ({(orderProject?.projectFiles || []).length})
+                            </p>
+                            {(orderProject?.projectFiles || []).length === 0 ? (
+                              <div className="py-10 text-center bg-black/[0.01] border border-black/[0.04] rounded-2xl">
+                                <Paperclip className="w-8 h-8 text-black/10 mx-auto mb-2" />
+                                <p className="text-xs text-black/25">{L ? "لا توجد ملفات مرفوعة بعد" : "No files uploaded yet"}</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {(orderProject.projectFiles || []).map((f: any) => {
+                                  const typeLabels: Record<string, string> = {
+                                    identity: L ? "هوية" : "Identity",
+                                    logo: L ? "شعار" : "Logo",
+                                    commercial_reg: L ? "سجل تجاري" : "Commercial Reg.",
+                                    tax_reg: L ? "شهادة ضريبية" : "Tax Cert.",
+                                    iban: "IBAN",
+                                    contract: L ? "عقد" : "Contract",
+                                    payment_proof: L ? "إيصال دفع" : "Payment Proof",
+                                    custom: L ? "أخرى" : "Other",
+                                  };
+                                  const fileId = f._id || f.id || "";
+                                  return (
+                                    <div key={fileId} className="group flex items-center gap-3 p-3 bg-black/[0.02] hover:bg-black/[0.03] rounded-xl border border-black/[0.04] transition-colors">
+                                      <div className="w-8 h-8 rounded-lg bg-black/[0.06] flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-black/40" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold text-black/80 truncate">{f.title}</p>
+                                        <p className="text-[10px] text-black/30">{typeLabels[f.fileType] || f.fileType}</p>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <a
+                                          href={f.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
+                                          data-testid={`link-project-file-${fileId}`}
+                                        >
+                                          <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
+                                        <button
+                                          onClick={() => deleteProjectFileMutation.mutate({ projectId: orderProject.id, fileId })}
+                                          disabled={deleteProjectFileMutation.isPending}
+                                          className="p-1.5 rounded-lg hover:bg-red-50 text-black/30 hover:text-red-500 transition-colors"
+                                          data-testid={`button-delete-project-file-${fileId}`}
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </ScrollArea>
                 </TabsContent>

@@ -194,6 +194,14 @@ const projectSchema = new mongoose.Schema({
   },
   deliveryVideoUrl: String,
   deliveryFiles: [{ nameAr: String, url: String, icon: String }],
+  projectFiles: [{
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    title: { type: String, required: true },
+    url: { type: String, required: true },
+    fileType: { type: String, enum: ['identity', 'logo', 'commercial_reg', 'tax_reg', 'iban', 'contract', 'payment_proof', 'custom'], default: 'custom' },
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    addedAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 const taskSchema = new mongoose.Schema({
@@ -620,6 +628,7 @@ const invoiceSchema = new mongoose.Schema({
     taxNumber: { type: String, default: "" },
     organizationName: { type: String, default: "" },
     commercialRegistration: { type: String, default: "" },
+    nationalAddress: { type: String, default: "" },
   },
 }, { timestamps: true });
 

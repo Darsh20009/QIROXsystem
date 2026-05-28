@@ -1375,7 +1375,7 @@ export async function registerRoutes(
     if (page > 0) {
       const total = await OrderModel.countDocuments(filter);
       const docs = await OrderModel.find(filter)
-        .populate('userId', 'fullName email phone username')
+        .populate('userId', 'fullName email phone username taxNumber organizationName commercialRegistration nationalAddress address city')
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -2179,6 +2179,43 @@ export async function registerRoutes(
     ).lean();
     if (!project) return res.sendStatus(404);
     res.json({ success: true, project });
+  });
+
+  // ── Project Files: add a file to a project ──
+  app.post("/api/admin/projects/:id/files", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
+    const { ProjectModel } = await import("./models");
+    const { title, url, fileType } = req.body;
+    if (!title || !url) return res.status(400).json({ error: "title and url are required" });
+    const fileEntry = {
+      title,
+      url,
+      fileType: fileType || "custom",
+      addedBy: (req.user as any)._id,
+      addedAt: new Date(),
+    };
+    const project = await ProjectModel.findByIdAndUpdate(
+      req.params.id,
+      { $push: { projectFiles: fileEntry } },
+      { returnDocument: "after" }
+    ).lean();
+    if (!project) return res.sendStatus(404);
+    res.json({ success: true, projectFiles: (project as any).projectFiles });
+  });
+
+  // ── Project Files: remove a file from a project ──
+  app.delete("/api/admin/projects/:id/files/:fileId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
+    const { ProjectModel } = await import("./models");
+    const project = await ProjectModel.findByIdAndUpdate(
+      req.params.id,
+      { $pull: { projectFiles: { _id: req.params.fileId } } },
+      { returnDocument: "after" }
+    ).lean();
+    if (!project) return res.sendStatus(404);
+    res.json({ success: true, projectFiles: (project as any).projectFiles });
   });
 
   app.patch(api.tasks.update.path, async (req, res) => {
@@ -7006,6 +7043,7 @@ export async function registerRoutes(
       taxNumber: clientUser?.taxNumber || "",
       organizationName: clientUser?.organizationName || (q as any).externalCompany || "",
       commercialRegistration: clientUser?.commercialRegistration || "",
+      nationalAddress: clientUser?.nationalAddress || "",
     };
     const invoice = await (InvoiceModel as any).create({
       invoiceNumber: invNum,
