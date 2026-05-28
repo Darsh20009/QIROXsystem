@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ElementType } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -222,24 +222,29 @@ const fade = (i = 0) => ({
 });
 
 // ─── Full-Width Ticker Strip ──────────────────────────────────────────────────
-function TickerStrip({ items, dark = true, reverse = false }: { items: string[]; dark?: boolean; reverse?: boolean }) {
+type TickerItem = { icon: ElementType; text: string; color: string };
+function TickerStrip({ items, dark = true, reverse = false }: { items: TickerItem[]; dark?: boolean; reverse?: boolean }) {
   const doubled = [...items, ...items];
-  const dur = reverse ? "38s" : "30s";
+  const dur = reverse ? "42s" : "34s";
   return (
-    <div className={`overflow-hidden py-3 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-gray-50 dark:bg-gray-950 border-black/[0.06] dark:border-white/[0.06]"}`}>
+    <div className={`overflow-hidden py-4 border-y ${dark ? "bg-black border-white/[0.08]" : "bg-white dark:bg-gray-950 border-black/[0.07] dark:border-white/[0.07]"}`}>
       <div
         className="flex whitespace-nowrap items-center"
         style={{ animation: `${reverse ? "marquee-right" : "marquee-left"} ${dur} linear infinite` }}
       >
         {doubled.map((item, i) => (
-          <span
-            key={i}
-            className={`inline-flex items-center gap-3 select-none`}
-          >
-            <span className={`text-sm font-bold px-4 ${dark ? "text-white/60" : "text-black/45 dark:text-white/45"}`}>
-              {item}
+          <span key={i} className="inline-flex items-center gap-2.5 select-none mx-2">
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border ${
+              dark
+                ? "border-white/10 bg-white/[0.05]"
+                : "border-black/[0.08] bg-black/[0.03] dark:border-white/10 dark:bg-white/[0.04]"
+            }`}>
+              <item.icon className={`w-3.5 h-3.5 flex-shrink-0 ${item.color}`} />
+              <span className={`text-[13px] font-bold ${dark ? "text-white/75" : "text-black/65 dark:text-white/65"}`}>
+                {item.text}
+              </span>
             </span>
-            <span className={`text-lg font-thin ${dark ? "text-white/20" : "text-black/15 dark:text-white/15"}`}>◆</span>
+            <span className={`text-base ${dark ? "text-white/12" : "text-black/10 dark:text-white/10"}`}>✦</span>
           </span>
         ))}
       </div>
@@ -563,9 +568,14 @@ export default function Home() {
 
         {/* ── Ticker after Hero ── */}
         <TickerStrip dark items={[
-          "تصميم احترافي", "تطوير متكامل", "إطلاق سريع", "QIROX STUDIO",
-          "أنظمة ذكية", "تجارب مميزة", "كود نظيف", "دعم مستمر",
-          "Professional Design", "Smart Systems", "Fast Delivery", "Clean Code",
+          { icon: Sparkles,      text: ar ? "تصميم احترافي"   : "Professional Design",  color: "text-yellow-400" },
+          { icon: Cpu,           text: ar ? "تطوير متكامل"    : "Full-Stack Dev",        color: "text-blue-400"   },
+          { icon: Zap,           text: ar ? "إطلاق سريع"      : "Fast Delivery",         color: "text-green-400"  },
+          { icon: Shield,        text: ar ? "حماية وأمان"     : "Secure & Protected",    color: "text-purple-400" },
+          { icon: Bot,           text: ar ? "ذكاء اصطناعي"    : "AI-Powered",            color: "text-pink-400"   },
+          { icon: Globe,         text: ar ? "وصول عالمي"      : "Global Reach",          color: "text-cyan-400"   },
+          { icon: Star,          text: ar ? "جودة لا تُساوَم" : "Top Quality",           color: "text-amber-400"  },
+          { icon: Layers,        text: ar ? "أنظمة متكاملة"   : "Integrated Systems",    color: "text-indigo-400" },
         ]} />
 
         {/* ─── TAB BAR ─── */}
@@ -873,9 +883,14 @@ export default function Home() {
 
         {/* ── Ticker between Pricing and Process ── */}
         <TickerStrip dark={false} reverse items={[
-          "لايت · لايت · برو", "نظام كامل", "بدون رسوم خفية", "تسليم 7–21 يوم",
-          "SSL مجاني", "حماية كاملة", "دعم مستمر", "Lite · Pro · Infinity",
-          "No Hidden Fees", "Full System", "7-21 Day Delivery", "24/7 Support",
+          { icon: ShoppingBag,   text: ar ? "باقة لايت"           : "Lite Plan",           color: "text-emerald-500" },
+          { icon: Zap,           text: ar ? "باقة برو"             : "Pro Plan",            color: "text-blue-500"    },
+          { icon: Infinity,      text: ar ? "باقة انفينيتي"        : "Infinity Plan",       color: "text-purple-500"  },
+          { icon: Shield,        text: ar ? "بدون رسوم خفية"       : "No Hidden Fees",      color: "text-green-500"   },
+          { icon: Zap,           text: ar ? "تسليم 7–21 يوم"       : "7-21 Day Delivery",   color: "text-orange-500"  },
+          { icon: Globe,         text: ar ? "SSL مجاني مدى الحياة" : "Free SSL Forever",    color: "text-cyan-500"    },
+          { icon: Star,          text: ar ? "دعم مستمر على مدار الساعة" : "24/7 Support",  color: "text-amber-500"   },
+          { icon: Check,         text: ar ? "ضمان رضا العميل"      : "Satisfaction Guarantee", color: "text-teal-500" },
         ]} />
 
         {/* ─── PROCESS ─── */}
@@ -909,9 +924,14 @@ export default function Home() {
 
         {/* ── Ticker between Process and Reviews ── */}
         <TickerStrip dark items={[
-          "فكرة · تصميم · تطوير · إطلاق", "4 خطوات فقط", "من الصفر للإطلاق",
-          "Idea · Design · Build · Launch", "4 Steps Only", "Zero to Live",
-          "بناء أنظمة", "تسليم في الوقت", "جودة لا تُساوَم",
+          { icon: Sparkles,     text: ar ? "فكرة"          : "Idea",            color: "text-yellow-400"  },
+          { icon: ArrowRight,   text: ar ? "تصميم"         : "Design",          color: "text-blue-400"    },
+          { icon: Cpu,          text: ar ? "تطوير"         : "Build",           color: "text-purple-400"  },
+          { icon: Zap,          text: ar ? "إطلاق"         : "Launch",          color: "text-green-400"   },
+          { icon: Check,        text: ar ? "4 خطوات فقط"  : "4 Steps Only",    color: "text-emerald-400" },
+          { icon: TrendingUp,   text: ar ? "نمو مستمر"    : "Continuous Growth", color: "text-pink-400"  },
+          { icon: Shield,       text: ar ? "جودة مضمونة"  : "Quality Guaranteed", color: "text-cyan-400" },
+          { icon: Globe,        text: ar ? "من الصفر للإطلاق" : "Zero to Live", color: "text-indigo-400" },
         ]} />
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
@@ -984,9 +1004,14 @@ export default function Home() {
 
         {/* ── Ticker between Reviews and Partners ── */}
         <TickerStrip dark={false} items={[
-          "37+ تقييم حقيقي", "4.97 متوسط التقييم", "عملاء من السعودية والخليج",
-          "37+ Real Reviews", "4.97 Rating", "Clients Across GCC",
-          "ثقة العملاء", "جودة موثّقة", "نتائج حقيقية",
+          { icon: Star,         text: ar ? "4.97 متوسط التقييم"          : "4.97 Avg. Rating",       color: "text-amber-500"   },
+          { icon: Check,        text: ar ? "37+ تقييم حقيقي موثّق"       : "37+ Verified Reviews",   color: "text-green-500"   },
+          { icon: Globe,        text: ar ? "عملاء من السعودية والخليج"   : "GCC Clients",            color: "text-blue-500"    },
+          { icon: Shield,       text: ar ? "خدمة موثوقة 100%"            : "100% Trusted Service",   color: "text-purple-500"  },
+          { icon: TrendingUp,   text: ar ? "نتائج حقيقية وملموسة"        : "Real Results",           color: "text-emerald-500" },
+          { icon: Heart,        text: ar ? "عملاء سعداء دائماً"          : "Happy Clients",          color: "text-pink-500"    },
+          { icon: Zap,          text: ar ? "دعم ما بعد التسليم"          : "Post-Launch Support",    color: "text-orange-500"  },
+          { icon: Bot,          text: ar ? "بناء علاقات طويلة الأمد"     : "Long-Term Partnership",  color: "text-cyan-500"    },
         ]} />
 
         {/* ─── PARTNERS ─── */}
@@ -1036,9 +1061,14 @@ export default function Home() {
 
         {/* ── Dark ticker between Partners and Templates ── */}
         <TickerStrip dark reverse items={[
-          "نماذج جاهزة للإطلاق", "مطاعم · عقارات · تجارة", "جرّب مجاناً",
-          "Ready-Made Templates", "Restaurants · Real Estate · Commerce", "Try For Free",
-          "Demo Live", "تجربة حية", "انطلق اليوم",
+          { icon: ShoppingBag,   text: ar ? "متجر إلكتروني"       : "E-Commerce Store",     color: "text-orange-400"  },
+          { icon: Coffee,        text: ar ? "نظام مطعم وكافيه"    : "Restaurant System",    color: "text-amber-400"   },
+          { icon: HomeIcon,      text: ar ? "منصة عقارات"         : "Real Estate Platform", color: "text-blue-400"    },
+          { icon: GraduationCap, text: ar ? "نظام تعليمي"         : "Education System",     color: "text-purple-400"  },
+          { icon: Heart,         text: ar ? "موقع عيادة طبية"     : "Healthcare Site",      color: "text-pink-400"    },
+          { icon: Building2,     text: ar ? "موقع شركة"           : "Corporate Website",    color: "text-cyan-400"    },
+          { icon: Scissors,      text: ar ? "صالون ومركز تجميل"   : "Beauty & Salon",       color: "text-rose-400"    },
+          { icon: Bot,           text: ar ? "جرّب النماذج مجاناً" : "Try Demos Free",       color: "text-green-400"   },
         ]} />
 
         {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
