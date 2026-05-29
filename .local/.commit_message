@@ -1,0 +1,28 @@
+feat(employee): Role-based guards, AI assistant, sidebar role colors
+
+Task #1 — Employee system full redesign (partial: guards + layout + AI)
+
+Changes:
+- NEW client/src/components/RoleGuard.tsx
+  Role-based route guard: checks user.role against allowedRoles[], shows
+  an access-denied screen and auto-redirects to /employee/role-dashboard.
+
+- NEW client/src/components/EmployeeAIAssistant.tsx
+  Floating slide-over Kimi AI chat panel accessible from sidebar/mobile.
+  Uses /api/ai/message with role-aware system prompts, quick prompts,
+  markdown formatting, bounce-dot loading indicator.
+
+- UPDATED client/src/components/EmployeeLayout.tsx
+  • Per-role colored badges (developer=blue, designer=purple, sales=green,
+    accountant=amber, hr=rose, support=orange, marketing=pink, etc.)
+  • Kimi AI button in sidebar footer + sparkle icon button on mobile topbar
+  • EmployeeAIAssistant mounted at layout level for global access
+
+- UPDATED client/src/App.tsx
+  • Imported RoleGuard
+  • 16 guarded wrapper components (G_Employees, G_Finance, G_Analytics…)
+  • Admin-only: atlas, cron-jobs, conn-settings, app-publish, sys-features,
+    extra-addons, mod-config, bank-settings, activity-log
+  • Admin+Manager: profit-report
+  • Admin+Manager+Accountant: finance, analytics (+ sales_manager), wallet
+  • Admin+Manager+HR: employees, attendance, payroll (+ accountant)
