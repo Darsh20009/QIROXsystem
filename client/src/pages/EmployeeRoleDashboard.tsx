@@ -16,7 +16,9 @@ import {
   Wrench, Code2, ShieldCheck, BarChart3, Palette, Upload, ExternalLink,
   FileText, Users, Activity, Wallet, Receipt, Banknote, Target,
   ChevronRight, Star, Zap, Globe, Wand2, Video, Calendar, KeyRound,
-  ShoppingCart, Phone, MessageCircle, ChevronDown, ChevronUp
+  ShoppingCart, Phone, MessageCircle, ChevronDown, ChevronUp,
+  Megaphone, Building2, Newspaper, ShoppingBag, PlusCircle,
+  FileCheck, LayoutDashboard, ClipboardList, CalendarDays
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -856,6 +858,385 @@ function QiroxPostsBanner() {
   );
 }
 
+// ── MARKETING DASHBOARD ────────────────────────────────────────────────────────
+function MarketingDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
+  const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
+  const { data: quotations } = useQuery<any[]>({ queryKey: ["/api/admin/quotations"] });
+
+  const now = new Date();
+  const newClientsThisMonth = customers?.filter((c: any) => {
+    const d = new Date(c.createdAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length || 0;
+  const activeOrders = orders?.filter((o: any) => !["completed","cancelled","rejected"].includes(o.status)).length || 0;
+  const pendingQuotations = quotations?.filter((q: any) => q.status === "pending" || q.status === "draft").length || 0;
+
+  const quickLinks = [
+    { icon: Users,     title: L ? "إدارة العملاء"       : "Client Management",  desc: L ? "قاعدة بيانات العملاء"      : "Client database",               href: "/admin/customers" },
+    { icon: PlusCircle,title: L ? "عميل وطلب جديد"      : "New Client & Order",  desc: L ? "تسجيل عميل مباشرة"        : "Register client directly",       href: "/employee/new-order" },
+    { icon: FileCheck, title: L ? "عروض الأسعار"         : "Quotations",         desc: L ? "إعداد وإرسال العروض"       : "Prepare and send proposals",     href: "/admin/quotations" },
+    { icon: Megaphone, title: L ? "أدوات التسويق"        : "Marketing Tools",    desc: L ? "البوسترات والمواد"         : "Posters and materials",          href: "/sales/marketing" },
+    { icon: Package,   title: L ? "متابعة المشاريع"      : "Track Projects",     desc: L ? "حالة الطلبات والمراحل"    : "Order statuses and stages",      href: "/admin/orders" },
+    { icon: Star,      title: L ? "اشتراكات العملاء"     : "Subscriptions",      desc: L ? "تفعيل وإدارة الاشتراكات" : "Manage client subscriptions",    href: "/employee/subscriptions" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.div {...fade(0)} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <Megaphone className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black">{L ? "لوحة التسويق" : "Marketing Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "متابعة العملاء والمقترحات والمواد التسويقية" : "Track clients, proposals, and marketing materials"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: L ? "عملاء الشهر" : "New This Month", val: newClientsThisMonth },
+              { label: L ? "مشاريع نشطة" : "Active Projects", val: activeOrders },
+              { label: L ? "عروض معلّقة" : "Pending Quotes", val: pendingQuotations },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-2xl font-black">{val}</p>
+                <p className="text-white/40 text-[11px] mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {quickLinks.map(({ icon: Icon, title, desc, href }, i) => (
+          <motion.div key={i} {...fade(0.08 + i * 0.04)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+              <CardContent className="p-4">
+                <Link href={href}>
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Icon className="w-5 h-5 text-black dark:text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-black dark:text-white">{title}</p>
+                      <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">{desc}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 flex-shrink-0 rotate-180" />
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div {...fade(0.3)}>
+        <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Users className="w-4 h-4 text-black/50 dark:text-white/50" />
+                {L ? "آخر العملاء المسجّلين" : "Recently Registered Clients"}
+              </CardTitle>
+              <Link href="/admin/customers">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-black/40 dark:text-white/40">
+                  {L ? "الكل" : "All"} <ChevronRight className="w-3 h-3 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {customers?.slice(0, 5).map((c: any) => (
+              <div key={c._id} className="flex items-center justify-between py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-black dark:text-white">{c.fullName || c.username}</p>
+                  <p className="text-[11px] text-black/35 dark:text-white/35">{c.email}</p>
+                </div>
+                <span className="text-[11px] text-black/30 dark:text-white/30">{c.phone || ""}</span>
+              </div>
+            )) || <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد بيانات" : "No data"}</p>}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── HR DASHBOARD ───────────────────────────────────────────────────────────────
+function HRDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: employees } = useQuery<any[]>({ queryKey: ["/api/admin/employees"] });
+  const { data: payroll } = useQuery<any[]>({ queryKey: ["/api/admin/payroll"] });
+
+  const quickLinks = [
+    { icon: Building2,   title: L ? "إدارة الموظفين"     : "Employees",   desc: L ? "ملفات الفريق والأدوار"  : "Team files and roles",       href: "/admin/employees" },
+    { icon: Banknote,    title: L ? "كشف الرواتب"         : "Payroll",     desc: L ? "الرواتب والمكافآت"      : "Salaries and bonuses",        href: "/admin/payroll" },
+    { icon: CalendarDays,title: L ? "سجلات الحضور"        : "Attendance",  desc: L ? "متابعة دوام الفريق"     : "Track team attendance",       href: "/admin/attendance" },
+    { icon: Users,       title: L ? "بيانات العملاء"      : "Clients",     desc: L ? "العملاء المسجّلون"      : "Registered clients",          href: "/admin/customers" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.div {...fade(0)} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black">{L ? "لوحة الموارد البشرية" : "HR Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "إدارة الموظفين والرواتب والحضور" : "Manage employees, payroll, and attendance"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: L ? "إجمالي الموظفين" : "Total Employees", val: employees?.length || 0 },
+              { label: L ? "سجلات الرواتب" : "Payroll Records", val: payroll?.length || 0 },
+              { label: L ? "أدوار مختلفة" : "Roles", val: [...new Set(employees?.map((e: any) => e.role) || [])].length },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-2xl font-black">{val}</p>
+                <p className="text-white/40 text-[11px] mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {quickLinks.map(({ icon: Icon, title, desc, href }, i) => (
+          <motion.div key={i} {...fade(0.08 + i * 0.05)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+              <CardContent className="p-4">
+                <Link href={href}>
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Icon className="w-5 h-5 text-black dark:text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-black dark:text-white">{title}</p>
+                      <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{desc}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 flex-shrink-0 rotate-180" />
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div {...fade(0.25)}>
+        <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-black/50 dark:text-white/50" />
+                {L ? "أعضاء الفريق" : "Team Members"}
+              </CardTitle>
+              <Link href="/admin/employees">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-black/40 dark:text-white/40">
+                  {L ? "الكل" : "All"} <ChevronRight className="w-3 h-3 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {employees?.slice(0, 7).map((e: any) => (
+              <div key={e._id} className="flex items-center justify-between py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-black dark:text-white">{e.fullName || e.username}</p>
+                  <p className="text-[11px] text-black/35 dark:text-white/35">{e.role}</p>
+                </div>
+                <span className="text-[11px] text-black/30 dark:text-white/30 truncate max-w-[120px]">{e.email}</span>
+              </div>
+            )) || <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد بيانات" : "No data"}</p>}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── CONTENT DASHBOARD ─────────────────────────────────────────────────────────
+function ContentDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: products } = useQuery<any[]>({ queryKey: ["/api/admin/products"] });
+  const { data: news } = useQuery<any[]>({ queryKey: ["/api/admin/news"] });
+
+  const links = [
+    { icon: ShoppingBag, title: L ? "المنتجات"          : "Products",         desc: L ? "إدارة قائمة المنتجات"    : "Manage product catalog",   href: "/admin/products" },
+    { icon: Newspaper,   title: L ? "الأخبار والمدونة"  : "News & Blog",      desc: L ? "نشر المقالات والأخبار"   : "Publish articles & news",  href: "/admin/news" },
+    { icon: Megaphone,   title: L ? "أدوات التسويق"     : "Marketing Tools",  desc: L ? "البوسترات والمواد الترويجية" : "Posters & materials",   href: "/sales/marketing" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.div {...fade(0)} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <Newspaper className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black">{L ? "لوحة إدارة المحتوى" : "Content Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "المنتجات والمدونة والمحتوى التسويقي" : "Products, blog, and marketing content"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: L ? "المنتجات" : "Products", val: products?.length || 0 },
+              { label: L ? "مقالات المدونة" : "Blog Posts", val: news?.length || 0 },
+              { label: L ? "إجمالي المحتوى" : "Total Items", val: (products?.length || 0) + (news?.length || 0) },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-2xl font-black">{val}</p>
+                <p className="text-white/40 text-[11px] mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {links.map(({ icon: Icon, title, desc, href }, i) => (
+          <motion.div key={i} {...fade(0.08 + i * 0.06)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+              <CardContent className="p-5">
+                <Link href={href}>
+                  <div className="flex flex-col items-center text-center gap-3 py-1">
+                    <div className="w-14 h-14 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon className="w-7 h-7 text-black dark:text-white" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-black dark:text-white">{title}</p>
+                      <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ADMIN / MANAGER OVERVIEW DASHBOARD ────────────────────────────────────────
+function AdminManagerDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
+  const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
+  const { data: employees } = useQuery<any[]>({ queryKey: ["/api/admin/employees"] });
+
+  const now = new Date();
+  const activeOrders = orders?.filter((o: any) => !["completed","cancelled","rejected"].includes(o.status)).length || 0;
+  const thisMonthOrders = orders?.filter((o: any) => {
+    const d = new Date(o.createdAt || o.appliedAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length || 0;
+
+  const shortcuts = [
+    { icon: Package,      label: L ? "المشاريع"        : "Projects",    href: "/admin/orders" },
+    { icon: Users,        label: L ? "العملاء"          : "Clients",     href: "/admin/customers" },
+    { icon: DollarSign,   label: L ? "المالية"          : "Finance",     href: "/admin/finance" },
+    { icon: Building2,    label: L ? "الفريق"           : "Team",        href: "/admin/employees" },
+    { icon: BarChart3,    label: L ? "التقارير"         : "Reports",     href: "/admin/analytics" },
+    { icon: ClipboardList,label: L ? "كانبان"           : "Kanban",      href: "/admin/kanban" },
+    { icon: FileCheck,    label: L ? "عروض الأسعار"     : "Quotations",  href: "/admin/quotations" },
+    { icon: CalendarDays, label: L ? "الحضور"           : "Attendance",  href: "/admin/attendance" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.div {...fade(0)} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black">{L ? "نظرة عامة على المنصة" : "Platform Overview"}</h1>
+              <p className="text-white/40 text-sm">{L ? "إحصاءات وأنشطة نظام قيروكس" : "QIROX platform stats and activity"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: L ? "مشاريع نشطة"   : "Active Projects",  val: activeOrders },
+              { label: L ? "طلبات الشهر"   : "This Month",       val: thisMonthOrders },
+              { label: L ? "إجمالي العملاء" : "Total Clients",    val: customers?.length || 0 },
+              { label: L ? "أعضاء الفريق"  : "Team Members",     val: employees?.length || 0 },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-xl font-black">{val}</p>
+                <p className="text-white/40 text-[10px] mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-4 gap-3">
+        {shortcuts.map(({ icon: Icon, label, href }, i) => (
+          <motion.div key={i} {...fade(i * 0.04)}>
+            <Link href={href}>
+              <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 text-center hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group">
+                <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                  <Icon className="w-5 h-5 text-black dark:text-white" />
+                </div>
+                <p className="text-xs font-bold text-black dark:text-white">{label}</p>
+              </div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div {...fade(0.3)}>
+        <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Package className="w-4 h-4 text-black/50 dark:text-white/50" />
+                {L ? "آخر المشاريع" : "Recent Projects"}
+              </CardTitle>
+              <Link href="/admin/orders">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-black/40 dark:text-white/40">
+                  {L ? "الكل" : "All"} <ChevronRight className="w-3 h-3 rotate-180" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {orders?.slice(0, 6).map((o: any) => (
+              <div key={o._id || o.id} className="flex items-center justify-between py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-black dark:text-white">{o.projectType || o.sector || (L ? "مشروع" : "Project")}</p>
+                  <p className="text-[11px] text-black/35 dark:text-white/35">{o.clientName || ""}</p>
+                </div>
+                <Badge variant="outline" className="text-[10px] border-black/10 dark:border-white/10">
+                  {o.status}
+                </Badge>
+              </div>
+            )) || <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد مشاريع" : "No projects"}</p>}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
   const { lang, dir } = useI18n();
@@ -867,40 +1248,35 @@ export default function EmployeeRoleDashboard() {
   }
 
   const roleToComponent: Record<string, JSX.Element> = {
-    merchant: <DeliveryDashboard />,
-    developer: <DeveloperDashboard />,
-    designer: <DeveloperDashboard />,
-    accountant: <AccountantDashboard />,
-    sales: <SalesDashboard />,
+    merchant:      <DeliveryDashboard />,
+    developer:     <DeveloperDashboard />,
+    designer:      <DeveloperDashboard />,
+    accountant:    <AccountantDashboard />,
+    sales:         <SalesDashboard />,
     sales_manager: <SalesDashboard />,
-    support: <SupportDashboard />,
+    support:       <SupportDashboard />,
+    marketing:     <MarketingDashboard />,
+    hr:            <HRDashboard />,
+    content:       <ContentDashboard />,
+    admin:         <AdminManagerDashboard />,
+    manager:       <AdminManagerDashboard />,
   };
 
-  const roleDashboard = roleToComponent[user.role];
-
-  if (!roleDashboard) {
-    return (
-      <div className="text-center py-12 text-black/40">
-        <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
-        <p className="font-medium">{L ? "هذا الدور ليس له لوحة متخصصة بعد" : "This role does not have a specialized dashboard yet"}</p>
-      </div>
-    );
-  }
+  const roleDashboard = roleToComponent[(user as any).role] ?? <AdminManagerDashboard />;
 
   return (
     <div className="relative overflow-hidden">
-      <PageGraphics variant="dashboard" />
       {roleDashboard}
       <QiroxPostsBanner />
       <AbandonedCartsWidget />
       <UpcomingMeetingsWidget />
-      <motion.div {...fade(0.3)} className="mt-4">
-        <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+      <motion.div {...fade(0.35)} className="mt-4">
+        <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
           <CardContent className="p-5">
             <Link href="/my-tools">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Wand2 className="w-6 h-6 text-black dark:text-white dark:text-black/70 dark:text-white/70" />
+                <div className="w-12 h-12 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wand2 className="w-6 h-6 text-black dark:text-white" />
                 </div>
                 <div>
                   <p className="font-bold text-black dark:text-white">{L ? "أدواتي ومميزاتي ⚡" : "My Tools & Features ⚡"}</p>
@@ -912,7 +1288,6 @@ export default function EmployeeRoleDashboard() {
           </CardContent>
         </Card>
       </motion.div>
-
     </div>
   );
 }
