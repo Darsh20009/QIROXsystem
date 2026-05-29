@@ -23,6 +23,7 @@ import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import PixelTracking from "@/components/PixelTracking";
+import RoleGuard from "@/components/RoleGuard";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -174,6 +175,31 @@ const TrackOrder = lazy(() => import("@/pages/TrackOrder"));
 const AdminSalesReports = lazy(() => import("@/pages/AdminSalesReports"));
 const AdminKimiAI = lazy(() => import("@/pages/AdminKimiAI"));
 const AdminSystemDashboards = lazy(() => import("@/pages/AdminSystemDashboards"));
+// ── Role-guarded admin pages ─────────────────────────────────────────────────
+const ADMIN_MANAGER = ["admin", "manager"] as const;
+const ADMIN_MANAGER_ACCOUNTANT = ["admin", "manager", "accountant"] as const;
+const ADMIN_MANAGER_HR = ["admin", "manager", "hr"] as const;
+const ADMIN_MANAGER_ACCOUNTANT_HR = ["admin", "manager", "accountant", "hr"] as const;
+const ADMIN_ONLY = ["admin"] as const;
+const ADMIN_MANAGER_SALES_ACCOUNTANT = ["admin", "manager", "sales_manager", "accountant"] as const;
+
+function G_Employees() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_HR]}><AdminEmployees /></RoleGuard>; }
+function G_Finance()   { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminFinance /></RoleGuard>; }
+function G_Analytics() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_SALES_ACCOUNTANT]}><AdminAnalytics /></RoleGuard>; }
+function G_ActivityLog(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminActivityLog /></RoleGuard>; }
+function G_Payroll()   { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT_HR]}><AdminPayroll /></RoleGuard>; }
+function G_Attendance(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_HR]}><AdminAttendance /></RoleGuard>; }
+function G_ProfitReport(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminProfitReport /></RoleGuard>; }
+function G_BankSettings(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminBankSettings /></RoleGuard>; }
+function G_CronJobs()  { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminCronJobs /></RoleGuard>; }
+function G_Atlas()     { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminMongoAtlas /></RoleGuard>; }
+function G_ConnSettings(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminConnectionSettings /></RoleGuard>; }
+function G_AppPublish(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminAppPublish /></RoleGuard>; }
+function G_SysFeatures(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminSystemFeatures /></RoleGuard>; }
+function G_ExtraAddons(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminExtraAddons /></RoleGuard>; }
+function G_ModConfig() { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminModConfig /></RoleGuard>; }
+function G_AdminWallet(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminWallet /></RoleGuard>; }
+
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track"];
 
 
@@ -237,14 +263,14 @@ function AdminRouter() {
         <Route path="/admin/services" component={AdminServices} />
         <Route path="/admin/orders" component={AdminOrders} />
         <Route path="/admin/project-data" component={AdminProjectData} />
-        <Route path="/admin/employees" component={AdminEmployees} />
+        <Route path="/admin/employees" component={G_Employees} />
         <Route path="/admin/gamification" component={AdminGamification} />
-        <Route path="/admin/finance" component={AdminFinance} />
+        <Route path="/admin/finance" component={G_Finance} />
         <Route path="/admin/templates" component={AdminTemplates} />
         <Route path="/admin/partners" component={AdminPartners} />
         <Route path="/admin/news" component={AdminNews} />
         <Route path="/admin/jobs" component={AdminJobs} />
-        <Route path="/admin/bank-settings" component={AdminBankSettings} />
+        <Route path="/admin/bank-settings" component={G_BankSettings} />
         <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
         <Route path="/admin/mod-requests" component={AdminModRequests} />
         <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />
@@ -252,12 +278,12 @@ function AdminRouter() {
         <Route path="/admin/products" component={AdminProducts} />
         <Route path="/admin/shipping" component={AdminShipping} />
         <Route path="/admin/countries" component={AdminCountries} />
-        <Route path="/admin/analytics" component={AdminAnalytics} />
-        <Route path="/admin/activity-log" component={AdminActivityLog} />
+        <Route path="/admin/analytics" component={G_Analytics} />
+        <Route path="/admin/activity-log" component={G_ActivityLog} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
-        <Route path="/admin/payroll" component={AdminPayroll} />
-        <Route path="/admin/attendance" component={AdminAttendance} />
-        <Route path="/admin/profit-report" component={AdminProfitReport} />
+        <Route path="/admin/payroll" component={G_Payroll} />
+        <Route path="/admin/attendance" component={G_Attendance} />
+        <Route path="/admin/profit-report" component={G_ProfitReport} />
         <Route path="/admin/sales-reports" component={AdminSalesReports} />
         <Route path="/admin/kimi-ai" component={AdminKimiAI} />
         <Route path="/admin/system-dashboards" component={AdminSystemDashboards} />
@@ -272,18 +298,18 @@ function AdminRouter() {
         <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
         <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
         <Route path="/admin/shipments" component={AdminShipments} />
-        <Route path="/admin/cron-jobs" component={AdminCronJobs} />
-        <Route path="/admin/atlas" component={AdminMongoAtlas} />
-        <Route path="/admin/connection-settings" component={AdminConnectionSettings} />
-        <Route path="/admin/app-publish" component={AdminAppPublish} />
-        <Route path="/admin/system-features" component={AdminSystemFeatures} />
-        <Route path="/admin/extra-addons" component={AdminExtraAddons} />
-        <Route path="/admin/mod-config" component={AdminModConfig} />
+        <Route path="/admin/cron-jobs" component={G_CronJobs} />
+        <Route path="/admin/atlas" component={G_Atlas} />
+        <Route path="/admin/connection-settings" component={G_ConnSettings} />
+        <Route path="/admin/app-publish" component={G_AppPublish} />
+        <Route path="/admin/system-features" component={G_SysFeatures} />
+        <Route path="/admin/extra-addons" component={G_ExtraAddons} />
+        <Route path="/admin/mod-config" component={G_ModConfig} />
         <Route path="/cs-chat" component={CSChat} />
         <Route path="/admin/project-features" component={AdminProjectFeatures} />
         <Route path="/project/:id/workspace" component={ProjectWorkspace} />
         <Route path="/wallet" component={ClientWallet} />
-        <Route path="/admin/wallet" component={AdminWallet} />
+        <Route path="/admin/wallet" component={G_AdminWallet} />
         <Route path="/installments" component={ClientInstallments} />
         <Route path="/admin/installments" component={AdminInstallments} />
         <Route path="/my-requests" component={ClientDataRequests} />

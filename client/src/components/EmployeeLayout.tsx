@@ -5,13 +5,14 @@ import { useUser, useLogout } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { UserAvatar } from "@/components/UserAvatar";
+import EmployeeAIAssistant from "@/components/EmployeeAIAssistant";
 import {
   LayoutDashboard, Users, Package, Wrench, Code2, Mail,
   User2, BookOpen, DollarSign, FileText, Receipt, Banknote,
   CalendarDays, Video, ShoppingCart, FileCheck, Settings,
   BarChart3, Megaphone, Globe, PlusCircle, Newspaper,
   ShoppingBag, LogOut, Menu, X, Star, Moon, Sun,
-  ClipboardList, Building2, Headphones, Loader2, ChevronRight,
+  ClipboardList, Building2, Headphones, Loader2, Sparkles,
 } from "lucide-react";
 
 interface NavItem {
@@ -84,6 +85,21 @@ const ROLE_LABELS: Record<string, [string, string]> = {
   marketing:     ["تسويق", "Marketing"],
 };
 
+const ROLE_BADGE_CLASS: Record<string, string> = {
+  admin:         "bg-black text-white dark:bg-white dark:text-black",
+  manager:       "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900",
+  developer:     "bg-blue-600 text-white dark:bg-blue-400 dark:text-blue-950",
+  designer:      "bg-purple-600 text-white dark:bg-purple-400 dark:text-purple-950",
+  sales:         "bg-emerald-600 text-white dark:bg-emerald-400 dark:text-emerald-950",
+  sales_manager: "bg-teal-600 text-white dark:bg-teal-400 dark:text-teal-950",
+  accountant:    "bg-amber-500 text-white dark:bg-amber-400 dark:text-amber-950",
+  support:       "bg-orange-500 text-white dark:bg-orange-400 dark:text-orange-950",
+  marketing:     "bg-pink-500 text-white dark:bg-pink-400 dark:text-pink-950",
+  hr:            "bg-rose-500 text-white dark:bg-rose-400 dark:text-rose-950",
+  content:       "bg-indigo-500 text-white dark:bg-indigo-400 dark:text-indigo-950",
+  merchant:      "bg-stone-500 text-white dark:bg-stone-300 dark:text-stone-900",
+};
+
 const GROUP_LABELS: Record<string, [string, string]> = {
   main:     ["الرئيسية",         "Main"],
   tools:    ["الأدوات",          "Tools"],
@@ -97,6 +113,7 @@ const GROUP_ORDER = ["main", "tools", "finance", "hr", "config", "personal"];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [location] = useLocation();
   const { data: user } = useUser();
   const { lang } = useI18n();
@@ -121,11 +138,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
   const orderedGroups = GROUP_ORDER.filter(g => grouped[g]?.length > 0);
 
-  const roleLabel = (user as any)?.role
-    ? (ROLE_LABELS[(user as any).role] || [(user as any).role, (user as any).role])
+  const userRole = (user as any)?.role || "";
+  const roleLabel = userRole
+    ? (ROLE_LABELS[userRole] || [userRole, userRole])
     : ["موظف", "Employee"];
-
-  const isHighRole = ["admin", "manager"].includes((user as any)?.role);
+  const roleBadgeClass = ROLE_BADGE_CLASS[userRole] || "bg-black/[0.07] text-black/60 dark:bg-white/[0.1] dark:text-white/60";
 
   function isActive(href: string) {
     if (href === "/employee/role-dashboard") {
@@ -176,13 +193,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               <p className="text-sm font-bold text-black dark:text-white truncate leading-tight">
                 {(user as any)?.fullName || (user as any)?.username || (L ? "الموظف" : "Employee")}
               </p>
-              <span
-                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${
-                  isHighRole
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "bg-black/[0.07] text-black/60 dark:bg-white/[0.1] dark:text-white/60"
-                }`}
-              >
+              <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${roleBadgeClass}`}>
                 {L ? roleLabel[0] : roleLabel[1]}
               </span>
             </div>
@@ -223,7 +234,18 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         </nav>
 
         {/* Footer Controls */}
-        <div className="px-2 pb-4 pt-2 border-t border-black/[0.06] dark:border-white/[0.06] space-y-0.5">
+        <div className="px-2 pb-3 pt-2 border-t border-black/[0.06] dark:border-white/[0.06] space-y-0.5">
+          {/* AI Assistant button */}
+          <button
+            onClick={() => { setAiOpen(true); if (onItemClick) onItemClick(); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white transition-colors group"
+            data-testid="employee-ai-btn"
+          >
+            <Sparkles className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" />
+            <span>{L ? "مساعد Kimi الذكي" : "Kimi AI Assistant"}</span>
+            <span className="mr-auto text-[9px] font-black bg-black/[0.06] dark:bg-white/[0.08] px-1.5 py-0.5 rounded-full text-black/40 dark:text-white/40">AI</span>
+          </button>
+
           <button
             onClick={toggleTheme}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white transition-colors"
@@ -294,13 +316,22 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             </div>
             <span className="font-black text-sm text-black dark:text-white tracking-tight">QIROX Studio</span>
           </div>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-black/[0.05] dark:bg-white/[0.06] hover:bg-black/[0.09] dark:hover:bg-white/[0.1] transition-colors"
-            data-testid="employee-mobile-menu"
-          >
-            <Menu className="w-4.5 h-4.5 text-black/70 dark:text-white/70" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAiOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-black dark:bg-white shadow-sm"
+              data-testid="employee-ai-mobile-btn"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-white dark:text-black" />
+            </button>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-black/[0.05] dark:bg-white/[0.06] hover:bg-black/[0.09] dark:hover:bg-white/[0.1] transition-colors"
+              data-testid="employee-mobile-menu"
+            >
+              <Menu className="w-4.5 h-4.5 text-black/70 dark:text-white/70" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -347,6 +378,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           })}
         </div>
       </nav>
+
+      {/* ── AI Assistant Panel ── */}
+      <EmployeeAIAssistant open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }
