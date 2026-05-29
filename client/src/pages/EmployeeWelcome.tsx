@@ -162,7 +162,7 @@ export default function EmployeeWelcome() {
 
   const displayName = (user as any)?.fullName || (user as any)?.username || "الموظف";
   const stats = summary?.stats;
-  const videoUrl = summary?.welcomeVideoUrl || "";
+  const videoUrl = summary?.welcomeVideoUrl || "/welcome-banner.mp4";
   const recent = summary?.recentAttendance || [];
 
   const statCards = stats ? [

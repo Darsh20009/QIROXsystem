@@ -805,6 +805,32 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Video Showcase Banner ── */}
+        <section className="relative overflow-hidden bg-black">
+          <div className="relative w-full" style={{ aspectRatio: "16/7" }}>
+            <video
+              src="/welcome-banner.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center px-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold tracking-wide mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {ar ? "نظام قيروكس في العمل" : "QIROX in action"}
+                </div>
+                <h2 className="text-white text-2xl md:text-4xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
+                  {ar ? "شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
+                </h2>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Graphic Divider after Hero ── */}
         <GraphicDivider variant={1} dark />
 
