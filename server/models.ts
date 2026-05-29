@@ -1349,6 +1349,8 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   snapPixelId:        { type: String, default: "" },
   ga4Id:              { type: String, default: "" },
   gtmId:              { type: String, default: "" },
+  // Employee Welcome Page
+  welcomeVideoUrl:    { type: String, default: "" },
   // Modification Tracking
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });

@@ -1217,6 +1217,53 @@ export async function registerRoutes(
     res.json(latest || null);
   });
 
+  // Employee welcome summary — attendance history + tasks
+  app.get("/api/employee/welcome-summary", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    try {
+      const { AttendanceModel, TaskModel, QiroxSystemSettingsModel } = await import("./models");
+      const userId = user._id || user.id;
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const [recentAttendance, allAttendance, tasksAssigned, tasksDone, tasksInProgress, settings] = await Promise.all([
+        (AttendanceModel as any).find({ userId, checkIn: { $gte: sevenDaysAgo } }).sort({ checkIn: -1 }).lean(),
+        (AttendanceModel as any).find({ userId, checkIn: { $gte: thirtyDaysAgo } }).lean(),
+        (TaskModel as any).countDocuments({ assignedTo: userId }).catch(() => 0),
+        (TaskModel as any).countDocuments({ assignedTo: userId, status: "done" }).catch(() => 0),
+        (TaskModel as any).countDocuments({ assignedTo: userId, status: { $in: ["in_progress", "pending"] } }).catch(() => 0),
+        QiroxSystemSettingsModel.findOne({ key: "main" }).lean().catch(() => null),
+      ]);
+
+      const totalHours = allAttendance.reduce((sum: number, a: any) => sum + (a.workHours || 0), 0);
+      const activeDays = allAttendance.filter((a: any) => a.checkOut).length;
+      const activeSessionToday = recentAttendance.find((a: any) => {
+        const d = new Date(a.checkIn);
+        return d.toDateString() === now.toDateString() && !a.checkOut;
+      });
+
+      res.json({
+        recentAttendance: recentAttendance.slice(0, 7),
+        stats: {
+          activeDaysThisMonth: activeDays,
+          totalHoursThisMonth: Math.round(totalHours * 10) / 10,
+          avgHoursPerDay: activeDays > 0 ? Math.round((totalHours / activeDays) * 10) / 10 : 0,
+          tasksAssigned,
+          tasksDone,
+          tasksInProgress,
+          completionRate: tasksAssigned > 0 ? Math.round((tasksDone / tasksAssigned) * 100) : 0,
+        },
+        isCheckedInNow: !!activeSessionToday,
+        welcomeVideoUrl: (settings as any)?.welcomeVideoUrl || "",
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.patch("/api/attendance/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;

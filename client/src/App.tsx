@@ -83,6 +83,7 @@ const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
 const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
 const EmployeeHub = lazy(() => import("@/pages/EmployeeHub"));
+const EmployeeWelcome = lazy(() => import("@/pages/EmployeeWelcome"));
 const EmployeeMail = lazy(() => import("@/pages/EmployeeMail"));
 const AdminMailAccounts = lazy(() => import("@/pages/AdminMailAccounts"));
 const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
@@ -297,6 +298,7 @@ function AdminRouter() {
         <Route path="/admin/api-keys" component={AdminApiKeys} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
+        <Route path="/employee" component={EmployeeWelcome} />
         <Route path="/employee/profile" component={EmployeeHub} />
         <Route path="/employee/mail" component={EmployeeMail} />
         <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
