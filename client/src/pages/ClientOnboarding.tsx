@@ -110,13 +110,13 @@ export default function ClientOnboarding() {
       title: L ? "دعم دائم معك" : "Always-On Support",
       subtitle: L ? "فريقنا جاهز للمساعدة في أي وقت" : "Our team is ready to help at any time",
       description: L
-        ? "سواء عندك سؤال عن مشروعك أو تريد تعديل، فريق QIROX متاح عبر المحادثة المباشرة، الرسائل، أو QIROX AI."
-        : "Whether you have a question about your project or want a modification, the QIROX team is available via live chat, messages, or QIROX AI.",
+        ? "سواء عندك سؤال عن مشروعك أو تريد تعديل، فريق QIROX متاح عبر المحادثة المباشرة، الرسائل، أو QIROX Agent."
+        : "Whether you have a question about your project or want a modification, the QIROX team is available via live chat, messages, or QIROX Agent.",
       visual: (
         <div className="space-y-3">
           {[
             { icon: MessageCircle, title: L ? "محادثة مباشرة" : "Live Chat", desc: L ? "تكلم مع الدعم فوراً" : "Talk to support instantly", color: "text-black dark:text-white" },
-            { icon: Zap, title: "QIROX AI", desc: L ? "مساعد ذكي متاح 24/7" : "AI assistant available 24/7", color: "text-black dark:text-white" },
+            { icon: Zap, title: "QIROX Agent", desc: L ? "مساعد ذكي متاح 24/7" : "AI assistant available 24/7", color: "text-black dark:text-white" },
             { icon: Shield, title: L ? "ضمان الجودة" : "Quality Guarantee", desc: L ? "ما بتدفع إلا لما تتأكد" : "You only pay when satisfied", color: "text-black dark:text-white" },
             { icon: Star, title: L ? "برنامج الولاء" : "Loyalty Program", desc: L ? "نقاط مع كل طلب" : "Points with every order", color: "text-black dark:text-white" },
           ].map((item, i) => (

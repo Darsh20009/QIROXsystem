@@ -55,15 +55,15 @@ const ALL_NAV: Record<string, NavItem> = {
 };
 
 const ROLE_ITEMS: Record<string, string[]> = {
-  admin:         ["dashboard", "orders", "customers", "employees", "finance", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "sector_guide", "settings", "mail", "profile", "changelog"],
-  manager:       ["dashboard", "orders", "customers", "employees", "finance", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "mail", "profile", "changelog"],
+  admin:         ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "sector_guide", "settings", "mail", "profile", "changelog"],
+  manager:       ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "mail", "profile", "changelog"],
   developer:     ["dashboard", "mod_requests", "orders", "builder", "sector_guide", "qmeet", "kanban", "mail", "profile", "changelog"],
-  designer:      ["dashboard", "mod_requests", "orders", "builder", "qmeet", "mail", "profile", "changelog"],
-  sales:         ["dashboard", "customers", "orders", "new_order", "subscriptions", "quotations", "mail", "profile"],
+  designer:      ["dashboard", "mod_requests", "builder", "qmeet", "mail", "profile", "changelog"],
+  sales:         ["dashboard", "customers", "new_order", "quotations", "mail", "profile"],
   sales_manager: ["dashboard", "customers", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "mail", "profile"],
-  marketing:     ["dashboard", "customers", "orders", "new_order", "subscriptions", "quotations", "marketing_posts", "mail", "profile"],
+  marketing:     ["dashboard", "customers", "new_order", "quotations", "marketing_posts", "mail", "profile"],
   accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "reports", "mail", "profile"],
-  support:       ["dashboard", "support_tickets", "customers", "orders", "mail", "profile"],
+  support:       ["dashboard", "support_tickets", "customers", "mail", "profile"],
   hr:            ["dashboard", "employees", "payroll", "attendance", "mail", "profile"],
   merchant:      ["dashboard", "mail", "profile"],
   content:       ["dashboard", "products", "news", "marketing_posts", "mail", "profile"],
@@ -242,8 +242,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             data-testid="employee-ai-btn"
           >
             <Sparkles className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" />
-            <span>{L ? "مساعد Kimi الذكي" : "Kimi AI Assistant"}</span>
-            <span className="mr-auto text-[9px] font-black bg-black/[0.06] dark:bg-white/[0.08] px-1.5 py-0.5 rounded-full text-black/40 dark:text-white/40">AI</span>
+            <span>{L ? "QIROX Agent" : "QIROX Agent"}</span>
+            <span className="mr-auto text-[9px] font-black bg-black dark:bg-white px-1.5 py-0.5 rounded-full text-white dark:text-black">AI</span>
           </button>
 
           <button

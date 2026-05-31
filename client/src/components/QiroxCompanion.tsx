@@ -89,10 +89,10 @@ export default function QiroxCompanion() {
   useEffect(() => {
     if (open && msgs.length === 0) {
       const greet = user
-        ? (L ? `أهلاً ${user.fullName?.split(" ")[0] || ""} 👋 أنا مساعدك الذكي في QIROX. كيف أقدر أخدمك؟`
-              : `Hi ${user.fullName?.split(" ")[0] || ""}! I'm your QIROX assistant. How can I help?`)
-        : (L ? "أهلاً بك في QIROX 👋 أنا مساعدك الذكي — أساعدك تختار الباقة المناسبة، أو أجاوبك عن أي استفسار."
-              : "Welcome to QIROX! I'm your AI assistant — I'll help you find the right plan or answer any question.");
+        ? (L ? `أهلاً ${user.fullName?.split(" ")[0] || ""} 👋 أنا QIROX Agent — مساعدك الذكي. كيف أقدر أخدمك؟`
+              : `Hi ${user.fullName?.split(" ")[0] || ""}! I'm QIROX Agent — your AI assistant. How can I help?`)
+        : (L ? "أهلاً بك في QIROX 👋 أنا QIROX Agent — مساعدك الذكي. أساعدك تختار الباقة المناسبة أو أجاوبك عن أي استفسار."
+              : "Welcome to QIROX! I'm QIROX Agent — your AI assistant. I'll help you find the right plan or answer any question.");
       setMsgs([{ role: "assistant", content: greet, suggestions: ctx.quick }]);
     }
   }, [open]); // eslint-disable-line
@@ -189,7 +189,7 @@ export default function QiroxCompanion() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold truncate flex items-center gap-1.5">
-                {L ? "مساعد QIROX" : "QIROX Assistant"}
+                QIROX Agent
                 <Sparkles className="w-3 h-3 opacity-60" />
               </p>
               <p className="text-[10px] text-white/50 truncate">{ctx.hint}</p>
@@ -374,7 +374,7 @@ export default function QiroxCompanion() {
 
               {/* Footer hint */}
               <div className="text-[9px] text-black/30 text-center pb-1.5 bg-white">
-                {L ? "مدعوم بـ QIROX AI" : "Powered by QIROX AI"} · {L ? "آمن وسريع" : "secure & fast"}
+                QIROX Agent · {L ? "مدعوم بـ Kimi AI" : "Powered by Kimi AI"} · {L ? "آمن وسريع" : "secure & fast"}
               </div>
             </>
           )}

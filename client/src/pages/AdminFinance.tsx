@@ -15,6 +15,7 @@ import {
   BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail,
   TrendingDown, Percent, ChevronDown, ChevronUp, Search, Globe, Layers,
   UtensilsCrossed, GraduationCap, Heart, Coffee, Home, Dumbbell, ShoppingCart,
+  BookOpen, ArrowLeftRight, CheckCircle2, MinusCircle, X,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Area } from "recharts";
 
@@ -40,7 +41,7 @@ export default function AdminFinance() {
   const qc = useQueryClient();
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [period, setPeriod] = useState<Period>("monthly");
-  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "ledger" | "profits" | "expenses" | "email">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "ledger" | "profits" | "expenses" | "email" | "journal">("overview");
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
   const [ledgerMonth, setLedgerMonth] = useState(currentMonth);
   const [quickExp, setQuickExp] = useState({ orderId: "", category: "other", description: "", amount: "" });
@@ -52,6 +53,22 @@ export default function AdminFinance() {
   const [newExp, setNewExp] = useState({ category: "operational", description: "", amount: "", date: "", notes: "" });
   const [expMonth, setExpMonth] = useState(currentMonth);
   const [projectFilter, setProjectFilter] = useState<"pending" | "all" | "paid">("pending");
+  // Journal Entries state
+  const [journalMonth, setJournalMonth] = useState(currentMonth);
+  const [journalCategory, setJournalCategory] = useState("");
+  const [journalStatus, setJournalStatus] = useState("");
+  const [expandedJE, setExpandedJE] = useState<string | null>(null);
+  const [showAddJE, setShowAddJE] = useState(false);
+  const [newJE, setNewJE] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    description: "",
+    category: "other",
+    refNumber: "",
+    lines: [
+      { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+      { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+    ],
+  });
   const [profitSearch, setProfitSearch] = useState("");
   const [profitSort, setProfitSort] = useState<"profit" | "revenue" | "margin">("profit");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -97,10 +114,84 @@ export default function AdminFinance() {
     enabled: activeTab === "expenses",
   });
 
-  const { data: plData, isLoading: plLoading, refetch: plRefetch } = useQuery<any>({
+  const { data: plData, isLoading: plLoading } = useQuery<any>({
     queryKey: ["/api/admin/finance/monthly-pl", ledgerMonth],
     queryFn: async () => { const r = await fetch(`/api/admin/finance/monthly-pl?month=${ledgerMonth}`, { credentials: "include" }); return r.json(); },
     enabled: activeTab === "ledger",
+  });
+
+  const { data: journalData, isLoading: journalLoading } = useQuery<{
+    entries: any[]; totalDebit: number; totalCredit: number; count: number;
+  }>({
+    queryKey: ["/api/admin/finance/journal-entries", journalMonth, journalCategory, journalStatus],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (journalMonth) params.set("month", journalMonth);
+      if (journalCategory) params.set("category", journalCategory);
+      if (journalStatus) params.set("status", journalStatus);
+      const r = await fetch(`/api/admin/finance/journal-entries?${params}`, { credentials: "include" });
+      return r.json();
+    },
+    enabled: activeTab === "journal",
+  });
+
+  const addJEMutation = useMutation({
+    mutationFn: async () => {
+      const entries = newJE.lines.filter(l => l.account.trim()).map(l => ({
+        account: l.account.trim(),
+        accountCode: l.accountCode.trim() || undefined,
+        debit: Number(l.debit) || 0,
+        credit: Number(l.credit) || 0,
+        notes: l.notes.trim() || undefined,
+      }));
+      const r = await apiRequest("POST", "/api/admin/finance/journal-entries", {
+        date: newJE.date,
+        description: newJE.description.trim(),
+        category: newJE.category,
+        refNumber: newJE.refNumber.trim() || undefined,
+        entries,
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.error || "فشل إضافة القيد");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      setShowAddJE(false);
+      setNewJE({
+        date: new Date().toISOString().slice(0, 10),
+        description: "", category: "other", refNumber: "",
+        lines: [
+          { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+          { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+        ],
+      });
+      toast({ title: L ? "تم إضافة القيد المحاسبي" : "Journal entry added" });
+    },
+    onError: (err: any) => toast({ title: err.message || "فشل إضافة القيد", variant: "destructive" }),
+  });
+
+  const voidJEMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("PATCH", `/api/admin/finance/journal-entries/${id}/void`, {});
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      toast({ title: L ? "تم إلغاء القيد" : "Entry voided" });
+    },
+  });
+
+  const deleteJEMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/admin/finance/journal-entries/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      toast({ title: L ? "تم حذف القيد" : "Entry deleted" });
+    },
   });
 
   const addQuickExpMutation = useMutation({
@@ -185,13 +276,14 @@ export default function AdminFinance() {
   }, {});
 
   const tabs = [
-    { key: "overview", label: L ? "نظرة عامة" : "Overview",         icon: BarChart3 },
-    { key: "ledger",   label: L ? "السجل المالي" : "Ledger",         icon: CreditCard },
-    { key: "projects", label: L ? "دفعات المشاريع" : "Payments",     icon: FileText },
-    { key: "systems",  label: L ? "حسب النظام" : "By System",        icon: Layers },
-    { key: "profits",  label: L ? "أرباح المشاريع" : "Profits",      icon: TrendingUp },
-    { key: "expenses", label: L ? "المصاريف" : "Expenses",           icon: ShoppingBag },
-    { key: "email",    label: L ? "نظام البريد" : "Email System",    icon: Mail },
+    { key: "overview", label: L ? "نظرة عامة" : "Overview",           icon: BarChart3 },
+    { key: "journal",  label: L ? "دفتر القيود" : "Journal",           icon: BookOpen },
+    { key: "ledger",   label: L ? "السجل المالي" : "P&L Ledger",       icon: CreditCard },
+    { key: "projects", label: L ? "دفعات المشاريع" : "Payments",       icon: FileText },
+    { key: "systems",  label: L ? "حسب النظام" : "By System",          icon: Layers },
+    { key: "profits",  label: L ? "أرباح المشاريع" : "Profits",        icon: TrendingUp },
+    { key: "expenses", label: L ? "المصاريف" : "Expenses",             icon: ShoppingBag },
+    { key: "email",    label: L ? "نظام البريد" : "Email System",      icon: Mail },
   ];
 
   // Segment label + icon map (mirrors AdminTemplates.tsx SEGMENT_META)
@@ -683,6 +775,316 @@ export default function AdminFinance() {
           )}
         </div>
       )}
+
+      {/* === TAB: JOURNAL ENTRIES (دفتر القيود المحاسبية) === */}
+      {activeTab === "journal" && (() => {
+        const JE_CATS: Record<string, string> = {
+          revenue: L ? "إيرادات" : "Revenue",
+          expense: L ? "مصاريف" : "Expense",
+          asset: L ? "أصول" : "Asset",
+          liability: L ? "التزامات" : "Liability",
+          equity: L ? "حقوق ملكية" : "Equity",
+          transfer: L ? "تحويل" : "Transfer",
+          payroll: L ? "رواتب" : "Payroll",
+          other: L ? "أخرى" : "Other",
+        };
+        const JE_STATUS: Record<string, { label: string; color: string }> = {
+          posted: { label: L ? "مرحّل" : "Posted", color: "bg-black text-white border-black" },
+          draft:  { label: L ? "مسودة" : "Draft",  color: "bg-black/[0.05] text-black/60 border-black/10" },
+          voided: { label: L ? "ملغي" : "Voided",  color: "bg-red-50 text-red-600 border-red-200" },
+        };
+        const jeList: any[] = journalData?.entries || [];
+        const totalDebit = journalData?.totalDebit || 0;
+        const totalCredit = journalData?.totalCredit || 0;
+        const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+        const newJETotalDebit = newJE.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+        const newJETotalCredit = newJE.lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+        const newJEBalanced = Math.abs(newJETotalDebit - newJETotalCredit) < 0.01 && newJETotalDebit > 0;
+
+        return (
+          <div className="space-y-5">
+            {/* Header bar */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-black/40" />
+                <span className="text-sm font-bold text-black/70">{L ? "دفتر القيود المحاسبية" : "Accounting Journal"}</span>
+              </div>
+              <input type="month" value={journalMonth} onChange={e => setJournalMonth(e.target.value)}
+                className="h-8 px-3 border border-black/[0.1] rounded-xl text-xs font-mono outline-none focus:border-black/20 bg-transparent" />
+              <Select value={journalCategory || "all"} onValueChange={v => setJournalCategory(v === "all" ? "" : v)}>
+                <SelectTrigger className="h-8 text-xs border-black/10 w-32"><SelectValue placeholder={L ? "الفئة" : "Category"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{L ? "كل الفئات" : "All"}</SelectItem>
+                  {Object.entries(JE_CATS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={journalStatus || "all"} onValueChange={v => setJournalStatus(v === "all" ? "" : v)}>
+                <SelectTrigger className="h-8 text-xs border-black/10 w-28"><SelectValue placeholder={L ? "الحالة" : "Status"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{L ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="posted">{L ? "مرحّل" : "Posted"}</SelectItem>
+                  <SelectItem value="draft">{L ? "مسودة" : "Draft"}</SelectItem>
+                  <SelectItem value="voided">{L ? "ملغي" : "Voided"}</SelectItem>
+                </SelectContent>
+              </Select>
+              {journalLoading && <Loader2 className="w-4 h-4 animate-spin text-black/30" />}
+              <Button onClick={() => setShowAddJE(!showAddJE)} className="mr-auto h-8 text-xs gap-1.5 bg-black text-white" data-testid="button-add-je">
+                <Plus className="w-3.5 h-3.5" />{L ? "قيد جديد" : "New Entry"}
+              </Button>
+            </div>
+
+            {/* Balance summary bar */}
+            <div className={`flex items-center gap-4 px-5 py-3 rounded-2xl border ${isBalanced ? "bg-black/[0.02] border-black/[0.06]" : "bg-amber-50 border-amber-200"}`}>
+              <ArrowLeftRight className="w-4 h-4 text-black/40 flex-shrink-0" />
+              <div className="flex items-center gap-6 flex-1 flex-wrap">
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "إجمالي المدين" : "Total Debit"}</p>
+                  <p className="text-sm font-black text-black flex items-center gap-1">{totalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "إجمالي الدائن" : "Total Credit"}</p>
+                  <p className="text-sm font-black text-black flex items-center gap-1">{totalCredit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "عدد القيود" : "Entries"}</p>
+                  <p className="text-sm font-black text-black">{journalData?.count || 0}</p>
+                </div>
+              </div>
+              {isBalanced && totalDebit > 0 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-black font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-black" />{L ? "متوازن" : "Balanced"}
+                </div>
+              )}
+            </div>
+
+            {/* Add new JE form */}
+            {showAddJE && (
+              <div className="border border-black/[0.1] rounded-2xl p-5 space-y-4 bg-black/[0.01]">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-black">{L ? "إضافة قيد محاسبي جديد" : "Add Journal Entry"}</p>
+                  <button onClick={() => setShowAddJE(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-black/[0.05] transition">
+                    <X className="w-4 h-4 text-black/40" />
+                  </button>
+                </div>
+                {/* Meta row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Input type="date" value={newJE.date} onChange={e => setNewJE(p => ({ ...p, date: e.target.value }))}
+                    className="h-8 text-xs border-black/10" data-testid="input-je-date" />
+                  <Input placeholder={L ? "رقم المرجع (اختياري)" : "Ref # (optional)"} value={newJE.refNumber}
+                    onChange={e => setNewJE(p => ({ ...p, refNumber: e.target.value }))}
+                    className="h-8 text-xs border-black/10" data-testid="input-je-ref" />
+                  <Input placeholder={L ? "وصف القيد *" : "Description *"} value={newJE.description}
+                    onChange={e => setNewJE(p => ({ ...p, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-je-desc" />
+                </div>
+                <Select value={newJE.category} onValueChange={v => setNewJE(p => ({ ...p, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10 w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(JE_CATS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                {/* Lines header */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-black/[0.08]">
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-8">#</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold">{L ? "اسم الحساب *" : "Account *"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-20">{L ? "كود" : "Code"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-28">{L ? "مدين ↑" : "Debit ↑"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-28">{L ? "دائن ↓" : "Credit ↓"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold">{L ? "ملاحظة" : "Notes"}</th>
+                        <th className="w-7" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newJE.lines.map((line, idx) => (
+                        <tr key={idx} className="border-b border-black/[0.04]">
+                          <td className="py-1.5 px-2 text-black/30 text-center">{idx + 1}</td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.account} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], account: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder={L ? "مثال: النقدية" : "e.g. Cash"} className="h-7 text-[11px] border-black/10" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.accountCode} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], accountCode: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="1-1" className="h-7 text-[11px] border-black/10" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input type="number" value={line.debit} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], debit: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="0" className="h-7 text-[11px] border-black/10 text-black font-bold" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input type="number" value={line.credit} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], credit: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="0" className="h-7 text-[11px] border-black/10 text-black/60" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.notes} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], notes: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="..." className="h-7 text-[11px] border-black/10" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            {idx >= 2 && (
+                              <button onClick={() => setNewJE(p => { const l = p.lines.filter((_, i) => i !== idx); return { ...p, lines: l }; })}
+                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/[0.05]">
+                                <X className="w-3 h-3 text-black/40" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-black/[0.08] bg-black/[0.02]">
+                        <td colSpan={3} className="py-2 px-2">
+                          <button onClick={() => setNewJE(p => ({ ...p, lines: [...p.lines, { account: "", accountCode: "", debit: "", credit: "", notes: "" }] }))}
+                            className="text-[10px] font-semibold text-black/40 hover:text-black flex items-center gap-1">
+                            <Plus className="w-3 h-3" />{L ? "إضافة سطر" : "Add line"}
+                          </button>
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          <p className={`text-xs font-black flex items-center justify-end gap-0.5 ${newJEBalanced ? "text-black" : "text-amber-600"}`}>
+                            {newJETotalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                          </p>
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          <p className={`text-xs font-black flex items-center justify-end gap-0.5 ${newJEBalanced ? "text-black/60" : "text-amber-600"}`}>
+                            {newJETotalCredit.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                          </p>
+                        </td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                {!newJEBalanced && newJETotalDebit > 0 && (
+                  <p className="text-[10px] text-amber-600 font-semibold">⚠ {L ? `القيد غير متوازن — الفرق: ${Math.abs(newJETotalDebit - newJETotalCredit).toLocaleString()} ر.س` : `Unbalanced — diff: ${Math.abs(newJETotalDebit - newJETotalCredit).toLocaleString()} SAR`}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <Button onClick={() => addJEMutation.mutate()} disabled={addJEMutation.isPending || !newJE.description || !newJEBalanced}
+                    className="h-8 text-xs bg-black text-white gap-1" data-testid="button-save-je">
+                    {addJEMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                    {L ? "حفظ القيد" : "Save Entry"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowAddJE(false)} className="h-8 text-xs border-black/10">
+                    {L ? "إلغاء" : "Cancel"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Journal entries list */}
+            {journalLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+            ) : jeList.length === 0 ? (
+              <div className="text-center py-20">
+                <BookOpen className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                <p className="text-black/30 text-sm">{L ? "لا قيود محاسبية لهذه الفترة" : "No journal entries for this period"}</p>
+                <p className="text-black/20 text-xs mt-1">{L ? "ابدأ بإضافة قيد جديد من الزر أعلاه" : "Add your first entry using the button above"}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {jeList.map((je: any) => {
+                  const isExpanded = expandedJE === je._id;
+                  const jeTotalDebit = je.entries?.reduce((s: number, e: any) => s + (e.debit || 0), 0) || 0;
+                  const jeTotalCredit = je.entries?.reduce((s: number, e: any) => s + (e.credit || 0), 0) || 0;
+                  const statusInfo = JE_STATUS[je.status] || JE_STATUS.posted;
+                  const catLabel = JE_CATS[je.category] || je.category;
+                  return (
+                    <div key={je._id} data-testid={`je-${je._id}`} className={`border rounded-2xl overflow-hidden ${je.status === "voided" ? "border-red-100 opacity-60" : "border-black/[0.07]"}`}>
+                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-black/[0.01] transition"
+                        onClick={() => setExpandedJE(isExpanded ? null : je._id)}>
+                        <div className="flex-shrink-0 text-center min-w-[60px]">
+                          <p className="text-[10px] text-black/30">{new Date(je.date).toLocaleDateString("ar-SA", { day: "2-digit", month: "short" })}</p>
+                          <p className="text-[9px] font-mono text-black/20">{je.refNumber || "—"}</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-xs text-black truncate">{je.description}</p>
+                          <p className="text-[10px] text-black/30 mt-0.5">{catLabel} · {je.entries?.length || 0} {L ? "سطر" : "lines"}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-black text-black flex items-center gap-0.5 justify-end">{jeTotalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                          <p className="text-[9px] text-black/30">{L ? "مدين/دائن" : "Dr/Cr"}</p>
+                        </div>
+                        <Badge className={`text-[9px] px-2 py-0 border flex-shrink-0 ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-black/30 flex-shrink-0" />}
+                      </div>
+                      {isExpanded && (
+                        <div className="border-t border-black/[0.06] bg-black/[0.01] px-4 py-3 space-y-3">
+                          {/* Lines table */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-black/[0.06]">
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold">{L ? "الحساب" : "Account"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-20">{L ? "كود" : "Code"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-28 text-emerald-700">{L ? "مدين ↑" : "Debit ↑"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-28 text-red-600">{L ? "دائن ↓" : "Credit ↓"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold">{L ? "ملاحظة" : "Notes"}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {je.entries?.map((line: any, li: number) => (
+                                  <tr key={li} className="border-b border-black/[0.03]">
+                                    <td className="py-2 px-2 font-medium text-black">{line.account}</td>
+                                    <td className="py-2 px-2 text-black/40 font-mono text-[10px]">{line.accountCode || "—"}</td>
+                                    <td className="py-2 px-2">
+                                      {line.debit > 0 ? (
+                                        <span className="font-black text-black flex items-center gap-0.5">
+                                          {line.debit.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                        </span>
+                                      ) : <span className="text-black/15">—</span>}
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      {line.credit > 0 ? (
+                                        <span className="font-bold text-black/60 flex items-center gap-0.5">
+                                          {line.credit.toLocaleString()} <SARIcon size={8} className="opacity-30" />
+                                        </span>
+                                      ) : <span className="text-black/15">—</span>}
+                                    </td>
+                                    <td className="py-2 px-2 text-black/35 text-[10px]">{line.notes || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="border-t border-black/[0.08] bg-black/[0.02]">
+                                  <td colSpan={2} className="py-2 px-2 text-[10px] font-black text-black/40">{L ? "الإجمالي" : "Total"}</td>
+                                  <td className="py-2 px-2 font-black text-black text-xs flex items-center gap-0.5">{jeTotalDebit.toLocaleString()} <SARIcon size={8} className="opacity-50" /></td>
+                                  <td className="py-2 px-2 font-black text-black/60 text-xs">{jeTotalCredit.toLocaleString()} <SARIcon size={8} className="opacity-30" /></td>
+                                  <td />
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          {/* Footer: metadata + actions */}
+                          <div className="flex items-center gap-3 flex-wrap pt-1">
+                            {je.createdBy && (
+                              <p className="text-[10px] text-black/30">{L ? "بواسطة:" : "By:"} {je.createdBy?.fullName || je.createdBy?.username}</p>
+                            )}
+                            <p className="text-[10px] text-black/25">{new Date(je.createdAt).toLocaleString("ar-SA")}</p>
+                            <div className="mr-auto flex gap-2">
+                              {je.status !== "voided" && (
+                                <button onClick={() => voidJEMutation.mutate(je._id)} disabled={voidJEMutation.isPending}
+                                  className="flex items-center gap-1 text-[10px] font-semibold text-black/40 hover:text-amber-600 transition">
+                                  <MinusCircle className="w-3.5 h-3.5" />{L ? "إلغاء القيد" : "Void"}
+                                </button>
+                              )}
+                              <button onClick={() => { if (confirm(L ? "حذف القيد نهائياً؟" : "Delete permanently?")) deleteJEMutation.mutate(je._id); }}
+                                disabled={deleteJEMutation.isPending}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-black/40 hover:text-red-600 transition">
+                                <Trash2 className="w-3.5 h-3.5" />{L ? "حذف" : "Delete"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* === TAB: Financial Ledger (السجل المالي) === */}
       {activeTab === "ledger" && (() => {

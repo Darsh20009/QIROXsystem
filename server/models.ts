@@ -2043,3 +2043,23 @@ const operationalExpenseSchema = new mongoose.Schema({
 }, { timestamps: true });
 operationalExpenseSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const OperationalExpenseModel = mongoose.models.OperationalExpense || mongoose.model("OperationalExpense", operationalExpenseSchema);
+
+// ── ACCOUNTING JOURNAL ENTRIES (دفتر القيود المحاسبية) ─────────────────────────
+const journalEntrySchema = new mongoose.Schema({
+  date:        { type: String, required: true },      // YYYY-MM-DD
+  refNumber:   { type: String },                      // e.g. JE-2025-001
+  description: { type: String, required: true },
+  entries: [{
+    account:   { type: String, required: true },      // account name
+    accountCode: { type: String },                    // optional chart-of-accounts code
+    debit:     { type: Number, default: 0 },
+    credit:    { type: Number, default: 0 },
+    notes:     { type: String },
+  }],
+  category:    { type: String, enum: ["revenue", "expense", "asset", "liability", "equity", "transfer", "payroll", "other"], default: "other" },
+  status:      { type: String, enum: ["draft", "posted", "voided"], default: "posted" },
+  attachmentUrl: { type: String },
+  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+journalEntrySchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const JournalEntryModel = mongoose.models.JournalEntry || mongoose.model("JournalEntry", journalEntrySchema);

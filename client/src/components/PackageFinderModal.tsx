@@ -177,7 +177,7 @@ export function PackageFinderModal({ open, onClose }: { open: boolean; onClose: 
     if (open) {
       setMessages([{
         id: uid(), from: "ai",
-        text: "أهلاً! 👋 أنا مساعد QIROX الذكي.\n\nأخبرني باختصار عن مشروعك أو نشاطك، وسأختار لك الباقة المثالية تلقائياً 🎯",
+        text: "أهلاً! 👋 أنا QIROX Agent — مساعدك الذكي.\n\nأخبرني باختصار عن مشروعك أو نشاطك، وسأختار لك الباقة المثالية تلقائياً 🎯",
       }]);
       setInput("");
       setDone(false);
@@ -266,7 +266,7 @@ export function PackageFinderModal({ open, onClose }: { open: boolean; onClose: 
                 <p className="text-white/30 text-[10px] flex items-center gap-1.5">
                   <motion.span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400"
                     animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-                  QIROX AI · يحلل احتياجاتك تلقائياً
+                  QIROX Agent · يحلل احتياجاتك تلقائياً
                 </p>
               </div>
             </div>

@@ -7520,6 +7520,90 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  // ── JOURNAL ENTRIES (دفتر القيود المحاسبية) ────────────────────────────────
+  // GET /api/admin/finance/journal-entries?month=YYYY-MM&category=&status=
+  app.get("/api/admin/finance/journal-entries", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role))
+      return res.sendStatus(403);
+    const { JournalEntryModel } = await import("./models");
+    const { month, category, status } = req.query as any;
+    const filter: any = {};
+    if (month) filter.date = { $regex: `^${month}` };
+    if (category) filter.category = category;
+    if (status) filter.status = status;
+    const entries = await JournalEntryModel.find(filter)
+      .sort({ date: -1, createdAt: -1 })
+      .populate("createdBy", "fullName username")
+      .lean();
+    // Compute totals
+    let totalDebit = 0, totalCredit = 0;
+    entries.forEach((e: any) => {
+      e.entries?.forEach((line: any) => {
+        totalDebit += line.debit || 0;
+        totalCredit += line.credit || 0;
+      });
+    });
+    res.json({ entries, totalDebit, totalCredit, count: entries.length });
+  });
+
+  // POST /api/admin/finance/journal-entries — create new journal entry
+  app.post("/api/admin/finance/journal-entries", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role))
+      return res.sendStatus(403);
+    const { JournalEntryModel } = await import("./models");
+    const { date, description, entries, category, status, attachmentUrl, refNumber } = req.body;
+    if (!date || !description || !Array.isArray(entries) || entries.length < 2)
+      return res.status(400).json({ error: "يجب توفير التاريخ والوصف وسطرين على الأقل" });
+    // Validate balanced entry (total debit === total credit)
+    const totalDebit = entries.reduce((s: number, e: any) => s + (Number(e.debit) || 0), 0);
+    const totalCredit = entries.reduce((s: number, e: any) => s + (Number(e.credit) || 0), 0);
+    if (Math.abs(totalDebit - totalCredit) > 0.01)
+      return res.status(400).json({ error: `القيد غير متوازن — المدين: ${totalDebit} ≠ الدائن: ${totalCredit}` });
+    // Auto-generate ref number
+    const count = await JournalEntryModel.countDocuments();
+    const auto_ref = refNumber || `JE-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
+    const je = await JournalEntryModel.create({
+      date, description, entries, category: category || "other",
+      status: status || "posted", attachmentUrl, refNumber: auto_ref,
+      createdBy: (req.user as any)._id,
+    });
+    res.status(201).json(je);
+  });
+
+  // PATCH /api/admin/finance/journal-entries/:id/void — void a journal entry
+  app.patch("/api/admin/finance/journal-entries/:id/void", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role))
+      return res.sendStatus(403);
+    const { JournalEntryModel } = await import("./models");
+    const je = await JournalEntryModel.findByIdAndUpdate(
+      req.params.id, { status: "voided" }, { new: true }
+    );
+    if (!je) return res.status(404).json({ error: "القيد غير موجود" });
+    res.json(je);
+  });
+
+  // DELETE /api/admin/finance/journal-entries/:id
+  app.delete("/api/admin/finance/journal-entries/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role))
+      return res.sendStatus(403);
+    const { JournalEntryModel } = await import("./models");
+    await JournalEntryModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // GET /api/admin/finance/chart-of-accounts — return unique account names used
+  app.get("/api/admin/finance/chart-of-accounts", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role))
+      return res.sendStatus(403);
+    const { JournalEntryModel } = await import("./models");
+    const accounts = await JournalEntryModel.aggregate([
+      { $unwind: "$entries" },
+      { $group: { _id: "$entries.account", code: { $first: "$entries.accountCode" }, totalDebit: { $sum: "$entries.debit" }, totalCredit: { $sum: "$entries.credit" } } },
+      { $sort: { _id: 1 } }
+    ]);
+    res.json(accounts);
+  });
+
   // POST /api/ai/enhance-idea — public AI route for QuickStart wizard
   app.post("/api/ai/enhance-idea", async (req, res) => {
     const apiKey = process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || process.env.KIMI_API_KEY;
@@ -9563,7 +9647,7 @@ export async function registerRoutes(
   app.post("/api/admin/upgrade/apply/:orderId", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const { UserModel, NotificationModel } = await import("./models");
+      const { UserModel, NotificationModel, InvoiceModel } = await import("./models");
       const order = await storage.getOrder(req.params.orderId) as any;
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       if (order.serviceType !== "plan") return res.status(400).json({ error: "هذا الطلب ليس طلب ترقية" });
@@ -9572,9 +9656,12 @@ export async function registerRoutes(
       if (!targetPeriod) return res.status(400).json({ error: "الفترة المستهدفة مطلوبة" });
 
       const PERIOD_DAYS: Record<string, number> = { monthly: 30, "6months": 180, annual: 365 };
+      const PERIOD_LABEL: Record<string, string> = { monthly: "شهري", "6months": "نصف سنوي", annual: "سنوي" };
       const durationDays = PERIOD_DAYS[targetPeriod] || 30;
       const now = new Date();
       const newExpiry = new Date(now.getTime() + durationDays * 86400000);
+
+      const dbUser = await UserModel.findById(order.userId).lean() as any;
 
       await UserModel.findByIdAndUpdate(order.userId, {
         $set: {
@@ -9587,17 +9674,44 @@ export async function registerRoutes(
 
       await storage.updateOrder(req.params.orderId, { status: "completed", isDepositPaid: true } as any);
 
-      const PERIOD_LABEL: Record<string, string> = { monthly: "شهري", "6months": "نصف سنوي", annual: "سنوي" };
+      // Auto-generate invoice for the upgrade
+      try {
+        const invoiceCount = await InvoiceModel.countDocuments();
+        const invNumber = `INV-UPG-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(4, "0")}`;
+        const amount = Number(order.totalAmount) || 0;
+        await InvoiceModel.create({
+          userId: String(order.userId),
+          orderId: String(order.id || order._id),
+          invoiceNumber: invNumber,
+          clientName: dbUser?.fullName || dbUser?.username || "عميل",
+          clientEmail: dbUser?.email || "",
+          items: [{
+            name: `ترقية الاشتراك — ${dbUser?.subscriptionSegmentNameAr || order.planSegment || ""} — ${PERIOD_LABEL[targetPeriod]}`,
+            qty: 1,
+            unitPrice: amount,
+            total: amount,
+          }],
+          subtotal: amount,
+          tax: 0,
+          totalAmount: amount,
+          status: "paid",
+          paidAt: now,
+          notes: `فاتورة ترقية اشتراك تلقائية — من ${PERIOD_LABEL[dbUser?.subscriptionPeriod || "monthly"]} إلى ${PERIOD_LABEL[targetPeriod]}`,
+          issuedAt: now,
+        });
+      } catch (_) {}
+
+      // Notify client
       try {
         await NotificationModel.create({
           userId: String(order.userId), forAdmins: false, type: "subscription",
-          title: "تمت ترقية اشتراكك",
-          body: `تمت ترقية اشتراكك بنجاح إلى الباقة ${PERIOD_LABEL[targetPeriod]} — ينتهي في ${newExpiry.toLocaleDateString("ar-SA")}`,
+          title: "تمت ترقية اشتراكك ✅",
+          body: `تمت ترقية اشتراكك بنجاح إلى الباقة ${PERIOD_LABEL[targetPeriod]} — ينتهي في ${newExpiry.toLocaleDateString("ar-SA")}. تم إصدار فاتورة تلقائية.`,
           link: "/dashboard", icon: "⬆️",
         });
       } catch (_) {}
 
-      res.json({ success: true, newExpiresAt: newExpiry.toISOString() });
+      res.json({ success: true, newExpiresAt: newExpiry.toISOString(), invoiceGenerated: true });
     } catch (err) {
       res.status(500).json({ error: "فشل تطبيق الترقية" });
     }
