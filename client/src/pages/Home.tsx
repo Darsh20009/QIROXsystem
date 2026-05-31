@@ -153,16 +153,16 @@ const SECTOR_ACCENT: Record<string, { glow: string; ring: string }> = {
 };
 
 const SECTORS = [
-  { icon: ShoppingBag, arName: "متاجر إلكترونية",    enName: "E-Commerce",        segment: "ecommerce" },
-  { icon: Coffee,      arName: "مطاعم ومقاهي",       enName: "Restaurants",       segment: "restaurant" },
-  { icon: GraduationCap, arName: "منصات تعليمية",   enName: "Education",         segment: "education" },
-  { icon: Building2,   arName: "شركات ومؤسسات",      enName: "Corporate",         segment: "corporate" },
-  { icon: Heart,       arName: "صحة وعيادات",         enName: "Healthcare",        segment: "healthcare" },
-  { icon: HomeIcon,    arName: "عقارات",              enName: "Real Estate",       segment: "realestate" },
-  { icon: Scissors,    arName: "صالونات تجميل",       enName: "Beauty Salons",     segment: "beauty" },
-  { icon: TrendingUp,  arName: "وكالات التسويق",      enName: "Marketing Agencies",segment: "marketing" },
-  { icon: Bot,         arName: "ذكاء اصطناعي",        enName: "AI Solutions",       segment: "ai" },
-  { icon: Lightbulb,   arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
+  { icon: ShoppingBag,   img: "/sector-01.png", arName: "متاجر إلكترونية",    enName: "E-Commerce",          segment: "ecommerce" },
+  { icon: Coffee,        img: "/sector-02.png", arName: "مطاعم ومقاهي",       enName: "Restaurants",         segment: "restaurant" },
+  { icon: GraduationCap, img: "/sector-03.png", arName: "منصات تعليمية",      enName: "Education",           segment: "education" },
+  { icon: Building2,     img: "/sector-04.png", arName: "شركات ومؤسسات",      enName: "Corporate",           segment: "corporate" },
+  { icon: Heart,         img: "/sector-05.png", arName: "صحة وعيادات",        enName: "Healthcare",          segment: "healthcare" },
+  { icon: HomeIcon,      img: "/sector-06.png", arName: "عقارات",              enName: "Real Estate",         segment: "realestate" },
+  { icon: Scissors,      img: "/sector-07.png", arName: "صالونات تجميل",      enName: "Beauty Salons",       segment: "beauty" },
+  { icon: TrendingUp,    img: "/sector-08.png", arName: "وكالات التسويق",      enName: "Marketing Agencies",  segment: "marketing" },
+  { icon: Bot,           img: "/sector-09.png", arName: "ذكاء اصطناعي",       enName: "AI Solutions",        segment: "ai" },
+  { icon: Lightbulb,     img: "/sector-10.png", arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
 ];
 
 const PILLARS = [
@@ -921,7 +921,13 @@ export default function Home() {
                         s.custom ? "text-white dark:text-black" : "text-black dark:text-white"
                       }`}>
                         <div className="relative w-full h-full flex items-center justify-center">
-                          {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-10 h-10" />}
+                          {s.img ? (
+                            <img src={s.img} alt={s.arName} className="w-full h-full object-cover" />
+                          ) : IllustrationComponent ? (
+                            <IllustrationComponent />
+                          ) : (
+                            <Icon className="w-10 h-10" />
+                          )}
                         </div>
                       </div>
 
