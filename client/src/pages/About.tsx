@@ -12,7 +12,7 @@ import {
   ArrowLeft, Code2, Layers, Globe, Cpu, GitBranch, TrendingUp,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users,
-  Smartphone, Monitor, Tablet, ExternalLink, Handshake, CheckCircle2
+  Smartphone, Monitor, Tablet, ExternalLink, Handshake, CheckCircle2, Apple, Download
 } from "lucide-react";
 const sectorIcons: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -263,53 +263,93 @@ export default function About() {
                 {lang === "ar" ? "متاح على جميع المنصات والأجهزة الرئيسية" : "Available on all major platforms and devices"}
               </motion.p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
               {[
                 {
                   key: "android",
                   icon: Smartphone,
+                  iconBg: "bg-black dark:bg-white",
+                  iconColor: "text-white dark:text-black",
                   title: { ar: "أندرويد", en: "Android" },
-                  desc: { ar: "متوافق مع جميع أجهزة أندرويد", en: "Compatible with all Android devices" },
+                  desc: { ar: "Google Play — جميع أجهزة أندرويد", en: "Google Play — All Android devices" },
                   url: appDownloads?.playStore?.enabled ? appDownloads.playStore.url : null,
                   badge: { ar: "متوفر", en: "Available" },
+                  badgeStyle: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
                   enabled: appDownloads?.playStore?.enabled ?? true,
+                  version: "Android 7.0+",
                 },
                 {
                   key: "ios",
-                  icon: Tablet,
+                  icon: Apple,
+                  iconBg: "bg-black dark:bg-white",
+                  iconColor: "text-white dark:text-black",
                   title: { ar: "آيفون وآيباد", en: "iPhone & iPad" },
-                  desc: { ar: "متوافق مع iOS على iPhone وiPad", en: "Compatible with iOS on iPhone and iPad" },
+                  desc: { ar: "App Store — iPhone وiPad", en: "App Store — iPhone & iPad" },
                   url: appDownloads?.appStore?.enabled ? appDownloads.appStore.url : null,
                   badge: appDownloads?.appStore?.enabled ? { ar: "متوفر", en: "Available" } : { ar: "قريباً", en: "Coming Soon" },
+                  badgeStyle: appDownloads?.appStore?.enabled ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
                   enabled: appDownloads?.appStore?.enabled ?? false,
+                  version: "iOS 15+",
+                },
+                {
+                  key: "macos",
+                  icon: Apple,
+                  iconBg: "bg-black dark:bg-white",
+                  iconColor: "text-white dark:text-black",
+                  title: { ar: "ماك", en: "macOS" },
+                  desc: { ar: "تطبيق سطح مكتب — DMG + Dark Mode", en: "Desktop App — DMG + Dark Mode" },
+                  url: appDownloads?.macStore?.enabled ? appDownloads.macStore.url : null,
+                  badge: { ar: "تحميل مباشر", en: "Direct Download" },
+                  badgeStyle: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+                  enabled: true,
+                  version: "macOS 12+",
+                  newTag: true,
                 },
                 {
                   key: "windows",
                   icon: Monitor,
-                  title: { ar: "ويندوز وماك", en: "Windows & Mac" },
-                  desc: { ar: "متوافق مع متصفح أي حاسوب", en: "Compatible with any desktop browser" },
+                  iconBg: "bg-black dark:bg-white",
+                  iconColor: "text-white dark:text-black",
+                  title: { ar: "ويندوز", en: "Windows" },
+                  desc: { ar: "Microsoft Store — EXE Installer", en: "Microsoft Store — EXE Installer" },
                   url: appDownloads?.msStore?.enabled ? appDownloads.msStore.url : null,
                   badge: { ar: "متوفر", en: "Available" },
+                  badgeStyle: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
                   enabled: true,
+                  version: "Windows 10+",
                 },
               ].map((item, idx) => (
                 <motion.div key={item.key} variants={fadeUp} custom={idx}>
-                  <div className={`bg-white dark:bg-gray-900 border rounded-2xl p-7 text-center group transition-all h-full flex flex-col items-center ${item.enabled ? "border-black/[0.06] dark:border-white/[0.06] hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2]" : "border-dashed border-black/[0.06] dark:border-white/[0.06] opacity-60"}`} data-testid={`card-device-${item.key}`}>
-                    <div className="w-14 h-14 mx-auto rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-5">
-                      <item.icon className="w-6 h-6 text-black/35 dark:text-white/35" />
+                  <div className={`relative bg-white dark:bg-gray-900 border rounded-2xl p-6 text-center group transition-all duration-300 h-full flex flex-col items-center ${item.enabled ? "border-black/[0.07] dark:border-white/[0.07] hover:shadow-xl hover:shadow-black/[0.07] dark:hover:shadow-black/[0.3] hover:-translate-y-1" : "border-dashed border-black/[0.06] dark:border-white/[0.06] opacity-55"}`} data-testid={`card-device-${item.key}`}>
+                    {(item as any).newTag && (
+                      <span className="absolute top-3 end-3 text-[9px] font-black bg-black dark:bg-white text-white dark:text-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        NEW
+                      </span>
+                    )}
+                    {/* Dark-mode adaptive icon */}
+                    <div className={`w-14 h-14 mx-auto rounded-2xl ${item.iconBg} flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110`}>
+                      <item.icon className={`w-6 h-6 ${item.iconColor}`} />
                     </div>
-                    <h3 className="font-bold text-black dark:text-white text-base mb-2">{item.title[lang]}</h3>
-                    <p className="text-black/40 dark:text-white/40 text-sm mb-4 flex-1">{item.desc[lang]}</p>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${item.enabled ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-black/[0.04] text-black/40 dark:bg-white/[0.04] dark:text-white/40 border border-black/[0.06] dark:border-white/[0.06]"}`}>
+                    <h3 className="font-bold text-black dark:text-white text-base mb-1">{item.title[lang]}</h3>
+                    <p className="text-[10px] text-black/35 dark:text-white/35 mb-1 font-mono">{(item as any).version}</p>
+                    <p className="text-black/40 dark:text-white/40 text-xs mb-4 flex-1 leading-relaxed">{item.desc[lang]}</p>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${(item as any).badgeStyle}`}>
                       {item.enabled && <CheckCircle2 className="w-3 h-3" />}
                       {item.badge[lang]}
                     </div>
-                    {item.url && (
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-3 text-[11px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1" data-testid={`link-download-${item.key}`}>
-                        <ExternalLink className="w-3 h-3" />
+                    {item.url ? (
+                      <a href={item.url} target="_blank" rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-black dark:text-white bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] px-3 py-1.5 rounded-xl transition-colors"
+                        data-testid={`link-download-${item.key}`}>
+                        <Download className="w-3 h-3" />
                         {lang === "ar" ? "تحميل" : "Download"}
                       </a>
-                    )}
+                    ) : item.key === "macos" ? (
+                      <a href="/about#download" className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-black dark:text-white bg-black/[0.05] dark:bg-white/[0.07] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] px-3 py-1.5 rounded-xl transition-colors">
+                        <Apple className="w-3 h-3" />
+                        {lang === "ar" ? "من لوحة الأدمن" : "Via Admin Panel"}
+                      </a>
+                    ) : null}
                   </div>
                 </motion.div>
               ))}

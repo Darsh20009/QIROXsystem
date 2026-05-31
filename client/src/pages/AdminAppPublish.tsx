@@ -21,12 +21,13 @@ import {
 import JSZip from "jszip";
 
 // ─── Types ──────────────────────────────────────────────────
-type Platform = "android" | "windows" | "ios" | "harmony";
+type Platform = "android" | "windows" | "macos" | "ios" | "harmony";
 
-const PLATFORMS: { id: Platform; label: string; labelEn: string; icon: any; color: string; bg: string; ext: string; desc: string }[] = [
+const PLATFORMS: { id: Platform; label: string; labelEn: string; icon: any; color: string; bg: string; ext: string; desc: string; badge?: string }[] = [
   { id: "android", label: "أندرويد", labelEn: "Android", icon: Smartphone, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "APK", desc: "Google Play — Trusted Web Activity" },
   { id: "windows", label: "ويندوز", labelEn: "Windows", icon: Monitor, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "EXE", desc: "Electron — Windows Desktop App" },
-  { id: "ios", label: "آيفون iOS", labelEn: "iOS", icon: Apple, color: "text-gray-700", bg: "bg-gray-50 border-gray-200", ext: "IPA", desc: "Capacitor — Apple App Store" },
+  { id: "macos", label: "ماك", labelEn: "macOS", icon: Apple, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "DMG", desc: "Electron — macOS Desktop App (.dmg)", badge: "جديد" },
+  { id: "ios", label: "آيفون iOS", labelEn: "iOS", icon: Apple, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "IPA", desc: "Capacitor — Apple App Store" },
   { id: "harmony", label: "هارموني", labelEn: "HarmonyOS", icon: Cpu, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "HAP", desc: "DevEco Studio — Huawei App Gallery" },
 ];
 
@@ -666,6 +667,394 @@ npm run dist:msix   # → dist/qirox-studio-${version}.msix (Microsoft Store)
   return zip;
 }
 
+function generateMacZip(cfg: any, appName: string, version: string, siteUrl: string) {
+  const zip = new JSZip();
+
+  // package.json — Electron + electron-builder for macOS
+  zip.file("package.json", JSON.stringify({
+    name: "qirox-studio-mac",
+    version,
+    description: `${appName} — macOS Desktop Application`,
+    main: "src/main.js",
+    private: true,
+    scripts: {
+      "start": "electron .",
+      "pack": "electron-builder --dir",
+      "dist": "electron-builder",
+      "dist:mac": "electron-builder --mac",
+      "dist:dmg": "electron-builder --mac dmg",
+      "dist:mas": "electron-builder --mac mas",
+      "notarize": "electron-builder --mac dmg --publish never",
+    },
+    dependencies: { "electron-updater": "^6.1.7" },
+    devDependencies: {
+      "electron": "^28.0.0",
+      "electron-builder": "^24.9.1",
+      "@electron/notarize": "^2.1.0",
+    },
+    build: {
+      appId: "online.qiroxstudio.app",
+      productName: appName,
+      copyright: `Copyright © ${new Date().getFullYear()} QIROX Studio`,
+      directories: { output: "dist", buildResources: "assets" },
+      files: ["src/**/*", "assets/**/*"],
+      mac: {
+        category: "public.app-category.business",
+        target: [
+          { target: "dmg", arch: ["x64", "arm64"] },
+          { target: "zip", arch: ["x64", "arm64"] },
+          { target: "mas", arch: ["x64", "arm64"] },
+        ],
+        icon: "assets/icon.icns",
+        darkModeSupport: true,
+        hardenedRuntime: true,
+        gatekeeperAssess: false,
+        entitlements: "assets/entitlements.mac.plist",
+        entitlementsInherit: "assets/entitlements.mac.inherit.plist",
+        extendInfo: {
+          NSCameraUsageDescription: "يستخدم التطبيق الكاميرا لمسح الرمز",
+          NSMicrophoneUsageDescription: "يستخدم التطبيق الميكروفون للاجتماعات",
+          NSAppTransportSecurity: { NSAllowsArbitraryLoads: true },
+        },
+        artifactName: "\${productName}-\${version}-\${arch}.dmg",
+      },
+      dmg: {
+        title: `${appName} \${version}`,
+        background: "assets/dmg-background.png",
+        icon: "assets/icon.icns",
+        iconSize: 128,
+        window: { width: 660, height: 400 },
+        contents: [
+          { x: 200, y: 200, type: "file" },
+          { x: 460, y: 200, type: "link", path: "/Applications" },
+        ],
+        format: "ULFO",
+      },
+      mas: {
+        entitlements: "assets/entitlements.mas.plist",
+        entitlementsInherit: "assets/entitlements.mas.inherit.plist",
+        provisioningProfile: "embedded.provisionprofile",
+      },
+      publish: { provider: "github", releaseType: "release" },
+      afterSign: "scripts/notarize.js",
+    },
+  }, null, 2));
+
+  // src/main.js — Electron main process (macOS optimized)
+  zip.folder("src").file("main.js", `const { app, BrowserWindow, Menu, Tray, shell, ipcMain, nativeTheme, systemPreferences } = require("electron");
+const { autoUpdater } = require("electron-updater");
+const path = require("path");
+
+const APP_URL = "${siteUrl}";
+const APP_NAME = "${appName}";
+let mainWindow = null;
+let tray = null;
+
+// ─── Single Instance Lock ───────────────────────────────────
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) { app.quit(); }
+else {
+  app.on("second-instance", () => {
+    if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); }
+  });
+}
+
+function createWindow() {
+  // ─── Dark/Light icon for dock ───────────────────────────
+  const isDark = nativeTheme.shouldUseDarkColors;
+
+  mainWindow = new BrowserWindow({
+    width: 1440,
+    height: 900,
+    minWidth: 900,
+    minHeight: 640,
+    title: APP_NAME,
+    icon: path.join(__dirname, isDark ? "../assets/icon-dark.icns" : "../assets/icon.icns"),
+    backgroundColor: isDark ? "#030712" : "#ffffff",
+    titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 18, y: 18 },
+    vibrancy: "under-window",
+    visualEffectState: "active",
+    autoHideMenuBar: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      preload: path.join(__dirname, "preload.js"),
+    },
+    show: false,
+  });
+
+  mainWindow.loadURL(APP_URL);
+
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    mainWindow.focus();
+    if (app.isPackaged) autoUpdater.checkForUpdatesAndNotify();
+  });
+
+  // Open external links in browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+
+  // ─── Dark mode sync ───────────────────────────────────────
+  nativeTheme.on("updated", () => {
+    const dark = nativeTheme.shouldUseDarkColors;
+    mainWindow?.webContents.send("theme-changed", dark);
+    // Update dock icon
+    try {
+      const iconPath = path.join(__dirname, dark ? "../assets/icon-dark.icns" : "../assets/icon.icns");
+      if (process.platform === "darwin") app.dock.setIcon(iconPath);
+    } catch(e) {}
+  });
+
+  // ─── macOS Touch Bar ──────────────────────────────────────
+  try {
+    const { TouchBar, TouchBarButton } = require("electron");
+    const tb = new TouchBar({
+      items: [
+        new TouchBarButton({ label: "لوحة التحكم", click: () => mainWindow?.loadURL(APP_URL + "/dashboard") }),
+        new TouchBarButton({ label: "الطلبات", click: () => mainWindow?.loadURL(APP_URL + "/orders") }),
+        new TouchBarButton({ label: "تواصل", click: () => mainWindow?.loadURL(APP_URL + "/contact") }),
+      ]
+    });
+    mainWindow.setTouchBar(tb);
+  } catch(e) {}
+
+  mainWindow.on("closed", () => { mainWindow = null; });
+}
+
+// ─── macOS Dock Menu ──────────────────────────────────────────
+app.whenReady().then(() => {
+  // Set dock icon dark mode
+  const isDark = nativeTheme.shouldUseDarkColors;
+  try {
+    if (process.platform === "darwin") {
+      const iconFile = isDark ? "icon-dark.icns" : "icon.icns";
+      app.dock.setIcon(path.join(__dirname, "../assets/" + iconFile));
+      app.dock.setMenu(Menu.buildFromTemplate([
+        { label: "طلب جديد", click: () => { createWindow(); mainWindow?.loadURL(APP_URL + "/order"); } },
+        { label: "لوحة التحكم", click: () => { createWindow(); mainWindow?.loadURL(APP_URL + "/dashboard"); } },
+      ]));
+    }
+  } catch(e) {}
+
+  createWindow();
+  app.on("activate", () => { if (!mainWindow) createWindow(); });
+});
+
+// ─── macOS Menu ───────────────────────────────────────────────
+const menuTemplate = [
+  { label: app.name, submenu: [
+    { role: "about" },
+    { type: "separator" },
+    { label: "الإعدادات...", accelerator: "Cmd+,", click: () => mainWindow?.loadURL(APP_URL + "/dashboard") },
+    { type: "separator" },
+    { role: "services" },
+    { type: "separator" },
+    { role: "hide" },
+    { role: "hideOthers" },
+    { role: "unhide" },
+    { type: "separator" },
+    { role: "quit" },
+  ]},
+  { label: "تحرير", submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }] },
+  { label: "عرض", submenu: [{ role: "reload" }, { role: "forceReload" }, { type: "separator" }, { role: "resetZoom" }, { role: "zoomIn" }, { role: "zoomOut" }, { type: "separator" }, { role: "togglefullscreen" }] },
+  { label: "نافذة", role: "windowMenu" },
+  { label: "مساعدة", submenu: [
+    { label: "فتح في المتصفح", click: () => shell.openExternal(APP_URL) },
+    { label: "اتصل بنا", click: () => mainWindow?.loadURL(APP_URL + "/contact") },
+  ]},
+];
+Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate as any));
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
+// ─── Auto-updater ─────────────────────────────────────────────
+autoUpdater.on("update-available", () => mainWindow?.webContents.send("update-available"));
+autoUpdater.on("update-downloaded", () => mainWindow?.webContents.send("update-downloaded"));
+ipcMain.on("install-update", () => autoUpdater.quitAndInstall());
+`);
+
+  // src/preload.js
+  zip.folder("src").file("preload.js", `const { contextBridge, ipcRenderer } = require("electron");
+contextBridge.exposeInMainWorld("electronAPI", {
+  onUpdateAvailable: (cb) => ipcRenderer.on("update-available", cb),
+  onUpdateDownloaded: (cb) => ipcRenderer.on("update-downloaded", cb),
+  installUpdate: () => ipcRenderer.send("install-update"),
+  onThemeChanged: (cb) => ipcRenderer.on("theme-changed", (_, dark) => cb(dark)),
+  platform: process.platform,
+  version: "${version}",
+  isMac: process.platform === "darwin",
+});`);
+
+  // assets/entitlements.mac.plist
+  zip.folder("assets").file("entitlements.mac.plist", `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.network.server</key><true/>
+  <key>com.apple.security.device.camera</key><true/>
+  <key>com.apple.security.device.microphone</key><true/>
+  <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.cs.disable-library-validation</key><true/>
+</dict>
+</plist>`);
+
+  zip.folder("assets").file("entitlements.mac.inherit.plist", `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+</dict>
+</plist>`);
+
+  zip.folder("assets").file("entitlements.mas.plist", `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.network.server</key><true/>
+  <key>com.apple.security.device.camera</key><true/>
+  <key>com.apple.security.device.microphone</key><true/>
+  <key>com.apple.security.files.user-selected.read-write</key><true/>
+</dict>
+</plist>`);
+
+  zip.folder("assets").file("entitlements.mas.inherit.plist", `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.inherit</key><true/>
+</dict>
+</plist>`);
+
+  // scripts/notarize.js — Apple Notarization
+  zip.folder("scripts").file("notarize.js", `const { notarize } = require("@electron/notarize");
+exports.default = async function notarizing(context) {
+  const { electronPlatformName, appOutDir } = context;
+  if (electronPlatformName !== "darwin") return;
+  const appName = context.packager.appInfo.productFilename;
+  return await notarize({
+    tool: "notarytool",
+    appBundleId: "online.qiroxstudio.app",
+    appPath: \`\${appOutDir}/\${appName}.app\`,
+    appleId: process.env.APPLE_ID,
+    appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
+    teamId: process.env.APPLE_TEAM_ID,
+  });
+};`);
+
+  // GitHub Actions CI/CD — Build macOS DMG
+  zip.folder(".github/workflows").file("build-macos.yml", `name: Build macOS App
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - name: Build macOS DMG (Intel + Apple Silicon)
+        run: npm run dist:mac
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: \${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: \${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: \${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: \${{ secrets.MAC_CERTS }}
+          CSC_KEY_PASSWORD: \${{ secrets.MAC_CERTS_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qirox-macos-\${{ github.ref_name }}
+          path: |
+            dist/*.dmg
+            dist/*.zip`);
+
+  zip.file("README.md", `# ${appName} — macOS Desktop App (Electron)
+
+## المتطلبات
+- macOS 12 (Monterey) أو أحدث
+- Node.js 20+
+- npm أو yarn
+- حساب Apple Developer ($99/سنة) — للتوقيع والتوزيع
+- Xcode Command Line Tools
+
+## خطوات البناء
+
+### 1. تثبيت المتطلبات
+\`\`\`bash
+xcode-select --install
+npm install
+\`\`\`
+
+### 2. إضافة أيقونات الوضع الليلي والنهاري
+ضع في مجلد assets/:
+- icon.icns       — أيقونة الوضع النهاري (فاتح)
+- icon-dark.icns  — أيقونة الوضع الليلي (داكن) ← مهم جداً
+- dmg-background.png — خلفية نافذة التثبيت (660x400)
+
+### 3. تشغيل للاختبار
+\`\`\`bash
+npm start
+\`\`\`
+
+### 4. بناء DMG
+\`\`\`bash
+npm run dist:dmg  # → dist/${appName}-${version}-x64.dmg (Intel)
+                  # → dist/${appName}-${version}-arm64.dmg (Apple Silicon M1/M2/M3)
+\`\`\`
+
+### 5. بناء لـ Mac App Store (اختياري)
+\`\`\`bash
+npm run dist:mas  # → dist/mas/${appName}-${version}.pkg
+\`\`\`
+
+### 6. متغيرات البيئة للتوقيع والـ Notarization
+\`\`\`bash
+export APPLE_ID="your@email.com"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+export APPLE_TEAM_ID="XXXXXXXXXX"
+\`\`\`
+
+## الميزات المضمّنة
+- ✅ دعم Apple Silicon (M1/M2/M3) وIntel بشكل تلقائي
+- ✅ الوضع الليلي والنهاري (Dark/Light mode) مع أيقونة مخصصة لكل وضع
+- ✅ Vibrancy Effect (تأثير الشفافية macOS)
+- ✅ Hidden Title Bar + Traffic Lights مخصصة
+- ✅ Touch Bar دعم
+- ✅ Dock Menu مخصص
+- ✅ Auto-Updater تلقائي
+- ✅ Notarization (Apple أمان)
+- ✅ Sandboxing للأمان
+- ✅ قائمة macOS كاملة بالعربية
+
+## ملاحظات
+- الرابط: ${siteUrl}
+- الإصدار: ${version}
+- تاريخ التوليد: ${new Date().toLocaleString("ar-SA")}
+`);
+
+  return zip;
+}
+
 function generateIosZip(cfg: any, appName: string, bundleId: string, version: string, siteUrl: string) {
   const zip = new JSZip();
   const safeName = appName.replace(/\s+/g, "");
@@ -1293,6 +1682,9 @@ export default function AdminAppPublish() {
         case "windows":
           zip = generateWindowsZip(data, appName, pkg.version, siteUrl);
           break;
+        case "macos":
+          zip = generateMacZip(data, appName, pkg.version, siteUrl);
+          break;
         case "ios":
           zip = generateIosZip(data, appName, data.appleBundleId || "com.qirox.studio", pkg.version, siteUrl);
           break;
@@ -1341,6 +1733,9 @@ export default function AdminAppPublish() {
           break;
         case "windows":
           zip = generateWindowsZip(data, appName, buildVer, siteUrl);
+          break;
+        case "macos":
+          zip = generateMacZip(data, appName, buildVer, siteUrl);
           break;
         case "ios":
           zip = generateIosZip(data, appName, data.appleBundleId || "com.qirox.studio", buildVer, siteUrl);
@@ -1512,7 +1907,7 @@ export default function AdminAppPublish() {
               {/* Platform Cards */}
               <div>
                 <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">{L ? "اختر المنصة المستهدفة" : "Choose Target Platform"}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {PLATFORMS.map(plt => {
                     const Icon = plt.icon;
                     const active = selectedPlatform === plt.id;
@@ -1521,11 +1916,16 @@ export default function AdminAppPublish() {
                         key={plt.id}
                         data-testid={`platform-${plt.id}`}
                         onClick={() => setSelectedPlatform(plt.id)}
-                        className={`p-4 rounded-2xl border-2 text-right transition-all duration-200 ${active ? "border-black bg-black text-white shadow-lg scale-[1.02]" : "border-black/[0.08] bg-white hover:border-black/30 text-black hover:scale-[1.01]"}`}
+                        className={`relative p-4 rounded-2xl border-2 text-right transition-all duration-200 ${active ? "border-black bg-black text-white shadow-lg scale-[1.02]" : "border-black/[0.08] bg-white hover:border-black/30 text-black hover:scale-[1.01]"}`}
                       >
+                        {plt.badge && (
+                          <span className={`absolute top-2 end-2 text-[8px] font-black px-1.5 py-0.5 rounded-full ${active ? "bg-white/20 text-white" : "bg-black text-white"}`}>
+                            {plt.badge}
+                          </span>
+                        )}
                         <Icon className={`w-6 h-6 mb-2 ${active ? "text-white" : plt.color}`} />
-                        <p className={`text-sm font-black ${active ? "text-white" : "text-black"}`}>{plt.label}</p>
-                        <p className={`text-[10px] mt-0.5 ${active ? "text-white/60" : "text-black/40"}`}>{plt.labelEn}</p>
+                        <p className={`text-sm font-black ${active ? "text-white" : "text-black dark:text-white"}`}>{plt.label}</p>
+                        <p className={`text-[10px] mt-0.5 ${active ? "text-white/60" : "text-black/40 dark:text-white/40"}`}>{plt.labelEn}</p>
                         <Badge className={`mt-2 text-[9px] font-black ${active ? "bg-white/20 text-white border-white/20" : "bg-black/[0.04] text-black/50 border-black/10"}`} variant="outline">
                           {plt.ext}
                         </Badge>
@@ -1556,7 +1956,8 @@ export default function AdminAppPublish() {
                     <Input
                       value={selectedPlatform === "android" ? (data.androidPackage || "com.qirox.studio") :
                         selectedPlatform === "harmony" ? (data.huaweiPackage || "com.qirox.studio.harmony") :
-                        selectedPlatform === "ios" ? (data.appleBundleId || "com.qirox.studio") : "QiroxStudio.App"}
+                        selectedPlatform === "ios" ? (data.appleBundleId || "com.qirox.studio") :
+                        selectedPlatform === "macos" ? "online.qiroxstudio.app" : "QiroxStudio.App"}
                       disabled className="text-sm h-9 opacity-60 font-mono" dir="ltr" />
                   </div>
                 </div>
@@ -1622,6 +2023,19 @@ export default function AdminAppPublish() {
                     "WKWebView Configuration",
                     "App Transport Security",
                   ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-gray-600 shrink-0" />{i}</div>)}
+
+                  {selectedPlatform === "macos" && [
+                    "Electron Main (main.js) macOS",
+                    "DMG Config (electron-builder)",
+                    "Dark Mode Icon Support ✦",
+                    "Vibrancy + Hidden TitleBar",
+                    "Touch Bar دعم كامل",
+                    "Dock Menu بالعربية",
+                    "entitlements.mac.plist",
+                    "Apple Notarization Script",
+                    "GitHub Actions CI/CD (arm64+x64)",
+                    "Mac App Store (MAS) Config",
+                  ].map(i => <div key={i} className="flex items-center gap-1.5 text-black/60"><CheckCheck className="w-3 h-3 text-black dark:text-white shrink-0" />{i}</div>)}
 
                   {selectedPlatform === "harmony" && [
                     "EntryAbility.ets (HarmonyOS)",
