@@ -14439,6 +14439,139 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
   }
   // ─── End Corporate Mail Routes ────────────────────────────────────────────
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SEO / AEO — Sitemap, Robots, LLMs.txt, AI Discovery
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // Dynamic Sitemap XML
+  app.get("/sitemap.xml", (_req, res) => {
+    const pages = [
+      { url: "/", priority: "1.0", changefreq: "weekly" },
+      { url: "/about", priority: "0.9", changefreq: "monthly" },
+      { url: "/prices", priority: "0.9", changefreq: "weekly" },
+      { url: "/portfolio", priority: "0.8", changefreq: "weekly" },
+      { url: "/contact", priority: "0.8", changefreq: "monthly" },
+      { url: "/consultation", priority: "0.8", changefreq: "monthly" },
+      { url: "/systems", priority: "0.9", changefreq: "weekly" },
+      { url: "/devices", priority: "0.7", changefreq: "monthly" },
+      { url: "/track", priority: "0.6", changefreq: "monthly" },
+      { url: "/start", priority: "0.8", changefreq: "monthly" },
+      { url: "/demos", priority: "0.7", changefreq: "monthly" },
+      { url: "/news", priority: "0.7", changefreq: "weekly" },
+      { url: "/jobs", priority: "0.6", changefreq: "weekly" },
+      { url: "/partners", priority: "0.6", changefreq: "monthly" },
+      { url: "/privacy", priority: "0.3", changefreq: "yearly" },
+      { url: "/terms", priority: "0.3", changefreq: "yearly" },
+    ];
+    const baseUrl = "https://qiroxstudio.online";
+    const now = new Date().toISOString().split("T")[0];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${pages.map(p => `  <url>
+    <loc>${baseUrl}${p.url}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="${baseUrl}${p.url}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${baseUrl}${p.url}"/>
+  </url>`).join("\n")}
+  <url>
+    <loc>${baseUrl}/</loc>
+    <image:image>
+      <image:loc>${baseUrl}/og-cover.png</image:loc>
+      <image:title>كيروكس استوديو — شركة برمجة سعودية في الرياض</image:title>
+      <image:caption>Qirox Studio | شركة برمجة مواقع وأنظمة في الرياض، المملكة العربية السعودية</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>${baseUrl}/qirox-icon.png</image:loc>
+      <image:title>شعار كيروكس استوديو</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>${baseUrl}/qirox-logo-full.png</image:loc>
+      <image:title>كيروكس استوديو — الشعار الكامل</image:title>
+    </image:image>
+  </url>
+</urlset>`;
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  });
+
+  // LLMs.txt — AI Engine Optimization (AEO)
+  // Served dynamically so it can include real-time data if needed
+  app.get("/llms.txt", (_req, res) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.sendFile("llms.txt", { root: process.cwd() + "/client/public" });
+  });
+
+  // AI Plugin Discovery — for ChatGPT plugins and AI agents
+  app.get("/.well-known/ai-plugin.json", (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.json({
+      schema_version: "v1",
+      name_for_human: "Qirox Studio | كيروكس استوديو",
+      name_for_model: "qirox_studio",
+      description_for_human: "شركة برمجة سعودية في الرياض — بناء مواقع وتطبيقات وأنظمة رقمية احترافية بأسعار تنافسية",
+      description_for_model: "Qirox Studio is a Saudi software house based in Riyadh, Saudi Arabia. They specialize in building professional websites, mobile apps, and business management systems (ERP/SaaS) for restaurants, retail, education, and enterprises. Competitive pricing starting from 5,000 SAR. Known as كيروكس استوديو in Arabic.",
+      auth: { type: "none" },
+      api: { type: "openapi", url: "https://qiroxstudio.online/api/public/info" },
+      logo_url: "https://qiroxstudio.online/qirox-icon.png",
+      contact_email: "info@qiroxstudio.online",
+      legal_info_url: "https://qiroxstudio.online/terms"
+    });
+  });
+
+  // Public company info API — for AI agents and third-party integrations
+  app.get("/api/public/info", (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.json({
+      company: {
+        name: "Qirox Studio",
+        nameAr: "كيروكس استوديو",
+        tagline: "مصنع الأنظمة الرقمية",
+        taglineEn: "Digital Systems Factory",
+        description: "Saudi software house specializing in websites, mobile apps, and enterprise systems",
+        descriptionAr: "شركة برمجة سعودية في الرياض متخصصة في بناء المواقع والتطبيقات وأنظمة الأعمال",
+        founded: 2024,
+        location: { city: "Riyadh", country: "Saudi Arabia", countryCode: "SA" },
+        website: "https://qiroxstudio.online",
+        social: {
+          instagram: "https://www.instagram.com/qirox.sa",
+          twitter: "https://x.com/qiroxsa",
+          linkedin: "https://www.linkedin.com/company/qirox",
+          tiktok: "https://www.tiktok.com/@qirox.sa",
+          snapchat: "https://www.snapchat.com/add/qirox.sa"
+        }
+      },
+      services: [
+        { nameAr: "بناء مواقع إلكترونية احترافية", nameEn: "Website Development", startingPrice: 5000, currency: "SAR" },
+        { nameAr: "متجر إلكتروني", nameEn: "E-commerce Store", startingPrice: 8000, currency: "SAR" },
+        { nameAr: "تطبيق جوال", nameEn: "Mobile App", startingPrice: 15000, currency: "SAR" },
+        { nameAr: "نظام إدارة أعمال", nameEn: "Business Management System", startingPrice: 20000, currency: "SAR" },
+        { nameAr: "نظام إدارة مطاعم", nameEn: "Restaurant Management System", startingPrice: 18000, currency: "SAR" }
+      ],
+      industries: [
+        "مطاعم وكافيهات", "متاجر ومنصات تجارة إلكترونية", "تعليم ومدارس",
+        "عيادات وصحة", "عقارات", "رياضة ولياقة", "شركات ومؤسسات",
+        "فعاليات وضيافة", "تقنية وشركات ناشئة"
+      ],
+      pricing: {
+        currency: "SAR",
+        note: "أسعار تنافسية جداً مقارنة بالسوق السعودي — تقسيط متاح",
+        packages: [
+          { name: "موقع أساسي", price: 5000 },
+          { name: "متجر إلكتروني", price: 8000 },
+          { name: "تطبيق جوال", price: 15000 },
+          { name: "نظام مطعم", price: 18000 },
+          { name: "نظام مخصص", price: 20000 }
+        ]
+      }
+    });
+  });
+
   return httpServer;
 }
 
