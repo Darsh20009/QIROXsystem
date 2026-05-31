@@ -1,0 +1,214 @@
+# ═══════════════════════════════════════════════════════════════════
+#  QIROX Studio — Codemagic CI/CD Configuration
+#  App ID: 69d77e01516f88abd2fff678
+#  https://codemagic.io/app/69d77e01516f88abd2fff678/settings
+# ═══════════════════════════════════════════════════════════════════
+#
+#  Workflows:
+#   1. electron-macos  — macOS Desktop App (.dmg for arm64 + x64)
+#   2. android-twa     — Android TWA (.aab + .apk for Play Store)
+#   3. web-build       — Web App Build (CI check + artifact)
+#
+# ═══════════════════════════════════════════════════════════════════
+
+definitions:
+  env_versions: &node_env
+    node: "18"
+
+workflows:
+
+  # ─────────────────────────────────────────────────────────────────
+  #  1. macOS Desktop App — Electron DMG
+  #     Builds a universal macOS .dmg for Apple Silicon + Intel.
+  #     Output: electron/dist/QIROX Studio-*.dmg
+  # ─────────────────────────────────────────────────────────────────
+  electron-macos:
+    name: "🍎 macOS Desktop App (DMG)"
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+
+    environment:
+      <<: *node_env
+      vars:
+        ELECTRON_CACHE: ~/.cache/electron
+        ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
+      # Uncomment and configure after adding certificates to Codemagic:
+      # certificate_credential_references:
+      #   - reference: mac_developer_certificate
+
+    cache:
+      cache_paths:
+        - ~/.cache/electron
+        - ~/.cache/electron-builder
+        - electron/node_modules
+
+    scripts:
+      - name: Install Electron dependencies
+        script: |
+          cd electron
+          npm ci
+
+      - name: Convert PNG → ICNS (macOS app icon)
+        script: |
+          # Create icon set from existing icon-512.png
+          mkdir -p /tmp/qirox.iconset
+          cp ../client/public/icon-512.png /tmp/qirox.iconset/icon_512x512.png
+          cp ../client/public/icon-512.png /tmp/qirox.iconset/icon_512x512@2x.png
+          cp ../client/public/icon-256.png /tmp/qirox.iconset/icon_256x256.png
+          cp ../client/public/icon-256.png /tmp/qirox.iconset/icon_256x256@2x.png
+          cp ../client/public/icon-192.png /tmp/qirox.iconset/icon_128x128@2x.png
+          cp ../client/public/icon-96.png  /tmp/qirox.iconset/icon_48x48@2x.png    2>/dev/null || true
+          cp ../client/public/icon-32.png  /tmp/qirox.iconset/icon_32x32.png
+          cp ../client/public/icon-16.png  /tmp/qirox.iconset/icon_16x16.png
+          iconutil -c icns /tmp/qirox.iconset -o electron/icons/icon.icns || true
+        working_directory: electron
+
+      - name: Build macOS DMG (arm64 + x64)
+        script: |
+          cd electron
+          npx electron-builder --mac --publish never
+
+    artifacts:
+      - electron/dist/*.dmg
+      - electron/dist/*.zip
+      - electron/dist/latest-mac.yml
+
+    publishing:
+      email:
+        recipients:
+          - admin@qiroxstudio.online
+        notify:
+          success: true
+          failure: true
+
+
+  # ─────────────────────────────────────────────────────────────────
+  #  2. Android TWA — Play Store (APK + AAB)
+  #     Trusted Web Activity wrapping https://qiroxstudio.online
+  #     Requires: keystore uploaded to Codemagic + Play Console JSON
+  # ─────────────────────────────────────────────────────────────────
+  android-twa:
+    name: "🤖 Android TWA (Play Store)"
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      <<: *node_env
+      android_signing:
+        - qirox_android_keystore   # Reference name set in Codemagic → Code signing
+      java: "17"
+      vars:
+        TWA_PACKAGE:   "online.qiroxstudio.twa"
+        TWA_HOST:      "qiroxstudio.online"
+        JAVA_HOME:     /usr/lib/jvm/java-17-openjdk-amd64
+
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.android/build-cache
+        - android-twa/twa-project/node_modules
+
+    scripts:
+      - name: Install Bubblewrap CLI
+        script: npm install -g @bubblewrap/cli@latest
+
+      - name: Setup Bubblewrap dependencies (JDK + SDK)
+        script: |
+          bubblewrap doctor || true
+
+      - name: Initialize TWA Project from manifest
+        script: |
+          cd android-twa
+          # Only init if project doesn't already exist
+          if [ ! -d "twa-project" ]; then
+            bubblewrap init \
+              --manifest "https://${TWA_HOST}/manifest.json" \
+              --directory ./twa-project
+          fi
+
+      - name: Copy signing key into project
+        script: |
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo "$CM_KEYSTORE" | base64 --decode > android-twa/qirox-android.keystore
+          fi
+
+      - name: Build Release APK & AAB
+        script: |
+          cd android-twa/twa-project
+          bubblewrap build \
+            --skipPwaValidation
+
+      - name: Sign and align APK
+        script: |
+          APK_PATH=$(find android-twa -name "app-release-unsigned.apk" | head -1)
+          AAB_PATH=$(find android-twa -name "app-release.aab" | head -1)
+          if [ -n "$APK_PATH" ]; then
+            zipalign -v 4 "$APK_PATH" android-twa/app-release-aligned.apk
+            apksigner sign \
+              --ks android-twa/qirox-android.keystore \
+              --ks-key-alias qirox \
+              --ks-pass "pass:${CM_KEYSTORE_PASSWORD}" \
+              --key-pass "pass:${CM_KEY_PASSWORD}" \
+              --out android-twa/app-release-signed.apk \
+              android-twa/app-release-aligned.apk
+          fi
+
+    artifacts:
+      - android-twa/app-release-signed.apk
+      - android-twa/twa-project/app/build/outputs/apk/release/*.apk
+      - android-twa/twa-project/app/build/outputs/bundle/release/*.aab
+
+    publishing:
+      email:
+        recipients:
+          - admin@qiroxstudio.online
+        notify:
+          success: true
+          failure: true
+      # Uncomment after setting up Google Play Console service account:
+      # google_play:
+      #   credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      #   track: internal
+      #   submit_as_draft: true
+
+
+  # ─────────────────────────────────────────────────────────────────
+  #  3. Web App Build — CI Check & Artifact
+  #     Builds the React frontend + Express backend for deployment.
+  # ─────────────────────────────────────────────────────────────────
+  web-build:
+    name: "🌐 Web App Build"
+    max_build_duration: 30
+    instance_type: linux_x2
+
+    environment:
+      <<: *node_env
+      vars:
+        NODE_ENV: production
+
+    cache:
+      cache_paths:
+        - node_modules
+        - ~/.npm
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Type check
+        script: npm run typecheck || true
+
+      - name: Build production bundle
+        script: npm run build
+
+    artifacts:
+      - dist/**
+      - dist/public/**
+
+    publishing:
+      email:
+        recipients:
+          - admin@qiroxstudio.online
+        notify:
+          success: false
+          failure: true
