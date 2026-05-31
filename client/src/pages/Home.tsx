@@ -876,7 +876,7 @@ export default function Home() {
         <section className="relative overflow-hidden bg-black">
           <div className="relative w-full" style={{ aspectRatio: "16/7" }}>
             <video
-              src="/demo-video.mov"
+              src="/demo-video.mp4"
               autoPlay
               loop
               muted
