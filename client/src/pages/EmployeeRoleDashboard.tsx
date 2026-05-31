@@ -1169,7 +1169,7 @@ function AdminManagerDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-black">{L ? "نظرة عامة على المنصة" : "Platform Overview"}</h1>
-              <p className="text-white/40 text-sm">{L ? "إحصاءات وأنشطة نظام قيروكس" : "QIROX platform stats and activity"}</p>
+              <p className="text-white/40 text-sm">{L ? "إحصاءات وأنشطة نظام كيروكس" : "QIROX platform stats and activity"}</p>
             </div>
           </div>
           <div className="grid grid-cols-4 gap-3">

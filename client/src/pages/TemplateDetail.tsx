@@ -1270,7 +1270,7 @@ export default function TemplateDetail() {
               <div className="relative mt-6 pt-5 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <BadgeCheck className="w-4 h-4 text-black/70 dark:text-white/70" />
-                  <span className="text-xs text-white/40 font-medium">جميع الأجهزة مختبرة ومعتمدة من فريق قيروكس</span>
+                  <span className="text-xs text-white/40 font-medium">جميع الأجهزة مختبرة ومعتمدة من فريق كيروكس</span>
                 </div>
                 <div className="flex items-center gap-4">
                   {[

@@ -34,16 +34,16 @@ function getTemplates(ar: boolean) {
     {
       cat: ar ? "مناسبات" : "Occasions",
       items: [
-        { title: ar ? "عيد مبارك 🌙" : "Eid Mubarak 🌙", body: ar ? "تهنئكم منصة قيروكس ستوديو بمناسبة العيد المبارك! أعاده الله عليكم بالخير واليُمن والبركات." : "Qirox Studio wishes you a blessed Eid! May it bring you joy, peace, and prosperity." },
+        { title: ar ? "عيد مبارك 🌙" : "Eid Mubarak 🌙", body: ar ? "تهنئكم منصة كيروكس ستوديو بمناسبة العيد المبارك! أعاده الله عليكم بالخير واليُمن والبركات." : "Qirox Studio wishes you a blessed Eid! May it bring you joy, peace, and prosperity." },
         { title: ar ? "رمضان كريم 🌙" : "Ramadan Kareem 🌙", body: ar ? "رمضان كريم! نسأل الله أن يتقبل صيامكم وقيامكم ويتغمدكم برحمته." : "Ramadan Kareem! May this holy month bring peace and blessings to you and your family." },
         { title: ar ? "اليوم الوطني السعودي 🇸🇦" : "Saudi National Day 🇸🇦", body: ar ? "في ذكرى اليوم الوطني المجيد، نشارككم الفخر والاعتزاز بهذا الوطن العزيز. كل عام والمملكة بخير." : "Happy Saudi National Day! We're proud to serve this great nation." },
-        { title: ar ? "صباح الخير ☀️" : "Good Morning ☀️", body: ar ? "صباح الخير! نتمنى لكم يوماً مليئاً بالإنجازات والنجاحات. فريق قيروكس ستوديو دائماً في خدمتكم." : "Good morning! We wish you a productive and successful day. Qirox Studio is always at your service." },
+        { title: ar ? "صباح الخير ☀️" : "Good Morning ☀️", body: ar ? "صباح الخير! نتمنى لكم يوماً مليئاً بالإنجازات والنجاحات. فريق كيروكس ستوديو دائماً في خدمتكم." : "Good morning! We wish you a productive and successful day. Qirox Studio is always at your service." },
       ],
     },
     {
       cat: ar ? "خدمة" : "Service",
       items: [
-        { title: ar ? "تحديث المنصة 🚀" : "Platform Update 🚀", body: ar ? "تم تحديث منصة قيروكس ستوديو بمميزات جديدة! ادخل الآن واكتشف كل الجديد." : "Qirox Studio platform has been updated with new features! Log in now to explore." },
+        { title: ar ? "تحديث المنصة 🚀" : "Platform Update 🚀", body: ar ? "تم تحديث منصة كيروكس ستوديو بمميزات جديدة! ادخل الآن واكتشف كل الجديد." : "Qirox Studio platform has been updated with new features! Log in now to explore." },
         { title: ar ? "عرض خاص 🎁" : "Special Offer 🎁", body: ar ? "عرض لفترة محدودة! تواصل معنا الآن للحصول على التفاصيل وأفضل الأسعار." : "Limited-time offer! Contact us now for details and best prices." },
         { title: ar ? "تذكير بالمشروع 📋" : "Project Reminder 📋", body: ar ? "لديك مشروع قيد التنفيذ. يمكنك متابعة حالته من لوحة التحكم الخاصة بك." : "You have an active project in progress. Track its status from your dashboard." },
       ],
@@ -326,7 +326,7 @@ export default function AdminPushNotifications() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-black/50 dark:text-white/40 mb-1 block">{ar ? "موضوع البريد *" : "Subject *"}</label>
-                  <Input value={emailForm.subject} onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} placeholder={ar ? "مثال: عيد مبارك من قيروكس ستوديو" : "e.g. Happy Eid from Qirox Studio"} className="border-black/20" data-testid="input-email-subject" />
+                  <Input value={emailForm.subject} onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))} placeholder={ar ? "مثال: عيد مبارك من كيروكس ستوديو" : "e.g. Happy Eid from Qirox Studio"} className="border-black/20" data-testid="input-email-subject" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-black/50 dark:text-white/40 mb-1 block">{ar ? "نص الرسالة *" : "Message Body *"}</label>

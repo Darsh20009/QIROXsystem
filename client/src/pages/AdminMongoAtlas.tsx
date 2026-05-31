@@ -211,7 +211,7 @@ export default function AdminMongoAtlas() {
           <div className="space-y-3 max-h-[60vh] overflow-y-auto px-1">
             <div>
               <Label>{L ? "تسمية الإعداد *" : "Config Label *"}</Label>
-              <Input value={configForm.label} onChange={e => setConfigForm(f => ({ ...f, label: e.target.value }))} placeholder={L ? "مثال: قيروكس الرئيسي" : "e.g. Qirox Main"} data-testid="input-atlas-label" />
+              <Input value={configForm.label} onChange={e => setConfigForm(f => ({ ...f, label: e.target.value }))} placeholder={L ? "مثال: كيروكس الرئيسي" : "e.g. Qirox Main"} data-testid="input-atlas-label" />
             </div>
             <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-lg p-3 text-xs text-black dark:text-white">
               {L ? <>يدعم النظام نوعين: <strong>API Key</strong> (Public/Private Key) أو <strong>Service Account</strong> (Client ID/Secret — يبدأ بـ mdb_sa_id_)</> : <>Supports two types: <strong>API Key</strong> (Public/Private Key) or <strong>Service Account</strong> (Client ID/Secret — starts with mdb_sa_id_)</>}

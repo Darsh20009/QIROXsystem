@@ -21,7 +21,7 @@ export default function Customers() {
         <div className="container mx-auto px-4 md:px-8 max-w-5xl relative z-10">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-black font-heading mb-4">{L ? "عملاؤنا وشركاؤنا" : "Our Clients & Partners"}</h1>
-            <p className="text-black/40 text-lg">{L ? "نفخر بثقة عملائنا وشركائنا في منطومة قيروكس" : "We are proud of the trust our clients and partners place in the Qirox ecosystem"}</p>
+            <p className="text-black/40 text-lg">{L ? "نفخر بثقة عملائنا وشركائنا في منطومة كيروكس" : "We are proud of the trust our clients and partners place in the Qirox ecosystem"}</p>
           </div>
 
           {isLoading ? (

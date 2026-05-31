@@ -966,7 +966,7 @@ export default function Home() {
               <div className="text-center px-4">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold tracking-wide mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  {ar ? "نظام قيروكس في العمل" : "QIROX in action"}
+                  {ar ? "نظام كيروكس في العمل" : "QIROX in action"}
                 </div>
                 <h2 className="text-white text-2xl md:text-4xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
                   {ar ? "شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}

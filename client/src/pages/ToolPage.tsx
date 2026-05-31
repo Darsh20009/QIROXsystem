@@ -1640,7 +1640,7 @@ function HashtagGenPanel() {
   const [tags, setTags] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const generate = () => {
-    const arPrefixes = ["#", "#تصميم_", "#اعمال_", "#تقنية_", "#سوشيال_", "#محتوى_", "#قيروكس_"];
+    const arPrefixes = ["#", "#تصميم_", "#اعمال_", "#تقنية_", "#سوشيال_", "#محتوى_", "#كيروكس_"];
     const enPrefixes = ["#", "#design_", "#digital_", "#tech_", "#social_", "#content_", "#brand_"];
     const base = topic.trim().replace(/\s+/g,"_");
     const prefixes = lang==="ar" ? arPrefixes : enPrefixes;

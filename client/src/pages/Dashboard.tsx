@@ -2415,7 +2415,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className={`font-black text-sm ${isDanger ? "text-black dark:text-white" : isWarning ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
-                      {L ? `اشتراكك في ${(user as any).subscriptionSegmentNameAr || "قيروكس"}` : `Your ${(user as any).subscriptionSegmentNameEn || "QIROX"} Subscription`}
+                      {L ? `اشتراكك في ${(user as any).subscriptionSegmentNameAr || "كيروكس"}` : `Your ${(user as any).subscriptionSegmentNameEn || "QIROX"} Subscription`}
                     </p>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : isWarning ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60"}`}>{L ? "نشط" : "Active"}</span>
                   </div>
