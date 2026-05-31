@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * QIROX AI — Agentic Intelligence
- * Powered by Kimi (Moonshot AI) — kimi-k2.6
+ * Powered by Kimi (Moonshot AI) — kimi-k2-0905-preview
  */
 import type { Express } from "express";
 import OpenAI from "openai";
@@ -20,7 +20,7 @@ const openai = new Proxy({} as OpenAI, {
   },
 });
 
-const AI_MODEL = "kimi-k2.6";
+const AI_MODEL = "kimi-k2-0905-preview";
 
 console.log(`[AI] Provider: Kimi k2 (Moonshot AI)`);;
 
@@ -1220,8 +1220,8 @@ async function handleChat(req: any, res: any) {
       messages,
       tools: QIROX_TOOLS,
       tool_choice: "auto",
-      temperature: 0.65,
-      max_tokens: 1200,
+      temperature: 0.7,
+      max_tokens: 2000,
     });
 
     const choice = completion.choices[0];
@@ -1253,8 +1253,8 @@ async function handleChat(req: any, res: any) {
       const finalCompletion = await openai.chat.completions.create({
         model: AI_MODEL,
         messages: toolMessages,
-        temperature: 0.65,
-        max_tokens: 1200,
+        temperature: 0.7,
+        max_tokens: 2000,
       });
 
       const finalReply = finalCompletion.choices[0].message.content || "تم تنفيذ العملية.";
