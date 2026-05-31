@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import DashboardVideoBg from "@/components/DashboardVideoBg";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -279,6 +280,7 @@ export default function AdminSystemDashboards() {
 
   return (
     <div className="relative overflow-hidden space-y-6" dir={dir}>
+      <DashboardVideoBg opacity={0.1} particles />
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
