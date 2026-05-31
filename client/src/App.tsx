@@ -913,9 +913,15 @@ function AppInner() {
   const isPublicRoute = publicRoutes.some(r => location === r)
     || location.startsWith("/templates/");
 
+  // Guard: redirect unauthenticated users to /login (must be before any early returns)
+  useEffect(() => {
+    if (!isPublicRoute && !userLoading && user === null) {
+      try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
+      navigate(`/login?redirect=${encodeURIComponent(location)}`);
+    }
+  }, [isPublicRoute, userLoading, user, location]);
+
   // While auth is still resolving on private routes, show a blank screen
-  // (Splash screen already showed — this is just a safety guard to prevent
-  //  child components from crashing when user is still null)
   if (!isPublicRoute && userLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950">
@@ -923,14 +929,6 @@ function AppInner() {
       </div>
     );
   }
-
-  // Guard: redirect unauthenticated users to /login and save the return URL
-  useEffect(() => {
-    if (!isPublicRoute && !userLoading && user === null) {
-      try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
-      navigate(`/login?redirect=${encodeURIComponent(location)}`);
-    }
-  }, [isPublicRoute, userLoading, user, location]);
 
   if (!isPublicRoute && !userLoading && user === null) {
     return null;
