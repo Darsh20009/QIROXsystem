@@ -805,6 +805,32 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Video Showcase Banner ── */}
+        <section className="relative overflow-hidden bg-black">
+          <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+            <video
+              src="/demo-video.mov"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-contain opacity-90"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
+            <div className="absolute inset-0 flex items-end justify-center pb-8">
+              <div className="text-center px-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold tracking-wide mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {ar ? "نظام كيروكس في العمل" : "QIROX in action"}
+                </div>
+                <h2 className="text-white text-xl md:text-3xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
+                  {ar ? "شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
+                </h2>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Graphic Divider after Hero ── */}
         <GraphicDivider variant={1} dark />
 
@@ -949,32 +975,6 @@ export default function Home() {
         {/* ── Stats + Graphic after Systems ── */}
         <StatsBar ar={ar} />
         <GraphicBanner ar={ar} />
-
-        {/* ── Video Showcase Banner ── */}
-        <section className="relative overflow-hidden bg-black">
-          <div className="relative w-full" style={{ aspectRatio: "16/7" }}>
-            <video
-              src="/demo-video.mov"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover opacity-80"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center px-4">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold tracking-wide mb-4">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  {ar ? "نظام كيروكس في العمل" : "QIROX in action"}
-                </div>
-                <h2 className="text-white text-2xl md:text-4xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
-                  {ar ? "شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
-                </h2>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* ─── PRICING ─── */}
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-black/[0.02] dark:bg-white/[0.02]">
