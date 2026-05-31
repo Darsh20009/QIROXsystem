@@ -917,18 +917,16 @@ export default function Home() {
                       </div>
 
                       {/* Illustration zone — top 65% — bigger, bolder, lifted on hover */}
-                      <div className={`absolute inset-0 bottom-[35%] flex items-center justify-center p-3 transition-transform duration-500 group-hover:scale-110 ${
+                      <div className={`absolute inset-0 bottom-[35%] overflow-hidden transition-transform duration-500 group-hover:scale-110 ${
                         s.custom ? "text-white dark:text-black" : "text-black dark:text-white"
                       }`}>
-                        <div className="relative w-full h-full flex items-center justify-center">
-                          {s.img ? (
-                            <img src={s.img} alt={s.arName} className="w-full h-full object-cover" />
-                          ) : IllustrationComponent ? (
-                            <IllustrationComponent />
-                          ) : (
-                            <Icon className="w-10 h-10" />
-                          )}
-                        </div>
+                        {s.img ? (
+                          <img src={s.img} alt={s.arName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center p-3">
+                            {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-10 h-10" />}
+                          </div>
+                        )}
                       </div>
 
                       {/* Bottom title strip — premium solid black/white with crisp typography */}
