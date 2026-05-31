@@ -112,17 +112,84 @@ function BeautyIllustration() {
 }
 function IdeaIllustration() {
   return (
-    <svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <circle cx="80" cy="52" r="28" fill="currentColor" fillOpacity=".12"/>
-      <path d="M70 52 C70 42 90 42 90 52 C90 59 86 62 86 68 L74 68 C74 62 70 59 70 52Z" fill="currentColor" fillOpacity=".25"/>
-      <rect x="74" y="70" width="12" height="4" rx="2" fill="currentColor" fillOpacity=".25"/>
-      <rect x="76" y="76" width="8" height="4" rx="2" fill="currentColor" fillOpacity=".2"/>
-      <path d="M55 30 L50 25 M105 30 L110 25 M80 22 L80 15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeOpacity=".2"/>
-      <path d="M45 85 L115 85" stroke="currentColor" strokeWidth="2" strokeOpacity=".1" strokeDasharray="4 4"/>
-      <circle cx="50" cy="95" r="6" fill="currentColor" fillOpacity=".12"/>
-      <circle cx="80" cy="100" r="6" fill="currentColor" fillOpacity=".12"/>
-      <circle cx="110" cy="95" r="6" fill="currentColor" fillOpacity=".12"/>
-    </svg>
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <style>{`
+        @keyframes ideaGlow{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.18)}}
+        @keyframes ideaPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.35)}}
+        @keyframes ideaRay{0%,100%{opacity:.2;transform-origin:center;transform:scaleX(1)}50%{opacity:.9;transform:scaleX(1.3)}}
+        @keyframes ideaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes ideaSpark{0%{opacity:0;transform:translate(0,0) scale(0)}40%{opacity:1;transform:translate(var(--tx),var(--ty)) scale(1)}100%{opacity:0;transform:translate(calc(var(--tx)*1.8),calc(var(--ty)*1.8)) scale(0)}}
+        @keyframes ideaFlicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.6}95%{opacity:1}97%{opacity:.8}99%{opacity:1}}
+        @keyframes ideaRotateSlow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .idea-glow{animation:ideaGlow 2.4s ease-in-out infinite}
+        .idea-pulse{animation:ideaPulse 3s ease-in-out infinite}
+        .idea-float{animation:ideaFloat 3s ease-in-out infinite}
+        .idea-flicker{animation:ideaFlicker 4s ease-in-out infinite}
+        .idea-rotate{animation:ideaRotateSlow 12s linear infinite}
+      `}</style>
+
+      {/* outermost soft glow ring */}
+      <div className="idea-pulse absolute rounded-full"
+        style={{width:'80%',height:'80%',background:'radial-gradient(circle,rgba(201,168,76,0.18) 0%,transparent 70%)'}} />
+
+      {/* mid glow ring */}
+      <div className="idea-glow absolute rounded-full"
+        style={{width:'55%',height:'55%',background:'radial-gradient(circle,rgba(201,168,76,0.35) 0%,transparent 70%)',animationDelay:'.4s'}} />
+
+      {/* rotating dashed ring */}
+      <div className="idea-rotate absolute"
+        style={{width:'62%',height:'62%',border:'1.5px dashed rgba(201,168,76,0.22)',borderRadius:'50%'}} />
+
+      {/* rays — 8 directions */}
+      {[0,45,90,135,180,225,270,315].map((deg,i) => (
+        <div key={deg} className="absolute"
+          style={{
+            width:'42%',height:'1.5px',
+            top:'50%',left:'50%',
+            transformOrigin:'0 50%',
+            transform:`rotate(${deg}deg)`,
+            background:`linear-gradient(90deg,rgba(201,168,76,0) 0%,rgba(201,168,76,0.55) 50%,rgba(201,168,76,0) 100%)`,
+            animation:`ideaRay ${2+i*0.18}s ease-in-out infinite`,
+            animationDelay:`${i*0.22}s`,
+          }} />
+      ))}
+
+      {/* sparks */}
+      {[
+        {tx:'-22px',ty:'-26px',d:'0s'},{tx:'24px',ty:'-20px',d:'0.6s'},
+        {tx:'-28px',ty:'10px',d:'1.1s'},{tx:'26px',ty:'14px',d:'0.3s'},
+        {tx:'0px',ty:'-32px',d:'0.9s'},{tx:'-10px',ty:'28px',d:'1.4s'},
+      ].map((s,i)=>(
+        <div key={i} className="absolute w-1.5 h-1.5 rounded-full"
+          style={{
+            background:'#c9a84c',
+            top:'50%',left:'50%',
+            ['--tx' as any]:s.tx,['--ty' as any]:s.ty,
+            animation:`ideaSpark 2.2s ease-out infinite`,
+            animationDelay:s.d,
+            boxShadow:'0 0 4px 2px rgba(201,168,76,0.6)',
+          }} />
+      ))}
+
+      {/* bulb SVG — floating + flickering */}
+      <div className="idea-float idea-flicker relative z-10" style={{width:'52%',height:'52%'}}>
+        <svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%',filter:'drop-shadow(0 0 10px rgba(201,168,76,0.9)) drop-shadow(0 0 22px rgba(201,168,76,0.55))'}}>
+          {/* inner glow fill */}
+          <ellipse cx="40" cy="38" rx="22" ry="22" fill="rgba(201,168,76,0.25)"/>
+          {/* bulb body */}
+          <path d="M24 38 C24 24 56 24 56 38 C56 48 50 54 50 62 L30 62 C30 54 24 48 24 38Z"
+            fill="rgba(201,168,76,0.85)" />
+          {/* highlight shine */}
+          <ellipse cx="34" cy="30" rx="5" ry="8" fill="rgba(255,255,255,0.25)" transform="rotate(-15 34 30)"/>
+          {/* filament lines */}
+          <path d="M34 62 L34 68 M40 62 L40 70 M46 62 L46 68" stroke="rgba(201,168,76,0.6)" strokeWidth="2" strokeLinecap="round"/>
+          {/* base bands */}
+          <rect x="30" y="68" width="20" height="5" rx="2.5" fill="rgba(201,168,76,0.5)"/>
+          <rect x="32" y="75" width="16" height="5" rx="2.5" fill="rgba(201,168,76,0.4)"/>
+          <rect x="34" y="82" width="12" height="5" rx="2.5" fill="rgba(201,168,76,0.3)"/>
+        </svg>
+      </div>
+    </div>
   );
 }
 
