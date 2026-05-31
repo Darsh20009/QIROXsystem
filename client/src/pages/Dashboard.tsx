@@ -29,7 +29,6 @@ import type { ModificationRequest, Order } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
 import { ClientHeroVisual } from "@/components/ClientHeroVisual";
-import DashboardVideoBg from "@/components/DashboardVideoBg";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
@@ -363,7 +362,6 @@ function AdminDashboard({ user }: { user: any }) {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="admin-dashboard">
-      <DashboardVideoBg opacity={0.11} particles />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
@@ -739,7 +737,6 @@ function EmployeeDashboard({ user }: { user: any }) {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="employee-dashboard" dir={dir}>
-      <DashboardVideoBg opacity={0.1} particles />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
 
       {/* ── Cinematic Employee Banner ── */}
@@ -2024,7 +2021,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" dir={dir}>
-      <DashboardVideoBg opacity={0.1} particles />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
       <div className="bg-black dark:bg-black overflow-hidden relative">

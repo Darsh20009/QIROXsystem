@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import DashboardVideoBg from "@/components/DashboardVideoBg";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,8 +48,7 @@ export default function SupplierDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 font-sans max-w-3xl mx-auto relative" dir={dir}>
-      <DashboardVideoBg opacity={0.09} particles={false} />
+    <div className="p-6 space-y-6 font-sans max-w-3xl mx-auto" dir={dir}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{L ? "لوحة المورد" : "Supplier Dashboard"}</h1>

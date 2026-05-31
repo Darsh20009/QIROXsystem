@@ -1,7 +1,6 @@
 import SARIcon from "@/components/SARIcon";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
-import DashboardVideoBg from "@/components/DashboardVideoBg";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1267,7 +1266,6 @@ export default function EmployeeRoleDashboard() {
 
   return (
     <div className="relative overflow-hidden">
-      <DashboardVideoBg opacity={0.1} particles />
       {roleDashboard}
       <QiroxPostsBanner />
       <AbandonedCartsWidget />
