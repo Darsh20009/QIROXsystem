@@ -807,14 +807,14 @@ export default function Home() {
 
         {/* ── Video Showcase Banner ── */}
         <section className="relative overflow-hidden bg-black">
-          <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+          <div className="relative w-full" style={{ aspectRatio: "16/7" }}>
             <video
               src="/demo-video.mov"
               autoPlay
               loop
               muted
               playsInline
-              className="absolute inset-0 w-full h-full object-contain opacity-90"
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
             <div className="absolute inset-0 flex items-end justify-center pb-8">
