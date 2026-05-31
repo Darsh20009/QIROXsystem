@@ -7537,7 +7537,7 @@ export async function registerRoutes(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
         body: JSON.stringify({
-          model: "kimi-k2-0905-preview",
+          model: "kimi-k2.6",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
@@ -7558,7 +7558,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const apiKey = process.env.MOONSHOT_API_KEY || process.env.KIMI_API_KEY;
     if (!apiKey) return res.status(503).json({ error: "MOONSHOT_API_KEY غير مُعدَّ" });
-    const { messages, systemPrompt, model = "kimi-k2-0905-preview" } = req.body;
+    const { messages, systemPrompt, model = "kimi-k2.6" } = req.body;
     try {
       const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
         method: "POST",
@@ -9069,7 +9069,7 @@ export async function registerRoutes(
         ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
         { role: "user" as const, content: message },
       ];
-      const completion = await groq.chat.completions.create({ model: "kimi-k2-0905-preview", messages: msgs, max_tokens: 400, temperature: 0.7 });
+      const completion = await groq.chat.completions.create({ model: "kimi-k2.6", messages: msgs, max_tokens: 400, temperature: 0.7 });
       res.json({ reply: completion.choices[0]?.message?.content || "..." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -13980,7 +13980,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
-      const contractModel = "kimi-k2-0905-preview";
+      const contractModel = "kimi-k2.6";
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
 
@@ -14031,7 +14031,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
-      const model = "kimi-k2-0905-preview";
+      const model = "kimi-k2.6";
       const safeText = String(text || "").slice(0, 12000);
       const safeInstructions = String(instructions || "").slice(0, 3000);
       const docLabel = documentType === "contract" ? "عقد" : "فاتورة";

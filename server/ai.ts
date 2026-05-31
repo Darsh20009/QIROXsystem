@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * QIROX AI — Agentic Intelligence
- * Powered by Kimi (Moonshot AI) — kimi-k2-0905-preview
+ * Powered by Kimi (Moonshot AI) — kimi-k2.6
  */
 import type { Express } from "express";
 import OpenAI from "openai";
@@ -20,7 +20,7 @@ const openai = new Proxy({} as OpenAI, {
   },
 });
 
-const AI_MODEL = "kimi-k2-0905-preview";
+const AI_MODEL = "kimi-k2.6";
 
 console.log(`[AI] Provider: Kimi k2 (Moonshot AI)`);;
 
