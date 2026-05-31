@@ -162,7 +162,7 @@ const SECTORS = [
   { icon: Scissors,      img: "/sector-07.png", arName: "صالونات تجميل",      enName: "Beauty Salons",       segment: "beauty" },
   { icon: TrendingUp,    img: "/sector-08.png", arName: "وكالات التسويق",      enName: "Marketing Agencies",  segment: "marketing" },
   { icon: Bot,           img: "/sector-09.png", arName: "ذكاء اصطناعي",       enName: "AI Solutions",        segment: "ai" },
-  { icon: Lightbulb,     img: "/sector-10.png", arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
+  { icon: Lightbulb,     arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
 ];
 
 const PILLARS = [
