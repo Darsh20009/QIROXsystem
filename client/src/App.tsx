@@ -925,9 +925,14 @@ function AppInner() {
   }
 
   // Guard: redirect unauthenticated users to /login and save the return URL
+  useEffect(() => {
+    if (!isPublicRoute && !userLoading && user === null) {
+      try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
+      navigate(`/login?redirect=${encodeURIComponent(location)}`);
+    }
+  }, [isPublicRoute, userLoading, user, location]);
+
   if (!isPublicRoute && !userLoading && user === null) {
-    try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
-    navigate(`/login?redirect=${encodeURIComponent(location)}`);
     return null;
   }
 

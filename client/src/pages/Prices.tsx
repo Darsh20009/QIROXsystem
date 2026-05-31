@@ -1195,7 +1195,8 @@ const SEGMENT_TO_SECTOR: Record<string, Sector> = {
 const NON_PRIMARY_SEGMENTS = ["education","healthcare","realestate","corporate","fitness","beauty","events","marketing","ai","other"];
 
 export default function Prices() {
-  const { L } = useI18n();
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const { user } = useUser();
   const [, setLocation] = useLocation();
 

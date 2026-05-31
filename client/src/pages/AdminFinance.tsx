@@ -38,6 +38,7 @@ export default function AdminFinance() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const currentMonth = new Date().toISOString().slice(0, 7);
   const [period, setPeriod] = useState<Period>("monthly");
   const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "ledger" | "profits" | "expenses" | "email">("overview");
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
@@ -49,7 +50,6 @@ export default function AdminFinance() {
   const [emailType, setEmailType] = useState("welcome");
   const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [newExp, setNewExp] = useState({ category: "operational", description: "", amount: "", date: "", notes: "" });
-  const currentMonth = new Date().toISOString().slice(0, 7);
   const [expMonth, setExpMonth] = useState(currentMonth);
   const [projectFilter, setProjectFilter] = useState<"pending" | "all" | "paid">("pending");
   const [profitSearch, setProfitSearch] = useState("");

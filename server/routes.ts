@@ -14471,24 +14471,25 @@ export async function seedDatabase() {
     });
     console.log("Admin account created: admin@qirox.tech");
   } else {
+    const { UserModel } = await import("./models");
     await UserModel.updateOne({ username: adminUsername }, { $set: { role: "admin", email: adminEmail } });
     console.log(`[Seed] Admin account verified: ${adminUsername}`);
   }
 
   // ── Migrate walletBalance from transactions (one-time sync for existing data) ──
   try {
-    const { WalletTransactionModel: WTM } = await import("./models");
+    const { WalletTransactionModel: WTM, UserModel: UM } = await import("./models");
     const userIds: string[] = await WTM.distinct('userId');
     let migrated = 0;
     for (const uid of userIds) {
-      const user = await UserModel.findById(uid).select("walletBalance");
+      const user = await UM.findById(uid).select("walletBalance");
       if (!user) continue;
       if ((user as any).walletBalance !== 0 && (user as any).walletBalance !== undefined && (user as any).walletBalance !== null) continue;
       const txs = await WTM.find({ userId: uid });
       const credit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
       const debit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
       const balance = Math.max(0, parseFloat((credit - debit).toFixed(2)));
-      await UserModel.findByIdAndUpdate(uid, { walletBalance: balance });
+      await UM.findByIdAndUpdate(uid, { walletBalance: balance });
       migrated++;
     }
     if (migrated > 0) console.log(`[WalletMigration] Synced walletBalance for ${migrated} users`);
@@ -14760,7 +14761,8 @@ export async function seedDatabase() {
 
   // ── E-Commerce template migration: ensure demoUrl, category, and featuresAr are set ──
   try {
-    const ecTemplate = await (SectorTemplateModel as any).findOne({ slug: "ecommerce-store" });
+    const { SectorTemplateModel: STM } = await import("./models");
+    const ecTemplate = await (STM as any).findOne({ slug: "ecommerce-store" });
     if (ecTemplate) {
       const updates: any = {};
       if (!ecTemplate.demoUrl) updates.demoUrl = "https://e-commerce.qiroxstudio.online";
@@ -14781,7 +14783,7 @@ export async function seedDatabase() {
         ];
       }
       if (Object.keys(updates).length > 0) {
-        await (SectorTemplateModel as any).findByIdAndUpdate(ecTemplate._id, updates);
+        await (STM as any).findByIdAndUpdate(ecTemplate._id, updates);
         console.log("[Migration] E-Commerce template updated:", Object.keys(updates));
       }
     }

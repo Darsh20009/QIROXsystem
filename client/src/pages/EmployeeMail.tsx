@@ -130,7 +130,8 @@ function OutlookSetupModal({ account, onClose, L }: { account: MailAccount; onCl
 
 /* ─── Main Component ─────────────────────────────────────────────────────── */
 export default function EmployeeMail() {
-  const { L } = useI18n();
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const { toast } = useToast();
   const qc = useQueryClient();
   const dir = L ? "rtl" : "ltr";

@@ -44,7 +44,8 @@ interface TestResult {
 const ROLES = ["admin", "manager", "ceo", "cto", "developer", "designer", "support", "sales", "accountant"];
 
 export default function AdminMailAccounts() {
-  const { L } = useI18n();
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const { toast } = useToast();
   const qc = useQueryClient();
 
