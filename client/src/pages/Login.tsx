@@ -817,7 +817,62 @@ export default function Login() {
       />
 
       {/* Right form area */}
-      <div className="flex-1 flex flex-col items-center px-6 py-12 overflow-y-auto" style={{ justifyContent: "safe center" }}>
+      <div className="flex-1 flex flex-col items-center px-6 py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
+
+        {/* ── Decorative background layer ── */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+          {/* Dot grid */}
+          <div className="absolute inset-0 opacity-[0.5]" style={{
+            backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1.2px, transparent 1.2px)",
+            backgroundSize: "26px 26px",
+          }} />
+
+          {/* Large circle rings — top-left corner */}
+          <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full border border-black/[0.05]" />
+          <div className="absolute -top-28 -left-28 w-[420px] h-[420px] rounded-full border border-black/[0.04]" />
+          <div className="absolute -top-14 -left-14 w-[300px] h-[300px] rounded-full border border-black/[0.03]" />
+
+          {/* Large circle rings — bottom-right corner */}
+          <div className="absolute -bottom-40 -right-40 w-[480px] h-[480px] rounded-full border border-black/[0.04]" />
+          <div className="absolute -bottom-24 -right-24 w-[340px] h-[340px] rounded-full border border-black/[0.03]" />
+
+          {/* Hexagon — top right */}
+          <svg className="absolute top-10 right-10 opacity-[0.045]" width="140" height="140" viewBox="0 0 140 140">
+            <polygon points="70,6 126,37 126,103 70,134 14,103 14,37" fill="none" stroke="black" strokeWidth="1.5"/>
+            <polygon points="70,24 110,46 110,94 70,116 30,94 30,46" fill="none" stroke="black" strokeWidth="0.8"/>
+          </svg>
+
+          {/* Hexagon — bottom left */}
+          <svg className="absolute bottom-16 left-6 opacity-[0.035]" width="100" height="100" viewBox="0 0 100 100">
+            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="black" strokeWidth="1.5"/>
+          </svg>
+
+          {/* Diamond/square rotated — mid left */}
+          <svg className="absolute top-1/2 -translate-y-1/2 -left-10 opacity-[0.03]" width="180" height="180" viewBox="0 0 180 180">
+            <rect x="15" y="15" width="150" height="150" rx="8" fill="none" stroke="black" strokeWidth="1.5" transform="rotate(45 90 90)"/>
+            <rect x="35" y="35" width="110" height="110" rx="6" fill="none" stroke="black" strokeWidth="0.8" transform="rotate(45 90 90)"/>
+          </svg>
+
+          {/* Accent line — top */}
+          <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+
+          {/* QIROX large watermark letter */}
+          <div className="absolute bottom-8 right-8 text-[180px] font-black text-black/[0.018] leading-none font-heading tracking-tight select-none">
+            Q
+          </div>
+
+          {/* Small floating accent dots */}
+          <div className="absolute top-1/3 right-[15%] w-2 h-2 rounded-full bg-black/[0.06]" />
+          <div className="absolute top-1/3 right-[18%] w-1 h-1 rounded-full bg-black/[0.04]" />
+          <div className="absolute top-[40%] left-[12%] w-1.5 h-1.5 rounded-full bg-black/[0.05]" />
+          <div className="absolute bottom-1/3 left-[18%] w-2 h-2 rounded-full bg-black/[0.04]" />
+
+          {/* Diagonal accent lines */}
+          <svg className="absolute inset-0 w-full h-full opacity-[0.025]" preserveAspectRatio="none">
+            <line x1="0" y1="0" x2="30%" y2="60%" stroke="black" strokeWidth="0.8"/>
+            <line x1="100%" y1="100%" x2="70%" y2="40%" stroke="black" strokeWidth="0.8"/>
+          </svg>
+        </div>
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
           <Link href="/">
@@ -1307,18 +1362,41 @@ export default function Login() {
         >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-black font-heading text-black mb-1.5">
-              {isRegister
-                ? (isEmployeeRegister ? "تسجيل موظف جديد" : "إنشاء حساب جديد")
-                : "تسجيل الدخول"
-              }
-            </h1>
-            <p className="text-black/35 text-sm">
-              {isRegister
-                ? (isEmployeeRegister ? "حساب خاص بفريق QIROX الداخلي" : "أنشئ حسابك وابدأ فكرتك الخاصة اليوم")
-                : "أدخل بياناتك للوصول إلى لوحة تحكمك"
-              }
-            </p>
+            {/* Brand mark above title */}
+            <div className="flex items-center gap-2.5 mb-4">
+              <Link href="/">
+                <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-5 w-auto object-contain opacity-30 hover:opacity-60 transition-opacity" />
+              </Link>
+              <div className="flex-1 h-px bg-gradient-to-l from-black/10 to-transparent" />
+              <span className="text-[10px] font-mono font-bold text-black/20 tracking-widest uppercase">
+                {isRegister ? "NEW ACCOUNT" : "SECURE LOGIN"}
+              </span>
+            </div>
+
+            {/* Main title with decorative accent */}
+            <div className="relative">
+              {/* Vertical accent line */}
+              <div className="absolute right-0 top-0 bottom-0 w-[3px] rounded-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+              <div className="pr-4">
+                <h1 className="text-[2.1rem] font-black font-heading text-black leading-tight tracking-tight">
+                  {isRegister
+                    ? (isEmployeeRegister ? "تسجيل موظف" : "إنشاء حساب")
+                    : "تسجيل الدخول"
+                  }
+                </h1>
+                {isRegister && (
+                  <span className="text-[2.1rem] font-black font-heading leading-tight tracking-tight text-black/25 block">
+                    {isEmployeeRegister ? "جديد" : "جديد"}
+                  </span>
+                )}
+                <p className="text-black/35 text-[13px] mt-1.5 leading-relaxed">
+                  {isRegister
+                    ? (isEmployeeRegister ? "حساب خاص بفريق QIROX الداخلي" : "أنشئ حسابك وابدأ فكرتك الخاصة اليوم")
+                    : "أدخل بياناتك للوصول إلى لوحة تحكمك"
+                  }
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Error Alert */}
