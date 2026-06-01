@@ -33,6 +33,9 @@ const MANAGEMENT_ROLES = ["admin", "manager"];
 const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
 const FINANCE_ROLES = ["admin", "manager", "accountant"];
 const SALES_ROLES = ["admin", "manager", "sales_manager", "sales"];
+const TECH_ROLES = ["admin", "manager", "developer", "designer"];
+const SUPPORT_ROLES = ["admin", "manager", "support"];
+const CLIENT_OPS_ROLES = ["admin", "manager", "sales_manager", "sales", "support"];
 
 const ROLE_LABELS: Record<string, { ar: string; en: string }> = {
   admin:         { ar: "مدير النظام",       en: "System Admin" },
@@ -91,45 +94,51 @@ export function AppSidebar() {
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
 
-    // Employee — main
+    // Employee — main (visible to ALL employees)
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee", section: "main" },
     { title: ar ? "مركزي" : "My Hub", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", section: "main" },
-    // Employee — clients (قسم العملاء)
-    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "clients" },
-    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: UserPlus, url: "/employee/new-order", group: "employee", section: "clients" },
-    { title: ar ? "اشتراكات العملاء" : "Client Subscriptions", icon: Crown, url: "/employee/subscriptions", group: "employee", section: "clients" },
-    { title: ar ? "العربات المهجورة" : "Abandoned Carts", icon: ShoppingCart, url: "/employee/abandoned-carts", group: "employee", section: "clients" },
-    { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "clients" },
-    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "clients" },
+
+    // Employee — clients (فريق المبيعات والدعم فقط)
+    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "clients", allowedRoles: CLIENT_OPS_ROLES },
+    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: UserPlus, url: "/employee/new-order", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
+    { title: ar ? "اشتراكات العملاء" : "Client Subscriptions", icon: Crown, url: "/employee/subscriptions", group: "employee", section: "clients", allowedRoles: CLIENT_OPS_ROLES },
+    { title: ar ? "العربات المهجورة" : "Abandoned Carts", icon: ShoppingCart, url: "/employee/abandoned-carts", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
+    { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "clients", allowedRoles: SUPPORT_ROLES },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "clients", allowedRoles: SUPPORT_ROLES },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Megaphone, url: "/sales/marketing", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
     { title: ar ? "تقارير المبيعات" : "Sales Reports", icon: BarChart3, url: "/admin/sales-reports", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
-    // Employee — work (العمل والطلبات)
+
+    // Employee — work (كل الموظفين يرون مشاريعهم)
     { title: ar ? "المشاريع" : "Projects", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
-    { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work" },
-    { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
-    { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
-    // Employee — communication (التواصل)
+    { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work", allowedRoles: TECH_ROLES },
+    { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work", allowedRoles: TECH_ROLES },
+    { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work", allowedRoles: [...TECH_ROLES, "sales_manager", "sales"] },
+
+    // Employee — communication (التواصل — كل الموظفين)
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
     { title: ar ? "الصندوق البريدي" : "Mail Inbox", icon: Mail, url: "/employee/mail", group: "employee", section: "communication" },
     { title: ar ? "مجموعات الفريق" : "Team Groups", icon: Users, url: "/groups", group: "employee", section: "communication" },
-    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication" },
-    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "employee", section: "communication" },
+    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication", allowedRoles: CLIENT_OPS_ROLES },
+    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "employee", section: "communication", allowedRoles: SALES_ROLES },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "employee", section: "communication" },
-    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "employee", section: "communication" },
-    // Employee — finance (المالية)
-    { title: ar ? "المالية" : "Finance Overview", icon: Wallet, url: "/admin/finance", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "employee", section: "communication", allowedRoles: MANAGEMENT_ROLES },
+
+    // Employee — finance (المحاسبون والإدارة فقط)
+    { title: ar ? "نظرة مالية" : "Finance Overview", icon: Wallet, url: "/admin/finance", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/admin/quotations", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
-    { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: STAFF_ROLES },
+    { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+
     // Employee — tools (الأدوات)
     { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
-    { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools" },
+    { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools", allowedRoles: TECH_ROLES },
     { title: "Kimi AI", icon: Bot, url: "/admin/kimi-ai", group: "employee", section: "tools" },
-    { title: ar ? "دليل القطاعات" : "Sector Guide", icon: Layers, url: "/employee/sector-guide", group: "employee", section: "tools" },
-    // Employee — account (حسابي)
+    { title: ar ? "دليل القطاعات" : "Sector Guide", icon: Layers, url: "/employee/sector-guide", group: "employee", section: "tools", allowedRoles: TECH_ROLES },
+
+    // Employee — account (حسابي — كل الموظفين)
     { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "account" },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "account" },
     { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "employee", section: "account" },

@@ -150,6 +150,15 @@ function DeveloperDashboard() {
   const inProgress = modRequests?.filter(m => m.status === "in_progress") || [];
   const done = modRequests?.filter(m => m.status === "completed") || [];
 
+  const devLinks = [
+    { icon: Code2,        label: L ? "System Builder"       : "System Builder",      desc: L ? "بيئة تطوير السحابة"   : "Cloud IDE",                  href: "/employee/system-builder" },
+    { icon: Globe,        label: L ? "دليل القطاعات"        : "Sector Guide",        desc: L ? "10 قطاعات تقنية"       : "10 technical sectors",      href: "/employee/sector-guide" },
+    { icon: Wrench,       label: L ? "طلبات التعديل"        : "Mod Requests",        desc: L ? "المهام المُعيّنة لك"   : "Your assigned tasks",        href: "/admin/mod-requests" },
+    { icon: ShieldCheck,  label: L ? "قائمة مهامي"          : "My Checklist",        desc: L ? "المهام اليومية التقنية" : "Daily technical tasks",     href: "/employee/checklist" },
+    { icon: FileText,     label: L ? "بيانات المشاريع"      : "Project Data",        desc: L ? "ملفات المشاريع التقنية" : "Technical project files",   href: "/admin/project-data" },
+    { icon: Zap,          label: L ? "أدواتي"               : "My Tools",            desc: L ? "أدوات PDF والاختصارات" : "PDF & shortcut tools",       href: "/my-tools" },
+  ];
+
   const priorityColor: Record<string, string> = {
     urgent: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", high: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white",
     medium: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white", low: "bg-gray-100 text-gray-600",
@@ -171,12 +180,12 @@ function DeveloperDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pending.length, color: "text-black/70 dark:text-white/70" },
-              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgress.length, color: "text-black/70 dark:text-white/70" },
-              { label: L ? "مكتملة" : "Completed", val: done.length, color: "text-black/70 dark:text-white/70" },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
-                <p className={`text-2xl font-black ${color}`}>{val}</p>
+              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pending.length },
+              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgress.length },
+              { label: L ? "مكتملة" : "Completed", val: done.length },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-2xl font-black">{val}</p>
                 <p className="text-white/40 text-[11px] mt-1">{label}</p>
               </div>
             ))}
@@ -184,9 +193,32 @@ function DeveloperDashboard() {
         </div>
       </motion.div>
 
-      <motion.div {...fade(0.1)}>
+      {/* Quick Links Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {devLinks.map(({ icon: Icon, label, desc, href }, i) => (
+          <motion.div key={i} {...fade(0.06 + i * 0.05)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+              <CardContent className="p-4">
+                <Link href={href}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Icon className="w-5 h-5 text-black dark:text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-black dark:text-white truncate">{label}</p>
+                      <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div {...fade(0.35)}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-bold text-black/40 dark:text-white/40 uppercase tracking-wider flex items-center gap-2">
             <Wrench className="w-4 h-4 text-black dark:text-white" />
             {L ? "طلبات التعديل المطلوبة" : "Required Modification Requests"}
           </h2>
@@ -197,26 +229,26 @@ function DeveloperDashboard() {
           </Link>
         </div>
         {[...pending, ...inProgress].length === 0 ? (
-          <div className="border border-black/[0.06] rounded-2xl p-8 text-center text-black/30">
+          <div className="border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-8 text-center text-black/30 dark:text-white/30">
             <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">{L ? "لا توجد طلبات تعديل معلّقة" : "No pending modification requests"}</p>
+            <p className="text-sm">{L ? "لا توجد طلبات تعديل معلّقة ✓" : "No pending modification requests ✓"}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {[...pending, ...inProgress].slice(0, 8).map((mod: any) => (
-              <div key={mod.id} className="border border-black/[0.06] bg-white rounded-2xl p-4 flex items-start justify-between gap-3">
+            {[...pending, ...inProgress].slice(0, 6).map((mod: any) => (
+              <div key={mod.id} className="border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 rounded-2xl p-4 flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${priorityColor[mod.priority] || "bg-gray-100 text-gray-600"}`}>
                       {mod.priority === "urgent" ? (L ? "عاجل" : "Urgent") : mod.priority === "high" ? (L ? "عالي" : "High") : mod.priority === "medium" ? (L ? "متوسط" : "Medium") : (L ? "منخفض" : "Low")}
                     </span>
-                    <span className="text-[10px] text-black/30 font-mono">#{mod.id?.toString().slice(-5)}</span>
+                    <span className="text-[10px] text-black/30 dark:text-white/30 font-mono">#{mod.id?.toString().slice(-5)}</span>
                   </div>
-                  <p className="font-semibold text-black text-sm">{mod.title || (L ? "طلب تعديل" : "Modification Request")}</p>
-                  <p className="text-xs text-black/40 mt-0.5 line-clamp-2">{mod.description}</p>
+                  <p className="font-semibold text-black dark:text-white text-sm">{mod.title || (L ? "طلب تعديل" : "Modification Request")}</p>
+                  <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 line-clamp-2">{mod.description}</p>
                 </div>
                 <Link href="/admin/mod-requests">
-                  <Button size="sm" variant="outline" className="shrink-0 text-xs gap-1 border-black/10">
+                  <Button size="sm" variant="outline" className="shrink-0 text-xs gap-1 border-black/10 dark:border-white/10">
                     {L ? "فتح" : "Open"} <ChevronRight className="w-3 h-3" />
                   </Button>
                 </Link>
@@ -243,6 +275,115 @@ function DeveloperDashboard() {
             <Link href="/employee/checklist" className="text-black dark:text-white hover:underline">{L ? "افتح قائمة المهام" : "Open Task List"}</Link> {L ? "لإدارة مهامك اليومية والتقنية" : "to manage your daily and technical tasks"}
           </p>
         </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── DESIGNER DASHBOARD ────────────────────────────────────────────────────────
+function DesignerDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: modRequests } = useQuery<any[]>({ queryKey: ["/api/modification-requests"] });
+
+  const pendingCount = modRequests?.filter(m => m.status === "pending" || m.status === "in_review").length || 0;
+  const inProgressCount = modRequests?.filter(m => m.status === "in_progress").length || 0;
+  const doneCount = modRequests?.filter(m => m.status === "completed").length || 0;
+
+  const designLinks = [
+    { icon: Palette,      label: L ? "أدوات التسويق"        : "Marketing Tools",      desc: L ? "بوسترات ومواد ترويجية"   : "Posters & promo materials",    href: "/sales/marketing" },
+    { icon: Globe,        label: L ? "دليل القطاعات"        : "Sector Guide",          desc: L ? "مرجع تقني للقطاعات"      : "Sector design reference",      href: "/employee/sector-guide" },
+    { icon: Wrench,       label: L ? "طلبات التعديل"        : "Mod Requests",          desc: L ? "طلبات التصميم المُعيّنة"  : "Your assigned design tasks",   href: "/admin/mod-requests" },
+    { icon: Upload,       label: L ? "رفع التصاميم"         : "Upload Designs",        desc: L ? "رفع الملفات للمشاريع"    : "Upload files to projects",     href: "/admin/orders" },
+    { icon: ShieldCheck,  label: L ? "قائمة مهامي"          : "My Checklist",          desc: L ? "المهام اليومية"           : "Daily tasks",                  href: "/employee/checklist" },
+    { icon: Zap,          label: L ? "أدواتي"               : "My Tools",              desc: L ? "أدوات التصميم والاختصارات" : "Design tools & shortcuts",   href: "/my-tools" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <motion.div {...fade(0)} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <Palette className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black font-heading">{L ? "لوحة المصمم" : "Designer Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "مهامك التصميمية وأدوات الإبداع" : "Your design tasks and creative tools"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pendingCount },
+              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgressCount },
+              { label: L ? "مكتملة" : "Completed", val: doneCount },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/[0.06] rounded-2xl p-3 text-center">
+                <p className="text-2xl font-black">{val}</p>
+                <p className="text-white/40 text-[11px] mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Quick Links Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {designLinks.map(({ icon: Icon, label, desc, href }, i) => (
+          <motion.div key={i} {...fade(0.06 + i * 0.05)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+              <CardContent className="p-4">
+                <Link href={href}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                      <Icon className="w-5 h-5 text-black dark:text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-black dark:text-white truncate">{label}</p>
+                      <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Current design tasks */}
+      <motion.div {...fade(0.4)}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-black/40 dark:text-white/40 uppercase tracking-wider flex items-center gap-2">
+            <Palette className="w-4 h-4 text-black dark:text-white" />
+            {L ? "طلبات التعديل والتصميم" : "Design & Modification Tasks"}
+          </h2>
+          <Link href="/admin/mod-requests">
+            <Button variant="ghost" size="sm" className="text-xs text-black/40 hover:text-black gap-1">
+              {L ? "عرض الكل" : "View All"} <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
+        </div>
+        {(modRequests?.filter(m => m.status !== "completed") || []).length === 0 ? (
+          <div className="border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-8 text-center text-black/30 dark:text-white/30">
+            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
+            <p className="text-sm">{L ? "لا توجد مهام تصميم معلّقة ✓" : "No pending design tasks ✓"}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {modRequests?.filter(m => m.status !== "completed").slice(0, 5).map((mod: any) => (
+              <Link key={mod.id} href="/admin/mod-requests">
+                <div className="border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 rounded-2xl p-4 flex items-center justify-between gap-3 hover:shadow-sm transition-shadow cursor-pointer">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-black dark:text-white text-sm truncate">{mod.title || (L ? "طلب تصميم" : "Design Request")}</p>
+                    <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">#{mod.id?.toString().slice(-5)} · {mod.status === "in_progress" ? (L ? "قيد التنفيذ" : "In Progress") : (L ? "انتظار" : "Pending")}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 flex-shrink-0" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </motion.div>
     </div>
   );
@@ -1247,10 +1388,12 @@ export default function EmployeeRoleDashboard() {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin w-8 h-8 text-black/40" /></div>;
   }
 
+  const role = (user as any).role as string;
+
   const roleToComponent: Record<string, JSX.Element> = {
     merchant:      <DeliveryDashboard />,
     developer:     <DeveloperDashboard />,
-    designer:      <DeveloperDashboard />,
+    designer:      <DesignerDashboard />,
     accountant:    <AccountantDashboard />,
     sales:         <SalesDashboard />,
     sales_manager: <SalesDashboard />,
@@ -1262,13 +1405,15 @@ export default function EmployeeRoleDashboard() {
     manager:       <AdminManagerDashboard />,
   };
 
-  const roleDashboard = roleToComponent[(user as any).role] ?? <AdminManagerDashboard />;
+  const roleDashboard = roleToComponent[role] ?? <AdminManagerDashboard />;
+
+  const showAbandonedCarts = ["admin","manager","sales","sales_manager","support","marketing"].includes(role);
 
   return (
     <div className="relative overflow-hidden">
       {roleDashboard}
       <QiroxPostsBanner />
-      <AbandonedCartsWidget />
+      {showAbandonedCarts && <AbandonedCartsWidget />}
       <UpcomingMeetingsWidget />
       <motion.div {...fade(0.35)} className="mt-4">
         <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
