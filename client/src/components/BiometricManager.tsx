@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { checkBiometricAvailable, registerBiometric, clearBiometricLocal } from "@/hooks/use-biometric";
+import { checkBiometricAvailable, registerBiometric, clearBiometricLocal, clearFaceLocal } from "@/hooks/use-biometric";
 import { getQuickPinStatus, setQuickPin, removeQuickPin } from "@/hooks/use-quick-pin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Fingerprint, ScanFace, CheckCircle2, Plus, Trash2, Loader2,
   ShieldCheck, Monitor, Smartphone, TabletSmartphone, KeyRound,
-  Eye, EyeOff, Hash, AlertCircle, ChevronRight, X
+  Eye, EyeOff, Hash, AlertCircle, ChevronRight, X, Camera
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { FaceRecognitionModal } from "@/components/FaceRecognitionModal";
 
 type SetupStep = "choose_type" | "choose_finger" | "face_prep" | "scanning" | "success" | "error";
 type BiometricType = "fingerprint" | "face";
@@ -203,7 +204,7 @@ function FingerSelector({ onSelect }: { onSelect: (key: string, label: string) =
   );
 }
 
-function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function SetupDialog({ open, onClose, onFaceSetup }: { open: boolean; onClose: () => void; onFaceSetup: () => void }) {
   const { toast } = useToast();
   const [step, setStep] = useState<SetupStep>("choose_type");
   const [biometricType, setBiometricType] = useState<BiometricType>("fingerprint");
@@ -311,13 +312,13 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
                     <ChevronRight className="absolute top-3 left-3 w-3.5 h-3.5 text-violet-400/50" />
                   </motion.button>
 
-                  {/* Face ID — enabled */}
+                  {/* Face ID — real camera recognition */}
                   <motion.button
                     key="face"
                     data-testid="btn-biometric-type-face"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => { setBiometricType("face"); setStep("face_prep"); }}
+                    onClick={() => { handleClose(); onFaceSetup(); }}
                     className="relative flex flex-col items-center gap-3 p-5 rounded-xl border transition-all border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 hover:border-sky-500/60"
                   >
                     <div className="p-3 rounded-xl bg-sky-500/20 text-sky-400">
@@ -547,6 +548,8 @@ export function BiometricManager() {
   const { dir } = useI18n();
   const [available, setAvailable] = useState<boolean | null>(null);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     checkBiometricAvailable().then(setAvailable);
@@ -554,6 +557,10 @@ export function BiometricManager() {
 
   const { data: credentials = [], isLoading } = useQuery<Credential[]>({
     queryKey: ["/api/auth/webauthn/credentials"],
+  });
+
+  const { data: faceStatus, refetch: refetchFace } = useQuery<{ registered: boolean; updatedAt?: string }>({
+    queryKey: ["/api/auth/face-recognition/status"],
   });
 
   const handleDelete = async (id: string) => {
@@ -564,6 +571,17 @@ export function BiometricManager() {
       if (updated.length === 0) clearBiometricLocal();
       queryClient.invalidateQueries({ queryKey: ["/api/auth/webauthn/credentials"] });
     } catch {}
+  };
+
+  const handleDeleteFace = async () => {
+    try {
+      await apiRequest("DELETE", "/api/auth/face-recognition/delete");
+      clearFaceLocal();
+      refetchFace();
+      toast({ title: "تم حذف بصمة الوجه", description: "يمكنك تسجيلها مجدداً في أي وقت" });
+    } catch {
+      toast({ title: "تعذّر الحذف", variant: "destructive" });
+    }
   };
 
   if (available === false) return <QuickPinManager />;
@@ -669,7 +687,63 @@ export function BiometricManager() {
         </div>
       )}
 
-      <SetupDialog open={setupOpen} onClose={() => setSetupOpen(false)} />
+      {/* ── Face Recognition (Camera-based, cross-device) ─────────────────────── */}
+      <div className="mt-2 rounded-xl border bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">التعرف على الوجه</p>
+              <p className="text-xs text-muted-foreground">كاميرا ذكاء اصطناعي — يعمل من أي جهاز</p>
+            </div>
+          </div>
+          {faceStatus?.registered ? (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-xs gap-1">
+                <CheckCircle2 className="w-3 h-3" /> مسجّل
+              </Badge>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                onClick={handleDeleteFace}
+                data-testid="btn-delete-face"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => setFaceModalOpen(true)}
+              className="bg-sky-600 hover:bg-sky-700 text-white gap-1.5"
+              data-testid="btn-register-face"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              تسجيل الوجه
+            </Button>
+          )}
+        </div>
+        {faceStatus?.registered && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2.5">
+            <span>تعمل من أي جهاز أو متصفح</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setFaceModalOpen(true)}>
+              <Camera className="w-3 h-3" /> تحديث البصمة
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <SetupDialog open={setupOpen} onClose={() => setSetupOpen(false)} onFaceSetup={() => setFaceModalOpen(true)} />
+
+      <FaceRecognitionModal
+        open={faceModalOpen}
+        onClose={() => setFaceModalOpen(false)}
+        mode="register"
+        onRegistered={() => { refetchFace(); }}
+      />
     </div>
   );
 }

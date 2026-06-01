@@ -3,6 +3,17 @@ import { saveDeviceToken } from "./use-auth";
 import { queryClient } from "@/lib/queryClient";
 
 const BIOMETRIC_DEVICE_KEY = "qirox_biometric_device";
+const FACE_REG_KEY = "qirox_face_reg";
+
+export function markFaceRegistered(): void {
+  try { localStorage.setItem(FACE_REG_KEY, "1"); } catch {}
+}
+export function isFaceRegisteredLocally(): boolean {
+  try { return localStorage.getItem(FACE_REG_KEY) === "1"; } catch { return false; }
+}
+export function clearFaceLocal(): void {
+  try { localStorage.removeItem(FACE_REG_KEY); } catch {}
+}
 
 export function isBiometricSupported(): boolean {
   return (

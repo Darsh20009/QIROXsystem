@@ -5654,6 +5654,94 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── Face Recognition Auth ──────────────────────────────────────────────────
+  function euclidean(a: number[], b: number[]): number {
+    let s = 0; for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s);
+  }
+  function minDist(query: number[], stored: number[][]): number {
+    return Math.min(...stored.map(d => euclidean(query, d)));
+  }
+  const FACE_THRESHOLD = 0.58;
+
+  app.get("/api/auth/face-recognition/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { FaceDescriptorModel } = await import("./models");
+    const userId = String((req.user as any)._id || (req.user as any).id);
+    const profile = await FaceDescriptorModel.findOne({ userId });
+    res.json({ registered: !!profile, updatedAt: profile?.updatedAt || null });
+  });
+
+  app.post("/api/auth/face-recognition/register", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { FaceDescriptorModel } = await import("./models");
+      const { descriptors } = req.body;
+      if (!Array.isArray(descriptors) || descriptors.length < 1) return res.status(400).json({ error: "بيانات الوجه غير صالحة" });
+      for (const d of descriptors) {
+        if (!Array.isArray(d) || d.length !== 128) return res.status(400).json({ error: "بصمة الوجه غير مكتملة" });
+      }
+      const userId = String((req.user as any)._id || (req.user as any).id);
+      await FaceDescriptorModel.findOneAndUpdate(
+        { userId },
+        { userId, descriptors, angles: ["front", "left", "right"].slice(0, descriptors.length), updatedAt: new Date() },
+        { upsert: true, new: true }
+      );
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/auth/face-recognition/identify", async (req, res, next) => {
+    try {
+      const { FaceDescriptorModel, UserModel, DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+      const { descriptor, identifier } = req.body;
+      if (!Array.isArray(descriptor) || descriptor.length !== 128) return res.status(400).json({ error: "بيانات الوجه غير صالحة" });
+
+      let candidates: any[];
+      if (identifier) {
+        const id = String(identifier).toLowerCase().trim();
+        const user = await UserModel.findOne({ $or: [{ email: id }, { username: id }, { phone: id }] });
+        if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+        const profile = await FaceDescriptorModel.findOne({ userId: String(user._id) });
+        if (!profile) return res.status(404).json({ error: "لم يتم تسجيل بصمة الوجه لهذا الحساب" });
+        candidates = [profile];
+      } else {
+        candidates = await FaceDescriptorModel.find({});
+      }
+
+      let best: { profile: any; dist: number } | null = null;
+      for (const p of candidates) {
+        const dist = minDist(descriptor, p.descriptors);
+        if (!best || dist < best.dist) best = { profile: p, dist };
+      }
+
+      if (!best || best.dist > FACE_THRESHOLD) {
+        return res.status(401).json({ error: `لم يتم التعرف على الوجه (المسافة: ${best ? best.dist.toFixed(3) : "N/A"})` });
+      }
+
+      const user = await UserModel.findById(best.profile.userId);
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+
+      req.login(user as any, async (err) => {
+        if (err) return next(err);
+        const plainToken = randomBytes(48).toString("hex");
+        const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+        const safeUser = sanitizeUser(user);
+        res.json({ ...safeUser, deviceToken: plainToken });
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/auth/face-recognition/delete", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { FaceDescriptorModel } = await import("./models");
+    const userId = String((req.user as any)._id || (req.user as any).id);
+    await FaceDescriptorModel.deleteOne({ userId });
+    res.json({ ok: true });
+  });
+
   // ── Quick PIN Auth (fallback for devices without biometric sensors) ──
   app.get("/api/auth/quick-pin/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

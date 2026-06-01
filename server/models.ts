@@ -2063,3 +2063,12 @@ const journalEntrySchema = new mongoose.Schema({
 }, { timestamps: true });
 journalEntrySchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const JournalEntryModel = mongoose.models.JournalEntry || mongoose.model("JournalEntry", journalEntrySchema);
+
+// ── FACE RECOGNITION PROFILES ──────────────────────────────────────────────
+const faceDescriptorSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  descriptors: { type: [[Number]], required: true },
+  angles: { type: [String], default: ["front", "left", "right"] },
+}, { timestamps: true });
+faceDescriptorSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const FaceDescriptorModel = mongoose.models.FaceDescriptor || mongoose.model("FaceDescriptor", faceDescriptorSchema);
