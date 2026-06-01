@@ -1756,23 +1756,28 @@ export default function Login() {
                       )}
                     </div>
                     <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                        <Input
-                          type={showPw ? "text" : "password"}
-                          placeholder="••••••••"
-                          autoComplete={isRegister ? "new-password" : "current-password"}
-                          {...field}
-                          className={`${inputBase} pr-10 pl-10`}
-                          data-testid="input-password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPw(!showPw)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-black/20 hover:text-black/50 transition-colors"
-                        >
-                          {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                          <Input
+                            type={showPw ? "text" : "password"}
+                            placeholder="••••••••"
+                            autoComplete={isRegister ? "new-password" : "current-password"}
+                            {...field}
+                            className={`${inputBase} pr-10 pl-10`}
+                            data-testid="input-password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPw(!showPw)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/20 hover:text-black/50 transition-colors"
+                          >
+                            {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {!isRegister && (
+                          <BiometricButton prefillIdentifier={form.watch("username") || ""} />
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage className="text-xs" />
@@ -1834,15 +1839,7 @@ export default function Login() {
               </Button>
 
               {!isRegister && (
-                <>
-                  <div className="flex items-center gap-3 my-1">
-                    <div className="flex-1 h-px bg-black/[0.07]" />
-                    <span className="text-xs text-black/30 font-medium">أو</span>
-                    <div className="flex-1 h-px bg-black/[0.07]" />
-                  </div>
-                  <BiometricButton prefillIdentifier={form.watch("username") || ""} />
-                  <QuickPinButton prefillIdentifier={form.watch("username") || ""} />
-                </>
+                <QuickPinButton prefillIdentifier={form.watch("username") || ""} />
               )}
             </form>
           </Form>

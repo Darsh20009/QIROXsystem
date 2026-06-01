@@ -292,32 +292,43 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
             <AnimatePresence mode="wait">
               {step === "choose_type" && (
                 <motion.div key="choose_type" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="grid grid-cols-2 gap-3">
-                  {([
-                    { type: "fingerprint" as const, Icon: Fingerprint, label: "بصمة الإصبع", desc: "إصبع الإبهام أو السبابة", color: "violet" },
-                    { type: "face" as const, Icon: ScanFace, label: "بصمة الوجه", desc: "Face ID / التعرف على الوجه", color: "sky" },
-                  ]).map(({ type, Icon, label, desc, color }) => (
-                    <motion.button
-                      key={type}
-                      data-testid={`btn-biometric-type-${type}`}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => {
-                        setBiometricType(type);
-                        if (type === "face") setStep("face_prep");
-                        else setStep("choose_finger");
-                      }}
-                      className={`relative flex flex-col items-center gap-3 p-5 rounded-xl border transition-all ${color === "violet" ? "border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 hover:border-violet-500/60" : "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 hover:border-sky-500/60"}`}
-                    >
-                      <div className={`p-3 rounded-xl ${color === "violet" ? "bg-violet-500/20 text-violet-400" : "bg-sky-500/20 text-sky-400"}`}>
-                        <Icon className="w-7 h-7" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-white">{label}</p>
-                        <p className="text-[10px] text-white/40 mt-0.5 leading-tight">{desc}</p>
-                      </div>
-                      <ChevronRight className={`absolute top-3 left-3 w-3.5 h-3.5 ${color === "violet" ? "text-violet-400/50" : "text-sky-400/50"}`} />
-                    </motion.button>
-                  ))}
+                  {/* Fingerprint — available */}
+                  <motion.button
+                    key="fingerprint"
+                    data-testid="btn-biometric-type-fingerprint"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { setBiometricType("fingerprint"); setStep("choose_finger"); }}
+                    className="relative flex flex-col items-center gap-3 p-5 rounded-xl border transition-all border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 hover:border-violet-500/60"
+                  >
+                    <div className="p-3 rounded-xl bg-violet-500/20 text-violet-400">
+                      <Fingerprint className="w-7 h-7" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-white">بصمة الإصبع</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 leading-tight">إصبع الإبهام أو السبابة</p>
+                    </div>
+                    <ChevronRight className="absolute top-3 left-3 w-3.5 h-3.5 text-violet-400/50" />
+                  </motion.button>
+
+                  {/* Face ID — disabled (not working in this system) */}
+                  <div
+                    key="face"
+                    data-testid="btn-biometric-type-face"
+                    className="relative flex flex-col items-center gap-3 p-5 rounded-xl border border-white/10 bg-white/5 opacity-50 cursor-not-allowed select-none"
+                    title="بصمة الوجه غير متاحة حالياً"
+                  >
+                    <div className="p-3 rounded-xl bg-white/10 text-white/30">
+                      <ScanFace className="w-7 h-7" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-white/50">بصمة الوجه</p>
+                      <p className="text-[10px] text-red-400/70 mt-0.5 leading-tight">غير متاحة حالياً</p>
+                    </div>
+                    <div className="absolute -top-2 -right-2 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      قريباً
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
