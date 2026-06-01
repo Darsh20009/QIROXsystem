@@ -6,7 +6,7 @@ import {
 } from "@/hooks/use-biometric";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, ScanFace, Loader2, ShieldCheck, ChevronDown, AlertTriangle } from "lucide-react";
+import { Fingerprint, ScanFace, Loader2, ShieldCheck, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type BiometricType = "fingerprint" | "face";
@@ -57,14 +57,6 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
   if (!available || !registeredLocally) return null;
 
   function selectType(t: BiometricType) {
-    if (t === "face") {
-      toast({
-        title: "بصمة الوجه غير متاحة",
-        description: "بصمة الوجه لا تعمل حالياً في النظام. سيتم استخدام بصمة الإصبع.",
-        variant: "destructive",
-      });
-      return;
-    }
     savePref(t);
     setPref(t);
     setShowPicker(false);
@@ -99,8 +91,13 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
   };
 
   const Icon = pref === "face" ? ScanFace : Fingerprint;
-  const color = "text-violet-500";
-  const bg = "bg-violet-50 border-violet-200 hover:bg-violet-100";
+  const color = pref === "face" ? "text-sky-500" : "text-violet-500";
+  const bg = pref === "face"
+    ? "bg-sky-50 border-sky-200 hover:bg-sky-100"
+    : "bg-violet-50 border-violet-200 hover:bg-violet-100";
+  const chevronColor = pref === "face" ? "text-sky-400" : "text-violet-400";
+  const chevronBorder = pref === "face" ? "border-sky-200" : "border-violet-200";
+  const chevronBg = pref === "face" ? "bg-sky-50 hover:bg-sky-100" : "bg-violet-50 hover:bg-violet-100";
 
   return (
     <div className={`relative flex-shrink-0 ${className || ""}`} ref={pickerRef}>
@@ -138,10 +135,10 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
           type="button"
           data-testid="btn-biometric-type-toggle"
           onClick={() => setShowPicker(v => !v)}
-          className="flex items-center justify-center w-5 border-r border-violet-200 bg-violet-50 hover:bg-violet-100 transition-colors"
+          className={`flex items-center justify-center w-5 border-r ${chevronBorder} ${chevronBg} transition-colors`}
           title="اختر نوع البصمة"
         >
-          <ChevronDown className={`w-3 h-3 text-violet-400 transition-transform ${showPicker ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-3 h-3 ${chevronColor} transition-transform ${showPicker ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -176,28 +173,28 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
               )}
             </button>
 
-            {/* Face ID option — disabled */}
+            {/* Face ID option — enabled */}
             <button
               type="button"
               data-testid="btn-biometric-pick-face"
               onClick={() => selectType("face")}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-red-50 transition-colors opacity-60"
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-sky-50 transition-colors ${pref === "face" ? "bg-sky-50" : ""}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                <ScanFace className="w-4 h-4 text-gray-400" />
+              <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                <ScanFace className="w-4 h-4 text-sky-500" />
               </div>
               <div className="text-start flex-1">
-                <p className="text-[12px] font-semibold text-gray-600 flex items-center gap-1">
-                  بصمة الوجه
-                  <AlertTriangle className="w-3 h-3 text-amber-400" />
-                </p>
-                <p className="text-[10px] text-red-400">غير متاحة حالياً</p>
+                <p className="text-[12px] font-semibold text-gray-800">بصمة الوجه</p>
+                <p className="text-[10px] text-gray-400">Face ID</p>
               </div>
+              {pref === "face" && (
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-500 mr-auto" />
+              )}
             </button>
 
-            <div className="px-3 pb-2.5 pt-1">
-              <p className="text-[9px] text-black/20 leading-relaxed">
-                بصمة الوجه لا تعمل في النظام حالياً
+            <div className="px-3 pb-2.5 pt-1.5 border-t border-gray-100 mt-1">
+              <p className="text-[9px] text-black/25 leading-relaxed">
+                الجهاز يختار تلقائياً Face ID أو بصمة الإصبع حسب ما يدعمه
               </p>
             </div>
           </motion.div>

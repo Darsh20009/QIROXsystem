@@ -311,24 +311,24 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
                     <ChevronRight className="absolute top-3 left-3 w-3.5 h-3.5 text-violet-400/50" />
                   </motion.button>
 
-                  {/* Face ID — disabled (not working in this system) */}
-                  <div
+                  {/* Face ID — enabled */}
+                  <motion.button
                     key="face"
                     data-testid="btn-biometric-type-face"
-                    className="relative flex flex-col items-center gap-3 p-5 rounded-xl border border-white/10 bg-white/5 opacity-50 cursor-not-allowed select-none"
-                    title="بصمة الوجه غير متاحة حالياً"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { setBiometricType("face"); setStep("face_prep"); }}
+                    className="relative flex flex-col items-center gap-3 p-5 rounded-xl border transition-all border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 hover:border-sky-500/60"
                   >
-                    <div className="p-3 rounded-xl bg-white/10 text-white/30">
+                    <div className="p-3 rounded-xl bg-sky-500/20 text-sky-400">
                       <ScanFace className="w-7 h-7" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-bold text-white/50">بصمة الوجه</p>
-                      <p className="text-[10px] text-red-400/70 mt-0.5 leading-tight">غير متاحة حالياً</p>
+                      <p className="text-sm font-bold text-white">بصمة الوجه</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 leading-tight">Face ID / التعرف بالوجه</p>
                     </div>
-                    <div className="absolute -top-2 -right-2 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                      قريباً
-                    </div>
-                  </div>
+                    <ChevronRight className="absolute top-3 left-3 w-3.5 h-3.5 text-sky-400/50" />
+                  </motion.button>
                 </motion.div>
               )}
 
@@ -342,23 +342,27 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
               )}
 
               {step === "face_prep" && (
-                <motion.div key="face_prep" initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 15 }} className="space-y-5">
+                <motion.div key="face_prep" initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 15 }} className="space-y-4">
                   <FaceScanFrame />
-                  <ul className="space-y-1.5 text-xs text-white/50">
-                    {["تأكد من الإضاءة الكافية", "ابتعد قليلاً عن الشاشة", "انظر مباشرة إلى الكاميرا", "أزل النظارات إذا أمكن"].map(hint => (
-                      <li key={hint} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500/60 flex-shrink-0" />
-                        {hint}
-                      </li>
-                    ))}
-                  </ul>
+
+                  {/* Explanation box — clarifies the passkey prompt */}
+                  <div className="rounded-xl bg-sky-500/10 border border-sky-500/20 p-3.5 space-y-2">
+                    <p className="text-xs font-semibold text-sky-300 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      ملاحظة مهمة قبل البدء
+                    </p>
+                    <p className="text-[11px] text-white/50 leading-relaxed">
+                      سيطلب منك الجهاز <span className="text-white/80 font-medium">حفظ مفتاح دخول (Passkey)</span> — هذا طبيعي ومطلوب. اضغط "حفظ" أو "موافق" لإتمام التسجيل. هذا ليس حفظ كلمة مرور، بل بصمة دخول آمنة.
+                    </p>
+                  </div>
+
                   <Button
                     data-testid="btn-start-face-scan"
                     className="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold"
                     onClick={() => startRegistration("بصمة الوجه")}
                   >
                     <ScanFace className="w-4 h-4 ml-2" />
-                    ابدأ مسح الوجه
+                    تسجيل بصمة الوجه
                   </Button>
                   <button onClick={() => setStep("choose_type")} className="text-xs text-white/30 hover:text-white/60 transition-colors mx-auto block">
                     رجوع
