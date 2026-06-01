@@ -86,7 +86,7 @@ function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEn
   }, [terminalStep === TERMINAL_LINES.length]);
 
   return (
-    <div className="hidden lg:flex w-[42%] bg-[#030508] flex-col justify-between p-12 relative overflow-hidden flex-shrink-0">
+    <div className="flex order-last lg:order-first w-full lg:w-[42%] bg-[#030508] flex-col justify-end lg:justify-between py-5 px-5 lg:p-12 relative overflow-hidden flex-shrink-0 min-h-[160px] lg:min-h-0">
 
       {/* Grid lines */}
       <div className="absolute inset-0 opacity-[0.035]" style={{
@@ -141,8 +141,8 @@ function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEn
         style={{ background: "radial-gradient(circle, rgba(0,255,65,0.04) 0%, transparent 70%)" }}
       />
 
-      {/* ── Brand ── */}
-      <div className="relative z-10">
+      {/* ── Brand — desktop only ── */}
+      <div className="relative z-10 hidden lg:block">
         <Link href="/">
           <motion.img
             src="/qirox-logo-nobg.png" alt="QIROX"
@@ -152,8 +152,29 @@ function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEn
         </Link>
       </div>
 
-      {/* ── Center content ── */}
-      <div className="relative z-10 flex flex-col gap-5">
+      {/* ── Mobile compact strip ── */}
+      <div className="lg:hidden relative z-10 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-black text-white font-heading leading-tight">
+            {isRegister
+              ? <><span className="text-[#00ff41]">_build</span><span className="text-white/40"> منصتك</span></>
+              : <><span className="text-[#00ff41]">_welcome</span><span className="text-white/40"> إلى QIROX</span></>
+            }
+          </h2>
+          <p className="text-white/25 text-[10px] font-mono mt-0.5">// نظامك الرقمي الكامل في مكان واحد</p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {[{ value: "+100", label: "عميل" }, { value: "+8", label: "قطاعات" }, { value: "99%", label: "رضا" }].map(s => (
+            <div key={s.label} className="rounded-xl p-2 text-center border border-[#00ff41]/15" style={{ background: "rgba(0,255,65,0.05)" }}>
+              <p className="text-[#00ff41] font-black text-xs font-mono">{s.value}</p>
+              <p className="text-white/30 text-[9px] mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Center content — desktop only ── */}
+      <div className="relative z-10 hidden lg:flex flex-col gap-5">
 
         {/* Terminal window */}
         <motion.div
@@ -312,8 +333,8 @@ function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEn
         )}
       </div>
 
-      {/* ── Bottom signature ── */}
-      <div className="relative z-10 border-t border-[#00ff41]/10 pt-5">
+      {/* ── Bottom signature — desktop only ── */}
+      <div className="relative z-10 border-t border-[#00ff41]/10 pt-5 hidden lg:block">
         <p className="font-mono text-[9px] text-[#00ff41]/25 leading-relaxed">
           {"// QIROX SYSTEMS — مصنع الأنظمة الرقمية · v2.0.0"}
         </p>
@@ -807,7 +828,7 @@ export default function Login() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-white" dir={dir}>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white" dir={dir}>
       <PageGraphics variant="auth" />
       {/* Left decorative panel — hidden on mobile */}
       <AuthTechPanel isRegister={isRegister} isEmployeeRegister={isEmployeeRegister}
