@@ -24,30 +24,20 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 
-// ─── Premium Creative Auth Panel ─────────────────────────────────────────────
+// ─── Formal QIROX System Panel ───────────────────────────────────────────────
 
-const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
-  id: i,
-  x: `${5 + (i * 13.7) % 90}%`,
-  y: `${8 + (i * 17.3) % 84}%`,
-  size: i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1.5,
-  delay: (i * 0.37) % 4,
-  dur: 3 + (i * 0.41) % 4,
-  opacity: 0.12 + (i % 5) * 0.06,
-}));
-
-const FEATURE_CARDS = [
-  { icon: "🤖", title: "ذكاء اصطناعي", sub: "Kimi AI · محادثة · تحليل", color: "#818cf8", glow: "rgba(129,140,248,0.15)" },
-  { icon: "🔐", title: "أمان متقدم", sub: "AES-256 · 2FA · TLS 1.3",   color: "#34d399", glow: "rgba(52,211,153,0.15)"  },
-  { icon: "📊", title: "تقارير فورية", sub: "Analytics · KPIs · Live",   color: "#f59e0b", glow: "rgba(245,158,11,0.15)"  },
+const SYSTEM_MODULES = [
+  { label: "لوحة التحكم",     icon: "▪", active: true  },
+  { label: "إدارة المشاريع",  icon: "▪", active: false },
+  { label: "التقارير المالية",icon: "▪", active: false },
+  { label: "العملاء والعقود", icon: "▪", active: false },
+  { label: "الذكاء الاصطناعي",icon: "▪", active: false },
 ];
 
-const ORBIT_DOTS = [
-  { angle: 0,   r: 72, size: 5, color: "#818cf8", delay: 0   },
-  { angle: 72,  r: 72, size: 4, color: "#34d399", delay: 0.4 },
-  { angle: 144, r: 72, size: 5, color: "#f59e0b", delay: 0.8 },
-  { angle: 216, r: 72, size: 3, color: "#f472b6", delay: 1.2 },
-  { angle: 288, r: 72, size: 4, color: "#60a5fa", delay: 1.6 },
+const METRIC_BARS = [
+  { label: "المشاريع النشطة", val: 78, color: "rgba(255,255,255,0.9)"  },
+  { label: "رضا العملاء",     val: 96, color: "rgba(255,255,255,0.7)"  },
+  { label: "نسبة الإنجاز",    val: 64, color: "rgba(255,255,255,0.55)" },
 ];
 
 function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEnabled, appleEnabled,
@@ -57,322 +47,256 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
   googleLoading: boolean; githubLoading: boolean; appleLoading: boolean;
   handleGoogleLogin: () => void; handleGithubLogin: () => void; handleAppleLogin: () => void;
 }) {
-  const [activeCard, setActiveCard] = useState(0);
+  const [activeModule, setActiveModule] = useState(0);
+  const [barWidths, setBarWidths] = useState([0, 0, 0]);
 
   useEffect(() => {
-    const t = setInterval(() => setActiveCard(c => (c + 1) % FEATURE_CARDS.length), 2800);
+    const t = setInterval(() => setActiveModule(c => (c + 1) % SYSTEM_MODULES.length), 2200);
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBarWidths(METRIC_BARS.map(m => m.val));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="hidden lg:flex w-[44%] flex-col justify-between p-10 relative overflow-hidden flex-shrink-0"
-      style={{ background: "linear-gradient(145deg, #06080f 0%, #0d1120 40%, #0a0d1a 70%, #060810 100%)" }}
+    <div className="hidden lg:flex w-[44%] flex-col justify-between relative overflow-hidden flex-shrink-0"
+      style={{ background: "#0e0e12" }}
     >
+      {/* Subtle top-right light bloom */}
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 65%)" }} />
 
-      {/* ── Deep space background layers ── */}
-      {/* Nebula blobs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute w-[420px] h-[420px] rounded-full -top-24 -right-24 opacity-[0.07]"
-          style={{ background: "radial-gradient(circle, #6366f1, transparent 65%)", filter: "blur(60px)" }} />
-        <div className="absolute w-[300px] h-[300px] rounded-full bottom-0 left-0 opacity-[0.06]"
-          style={{ background: "radial-gradient(circle, #06b6d4, transparent 65%)", filter: "blur(50px)" }} />
-        <div className="absolute w-[200px] h-[200px] rounded-full top-1/2 left-1/3 opacity-[0.05]"
-          style={{ background: "radial-gradient(circle, #f59e0b, transparent 65%)", filter: "blur(40px)" }} />
-      </div>
-
-      {/* Dot grid */}
-      <div className="absolute inset-0 opacity-[0.04]" style={{
-        backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.8) 1px, transparent 1px)",
-        backgroundSize: "28px 28px",
+      {/* Subtle grid */}
+      <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{
+        backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
+        backgroundSize: "48px 48px",
       }} />
 
-      {/* Diagonal mesh lines */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="mesh" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M0 60 L60 0" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
-            <path d="M-10 10 L10 -10" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
-            <path d="M50 70 L70 50" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#mesh)" />
-      </svg>
+      {/* Left accent stripe */}
+      <div className="absolute left-0 top-0 bottom-0 w-[3px]"
+        style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.18) 60%, transparent 100%)" }} />
 
-      {/* Floating particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {PARTICLES.map(p => (
-          <motion.div key={p.id}
-            className="absolute rounded-full"
-            style={{ left: p.x, top: p.y, width: p.size, height: p.size,
-              background: p.id % 3 === 0 ? "#818cf8" : p.id % 3 === 1 ? "#34d399" : "#60a5fa",
-              opacity: p.opacity, boxShadow: `0 0 ${p.size * 2}px currentColor` }}
-            animate={{ y: [-8, 8, -8], opacity: [p.opacity * 0.5, p.opacity, p.opacity * 0.5] }}
-            transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
-          />
-        ))}
-      </div>
-
-      {/* Horizontal glow sweep */}
-      <motion.div className="absolute left-0 right-0 h-px pointer-events-none"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.4) 40%, rgba(56,189,248,0.4) 60%, transparent 100%)" }}
-        animate={{ top: ["5%", "95%"], opacity: [0, 0.8, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
-      />
-
-      {/* ── Top brand ── */}
-      <div className="relative z-10 flex items-center justify-between">
+      {/* ── Top brand bar ── */}
+      <div className="relative z-10 px-10 pt-10 pb-0 flex items-center justify-between">
         <Link href="/">
-          <motion.div className="flex items-center gap-2.5 cursor-pointer group" whileHover={{ scale: 1.02 }}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center relative"
-              style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(56,189,248,0.15))", border: "1px solid rgba(99,102,241,0.3)" }}>
-              <img src="/qirox-icon-nobg.png" alt="Q" className="w-6 h-6 object-contain" />
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background: "radial-gradient(circle at center, rgba(99,102,241,0.2), transparent 70%)" }} />
+          <motion.div className="flex items-center gap-3 cursor-pointer" whileHover={{ opacity: 0.85 }} transition={{ duration: 0.2 }}>
+            <img src="/qirox-icon-nobg.png" alt="QIROX" className="h-8 w-auto object-contain" />
+            <div>
+              <span className="text-white font-black text-lg tracking-[0.12em] block leading-none" style={{ fontFamily: "var(--font-heading)" }}>QIROX</span>
+              <span className="text-white/30 text-[9px] tracking-[0.25em] uppercase block mt-0.5">Systems Factory</span>
             </div>
-            <span className="text-white/80 font-bold text-sm tracking-widest font-mono group-hover:text-white transition-colors">QIROX</span>
           </motion.div>
         </Link>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
+        <div className="flex items-center gap-1.5">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            <span className="animate-ping absolute h-full w-full rounded-full bg-white opacity-30" />
+            <span className="relative rounded-full h-1.5 w-1.5 bg-white/60" />
           </span>
-          <span className="text-emerald-400/70 text-[9px] font-mono tracking-wider">ONLINE</span>
+          <span className="text-white/30 text-[9px] tracking-widest uppercase font-mono">Live</span>
         </div>
       </div>
 
-      {/* ── Central orb + orbit ── */}
-      <div className="relative z-10 flex flex-col items-center gap-6">
-
-        {/* Orbit system */}
-        <div className="relative w-48 h-48 flex items-center justify-center">
-
-          {/* Outer ring */}
-          <motion.div className="absolute w-44 h-44 rounded-full"
-            style={{ border: "1px solid rgba(99,102,241,0.15)" }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            {ORBIT_DOTS.map((dot, i) => (
-              <motion.div key={i}
-                className="absolute rounded-full"
-                style={{
-                  width: dot.size, height: dot.size,
-                  background: dot.color,
-                  boxShadow: `0 0 ${dot.size * 3}px ${dot.color}`,
-                  top: `calc(50% + ${Math.sin((dot.angle * Math.PI) / 180) * dot.r}px - ${dot.size / 2}px)`,
-                  left: `calc(50% + ${Math.cos((dot.angle * Math.PI) / 180) * dot.r}px - ${dot.size / 2}px)`,
-                }}
-                animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.3, 0.8] }}
-                transition={{ duration: 2.5, delay: dot.delay, repeat: Infinity, ease: "easeInOut" }}
-              />
-            ))}
-          </motion.div>
-
-          {/* Middle ring */}
-          <motion.div className="absolute w-32 h-32 rounded-full"
-            style={{ border: "1px dashed rgba(56,189,248,0.12)" }}
-            animate={{ rotate: -360 }}
-            transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
-          />
-
-          {/* Inner glow ring */}
-          <motion.div className="absolute w-24 h-24 rounded-full"
-            style={{ border: "1px solid rgba(99,102,241,0.25)", boxShadow: "0 0 20px rgba(99,102,241,0.08) inset" }}
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          />
-
-          {/* Core logo */}
-          <motion.div
-            className="relative w-20 h-20 rounded-2xl flex items-center justify-center z-10"
-            style={{
-              background: "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(56,189,248,0.12) 50%, rgba(99,102,241,0.08) 100%)",
-              border: "1px solid rgba(99,102,241,0.35)",
-              boxShadow: "0 0 40px rgba(99,102,241,0.15), 0 0 80px rgba(99,102,241,0.06), inset 0 1px 0 rgba(255,255,255,0.06)",
-            }}
-            animate={{ y: [-4, 4, -4] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            whileHover={{ scale: 1.06 }}
-          >
-            <img src="/qirox-icon-nobg.png" alt="QIROX" className="w-12 h-12 object-contain" />
-            <div className="absolute inset-0 rounded-2xl"
-              style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.07), transparent 60%)" }} />
-          </motion.div>
-        </div>
+      {/* ── Main content: System UI preview ── */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center px-10 py-6 gap-5">
 
         {/* Headline */}
-        <motion.div className="text-center"
-          initial={{ opacity: 0, y: 16 }}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-black leading-tight mb-1.5" style={{ fontFamily: "inherit" }}>
-            {isRegister ? (
-              <>
-                <span style={{ background: "linear-gradient(90deg, #818cf8, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ابنِ نظامك</span>
-                <br />
-                <span className="text-white/25 text-xl">الرقمي الآن</span>
-              </>
-            ) : (
-              <>
-                <span style={{ background: "linear-gradient(90deg, #818cf8, #38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>مرحباً بك</span>
-                <br />
-                <span className="text-white/25 text-xl">في QIROX</span>
-              </>
-            )}
+          <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] mb-2 font-mono">
+            {isRegister ? "— منضم جديد" : "— بوابة الدخول"}
+          </p>
+          <h2 className="text-white font-black leading-[1.1] mb-1" style={{ fontSize: "clamp(1.6rem,3vw,2.2rem)", fontFamily: "var(--font-heading)" }}>
+            {isRegister ? <>ابنِ نظامك<br /><span className="text-white/35">الرقمي</span></> : <>منصة إدارة<br /><span className="text-white/35">متكاملة</span></>}
           </h2>
-          <p className="text-white/25 text-[11px] font-mono tracking-wide">
-            {isRegister ? "مصنع الأنظمة الرقمية · انضم الآن" : "نظامك الرقمي الكامل في مكان واحد"}
+          <p className="text-white/30 text-xs leading-relaxed">
+            {isRegister ? "مصنع الأنظمة الرقمية — أكثر من 100 عميل بنوا أنظمتهم معنا" : "نظام إدارة الأعمال الرقمي الشامل · مُصمَّم للسوق العربي"}
           </p>
         </motion.div>
 
-        {/* Rotating feature card */}
-        <div className="w-full relative h-[70px]">
-          <AnimatePresence mode="wait">
-            {FEATURE_CARDS.map((card, i) => i === activeCard && (
-              <motion.div key={card.title}
-                className="absolute inset-0 rounded-2xl px-4 py-3 flex items-center gap-3"
-                style={{
-                  background: `linear-gradient(135deg, ${card.glow}, rgba(255,255,255,0.02))`,
-                  border: `1px solid ${card.color}25`,
-                  backdropFilter: "blur(12px)",
-                }}
-                initial={{ opacity: 0, x: 20, scale: 0.97 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -20, scale: 0.97 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-                  style={{ background: `${card.glow}`, border: `1px solid ${card.color}30` }}>
-                  {card.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white/85 text-xs font-bold">{card.title}</p>
-                  <p className="text-[10px] font-mono mt-0.5 truncate" style={{ color: `${card.color}80` }}>{card.sub}</p>
-                </div>
-                <div className="flex gap-1">
-                  {FEATURE_CARDS.map((_, di) => (
-                    <div key={di} className="w-1 h-1 rounded-full transition-all"
-                      style={{ background: di === activeCard ? card.color : "rgba(255,255,255,0.12)", width: di === activeCard ? 12 : 4 }} />
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        {/* ── System UI mockup ── */}
+        <motion.div
+          className="rounded-2xl overflow-hidden relative"
+          style={{
+            background: "#141418",
+            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+        >
+          {/* Window chrome */}
+          <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/[0.05]"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            <div className="w-2 h-2 rounded-full bg-white/10" />
+            <div className="w-2 h-2 rounded-full bg-white/10" />
+            <div className="w-2 h-2 rounded-full bg-white/10" />
+            <span className="text-white/20 text-[9px] font-mono ml-2 tracking-wider">qirox.app / dashboard</span>
+            <div className="ml-auto flex items-center gap-1">
+              <div className="w-12 h-1.5 rounded-full bg-white/08" style={{ background: "rgba(255,255,255,0.06)" }} />
+            </div>
+          </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 w-full">
+          {/* Mockup body: sidebar + content */}
+          <div className="flex" style={{ height: 180 }}>
+            {/* Sidebar */}
+            <div className="w-[90px] border-r border-white/[0.05] flex flex-col py-3 gap-0.5 px-2 shrink-0"
+              style={{ background: "rgba(255,255,255,0.01)" }}>
+              <div className="flex items-center gap-1.5 px-2 py-1.5 mb-2">
+                <div className="w-4 h-4 rounded bg-white/15 shrink-0" />
+                <div className="h-1.5 rounded-full w-10 bg-white/10" />
+              </div>
+              {SYSTEM_MODULES.map((mod, i) => (
+                <motion.div key={mod.label}
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-default"
+                  animate={{ backgroundColor: i === activeModule ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0)" }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: i === activeModule ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.15)" }} />
+                  <div className="h-1 rounded-full flex-1"
+                    style={{ background: i === activeModule ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.08)" }} />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Main area */}
+            <div className="flex-1 p-4 flex flex-col gap-3">
+              {/* Top metric cards */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { v: "١٢٤", l: "مشروع" },
+                  { v: "٩٨٪", l: "رضا" },
+                  { v: "٨", l: "قطاعات" },
+                ].map((m, i) => (
+                  <motion.div key={i}
+                    className="rounded-lg p-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.5 + i * 0.08 }}
+                  >
+                    <p className="text-white font-bold text-xs">{m.v}</p>
+                    <p className="text-white/30 text-[8px] mt-0.5">{m.l}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Bar chart mock */}
+              <div className="flex flex-col gap-2">
+                {METRIC_BARS.map((bar, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="h-1 rounded-full flex-1 bg-white/[0.06] overflow-hidden">
+                      <motion.div className="h-full rounded-full"
+                        style={{ background: `rgba(255,255,255,${0.25 - i * 0.06})` }}
+                        initial={{ width: "0%" }}
+                        animate={{ width: `${barWidths[i]}%` }}
+                        transition={{ duration: 1.1, delay: 0.7 + i * 0.15, ease: "easeOut" }}
+                      />
+                    </div>
+                    <span className="text-white/20 text-[8px] w-5 text-left font-mono">{bar.val}%</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Active module label */}
+              <AnimatePresence mode="wait">
+                <motion.div key={activeModule}
+                  className="mt-auto flex items-center gap-1.5"
+                  initial={{ opacity: 0, x: 6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div className="w-1 h-1 rounded-full bg-white/40" />
+                  <span className="text-white/30 text-[9px] font-mono">{SYSTEM_MODULES[activeModule].label}</span>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Feature list ── */}
+        <div className="flex flex-col gap-2">
           {[
-            { value: "+100", label: "عميل نشط",  color: "#818cf8" },
-            { value: "+8",   label: "قطاعات",     color: "#34d399" },
-            { value: "99%",  label: "رضا العملاء", color: "#f59e0b" },
-          ].map((s, i) => (
-            <motion.div key={s.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 + i * 0.12 }}
-              className="rounded-xl p-3 text-center relative overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.025)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                backdropFilter: "blur(8px)",
-              }}
+            { title: "إدارة شاملة",      desc: "عمليات · مالية · موظفون · عملاء" },
+            { title: "ذكاء اصطناعي",     desc: "Kimi AI · تحليل · محادثة · أتمتة" },
+            { title: "أمان مؤسسي",       desc: "2FA · تشفير · جلسات آمنة"         },
+          ].map((f, i) => (
+            <motion.div key={f.title}
+              className="flex items-start gap-3"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.55 + i * 0.12 }}
             >
-              <div className="absolute top-0 left-0 right-0 h-px"
-                style={{ background: `linear-gradient(90deg, transparent, ${s.color}50, transparent)` }} />
-              <p className="font-black text-sm font-mono mb-0.5" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-white/25 text-[9px] leading-tight">{s.label}</p>
+              <div className="w-4 h-4 rounded border border-white/15 flex items-center justify-center mt-0.5 shrink-0"
+                style={{ background: "rgba(255,255,255,0.04)" }}>
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/50" />
+              </div>
+              <div>
+                <p className="text-white/75 text-[11px] font-semibold leading-tight">{f.title}</p>
+                <p className="text-white/25 text-[9px] mt-0.5 font-mono">{f.desc}</p>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Social login buttons */}
+        {/* Social login */}
         {(googleEnabled || githubEnabled || appleEnabled) && !isEmployeeRegister && (
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex gap-2">
             {googleEnabled && (
               <button type="button" onClick={handleGoogleLogin} disabled={googleLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right group"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(66,133,244,0.35)")}
-                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.09)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-px flex overflow-hidden">
-                  <div className="flex-1 bg-[#4285F4]/50" /><div className="flex-1 bg-[#EA4335]/50" />
-                  <div className="flex-1 bg-[#FBBC05]/50" /><div className="flex-1 bg-[#34A853]/50" />
-                </div>
-                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0">
-                  <SiGoogle className="w-3.5 h-3.5 text-[#4285F4]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white/70 text-[11px] font-bold">دخول بـ Google</p>
-                </div>
-                <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#34A853] opacity-50" />
-                  <span className="relative rounded-full h-1.5 w-1.5 bg-[#34A853]" />
-                </span>
+                <SiGoogle className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-white/55 text-[10px] font-medium">Google</span>
               </button>
             )}
             {githubEnabled && (
               <button type="button" onClick={handleGithubLogin} disabled={githubLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(139,87,229,0.35)")}
-                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.09)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8957e5]/50 to-transparent" />
-                <div className="w-7 h-7 rounded-lg bg-[#161b22] border border-white/10 flex items-center justify-center shrink-0">
-                  <SiGithub className="w-3.5 h-3.5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white/70 text-[11px] font-bold">دخول بـ GitHub</p>
-                </div>
-                <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#8957e5] opacity-50" />
-                  <span className="relative rounded-full h-1.5 w-1.5 bg-[#8957e5]" />
-                </span>
+                <SiGithub className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-white/55 text-[10px] font-medium">GitHub</span>
               </button>
             )}
             {appleEnabled && (
               <button type="button" onClick={handleAppleLogin} disabled={appleLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.25)")}
-                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.09)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                <div className="w-7 h-7 rounded-lg bg-black border border-white/10 flex items-center justify-center shrink-0">
-                  <SiApple className="w-3.5 h-3.5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white/70 text-[11px] font-bold">دخول بـ Apple</p>
-                </div>
-                <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-white/40 opacity-50" />
-                  <span className="relative rounded-full h-1.5 w-1.5 bg-white/60" />
-                </span>
+                <SiApple className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-white/55 text-[10px] font-medium">Apple</span>
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* ── Bottom signature ── */}
-      <div className="relative z-10 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-[9px] text-white/15 tracking-wider">
-            QIROX SYSTEMS · v2.0.0
-          </p>
-          <div className="flex items-center gap-2">
-            {["AES-256", "TLS 1.3", "2FA"].map(tag => (
-              <span key={tag} className="text-[8px] font-mono px-1.5 py-0.5 rounded"
-                style={{ background: "rgba(99,102,241,0.1)", color: "rgba(129,140,248,0.5)", border: "1px solid rgba(99,102,241,0.15)" }}>
-                {tag}
-              </span>
-            ))}
-          </div>
+      {/* ── Bottom bar ── */}
+      <div className="relative z-10 px-10 pb-8 pt-4 flex items-center justify-between"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <p className="text-white/15 text-[9px] font-mono tracking-wider">QIROX © 2025 · v2.0</p>
+        <div className="flex items-center gap-1.5">
+          {["2FA", "AES-256", "TLS 1.3"].map(t => (
+            <span key={t} className="text-[8px] font-mono text-white/20 px-1.5 py-0.5 rounded"
+              style={{ border: "1px solid rgba(255,255,255,0.07)" }}>{t}</span>
+          ))}
         </div>
       </div>
     </div>
