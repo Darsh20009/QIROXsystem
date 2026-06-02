@@ -789,72 +789,271 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
       // First error: silently reloading — don't flash the error page
       if (!this.state.retried) return null;
       return (
-        <div
-          dir="rtl"
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem",
-            fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-            textAlign: "center",
-            background: "linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
-          }}
-        >
-          {/* Gear / maintenance icon */}
+        <div dir="rtl" style={{
+          minHeight: "100vh", display: "flex", flexDirection: "column",
+          background: "#0e0e12", fontFamily: "'Cairo', 'Segoe UI', sans-serif",
+          position: "relative", overflow: "hidden",
+        }}>
+
+          {/* Subtle dot grid */}
           <div style={{
-            width: 88, height: 88, borderRadius: 28,
-            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: 28, boxShadow: "0 0 48px rgba(99,102,241,0.45)",
+            position: "absolute", inset: 0, opacity: 0.025, pointerEvents: "none",
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }} />
+          {/* Top-right bloom */}
+          <div style={{
+            position: "absolute", top: -120, right: -120, width: 400, height: 400,
+            borderRadius: "50%", pointerEvents: "none",
+            background: "radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 65%)",
+          }} />
+          {/* Bottom-left bloom */}
+          <div style={{
+            position: "absolute", bottom: -80, left: -80, width: 280, height: 280,
+            borderRadius: "50%", pointerEvents: "none",
+            background: "radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 65%)",
+          }} />
+          {/* Left accent stripe */}
+          <div style={{
+            position: "absolute", right: 0, top: 0, bottom: 0, width: 3,
+            background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.1) 30%, rgba(255,255,255,0.16) 65%, transparent 100%)",
+          }} />
+
+          {/* ── Top bar ── */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "1.5rem 2.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)",
+            position: "relative", zIndex: 10,
           }}>
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <img src="/qirox-icon-nobg.png" alt="QIROX" style={{ height: 32, width: "auto", objectFit: "contain" }} />
+              <div>
+                <div style={{ color: "#fff", fontWeight: 900, fontSize: "1rem", letterSpacing: "0.15em", lineHeight: 1 }}>QIROX</div>
+                <div style={{ color: "rgba(255,255,255,0.28)", fontSize: "0.6rem", letterSpacing: "0.25em", textTransform: "uppercase", marginTop: 2 }}>Systems Factory</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.5)",
+                boxShadow: "0 0 0 0 rgba(255,255,255,0.3)",
+                animation: "pulse-dot 2s infinite",
+              }} />
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "monospace" }}>Maintenance</span>
+            </div>
           </div>
 
-          {/* Logo text */}
-          <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#fff", letterSpacing: "0.18em", marginBottom: 6, opacity: 0.9 }}>
-            QIROX
+          {/* ── Main content ── */}
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "2rem", position: "relative", zIndex: 10,
+          }}>
+            <div style={{ maxWidth: 780, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "2rem" }}>
+
+              {/* Status badge */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "0.35rem 1rem", borderRadius: 100,
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.72rem", letterSpacing: "0.15em", fontFamily: "monospace" }}>قيد التحديث — سيعود النظام قريباً</span>
+              </div>
+
+              {/* Headline */}
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.7rem", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 12, fontFamily: "monospace" }}>— system update</div>
+                <h1 style={{
+                  color: "#fff", fontWeight: 900, margin: 0, lineHeight: 1.1,
+                  fontSize: "clamp(2rem, 5vw, 3.2rem)", fontFamily: "'Cairo', sans-serif",
+                }}>
+                  هذه الصفحة تحت الصيانة
+                </h1>
+                <div style={{ color: "rgba(255,255,255,0.25)", fontWeight: 400, fontSize: "clamp(1rem, 2vw, 1.15rem)", marginTop: 8 }}>
+                  نعمل على تطويرها
+                </div>
+              </div>
+
+              {/* Description */}
+              <p style={{
+                color: "rgba(255,255,255,0.4)", fontSize: "0.95rem", textAlign: "center",
+                maxWidth: 480, lineHeight: 1.8, margin: 0,
+              }}>
+                فريق QIROX يعمل على تحسين هذه الصفحة لتقديم تجربة أفضل وأسرع.
+                يُرجى المحاولة مرة أخرى بعد لحظات، أو تابعنا عبر مواقع التواصل للاطلاع على آخر التحديثات.
+              </p>
+
+              {/* ── Video section ── */}
+              <div style={{
+                width: "100%", maxWidth: 620, borderRadius: 18, overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "#141418", position: "relative",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+              }}>
+                {/* Window chrome */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "10px 16px",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)",
+                }}>
+                  {["rgba(255,255,255,0.1)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.06)"].map((c, i) => (
+                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
+                  ))}
+                  <span style={{ color: "rgba(255,255,255,0.18)", fontSize: "0.65rem", fontFamily: "monospace", marginRight: 6 }}>qirox.sa — تعرّف علينا</span>
+                </div>
+                {/* YouTube embed */}
+                <div style={{ position: "relative", paddingBottom: "52%", height: 0 }}>
+                  <iframe
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                    src="https://www.youtube.com/embed?listType=user_uploads&list=qiroxsa&rel=0&modestbranding=1&color=white"
+                    title="QIROX على يوتيوب"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+
+              {/* ── Social media ── */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", margin: 0, fontFamily: "monospace" }}>تابعنا على</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* Instagram */}
+                  <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer"
+                    style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8"/>
+                        <circle cx="12" cy="12" r="4" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8"/>
+                        <circle cx="17.5" cy="6.5" r="1.2" fill="rgba(255,255,255,0.6)"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* Twitter / X */}
+                  <a href="https://x.com/qiroxsa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* TikTok */}
+                  <a href="https://www.tiktok.com/@qirox.sa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.01a8.16 8.16 0 004.77 1.52V7.1a4.85 4.85 0 01-1.01-.41z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* YouTube */}
+                  <a href="https://www.youtube.com/@qiroxsa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="16" viewBox="0 0 24 18" fill="rgba(255,255,255,0.6)">
+                        <path d="M23.5 3S23.2 1 22.2.1C21 -1 19.6 0 19 .1 16 .3 12 .3 12 .3s-4 0-7 .2c-.6 0-2 .1-3.2 1.1C.8 2.5.5 4 .5 4S.2 5.8.2 7.5v1.7c0 1.7.3 3.5.3 3.5s.3 1.5 1.3 2.4c1.2 1 2.7.9 3.4 1 2.4.2 10.8.3 10.8.3s4 0 7-.2c.6-.1 2-.1 3.2-1.1 1-1 1.3-2.4 1.3-2.4s.3-1.7.3-3.5V6.9c0-1.7-.3-3.4-.3-3.4V3zm-14 7.5V4.3l8.6 3.2-8.6 3z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* WhatsApp */}
+                  <a href="https://wa.me/966500000000" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              {/* ── Action buttons ── */}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                <button
+                  onClick={() => { this.setState({ hasError: false, retried: false }); window.location.reload(); }}
+                  style={{
+                    padding: "0.8rem 2rem", background: "#fff", color: "#0e0e12",
+                    border: "none", borderRadius: 12, cursor: "pointer",
+                    fontSize: "0.9rem", fontWeight: 800, letterSpacing: "0.03em",
+                    fontFamily: "'Cairo', sans-serif",
+                    boxShadow: "0 4px 20px rgba(255,255,255,0.1)",
+                    transition: "opacity 0.2s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.88"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                >
+                  ↻ إعادة التحميل
+                </button>
+                <button
+                  onClick={() => { window.location.href = "/"; }}
+                  style={{
+                    padding: "0.8rem 2rem",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "rgba(255,255,255,0.65)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 12, cursor: "pointer",
+                    fontSize: "0.9rem", fontWeight: 600,
+                    fontFamily: "'Cairo', sans-serif",
+                    transition: "background 0.2s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.09)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
+                >
+                  الرئيسية
+                </button>
+              </div>
+
+            </div>
           </div>
 
-          <h1 style={{ fontSize: "1.45rem", fontWeight: 800, color: "#fff", margin: "0 0 12px" }}>
-            هذه الصفحة تحت الصيانة
-          </h1>
-          <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 32px", maxWidth: 380, lineHeight: 1.7 }}>
-            نعمل على تحسين هذه الصفحة لتقديم تجربة أفضل.<br/>
-            يُرجى المحاولة مرة أخرى خلال لحظات.
-          </p>
-
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-            <button
-              onClick={() => { this.setState({ hasError: false, retried: false }); window.location.reload(); }}
-              style={{
-                padding: "0.75rem 1.75rem",
-                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-                color: "#fff", border: "none", borderRadius: 12, cursor: "pointer",
-                fontSize: "0.95rem", fontWeight: 700,
-                boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
-              }}
-            >
-              ↻ إعادة التحميل
-            </button>
-            <button
-              onClick={() => { window.location.href = "/"; }}
-              style={{
-                padding: "0.75rem 1.75rem",
-                background: "rgba(255,255,255,0.07)",
-                color: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(255,255,255,0.13)",
-                borderRadius: 12, cursor: "pointer",
-                fontSize: "0.95rem", fontWeight: 600,
-              }}
-            >
-              الرئيسية
-            </button>
+          {/* ── Bottom bar ── */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "1rem 2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)",
+            position: "relative", zIndex: 10,
+          }}>
+            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.65rem", fontFamily: "monospace", letterSpacing: "0.15em" }}>
+              QIROX © 2025 · v2.0
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["2FA", "AES-256", "TLS 1.3"].map(t => (
+                <span key={t} style={{
+                  color: "rgba(255,255,255,0.2)", fontSize: "0.6rem", fontFamily: "monospace",
+                  padding: "2px 7px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.07)",
+                }}>{t}</span>
+              ))}
+            </div>
           </div>
         </div>
       );
