@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useCurrency } from "@/hooks/use-currency";
 import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -65,18 +66,25 @@ const FEATURES_EN = [
   { key: "ai",         icon: Zap,            label: "AI Features" },
 ];
 
-const BUDGETS_AR = [
-  { key: "unknown",   label: "لم أحدد بعد",     sub: "سنقترح ما يناسبك" },
-  { key: "small",     label: "أقل من 15,000 ريال",   sub: "مشاريع لايت" },
+const BUDGETS_AR_SAR = [
+  { key: "unknown",   label: "لم أحدد بعد",           sub: "سنقترح ما يناسبك" },
+  { key: "small",     label: "أقل من 15,000 ريال",    sub: "مشاريع لايت" },
   { key: "medium",    label: "15,000 – 50,000 ريال",  sub: "مشاريع برو" },
   { key: "large",     label: "أكثر من 50,000 ريال",   sub: "مشاريع إنفينيت" },
 ];
 
+const BUDGETS_AR_EGP = [
+  { key: "unknown",   label: "لم أحدد بعد",             sub: "سنقترح ما يناسبك" },
+  { key: "small",     label: "أقل من 105,000 جنيه",     sub: "مشاريع لايت" },
+  { key: "medium",    label: "105,000 – 350,000 جنيه",  sub: "مشاريع برو" },
+  { key: "large",     label: "أكثر من 350,000 جنيه",    sub: "مشاريع إنفينيت" },
+];
+
 const BUDGETS_EN = [
-  { key: "unknown",   label: "Not sure yet",      sub: "We'll suggest the best fit" },
-  { key: "small",     label: "Under SAR 15,000",  sub: "Lite projects" },
+  { key: "unknown",   label: "Not sure yet",        sub: "We'll suggest the best fit" },
+  { key: "small",     label: "Under SAR 15,000",    sub: "Lite projects" },
   { key: "medium",    label: "SAR 15,000 – 50,000", sub: "Pro projects" },
-  { key: "large",     label: "SAR 50,000+",        sub: "Infinite projects" },
+  { key: "large",     label: "SAR 50,000+",          sub: "Infinite projects" },
 ];
 
 const CONTACT_OPTIONS_AR = [
@@ -98,11 +106,12 @@ export default function QuickStart() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
   const { data: user } = useUser();
+  const currency = useCurrency();
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
   const sectors  = ar ? SECTORS_AR  : SECTORS_EN;
   const featuresList = ar ? FEATURES_AR : FEATURES_EN;
-  const budgets  = ar ? BUDGETS_AR  : BUDGETS_EN;
+  const budgets  = ar ? (currency.isEgypt ? BUDGETS_AR_EGP : BUDGETS_AR_SAR) : BUDGETS_EN;
   const contactOptions = ar ? CONTACT_OPTIONS_AR : CONTACT_OPTIONS_EN;
 
   /* form state */

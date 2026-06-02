@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useCurrency } from "@/hooks/use-currency";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -11,7 +12,7 @@ import {
   MessageSquare, QrCode, Printer, MapPin, Truck, Lock, Brain,
   ChefHat, Camera, Music, Award, Activity, Stethoscope, Pill,
   Building2, Key, Wrench, ShoppingCart, Tag, ArrowLeft, ArrowRight,
-  Grid3x3, List, Sparkles
+  Grid3x3, List, Sparkles, Rocket
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -757,6 +758,243 @@ function ComparisonMatrix({ ar }: { ar: boolean }) {
   );
 }
 
+// ─── Budget Planner Component ───────────────────────────────────────────────────
+function BudgetPlanner({ ar }: { ar: boolean }) {
+  const currency = useCurrency();
+  const [selectedBudget, setSelectedBudget] = useState<"starter" | "growth" | "enterprise">("growth");
+
+  const tiers = useMemo(() => [
+    {
+      key: "starter" as const,
+      label: ar ? "مبتدئ" : "Starter",
+      icon: Zap,
+      color: "from-emerald-500 to-teal-500",
+      bgLight: "bg-emerald-50 dark:bg-emerald-950/20",
+      border: "border-emerald-200 dark:border-emerald-800/40",
+      textColor: "text-emerald-600 dark:text-emerald-400",
+      btnActive: "bg-emerald-600 text-white",
+      sar: 15000,
+      egp: 105000,
+      plan: ar ? "لايت" : "Lite",
+      desc: ar ? "مثالي لبدء نشاطك الرقمي" : "Perfect for launching your digital presence",
+      badge: ar ? "أفضل للبداية" : "Best to Start",
+      what: ar ? [
+        "موقع احترافي بتصميم مخصص",
+        "لوحة تحكم أساسية للنشاط",
+        "نظام حجوزات أو طلبات",
+        "تقارير أساسية يومية",
+        "دعم تقني لمدة 6 أشهر",
+      ] : [
+        "Professional custom-designed website",
+        "Basic business control panel",
+        "Booking or ordering system",
+        "Basic daily reports",
+        "6-month technical support",
+      ],
+      notIncluded: ar ? ["تطبيق موبايل", "ذكاء اصطناعي", "تعدد الفروع"] : ["Mobile app", "AI features", "Multi-branch"],
+    },
+    {
+      key: "growth" as const,
+      label: ar ? "نمو" : "Growth",
+      icon: Star,
+      color: "from-blue-500 to-violet-600",
+      bgLight: "bg-blue-50 dark:bg-blue-950/20",
+      border: "border-blue-200 dark:border-blue-800/40",
+      textColor: "text-blue-600 dark:text-blue-400",
+      btnActive: "bg-blue-600 text-white",
+      sar: 50000,
+      egp: 350000,
+      plan: ar ? "برو" : "Pro",
+      desc: ar ? "للنشاطات التي تريد التوسع والنمو" : "For businesses ready to scale",
+      badge: ar ? "الأكثر طلباً" : "Most Popular",
+      what: ar ? [
+        "كل ميزات الباقة المبتدئة ✦",
+        "تطبيق PWA كامل للموبايل",
+        "بوابة دفع إلكترونية مجانية",
+        "نظام ولاء ونقاط للعملاء",
+        "تقارير تحليلية متقدمة",
+        "1,000 بريد إلكتروني شهرياً",
+        "5 تعديلات ما بعد التسليم",
+      ] : [
+        "All Starter features ✦",
+        "Full PWA mobile app",
+        "Free payment gateway",
+        "Customer loyalty & points",
+        "Advanced analytics reports",
+        "1,000 monthly emails",
+        "5 post-delivery edits",
+      ],
+      notIncluded: ar ? ["تعدد الفروع", "ERP مؤسسي"] : ["Multi-branch", "Enterprise ERP"],
+    },
+    {
+      key: "enterprise" as const,
+      label: ar ? "مؤسسي" : "Enterprise",
+      icon: Building2,
+      color: "from-amber-500 to-orange-500",
+      bgLight: "bg-amber-50 dark:bg-amber-950/20",
+      border: "border-amber-200 dark:border-amber-800/40",
+      textColor: "text-amber-600 dark:text-amber-400",
+      btnActive: "bg-amber-500 text-white",
+      sar: 999999,
+      egp: 6999993,
+      plan: ar ? "إنفينيت" : "Infinity",
+      desc: ar ? "للشركات والسلاسل الكبيرة بلا حدود" : "For large businesses with no limits",
+      badge: ar ? "بلا حدود" : "No Limits",
+      what: ar ? [
+        "كل ميزات برو ✦✦",
+        "إدارة فروع متعددة غير محدودة",
+        "نظام ERP وإدارة مؤسسية",
+        "5 بريد إلكتروني رسمي باسمك",
+        "10,000 رسالة بريدية شهرياً",
+        "مدير حساب مخصص 24/7",
+        "20 تطوير ما بعد التسليم",
+      ] : [
+        "All Pro features ✦✦",
+        "Unlimited multi-branch management",
+        "ERP & enterprise system",
+        "5 branded email addresses",
+        "10,000 monthly emails",
+        "Dedicated account manager 24/7",
+        "20 post-delivery developments",
+      ],
+      notIncluded: [],
+    },
+  ], [ar]);
+
+  const selected = tiers.find(t => t.key === selectedBudget)!;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+      className="mt-10 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-black/[0.05] dark:border-white/[0.05] bg-gradient-to-l from-violet-50/60 to-transparent dark:from-violet-950/10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-500/20">
+            <Target className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-black dark:text-white">
+              {ar ? "اشتغل على قد ميزانيتك" : "Work Within Your Budget"}
+            </h3>
+            <p className="text-xs text-black/40 dark:text-white/40">
+              {ar
+                ? `اختر حجم استثمارك وشوف إيش تحصل عليه${currency.isEgypt ? " — بالجنيه المصري" : ""}`
+                : "Pick your investment range and see exactly what you get"}
+            </p>
+          </div>
+          {currency.isEgypt && (
+            <span className="mr-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[11px] font-black border border-emerald-200 dark:border-emerald-800/40">
+              🇪🇬 الأسعار بالجنيه
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Budget selector tabs */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {tiers.map(tier => {
+            const Icon = tier.icon;
+            const isActive = selectedBudget === tier.key;
+            const amount = currency.isEgypt ? tier.egp : tier.sar;
+            const isEnterprise = tier.key === "enterprise";
+            return (
+              <button key={tier.key} onClick={() => setSelectedBudget(tier.key)}
+                data-testid={`budget-tier-${tier.key}`}
+                className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-200 text-center ${
+                  isActive
+                    ? `${tier.bgLight} ${tier.border} shadow-md ring-1 ring-inset ${tier.border}`
+                    : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/[0.12] dark:hover:border-white/[0.12]"
+                }`}>
+                {tier.badge && isActive && (
+                  <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap bg-gradient-to-r ${tier.color} text-white shadow-sm`}>
+                    {tier.badge}
+                  </span>
+                )}
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center shadow-sm`}>
+                  <Icon className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className={`text-sm font-black ${isActive ? tier.textColor : "text-black/60 dark:text-white/60"}`}>{tier.label}</p>
+                  <p className={`text-[11px] font-bold mt-0.5 ${isActive ? tier.textColor + "/70" : "text-black/35 dark:text-white/35"}`}>
+                    {isEnterprise
+                      ? (ar ? "50,000+ ريال" : "SAR 50,000+")
+                      : `${ar ? "حتى" : "Up to"} ${currency.isEgypt
+                          ? `${(amount).toLocaleString("ar-EG")} ${ar ? "جنيه" : "EGP"}`
+                          : `${amount.toLocaleString("ar-SA")} ${ar ? "ريال" : "SAR"}`}`}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Detail panel */}
+        <AnimatePresence mode="wait">
+          <motion.div key={selectedBudget} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
+            className={`rounded-2xl border ${selected.bgLight} ${selected.border} p-5`}>
+            <div className="flex flex-col md:flex-row gap-5">
+              {/* Left: what you get */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-black bg-gradient-to-r ${selected.color} text-white`}>{selected.plan}</span>
+                  <span className={`text-sm font-bold ${selected.textColor}`}>{selected.desc}</span>
+                </div>
+                <p className={`text-[11px] font-black uppercase tracking-wider mb-2 ${selected.textColor}`}>
+                  {ar ? "✦ إيش تحصل عليه" : "✦ What you get"}
+                </p>
+                <ul className="space-y-1.5">
+                  {selected.what.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${selected.textColor}`} />
+                      <span className="text-xs text-black/70 dark:text-white/70 leading-snug">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Right: not included + CTA */}
+              <div className="md:w-48 flex flex-col gap-3">
+                {selected.notIncluded.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-black/30 dark:text-white/30 mb-2">
+                      {ar ? "غير مشمول" : "Not included"}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {selected.notIncluded.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <div className="w-3.5 h-3.5 shrink-0 mt-0.5 rounded-full border border-black/20 dark:border-white/20 flex items-center justify-center">
+                            <div className="w-1.5 h-0.5 bg-black/30 dark:bg-white/30 rounded-full" />
+                          </div>
+                          <span className="text-[11px] text-black/35 dark:text-white/35 line-through leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <Link href="/prices" className={`mt-auto flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black bg-gradient-to-r ${selected.color} text-white shadow-md transition-opacity hover:opacity-90`}>
+                  <Rocket className="w-3.5 h-3.5" />
+                  {ar ? "شوف الأسعار" : "View Pricing"}
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Bottom hint */}
+        <p className="text-center text-[11px] text-black/30 dark:text-white/30 mt-4 font-medium">
+          {ar
+            ? currency.isEgypt
+              ? "💡 الأسعار المعروضة بالجنيه المصري — تواصل معنا للحصول على عرض خاص لمصر"
+              : "💡 الأسعار التقريبية — تواصل معنا للحصول على عرض سعر مخصص"
+            : "💡 Approximate pricing — contact us for a custom quote"}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function SectorGuide() {
   const { lang, dir } = useI18n();
@@ -887,6 +1125,9 @@ export default function SectorGuide() {
           <ComparisonMatrix ar={ar} />
         </motion.div>
       )}
+
+      {/* Budget Planner */}
+      <BudgetPlanner ar={ar} />
 
       {/* Legend footer */}
       {tab === "sectors" && (

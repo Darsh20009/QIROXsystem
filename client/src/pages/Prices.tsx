@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useCurrency } from "@/hooks/use-currency";
 import {
   Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
   UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
@@ -532,9 +533,10 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   const isPro = tier === "pro";
   const isInfinity = tier === "infinity";
   const isLifetime = period === "lifetime";
+  const currency = useCurrency();
 
   let price = 0, label = "", sublabel = "";
-  if (period === "sixmonth") { price = prices.sm; label = "6 أشهر"; sublabel = `${fmt(prices.sm * 2)} / السنة`; }
+  if (period === "sixmonth") { price = prices.sm; label = "6 أشهر"; sublabel = `${currency.format(prices.sm * 2)} / السنة`; }
   else if (period === "annual") { price = prices.yr; label = "سنة"; sublabel = "دفعة واحدة"; }
   else if (period === "multiyear") {
     price = multiYearPrice(prices.yr, years);
@@ -621,9 +623,14 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         <AnimatePresence mode="wait">
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-2">
-              <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{fmt(price)}</span>
-              <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>ريال</span>
+              <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{currency.format(price)}</span>
+              <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
             </div>
+            {currency.isEgypt && (
+              <p className={`text-[10px] mt-0.5 font-bold ${isPro ? "text-blue-200/50" : isInfinity ? "text-amber-300/40" : "text-gray-400/70"}`}>
+                ≈ {fmt(price)} ريال
+              </p>
+            )}
             <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>
               {period === "sixmonth" ? "كل 6 أشهر" : period === "annual" ? "سنوياً — دفعة واحدة" : period === "multiyear" ? `${years} سنوات (خصم ${multiYearDiscount(years)}%)` : "مرة واحدة — للأبد"}
             </p>
@@ -634,13 +641,13 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
                              "bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50"
               }`}>
                 <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>≈</span>
-                <span className={`text-sm font-black ${st.textColor}`}>{fmt(monthlyEquiv)}</span>
-                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>ريال / شهر</span>
+                <span className={`text-sm font-black ${st.textColor}`}>{currency.format(monthlyEquiv)}</span>
+                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>{currency.symbol} / شهر</span>
               </div>
             )}
             {period === "sixmonth" && (
               <p className={`text-[10px] mt-1.5 ${isPro || isInfinity ? "text-white/35" : "text-gray-400/80"}`}>
-                يساوي <span className="line-through">{fmt(prices.sm * 2)}</span> ريال سنوياً
+                يساوي <span className="line-through">{currency.format(prices.sm * 2)}</span> {currency.symbol} سنوياً
               </p>
             )}
           </motion.div>
