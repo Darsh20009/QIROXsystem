@@ -24,286 +24,333 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 
-// ─── Tech Creative Auth Panel ────────────────────────────────────────────────
-const BINARY_COLS = [
-  { x: "8%",  delay: 0,    dur: 7,  chars: "01001011\n01110100\n00100001\n11001010\n01110001\n10110100\n00111010\n11000101" },
-  { x: "17%", delay: 1.2,  dur: 9,  chars: "11010010\n00101101\n10010110\n01101001\n11100011\n00010111\n10101010\n01010101" },
-  { x: "26%", delay: 0.5,  dur: 8,  chars: "00110101\n11001100\n01010011\n10100110\n00011011\n11110000\n01101100\n10010011" },
-  { x: "35%", delay: 2,    dur: 11, chars: "10100011\n01011100\n11000010\n00111011\n10010101\n01100110\n11011001\n00101010" },
-  { x: "44%", delay: 0.8,  dur: 7,  chars: "01110010\n10001101\n00100111\n11011000\n01001110\n10110011\n00011100\n11100101" },
-  { x: "53%", delay: 1.7,  dur: 10, chars: "11001001\n00110110\n10101100\n01010010\n11100110\n00011001\n10110101\n01001100" },
-  { x: "62%", delay: 0.3,  dur: 8,  chars: "00101110\n11010001\n01100011\n10011010\n00110100\n11001011\n01110110\n10000111" },
-  { x: "71%", delay: 2.4,  dur: 9,  chars: "10011011\n01100100\n11110001\n00001110\n10100101\n01011010\n11001110\n00110001" },
-  { x: "80%", delay: 1,    dur: 7,  chars: "01010110\n10101001\n00011101\n11100010\n01001011\n10110110\n00100100\n11011011" },
-  { x: "89%", delay: 1.5,  dur: 12, chars: "11100100\n00011011\n10010010\n01101101\n11010110\n00101001\n10111100\n01000011" },
+// ─── Premium Creative Auth Panel ─────────────────────────────────────────────
+
+const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
+  id: i,
+  x: `${5 + (i * 13.7) % 90}%`,
+  y: `${8 + (i * 17.3) % 84}%`,
+  size: i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1.5,
+  delay: (i * 0.37) % 4,
+  dur: 3 + (i * 0.41) % 4,
+  opacity: 0.12 + (i % 5) * 0.06,
+}));
+
+const FEATURE_CARDS = [
+  { icon: "🤖", title: "ذكاء اصطناعي", sub: "Kimi AI · محادثة · تحليل", color: "#818cf8", glow: "rgba(129,140,248,0.15)" },
+  { icon: "🔐", title: "أمان متقدم", sub: "AES-256 · 2FA · TLS 1.3",   color: "#34d399", glow: "rgba(52,211,153,0.15)"  },
+  { icon: "📊", title: "تقارير فورية", sub: "Analytics · KPIs · Live",   color: "#f59e0b", glow: "rgba(245,158,11,0.15)"  },
 ];
 
-const FLOAT_TOKENS = [
-  { text: "</>",        x: "12%", y: "18%", delay: 0,   dur: 6,  size: "text-sm",   opacity: 0.18 },
-  { text: "{ }",        x: "72%", y: "12%", delay: 1,   dur: 7,  size: "text-xs",   opacity: 0.14 },
-  { text: "async",      x: "55%", y: "22%", delay: 2,   dur: 5,  size: "text-[10px]", opacity: 0.12 },
-  { text: "=>",         x: "28%", y: "72%", delay: 0.5, dur: 8,  size: "text-sm",   opacity: 0.16 },
-  { text: "return",     x: "80%", y: "65%", delay: 1.5, dur: 6,  size: "text-[10px]", opacity: 0.13 },
-  { text: "[]",         x: "15%", y: "55%", delay: 3,   dur: 7,  size: "text-sm",   opacity: 0.15 },
-  { text: "const",      x: "65%", y: "80%", delay: 0.8, dur: 9,  size: "text-[10px]", opacity: 0.11 },
-  { text: "===",        x: "40%", y: "88%", delay: 2.2, dur: 5,  size: "text-xs",   opacity: 0.14 },
-  { text: "&&",         x: "88%", y: "30%", delay: 1.2, dur: 8,  size: "text-sm",   opacity: 0.12 },
-  { text: "||",         x: "5%",  y: "35%", delay: 0.3, dur: 6,  size: "text-xs",   opacity: 0.10 },
-  { text: "import",     x: "48%", y: "45%", delay: 3.5, dur: 7,  size: "text-[10px]", opacity: 0.09 },
-  { text: "await",      x: "22%", y: "40%", delay: 1.8, dur: 6,  size: "text-[10px]", opacity: 0.11 },
+const ORBIT_DOTS = [
+  { angle: 0,   r: 72, size: 5, color: "#818cf8", delay: 0   },
+  { angle: 72,  r: 72, size: 4, color: "#34d399", delay: 0.4 },
+  { angle: 144, r: 72, size: 5, color: "#f59e0b", delay: 0.8 },
+  { angle: 216, r: 72, size: 3, color: "#f472b6", delay: 1.2 },
+  { angle: 288, r: 72, size: 4, color: "#60a5fa", delay: 1.6 },
 ];
 
-const TERMINAL_LINES = [
-  { text: "$ qirox init --auth",                  color: "#4ade80", delay: 400  },
-  { text: "✓ Loading authentication module...",    color: "#86efac", delay: 600  },
-  { text: "$ encrypt --method=AES-256-GCM",        color: "#4ade80", delay: 500  },
-  { text: "✓ Session secured [token: 0x7f3a...]", color: "#86efac", delay: 700  },
-  { text: "$ connect --db=mongodb-atlas",          color: "#4ade80", delay: 500  },
-  { text: "✓ Connection established (2ms)",        color: "#86efac", delay: 600  },
-  { text: "$ auth --user=**** --2fa=enabled",      color: "#4ade80", delay: 500  },
-  { text: "✓ Access granted · QIROX SYSTEMS v2",  color: "#4ade80", delay: 700  },
-];
-
-function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEnabled, appleEnabled,
+function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEnabled, appleEnabled,
   googleLoading, githubLoading, appleLoading, handleGoogleLogin, handleGithubLogin, handleAppleLogin }: {
   isRegister: boolean; isEmployeeRegister: boolean;
   googleEnabled: boolean; githubEnabled: boolean; appleEnabled: boolean;
   googleLoading: boolean; githubLoading: boolean; appleLoading: boolean;
   handleGoogleLogin: () => void; handleGithubLogin: () => void; handleAppleLogin: () => void;
 }) {
-  const [terminalStep, setTerminalStep] = useState(0);
+  const [activeCard, setActiveCard] = useState(0);
 
   useEffect(() => {
-    if (terminalStep >= TERMINAL_LINES.length) return;
-    const next = TERMINAL_LINES[terminalStep];
-    const timer = setTimeout(() => setTerminalStep(s => s + 1), next.delay * 1000 + (terminalStep === 0 ? 800 : 0));
-    return () => clearTimeout(timer);
-  }, [terminalStep]);
-
-  useEffect(() => {
-    const reset = setTimeout(() => setTerminalStep(0), 9000);
-    return () => clearTimeout(reset);
-  }, [terminalStep === TERMINAL_LINES.length]);
+    const t = setInterval(() => setActiveCard(c => (c + 1) % FEATURE_CARDS.length), 2800);
+    return () => clearInterval(t);
+  }, []);
 
   return (
-    <div className="hidden lg:flex w-[42%] bg-[#030508] flex-col justify-between p-12 relative overflow-hidden flex-shrink-0">
+    <div className="hidden lg:flex w-[44%] flex-col justify-between p-10 relative overflow-hidden flex-shrink-0"
+      style={{ background: "linear-gradient(145deg, #06080f 0%, #0d1120 40%, #0a0d1a 70%, #060810 100%)" }}
+    >
 
-      {/* Grid lines */}
-      <div className="absolute inset-0 opacity-[0.035]" style={{
-        backgroundImage: "linear-gradient(#00ff41 1px, transparent 1px), linear-gradient(90deg, #00ff41 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
+      {/* ── Deep space background layers ── */}
+      {/* Nebula blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute w-[420px] h-[420px] rounded-full -top-24 -right-24 opacity-[0.07]"
+          style={{ background: "radial-gradient(circle, #6366f1, transparent 65%)", filter: "blur(60px)" }} />
+        <div className="absolute w-[300px] h-[300px] rounded-full bottom-0 left-0 opacity-[0.06]"
+          style={{ background: "radial-gradient(circle, #06b6d4, transparent 65%)", filter: "blur(50px)" }} />
+        <div className="absolute w-[200px] h-[200px] rounded-full top-1/2 left-1/3 opacity-[0.05]"
+          style={{ background: "radial-gradient(circle, #f59e0b, transparent 65%)", filter: "blur(40px)" }} />
+      </div>
+
+      {/* Dot grid */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{
+        backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.8) 1px, transparent 1px)",
+        backgroundSize: "28px 28px",
       }} />
 
-      {/* Vignette corners */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,#030508_100%)] pointer-events-none" />
+      {/* Diagonal mesh lines */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="mesh" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M0 60 L60 0" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
+            <path d="M-10 10 L10 -10" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
+            <path d="M50 70 L70 50" stroke="#6366f1" strokeWidth="0.6" fill="none"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#mesh)" />
+      </svg>
 
-      {/* Scan line sweep */}
-      <motion.div
-        className="absolute left-0 right-0 h-[2px] pointer-events-none"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent)" }}
-        animate={{ top: ["0%", "100%"] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
-      />
-
-      {/* Binary rain columns */}
-      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-        {BINARY_COLS.map((col, i) => (
-          <motion.div
-            key={i}
-            className="absolute top-0 font-mono leading-[1.6] whitespace-pre text-[9px] tracking-widest"
-            style={{ left: col.x, color: "#00ff41" }}
-            initial={{ y: "-100%", opacity: 0 }}
-            animate={{ y: ["-110%", "115%"], opacity: [0, col.x === "44%" ? 0.28 : 0.16, 0.05] }}
-            transition={{ duration: col.dur, delay: col.delay, repeat: Infinity, ease: "linear", repeatDelay: 0.5 }}
-          >
-            {col.chars}
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Floating code tokens */}
-      <div className="absolute inset-0 pointer-events-none select-none">
-        {FLOAT_TOKENS.map((tok, i) => (
-          <motion.span
-            key={i}
-            className={`absolute font-mono ${tok.size} text-[#00ff41] font-bold`}
-            style={{ left: tok.x, top: tok.y, opacity: tok.opacity }}
-            animate={{ y: [-6, 6, -6], opacity: [tok.opacity * 0.6, tok.opacity, tok.opacity * 0.6] }}
-            transition={{ duration: tok.dur, delay: tok.delay, repeat: Infinity, ease: "easeInOut" }}
-          >
-            {tok.text}
-          </motion.span>
-        ))}
-      </div>
-
-      {/* Glowing orb background */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(0,255,65,0.04) 0%, transparent 70%)" }}
-      />
-
-      {/* ── Brand ── */}
-      <div className="relative z-10">
-        <Link href="/">
-          <motion.img
-            src="/qirox-logo-nobg.png" alt="QIROX"
-            className="h-9 w-auto object-contain invert opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-            whileHover={{ scale: 1.03 }}
+      {/* Floating particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {PARTICLES.map(p => (
+          <motion.div key={p.id}
+            className="absolute rounded-full"
+            style={{ left: p.x, top: p.y, width: p.size, height: p.size,
+              background: p.id % 3 === 0 ? "#818cf8" : p.id % 3 === 1 ? "#34d399" : "#60a5fa",
+              opacity: p.opacity, boxShadow: `0 0 ${p.size * 2}px currentColor` }}
+            animate={{ y: [-8, 8, -8], opacity: [p.opacity * 0.5, p.opacity, p.opacity * 0.5] }}
+            transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
           />
-        </Link>
+        ))}
       </div>
 
-      {/* ── Center content ── */}
-      <div className="relative z-10 flex flex-col gap-5">
+      {/* Horizontal glow sweep */}
+      <motion.div className="absolute left-0 right-0 h-px pointer-events-none"
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.4) 40%, rgba(56,189,248,0.4) 60%, transparent 100%)" }}
+        animate={{ top: ["5%", "95%"], opacity: [0, 0.8, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
+      />
 
-        {/* Terminal window */}
-        <motion.div
-          className="rounded-xl border border-[#00ff41]/20 overflow-hidden"
-          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)" }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-        >
-          {/* Terminal top bar */}
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#00ff41]/10" style={{ background: "rgba(0,255,65,0.03)" }}>
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+      {/* ── Top brand ── */}
+      <div className="relative z-10 flex items-center justify-between">
+        <Link href="/">
+          <motion.div className="flex items-center gap-2.5 cursor-pointer group" whileHover={{ scale: 1.02 }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center relative"
+              style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.25), rgba(56,189,248,0.15))", border: "1px solid rgba(99,102,241,0.3)" }}>
+              <img src="/qirox-icon-nobg.png" alt="Q" className="w-6 h-6 object-contain" />
+              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: "radial-gradient(circle at center, rgba(99,102,241,0.2), transparent 70%)" }} />
             </div>
-            <span className="font-mono text-[10px] text-[#00ff41]/40 ml-2">qirox-auth — bash</span>
-            <div className="ml-auto flex items-center gap-1">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ff41] opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00ff41]" />
-              </span>
-              <span className="font-mono text-[9px] text-[#00ff41]/40">LIVE</span>
-            </div>
-          </div>
+            <span className="text-white/80 font-bold text-sm tracking-widest font-mono group-hover:text-white transition-colors">QIROX</span>
+          </motion.div>
+        </Link>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+          style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
+          </span>
+          <span className="text-emerald-400/70 text-[9px] font-mono tracking-wider">ONLINE</span>
+        </div>
+      </div>
 
-          {/* Terminal body */}
-          <div className="p-4 font-mono text-[10px] space-y-0.5 min-h-[140px]">
-            {TERMINAL_LINES.slice(0, terminalStep).map((line, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25 }}
-                style={{ color: line.color }}
-              >
-                {line.text}
-              </motion.div>
-            ))}
-            {terminalStep < TERMINAL_LINES.length && (
-              <motion.span
-                className="inline-block w-1.5 h-3 bg-[#00ff41] ml-0.5 align-middle"
-                animate={{ opacity: [1, 0] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
+      {/* ── Central orb + orbit ── */}
+      <div className="relative z-10 flex flex-col items-center gap-6">
+
+        {/* Orbit system */}
+        <div className="relative w-48 h-48 flex items-center justify-center">
+
+          {/* Outer ring */}
+          <motion.div className="absolute w-44 h-44 rounded-full"
+            style={{ border: "1px solid rgba(99,102,241,0.15)" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            {ORBIT_DOTS.map((dot, i) => (
+              <motion.div key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: dot.size, height: dot.size,
+                  background: dot.color,
+                  boxShadow: `0 0 ${dot.size * 3}px ${dot.color}`,
+                  top: `calc(50% + ${Math.sin((dot.angle * Math.PI) / 180) * dot.r}px - ${dot.size / 2}px)`,
+                  left: `calc(50% + ${Math.cos((dot.angle * Math.PI) / 180) * dot.r}px - ${dot.size / 2}px)`,
+                }}
+                animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.3, 0.8] }}
+                transition={{ duration: 2.5, delay: dot.delay, repeat: Infinity, ease: "easeInOut" }}
               />
-            )}
-          </div>
-        </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Middle ring */}
+          <motion.div className="absolute w-32 h-32 rounded-full"
+            style={{ border: "1px dashed rgba(56,189,248,0.12)" }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+          />
+
+          {/* Inner glow ring */}
+          <motion.div className="absolute w-24 h-24 rounded-full"
+            style={{ border: "1px solid rgba(99,102,241,0.25)", boxShadow: "0 0 20px rgba(99,102,241,0.08) inset" }}
+            animate={{ scale: [1, 1.04, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* Core logo */}
+          <motion.div
+            className="relative w-20 h-20 rounded-2xl flex items-center justify-center z-10"
+            style={{
+              background: "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(56,189,248,0.12) 50%, rgba(99,102,241,0.08) 100%)",
+              border: "1px solid rgba(99,102,241,0.35)",
+              boxShadow: "0 0 40px rgba(99,102,241,0.15), 0 0 80px rgba(99,102,241,0.06), inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
+            animate={{ y: [-4, 4, -4] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            whileHover={{ scale: 1.06 }}
+          >
+            <img src="/qirox-icon-nobg.png" alt="QIROX" className="w-12 h-12 object-contain" />
+            <div className="absolute inset-0 rounded-2xl"
+              style={{ background: "radial-gradient(circle at 35% 30%, rgba(255,255,255,0.07), transparent 60%)" }} />
+          </motion.div>
+        </div>
 
         {/* Headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
+        <motion.div className="text-center"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.7, delay: 0.4 }}
         >
-          <h2 className="text-3xl font-black text-white font-heading leading-tight mb-2">
-            {isRegister
-              ? <><span className="text-[#00ff41]">_build</span><br /><span className="text-white/30">منصتك الرقمية</span></>
-              : <><span className="text-[#00ff41]">_welcome</span><br /><span className="text-white/30">إلى QIROX</span></>
-            }
+          <h2 className="text-2xl font-black leading-tight mb-1.5" style={{ fontFamily: "inherit" }}>
+            {isRegister ? (
+              <>
+                <span style={{ background: "linear-gradient(90deg, #818cf8, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ابنِ نظامك</span>
+                <br />
+                <span className="text-white/25 text-xl">الرقمي الآن</span>
+              </>
+            ) : (
+              <>
+                <span style={{ background: "linear-gradient(90deg, #818cf8, #38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>مرحباً بك</span>
+                <br />
+                <span className="text-white/25 text-xl">في QIROX</span>
+              </>
+            )}
           </h2>
-          <p className="text-white/30 text-xs leading-relaxed max-w-xs font-mono">
-            {isRegister
-              ? "// انضم · ابنِ · انطلق — مئات الأعمال بدأت من هنا"
-              : "// نظامك الرقمي الكامل في مكان واحد"
-            }
+          <p className="text-white/25 text-[11px] font-mono tracking-wide">
+            {isRegister ? "مصنع الأنظمة الرقمية · انضم الآن" : "نظامك الرقمي الكامل في مكان واحد"}
           </p>
         </motion.div>
 
-        {/* Stats — glassmorphism */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Rotating feature card */}
+        <div className="w-full relative h-[70px]">
+          <AnimatePresence mode="wait">
+            {FEATURE_CARDS.map((card, i) => i === activeCard && (
+              <motion.div key={card.title}
+                className="absolute inset-0 rounded-2xl px-4 py-3 flex items-center gap-3"
+                style={{
+                  background: `linear-gradient(135deg, ${card.glow}, rgba(255,255,255,0.02))`,
+                  border: `1px solid ${card.color}25`,
+                  backdropFilter: "blur(12px)",
+                }}
+                initial={{ opacity: 0, x: 20, scale: 0.97 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -20, scale: 0.97 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                  style={{ background: `${card.glow}`, border: `1px solid ${card.color}30` }}>
+                  {card.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/85 text-xs font-bold">{card.title}</p>
+                  <p className="text-[10px] font-mono mt-0.5 truncate" style={{ color: `${card.color}80` }}>{card.sub}</p>
+                </div>
+                <div className="flex gap-1">
+                  {FEATURE_CARDS.map((_, di) => (
+                    <div key={di} className="w-1 h-1 rounded-full transition-all"
+                      style={{ background: di === activeCard ? card.color : "rgba(255,255,255,0.12)", width: di === activeCard ? 12 : 4 }} />
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2 w-full">
           {[
-            { value: "+100", label: "عميل" },
-            { value: "+8",   label: "قطاعات" },
-            { value: "99%",  label: "رضا" },
+            { value: "+100", label: "عميل نشط",  color: "#818cf8" },
+            { value: "+8",   label: "قطاعات",     color: "#34d399" },
+            { value: "99%",  label: "رضا العملاء", color: "#f59e0b" },
           ].map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 10 }}
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7 + i * 0.1 }}
-              className="rounded-xl p-3 text-center border border-[#00ff41]/15 relative overflow-hidden"
-              style={{ background: "rgba(0,255,65,0.04)", backdropFilter: "blur(8px)" }}
+              transition={{ duration: 0.5, delay: 0.6 + i * 0.12 }}
+              className="rounded-xl p-3 text-center relative overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                backdropFilter: "blur(8px)",
+              }}
             >
-              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 50% 0%, #00ff41, transparent 70%)" }} />
-              <p className="text-[#00ff41] font-black text-base font-mono">{s.value}</p>
-              <p className="text-white/30 text-[10px] mt-0.5">{s.label}</p>
+              <div className="absolute top-0 left-0 right-0 h-px"
+                style={{ background: `linear-gradient(90deg, transparent, ${s.color}50, transparent)` }} />
+              <p className="font-black text-sm font-mono mb-0.5" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-white/25 text-[9px] leading-tight">{s.label}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Social login */}
+        {/* Social login buttons */}
         {(googleEnabled || githubEnabled || appleEnabled) && !isEmployeeRegister && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-full">
             {googleEnabled && (
               <button type="button" onClick={handleGoogleLogin} disabled={googleLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 border border-[#00ff41]/15 rounded-xl px-4 py-3 hover:border-[#00ff41]/30 transition-colors cursor-pointer text-right"
-                style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right group"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(66,133,244,0.35)")}
+                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-[1.5px] flex">
-                  <div className="flex-1 bg-[#4285F4]/60" /><div className="flex-1 bg-[#EA4335]/60" />
-                  <div className="flex-1 bg-[#FBBC05]/60" /><div className="flex-1 bg-[#34A853]/60" />
+                <div className="absolute top-0 left-0 right-0 h-px flex overflow-hidden">
+                  <div className="flex-1 bg-[#4285F4]/50" /><div className="flex-1 bg-[#EA4335]/50" />
+                  <div className="flex-1 bg-[#FBBC05]/50" /><div className="flex-1 bg-[#34A853]/50" />
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-                  <SiGoogle className="w-4 h-4 text-[#4285F4]" />
+                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0">
+                  <SiGoogle className="w-3.5 h-3.5 text-[#4285F4]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white/80 text-xs font-bold font-mono">دخول سريع بـ Google</p>
-                  <p className="text-[#00ff41]/40 text-[9px] font-mono">آمن · مشفّر · OAuth 2.0</p>
+                  <p className="text-white/70 text-[11px] font-bold">دخول بـ Google</p>
                 </div>
                 <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#34A853] opacity-60" />
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#34A853] opacity-50" />
                   <span className="relative rounded-full h-1.5 w-1.5 bg-[#34A853]" />
                 </span>
               </button>
             )}
             {githubEnabled && (
               <button type="button" onClick={handleGithubLogin} disabled={githubLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 border border-[#00ff41]/15 rounded-xl px-4 py-3 hover:border-[#00ff41]/30 transition-colors cursor-pointer text-right"
-                style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(139,87,229,0.35)")}
+                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-[#8957e5]/60" />
-                <div className="w-8 h-8 rounded-lg bg-[#161b22] border border-white/10 flex items-center justify-center shrink-0">
-                  <SiGithub className="w-4 h-4 text-white" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8957e5]/50 to-transparent" />
+                <div className="w-7 h-7 rounded-lg bg-[#161b22] border border-white/10 flex items-center justify-center shrink-0">
+                  <SiGithub className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white/80 text-xs font-bold font-mono">دخول سريع بـ GitHub</p>
-                  <p className="text-[#00ff41]/40 text-[9px] font-mono">آمن · مشفّر · OAuth 2.0</p>
+                  <p className="text-white/70 text-[11px] font-bold">دخول بـ GitHub</p>
                 </div>
                 <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#8957e5] opacity-60" />
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-[#8957e5] opacity-50" />
                   <span className="relative rounded-full h-1.5 w-1.5 bg-[#8957e5]" />
                 </span>
               </button>
             )}
             {appleEnabled && (
               <button type="button" onClick={handleAppleLogin} disabled={appleLoading}
-                className="w-full relative overflow-hidden flex items-center gap-3 border border-[#00ff41]/15 rounded-xl px-4 py-3 hover:border-[#00ff41]/30 transition-colors cursor-pointer text-right"
-                style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+                className="w-full relative overflow-hidden flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-right"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                onMouseEnter={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.25)")}
+                onMouseLeave={e => (e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)")}
               >
-                <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-white/20" />
-                <div className="w-8 h-8 rounded-lg bg-black border border-white/10 flex items-center justify-center shrink-0">
-                  <SiApple className="w-4 h-4 text-white" />
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                <div className="w-7 h-7 rounded-lg bg-black border border-white/10 flex items-center justify-center shrink-0">
+                  <SiApple className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white/80 text-xs font-bold font-mono">دخول سريع بـ Apple</p>
-                  <p className="text-[#00ff41]/40 text-[9px] font-mono">آمن · مشفّر · Sign In</p>
+                  <p className="text-white/70 text-[11px] font-bold">دخول بـ Apple</p>
                 </div>
                 <span className="relative flex h-1.5 w-1.5 shrink-0">
-                  <span className="animate-ping absolute h-full w-full rounded-full bg-white opacity-30" />
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-white/40 opacity-50" />
                   <span className="relative rounded-full h-1.5 w-1.5 bg-white/60" />
                 </span>
               </button>
@@ -313,13 +360,20 @@ function AuthTechPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEn
       </div>
 
       {/* ── Bottom signature ── */}
-      <div className="relative z-10 border-t border-[#00ff41]/10 pt-5">
-        <p className="font-mono text-[9px] text-[#00ff41]/25 leading-relaxed">
-          {"// QIROX SYSTEMS — مصنع الأنظمة الرقمية · v2.0.0"}
-        </p>
-        <p className="font-mono text-[9px] text-white/10 mt-0.5">
-          {"enc: AES-256-GCM · tls: 1.3 · session: secure-httponly"}
-        </p>
+      <div className="relative z-10 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[9px] text-white/15 tracking-wider">
+            QIROX SYSTEMS · v2.0.0
+          </p>
+          <div className="flex items-center gap-2">
+            {["AES-256", "TLS 1.3", "2FA"].map(tag => (
+              <span key={tag} className="text-[8px] font-mono px-1.5 py-0.5 rounded"
+                style={{ background: "rgba(99,102,241,0.1)", color: "rgba(129,140,248,0.5)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -810,7 +864,7 @@ export default function Login() {
     <div className="min-h-screen flex bg-white" dir={dir}>
       <PageGraphics variant="auth" />
       {/* Left decorative panel — hidden on mobile */}
-      <AuthTechPanel isRegister={isRegister} isEmployeeRegister={isEmployeeRegister}
+      <AuthPremiumPanel isRegister={isRegister} isEmployeeRegister={isEmployeeRegister}
         googleEnabled={googleEnabled} githubEnabled={githubEnabled} appleEnabled={appleEnabled}
         googleLoading={googleLoading} githubLoading={githubLoading} appleLoading={appleLoading}
         handleGoogleLogin={handleGoogleLogin} handleGithubLogin={handleGithubLogin} handleAppleLogin={handleAppleLogin}
