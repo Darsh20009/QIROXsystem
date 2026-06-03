@@ -6,7 +6,8 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine, ScanFace } from "lucide-react";
+import { FaceRecognitionModal } from "@/components/FaceRecognitionModal";
 import { QrLoginScanner } from "@/components/QrLoginScanner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
@@ -322,6 +323,9 @@ export default function Login() {
   const [appleEnabled, setAppleEnabled] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const appleCallbackHandled = useRef(false);
+
+  const [faceSetupStep, setFaceSetupStep] = useState<{ user: any; redirectTo: string } | null>(null);
+  const [faceLoginOpen, setFaceLoginOpen] = useState(false);
 
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
@@ -720,30 +724,24 @@ export default function Login() {
       const userData = { ...rest, phone: whatsappNumber || undefined, whatsappNumber: whatsappNumber || undefined };
       register(userData, {
         onSuccess: (user: any) => {
-          if (user.email) {
-            if (user.resent) {
-              toast({
-                title: "حسابك موجود — تم إعادة إرسال الرمز",
-                description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
-              });
-            }
-            // Cache user data so verify-email page knows user is authenticated
-            queryClient.setQueryData(["/api/user"], user);
-            // Navigate to standalone email verify page for registration flow
-            setLocation("/verify-email?flow=register");
+          queryClient.setQueryData(["/api/user"], user);
+          if (user.resent) {
+            toast({
+              title: "حسابك موجود — تم إعادة إرسال الرمز",
+              description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
+            });
+          }
+          // For client accounts — show face setup step first
+          const redirectTo = user.email ? "/verify-email?flow=register" : (() => {
+            const r = sessionStorage.getItem("returnAfterLogin");
+            if (r) { sessionStorage.removeItem("returnAfterLogin"); return r; }
+            return user.role === "client" ? "/dashboard" : "/admin";
+          })();
+
+          if (user.role === "client" && !isEmployeeRegister) {
+            setFaceSetupStep({ user, redirectTo });
           } else {
-            queryClient.setQueryData(["/api/user"], user);
-            if (user.role === "client") {
-              const returnUrl = sessionStorage.getItem("returnAfterLogin");
-              if (returnUrl) {
-                sessionStorage.removeItem("returnAfterLogin");
-                setLocation(returnUrl);
-              } else {
-                setLocation("/dashboard");
-              }
-            } else {
-              setLocation("/admin");
-            }
+            setLocation(redirectTo);
           }
         },
       });
@@ -859,6 +857,22 @@ export default function Login() {
             </div>
           </Link>
         </div>
+
+        {/* ── Face modals (fixed, outside AnimatePresence) ── */}
+        <FaceRecognitionModal
+          open={faceLoginOpen}
+          onClose={() => setFaceLoginOpen(false)}
+          mode="authenticate"
+          prefillIdentifier={form.watch("username") || ""}
+        />
+        <FaceRecognitionModal
+          open={!!faceSetupStep}
+          onClose={() => { if (faceSetupStep) { setFaceSetupStep(null); setLocation(faceSetupStep.redirectTo); } }}
+          mode="register"
+          showSkip={true}
+          onSkip={() => { if (faceSetupStep) { const r = faceSetupStep.redirectTo; setFaceSetupStep(null); setLocation(r); } }}
+          onRegistered={() => { if (faceSetupStep) { const r = faceSetupStep.redirectTo; setFaceSetupStep(null); setTimeout(() => setLocation(r), 400); } }}
+        />
 
         <AnimatePresence mode="wait">
         {verifySuccess ? (
@@ -1896,6 +1910,69 @@ export default function Login() {
 
               {!isRegister && (
                 <QuickPinButton prefillIdentifier={form.watch("username") || ""} />
+              )}
+
+              {/* Face Login Button */}
+              {!isRegister && (
+                <motion.button
+                  type="button"
+                  onClick={() => setFaceLoginOpen(true)}
+                  data-testid="btn-face-login"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="w-full mt-2 relative overflow-hidden rounded-xl border border-black/[0.1] flex items-center gap-0 transition-all duration-200 group"
+                  style={{
+                    background: "linear-gradient(135deg, #060811 0%, #0d1e3a 50%, #060f1f 100%)",
+                    boxShadow: "0 2px 12px rgba(34,211,238,0.08)",
+                  }}
+                >
+                  {/* Animated shimmer */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      background: "linear-gradient(105deg, transparent 35%, rgba(34,211,238,0.06) 50%, transparent 65%)",
+                    }}
+                    animate={{ x: ["-120%", "120%"] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  {/* Cyan glow border */}
+                  <div className="absolute inset-0 rounded-xl border border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors pointer-events-none" />
+
+                  {/* Icon column */}
+                  <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-cyan-500/15">
+                    {/* Pulse rings */}
+                    <motion.div
+                      className="absolute inset-3 rounded-full border border-cyan-400/30"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
+                      transition={{ duration: 2.5, repeat: Infinity }}
+                    />
+                    <motion.div
+                      className="absolute inset-4 rounded-full border border-cyan-400/20"
+                      animate={{ scale: [1, 1.6, 1], opacity: [0.3, 0, 0.3] }}
+                      transition={{ duration: 2.5, repeat: Infinity, delay: 0.4 }}
+                    />
+                    <ScanFace className="w-[22px] h-[22px] text-cyan-400 relative z-10" />
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 px-4 py-3.5 text-right">
+                    <p className="text-white font-bold text-[14px] leading-snug">الدخول بالوجه</p>
+                    <p className="text-cyan-400/50 text-[10.5px] font-medium mt-0.5">
+                      بصمة الوجه · آمن · فوري
+                    </p>
+                  </div>
+                  {/* Status dot */}
+                  <div className="px-4">
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-cyan-400"
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  </div>
+                  {/* Cyan bottom bar */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]"
+                    style={{ background: "linear-gradient(90deg, transparent, rgba(34,211,238,0.5), transparent)" }} />
+                </motion.button>
               )}
             </form>
           </Form>
