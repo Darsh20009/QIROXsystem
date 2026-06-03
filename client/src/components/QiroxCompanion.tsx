@@ -7,7 +7,7 @@ import {
   Sparkles, X, Send, Loader2, Minimize2, ArrowUpRight,
   ExternalLink, Eye, QrCode, Globe, CheckCircle2,
   ShoppingBag, Users, BarChart3, Briefcase, Wallet,
-  PhoneCall,
+  PhoneCall, ScanFace, Fingerprint, ShieldCheck, Trash2, Hash,
 } from "lucide-react";
 
 type ToolArtifact = {
@@ -258,6 +258,91 @@ function WebResults({ data, L }: { data: any; L: boolean }) {
   );
 }
 
+function FaceBiometricsList({ data, L }: { data: any; L: boolean }) {
+  const users: any[] = data?.users || [];
+  return (
+    <div className="rounded-xl border border-sky-200 bg-sky-50 overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 bg-sky-100 border-b border-sky-200">
+        <div className="flex items-center gap-1.5">
+          <ScanFace className="w-3.5 h-3.5 text-sky-600" />
+          <span className="text-[11px] font-bold text-sky-800">{L ? `بصمات الوجه المسجّلة (${data?.total || 0})` : `Registered Face IDs (${data?.total || 0})`}</span>
+        </div>
+      </div>
+      <div className="divide-y divide-sky-100 max-h-48 overflow-y-auto">
+        {users.length === 0 ? (
+          <p className="px-3 py-3 text-[10px] text-sky-600 text-center">{L ? "لا توجد بصمات مسجّلة" : "No face IDs registered"}</p>
+        ) : users.map((u: any, idx: number) => (
+          <div key={idx} className="flex items-center justify-between gap-2 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-full bg-sky-200"><ScanFace className="w-3 h-3 text-sky-700" /></div>
+              <div>
+                <p className="text-[11px] font-semibold text-sky-900 leading-tight">{u.name}</p>
+                <p className="text-[9px] text-sky-500 leading-tight">{u.email} · {u.role}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[9px] bg-sky-200 text-sky-700 px-1.5 py-0.5 rounded-full font-bold">{u.anglesCount} {L ? "زوايا" : "angles"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FaceBiometricUser({ data, L }: { data: any; L: boolean }) {
+  return (
+    <div className={`rounded-xl border px-3 py-3 ${data?.registered ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <ScanFace className={`w-4 h-4 ${data?.registered ? "text-emerald-600" : "text-red-500"}`} />
+        <span className={`text-[11px] font-bold ${data?.registered ? "text-emerald-800" : "text-red-700"}`}>
+          {data?.registered ? (L ? "بصمة الوجه مسجّلة ✓" : "Face ID registered ✓") : (L ? "لم تُسجَّل بصمة الوجه" : "No face ID registered")}
+        </span>
+      </div>
+      {data?.user && <p className="text-[10px] text-gray-600">{data.user.name} · {data.user.email}</p>}
+      {data?.anglesCount > 0 && <p className="text-[10px] text-emerald-600 mt-0.5">{L ? `${data.anglesCount} زوايا محفوظة` : `${data.anglesCount} angles stored`}</p>}
+    </div>
+  );
+}
+
+function FaceBiometricDeleted({ data, L }: { data: any; L: boolean }) {
+  return (
+    <div className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-3 flex items-center gap-2">
+      <Trash2 className="w-4 h-4 text-orange-600 flex-shrink-0" />
+      <div>
+        <p className="text-[11px] font-bold text-orange-800">{L ? "تم حذف بصمة الوجه ✓" : "Face ID deleted ✓"}</p>
+        <p className="text-[10px] text-orange-600">{data?.userName}</p>
+      </div>
+    </div>
+  );
+}
+
+function BiometricStats({ data, L }: { data: any; L: boolean }) {
+  const items = [
+    { icon: <ScanFace className="w-4 h-4 text-sky-600" />, label: L ? "بصمة الوجه" : "Face ID", value: data?.faceRecognition || 0, color: "sky" },
+    { icon: <Fingerprint className="w-4 h-4 text-violet-600" />, label: L ? "بصمة الإصبع" : "Fingerprint", value: data?.webAuthn || 0, color: "violet" },
+    { icon: <Hash className="w-4 h-4 text-orange-600" />, label: L ? "الرمز السريع" : "Quick PIN", value: data?.quickPin || 0, color: "orange" },
+  ];
+  return (
+    <div className="rounded-xl border border-black/10 bg-white overflow-hidden">
+      <div className="flex items-center gap-1.5 px-3 py-2 bg-black/[0.04] border-b border-black/10">
+        <ShieldCheck className="w-3.5 h-3.5 text-black/60" />
+        <span className="text-[10px] font-bold text-black/60">{L ? "إحصائيات البيومترية" : "Biometric Stats"}</span>
+        <span className="text-[9px] text-black/40 mr-auto">{L ? `${data?.totalUsers || 0} مستخدم` : `${data?.totalUsers || 0} users`}</span>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-black/10">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex flex-col items-center gap-1 py-3">
+            {item.icon}
+            <span className="text-lg font-black text-black/80">{item.value}</span>
+            <span className="text-[9px] text-black/50 text-center leading-tight">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ArtifactRenderer({ artifact, i, k, L, setLocation }: { artifact: ToolArtifact; i: number; k: number; L: boolean; setLocation: (p: string) => void }) {
   const { displayType: dt, data, name } = artifact;
 
@@ -345,6 +430,10 @@ function ArtifactRenderer({ artifact, i, k, L, setLocation }: { artifact: ToolAr
   if (dt === "employees_table") return <EmployeesTable data={data} L={L} />;
   if (dt === "consultation_submitted") return <ConsultationSubmitted data={data} L={L} />;
   if (dt === "web_results") return <WebResults data={data} L={L} />;
+  if (dt === "face_biometrics_list") return <FaceBiometricsList data={data} L={L} />;
+  if (dt === "face_biometric_user") return <FaceBiometricUser data={data} L={L} />;
+  if (dt === "face_biometric_deleted") return <FaceBiometricDeleted data={data} L={L} />;
+  if (dt === "biometric_stats") return <BiometricStats data={data} L={L} />;
 
   return null;
 }

@@ -487,6 +487,41 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_face_biometrics",
+      description: "عرض قائمة المستخدمين المسجّلة بصمات وجوههم في النظام. للمدراء فقط. يُظهر عدد المستخدمين المسجّلين وتفاصيلهم.",
+      parameters: {
+        type: "object",
+        properties: {
+          userId: { type: "string", description: "معرّف مستخدم معيّن لعرض حالة بصمته (اختياري — بدونه يعرض الجميع)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_face_biometric",
+      description: "حذف بصمة وجه مستخدم من النظام. للمدراء فقط. يُستخدم عند طلب إزالة بصمة الوجه لمستخدم معيّن.",
+      parameters: {
+        type: "object",
+        required: ["targetUserId"],
+        properties: {
+          targetUserId: { type: "string", description: "معرّف المستخدم الذي سيُحذف سجل بصمة وجهه" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_biometric_stats",
+      description: "إحصائيات نظام المصادقة البيومترية: عدد مسجّلي بصمة الوجه، بصمة الإصبع (WebAuthn)، والرمز السريع. للمدراء.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
 ];
 
 /* ─── Tool Executor ─── */
@@ -1113,6 +1148,92 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
       };
     }
 
+    /* ── get_face_biometrics ── */
+    if (name === "get_face_biometrics") {
+      if (!["admin", "manager"].includes(userRole || "")) return { success: false, error: "هذه الأداة للمدراء فقط" };
+      const { FaceDescriptorModel, UserModel } = await import("./models");
+      if (args.userId) {
+        const profile = await FaceDescriptorModel.findOne({ userId: args.userId });
+        const user = await UserModel.findById(args.userId).select("fullName username email role");
+        return {
+          success: true,
+          data: {
+            registered: !!profile,
+            user: user ? { id: String(user._id), name: user.fullName || user.username, email: user.email, role: user.role } : null,
+            anglesCount: profile?.descriptors?.length || 0,
+            updatedAt: profile?.updatedAt || null,
+          },
+          display: { type: "face_biometric_user" },
+        };
+      } else {
+        const allProfiles = await FaceDescriptorModel.find({}).select("userId updatedAt descriptors");
+        const userIds = allProfiles.map(p => p.userId);
+        const users = await UserModel.find({ _id: { $in: userIds } }).select("fullName username email role");
+        const userMap: Record<string, any> = {};
+        users.forEach(u => { userMap[String(u._id)] = u; });
+        const list = allProfiles.map(p => {
+          const u = userMap[p.userId];
+          return {
+            userId: p.userId,
+            name: u?.fullName || u?.username || "مجهول",
+            email: u?.email || "",
+            role: u?.role || "",
+            anglesCount: p.descriptors?.length || 0,
+            updatedAt: p.updatedAt,
+          };
+        });
+        return {
+          success: true,
+          data: { total: list.length, users: list },
+          display: { type: "face_biometrics_list" },
+        };
+      }
+    }
+
+    /* ── delete_face_biometric ── */
+    if (name === "delete_face_biometric") {
+      if (!["admin", "manager"].includes(userRole || "")) return { success: false, error: "هذه الأداة للمدراء فقط" };
+      const { FaceDescriptorModel, UserModel } = await import("./models");
+      const profile = await FaceDescriptorModel.findOne({ userId: args.targetUserId });
+      if (!profile) return { success: false, error: "لا يوجد سجل بصمة وجه لهذا المستخدم" };
+      await FaceDescriptorModel.deleteOne({ userId: args.targetUserId });
+      const user = await UserModel.findById(args.targetUserId).select("fullName username email");
+      return {
+        success: true,
+        data: {
+          deleted: true,
+          userName: user?.fullName || user?.username || args.targetUserId,
+        },
+        display: { type: "face_biometric_deleted" },
+      };
+    }
+
+    /* ── get_biometric_stats ── */
+    if (name === "get_biometric_stats") {
+      if (!["admin", "manager"].includes(userRole || "")) return { success: false, error: "هذه الأداة للمدراء فقط" };
+      const { FaceDescriptorModel, UserModel } = await import("./models");
+      const [faceCount, totalUsers, usersWithPin] = await Promise.all([
+        FaceDescriptorModel.countDocuments(),
+        UserModel.countDocuments({ role: { $ne: "admin" } }),
+        UserModel.countDocuments({ quickPin: { $exists: true, $ne: null } }),
+      ]);
+      let webauthnCount = 0;
+      try {
+        const { PasskeyModel } = await import("./models");
+        webauthnCount = await (PasskeyModel as any).countDocuments();
+      } catch {}
+      return {
+        success: true,
+        data: {
+          faceRecognition: faceCount,
+          webAuthn: webauthnCount,
+          quickPin: usersWithPin,
+          totalUsers,
+        },
+        display: { type: "biometric_stats" },
+      };
+    }
+
     return { success: false, error: `أداة غير معروفة: ${name}` };
   } catch (err: any) {
     console.error(`[AI Tool Error] ${name}:`, err.message);
@@ -1172,6 +1293,10 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
 - 🔳 **توليد رمز QR** من أي رابط أو نص (أداة generate_qr_code). يُرجع صورة جاهزة. استخدمها لمشاركة روابط الفواتير، عروض الأسعار، روابط الدفع، أو أي رابط. **بعد إنشاء عرض سعر أو فاتورة، اقترح فوراً توليد QR لرابط الطباعة لتسهيل المشاركة.**
 - 🗑️ **الإلغاء**: إلغاء الطلبات المعلّقة (للعملاء فقط)
 - 📅 **للزوار بدون حساب**: إرسال طلب استشارة أو تواصل باسم الزائر ورقمه مباشرةً (أداة submit_consultation_request)
+- 👤 **إدارة بصمة الوجه** (للمدراء فقط):
+  - **get_face_biometrics**: عرض كل المستخدمين المسجّلة بصماتهم أو حالة بصمة مستخدم معيّن
+  - **delete_face_biometric**: حذف بصمة وجه مستخدم من النظام (targetUserId مطلوب)
+  - **get_biometric_stats**: إحصائيات شاملة لنظام المصادقة البيومترية (وجه + إصبع + PIN)
 
 == تعليمات لمعالجة طلبات الاستشارة من الزوار ==
 - إذا طلب زائر (guest) التواصل أو الاستشارة أو أراد أن "يتواصل الفريق معه"، لا تقل له سجّل دخول!
