@@ -1,0 +1,29 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+9:14:06 AM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 20 cron jobs
+[WalletMigration] Synced walletBalance for 1 users
+9:14:17 AM [express] GET /api/user 304 in 66ms :: {"address":"","city":"","taxNumber":"","organizationName":"","commercialRegistration":"","nationalAddress":"","renewalReminderSentAt":null,"isProjectLive":false,"projectLi…
+9:14:17 AM [express] GET /api/public/settings 304 in 139ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+9:14:20 AM [express] GET /api/auth/apple/status 304 in 63ms :: {"enabled":false}
+9:14:20 AM [express] GET /api/auth/google/status 304 in 64ms :: {"enabled":false}
+9:14:20 AM [express] GET /api/app-downloads 304 in 129ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+9:14:20 AM [express] GET /api/templates 304 in 133ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+9:14:20 AM [express] GET /api/reviews/public 304 in 129ms :: []
+9:14:20 AM [express] GET /api/partners 304 in 195ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+9:14:20 AM [express] GET /api/pricing 304 in 214ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":5299,"currency":"SAR","billingCycle":"lifetim…
