@@ -20,7 +20,7 @@ const openai = new Proxy({} as OpenAI, {
   },
 });
 
-const AI_MODEL = "moonshot-v1-32k";
+const AI_MODEL = "kimi-k2-0905-preview";
 
 console.log(`[AI] Provider: Kimi k2 (Moonshot AI)`);;
 
