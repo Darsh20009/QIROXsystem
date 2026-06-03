@@ -1094,7 +1094,7 @@ export function registerQMeetRoutes(app: Express) {
         apiKey: process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
-      const aiModel = "kimi-k2-0905-preview";
+      const aiModel = "moonshot-v1-32k";
       const m = meeting as any;
       const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
 
@@ -1144,7 +1144,7 @@ export function registerQMeetRoutes(app: Express) {
         apiKey: process.env.OPENAI_API_KEY || "",
         baseURL: "https://api.moonshot.ai/v1",
       });
-      const aiModel2 = "kimi-k2-0905-preview";
+      const aiModel2 = "moonshot-v1-32k";
 
       const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");
       const captionText = captions.map((c: any) => `${c.name}: ${c.text}`).join("\n");

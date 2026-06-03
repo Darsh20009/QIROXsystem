@@ -216,7 +216,7 @@ async function getOpenAIClient() {
       apiKey: process.env.OPENAI_API_KEY || "",
       baseURL: "https://api.moonshot.ai/v1",
     }),
-    model: "kimi-k2-0905-preview",
+    model: "moonshot-v1-32k",
   };
 }
 
