@@ -774,7 +774,9 @@ export async function registerRoutes(
     try {
       const sanitized: Record<string, any> = {};
       for (const key of userFieldsWhitelist) {
-        if (req.body[key] !== undefined && req.body[key] !== "") {
+        if (key === "phone" && req.body.phone !== undefined) {
+          sanitized.phone = String(req.body.phone).trim();
+        } else if (req.body[key] !== undefined && req.body[key] !== "") {
           sanitized[key] = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
         }
       }

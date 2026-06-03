@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
-  Loader2, Users, Mail, Phone, Calendar, Search, Trash2,
+  Loader2, Users, User as UserIcon, Mail, Phone, Calendar, Search, Trash2,
   AlertTriangle, MessageCircle, X, PhoneOff, CheckCircle2,
   Clock, ChevronDown, ChevronUp, Send, Download, Building2, MapPin, Hash, Edit2, UserCheck,
 } from "lucide-react";
@@ -52,7 +52,7 @@ export default function Customers() {
   const [salesFilter, setSalesFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [editTarget, setEditTarget] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ address: "", city: "", taxNumber: "", organizationName: "", commercialRegistration: "", nationalAddress: "" });
+  const [editForm, setEditForm] = useState({ fullName: "", email: "", phone: "", address: "", city: "", taxNumber: "", organizationName: "", commercialRegistration: "", nationalAddress: "" });
   const [assignTarget, setAssignTarget] = useState<User | null>(null);
   const [assignSalesRepId, setAssignSalesRepId] = useState("");
 
@@ -450,6 +450,9 @@ export default function Customers() {
                           onClick={() => {
                             setEditTarget(customer);
                             setEditForm({
+                              fullName: customer.fullName || "",
+                              email: customer.email || "",
+                              phone: (customer as any).phone || "",
                               address: (customer as any).address || "",
                               city: (customer as any).city || "",
                               taxNumber: (customer as any).taxNumber || "",
@@ -500,69 +503,133 @@ export default function Customers() {
 
       {/* ── Edit client data dialog ── */}
       <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
-        <DialogContent dir={dir} className="max-w-md">
+        <DialogContent dir={dir} className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              {L ? "بيانات الفوترة والمؤسسة" : "Billing & Organization Data"}
+              <Edit2 className="w-4 h-4" />
+              {L ? "تعديل بيانات العميل" : "Edit Customer Data"}
             </DialogTitle>
             <DialogDescription>
-              {editTarget?.fullName} — {L ? "هذه البيانات تُستخدم في الفواتير وعروض الأسعار" : "Used in invoices & quotations"}
+              {L ? "يمكنك تعديل المعلومات الأساسية وبيانات الفوترة" : "Edit basic info and billing data"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                  <Building2 className="w-3 h-3" /> {L ? "اسم المؤسسة" : "Organization"}
-                </Label>
-                <Input value={editForm.organizationName} onChange={e => setEditForm(p => ({ ...p, organizationName: e.target.value }))}
-                  placeholder={L ? "اسم الشركة أو المنشأة" : "Company name"}
-                  className="h-9 text-sm border-foreground/10" data-testid="input-org-name" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                  <Hash className="w-3 h-3" /> {L ? "الرقم الضريبي" : "Tax Number"}
-                </Label>
-                <Input value={editForm.taxNumber} onChange={e => setEditForm(p => ({ ...p, taxNumber: e.target.value }))}
-                  placeholder="3XXXXXXXXXX3" dir="ltr"
-                  className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-tax-number" />
+          <div className="space-y-4 pt-2">
+
+            {/* ── Basic Info Section ── */}
+            <div>
+              <p className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-2.5">
+                {L ? "المعلومات الأساسية" : "Basic Info"}
+              </p>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <UserIcon className="w-3 h-3" /> {L ? "الاسم الكامل" : "Full Name"}
+                    </Label>
+                    <Input value={editForm.fullName} onChange={e => setEditForm(p => ({ ...p, fullName: e.target.value }))}
+                      placeholder={L ? "اسم العميل" : "Client name"}
+                      className="h-9 text-sm border-foreground/10" data-testid="input-fullname" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <Mail className="w-3 h-3" /> {L ? "البريد الإلكتروني" : "Email"}
+                    </Label>
+                    <Input value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
+                      placeholder="name@example.com" dir="ltr"
+                      className="h-9 text-sm border-foreground/10" data-testid="input-email" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> {L ? "رقم الجوال" : "Phone Number"}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="+966XXXXXXXXX" dir="ltr"
+                      className="h-9 text-sm border-foreground/10 flex-1" data-testid="input-phone-edit" />
+                    {editForm.phone && (
+                      <button
+                        onClick={() => setEditForm(p => ({ ...p, phone: "" }))}
+                        className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 dark:border-red-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
+                        title={L ? "حذف رقم الجوال" : "Delete phone number"}
+                        data-testid="button-clear-phone"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {!editForm.phone && (editTarget as any)?.phone && (
+                    <p className="text-[11px] text-orange-500 font-medium">
+                      {L ? "⚠️ سيتم حذف رقم الجوال عند الحفظ" : "⚠️ Phone will be deleted on save"}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                <Hash className="w-3 h-3" /> {L ? "السجل التجاري" : "Commercial Registration"}
-              </Label>
-              <Input value={editForm.commercialRegistration} onChange={e => setEditForm(p => ({ ...p, commercialRegistration: e.target.value }))}
-                placeholder="1XXXXXXXXX" dir="ltr"
-                className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-commercial-reg" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {L ? "العنوان الوطني" : "National Address"}
-              </Label>
-              <Input value={editForm.nationalAddress} onChange={e => setEditForm(p => ({ ...p, nationalAddress: e.target.value }))}
-                placeholder={L ? "مثال: RHHJ3894 أو الرياض، حي النخيل، شارع..." : "e.g. RHHJ3894"}
-                className="h-9 text-sm border-foreground/10" data-testid="input-national-address" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {L ? "العنوان" : "Address"}
-                </Label>
-                <Input value={editForm.address} onChange={e => setEditForm(p => ({ ...p, address: e.target.value }))}
-                  placeholder={L ? "الشارع والحي" : "Street & district"}
-                  className="h-9 text-sm border-foreground/10" data-testid="input-address" />
+
+            <div className="border-t border-foreground/[0.06]" />
+
+            {/* ── Billing & Organization Section ── */}
+            <div>
+              <p className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-2.5">
+                {L ? "بيانات الفوترة والمؤسسة" : "Billing & Organization"}
+              </p>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <Building2 className="w-3 h-3" /> {L ? "اسم المؤسسة" : "Organization"}
+                    </Label>
+                    <Input value={editForm.organizationName} onChange={e => setEditForm(p => ({ ...p, organizationName: e.target.value }))}
+                      placeholder={L ? "اسم الشركة أو المنشأة" : "Company name"}
+                      className="h-9 text-sm border-foreground/10" data-testid="input-org-name" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <Hash className="w-3 h-3" /> {L ? "الرقم الضريبي" : "Tax Number"}
+                    </Label>
+                    <Input value={editForm.taxNumber} onChange={e => setEditForm(p => ({ ...p, taxNumber: e.target.value }))}
+                      placeholder="3XXXXXXXXXX3" dir="ltr"
+                      className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-tax-number" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                    <Hash className="w-3 h-3" /> {L ? "السجل التجاري" : "Commercial Registration"}
+                  </Label>
+                  <Input value={editForm.commercialRegistration} onChange={e => setEditForm(p => ({ ...p, commercialRegistration: e.target.value }))}
+                    placeholder="1XXXXXXXXX" dir="ltr"
+                    className="h-9 text-sm border-foreground/10 font-mono" data-testid="input-commercial-reg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {L ? "العنوان الوطني" : "National Address"}
+                  </Label>
+                  <Input value={editForm.nationalAddress} onChange={e => setEditForm(p => ({ ...p, nationalAddress: e.target.value }))}
+                    placeholder={L ? "مثال: RHHJ3894 أو الرياض، حي النخيل، شارع..." : "e.g. RHHJ3894"}
+                    className="h-9 text-sm border-foreground/10" data-testid="input-national-address" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {L ? "العنوان" : "Address"}
+                    </Label>
+                    <Input value={editForm.address} onChange={e => setEditForm(p => ({ ...p, address: e.target.value }))}
+                      placeholder={L ? "الشارع والحي" : "Street & district"}
+                      className="h-9 text-sm border-foreground/10" data-testid="input-address" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {L ? "المدينة" : "City"}
+                    </Label>
+                    <Input value={editForm.city} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))}
+                      placeholder={L ? "الرياض، جدة..." : "Riyadh, Jeddah..."}
+                      className="h-9 text-sm border-foreground/10" data-testid="input-city" />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground/60 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {L ? "المدينة" : "City"}
-                </Label>
-                <Input value={editForm.city} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))}
-                  placeholder={L ? "الرياض، جدة..." : "Riyadh, Jeddah..."}
-                  className="h-9 text-sm border-foreground/10" data-testid="input-city" />
-              </div>
             </div>
+
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" onClick={() => setEditTarget(null)} className="h-9">{L ? "إلغاء" : "Cancel"}</Button>
               <Button
