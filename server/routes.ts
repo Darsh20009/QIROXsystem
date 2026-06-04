@@ -13209,7 +13209,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
           });
         }
         return res.json({ method: "telegram", expiresAt, phone: normPhone, sent: true });
-      } else {
+      } else if (method === "call") {
         const { NotificationModel, UserModel: UModel } = await import("./models");
         const clientName = dbUser?.fullName || dbUser?.username || "عميل";
         await (NotificationModel as any).create({
