@@ -13158,7 +13158,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const me = req.user as any;
       const { phone, method } = req.body;
       if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
-      if (!["telegram", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
+      if (!["telegram", "call", "whatsapp"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
       const normPhone = normalisePhone(String(phone).trim());
 
       const dbUser = await (UserModel as any).findById(me._id || me.id);
@@ -13245,6 +13245,19 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
           } catch {}
         })();
         return res.json({ method: "call", expiresAt, phone: normPhone });
+      } else if (method === "whatsapp") {
+        const clientName = dbUser?.fullName || dbUser?.username || "عميل";
+        const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
+        const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
+        const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
+        const { sendDirectEmail } = await import("./email");
+        await sendDirectEmail(
+          "youssefd.business@gmail.com",
+          "Youssef",
+          `📱 توثيق جوال — ${clientName} (${normPhone})`,
+          `طلب توثيق جوال جديد:\n\nالعميل: ${clientName}\nالجوال: ${normPhone}\nرمز OTP: ${otp}\n\nافتح واتساب لإرسال الرمز:\n${waLink}\n\nالرمز صالح لمدة 15 دقيقة حتى: ${expiresAt.toLocaleString("ar-SA")}`
+        ).catch(() => {});
+        return res.json({ method: "whatsapp", expiresAt, phone: normPhone, sent: true });
       }
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -13261,7 +13274,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         userId: me._id || me.id,
         otp: String(otp).trim(),
         verified: false,
-        method: "telegram",
+        method: { $in: ["telegram", "whatsapp"] },
         expiresAt: { $gt: new Date() },
       });
       if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });

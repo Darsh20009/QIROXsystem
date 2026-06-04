@@ -105,6 +105,8 @@ export default function EmployeeNewOrder() {
   const [password, setPassword] = useState(generatePassword());
   const [businessType, setBusinessType] = useState("");
   const [country, setCountry] = useState("SA");
+  const currency = country === "SA" ? "SAR" : country === "EG" ? "EGP" : "USD";
+  const currencySymbol = currency === "SAR" ? "ر.س" : currency === "EGP" ? "ج.م" : "$";
 
   /* ── Legal / billing fields ── */
   const [organizationName, setOrganizationName] = useState("");
@@ -214,10 +216,10 @@ export default function EmployeeNewOrder() {
       if (!fullName || !email || !username || !password) {
         toast({ title: L ? "أكمل بيانات العميل أولاً" : "Complete client info first", variant: "destructive" }); return;
       }
-      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, organizationName, taxNumber, commercialRegistration, nationalAddress, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
+      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, currency, organizationName, taxNumber, commercialRegistration, nationalAddress, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
-      existingClientMutation.mutate({ clientId: selectedClient.id, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer" });
+      existingClientMutation.mutate({ clientId: selectedClient.id, currency, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer" });
     }
   }
 
@@ -792,8 +794,8 @@ export default function EmployeeNewOrder() {
                     <div className="space-y-3">
                       <div>
                         <label className="text-xs font-semibold text-black/50 mb-1.5 flex items-center gap-1">
-                          {L ? "المبلغ الإجمالي" : "Total Amount"} (<SARIcon size={9} className="opacity-60" />)
-                          {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30 flex items-center gap-0.5">{L ? "محسوب تلقائياً:" : "Auto-calculated:"} {autoTotal.toLocaleString()} <SARIcon size={8} className="opacity-40" /></span>}
+                          {L ? "المبلغ الإجمالي" : "Total Amount"} (<span className="font-mono text-[10px]">{currency}</span>)
+                          {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30 flex items-center gap-0.5">{L ? "محسوب تلقائياً:" : "Auto-calculated:"} {autoTotal.toLocaleString()} <span className="text-[10px] font-mono">{currencySymbol}</span></span>}
                         </label>
                         <div className="relative">
                           <DollarSign className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
@@ -836,12 +838,12 @@ export default function EmployeeNewOrder() {
                         {discount > 0 && base > 0 && (
                           <div className="mt-2 flex items-center justify-between bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2.5">
                             <div className="text-xs text-black dark:text-white">
-                              <span className="font-semibold inline-flex items-center gap-0.5">{base.toLocaleString()} <SARIcon size={8} className="opacity-60" /></span>
+                              <span className="font-semibold inline-flex items-center gap-0.5">{base.toLocaleString()} <span className="text-[10px] font-mono opacity-60">{currencySymbol}</span></span>
                               <span className="mx-1.5 text-black/70 dark:text-white/70">−</span>
-                              <span className="font-semibold text-black dark:text-white inline-flex items-center gap-0.5">{discount.toLocaleString()} <SARIcon size={8} className="opacity-60" /> {L ? "خصم" : "off"}</span>
+                              <span className="font-semibold text-black dark:text-white inline-flex items-center gap-0.5">{discount.toLocaleString()} <span className="text-[10px] font-mono opacity-60">{currencySymbol}</span> {L ? "خصم" : "off"}</span>
                             </div>
                             <div className="text-sm font-black text-black dark:text-white flex items-center gap-1">
-                              = {finalTotal.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                              = {finalTotal.toLocaleString()} <span className="text-[11px] font-mono opacity-60">{currencySymbol}</span>
                             </div>
                           </div>
                         )}

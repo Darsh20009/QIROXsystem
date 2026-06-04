@@ -522,10 +522,24 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       parameters: { type: "object", properties: {} },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "escalate_to_human",
+      description: "تصعيد المحادثة إلى موظف بشري: يُرسَل ملخص المحادثة بالكامل عبر إيميل لفريق الدعم. استخدمها عندما يطلب المستخدم التحدث مع إنسان أو موظف، أو عندما لا تستطيع الإجابة، أو عند الشكاوى المهمة.",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: { type: "string", description: "سبب التصعيد — ملخص مشكلة المستخدم بكلماتك" },
+          urgency: { type: "string", enum: ["normal", "high", "critical"], description: "درجة الإلحاح (normal/high/critical)" },
+        },
+      },
+    },
+  },
 ];
 
 /* ─── Tool Executor ─── */
-async function executeTool(name: string, args: any, userId?: string, userRole?: string): Promise<{ success: boolean; data?: any; error?: string; display?: any }> {
+async function executeTool(name: string, args: any, userId?: string, userRole?: string, session?: Session): Promise<{ success: boolean; data?: any; error?: string; display?: any }> {
   try {
     const {
       OrderModel, UserModel, ProjectModel, TaskModel,
@@ -1234,6 +1248,30 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
       };
     }
 
+    /* ── escalate_to_human ── */
+    if (name === "escalate_to_human") {
+      const reason = String(args.reason || "لم يُحدَّد السبب").trim();
+      const urgency: string = ["normal", "high", "critical"].includes(args.urgency) ? args.urgency : "normal";
+      const urgencyLabel: Record<string, string> = { normal: "عادية", high: "عالية", critical: "حرجة" };
+      const userName2 = session?.userName || userRole || userId || "مجهول";
+      const historyText = (session?.history || [])
+        .slice(-20)
+        .map((m: any) => `[${m.role === "user" ? "المستخدم" : "الذكاء الاصطناعي"}]: ${m.content}`)
+        .join("\n\n");
+      const { sendDirectEmail } = await import("./email");
+      await sendDirectEmail(
+        "youssefd.business@gmail.com",
+        "Youssef",
+        `🚨 تصعيد محادثة — ${urgencyLabel[urgency]} — ${userName2}`,
+        `تصعيد محادثة من الذكاء الاصطناعي\n\nالمستخدم: ${userName2}\nدور المستخدم: ${userRole || "guest"}\nدرجة الإلحاح: ${urgencyLabel[urgency]}\nالسبب: ${reason}\n\n── سجل المحادثة (آخر 20 رسالة) ──\n\n${historyText}`
+      ).catch(() => {});
+      return {
+        success: true,
+        data: { escalated: true, urgency, reason },
+        display: { type: "action_success" },
+      };
+    }
+
     return { success: false, error: `أداة غير معروفة: ${name}` };
   } catch (err: any) {
     console.error(`[AI Tool Error] ${name}:`, err.message);
@@ -1297,6 +1335,7 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
   - **get_face_biometrics**: عرض كل المستخدمين المسجّلة بصماتهم أو حالة بصمة مستخدم معيّن
   - **delete_face_biometric**: حذف بصمة وجه مستخدم من النظام (targetUserId مطلوب)
   - **get_biometric_stats**: إحصائيات شاملة لنظام المصادقة البيومترية (وجه + إصبع + PIN)
+- 🆘 **التصعيد لموظف بشري** (escalate_to_human): استخدمها فوراً عندما يقول المستخدم "أريد التحدث مع إنسان/موظف حقيقي"، أو يشتكي شكوى مهمة، أو أنت عاجز عن حل مشكلته. ترسل إيميل لفريق الدعم مع كامل سجل المحادثة. أخبر المستخدم أن الفريق سيتواصل معه قريباً.
 
 == تعليمات لمعالجة طلبات الاستشارة من الزوار ==
 - إذا طلب زائر (guest) التواصل أو الاستشارة أو أراد أن "يتواصل الفريق معه"، لا تقل له سجّل دخول!
@@ -1363,7 +1402,7 @@ async function handleChat(req: any, res: any) {
       const executionResults = await Promise.all(
         choice.message.tool_calls.map(async (tc) => {
           const args = JSON.parse(tc.function.arguments || "{}");
-          const result = await executeTool(tc.function.name, args, userId, userRole);
+          const result = await executeTool(tc.function.name, args, userId, userRole, session);
           toolResults.push({ name: tc.function.name, result });
           return {
             role: "tool" as const,
