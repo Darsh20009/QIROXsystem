@@ -654,9 +654,19 @@ export async function registerRoutes(
         }
       }
 
-      // Check if phone already exists
-      const incomingPhone = req.body.phone ? String(req.body.phone).trim() : "";
+      // Check if phone already exists (normalise before checking to avoid duplicates with different formats)
+      const rawPhone = req.body.phone ? String(req.body.phone).trim() : "";
+      let incomingPhone = rawPhone;
       if (incomingPhone) {
+        // Inline normalise: 05xxx → +96605xxx, 5xxxxxxxx → +9665xxxxxxxx
+        let p = incomingPhone.replace(/[\s\-().]/g, "");
+        if (p.startsWith("00")) p = "+" + p.slice(2);
+        if (!p.startsWith("+")) {
+          if (p.startsWith("05")) p = "+966" + p.slice(1);
+          else if (p.startsWith("5") && p.length === 9) p = "+966" + p;
+          else p = "+" + p;
+        }
+        incomingPhone = p;
         const { UserModel: UModel } = await import("./models");
         const existingByPhone = await UModel.findOne({ phone: incomingPhone });
         if (existingByPhone) {
@@ -5329,7 +5339,7 @@ export async function registerRoutes(
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       await OtpModel.create({ email: cleanUserEmail, code, expiresAt, type: "email_verify" });
-      await sendEmailVerificationEmail(user.email, user.fullName || user.username, code);
+      sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(e => console.error("[Email] resend-verification failed:", e));
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });

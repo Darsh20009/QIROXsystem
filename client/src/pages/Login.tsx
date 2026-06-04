@@ -730,6 +730,9 @@ export default function Login() {
               title: "حسابك موجود — تم إعادة إرسال الرمز",
               description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
             });
+            // Skip face setup for resent accounts — go straight to email verification
+            setLocation("/verify-email?flow=register");
+            return;
           }
           // For client accounts — show face setup step first
           const redirectTo = user.email ? "/verify-email?flow=register" : (() => {
