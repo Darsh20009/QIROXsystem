@@ -9,6 +9,49 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useQuery } from "@tanstack/react-query";
 import RegisterModal from "@/components/RegisterModal";
+import { useCurrency, getCountryCode } from "@/hooks/use-currency";
+
+const COUNTRY_AR: Record<string, string> = {
+  SA: "السعودية", AE: "الإمارات", KW: "الكويت", QA: "قطر", BH: "البحرين",
+  OM: "عُمان", EG: "مصر", JO: "الأردن", IQ: "العراق", LY: "ليبيا",
+  SD: "السودان", TN: "تونس", DZ: "الجزائر", MA: "المغرب",
+  US: "الولايات المتحدة", GB: "المملكة المتحدة", DE: "ألمانيا", FR: "فرنسا", TR: "تركيا",
+  YE: "اليمن", SY: "سوريا", LB: "لبنان",
+};
+const COUNTRY_EN: Record<string, string> = {
+  SA: "Saudi Arabia", AE: "UAE", KW: "Kuwait", QA: "Qatar", BH: "Bahrain",
+  OM: "Oman", EG: "Egypt", JO: "Jordan", IQ: "Iraq", LY: "Libya",
+  SD: "Sudan", TN: "Tunisia", DZ: "Algeria", MA: "Morocco",
+  US: "United States", GB: "United Kingdom", DE: "Germany", FR: "France", TR: "Turkey",
+  YE: "Yemen", SY: "Syria", LB: "Lebanon",
+};
+const SEO_MAP: Record<string, { ar: { title: string; desc: string; kw: string }; en: { title: string; desc: string; kw: string } }> = {
+  SA: {
+    ar: { title: "QIROX | مصنع الأنظمة الرقمية — السعودية", desc: "قيروكس — شريكك التقني في السعودية. نبني مواقع وتطبيقات وأنظمة إدارة احترافية للشركات السعودية.", kw: "تطوير تطبيقات السعودية,مواقع الرياض,برمجة السعودية,QIROX Saudi" },
+    en: { title: "QIROX | Digital Systems Factory — Saudi Arabia", desc: "QIROX — your tech partner in Saudi Arabia. Professional websites, apps & management systems for Saudi businesses.", kw: "app development Saudi Arabia,web design Riyadh,software company Saudi,QIROX" },
+  },
+  EG: {
+    ar: { title: "QIROX | مصنع الأنظمة الرقمية — مصر", desc: "قيروكس — شريكك التقني في مصر. نبني مواقع وتطبيقات وأنظمة إدارة للشركات المصرية بأسعار مناسبة.", kw: "تطوير تطبيقات مصر,مواقع إلكترونية القاهرة,برمجة مصر,QIROX Egypt" },
+    en: { title: "QIROX | Digital Systems Factory — Egypt", desc: "QIROX — your tech partner in Egypt. Websites, apps & systems for Egyptian businesses.", kw: "app development Egypt,web design Cairo,software company Egypt,QIROX" },
+  },
+  AE: {
+    ar: { title: "QIROX | مصنع الأنظمة الرقمية — الإمارات", desc: "قيروكس — شريكك التقني في الإمارات. مواقع وتطبيقات وأنظمة إدارة للشركات الإماراتية.", kw: "تطوير تطبيقات الإمارات,مواقع دبي,برمجة الإمارات,QIROX UAE" },
+    en: { title: "QIROX | Digital Systems Factory — UAE", desc: "QIROX — your tech partner in UAE. Websites, apps & management systems for Emirati businesses.", kw: "app development UAE,web design Dubai,software company UAE,QIROX" },
+  },
+  KW: {
+    ar: { title: "QIROX | مصنع الأنظمة الرقمية — الكويت", desc: "قيروكس — شريكك التقني في الكويت. نبني مواقع وتطبيقات وأنظمة إدارة للشركات الكويتية.", kw: "تطوير تطبيقات الكويت,مواقع الكويت,برمجة الكويت,QIROX Kuwait" },
+    en: { title: "QIROX | Digital Systems Factory — Kuwait", desc: "QIROX — your tech partner in Kuwait. Websites, apps & systems for Kuwaiti businesses.", kw: "app development Kuwait,web design Kuwait,QIROX Kuwait" },
+  },
+  QA: {
+    ar: { title: "QIROX | مصنع الأنظمة الرقمية — قطر", desc: "قيروكس — شريكك التقني في قطر. مواقع وتطبيقات وأنظمة إدارة للشركات القطرية.", kw: "تطوير تطبيقات قطر,مواقع الدوحة,برمجة قطر,QIROX Qatar" },
+    en: { title: "QIROX | Digital Systems Factory — Qatar", desc: "QIROX — your tech partner in Qatar. Websites, apps & systems for Qatari businesses.", kw: "app development Qatar,web design Doha,QIROX Qatar" },
+  },
+};
+
+function countryToFlag(cc: unknown): string {
+  const code = typeof cc === "string" && cc.length >= 2 ? cc : "SA";
+  return [...code.toUpperCase().slice(0, 2)].map(c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0))).join("");
+}
 
 function NavCartDropdown({ onClose }: { onClose: () => void }) {
   const { data: cartData } = useQuery<any>({ queryKey: ["/api/cart"] });
@@ -192,6 +235,46 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const { t, lang, dir, setLang } = useI18n();
   const { theme, toggle } = useTheme();
+  const currency = useCurrency();
+  const rawCC = getCountryCode();
+  const countryCode = (typeof rawCC === "string" && rawCC.length === 2) ? rawCC.toUpperCase() : "SA";
+  const countryName = lang === "ar" ? (COUNTRY_AR[countryCode] || "السعودية") : (COUNTRY_EN[countryCode] || "Saudi Arabia");
+  const countryFlag = countryToFlag(countryCode);
+
+  /* ── Country-aware SEO ── */
+  useEffect(() => {
+    const seo = SEO_MAP[countryCode] || SEO_MAP["SA"];
+    const l = lang as "ar" | "en";
+    const title = seo[l].title;
+    const desc  = seo[l].desc;
+    const kw    = seo[l].kw;
+
+    document.title = title;
+
+    const setMeta = (selector: string, attr: string, val: string) => {
+      let el = document.querySelector<HTMLMetaElement>(selector);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr.split("=")[0].replace("[","").replace('"',''), attr.split('"')[1] || ""); document.head.appendChild(el); }
+      el.content = val;
+    };
+    const ensure = (name: string | null, prop: string | null, content: string) => {
+      let el: HTMLMetaElement | null = name
+        ? document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
+        : document.querySelector<HTMLMetaElement>(`meta[property="${prop}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        if (name) el.setAttribute("name", name);
+        else if (prop) el.setAttribute("property", prop);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+    ensure("description", null, desc);
+    ensure("keywords", null, kw);
+    ensure(null, "og:title", title);
+    ensure(null, "og:description", desc);
+    ensure(null, "og:locale", lang === "ar" ? "ar_SA" : "en_US");
+  }, [countryCode, lang]);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
@@ -290,6 +373,16 @@ export default function Navigation() {
 
                 {/* Creative Cart Button — only for clients */}
                 <NavCartButton />
+
+                {/* Country Indicator */}
+                <div className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold select-none ${
+                  isOnDarkHero
+                    ? "border-white/10 text-white/60 bg-white/[0.05]"
+                    : "border-black/[0.07] dark:border-white/[0.07] text-black/50 dark:text-white/50 bg-black/[0.03] dark:bg-white/[0.03]"
+                }`} data-testid="badge-country-indicator">
+                  <span className="text-base leading-none">{countryFlag}</span>
+                  <span className="hidden xl:inline">{lang === "ar" ? `قيروكس معك في ${countryName}` : `QIROX in ${countryName}`}</span>
+                </div>
 
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}

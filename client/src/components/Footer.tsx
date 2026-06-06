@@ -95,10 +95,16 @@ export default function Footer() {
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">
               {t("footer.description")}
             </p>
-            <div className="flex items-center gap-4">
-              <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium">الرياض</span>
-              <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-              <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium">القاهرة</span>
+            <div className="space-y-2">
+              <p className="text-[11px] text-black/45 dark:text-white/45 font-semibold flex items-center gap-1.5">
+                <span>🇸🇦</span>
+                {lang === "ar" ? "شركة سعودية الأصل" : "Saudi-founded company"}
+              </p>
+              <div className="flex items-center gap-4">
+                <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium flex items-center gap-1">🏙️ {lang === "ar" ? "الرياض" : "Riyadh"}</span>
+                <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
+                <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium flex items-center gap-1">🏙️ {lang === "ar" ? "القاهرة" : "Cairo"}</span>
+              </div>
             </div>
           </div>
 

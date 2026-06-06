@@ -316,6 +316,8 @@ export default function OrderFlow() {
   const [walletPin, setWalletPin]         = useState("");
   const [showWalletPin, setShowWalletPin] = useState(false);
   const [usePaymob, setUsePaymob]         = useState(false);
+  const [egyptPayType, setEgyptPayType]   = useState<"local" | "international">("local");
+  const [copiedWallet, setCopiedWallet]   = useState(false);
 
   const [formData, setFormData] = useState({
     businessName: "", phone: "", sector: segmentFromUrl || "",
@@ -640,42 +642,101 @@ export default function OrderFlow() {
             </div>
           </motion.div>
         ) : (
-        /* Bank card */
+        /* Payment card — Egypt gets local/international toggle */
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] p-6 mb-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-9 h-9 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
-              <BanknoteIcon className="w-4 h-4 text-white" />
-            </div>
-            <p className="font-black text-black dark:text-white">بيانات التحويل البنكي</p>
-            {submittedOrder?.walletUsed ? (
-              <span className="mr-auto text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
-            ) : null}
-          </div>
-          <div className="space-y-3 mb-4">
-            {[{ label: "البنك", value: bank.bankName }, { label: "اسم المستفيد", value: bank.beneficiaryName }].map(r => (
-              <div key={r.label} className="flex justify-between items-center py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
-                <span className="text-xs text-black/40 dark:text-white/40">{r.label}</span>
-                <span className="text-sm font-semibold text-black dark:text-white">{r.value}</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between py-2">
-              <span className="text-xs text-black/40 dark:text-white/40">IBAN</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-bold text-black dark:text-white" dir="ltr">{bank.iban}</span>
-                <button onClick={() => { navigator.clipboard.writeText(bank.iban); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2500); }}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copiedIban ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white" : "bg-black/[0.05] dark:bg-white/[0.05] text-black/40 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10"}`}
-                  data-testid="button-copy-iban">
-                  {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
+
+          {/* Egypt: transfer type selector */}
+          {currency.isEgypt && (
+            <div className="mb-5">
+              <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-2">اختر نوع التحويل</p>
+              <div className="flex gap-2 p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl">
+                {([["local","📱 محلي — e& money"] , ["international","🏦 دولي — تحويل بنكي"]] as const).map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => setEgyptPayType(val)}
+                    className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${egyptPayType === val ? "bg-white dark:bg-gray-800 shadow text-black dark:text-white" : "text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60"}`}
+                    data-testid={`button-egypt-pay-${val}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-          <div className="bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-2xl p-3.5">
-            <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70 leading-relaxed">
-              ⚠️ اكتب رقم طلبك <strong className="font-mono">{submittedOrder!.id}</strong> في خانة الملاحظات عند التحويل
-            </p>
-          </div>
+          )}
+
+          {/* e& money (Egypt local) */}
+          {currency.isEgypt && egyptPayType === "local" ? (
+            <>
+              <div className="flex items-center gap-3 mb-5">
+                <img src="/etisalat-cash-logo.png" alt="e& money اتصالات" className="h-10 rounded-xl object-contain" />
+                <div>
+                  <p className="font-black text-black dark:text-white text-sm">محفظة e& money اتصالات</p>
+                  {submittedOrder?.walletUsed ? (
+                    <span className="text-xs text-black/50 dark:text-white/50 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} {currency.symbolShort}</span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="space-y-3 mb-4">
+                {[{ label: "اسم المحفظة", value: "QIROX Studio" }].map(r => (
+                  <div key={r.label} className="flex justify-between items-center py-2 border-b border-black/[0.04] dark:border-white/[0.04]">
+                    <span className="text-xs text-black/40 dark:text-white/40">{r.label}</span>
+                    <span className="text-sm font-semibold text-black dark:text-white">{r.value}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-xs text-black/40 dark:text-white/40">رقم المحفظة</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-black dark:text-white" dir="ltr">+20 115 520 1921</span>
+                    <button onClick={() => { navigator.clipboard.writeText("+201155201921"); setCopiedWallet(true); setTimeout(() => setCopiedWallet(false), 2500); }}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copiedWallet ? "bg-green-50 text-green-600" : "bg-black/[0.05] dark:bg-white/[0.05] text-black/40 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10"}`}
+                      data-testid="button-copy-wallet">
+                      {copiedWallet ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-3.5">
+                <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed">
+                  ⚠️ اكتب رقم طلبك <strong className="font-mono">{submittedOrder!.id}</strong> في حقل الملاحظة عند التحويل
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Regular bank transfer */
+            <>
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-9 h-9 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center">
+                  <BanknoteIcon className="w-4 h-4 text-white dark:text-black" />
+                </div>
+                <p className="font-black text-black dark:text-white">بيانات التحويل البنكي</p>
+                {submittedOrder?.walletUsed ? (
+                  <span className="mr-auto text-xs font-bold text-black/70 dark:text-white/70 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
+                ) : null}
+              </div>
+              <div className="space-y-3 mb-4">
+                {[{ label: "البنك", value: bank.bankName }, { label: "اسم المستفيد", value: bank.beneficiaryName }].map(r => (
+                  <div key={r.label} className="flex justify-between items-center py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                    <span className="text-xs text-black/40 dark:text-white/40">{r.label}</span>
+                    <span className="text-sm font-semibold text-black dark:text-white">{r.value}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-xs text-black/40 dark:text-white/40">IBAN</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-black dark:text-white" dir="ltr">{bank.iban}</span>
+                    <button onClick={() => { navigator.clipboard.writeText(bank.iban); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2500); }}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copiedIban ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-black/[0.05] dark:bg-white/[0.05] text-black/40 dark:text-white/40 hover:bg-black/10 dark:hover:bg-white/10"}`}
+                      data-testid="button-copy-iban">
+                      {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-3.5">
+                <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed">
+                  ⚠️ اكتب رقم طلبك <strong className="font-mono">{submittedOrder!.id}</strong> في خانة الملاحظات عند التحويل
+                </p>
+              </div>
+            </>
+          )}
         </motion.div>
         )}
 
@@ -720,7 +781,7 @@ export default function OrderFlow() {
             </div>
           </div>
           {(() => {
-            const sup = settings?.whatsapp || settings?.contactPhone || "966554656670";
+            const sup = currency.isEgypt ? "201155201921" : (settings?.whatsapp || settings?.contactPhone || "966554656670");
             const num = String(sup).replace(/\D/g, "");
             const lines = [
               `مرحباً 👋 لقد أتممت طلبي على QIROX Studio`,
