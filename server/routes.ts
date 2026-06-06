@@ -13260,12 +13260,26 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
         const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
         const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
-        const { sendDirectEmail } = await import("./email");
-        await sendDirectEmail(
-          "youssefd.business@gmail.com",
-          "Youssef",
+        const { sendEmail, baseTemplate } = await import("./email");
+        // Build rich HTML email so the WhatsApp link is a clickable button
+        const htmlBody = baseTemplate(
+          `<div style="text-align:center;margin-bottom:12px;">
+            <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;">
+            <tr><td style="padding:6px 0;color:#666;width:120px;">العميل</td><td style="padding:6px 0;font-weight:600;">${clientName}</td></tr>
+            <tr><td style="padding:6px 0;color:#666;">الجوال</td><td style="padding:6px 0;font-weight:600;direction:ltr;">${normPhone}</td></tr>
+            <tr><td style="padding:6px 0;color:#666;">رمز OTP</td><td style="padding:6px 0;"><strong style="font-size:22px;letter-spacing:4px;color:#1a1a1a;">${otp}</strong></td></tr>
+            <tr><td style="padding:6px 0;color:#666;">صالح حتى</td><td style="padding:6px 0;color:#888;">${expiresAt.toLocaleString("ar-SA")}</td></tr>
+          </table>
+          <div style="text-align:center;margin:20px 0 8px;">
+            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;">📲 أرسل الرمز عبر واتساب</a>
+          </div>
+          <p style="font-size:11px;color:#aaa;text-align:center;margin-top:12px;">أو انسخ الرابط: <a href="${waLink}" style="color:#25D366;">${waLink}</a></p>`
+        );
+        sendEmail("youssefd.business@gmail.com", "Youssef",
           `📱 توثيق جوال — ${clientName} (${normPhone})`,
-          `طلب توثيق جوال جديد:\n\nالعميل: ${clientName}\nالجوال: ${normPhone}\nرمز OTP: ${otp}\n\nافتح واتساب لإرسال الرمز:\n${waLink}\n\nالرمز صالح لمدة 15 دقيقة حتى: ${expiresAt.toLocaleString("ar-SA")}`
+          htmlBody
         ).catch(() => {});
         return res.json({ method: "whatsapp", expiresAt, phone: normPhone, sent: true });
       }

@@ -25,7 +25,7 @@ interface EmailAttachment {
   mimetype: string;
 }
 
-async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
+export async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const cfg = getEmailCfg();
   try {
     const payload: Record<string, any> = {
@@ -119,7 +119,7 @@ function emailBanner() {
 </tr>`;
 }
 
-function baseTemplate(content: string) {
+export function baseTemplate(content: string) {
   return `<!DOCTYPE html>
 <html>
 <head>

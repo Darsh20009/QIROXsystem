@@ -244,13 +244,75 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
       <div>
         <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود الفاتورة" : "Invoice Items"}</Label>
+
+        {/* Preset Quick-Add Items */}
+        {(() => {
+          const PRESETS = L ? [
+            { name: "تصميم وتطوير الموقع الإلكتروني",   price: 2499 },
+            { name: "تطبيق جوال (iOS + Android)",         price: 3499 },
+            { name: "لوحة تحكم إدارية",                   price: 1499 },
+            { name: "تكامل بوابة الدفع الإلكتروني",       price: 499  },
+            { name: "نظام الحجز والمواعيد",               price: 799  },
+            { name: "نظام التوصيل والمتابعة",             price: 699  },
+            { name: "ميزات الذكاء الاصطناعي",             price: 999  },
+            { name: "استضافة (سنة كاملة)",                price: 299  },
+            { name: "دومين (.com — سنة)",                  price: 79   },
+            { name: "شهادة SSL",                           price: 99   },
+            { name: "صيانة وتحديثات (شهر)",               price: 199  },
+            { name: "محتوى وكتابة إبداعية",               price: 399  },
+            { name: "تصميم هوية بصرية",                   price: 899  },
+            { name: "إعداد إعلانات Google / Meta",        price: 599  },
+          ] : [
+            { name: "Website Design & Development",       price: 2499 },
+            { name: "Mobile App (iOS + Android)",         price: 3499 },
+            { name: "Admin Dashboard",                    price: 1499 },
+            { name: "Payment Gateway Integration",        price: 499  },
+            { name: "Booking & Appointments System",      price: 799  },
+            { name: "Delivery & Tracking System",         price: 699  },
+            { name: "AI Features",                        price: 999  },
+            { name: "Hosting (1 year)",                   price: 299  },
+            { name: "Domain (.com — 1 year)",             price: 79   },
+            { name: "SSL Certificate",                    price: 99   },
+            { name: "Maintenance & Updates (monthly)",    price: 199  },
+            { name: "Copywriting & Content",              price: 399  },
+            { name: "Brand Identity Design",              price: 899  },
+            { name: "Google / Meta Ads Setup",            price: 599  },
+          ];
+          return (
+            <div className="mb-3">
+              <p className="text-[10px] text-black/40 dark:text-white/40 mb-1.5">{L ? "⚡ بنود جاهزة — اضغط للإضافة الفورية" : "⚡ Quick presets — click to add"}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESETS.map((p, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      const total = p.price;
+                      setForm(prev => ({
+                        ...prev,
+                        items: [...prev.items, { name: p.name, qty: 1, unitPrice: p.price, total }],
+                      }));
+                    }}
+                    className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 py-1 text-black/70 dark:text-white/70 transition-colors flex items-center gap-1"
+                    data-testid={`button-preset-item-${i}`}
+                  >
+                    <Plus className="w-2.5 h-2.5 opacity-50" />
+                    {p.name}
+                    <span className="opacity-50 font-mono">{p.price.toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="grid grid-cols-4 gap-2 mb-2">
           <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
           <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
           <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
         </div>
         <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs mb-3" disabled={!form.newItemName || !form.newItemPrice}>
-          <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند" : "Add Item"}
+          <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند مخصص" : "Add Custom Item"}
         </Button>
         {form.items.length > 0 && (
           <div className="space-y-1.5 mb-2">
@@ -445,7 +507,48 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
         )}
         {/* Add new item */}
         <div className="bg-black/[0.01] border border-dashed border-black/[0.12] rounded-xl p-3">
-          <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "إضافة بند جديد" : "Add New Item"}</p>
+          <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "⚡ بنود جاهزة" : "⚡ Quick Presets"}</p>
+          {(() => {
+            const PRESETS = L ? [
+              { name: "تصميم وتطوير الموقع الإلكتروني",   price: 2499 },
+              { name: "تطبيق جوال (iOS + Android)",         price: 3499 },
+              { name: "لوحة تحكم إدارية",                   price: 1499 },
+              { name: "تكامل بوابة الدفع الإلكتروني",       price: 499  },
+              { name: "نظام الحجز والمواعيد",               price: 799  },
+              { name: "نظام التوصيل والمتابعة",             price: 699  },
+              { name: "ميزات الذكاء الاصطناعي",             price: 999  },
+              { name: "استضافة (سنة كاملة)",                price: 299  },
+              { name: "دومين (.com — سنة)",                  price: 79   },
+              { name: "شهادة SSL",                           price: 99   },
+              { name: "صيانة وتحديثات (شهر)",               price: 199  },
+              { name: "تصميم هوية بصرية",                   price: 899  },
+            ] : [
+              { name: "Website Design & Development",       price: 2499 },
+              { name: "Mobile App (iOS + Android)",         price: 3499 },
+              { name: "Admin Dashboard",                    price: 1499 },
+              { name: "Payment Gateway Integration",        price: 499  },
+              { name: "Booking & Appointments System",      price: 799  },
+              { name: "Delivery & Tracking System",         price: 699  },
+              { name: "AI Features",                        price: 999  },
+              { name: "Hosting (1 year)",                   price: 299  },
+              { name: "Domain (.com — 1 year)",             price: 79   },
+              { name: "SSL Certificate",                    price: 99   },
+              { name: "Maintenance & Updates (monthly)",    price: 199  },
+              { name: "Brand Identity Design",              price: 899  },
+            ];
+            return (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {PRESETS.map((p, i) => (
+                  <button key={i} type="button"
+                    onClick={() => setForm(prev => ({ ...prev, items: [...prev.items, { name: p.name, qty: 1, unitPrice: p.price, total: p.price }] }))}
+                    className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.09] dark:hover:bg-white/[0.12] border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 py-1 text-black/70 dark:text-white/70 transition-colors flex items-center gap-1">
+                    <Plus className="w-2.5 h-2.5 opacity-50" />{p.name}<span className="opacity-40 font-mono">{p.price.toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+          <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "بند مخصص" : "Custom Item"}</p>
           <div className="grid grid-cols-4 gap-2 mb-2">
             <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
             <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />

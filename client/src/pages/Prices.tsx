@@ -626,9 +626,9 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
               <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{currency.format(price)}</span>
               <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
             </div>
-            {currency.isEgypt && (
+            {!currency.isSaudi && (
               <p className={`text-[10px] mt-0.5 font-bold ${isPro ? "text-blue-200/50" : isInfinity ? "text-amber-300/40" : "text-gray-400/70"}`}>
-                ≈ {fmt(price)} ريال
+                ≈ {fmt(price)} ريال سعودي
               </p>
             )}
             <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>

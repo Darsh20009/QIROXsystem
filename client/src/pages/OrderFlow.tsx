@@ -21,6 +21,7 @@ import {
   MonitorSmartphone, BookOpen, Brush, Clock, Eye, EyeOff,
 } from "lucide-react";
 import SARIcon from "@/components/SARIcon";
+import { useCurrency } from "@/hooks/use-currency";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -402,6 +403,9 @@ export default function OrderFlow() {
   }, 0);
   const paymobFee    = usePaymob && selectedPlan === "lite" ? 100 : 0;
   const grandTotal   = planPrice + addonsTotal + devicesTotal + bundlesTotal + paymobFee;
+  const currency     = useCurrency();
+  const localTotal   = currency.convert(grandTotal);
+  const localRemain  = (amt: number) => currency.convert(amt);
 
   /* wallet */
   const walletBalance = walletData ? Math.max(0, walletData.totalCredit - walletData.totalDebit) : 0;
@@ -606,7 +610,10 @@ export default function OrderFlow() {
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
           <p className="text-white/40 text-xs uppercase tracking-wider mb-1 relative z-10">إجمالي الطلب</p>
-          <p className="text-white font-black text-4xl relative z-10 flex items-baseline gap-2">{grandTotal.toLocaleString()} <SARIcon size={20} className="opacity-50 translate-y-0.5" /></p>
+          <p className="text-white font-black text-4xl relative z-10 flex items-baseline gap-2">
+            {currency.isSaudi ? <>{grandTotal.toLocaleString()} <SARIcon size={20} className="opacity-50 translate-y-0.5" /></> : <>{currency.formatRaw(localTotal)} {currency.symbolShort}</>}
+          </p>
+          {!currency.isSaudi && <p className="text-white/40 text-xs relative z-10 mt-0.5">≈ {grandTotal.toLocaleString()} ريال سعودي (مبلغ التحويل)</p>}
           {submittedOrder?.walletUsed ? (
             <div className="mt-3 flex items-center gap-2 relative z-10">
               <div className="flex items-center gap-1.5 bg-black dark:bg-white border border-black/15 dark:border-white/15 rounded-xl px-3 py-1.5">
@@ -793,7 +800,9 @@ export default function OrderFlow() {
             </div>
             {planPrice > 0 && (
               <div className="text-right shrink-0">
-                <p className="font-black text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-60" /></p>
+                <p className="font-black text-black dark:text-white flex items-center gap-1">
+                  {currency.isSaudi ? <>{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-60" /></> : <>{currency.formatRaw(currency.convert(planPrice))} {currency.symbolShort}</>}
+                </p>
                 {periodFromUrl && <p className="text-[10px] text-black/35 dark:text-white/35">{PERIOD_LABELS_TR[periodFromUrl]}</p>}
               </div>
             )}
@@ -1119,7 +1128,9 @@ export default function OrderFlow() {
                             {segmentFromUrl && <p className="text-[10px] text-white/40">{SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl}</p>}
                           </div>
                         </div>
-                        <span className="font-black text-white flex items-center gap-1">{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-50" /></span>
+                        <span className="font-black text-white flex items-center gap-1">
+                          {currency.isSaudi ? <>{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-50" /></> : <>{currency.formatRaw(currency.convert(planPrice))} {currency.symbolShort}</>}
+                        </span>
                       </div>
                       {/* Add-ons rows */}
                       {selectedAddons.map(id => {

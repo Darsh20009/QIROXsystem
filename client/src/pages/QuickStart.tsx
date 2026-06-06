@@ -111,7 +111,16 @@ export default function QuickStart() {
 
   const sectors  = ar ? SECTORS_AR  : SECTORS_EN;
   const featuresList = ar ? FEATURES_AR : FEATURES_EN;
-  const budgets  = ar ? (currency.isEgypt ? BUDGETS_AR_EGP : BUDGETS_AR_SAR) : BUDGETS_EN;
+  const budgets  = ar
+    ? (currency.isSaudi
+        ? BUDGETS_AR_SAR
+        : [
+            { key: "unknown", label: "لم أحدد بعد",                                                                          sub: "سنقترح ما يناسبك" },
+            { key: "small",   label: `أقل من ${currency.formatRaw(currency.convert(15000))} ${currency.symbol}`,             sub: "مشاريع لايت" },
+            { key: "medium",  label: `${currency.formatRaw(currency.convert(15000))} – ${currency.formatRaw(currency.convert(50000))} ${currency.symbol}`, sub: "مشاريع برو" },
+            { key: "large",   label: `أكثر من ${currency.formatRaw(currency.convert(50000))} ${currency.symbol}`,           sub: "مشاريع إنفينيت" },
+          ])
+    : BUDGETS_EN;
   const contactOptions = ar ? CONTACT_OPTIONS_AR : CONTACT_OPTIONS_EN;
 
   /* form state */
