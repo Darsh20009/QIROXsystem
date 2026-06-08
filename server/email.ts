@@ -585,6 +585,59 @@ export async function sendAdminNewOrderEmail(adminEmail: string, clientName: str
   return sendEmail(adminEmail, "فريق QIROX", `طلب جديد من ${clientName} | QIROX`, html);
 }
 
+/* ── Owner WhatsApp Notification Email ──────────────────────────────────────
+   Sent to youssefd.business@gmail.com for every key client event.
+   Contains a big green "Open WhatsApp" button pre-filled with the right message.
+   This makes it a one-click action for the system owner to reach the client.
+─────────────────────────────────────────────────────────────────────────── */
+const OWNER_EMAIL = "youssefd.business@gmail.com";
+
+export async function sendOwnerWAEmail(opts: {
+  event: string;
+  clientName: string;
+  clientPhone?: string;
+  orderId?: string;
+  details?: [string, string][];
+  waMessage?: string;
+}): Promise<boolean> {
+  const { event, clientName, clientPhone, orderId, details = [], waMessage } = opts;
+  const waPhone = (clientPhone || "").replace(/\D/g, "");
+  const defaultMsg = waMessage ||
+    `مرحباً ${clientName} 👋\nتواصل معك فريق QIROX Studio.\n${orderId ? `رقم الطلب: #${orderId.slice(-8).toUpperCase()}\n` : ""}يسعدنا خدمتك دائماً. 🙏`;
+  const waMsg = encodeURIComponent(defaultMsg);
+  const waLink = waPhone ? `https://wa.me/${waPhone}?text=${waMsg}` : "";
+
+  const rows: [string, string][] = [
+    ["العميل", clientName],
+    ...(clientPhone ? [["الجوال", clientPhone] as [string, string]] : []),
+    ...(orderId ? [["رقم الطلب", `#${orderId.slice(-8).toUpperCase()}`] as [string, string]] : []),
+    ["الوقت", new Date().toLocaleString("ar-SA")],
+    ...details,
+  ];
+
+  const waButton = waLink
+    ? `<div style="text-align:center;margin:24px 0 8px;">
+        <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:900;font-family:Arial,sans-serif;letter-spacing:0.5px;">
+          📲 فتح واتساب — ${clientName}
+        </a>
+       </div>
+       <p style="font-size:11px;color:#aaa;text-align:center;margin:4px 0 0;">أو انسخ الرابط: <a href="${waLink}" style="color:#25D366;word-break:break-all;">${waLink}</a></p>`
+    : `<p style="font-size:13px;color:#e74c3c;text-align:center;margin:16px 0;">⚠️ لا يوجد رقم جوال لهذا العميل</p>`;
+
+  const html = baseTemplate(
+    `<div style="text-align:center;margin-bottom:12px;">
+      <span style="background:#25D366;color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;font-family:Arial,sans-serif;">🔔 ${event}</span>
+     </div>` +
+    title(`إشعار واتساب — ${clientName}`) +
+    infoTable(rows) +
+    waButton +
+    divider() +
+    text("هذا الإشعار تلقائي — اضغط الزر لفتح محادثة واتساب مع العميل مباشرةً.", "font-size:11px;color:#9ca3af;")
+  );
+
+  return sendEmail(OWNER_EMAIL, "Youssef", `${event} — ${clientName} | QIROX`, html);
+}
+
 export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
   const displayName = cleanName(name);
   const html = baseTemplate(

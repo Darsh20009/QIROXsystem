@@ -45,7 +45,7 @@ const contactLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
-import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
+import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail, sendOwnerWAEmail } from "./email";
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
@@ -695,6 +695,13 @@ export async function registerRoutes(
           sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
           sendAdminNewClientEmail("info@qiroxstudio.online", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
           sendAdminNewClientEmail("qiroxsystem@gmail.com", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
+          sendOwnerWAEmail({
+            event: "عميل جديد",
+            clientName: user.fullName || user.username,
+            clientPhone: (user as any).phone || "",
+            details: [["البريد", user.email], ["المنصة", (user as any).businessType || "تسجيل ذاتي"]],
+            waMessage: `مرحباً ${user.fullName || user.username} 👋\nشكراً لتسجيلك في QIROX Studio!\nيسعدنا خدمتك — تواصل معنا لأي استفسار.`,
+          }).catch(console.error);
           fireNotifyAdmins(`🆕 عميل جديد انضم إلى المنصة`, `${user.fullName || user.username} (${user.email}) — ${(user as any).businessType || 'تسجيل ذاتي'}`, { type: 'info', link: '/admin/customers', icon: '🆕' });
         }
         res.status(201).json({ ...sanitizeUser(user), emailVerified: false, needsVerification: true });
@@ -1465,11 +1472,30 @@ export async function registerRoutes(
     if (req.body.status && order) {
       try {
         const { NotificationModel, UserModel } = await import("./models");
-        const clientUser = await UserModel.findById((order as any).userId).select("email fullName username");
+        const clientUser = await UserModel.findById((order as any).userId).select("email fullName username phone whatsappNumber");
         if (clientUser?.email) {
           sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order.id), req.body.status).catch(console.error);
         }
         const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'تمت الموافقة', in_progress: 'قيد التنفيذ', review: 'مراجعة العميل', completed: 'مكتمل', rejected: 'مرفوض' };
+        // Owner WA notification for key status changes
+        if (["approved","in_progress","completed","rejected","payment_rejected"].includes(req.body.status)) {
+          const statusAr = statusLabels[req.body.status] || req.body.status;
+          const waMessages: Record<string,string> = {
+            approved: `مرحباً ${clientUser?.fullName || ""} 👋\nتم قبول طلبك #${String(order.id).slice(-8).toUpperCase()} ✅\nسيبدأ فريقنا بالعمل عليه قريباً.`,
+            in_progress: `مرحباً ${clientUser?.fullName || ""} 👋\nبدأ فريق QIROX العمل على طلبك #${String(order.id).slice(-8).toUpperCase()} 🚀`,
+            completed: `مرحباً ${clientUser?.fullName || ""} 👋\nتم إنجاز طلبك #${String(order.id).slice(-8).toUpperCase()} بنجاح 🎉\nيمكنك الاطلاع عليه الآن.`,
+            rejected: `مرحباً ${clientUser?.fullName || ""} 👋\nبخصوص طلبك #${String(order.id).slice(-8).toUpperCase()} — نود مناقشة التفاصيل معك. هل يمكنك التواصل معنا؟`,
+            payment_rejected: `مرحباً ${clientUser?.fullName || ""} 👋\nلم يتم التحقق من إيصال الدفع الخاص بطلبك #${String(order.id).slice(-8).toUpperCase()}. يرجى إعادة الإرسال أو التواصل معنا.`,
+          };
+          sendOwnerWAEmail({
+            event: `تحديث طلب — ${statusAr}`,
+            clientName: clientUser?.fullName || clientUser?.username || "عميل",
+            clientPhone: (clientUser as any)?.phone || (clientUser as any)?.whatsappNumber || "",
+            orderId: String(order.id),
+            details: [["الحالة الجديدة", statusAr]],
+            waMessage: waMessages[req.body.status],
+          }).catch(console.error);
+        }
         const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
         await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: notifTitle, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
         pushNotification(String((order as any).userId), { title: notifTitle, body: 'تم تحديث حالة طلبك', icon: '📋', link: '/dashboard' });
@@ -1939,6 +1965,17 @@ export async function registerRoutes(
     const _clientEmail = (user as any).email || "";
     sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
     sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+    sendOwnerWAEmail({
+      event: "طلب جديد",
+      clientName: _clientName,
+      clientPhone: (user as any).phone || (user as any).whatsappNumber || "",
+      orderId: String(order.id),
+      details: [
+        ["الخدمات", items.slice(0, 3).join("، ") || "—"],
+        ...(req.body.totalAmount ? [["المبلغ", `${Number(req.body.totalAmount).toLocaleString("ar-SA")} ر.س`] as [string,string]] : []),
+      ],
+      waMessage: `مرحباً ${_clientName} 👋\nتم استلام طلبك على QIROX Studio بنجاح ✅\nرقم الطلب: #${String(order.id).slice(-8).toUpperCase()}\nسيتواصل معك فريقنا قريباً لاستكمال التفاصيل.`,
+    }).catch(console.error);
 
     // Push device notification to all admins/managers for new order
     (async () => {
@@ -2025,6 +2062,15 @@ export async function registerRoutes(
         body: `أرفق العميل ${user.fullName || user.username} إيصال التحويل للطلب #${req.params.id}`,
         link: `/admin/orders/${req.params.id}`,
         icon: "🧾",
+      }).catch(console.error);
+      // Owner WA notification
+      sendOwnerWAEmail({
+        event: "إيصال دفع مرفوع",
+        clientName: user.fullName || user.username,
+        clientPhone: user.phone || user.whatsappNumber || "",
+        orderId: req.params.id,
+        details: [["البريد", user.email || "—"]],
+        waMessage: `مرحباً ${user.fullName || user.username} 👋\nوصلنا إيصال تحويلك للطلب #${String(req.params.id).slice(-8).toUpperCase()} ✅\nجاري المراجعة وسنُعلمك بالتفاصيل قريباً.`,
       }).catch(console.error);
       res.json({ success: true });
     } catch (err: any) {
