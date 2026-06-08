@@ -154,20 +154,22 @@ function ImgToPdfPanel() {
     if (!files.length) return;
     setLoading(true);
     try {
-      const { jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      const { PDFDocument } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.create();
+      for (const file of files) {
         const dataUrl = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload = e => resolve(e.target?.result as string); r.onerror = reject; r.readAsDataURL(file); });
         const img = new window.Image();
         await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = dataUrl; });
-        if (i > 0) pdf.addPage();
-        const [w, h] = [210, 297];
-        const ratio = Math.min(w / img.width, h / img.height);
-        const [iw, ih] = [img.width * ratio, img.height * ratio];
-        pdf.addImage(dataUrl, file.type.includes("png") ? "PNG" : "JPEG", (w - iw) / 2, (h - ih) / 2, iw, ih);
+        const arrayBuf = await file.arrayBuffer();
+        const page = pdfDoc.addPage([595, 842]);
+        const isPng = file.type.includes("png");
+        const embedded = isPng ? await pdfDoc.embedPng(arrayBuf) : await pdfDoc.embedJpg(arrayBuf);
+        const { width, height } = embedded.scaleToFit(595, 842);
+        page.drawImage(embedded, { x: (595 - width) / 2, y: (842 - height) / 2, width, height });
       }
-      pdf.save("images-to-pdf.pdf");
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "images-to-pdf.pdf"; a.click();
       toast({ title: "✅ تم إنشاء PDF بنجاح" });
     } catch { toast({ title: "خطأ في التحويل", variant: "destructive" }); }
     setLoading(false);

@@ -9,14 +9,21 @@ import { sendDirectEmail } from "./email";
 import axios from "axios";
 
 /* ─── AI Provider — Kimi (Moonshot AI) ─── */
-const _kimiClient = new OpenAI({
-  apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "",
-  baseURL: "https://api.moonshot.ai/v1",
-});
+let _kimiClient: OpenAI | null = null;
+function getKimiClient(): OpenAI {
+  if (!_kimiClient) {
+    const apiKey = process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "placeholder";
+    _kimiClient = new OpenAI({
+      apiKey,
+      baseURL: "https://api.moonshot.ai/v1",
+    });
+  }
+  return _kimiClient;
+}
 
 const openai = new Proxy({} as OpenAI, {
   get(_target, prop) {
-    return (_kimiClient as any)[prop];
+    return (getKimiClient() as any)[prop];
   },
 });
 

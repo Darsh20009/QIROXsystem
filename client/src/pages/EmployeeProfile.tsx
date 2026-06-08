@@ -95,91 +95,31 @@ export default function EmployeeProfile() {
     if (!node) return;
     try {
       setDownloading(side);
-      const html2canvas = (await import("html2canvas")).default;
-
-      // Wait for web fonts (Cairo / IBM Plex Sans Arabic) so mobile + desktop produce identical output
+      // Wait for web fonts (Cairo / IBM Plex Sans Arabic)
       try { await (document as any).fonts?.ready; } catch {}
 
-      // Pre-render white logo data URL for canvas (html2canvas ignores CSS filters)
-      const whiteLogoUrl = await toWhiteDataUrl(qiroxLogoPath);
-
-      // Temporarily neutralize 3D transforms so capture is flat
-      const prevTransform = node.style.transform;
-      const prevBackface = node.style.backfaceVisibility;
-      node.style.transform = "none";
-      node.style.backfaceVisibility = "visible";
-
-      // Allow layout/paint flush
-      await new Promise(r => requestAnimationFrame(() => r(null)));
-
-      // Card is designed at 280×440 — lock those exact pixel dimensions so the
-      // downloaded PNG looks identical regardless of phone/laptop viewport.
-      const CARD_W = 280;
-      const CARD_H = 440;
-
-      const canvas = await html2canvas(node, {
-        backgroundColor: null,
-        scale: 3,                  // 840×1320 output
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: CARD_W,
-        height: CARD_H,
-        windowWidth: 1280,         // force a desktop-sized layout viewport for the clone
-        windowHeight: 900,
-        onclone: (_doc, element) => {
-          // Lock the cloned card to design dimensions (fights any responsive scaling)
-          element.style.width = CARD_W + "px";
-          element.style.height = CARD_H + "px";
-          element.style.transform = "none";
-          element.style.position = "relative";
-          element.style.inset = "auto";
-          // Force a known font stack so the download never falls back to system fonts
-          element.style.fontFamily = "'Cairo','IBM Plex Sans Arabic',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif";
-
-          // Fix Arabic text direction (inherited dir="ltr" from outer wrapper)
-          element.style.direction = "rtl";
-          element.querySelectorAll("[data-dir-auto]").forEach(el => {
-            (el as HTMLElement).style.direction = "rtl";
-            (el as HTMLElement).style.unicodeBidi = "embed";
-          });
-          // Replace CSS-filtered logo imgs with pre-rendered white version
-          element.querySelectorAll("img[data-white-logo]").forEach(el => {
-            (el as HTMLImageElement).src = whiteLogoUrl;
-            (el as HTMLImageElement).style.filter = "none";
-          });
-
-          // html2canvas does NOT support conic-gradient — convert each occurrence to
-          // a visually-similar linear-gradient so the silver photo ring + QR ring render.
-          const SILVER_LINEAR = "linear-gradient(135deg,#ffffff 0%,#d4d4d8 25%,#71717a 50%,#a1a1aa 75%,#ffffff 100%)";
-          element.querySelectorAll<HTMLElement>("*").forEach(el => {
-            const inline = el.getAttribute("style") || "";
-            if (inline.includes("conic-gradient")) {
-              el.setAttribute(
-                "style",
-                inline.replace(/conic-gradient\([^)]*\)/g, SILVER_LINEAR)
-              );
-            }
-            // Also catch computed background that came from CSS classes
-            const bg = el.style.background || el.style.backgroundImage;
-            if (bg && bg.includes("conic-gradient")) {
-              el.style.background = SILVER_LINEAR;
-            }
-          });
-        },
-      });
-
-      node.style.transform = prevTransform;
-      node.style.backfaceVisibility = prevBackface;
-
-      const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
+      // Open a print window with the card content
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) throw new Error("popup blocked");
       const name = ((profile as any)?.fullName || (user as any)?.fullName || (user as any)?.username || "qirox-employee").toString().replace(/\s+/g, "-");
-      a.href = url;
-      a.download = `${name}-id-card-${side}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      printWindow.document.write(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${name}-id-card-${side}</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+              body { margin: 0; padding: 20px; background: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Cairo', sans-serif; }
+              @media print { body { margin: 0; padding: 0; background: white; } @page { size: 280px 440px; margin: 0; } }
+            </style>
+          </head>
+          <body>
+            ${node.outerHTML}
+            <script>window.onload = () => { window.print(); window.close(); }<\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (e) {
       console.error("download card error", e);
     } finally {

@@ -78,80 +78,32 @@ export default function QuotationPrint() {
     if (!printCardRef.current) return;
     setPdfLoading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-
-      /* Load local Arabic font and convert to base64 for embedding */
-      let arabicFontDataUrl = "";
-      try {
-        const fontResp = await fetch("/fonts/arabic.ttf");
-        const fontBuf  = await fontResp.arrayBuffer();
-        const bytes    = new Uint8Array(fontBuf);
-        let binary = "";
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        const base64   = btoa(binary);
-        arabicFontDataUrl = `data:font/truetype;base64,${base64}`;
-      } catch {
-        /* Non-fatal — fall back to system fonts */
-      }
-
       /* Wait for browser fonts to settle */
       await document.fonts.ready;
       await new Promise((r) => setTimeout(r, 150));
 
-      /* Capture at a fixed 800 px viewport so layout is always consistent */
-      const canvas = await html2canvas(printCardRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: 1200,
-        onclone: (doc: Document, el: HTMLElement) => {
-          /* Inject local Arabic font + Cairo fallback */
-          const style = doc.createElement("style");
-          style.textContent = `
-            ${arabicFontDataUrl ? `
-            @font-face {
-              font-family: 'ArabicPDF';
-              src: url('${arabicFontDataUrl}') format('truetype');
-              font-weight: 400 900;
-            }` : ""}
-            *, *::before, *::after {
-              font-family: 'ArabicPDF', 'Cairo', 'IBM Plex Sans Arabic',
-                           'Segoe UI', Tahoma, Arial, sans-serif !important;
-            }
-          `;
-          doc.head.appendChild(style);
-
-          el.style.maxWidth     = "800px";
-          el.style.width        = "800px";
-          el.style.borderRadius = "0";
-          el.style.boxShadow    = "none";
-        },
-      });
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-      /* Always fit the entire quotation onto ONE A4 page */
-      const A4_W = 210; // mm
-      const A4_H = 297; // mm
-      const aspect = canvas.height / canvas.width;
-
-      let w = A4_W;
-      let h = w * aspect;
-      if (h > A4_H) {          // content taller than A4 — scale down
-        h = A4_H;
-        w = h / aspect;
-      }
-
-      /* Center on the page */
-      const x = (A4_W - w) / 2;
-      const y = (A4_H - h) / 2;
-
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      pdf.addImage(imgData, "JPEG", x, y, w, h, "", "FAST");
-      pdf.save(`quotation-${quotation?.quotationNumber || params.id}.pdf`);
+      /* Open print dialog — browser can save as PDF */
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) throw new Error("popup blocked");
+      const content = printCardRef.current?.outerHTML || "";
+      printWindow.document.write(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>quotation-${quotation?.quotationNumber || params.id}</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+              *, *::before, *::after { font-family: 'Cairo', 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif !important; }
+              body { margin: 0; padding: 20px; background: white; }
+              @media print { body { margin: 0; padding: 0; } @page { size: A4; margin: 10mm; } }
+            </style>
+          </head>
+          <body dir="rtl">${content}
+            <script>window.onload = () => { window.print(); window.close(); }<\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (err) {
       console.error("[PDF]", err);
       toast({ title: "فشل تحميل PDF", variant: "destructive" });

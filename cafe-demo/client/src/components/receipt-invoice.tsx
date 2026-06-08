@@ -1,5 +1,3 @@
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
@@ -73,27 +71,26 @@ export function ReceiptInvoice({ order, variant = "button" }: ReceiptInvoiceProp
 
   const generatePDF = async () => {
     if (!invoiceRef.current) return;
-
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff"
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`فاتورة-${order.orderNumber}.pdf`);
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return;
+      printWindow.document.write(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>فاتورة-${order.orderNumber}</title>
+            <style>
+              body { margin: 0; padding: 20px; font-family: sans-serif; }
+              @media print { body { margin: 0; padding: 0; } }
+            </style>
+          </head>
+          <body>
+            ${invoiceRef.current.outerHTML}
+            <script>window.onload = () => { window.print(); window.close(); }<\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (error) {
       console.error("Error generating PDF:", error);
     }

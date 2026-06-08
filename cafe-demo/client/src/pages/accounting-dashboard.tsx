@@ -416,37 +416,31 @@ export default function AccountingDashboardPage() {
   };
 
   const exportToPDF = (title: string, data: any) => {
-    import('jspdf').then(({ jsPDF }) => {
-      const doc = new jsPDF({ orientation: 'portrait' });
-      doc.setFont('helvetica');
-      doc.setFontSize(18);
-      doc.text(title, 105, 20, { align: 'center' });
-      doc.setFontSize(12);
-      doc.text(`الفترة: ${periodLabels[period]}`, 105, 30, { align: 'center' });
-      doc.text(`التاريخ: ${format(new Date(), 'yyyy/MM/dd')}`, 105, 38, { align: 'center' });
-      
-      let y = 55;
-      if (data.summary) {
-        doc.setFontSize(14);
-        doc.text('ملخص الأداء المالي', 105, y, { align: 'center' });
-        y += 12;
-        doc.setFontSize(11);
-        doc.text(`إجمالي الإيرادات: ${data.summary.totalRevenue?.toFixed(2) || 0} ر.س`, 20, y);
-        y += 8;
-        doc.text(`تكلفة المكونات: ${data.summary.totalCogs?.toFixed(2) || 0} ر.س`, 20, y);
-        y += 8;
-        doc.text(`المصروفات: ${data.summary.totalExpenses?.toFixed(2) || 0} ر.س`, 20, y);
-        y += 8;
-        doc.text(`صافي الربح: ${data.summary.netProfit?.toFixed(2) || 0} ر.س`, 20, y);
-        y += 8;
-        doc.text(`هامش الربح: ${data.summary.profitMargin?.toFixed(1) || 0}%`, 20, y);
-      }
-      
-      doc.save(`${title}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast({ title: 'تم تصدير التقرير بنجاح', description: 'تم حفظ الملف بصيغة PDF' });
-    }).catch(() => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) { toast({ title: 'فشل التصدير', variant: 'destructive' }); return; }
+      const rows = data.summary ? `
+        <tr><td>إجمالي الإيرادات</td><td>${data.summary.totalRevenue?.toFixed(2) || 0} ر.س</td></tr>
+        <tr><td>تكلفة المكونات</td><td>${data.summary.totalCogs?.toFixed(2) || 0} ر.س</td></tr>
+        <tr><td>المصروفات</td><td>${data.summary.totalExpenses?.toFixed(2) || 0} ر.س</td></tr>
+        <tr><td>صافي الربح</td><td>${data.summary.netProfit?.toFixed(2) || 0} ر.س</td></tr>
+        <tr><td>هامش الربح</td><td>${data.summary.profitMargin?.toFixed(1) || 0}%</td></tr>
+      ` : '';
+      printWindow.document.write(`
+        <html><head><meta charset="UTF-8"><title>${title}</title>
+        <style>body{font-family:sans-serif;direction:rtl;padding:20px;}h1{text-align:center;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #ccc;padding:8px;}</style>
+        </head><body>
+        <h1>${title}</h1>
+        <p style="text-align:center">الفترة: ${periodLabels[period]} | التاريخ: ${format(new Date(), 'yyyy/MM/dd')}</p>
+        <table><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody>${rows}</tbody></table>
+        <script>window.onload=()=>{window.print();window.close();}<\/script>
+        </body></html>
+      `);
+      printWindow.document.close();
+      toast({ title: 'تم تصدير التقرير بنجاح', description: 'تم فتح نافذة الطباعة' });
+    } catch {
       toast({ title: 'فشل التصدير', variant: 'destructive' });
-    });
+    }
   };
 
   const handleExportSummaryExcel = () => {

@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/states";
 import { EmployeeSidebar } from "@/components/employee-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import html2canvas from "html2canvas";
 import qiroxLogoStaff from "@assets/qirox-logo-staff.png";
 import type { Employee } from "@shared/schema";
 import { useOrderWebSocket } from "@/lib/websocket";
@@ -335,17 +334,26 @@ export default function EmployeeDashboard() {
 
   const downloadCard = async () => {
     if (!cardRef.current) return;
-    
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#1a1410',
-        scale: 2
-      });
-      
-      const link = document.createElement('a');
-      link.download = `employee-card-${employee?.username}.png`;
-      link.href = canvas.toDataURL();
-      link.click();
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return;
+      printWindow.document.write(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Employee Card - ${employee?.username}</title>
+            <style>
+              body { margin: 0; padding: 20px; background: #1a1410; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+              @media print { body { margin: 0; padding: 0; } }
+            </style>
+          </head>
+          <body>
+            ${cardRef.current.outerHTML}
+            <script>window.onload = () => { window.print(); window.close(); }<\/script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (error) {
       console.error('Error downloading card:', error);
     }
