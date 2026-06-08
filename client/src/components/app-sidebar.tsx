@@ -27,7 +27,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
-import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp, SiLinktree } from "react-icons/si";
+import { SiInstagram, SiX, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp, SiLinktree } from "react-icons/si";
+import { Linkedin } from "lucide-react";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];
 const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
@@ -224,7 +225,7 @@ export function AppSidebar() {
   const socialLinks = [
     { key: "instagram",  Icon: SiInstagram,  color: "#E1306C", darkColor: "#E1306C", label: "Instagram" },
     { key: "twitter",    Icon: SiX,          color: "#000000", darkColor: "#ffffff", label: "X" },
-    { key: "linkedin",   Icon: SiLinkedin,   color: "#0077B5", darkColor: "#0e9fe6", label: "LinkedIn" },
+    { key: "linkedin",   Icon: Linkedin,   color: "#0077B5", darkColor: "#0e9fe6", label: "LinkedIn" },
     { key: "snapchat",   Icon: SiSnapchat,   color: "#FFFC00", darkColor: "#ffe600", label: "Snapchat" },
     { key: "tiktok",     Icon: SiTiktok,     color: "#010101", darkColor: "#ffffff", label: "TikTok" },
     { key: "youtube",    Icon: SiYoutube,    color: "#FF0000", darkColor: "#FF0000", label: "YouTube" },

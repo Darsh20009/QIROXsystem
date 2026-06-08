@@ -1223,6 +1223,7 @@ function AppInner() {
 
 function App() {
   return (
+    <>
     <PageErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
@@ -1235,6 +1236,7 @@ function App() {
         </ThemeProvider>
       </QueryClientProvider>
     </PageErrorBoundary>
+    </>
   );
 }
 

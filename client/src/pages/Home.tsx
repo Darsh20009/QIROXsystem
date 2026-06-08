@@ -18,7 +18,8 @@ import {
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
   Check, Star, Infinity, ChevronRight, TrendingUp, Bot, Globe,
 } from "lucide-react";
-import { SiWhatsapp, SiInstagram, SiX, SiLinkedin, SiGoogle, SiApple } from "react-icons/si";
+import { SiWhatsapp, SiInstagram, SiX, SiGoogle, SiApple } from "react-icons/si";
+import { Linkedin } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
 
 // ─── Sector SVG Illustrations ────────────────────────────────────────────────
@@ -1600,7 +1601,7 @@ export default function Home() {
               <div className="flex items-center justify-center gap-5 mt-12 text-white/50 dark:text-black/50">
                 <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer" aria-label="Instagram" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-instagram"><SiInstagram className="w-5 h-5" /></a>
                 <a href="https://x.com/qiroxsa" target="_blank" rel="noreferrer" aria-label="X" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-x"><SiX className="w-5 h-5" /></a>
-                <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-linkedin"><SiLinkedin className="w-5 h-5" /></a>
+                <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-linkedin"><Linkedin className="w-5 h-5" /></a>
               </div>
             </motion.div>
           </div>

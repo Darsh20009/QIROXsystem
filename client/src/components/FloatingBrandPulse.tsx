@@ -4,7 +4,8 @@ import { Link } from "wouter";
 const qiroxLogoPath = "/qirox-icon-nobg.png";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { SiInstagram, SiWhatsapp, SiX, SiSnapchat, SiTiktok, SiYoutube, SiLinkedin, SiLinktree } from "react-icons/si";
+import { SiInstagram, SiWhatsapp, SiX, SiSnapchat, SiTiktok, SiYoutube, SiLinktree } from "react-icons/si";
+import { Linkedin } from "lucide-react";
 
 interface PublicSettings {
   instagram?: string;
@@ -67,7 +68,7 @@ function buildSlides(s: PublicSettings): SocialSlide[] {
     } : null,
     s.linkedin ? {
       key: "linkedin", label: "تواصل عبر لينكد إن",
-      icon: SiLinkedin,
+      icon: Linkedin,
       url: s.linkedin,
       bg: "linear-gradient(135deg,#0077B5 0%,#00a0dc 100%)",
       ring: "rgba(0,119,181,0.5)", iconColor: "#fff", textColor: "#fff",

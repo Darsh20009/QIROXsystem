@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
   ],
+  optimizeDeps: {
+    exclude: ["react-icons"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -34,9 +37,5 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
   },
 });

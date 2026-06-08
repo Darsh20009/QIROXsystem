@@ -4,8 +4,8 @@ import { ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { SiGoogleplay, SiApple, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp, SiLinktree } from "react-icons/si";
-import { AppWindow } from "lucide-react";
+import { SiGoogleplay, SiApple, SiInstagram, SiX, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp, SiLinktree } from "react-icons/si";
+import { Linkedin, AppWindow } from "lucide-react";
 
 type AppDownloads = {
   playStore:   { url: string; enabled: boolean };
@@ -44,7 +44,7 @@ export default function Footer() {
   const SOCIAL_LINKS = [
     { key: "instagram",  icon: <SiInstagram className="w-4 h-4" />,  url: publicSettings?.instagram,  label: "Instagram" },
     { key: "twitter",    icon: <SiX className="w-4 h-4" />,           url: publicSettings?.twitter,    label: "X / Twitter" },
-    { key: "linkedin",   icon: <SiLinkedin className="w-4 h-4" />,   url: publicSettings?.linkedin,   label: "LinkedIn" },
+    { key: "linkedin",   icon: <Linkedin className="w-4 h-4" />,   url: publicSettings?.linkedin,   label: "LinkedIn" },
     { key: "tiktok",     icon: <SiTiktok className="w-4 h-4" />,     url: publicSettings?.tiktok,     label: "TikTok" },
     { key: "snapchat",   icon: <SiSnapchat className="w-4 h-4" />,   url: publicSettings?.snapchat,   label: "Snapchat" },
     { key: "youtube",    icon: <SiYoutube className="w-4 h-4" />,    url: publicSettings?.youtube,    label: "YouTube" },

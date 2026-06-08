@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle, LayoutGrid, List, GitBranch, ChevronDown, ChevronRight, Fingerprint, Crown, BadgeCheck, Code2, Palette, Headphones, Truck, BarChart3, CreditCard } from "lucide-react";
-import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
+import { SiInstagram, SiX, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
+import { Linkedin } from "lucide-react";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -534,7 +535,7 @@ export default function AdminEmployees() {
                     {[
                       { key: "instagram", icon: SiInstagram, color: "text-black dark:text-white", placeholder: "https://instagram.com/username", label: "Instagram" },
                       { key: "twitter", icon: SiX, color: "text-black dark:text-white", placeholder: "https://x.com/username", label: "X (Twitter)" },
-                      { key: "linkedin", icon: SiLinkedin, color: "text-black dark:text-white", placeholder: "https://linkedin.com/in/username", label: "LinkedIn" },
+                      { key: "linkedin", icon: Linkedin, color: "text-black dark:text-white", placeholder: "https://linkedin.com/in/username", label: "LinkedIn" },
                       { key: "snapchat", icon: SiSnapchat, color: "text-black/70 dark:text-white/70", placeholder: "https://snapchat.com/add/username", label: "Snapchat" },
                       { key: "tiktok", icon: SiTiktok, color: "text-black dark:text-white", placeholder: "https://tiktok.com/@username", label: "TikTok" },
                       { key: "youtube", icon: SiYoutube, color: "text-black dark:text-white", placeholder: "https://youtube.com/@channel", label: "YouTube" },
