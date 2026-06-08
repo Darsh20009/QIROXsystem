@@ -13307,8 +13307,21 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
         const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
         const { sendEmail, baseTemplate } = await import("./email");
-        // Build rich HTML email so the WhatsApp link is a clickable button
-        const htmlBody = baseTemplate(
+        const otpHtml = `<div style="text-align:center;margin-bottom:12px;">
+            <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال — واتساب</span>
+          </div>
+          <p style="font-size:15px;text-align:center;margin-bottom:8px;">مرحباً ${clientName}،</p>
+          <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;">رمز التحقق من رقم جوالك على منصة QIROX هو:</p>
+          <div style="text-align:center;margin:20px 0;">
+            <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1a1a1a;font-family:monospace;">${otp}</span>
+          </div>
+          <p style="font-size:12px;color:#999;text-align:center;">الرمز صالح لمدة 15 دقيقة فقط.<br>إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>`;
+        // Send OTP to the user's own email directly
+        if (dbUser?.email) {
+          sendEmail(dbUser.email, clientName, `رمز توثيق جوالك على QIROX: ${otp}`, baseTemplate(otpHtml)).catch(() => {});
+        }
+        // Also notify admin with wa.me link so they can send via WhatsApp too
+        const adminHtml = baseTemplate(
           `<div style="text-align:center;margin-bottom:12px;">
             <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال</span>
           </div>
@@ -13319,13 +13332,13 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
             <tr><td style="padding:6px 0;color:#666;">صالح حتى</td><td style="padding:6px 0;color:#888;">${expiresAt.toLocaleString("ar-SA")}</td></tr>
           </table>
           <div style="text-align:center;margin:20px 0 8px;">
-            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;">📲 أرسل الرمز عبر واتساب</a>
+            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;">📲 أرسل الرمز للعميل عبر واتساب</a>
           </div>
-          <p style="font-size:11px;color:#aaa;text-align:center;margin-top:12px;">أو انسخ الرابط: <a href="${waLink}" style="color:#25D366;">${waLink}</a></p>`
+          <p style="font-size:11px;color:#aaa;text-align:center;margin-top:12px;">تم إرسال الرمز للعميل على بريده الإلكتروني أيضاً.</p>`
         );
         sendEmail("youssefd.business@gmail.com", "Youssef",
           `📱 توثيق جوال — ${clientName} (${normPhone})`,
-          htmlBody
+          adminHtml
         ).catch(() => {});
         return res.json({ method: "whatsapp", expiresAt, phone: normPhone, sent: true });
       }
@@ -13517,6 +13530,110 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       record.expiresAt  = new Date();
       await record.save();
       res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/auth/phone-otp/send — generate login OTP sent to phone (no auth required)
+  app.post("/api/auth/phone-otp/send", otpLimiter, async (req, res) => {
+    try {
+      const { phone, method } = req.body;
+      if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
+      if (!["whatsapp", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
+      const normPhone = normalisePhone(String(phone).trim());
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const dbUser = await (UserModel as any).findOne({ phone: normPhone }).lean() as any;
+      if (!dbUser) {
+        // Don't reveal whether phone exists — return success silently
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        return res.json({ sent: true, expiresAt, phone: normPhone });
+      }
+      // Expire previous login OTPs for this user
+      await (PhoneVerifyOtpModel as any).updateMany(
+        { userId: dbUser._id, verified: false, purpose: "login" },
+        { expiresAt: new Date() }
+      );
+      const otp = genOtp();
+      const token = genPhoneToken();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      await (PhoneVerifyOtpModel as any).create({
+        userId: dbUser._id,
+        phone: normPhone,
+        token,
+        otp,
+        method,
+        expiresAt,
+        verified: false,
+        purpose: "login",
+        callStatus: method === "call" ? "pending" : undefined,
+      });
+      const clientName = dbUser.fullName || dbUser.username || "مستخدم";
+      const { sendEmail, baseTemplate } = await import("./email");
+      if (method === "whatsapp") {
+        const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
+        const waMsg = encodeURIComponent(`رمز دخولك إلى منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
+        const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
+        const otpHtml = baseTemplate(`<div style="text-align:center;margin-bottom:12px;">
+          <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">🔑 رمز الدخول</span>
+        </div>
+        <p style="font-size:15px;text-align:center;margin-bottom:8px;">مرحباً ${clientName}،</p>
+        <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;">رمز تسجيل الدخول إلى منصة QIROX هو:</p>
+        <div style="text-align:center;margin:20px 0;">
+          <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1a1a1a;font-family:monospace;">${otp}</span>
+        </div>
+        <p style="font-size:12px;color:#999;text-align:center;">الرمز صالح لمدة 15 دقيقة فقط.</p>`);
+        if (dbUser.email) sendEmail(dbUser.email, clientName, `رمز الدخول إلى QIROX: ${otp}`, otpHtml).catch(() => {});
+        sendEmail("youssefd.business@gmail.com", "Youssef",
+          `🔑 طلب دخول بالجوال — ${clientName} (${normPhone})`,
+          baseTemplate(`<p>العميل <strong>${clientName}</strong> يريد الدخول عبر رقم <strong dir="ltr">${normPhone}</strong></p>
+          <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
+          <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
+        ).catch(() => {});
+      } else if (method === "call") {
+        const { NotificationModel, UserModel: UModel } = await import("./models");
+        await (NotificationModel as any).create({
+          forAdmins: true, type: "info",
+          title: `📞 طلب دخول بالجوال — ${clientName}`,
+          body: `${clientName} يطلب الدخول عبر اتصال هاتفي على ${normPhone} — رمز OTP: ${otp}`,
+          link: `/admin/phone-verifications`,
+        });
+        const staff = await (UModel as any).find({ role: { $ne: "client" } }).select("_id").lean();
+        const { pushToUser } = await import("./ws");
+        for (const s of staff as any[]) {
+          pushToUser(String(s._id), { type: "notification", notification: { type: "info", title: `📞 طلب دخول بالجوال`, body: `${clientName} — ${normPhone} — رمز: ${otp}`, link: "/admin/phone-verifications" } });
+        }
+      }
+      return res.json({ sent: true, expiresAt, phone: normPhone });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/auth/phone-otp/verify — verify login OTP and create session
+  app.post("/api/auth/phone-otp/verify", otpLimiter, async (req, res) => {
+    try {
+      const { phone, otp } = req.body;
+      if (!phone || !otp) return res.status(400).json({ error: "phone و otp مطلوبان" });
+      const normPhone = normalisePhone(String(phone).trim());
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const record = await (PhoneVerifyOtpModel as any).findOne({
+        phone: normPhone,
+        otp: String(otp).trim(),
+        verified: false,
+        purpose: "login",
+        expiresAt: { $gt: new Date() },
+      });
+      if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
+      record.verified = true;
+      await record.save();
+      const dbUser = await (UserModel as any).findById(record.userId);
+      if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+      return new Promise<void>((resolve) => {
+        req.logIn(dbUser, (err) => {
+          if (err) { res.status(500).json({ error: "خطأ في تسجيل الدخول" }); return resolve(); }
+          const u = dbUser.toObject();
+          delete u.password;
+          res.json({ success: true, user: u });
+          resolve();
+        });
+      });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

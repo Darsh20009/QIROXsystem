@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Phone, CheckCircle2, Loader2, ShieldCheck,
+  CheckCircle2, Loader2, ShieldCheck,
   Clock, PhoneCall, Info, Star, MessageSquare, KeyRound
 } from "lucide-react";
+import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 
 type Method = "call" | "whatsapp";
 type Stage = "enter-phone" | "call-wait" | "otp-input" | "done";
@@ -121,9 +122,9 @@ export default function PhoneVerify() {
   });
 
   const handleStart = useCallback(() => {
-    const cleaned = phone.replace(/\s/g, "");
-    if (cleaned.length < 9) {
-      toast({ title: L ? "أدخل رقم جوال صحيح" : "Enter a valid phone number", variant: "destructive" });
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length < 10) {
+      toast({ title: L ? "أدخل رقم جوال صحيح مع رمز الدولة" : "Enter a valid phone number with country code", variant: "destructive" });
       return;
     }
     initMutation.mutate();
@@ -216,26 +217,20 @@ export default function PhoneVerify() {
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                 <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
                   {method === "whatsapp"
-                    ? (L ? "سيُرسَل رمز التحقق عبر واتساب" : "OTP code sent via WhatsApp")
+                    ? (L ? "سيُرسَل رمز التحقق عبر واتساب أو بريدك الإلكتروني" : "OTP code sent via WhatsApp and your email")
                     : (L ? "سيتصل بك فريق QIROX للتحقق" : "QIROX team will call you to verify")
                   }
                 </p>
-                <div className="relative">
-                  <Phone className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="05xxxxxxxx"
-                    className="h-14 rounded-2xl pr-11 text-xl font-mono bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600"
-                    type="tel" dir="ltr" data-testid="input-phone-number"
-                    onKeyDown={e => e.key === "Enter" && handleStart()}
-                  />
-                </div>
+                <CountryPhoneInput
+                  value={phone}
+                  onChange={setPhone}
+                  placeholder="5XXXXXXXX"
+                />
                 <div className="flex items-start gap-2 mt-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3">
                   <Info className="w-4 h-4 text-white/50 mt-0.5 shrink-0" />
                   <p className="text-xs text-white/50 leading-relaxed">
                     {method === "whatsapp"
-                      ? (L ? "سيصلك رمز التحقق عبر رسالة واتساب خلال دقائق." : "You'll receive a verification code via WhatsApp within minutes.")
+                      ? (L ? "سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني خلال دقائق." : "You'll receive a verification code via WhatsApp and your email within minutes.")
                       : (L ? "سيتصل بك أحد موظفي QIROX على رقمك ويُؤكد توثيق الحساب." : "A QIROX staff member will call you at your number.")
                     }
                   </p>
@@ -244,7 +239,7 @@ export default function PhoneVerify() {
 
               <Button
                 onClick={handleStart}
-                disabled={initMutation.isPending || phone.replace(/\s/g, "").length < 9}
+                disabled={initMutation.isPending || phone.replace(/\D/g, "").length < 10}
                 className={`w-full h-14 rounded-2xl font-black text-base gap-2 shadow-lg ${
                   method === "whatsapp"
                     ? "bg-emerald-600 hover:bg-emerald-500 text-white"
