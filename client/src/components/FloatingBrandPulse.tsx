@@ -118,8 +118,12 @@ export function FloatingBrandPulse() {
 
   const [phase, setPhase] = useState<Phase>("hidden");
   const [slideIdx, setSlideIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   useEffect(() => {
     if (slides.length === 0) return;
@@ -142,24 +146,28 @@ export function FloatingBrandPulse() {
 
           let idx = 0;
           function nextSlide() {
+            if (pausedRef.current) {
+              slideTimerRef.current = setTimeout(nextSlide, 400);
+              return;
+            }
             idx++;
             if (idx < slides.length) {
               setSlideIdx(idx);
-              slideTimerRef.current = setTimeout(nextSlide, 2400);
+              slideTimerRef.current = setTimeout(nextSlide, 3200);
             } else {
               timerRef.current = setTimeout(() => {
                 setPhase("hidden");
-                timerRef.current = setTimeout(runCycle, 2800);
-              }, 2400);
+                timerRef.current = setTimeout(runCycle, 6000);
+              }, 3200);
             }
           }
-          slideTimerRef.current = setTimeout(nextSlide, 2400);
+          slideTimerRef.current = setTimeout(nextSlide, 3200);
 
-        }, 3600);
+        }, 3000);
       }, 2000);
     }
 
-    const boot = setTimeout(runCycle, 1500);
+    const boot = setTimeout(runCycle, 2000);
     return () => {
       clearTimeout(boot);
       clear();
@@ -169,131 +177,142 @@ export function FloatingBrandPulse() {
   const currentSlide = slides[slideIdx];
 
   return (
-    <div className="floating-brand-pulse fixed right-4 md:right-6 z-[90] flex flex-col items-end gap-3 pointer-events-none max-w-[calc(100vw-2rem)]">
-      <AnimatePresence mode="wait">
-
-        {/* ── Logo / Brand Phase ── */}
-        {phase === "logo" && (
+    <>
+      {/* ── Permanent WhatsApp Channel Button (always visible, bottom-left) ── */}
+      <a
+        href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="floating-wa-channel"
+        className="fixed bottom-6 left-4 md:left-6 z-[91] group flex items-center gap-0 hover:gap-2.5 overflow-hidden transition-all duration-300"
+        style={{ maxWidth: "calc(100vw - 2rem)" }}
+      >
+        {/* Label — slides in on hover */}
+        <div className="max-w-0 group-hover:max-w-[200px] opacity-0 group-hover:opacity-100 transition-all duration-300 overflow-hidden whitespace-nowrap">
+          <div className="bg-[#25D366] text-white text-xs font-bold px-3 py-2 rounded-l-xl leading-tight">
+            <span className="block">📢 انضم لقناتنا</span>
+            <span className="block text-[9px] font-normal opacity-80">عروض · مشاريع · خصومات</span>
+          </div>
+        </div>
+        {/* Icon button */}
+        <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg shadow-[#25D366]/40 group-hover:shadow-xl group-hover:shadow-[#25D366]/50 group-hover:scale-110 transition-all duration-300 relative">
           <motion.div
-            key="logo"
-            initial={{ opacity: 0, scale: 0.65, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.75, y: 14, filter: "blur(4px)" }}
-            transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className="pointer-events-auto"
-          >
-            <Link href="/">
-              <div className="relative group cursor-pointer">
-                <motion.div
-                  className="absolute -inset-1.5 rounded-3xl"
-                  style={{ background: "radial-gradient(circle, rgba(0,0,0,0.08) 0%, transparent 70%)" }}
-                  animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <div className="relative flex items-center gap-3 bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] shadow-xl shadow-black/[0.08] rounded-2xl px-4 py-3">
-                  <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
-                  <div className="w-px h-5 bg-black/[0.08] dark:bg-white/[0.08]" />
-                  <div>
-                    <p className="text-[11px] font-bold text-black/35 dark:text-white/35 whitespace-nowrap leading-tight">وكالة رقمية متكاملة</p>
-                    <p className="text-[9px] text-black/20 dark:text-white/20 font-medium leading-tight">Digital Agency</p>
+            className="absolute inset-0 rounded-full bg-[#25D366]"
+            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <SiWhatsapp size={22} color="#fff" className="relative z-10" />
+        </div>
+      </a>
+
+      {/* ── Cycling Social Slides (right side) ── */}
+      <div
+        className="floating-brand-pulse fixed right-4 md:right-6 bottom-6 z-[90] flex flex-col items-end gap-3 pointer-events-none max-w-[calc(100vw-5rem)]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <AnimatePresence mode="wait">
+
+          {/* ── Logo / Brand Phase ── */}
+          {phase === "logo" && (
+            <motion.div
+              key="logo"
+              initial={{ opacity: 0, scale: 0.65, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.75, y: 14, filter: "blur(4px)" }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              className="pointer-events-auto"
+            >
+              <Link href="/">
+                <div className="relative group cursor-pointer">
+                  <motion.div
+                    className="absolute -inset-1.5 rounded-3xl"
+                    style={{ background: "radial-gradient(circle, rgba(0,0,0,0.08) 0%, transparent 70%)" }}
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <div className="relative flex items-center gap-3 bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] shadow-xl shadow-black/[0.08] rounded-2xl px-4 py-3">
+                    <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
+                    <div className="w-px h-5 bg-black/[0.08] dark:bg-white/[0.08]" />
+                    <div>
+                      <p className="text-[11px] font-bold text-black/35 dark:text-white/35 whitespace-nowrap leading-tight">وكالة رقمية متكاملة</p>
+                      <p className="text-[9px] text-black/20 dark:text-white/20 font-medium leading-tight">Digital Agency</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          </motion.div>
-        )}
+              </Link>
+            </motion.div>
+          )}
 
-        {/* ── Social Slides Phase ── */}
-        {phase === "social" && currentSlide && (
-          <motion.div
-            key={`social-${currentSlide.key}`}
-            initial={{ opacity: 0, scale: 0.6, y: 30, rotateX: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
-            exit={{ opacity: 0, scale: 0.7, y: -20, rotateX: -10, filter: "blur(3px)" }}
-            transition={{ type: "spring", stiffness: 320, damping: 26 }}
-            className="pointer-events-auto"
-            style={{ perspective: "600px" }}
-          >
-            <a
-              href={currentSlide.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative group cursor-pointer block"
-              style={{ textDecoration: "none" }}
+          {/* ── Social Slides Phase ── */}
+          {phase === "social" && currentSlide && (
+            <motion.div
+              key={`social-${currentSlide.key}`}
+              initial={{ opacity: 0, scale: 0.6, y: 30, rotateX: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, scale: 0.7, y: -20, rotateX: -10, filter: "blur(3px)" }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              className="pointer-events-auto"
+              style={{ perspective: "600px" }}
             >
-              {/* Pulsing ring */}
-              <motion.div
-                className="absolute -inset-1.5 rounded-2xl"
-                style={{ background: currentSlide.ring }}
-                animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-              />
-
-              {/* Card */}
-              <div
-                className="relative flex items-center gap-3 rounded-2xl px-4 py-3 shadow-2xl overflow-hidden"
-                style={{ background: currentSlide.bg, minWidth: "180px" }}
+              <a
+                href={currentSlide.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative group cursor-pointer block"
+                style={{ textDecoration: "none" }}
               >
-                {/* Shine overlay */}
                 <motion.div
-                  className="absolute inset-0 rounded-2xl"
-                  style={{ background: "linear-gradient(120deg, rgba(255,255,255,0.18) 0%, transparent 60%)" }}
-                  animate={{ opacity: [0.3, 0.7, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -inset-1.5 rounded-2xl"
+                  style={{ background: currentSlide.ring }}
+                  animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
                 />
-
-                {/* Icon with pulse */}
-                <div className="relative flex-shrink-0">
+                <div
+                  className="relative flex items-center gap-3 rounded-2xl px-4 py-3 shadow-2xl overflow-hidden"
+                  style={{ background: currentSlide.bg, minWidth: "180px" }}
+                >
                   <motion.div
-                    className="absolute inset-0 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.2)" }}
-                    animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-2xl"
+                    style={{ background: "linear-gradient(120deg, rgba(255,255,255,0.18) 0%, transparent 60%)" }}
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   />
-                  <motion.div
-                    animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                    className="relative z-10"
-                  >
-                    <currentSlide.icon size={22} color={currentSlide.iconColor} />
-                  </motion.div>
+                  <div className="relative flex-shrink-0">
+                    <motion.div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: "rgba(255,255,255,0.2)" }}
+                      animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                    />
+                    <motion.div
+                      animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                      className="relative z-10"
+                    >
+                      <currentSlide.icon size={22} color={currentSlide.iconColor} />
+                    </motion.div>
+                  </div>
+                  <div className="relative z-10 flex-1 text-right">
+                    <motion.p
+                      className="text-[12px] font-black leading-tight whitespace-nowrap tracking-wide"
+                      style={{ color: currentSlide.textColor }}
+                      animate={{ opacity: [0.85, 1, 0.85] }}
+                      transition={{ duration: 1.8, repeat: Infinity }}
+                    >
+                      {currentSlide.label}
+                    </motion.p>
+                    <p className="text-[9px] font-medium leading-tight mt-0.5 opacity-60" style={{ color: currentSlide.textColor }}>
+                      اضغط للانتقال ←
+                    </p>
+                  </div>
                 </div>
+              </a>
+            </motion.div>
+          )}
 
-                {/* Text */}
-                <div className="relative z-10 flex-1 text-right">
-                  <motion.p
-                    className="text-[12px] font-black leading-tight whitespace-nowrap tracking-wide"
-                    style={{ color: currentSlide.textColor }}
-                    animate={{ opacity: [0.85, 1, 0.85] }}
-                    transition={{ duration: 1.8, repeat: Infinity }}
-                  >
-                    {currentSlide.label}
-                  </motion.p>
-                  <p
-                    className="text-[9px] font-medium leading-tight mt-0.5 opacity-60"
-                    style={{ color: currentSlide.textColor }}
-                  >
-                    اضغط للانتقال ←
-                  </p>
-                </div>
-              </div>
-            </a>
-          </motion.div>
-        )}
-
-        {/* ── Client Support Phase (after social cycle, only for logged-in clients) ── */}
-        {phase === "hidden" && isClient && (
-          <motion.div
-            key="client-support"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0 }}
-            exit={{ opacity: 0 }}
-            className="pointer-events-none"
-          />
-        )}
-
-      </AnimatePresence>
-
-    </div>
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
