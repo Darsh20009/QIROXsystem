@@ -1,0 +1,149 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+6:07:54 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[31m(!) Failed to run dependency scan. Skipping dependency pre-bundling. Error: [31m  Failed to scan for dependencies from entries:
+  /home/runner/workspace/client/index.html
+
+  [31m[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mFailed to resolve entry for package "date-fns". The package may have incorrect main/module/exports specified in its package.json.[0m [1m[35m[plugin vite:dep-scan][0m
+
+    node_modules/vite/dist/node/chunks/config.js:32896:31:
+[37m      32896 │   const err$2 = /* @__PURE__ */ [32m[37mnew Error(`Failed to resolve en...
+            ╵                                 [32m^[0m
+
+    at packageEntryFailure (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32896:32)
+    at resolvePackageEntry (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32893:2)
+    at tryNodeResolve (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32796:70)
+    at ResolveIdContext.handler (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32635:16)
+    at EnvironmentPluginContainer.resolveId (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:28797:56)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async resolve$4 (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31585:16)
+    at async <anonymous> (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31710:22)
+    at async requestCallbacks.on-resolve (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1498:22)
+    at async handleRequest (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:909:11)
+
+  This error came from the "onResolve" callback registered here:
+
+    node_modules/vite/dist/node/chunks/config.js:31707:11:
+[37m      31707 │       build$3.[32monResolve[37m({ filter: /^[\w@][^:]/ }, async ({ path...
+            ╵               [32m~~~~~~~~~[0m
+
+    at setup (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31707:12)
+    at handlePlugins (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1422:21)
+    at buildOrContextImpl (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1135:5)
+    at Object.buildOrContext (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:961:5)
+    at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:68
+    at new Promise (<anonymous>)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:27)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2167:58)
+    at prepareEsbuildScanner (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31534:23)
+
+  The plugin "vite:dep-scan" was triggered by this import
+
+    client/src/pages/AdminQMeet.tsx:23:52:
+[37m      23 │ import { format, formatDistanceToNow, isPast } from [32m"date-fns"[37m;
+         ╵                                                     [32m~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mFailed to resolve entry for package "date-fns". The package may have incorrect main/module/exports specified in its package.json.[0m [1m[35m[plugin vite:dep-scan][0m
+
+    node_modules/vite/dist/node/chunks/config.js:32896:31:
+[37m      32896 │   const err$2 = /* @__PURE__ */ [32m[37mnew Error(`Failed to resolve en...
+            ╵                                 [32m^[0m
+
+    at packageEntryFailure (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32896:32)
+    at resolvePackageEntry (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32893:2)
+    at tryNodeResolve (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32796:70)
+    at ResolveIdContext.handler (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32635:16)
+    at EnvironmentPluginContainer.resolveId (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:28797:56)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async resolve$4 (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31585:16)
+    at async <anonymous> (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31710:22)
+    at async requestCallbacks.on-resolve (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1498:22)
+    at async handleRequest (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:909:11)
+
+  This error came from the "onResolve" callback registered here:
+
+    node_modules/vite/dist/node/chunks/config.js:31707:11:
+[37m      31707 │       build$3.[32monResolve[37m({ filter: /^[\w@][^:]/ }, async ({ path...
+            ╵               [32m~~~~~~~~~[0m
+
+    at setup (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31707:12)
+    at handlePlugins (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1422:21)
+    at buildOrContextImpl (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1135:5)
+    at Object.buildOrContext (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:961:5)
+    at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:68
+    at new Promise (<anonymous>)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:27)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2167:58)
+    at prepareEsbuildScanner (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31534:23)
+
+  The plugin "vite:dep-scan" was triggered by this import
+
+    client/src/pages/AdminAISessions.tsx:10:23:
+[37m      10 │ import { format } from [32m"date-fns"[37m;
+         ╵                        [32m~~~~~~~~~~[0m
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mFailed to resolve entry for package "date-fns". The package may have incorrect main/module/exports specified in its package.json.[0m [1m[35m[plugin vite:dep-scan][0m
+
+    node_modules/vite/dist/node/chunks/config.js:32896:31:
+[37m      32896 │   const err$2 = /* @__PURE__ */ [32m[37mnew Error(`Failed to resolve en...
+            ╵                                 [32m^[0m
+
+    at packageEntryFailure (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32896:32)
+    at resolvePackageEntry (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32893:2)
+    at tryNodeResolve (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32796:70)
+    at ResolveIdContext.handler (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:32635:16)
+    at EnvironmentPluginContainer.resolveId (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:28797:56)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async resolve$4 (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31585:16)
+    at async <anonymous> (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31710:22)
+    at async requestCallbacks.on-resolve (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1498:22)
+    at async handleRequest (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:909:11)
+
+  This error came from the "onResolve" callback registered here:
+
+    node_modules/vite/dist/node/chunks/config.js:31707:11:
+[37m      31707 │       build$3.[32monResolve[37m({ filter: /^[\w@][^:]/ }, async ({ path...
+            ╵               [32m~~~~~~~~~[0m
+
+    at setup (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31707:12)
+    at handlePlugins (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1422:21)
+    at buildOrContextImpl (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1135:5)
+    at Object.buildOrContext (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:961:5)
+    at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:68
+    at new Promise (<anonymous>)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2325:27)
+    at Object.context (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:2167:58)
+    at prepareEsbuildScanner (/home/runner/workspace/node_modules/vite/dist/node/chunks/config.js:31534:23)
+
+  The plugin "vite:dep-scan" was triggered by this import
+
+    client/src/pages/AdminQMeetDetail.tsx:20:23:
+[37m      20 │ import { format } from [32m"date-fns"[37m;
+         ╵                        [32m~~~~~~~~~~[0m
+
+
+    at failureErrorWithLog (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1748:15)
+    at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1207:25
+    at runOnEndCallbacks (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1588:45)
+    at buildResponseToResult (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1205:7)
+    at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1217:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1216:54)
+    at handleRequest (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:909:17)
+    at handleIncomingPacket (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:934:7)
+    at Socket.readFromStdout (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:862:7)[39m
+[1G[0K⠙[1G[0K

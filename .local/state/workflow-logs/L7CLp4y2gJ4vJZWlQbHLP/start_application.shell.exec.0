@@ -1,0 +1,646 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K⠙[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:18:13 AM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+Initialized 21 cron jobs
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+1:19:02 AM [express] POST /api/internal/push/promotional 200 in 250ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:20:01 AM [express] POST /api/internal/push/promotional 200 in 237ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:21:00 AM [express] POST /api/internal/push/promotional 200 in 234ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:21:32 AM [express] GET /api/user 401 in 2ms
+1:21:33 AM [express] GET /api/public/settings 304 in 259ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+1:21:48 AM [express] GET /api/auth/apple/status 304 in 1ms :: {"enabled":false}
+1:21:48 AM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":false}
+1:21:48 AM [express] GET /api/templates 304 in 233ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+1:21:48 AM [express] GET /api/app-downloads 304 in 246ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+1:21:48 AM [express] GET /api/reviews/public 304 in 235ms :: []
+1:21:48 AM [express] GET /api/pricing 304 in 463ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":5299,"currency":"SAR","billingCycle":"lifetim…
+1:21:48 AM [express] GET /api/partners 304 in 682ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+1:22:00 AM [express] POST /api/internal/push/promotional 200 in 237ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:22:13 AM [express] GET /api/auth/apple/status 304 in 2ms :: {"enabled":false}
+1:22:13 AM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":false}
+1:22:13 AM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+1:22:23 AM [express] POST /api/auth/phone-otp/send 200 in 716ms :: {"sent":true,"expiresAt":"2026-06-09T01:37:23.044Z","phone":"+966532441566"}
+1:23:00 AM [express] POST /api/internal/push/promotional 200 in 236ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:23:27 AM [express] POST /api/auth/phone-otp/verify 200 in 1415ms :: {"success":true,"user":{"address":"","city":"","taxNumber":"","organizationName":"","commercialRegistration":"","nationalAddress":"","workEmail":"","qr…
+1:23:28 AM [express] GET /api/user 200 in 480ms :: {"address":"","city":"","taxNumber":"","organizationName":"","commercialRegistration":"","nationalAddress":"","workEmail":"","qrLoginTokenCreatedAt":null,"assignedSalesId…
+1:23:28 AM [express] GET /api/cart 200 in 882ms :: {"items":[],"discountAmount":0}
+1:23:28 AM [express] GET /api/badges 200 in 887ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:23:29 AM [express] GET /api/wallet 500 in 1345ms :: {"message":"UserModel is not defined"}
+1:23:29 AM [express] GET /api/orders 200 in 760ms :: []
+1:23:29 AM [express] GET /api/notifications/unread-count 200 in 2005ms :: {"count":2}
+1:23:30 AM [express] GET /api/inbox/unread-count 200 in 1891ms :: {"count":0}
+1:23:30 AM [express] GET /api/notifications 200 in 1915ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو …
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:23:30 AM [express] GET /api/wallet 500 in 692ms :: {"message":"UserModel is not defined"}
+1:23:33 AM [express] GET /api/projects 200 in 468ms :: []
+1:23:33 AM [express] GET /api/attendance/status 200 in 476ms
+1:23:33 AM [express] GET /api/modification-requests 200 in 467ms :: []
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:23:33 AM [express] GET /api/wallet 500 in 690ms :: {"message":"UserModel is not defined"}
+1:23:34 AM [express] GET /api/mod-quota 200 in 467ms :: {"hasOrders":false}
+1:23:34 AM [express] GET /api/admin/mod-type-prices 200 in 467ms :: []
+1:23:34 AM [express] GET /api/qmeet/upcoming 200 in 474ms :: []
+1:23:34 AM [express] GET /api/my-api-keys 200 in 475ms :: []
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:23:35 AM [express] GET /api/wallet 500 in 721ms :: {"message":"UserModel is not defined"}
+1:23:51 AM [express] GET /api/notifications 304 in 485ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:23:58 AM [express] GET /api/badges 304 in 242ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:23:59 AM [express] GET /api/cart 304 in 470ms :: {"items":[],"discountAmount":0}
+1:24:00 AM [express] POST /api/internal/push/promotional 200 in 232ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:24:01 AM [express] GET /api/inbox/unread-count 304 in 237ms :: {"count":0}
+1:24:01 AM [express] GET /api/notifications/unread-count 304 in 1632ms :: {"count":2}
+1:24:11 AM [express] GET /api/notifications 304 in 462ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:24:29 AM [express] GET /api/badges 304 in 470ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:24:29 AM [express] GET /api/cart 304 in 466ms :: {"items":[],"discountAmount":0}
+1:24:30 AM [express] GET /api/orders 304 in 467ms :: []
+1:24:31 AM [express] GET /api/inbox/unread-count 304 in 473ms :: {"count":0}
+1:24:32 AM [express] GET /api/notifications/unread-count 304 in 478ms :: {"count":2}
+1:24:32 AM [express] GET /api/notifications 304 in 481ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:24:36 AM [express] GET /api/wallet 500 in 711ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:24:38 AM [express] GET /api/wallet 500 in 702ms :: {"message":"UserModel is not defined"}
+1:24:53 AM [express] GET /api/notifications 304 in 481ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:25:00 AM [express] GET /api/badges 304 in 247ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:25:00 AM [express] GET /api/cart 304 in 491ms :: {"items":[],"discountAmount":0}
+1:25:01 AM [express] POST /api/internal/push/promotional 200 in 231ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:25:02 AM [express] GET /api/inbox/unread-count 304 in 238ms :: {"count":0}
+1:25:02 AM [express] GET /api/notifications/unread-count 304 in 469ms :: {"count":2}
+1:25:13 AM [express] GET /api/notifications 304 in 483ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:25:30 AM [express] GET /api/badges 304 in 490ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:25:30 AM [express] GET /api/orders 304 in 467ms :: []
+1:25:31 AM [express] GET /api/cart 304 in 474ms :: {"items":[],"discountAmount":0}
+1:25:32 AM [express] GET /api/inbox/unread-count 304 in 468ms :: {"count":0}
+1:25:33 AM [express] GET /api/notifications/unread-count 304 in 467ms :: {"count":2}
+1:25:34 AM [express] GET /api/notifications 304 in 468ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:25:39 AM [express] GET /api/wallet 500 in 703ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:25:40 AM [express] GET /api/wallet 500 in 699ms :: {"message":"UserModel is not defined"}
+1:25:55 AM [express] GET /api/notifications 304 in 467ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:25:55 AM [express] GET /api/wallet 500 in 695ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:25:57 AM [express] GET /api/wallet 500 in 704ms :: {"message":"UserModel is not defined"}
+1:26:00 AM [express] POST /api/internal/push/promotional 200 in 237ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:26:01 AM [express] GET /api/badges 304 in 242ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:26:01 AM [express] GET /api/cart 304 in 468ms :: {"items":[],"discountAmount":0}
+1:26:03 AM [express] GET /api/inbox/unread-count 304 in 241ms :: {"count":0}
+1:26:03 AM [express] GET /api/notifications/unread-count 304 in 471ms :: {"count":2}
+1:26:09 AM [express] GET /api/profile/me 200 in 470ms :: {"address":"","city":"","taxNumber":"","organizationName":"","commercialRegistration":"","nationalAddress":"","workEmail":"","qrLoginTokenCreatedAt":null,"assignedS…
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2946:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:12 AM [express] GET /api/wallet/card 500 in 470ms :: {"message":"UserModel is not defined"}
+1:26:12 AM [express] GET /api/wallet/topup-requests 200 in 475ms :: []
+1:26:12 AM [express] GET /api/bank-settings 200 in 477ms :: {"key":"main","bankName":"بنك الراجحي","beneficiaryName":"Mohammed Bin Ali ALdbani","iban":"SA74 8000 0336 6080 1608 1379","accountNumber":"","swiftCode":"","cur…
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:12 AM [express] GET /api/wallet 500 in 695ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2946:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:13 AM [express] GET /api/wallet/card 500 in 480ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:14 AM [express] GET /api/wallet 500 in 689ms :: {"message":"UserModel is not defined"}
+1:26:15 AM [express] GET /api/notifications 304 in 468ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:26:15 AM [express] POST /api/wallet/card/init 200 in 960ms :: {"cardNumber":"4747139956613781","cardActive":true}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2946:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:16 AM [express] GET /api/wallet/card 500 in 480ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2946:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:26:17 AM [express] GET /api/wallet/card 500 in 485ms :: {"message":"UserModel is not defined"}
+1:26:31 AM [express] GET /api/orders 304 in 467ms :: []
+1:26:31 AM [express] GET /api/badges 304 in 472ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:26:32 AM [express] GET /api/cart 304 in 465ms :: {"items":[],"discountAmount":0}
+1:26:33 AM [express] GET /api/inbox/unread-count 304 in 467ms :: {"count":0}
+1:26:34 AM [express] GET /api/notifications/unread-count 304 in 466ms :: {"count":2}
+1:26:36 AM [express] GET /api/notifications 304 in 468ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:26:56 AM [express] GET /api/notifications 304 in 468ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:27:01 AM [express] POST /api/internal/push/promotional 200 in 230ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:27:02 AM [express] GET /api/badges 304 in 240ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:27:02 AM [express] GET /api/cart 304 in 468ms :: {"items":[],"discountAmount":0}
+1:27:04 AM [express] GET /api/inbox/unread-count 304 in 239ms :: {"count":0}
+1:27:05 AM [express] GET /api/notifications/unread-count 304 in 468ms :: {"count":2}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:27:14 AM [express] GET /api/wallet 500 in 696ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:27:16 AM [express] GET /api/wallet 500 in 696ms :: {"message":"UserModel is not defined"}
+1:27:17 AM [express] GET /api/notifications 304 in 475ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:27:31 AM [express] GET /api/orders 304 in 466ms :: []
+1:27:32 AM [express] GET /api/badges 304 in 477ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:27:33 AM [express] GET /api/cart 304 in 472ms :: {"items":[],"discountAmount":0}
+1:27:34 AM [express] GET /api/inbox/unread-count 304 in 467ms :: {"count":0}
+1:27:35 AM [express] GET /api/notifications/unread-count 304 in 468ms :: {"count":2}
+1:27:38 AM [express] GET /api/notifications 304 in 469ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:27:58 AM [express] GET /api/notifications 304 in 484ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:28:00 AM [express] POST /api/internal/push/promotional 200 in 245ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:28:03 AM [express] GET /api/badges 304 in 238ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:28:04 AM [express] GET /api/cart 304 in 467ms :: {"items":[],"discountAmount":0}
+1:28:05 AM [express] GET /api/inbox/unread-count 304 in 239ms :: {"count":0}
+1:28:06 AM [express] GET /api/notifications/unread-count 304 in 478ms :: {"count":2}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:28:17 AM [express] GET /api/wallet 500 in 697ms :: {"message":"UserModel is not defined"}
+Internal Server Error: ReferenceError: UserModel is not defined
+    at getWalletBalance [90m(/home/runner/workspace/[39mserver/routes.ts:196:16[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:2761:27[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+1:28:19 AM [express] GET /api/wallet 500 in 708ms :: {"message":"UserModel is not defined"}
+1:28:19 AM [express] GET /api/notifications 304 in 486ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:28:32 AM [express] GET /api/orders 304 in 726ms :: []
+1:28:33 AM [express] GET /api/badges 304 in 498ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:28:34 AM [express] GET /api/cart 304 in 473ms :: {"items":[],"discountAmount":0}
+1:28:35 AM [express] GET /api/inbox/unread-count 304 in 478ms :: {"count":0}
+1:28:37 AM [express] GET /api/notifications/unread-count 304 in 467ms :: {"count":2}
+1:28:40 AM [express] GET /api/notifications 304 in 470ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو ب…
+1:29:00 AM [express] POST /api/internal/push/promotional 200 in 226ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:29:02 AM [express] GET /api/notifications 304 in 1636ms :: [{"_id":"6a16771cf147022a85bade7d","userId":"69b7459d5f061ea728b1a970","forAdmins":false,"type":"info","title":"عيد مبارك 🌙","body":"تهنئكم منصة كيروكس ستوديو …
+1:29:04 AM [express] GET /api/badges 304 in 239ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+1:29:05 AM [express] GET /api/cart 304 in 466ms :: {"items":[],"discountAmount":0}
+1:29:06 AM [express] GET /api/inbox/unread-count 304 in 237ms :: {"count":0}
+1:29:07 AM [express] GET /api/notifications/unread-count 304 in 468ms :: {"count":2}
+1:30:00 AM [express] POST /api/internal/push/promotional 200 in 236ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:30:59 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+1:31:00 AM [express] POST /api/internal/push/promotional 200 in 260ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:31:14 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:31:37 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:31:56 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m [33m(x4)[39m
+1:32:00 AM [express] POST /api/internal/push/promotional 200 in 240ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:32:05 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:32:23 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m [33m(x6)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:32:24 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: /home/runner/workspace/client/src/pages/Login.tsx: Unexpected token, expected "," (2214:10)
+
+[0m [90m 2212 |[31m           [33m<[31m[33m/[31m[33mForm[31m[33m>[31m
+ [90m 2213 |[31m
+[31m[1m>[22m[31m[90m 2214 |[31m           {[90m/* Switch auth mode */[31m}
+ [90m      |[31m           [31m[1m^[22m[31m
+ [90m 2215 |[31m           [33m<[31m[33mdiv[31m className[33m=[31m[32m"mt-6 text-center"[31m[33m>[31m
+ [90m 2216 |[31m             [33m<[31m[33mspan[31m className[33m=[31m[32m"text-sm text-black/35"[31m[33m>[31m
+ [90m 2217 |[31m               {isRegister [33m?[31m t([32m"login.hasAccount"[31m) [33m:[31m t([32m"login.noAccount"[31m)}{[32m" "[31m}[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36m/home/runner/workspace/client/src/pages/Login.tsx[39m:2214:10
+[33m  2212 |            </Form>
+  2213 |  
+  2214 |            {/* Switch auth mode */}
+       |            ^
+  2215 |            <div className="mt-6 text-center">
+  2216 |              <span className="text-sm text-black/35">[39m
+      at toParseError (/home/runner/workspace/node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at raise (/home/runner/workspace/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+      at unexpected (/home/runner/workspace/node_modules/@babel/parser/src/tokenizer/index.ts:1544:16)
+      at expect (/home/runner/workspace/node_modules/@babel/parser/src/parser/util.ts:157:12)
+      at parseParenAndDistinguishExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1801:14)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1170:21)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:583:22)
+      at parseExprSubscripts (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:742:23)
+      at parseUpdate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:721:21)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:683:23)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3893:20)
+      at parseMaybeUnaryOrPrivate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:417:14)
+      at parseExprOps (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:429:23)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:384:23)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3764:22)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:257:12)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3197:12)
+      at parseMaybeAssignAllowIn (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:256:17)
+      at parseConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:403:30)
+      at parseConditional (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3393:20)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:390:17)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3764:22)
+      at parseExpressionBase (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:226:23)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:39)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3197:12)
+      at parseExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:17)
+      at jsxParseExpressionContainer (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:376:33)
+      at jsxParseElementAt (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:500:24)
+      at jsxParseElement (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:559:19)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:573:21)
+      at parseExprSubscripts (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:742:23)
+      at parseUpdate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:721:21)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:683:23)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3893:20)
+      at parseMaybeUnaryOrPrivate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:417:14)
+      at parseExprOps (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:429:23)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:384:23)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at fn (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3745:23)
+      at tryParse (/home/runner/workspace/node_modules/@babel/parser/src/parser/util.ts:174:20)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3744:20)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:257:12)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3197:12)
+      at parseMaybeAssignAllowIn (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:256:17)
+      at parseMaybeAssignAllowInOrVoidPattern (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3311:17)
+      at parseParenAndDistinguishExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1825:16)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1170:21)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:583:22)
+[1G[0K⠙[1G[0K[1mnpm[22m [96mnotice[39m
+[1mnpm[22m [96mnotice[39m New [31mmajor[39m version of npm available! [31m10.8.2[39m -> [34m11.16.0[39m
+[1mnpm[22m [96mnotice[39m Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.16.0[39m
+[1mnpm[22m [96mnotice[39m To update run: [4mnpm install -g npm@11.16.0[24m
+[1mnpm[22m [96mnotice[39m
+[1G[0K⠙[1G[0K
