@@ -1,0 +1,74 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+6:09:51 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mUnexpected end of file in source map[0m
+
+    node_modules/lucide-react/dist/esm/icons/file-check-2.js.map:1:0:
+[37m      1 │ [32m[37m
+        ╵ [32m^[0m
+
+  The source map "node_modules/lucide-react/dist/esm/icons/file-check-2.js.map"
+  was referenced by the file
+  "node_modules/lucide-react/dist/esm/icons/file-check-2.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/file-check-2.js:17:21:
+[37m      17 │ //# sourceMappingURL=[32mfile-check-2.js.map[37m
+         ╵                      [32m~~~~~~~~~~~~~~~~~~~[0m
+
+[WalletMigration] Synced walletBalance for 1 users
+[UnhandledRejection] Unhandled promise rejection: [31mError during dependency optimization:
+
+[39m[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mUnexpected end of file in source map[0m
+
+    node_modules/lucide-react/dist/esm/icons/file-check-2.js.map:1:0:
+[37m      1 │ [32m[37m
+        ╵ [32m^[0m
+
+  The source map "node_modules/lucide-react/dist/esm/icons/file-check-2.js.map" was referenced by the file "node_modules/lucide-react/dist/esm/icons/file-check-2.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/file-check-2.js:17:21:
+[37m      17 │ //# sourceMappingURL=[32mfile-check-2.js.map[37m
+         ╵                      [32m~~~~~~~~~~~~~~~~~~~[0m
+
+ at: Promise {
+  [36m<rejected>[39m Error: [31mError during dependency optimization:
+  
+  [39m[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mUnexpected end of file in source map[0m
+  
+      node_modules/lucide-react/dist/esm/icons/file-check-2.js.map:1:0:
+  [37m      1 │ [32m[37m
+          ╵ [32m^[0m
+  
+    The source map "node_modules/lucide-react/dist/esm/icons/file-check-2.js.map" was referenced by the file "node_modules/lucide-react/dist/esm/icons/file-check-2.js" here:
+  
+      node_modules/lucide-react/dist/esm/icons/file-check-2.js:17:21:
+  [37m      17 │ //# sourceMappingURL=[32mfile-check-2.js.map[37m
+           ╵                      [32m~~~~~~~~~~~~~~~~~~~[0m
+  
+  
+      at failureErrorWithLog [90m(/home/runner/workspace/[39mnode_modules/[4mvite[24m/node_modules/[4mesbuild[24m/lib/main.js:1748:15[90m)[39m
+      at [90m/home/runner/workspace/[39mnode_modules/[4mvite[24m/node_modules/[4mesbuild[24m/lib/main.js:1207:25
+      at [90m/home/runner/workspace/[39mnode_modules/[4mvite[24m/node_modules/[4mesbuild[24m/lib/main.js:1626:9
+  [90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m {
+    errors: [36m[Getter/Setter][39m,
+    warnings: [36m[Getter/Setter][39m
+  }
+}
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+Initialized 21 cron jobs
+6:10:01 PM [express] POST /api/internal/push/promotional 200 in 246ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+6:11:00 PM [express] POST /api/internal/push/promotional 200 in 228ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}

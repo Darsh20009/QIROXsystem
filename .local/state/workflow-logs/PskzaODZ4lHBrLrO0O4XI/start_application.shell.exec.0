@@ -1,0 +1,31 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K⠙[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+7:07:40 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+Initialized 21 cron jobs
+[Mail] Auto-assigned y.business@qirox.online → darsh
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+7:08:02 PM [express] POST /api/internal/push/promotional 200 in 240ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:09:00 PM [express] POST /api/internal/push/promotional 200 in 229ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:10:00 PM [express] POST /api/internal/push/promotional 200 in 235ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:11:00 PM [express] POST /api/internal/push/promotional 200 in 223ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:11:11 PM [express] GET /api/public/settings 200 in 234ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+7:12:00 PM [express] POST /api/internal/push/promotional 200 in 244ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:13:00 PM [express] POST /api/internal/push/promotional 200 in 233ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:14:00 PM [express] POST /api/internal/push/promotional 200 in 227ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:15:00 PM [express] POST /api/internal/push/promotional 200 in 225ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:16:00 PM [express] POST /api/internal/push/promotional 200 in 240ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+7:17:00 PM [express] POST /api/internal/push/promotional 200 in 230ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}

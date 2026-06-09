@@ -1,0 +1,38 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K⠙[1G[0K[AI] Provider: Kimi k2 (Moonshot AI)
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+2:40:15 AM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[Mail] Auto-assigned y.business@qirox.online → darsh
+Initialized 21 cron jobs
+[Mail] Auto-assigned m.adbani@qirox.online → Aldbani
+[Mail] Default accounts seeded
+2:41:01 AM [express] POST /api/internal/push/promotional 200 in 399ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:42:00 AM [express] POST /api/internal/push/promotional 200 in 236ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:43:00 AM [express] POST /api/internal/push/promotional 200 in 235ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:43:24 AM [express] GET /api/user 304 in 230ms :: {"address":"","city":"","taxNumber":"","organizationName":"","commercialRegistration":"","nationalAddress":"","workEmail":"","qrLoginTokenCreatedAt":null,"assignedSalesId…
+2:43:24 AM [express] GET /api/public/settings 304 in 448ms :: {"instagram":"https://www.instagram.com/qirox.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxsa?s=21","linkedin":"https://www.linkedin.com/company…
+2:43:29 AM [express] GET /api/auth/google/status 304 in 227ms :: {"enabled":false}
+2:43:29 AM [express] GET /api/auth/apple/status 304 in 226ms :: {"enabled":false}
+2:43:30 AM [express] GET /api/cart 304 in 447ms :: {"items":[],"discountAmount":0}
+2:43:30 AM [express] GET /api/app-downloads 304 in 448ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft…
+2:43:30 AM [express] GET /api/templates 304 in 445ms :: [{"name":"Quran Academy System","nameAr":"نظام أكاديميات تحفيظ القرآن","slug":"quran-academy","description":"Complete digital platform for Quran memorization academi…
+2:43:30 AM [express] GET /api/pricing 304 in 455ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":5299,"currency":"SAR","billingCycle":"lifetim…
+2:43:30 AM [express] GET /api/reviews/public 304 in 459ms :: []
+2:43:30 AM [express] GET /api/partners 304 in 874ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+2:44:00 AM [express] POST /api/internal/push/promotional 200 in 231ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:45:00 AM [express] POST /api/internal/push/promotional 200 in 232ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:46:00 AM [express] POST /api/internal/push/promotional 200 in 240ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:47:00 AM [express] POST /api/internal/push/promotional 200 in 222ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+2:48:00 AM [express] POST /api/internal/push/promotional 200 in 227ms :: {"ok":true,"sent":69,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
