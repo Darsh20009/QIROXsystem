@@ -185,6 +185,7 @@ async function atomicWalletCredit(userId: string, amount: number): Promise<void>
 }
 
 async function atomicWalletDebit(userId: string, amount: number): Promise<boolean> {
+  const { UserModel } = await import("./models");
   const result = await UserModel.findOneAndUpdate(
     { _id: userId, walletBalance: { $gte: amount - 0.005 } },
     { $inc: { walletBalance: -amount } }
@@ -193,6 +194,7 @@ async function atomicWalletDebit(userId: string, amount: number): Promise<boolea
 }
 
 async function getWalletBalance(userId: string): Promise<number> {
+  const { UserModel } = await import("./models");
   const user = await UserModel.findById(userId).select("walletBalance");
   return Math.max(0, (user as any)?.walletBalance ?? 0);
 }
