@@ -130,7 +130,7 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
     const username = email.split("@")[0] + "_" + Math.random().toString(36).slice(2, 6);
 
     try {
-      await register.mutateAsync({
+      const userData = await register.mutateAsync({
         username,
         password,
         email: email.trim().toLowerCase(),
@@ -140,10 +140,10 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
         role: "client",
       } as any);
 
-      toast({ title: "أهلاً بك في كيروكس ✓", description: "تم إنشاء حسابك بنجاح" });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.setQueryData(["/api/user"], userData);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       close();
-      setLocation("/login?verify=" + encodeURIComponent(email.trim().toLowerCase()));
+      setLocation("/verify-email?flow=register");
     } catch (err: any) {
       toast({ title: "تعذر إنشاء الحساب", description: err?.message || "حاول مرة أخرى", variant: "destructive" });
     }
