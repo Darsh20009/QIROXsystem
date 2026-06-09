@@ -20,15 +20,15 @@ import maestroLogo from "@assets/Screenshot_2026-01-28_130058_1771717301779.png"
 import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
 
 const staticPartners = [
-  { name: "QahwaCup", nameAr: "قهوة كوب", logo: qahwaCupLogo },
-  { name: "Gen M&Z", nameAr: "Gen M&Z", logo: genMZLogo },
-  { name: "Be Fluent", nameAr: "Be Fluent", logo: beFluentLogo },
-  { name: "جمعية طويق", nameAr: "جمعية طويق", logo: tuwaiqLogo },
-  { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه", logo: blackRoseLogo },
-  { name: "Qodratak", nameAr: "قدراتك", logo: qodratakLogo },
-  { name: "Subway", nameAr: "صبواي", logo: subwayLogo },
-  { name: "Maestro", nameAr: "مايسترو", logo: maestroLogo },
-  { name: "InstaPay", nameAr: "إنستاباي", logo: instapayLogo },
+  { name: "QahwaCup",        nameAr: "قهوة كوب",        logo: qahwaCupLogo,   sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },
+  { name: "Gen M&Z",         nameAr: "Gen M&Z",          logo: genMZLogo,      sector: "تسويق رقمي",      sectorEn: "Marketing",    url: null },
+  { name: "Be Fluent",       nameAr: "Be Fluent",        logo: beFluentLogo,   sector: "التعليم",          sectorEn: "Education",    url: null },
+  { name: "جمعية طويق",     nameAr: "جمعية طويق",      logo: tuwaiqLogo,     sector: "القطاع غير الربحي", sectorEn: "Non-Profit",  url: "https://tuwaiq.edu.sa" },
+  { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه",  logo: blackRoseLogo,  sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },
+  { name: "Qodratak",        nameAr: "قدراتك",           logo: qodratakLogo,   sector: "التعليم والتطوير", sectorEn: "EdTech",       url: null },
+  { name: "Subway",          nameAr: "صبواي",            logo: subwayLogo,     sector: "سلاسل المطاعم",    sectorEn: "F&B Chain",    url: "https://subway.com" },
+  { name: "Maestro",         nameAr: "مايسترو",          logo: maestroLogo,    sector: "تقنية",            sectorEn: "Tech",         url: null },
+  { name: "InstaPay",        nameAr: "إنستاباي",         logo: instapayLogo,   sector: "المدفوعات",        sectorEn: "Fintech",      url: null },
 ];
 
 const fadeUp = {
@@ -204,11 +204,30 @@ export default function Partners() {
         >
           {staticPartners.map((partner, idx) => (
             <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
-              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5">
+              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
                 <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden">
-                  <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                  {partner.url ? (
+                    <a href={partner.url} target="_blank" rel="noopener noreferrer">
+                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                    </a>
+                  ) : (
+                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                  )}
                 </div>
-                <h3 className="text-xs font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
+                {partner.url ? (
+                  <a href={partner.url} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-bold text-black dark:text-white text-center hover:underline" data-testid={`link-static-partner-${idx}`}>
+                    {lang === "ar" ? partner.nameAr : partner.name}
+                  </a>
+                ) : (
+                  <h3 className="text-xs font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
+                )}
+                <span className="text-[9px] text-black/35 dark:text-white/35 mt-1 font-medium">
+                  {lang === "ar" ? partner.sector : partner.sectorEn}
+                </span>
+                {partner.url && (
+                  <ExternalLink className="w-2.5 h-2.5 text-black/20 dark:text-white/20 absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
               </div>
             </motion.div>
           ))}
