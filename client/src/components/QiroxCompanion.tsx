@@ -651,7 +651,7 @@ export default function QiroxCompanion() {
               </form>
 
               <div className="text-[9px] text-black/30 text-center pb-1.5 bg-white">
-                QIROX Agent · {L ? "مدعوم بـ Kimi AI" : "Powered by Kimi AI"} · {L ? "آمن وسريع" : "secure & fast"}
+                Qirox AI · {L ? "آمن وسريع" : "secure & fast"}
               </div>
             </>
           )}

@@ -227,7 +227,7 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
         <div className="flex flex-col gap-2">
           {[
             { title: "إدارة شاملة",      desc: "عمليات · مالية · موظفون · عملاء" },
-            { title: "ذكاء اصطناعي",     desc: "Kimi AI · تحليل · محادثة · أتمتة" },
+            { title: "ذكاء اصطناعي",     desc: "Qirox AI · تحليل · محادثة · أتمتة" },
             { title: "أمان مؤسسي",       desc: "2FA · تشفير · جلسات آمنة"         },
           ].map((f, i) => (
             <motion.div key={f.title}

@@ -137,7 +137,7 @@ export default function EmployeeAIAssistant({ open, onClose }: Props) {
                   <Sparkles className="w-4 h-4 text-white dark:text-black" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-black dark:text-white">Kimi AI</p>
+                  <p className="text-sm font-black text-black dark:text-white">Qirox AI</p>
                   <p className="text-[10px] text-black/35 dark:text-white/35">{L ? "مساعدك الذكي" : "Your AI assistant"}</p>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function EmployeeAIAssistant({ open, onClose }: Props) {
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 </Button>
               </div>
-              <p className="text-[10px] text-black/25 dark:text-white/25 text-center mt-1.5">Kimi AI · Moonshot</p>
+              <p className="text-[10px] text-black/25 dark:text-white/25 text-center mt-1.5">Qirox AI · ذكاء اصطناعي</p>
             </div>
           </motion.div>
         </>

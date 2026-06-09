@@ -136,7 +136,7 @@ export function AppSidebar() {
     // Employee — tools (الأدوات)
     { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
     { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools", allowedRoles: TECH_ROLES },
-    { title: "Kimi AI", icon: Bot, url: "/admin/kimi-ai", group: "employee", section: "tools" },
+    { title: "Qirox AI", icon: Bot, url: "/admin/kimi-ai", group: "employee", section: "tools" },
     { title: ar ? "دليل القطاعات" : "Sector Guide", icon: Layers, url: "/employee/sector-guide", group: "employee", section: "tools", allowedRoles: TECH_ROLES },
 
     // Employee — account (حسابي — كل الموظفين)
@@ -153,7 +153,7 @@ export function AppSidebar() {
     { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
     { title: ar ? "جلسات الذكاء الاصطناعي" : "AI Sessions", icon: Bot, url: "/admin/ai-sessions", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "Kimi AI" : "Kimi AI", icon: Bot, url: "/admin/kimi-ai", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
+    { title: ar ? "Qirox AI" : "Qirox AI", icon: Bot, url: "/admin/kimi-ai", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
     { title: ar ? "لوحات الأنظمة" : "System Dashboards", icon: LayoutGrid, url: "/admin/system-dashboards", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
     // Admin — products & services (core catalog)
     { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },

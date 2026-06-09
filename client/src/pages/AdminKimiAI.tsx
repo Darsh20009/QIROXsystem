@@ -82,7 +82,7 @@ export default function AdminKimiAI() {
       const assistantContent = data.choices?.[0]?.message?.content || "لم يتم الحصول على رد.";
       setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
     } catch (e: any) {
-      toast({ title: L ? "خطأ في الاتصال بـ Kimi AI" : "Kimi AI Error", description: e.message, variant: "destructive" });
+      toast({ title: L ? "خطأ في الاتصال بـ Qirox AI" : "Qirox AI Error", description: e.message, variant: "destructive" });
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function AdminKimiAI() {
           </div>
           <div>
             <h1 className="text-xl font-black text-black flex items-center gap-2">
-              Kimi AI <Sparkles className="w-4 h-4 text-black/40" />
+              Qirox AI <Sparkles className="w-4 h-4 text-black/40" />
             </h1>
             <p className="text-xs text-black/35">{L ? "مساعدك الذكي المتخصص لمنصة Qirox" : "Your specialized AI agent for Qirox"}</p>
           </div>
