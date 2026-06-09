@@ -217,6 +217,35 @@ export default function Footer() {
           </>
         )}
 
+        {/* WhatsApp Channel Banner */}
+        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+        <div className="mb-8">
+          <a
+            href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="footer-whatsapp-channel"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-2xl px-6 py-5 transition-all duration-300 hover:shadow-lg hover:shadow-[#25D366]/10"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-[#25D366] flex items-center justify-center shadow-md shadow-[#25D366]/30 shrink-0">
+                <SiWhatsapp className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-black dark:text-white text-sm leading-snug">
+                  {lang === "ar" ? "📢 انضم لقناة QIROX على واتساب" : "📢 Join QIROX WhatsApp Channel"}
+                </p>
+                <p className="text-xs text-black/45 dark:text-white/45 mt-0.5">
+                  {lang === "ar" ? "عروض حصرية · آخر المشاريع · خصومات العملاء" : "Exclusive offers · Latest projects · Client discounts"}
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 text-xs font-bold bg-[#25D366] text-white px-4 py-2 rounded-xl group-hover:bg-[#1faf55] transition-colors">
+              {lang === "ar" ? "انضم الآن" : "Join Now"}
+            </span>
+          </a>
+        </div>
+
         {SOCIAL_LINKS.length > 0 && (
           <>
             <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />

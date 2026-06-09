@@ -29,8 +29,20 @@ interface SocialSlide {
   textColor: string;
 }
 
+const WA_CHANNEL: SocialSlide = {
+  key: "wa-channel",
+  label: "انضم لقناتنا على واتساب",
+  icon: SiWhatsapp,
+  url: "https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i",
+  bg: "linear-gradient(135deg,#128C7E 0%,#25D366 100%)",
+  ring: "rgba(37,211,102,0.5)",
+  iconColor: "#fff",
+  textColor: "#fff",
+};
+
 function buildSlides(s: PublicSettings): SocialSlide[] {
   const all: (SocialSlide | null)[] = [
+    WA_CHANNEL,
     s.instagram ? {
       key: "instagram", label: "تابعنا على انستقرام",
       icon: SiInstagram,

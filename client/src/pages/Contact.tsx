@@ -249,6 +249,26 @@ export default function Contact() {
                 <p className="text-sm text-[#25D366] group-hover:underline">{T.whatsappChat}</p>
               </a>
             )}
+            <a
+              href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/25 hover:border-[#25D366]/60 rounded-2xl p-7 shadow-sm transition-all duration-300 group"
+              data-testid="link-whatsapp-channel-contact"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#25D366] flex items-center justify-center mb-5 shadow-md shadow-[#25D366]/30">
+                <SiWhatsapp className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-bold text-black dark:text-white text-sm mb-1">
+                {lang === "ar" ? "📢 قناة واتساب" : "📢 WhatsApp Channel"}
+              </h3>
+              <p className="text-xs text-black/45 dark:text-white/45 mb-3 leading-relaxed">
+                {lang === "ar" ? "انضم لقناتنا للحصول على عروض حصرية وآخر المشاريع والخصومات" : "Join our channel for exclusive offers, latest projects & discounts"}
+              </p>
+              <p className="text-sm font-bold text-[#25D366] group-hover:underline">
+                {lang === "ar" ? "انضم الآن ←" : "Join Now →"}
+              </p>
+            </a>
             <div className="bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm">
               <div className="w-12 h-12 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-5">
                 <MapPin className="w-5 h-5 text-black/40 dark:text-white/40" />
