@@ -178,33 +178,6 @@ export function FloatingBrandPulse() {
 
   return (
     <>
-      {/* ── Permanent WhatsApp Channel Button (always visible, bottom-left) ── */}
-      <a
-        href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
-        target="_blank"
-        rel="noopener noreferrer"
-        data-testid="floating-wa-channel"
-        className="fixed bottom-6 left-4 md:left-6 z-[91] group flex items-center gap-0 hover:gap-2.5 overflow-hidden transition-all duration-300"
-        style={{ maxWidth: "calc(100vw - 2rem)" }}
-      >
-        {/* Label — slides in on hover */}
-        <div className="max-w-0 group-hover:max-w-[200px] opacity-0 group-hover:opacity-100 transition-all duration-300 overflow-hidden whitespace-nowrap">
-          <div className="bg-[#25D366] text-white text-xs font-bold px-3 py-2 rounded-l-xl leading-tight">
-            <span className="block">📢 انضم لقناتنا</span>
-            <span className="block text-[9px] font-normal opacity-80">عروض · مشاريع · خصومات</span>
-          </div>
-        </div>
-        {/* Icon button */}
-        <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg shadow-[#25D366]/40 group-hover:shadow-xl group-hover:shadow-[#25D366]/50 group-hover:scale-110 transition-all duration-300 relative">
-          <motion.div
-            className="absolute inset-0 rounded-full bg-[#25D366]"
-            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <SiWhatsapp size={22} color="#fff" className="relative z-10" />
-        </div>
-      </a>
-
       {/* ── Cycling Social Slides (right side) ── */}
       <div
         className="floating-brand-pulse fixed right-4 md:right-6 bottom-6 z-[90] flex flex-col items-end gap-3 pointer-events-none max-w-[calc(100vw-5rem)]"
