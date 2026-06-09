@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle2, Loader2, ShieldCheck,
-  Clock, PhoneCall, Info, Star, MessageSquare, KeyRound
+  Clock, Info, Star, MessageSquare, KeyRound
 } from "lucide-react";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 
-type Method = "call" | "whatsapp";
-type Stage = "enter-phone" | "call-wait" | "otp-input" | "done";
+type Method = "whatsapp";
+type Stage = "enter-phone" | "otp-input" | "done";
 
 export default function PhoneVerify() {
   const { data: user } = useUser();
@@ -29,12 +29,11 @@ export default function PhoneVerify() {
   const nextAfterVerify = isRegisterFlow ? "/onboarding" : "/dashboard";
 
   const [stage, setStage] = useState<Stage>("enter-phone");
-  const [method, setMethod] = useState<Method>("call");
+  const [method] = useState<Method>("whatsapp");
   const [phone, setPhone] = useState((user as any)?.phone || "");
   const [otp, setOtp] = useState("");
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [remaining, setRemaining] = useState("");
-  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -49,44 +48,6 @@ export default function PhoneVerify() {
     return () => clearInterval(id);
   }, [expiresAt]);
 
-  // ── Polling: check verification status every 5s while waiting for call ──
-  const { data: verifyStatus } = useQuery({
-    queryKey: ["/api/phone-verify/status"],
-    enabled: stage === "call-wait",
-    refetchInterval: stage === "call-wait" ? 5000 : false,
-    staleTime: 0,
-  }) as { data: any };
-
-  useEffect(() => {
-    if (stage === "call-wait" && verifyStatus?.phoneVerified) {
-      setStage("done");
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
-    }
-  }, [verifyStatus, stage]);
-
-  // ── WebSocket: instant phone_verified push ──
-  useEffect(() => {
-    if (stage !== "call-wait" || !(user as any)?.id) return;
-    const uid = String((user as any).id || (user as any)._id);
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    wsRef.current = ws;
-    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", userId: uid }));
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "phone_verified") {
-          setStage("done");
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
-        }
-      } catch {}
-    };
-    ws.onerror = () => {};
-    return () => { ws.close(); wsRef.current = null; };
-  }, [stage, (user as any)?.id]);
-
   const initMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/phone-verify/init", { phone, method }).then(r => r.json()),
     onSuccess: (data: any) => {
@@ -97,11 +58,7 @@ export default function PhoneVerify() {
       }
       if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
       setExpiresAt(new Date(data.expiresAt));
-      if (method === "whatsapp") {
-        setStage("otp-input");
-      } else {
-        setStage("call-wait");
-      }
+      setStage("otp-input");
     },
     onError: (e: any) => {
       toast({ title: e?.message || "حدث خطأ", variant: "destructive" });
@@ -193,33 +150,9 @@ export default function PhoneVerify() {
           {stage === "enter-phone" && (
             <motion.div key="phone" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
 
-              {/* Method selector */}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: "call" as Method, icon: PhoneCall, labelAr: "اتصال هاتفي", labelEn: "Phone Call" },
-                  { id: "whatsapp" as Method, icon: MessageSquare, labelAr: "واتساب", labelEn: "WhatsApp" },
-                ].map(opt => (
-                  <button key={opt.id} onClick={() => setMethod(opt.id)}
-                    data-testid={`btn-method-${opt.id}`}
-                    className={`flex flex-col items-center gap-2 py-4 px-3 rounded-2xl border-2 transition-all font-bold text-sm ${
-                      method === opt.id
-                        ? opt.id === "whatsapp"
-                          ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-300"
-                          : "border-white/40 bg-white/10 text-white"
-                        : "border-white/10 bg-white/5 text-white/30 hover:border-white/20 hover:text-white/50"
-                    }`}>
-                    <opt.icon className="w-5 h-5" />
-                    <span className="text-xs">{L ? opt.labelAr : opt.labelEn}</span>
-                  </button>
-                ))}
-              </div>
-
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                 <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-                  {method === "whatsapp"
-                    ? (L ? "سيُرسَل رمز التحقق عبر واتساب أو بريدك الإلكتروني" : "OTP code sent via WhatsApp and your email")
-                    : (L ? "سيتصل بك فريق QIROX للتحقق" : "QIROX team will call you to verify")
-                  }
+                  {L ? "سيُرسَل رمز التحقق عبر واتساب أو بريدك الإلكتروني" : "OTP code sent via WhatsApp and your email"}
                 </p>
                 <CountryPhoneInput
                   value={phone}
@@ -229,10 +162,7 @@ export default function PhoneVerify() {
                 <div className="flex items-start gap-2 mt-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3">
                   <Info className="w-4 h-4 text-white/50 mt-0.5 shrink-0" />
                   <p className="text-xs text-white/50 leading-relaxed">
-                    {method === "whatsapp"
-                      ? (L ? "سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني خلال دقائق." : "You'll receive a verification code via WhatsApp and your email within minutes.")
-                      : (L ? "سيتصل بك أحد موظفي QIROX على رقمك ويُؤكد توثيق الحساب." : "A QIROX staff member will call you at your number.")
-                    }
+                    {L ? "سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني خلال دقائق." : "You'll receive a verification code via WhatsApp and your email within minutes."}
                   </p>
                 </div>
               </div>
@@ -240,17 +170,11 @@ export default function PhoneVerify() {
               <Button
                 onClick={handleStart}
                 disabled={initMutation.isPending || phone.replace(/\D/g, "").length < 10}
-                className={`w-full h-14 rounded-2xl font-black text-base gap-2 shadow-lg ${
-                  method === "whatsapp"
-                    ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                    : "bg-gray-900 dark:bg-white dark:text-gray-900 text-white"
-                }`}
+                className="w-full h-14 rounded-2xl font-black text-base gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white"
                 data-testid="btn-start-verify">
                 {initMutation.isPending
                   ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : method === "whatsapp"
-                    ? <><MessageSquare className="w-5 h-5" /> {L ? "طلب رمز واتساب" : "Request WhatsApp OTP"}</>
-                    : <><PhoneCall className="w-5 h-5" /> {L ? "طلب اتصال للتوثيق" : "Request Verification Call"}</>
+                  : <><MessageSquare className="w-5 h-5" /> {L ? "طلب رمز واتساب" : "Request WhatsApp OTP"}</>
                 }
               </Button>
 
@@ -320,53 +244,6 @@ export default function PhoneVerify() {
                 className="w-full h-11 rounded-2xl text-sm border-white/10 text-white/60 bg-transparent gap-2">
                 {L ? "تغيير الرقم أو الطريقة" : "Change Number or Method"}
               </Button>
-            </motion.div>
-          )}
-
-          {/* ── STAGE: Call Wait ── */}
-          {stage === "call-wait" && (
-            <motion.div key="call" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-6 text-center shadow-sm">
-                <div className="relative w-20 h-20 mx-auto mb-4">
-                  <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center">
-                    <PhoneCall className="w-10 h-10 text-black dark:text-white" />
-                  </div>
-                  <div className="absolute inset-0 rounded-full border-2 border-black/15 dark:border-white/15 animate-ping" />
-                </div>
-                <h2 className="font-black text-gray-900 dark:text-white text-xl mb-1">{L ? "انتظر الاتصال" : "Waiting for Call"}</h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{L ? "طلبك وصل إلى فريق QIROX" : "Your request has been sent to the QIROX team"}</p>
-                <div className="inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 mb-5">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span className="font-mono font-bold text-gray-700 dark:text-gray-200" dir="ltr">{phone}</span>
-                </div>
-                <div className="bg-black/[0.04] dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-2xl p-4 text-right space-y-2">
-                  {[
-                    L ? "تم إشعار فريق QIROX بطلبك" : "QIROX team has been notified",
-                    L ? "سيتصل بك موظف خلال دقائق قليلة" : "A staff member will call you in a few minutes",
-                    L ? "بعد التأكيد يُحدَّث حسابك تلقائياً" : "After confirmation, your account will update automatically",
-                  ].map((t, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-black/70 dark:text-white/70">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>{t}</span>
-                    </div>
-                  ))}
-                </div>
-                {expiresAt && (
-                  <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-gray-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{L ? `ينتهي الطلب خلال ${remaining}` : `Request expires in ${remaining}`}</span>
-                  </div>
-                )}
-              </div>
-
-              <Button variant="outline" onClick={() => setStage("enter-phone")}
-                className="w-full h-11 rounded-2xl text-sm border-white/10 text-white/60 bg-transparent gap-2">
-                {L ? "تغيير الرقم" : "Change Number"}
-              </Button>
-              <button onClick={() => navigate(nextAfterVerify)}
-                className="w-full text-center text-xs text-gray-400 hover:text-gray-300 py-2 transition-colors">
-                {isRegisterFlow ? (L ? "تخطي ومتابعة ←" : "Skip & Continue →") : (L ? "العودة للوحة التحكم ←" : "Back to Dashboard →")}
-              </button>
             </motion.div>
           )}
 

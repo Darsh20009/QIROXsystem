@@ -13538,7 +13538,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { phone, method } = req.body;
       if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
-      if (!["whatsapp", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
+      if (method !== "whatsapp") return res.status(400).json({ error: "method غير صحيح" });
       const normPhone = normalisePhone(String(phone).trim());
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
       const dbUser = await (UserModel as any).findOne({ phone: normPhone }).lean() as any;
@@ -13588,19 +13588,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
           <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
           <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
         ).catch(() => {});
-      } else if (method === "call") {
-        const { NotificationModel, UserModel: UModel } = await import("./models");
-        await (NotificationModel as any).create({
-          forAdmins: true, type: "info",
-          title: `📞 طلب دخول بالجوال — ${clientName}`,
-          body: `${clientName} يطلب الدخول عبر اتصال هاتفي على ${normPhone} — رمز OTP: ${otp}`,
-          link: `/admin/phone-verifications`,
-        });
-        const staff = await (UModel as any).find({ role: { $ne: "client" } }).select("_id").lean();
-        const { pushToUser } = await import("./ws");
-        for (const s of staff as any[]) {
-          pushToUser(String(s._id), { type: "notification", notification: { type: "info", title: `📞 طلب دخول بالجوال`, body: `${clientName} — ${normPhone} — رمز: ${otp}`, link: "/admin/phone-verifications" } });
-        }
       }
       return res.json({ sent: true, expiresAt, phone: normPhone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }

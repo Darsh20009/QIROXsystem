@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine, MessageSquare, PhoneCall, KeyRound } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine, MessageSquare, KeyRound } from "lucide-react";
 import { QrLoginScanner } from "@/components/QrLoginScanner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
@@ -326,9 +326,10 @@ export default function Login() {
   const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
   const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp">("phone");
   const [phoneLoginPhone, setPhoneLoginPhone] = useState("");
-  const [phoneLoginMethod, setPhoneLoginMethod] = useState<"whatsapp" | "call">("whatsapp");
   const [phoneLoginOtp, setPhoneLoginOtp] = useState("");
   const [phoneLoginPending, setPhoneLoginPending] = useState(false);
+  const [phoneLoginExpiry, setPhoneLoginExpiry] = useState<Date | null>(null);
+  const [phoneLoginSecsLeft, setPhoneLoginSecsLeft] = useState(900);
 
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
@@ -360,6 +361,15 @@ export default function Login() {
       toast({ title: msg.title, description: msg.desc, variant: "destructive" });
     }, 200);
   }, []);
+
+  // Phone OTP login countdown timer
+  useEffect(() => {
+    if (!phoneLoginExpiry || phoneLoginStep !== "otp") return;
+    const tick = () => setPhoneLoginSecsLeft(Math.max(0, Math.floor((phoneLoginExpiry.getTime() - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [phoneLoginExpiry, phoneLoginStep]);
 
   // Check if Google OAuth is enabled on the server
   useEffect(() => {
@@ -682,6 +692,64 @@ export default function Login() {
     } finally {
       setIsResending(false);
     }
+  };
+
+  const togglePhoneLogin = () => {
+    if (phoneLoginOpen) {
+      setPhoneLoginOpen(false);
+      setPhoneLoginStep("phone");
+      setPhoneLoginOtp("");
+      setPhoneLoginExpiry(null);
+    } else {
+      setPhoneLoginOpen(true);
+    }
+  };
+
+  const handleSendPhoneOtp = async () => {
+    if (phoneLoginPhone.replace(/\D/g, "").length < 10) {
+      toast({ title: "أدخل رقم جوال صحيح مع رمز الدولة", variant: "destructive" });
+      return;
+    }
+    setPhoneLoginPending(true);
+    try {
+      const r = await fetch("/api/auth/phone-otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneLoginPhone, method: "whatsapp" }),
+      });
+      const data = await r.json();
+      if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      setPhoneLoginExpiry(expiry);
+      setPhoneLoginSecsLeft(900);
+      setPhoneLoginStep("otp");
+    } catch {
+      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
+    } finally { setPhoneLoginPending(false); }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    if (phoneLoginOtp.length !== 6) return;
+    setPhoneLoginPending(true);
+    try {
+      const r = await fetch("/api/auth/phone-otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneLoginPhone, otp: phoneLoginOtp }),
+      });
+      const data = await r.json();
+      if (data.error || !data.success) {
+        toast({ title: data.error || "الرمز غير صحيح أو انتهت صلاحيته", variant: "destructive" });
+        return;
+      }
+      queryClient.setQueryData(["/api/user"], data.user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      const ret = sessionStorage.getItem("returnAfterLogin");
+      if (ret) { sessionStorage.removeItem("returnAfterLogin"); setLocation(ret); }
+      else setLocation(data.user?.role === "client" ? "/dashboard" : "/admin");
+    } catch {
+      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
+    } finally { setPhoneLoginPending(false); }
   };
 
   const registerSchema = z.object({
@@ -1565,11 +1633,45 @@ export default function Login() {
                 </button>
               )}
 
-              <div className="flex items-center gap-3 mt-4">
-                <div className="flex-1 h-px bg-black/[0.07]" />
-                <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
-                <div className="flex-1 h-px bg-black/[0.07]" />
-              </div>
+              {/* Phone Login — alongside Google/Apple/QR */}
+              {!isRegister && (
+                <motion.button
+                  type="button"
+                  onClick={togglePhoneLogin}
+                  data-testid="btn-phone-login"
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
+                    phoneLoginOpen
+                      ? "border-emerald-400 bg-emerald-600"
+                      : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
+                    <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
+                  </div>
+                  <div className="flex-1 px-4 py-3.5 text-right">
+                    <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
+                    <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
+                      {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
+                    </p>
+                  </div>
+                  <div className="px-4">
+                    {phoneLoginOpen
+                      ? <X className="w-4 h-4 text-white/70" />
+                      : <ChevronLeft className="w-4 h-4 text-gray-300" />
+                    }
+                  </div>
+                </motion.button>
+              )}
+
+              {!phoneLoginOpen && (
+                <div className="flex items-center gap-3 mt-4">
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                  <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                </div>
+              )}
             </div>
           )}
 
@@ -1596,17 +1698,49 @@ export default function Login() {
                 </div>
                 <QrCode className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
               </button>
-              <div className="flex items-center gap-3 mt-4">
-                <div className="flex-1 h-px bg-black/[0.07]" />
-                <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
-                <div className="flex-1 h-px bg-black/[0.07]" />
-              </div>
+              {/* Phone Login — for non-OAuth section */}
+              {!isRegister && (
+                <motion.button
+                  type="button"
+                  onClick={togglePhoneLogin}
+                  data-testid="btn-phone-login-alt"
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
+                    phoneLoginOpen
+                      ? "border-emerald-400 bg-emerald-600"
+                      : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
+                    <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
+                  </div>
+                  <div className="flex-1 px-4 py-3.5 text-right">
+                    <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
+                    <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
+                      {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
+                    </p>
+                  </div>
+                  <div className="px-4">
+                    {phoneLoginOpen ? <X className="w-4 h-4 text-white/70" /> : <ChevronLeft className="w-4 h-4 text-gray-300" />}
+                  </div>
+                </motion.button>
+              )}
+
+              {!phoneLoginOpen && (
+                <div className="flex items-center gap-3 mt-4">
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                  <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
+                  <div className="flex-1 h-px bg-black/[0.07]" />
+                </div>
+              )}
             </div>
           )}
 
           <QrLoginScanner open={qrScannerOpen} onClose={() => setQrScannerOpen(false)} />
 
-          {/* Form */}
+          {/* Form OR Phone Panel */}
+          {!phoneLoginOpen ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -1898,184 +2032,91 @@ export default function Login() {
               {!isRegister && (
                 <QuickPinButton prefillIdentifier={form.watch("username") || ""} />
               )}
-
-              {/* Phone OTP Login */}
-              {!isRegister && (
-                <div className="mt-2">
-                  {!phoneLoginOpen ? (
-                    <motion.button
-                      type="button"
-                      onClick={() => setPhoneLoginOpen(true)}
-                      data-testid="btn-phone-otp-login"
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      className="w-full relative overflow-hidden rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50 flex items-center gap-0 transition-all group"
-                    >
-                      <div className="flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-emerald-100">
-                        <MessageSquare className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div className="flex-1 px-4 py-3.5 text-right">
-                        <p className="text-gray-800 font-bold text-[14px] leading-snug">الدخول برقم الجوال</p>
-                        <p className="text-emerald-600/70 text-[10.5px] font-medium mt-0.5">واتساب · اتصال · بدون كلمة مرور</p>
-                      </div>
-                      <div className="px-4">
-                        <ChevronLeft className="w-4 h-4 text-gray-300" />
-                      </div>
-                    </motion.button>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-xl border border-black/[0.08] bg-gray-50 overflow-hidden"
-                    >
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-sm text-black">
-                            {phoneLoginStep === "phone" ? "الدخول برقم الجوال" : "أدخل رمز التحقق"}
-                          </h3>
-                          <button type="button"
-                            onClick={() => { setPhoneLoginOpen(false); setPhoneLoginStep("phone"); setPhoneLoginOtp(""); }}
-                            className="text-black/30 hover:text-black/60">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {phoneLoginStep === "phone" && (
-                          <>
-                            <div className="grid grid-cols-2 gap-2">
-                              {([
-                                { id: "whatsapp" as const, icon: MessageSquare, label: "واتساب" },
-                                { id: "call" as const, icon: PhoneCall, label: "اتصال" },
-                              ] as const).map(opt => (
-                                <button key={opt.id} type="button"
-                                  onClick={() => setPhoneLoginMethod(opt.id)}
-                                  className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg border text-xs font-bold transition-all ${
-                                    phoneLoginMethod === opt.id
-                                      ? opt.id === "whatsapp"
-                                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                                        : "border-black/20 bg-black/5 text-black"
-                                      : "border-black/[0.06] text-black/40 hover:text-black/60"
-                                  }`}>
-                                  <opt.icon className="w-3.5 h-3.5" />
-                                  {opt.label}
-                                </button>
-                              ))}
-                            </div>
-                            <CountryPhoneInput
-                              value={phoneLoginPhone}
-                              onChange={setPhoneLoginPhone}
-                              placeholder="5XXXXXXXX"
-                            />
-                            <Button
-                              type="button"
-                              onClick={async () => {
-                                if (phoneLoginPhone.replace(/\D/g, "").length < 10) {
-                                  toast({ title: "أدخل رقم جوال صحيح مع رمز الدولة", variant: "destructive" });
-                                  return;
-                                }
-                                setPhoneLoginPending(true);
-                                try {
-                                  const r = await fetch("/api/auth/phone-otp/send", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ phone: phoneLoginPhone, method: phoneLoginMethod }),
-                                  });
-                                  const data = await r.json();
-                                  if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
-                                  setPhoneLoginStep("otp");
-                                } catch {
-                                  toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
-                                } finally { setPhoneLoginPending(false); }
-                              }}
-                              disabled={phoneLoginPending || phoneLoginPhone.replace(/\D/g, "").length < 10}
-                              className={`w-full h-10 rounded-lg font-bold text-sm gap-1.5 ${
-                                phoneLoginMethod === "whatsapp"
-                                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                  : "bg-black hover:bg-black/80 text-white"
-                              }`}
-                            >
-                              {phoneLoginPending
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : phoneLoginMethod === "whatsapp"
-                                  ? <><MessageSquare className="w-4 h-4" /> إرسال رمز واتساب</>
-                                  : <><PhoneCall className="w-4 h-4" /> طلب اتصال</>
-                              }
-                            </Button>
-                          </>
-                        )}
-
-                        {phoneLoginStep === "otp" && (
-                          <>
-                            <div className="bg-white rounded-lg border border-black/[0.06] p-3 text-center">
-                              <p className="text-xs text-black/50 mb-1.5">
-                                {phoneLoginMethod === "whatsapp"
-                                  ? "سيصلك الرمز عبر واتساب أو بريدك الإلكتروني"
-                                  : "سيتصل بك فريق QIROX للتحقق"}
-                              </p>
-                              <div className="font-mono text-sm font-bold text-black/70" dir="ltr">{phoneLoginPhone}</div>
-                            </div>
-                            <div className="relative">
-                              <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                              <Input
-                                value={phoneLoginOtp}
-                                onChange={e => setPhoneLoginOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                placeholder="______"
-                                className="h-12 rounded-lg pr-10 text-xl font-mono tracking-[0.3em] text-center bg-white border-black/[0.08]"
-                                type="text" inputMode="numeric" dir="ltr"
-                                data-testid="input-phone-otp"
-                                autoFocus
-                                onKeyDown={e => { if (e.key === "Enter" && phoneLoginOtp.length === 6) document.getElementById("btn-otp-verify")?.click(); }}
-                              />
-                            </div>
-                            <Button
-                              id="btn-otp-verify"
-                              type="button"
-                              onClick={async () => {
-                                if (phoneLoginOtp.length !== 6) return;
-                                setPhoneLoginPending(true);
-                                try {
-                                  const r = await fetch("/api/auth/phone-otp/verify", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ phone: phoneLoginPhone, otp: phoneLoginOtp }),
-                                  });
-                                  const data = await r.json();
-                                  if (data.error || !data.success) {
-                                    toast({ title: data.error || "الرمز غير صحيح أو انتهت صلاحيته", variant: "destructive" });
-                                    return;
-                                  }
-                                  queryClient.setQueryData(["/api/user"], data.user);
-                                  queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-                                  const ret = sessionStorage.getItem("returnAfterLogin");
-                                  if (ret) { sessionStorage.removeItem("returnAfterLogin"); setLocation(ret); }
-                                  else setLocation(data.user?.role === "client" ? "/dashboard" : "/admin");
-                                } catch {
-                                  toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
-                                } finally { setPhoneLoginPending(false); }
-                              }}
-                              disabled={phoneLoginOtp.length !== 6 || phoneLoginPending}
-                              className="w-full h-10 rounded-lg bg-black hover:bg-black/80 text-white font-bold text-sm gap-1.5"
-                              data-testid="btn-phone-otp-verify"
-                            >
-                              {phoneLoginPending
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <><CheckCircle2 className="w-4 h-4" /> تأكيد الرمز والدخول</>
-                              }
-                            </Button>
-                            <button type="button"
-                              onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginOtp(""); }}
-                              className="w-full text-center text-xs text-black/30 hover:text-black/50 py-1 transition-colors">
-                              تغيير الرقم أو الطريقة
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              )}
             </form>
           </Form>
+          ) : (
+          /* ── Phone OTP Panel ── */
+          <div className="space-y-4">
+            <button type="button"
+              onClick={togglePhoneLogin}
+              className="flex items-center gap-1.5 text-xs text-black/40 hover:text-black/70 transition-colors -mb-1">
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>العودة لتسجيل الدخول بكلمة المرور</span>
+            </button>
+
+            {phoneLoginStep === "phone" && (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-black/50 mb-2">رقم الجوال مع رمز الدولة</p>
+                  <CountryPhoneInput value={phoneLoginPhone} onChange={setPhoneLoginPhone} placeholder="5XXXXXXXX" />
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-700 leading-relaxed">سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني المسجّل</p>
+                </div>
+                <Button type="button" onClick={handleSendPhoneOtp}
+                  disabled={phoneLoginPending || phoneLoginPhone.replace(/\D/g, "").length < 10}
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm gap-2"
+                  data-testid="btn-send-phone-otp">
+                  {phoneLoginPending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <><MessageSquare className="w-4 h-4" /> إرسال رمز التحقق</>
+                  }
+                </Button>
+              </div>
+            )}
+
+            {phoneLoginStep === "otp" && (
+              <div className="space-y-3">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                  <p className="text-[11px] text-emerald-600 mb-1">تم إرسال الرمز عبر واتساب وبريدك الإلكتروني</p>
+                  <p className="font-mono text-sm font-bold text-black/70" dir="ltr">{phoneLoginPhone}</p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-black/50">رمز التحقق (6 أرقام)</p>
+                    <span className={`text-xs font-mono font-bold tabular-nums ${phoneLoginSecsLeft < 60 ? "text-red-500" : "text-black/30"}`}>
+                      {String(Math.floor(phoneLoginSecsLeft / 60)).padStart(2, "0")}:{String(phoneLoginSecsLeft % 60).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <Input
+                    value={phoneLoginOtp}
+                    onChange={e => setPhoneLoginOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="______"
+                    className="h-14 text-2xl font-mono tracking-[0.4em] text-center bg-white border-black/[0.08] rounded-xl"
+                    type="text" inputMode="numeric" dir="ltr"
+                    data-testid="input-phone-otp" autoFocus
+                    onKeyDown={e => e.key === "Enter" && phoneLoginOtp.length === 6 && handleVerifyPhoneOtp()}
+                  />
+                </div>
+                <Button type="button" onClick={handleVerifyPhoneOtp}
+                  disabled={phoneLoginOtp.length !== 6 || phoneLoginPending}
+                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm gap-2"
+                  data-testid="btn-phone-otp-verify">
+                  {phoneLoginPending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <><CheckCircle2 className="w-4 h-4" /> تأكيد الرمز والدخول</>
+                  }
+                </Button>
+                {phoneLoginSecsLeft === 0 && (
+                  <Button type="button" onClick={handleSendPhoneOtp} disabled={phoneLoginPending}
+                    variant="outline" className="w-full h-10 rounded-xl text-sm gap-1.5">
+                    {phoneLoginPending
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <><RefreshCw className="w-3.5 h-3.5" /> إعادة إرسال الرمز</>
+                    }
+                  </Button>
+                )}
+                <button type="button"
+                  onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginOtp(""); setPhoneLoginExpiry(null); }}
+                  className="w-full text-center text-xs text-black/30 hover:text-black/50 py-1 transition-colors">
+                  تغيير رقم الجوال
+                </button>
+              </div>
+            )}
+          </div>
+          )}
+
 
           {/* Switch auth mode */}
           <div className="mt-6 text-center">
