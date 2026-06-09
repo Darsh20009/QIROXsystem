@@ -689,6 +689,20 @@ export async function registerRoutes(
 
       req.login(user, async (err) => {
         if (err) return next(err);
+
+        // If phoneToken provided, mark phone as verified
+        const phoneToken = req.body.phoneToken as string | undefined;
+        if (phoneToken && (user as any).phone) {
+          try {
+            const { PreRegPhoneOtpModel } = await import("./models");
+            const rec = await (PreRegPhoneOtpModel as any).findOne({ phoneToken, verified: true, expiresAt: { $gt: new Date(Date.now() - 30 * 60 * 1000) } });
+            if (rec) {
+              const { UserModel: UM } = await import("./models");
+              await (UM as any).findByIdAndUpdate(user._id || (user as any).id, { phoneVerified: true });
+            }
+          } catch {}
+        }
+
         if (user.email) {
           const code = Math.floor(100000 + Math.random() * 900000).toString();
           const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
@@ -13389,6 +13403,77 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         pendingCallStatus: (pending as any)?.callStatus || null,
         pendingExpiresAt: (pending as any)?.expiresAt || null,
       });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  /* ══ Pre-Registration Phone OTP (WhatsApp) — بدون مصادقة ════════════════════ */
+
+  // POST /api/pre-register/phone-otp-init
+  app.post("/api/pre-register/phone-otp-init", otpLimiter, async (req, res) => {
+    try {
+      const { PreRegPhoneOtpModel, UserModel } = await import("./models");
+      const raw = req.body.phone;
+      if (!raw) return res.status(400).json({ error: "رقم الجوال مطلوب" });
+      const normPhone = normalisePhone(String(raw).trim());
+
+      // Check if phone already registered
+      const existing = await (UserModel as any).findOne({ phone: normPhone });
+      if (existing) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل — سجّل الدخول بدلاً من ذلك" });
+
+      // Expire old OTPs for this phone
+      await (PreRegPhoneOtpModel as any).updateMany({ phone: normPhone, verified: false }, { expiresAt: new Date() });
+
+      const otp = genOtp();
+      const phoneToken = genPhoneToken() + genPhoneToken().slice(2);
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await (PreRegPhoneOtpModel as any).create({ phone: normPhone, otp, phoneToken, expiresAt, verified: false });
+
+      // Notify admin with WhatsApp link so they manually forward the OTP
+      const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
+      const waMsg = encodeURIComponent(`رمز تسجيل جوالك على منصة QIROX هو: *${otp}*\nصالح 15 دقيقة.`);
+      const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
+      const { sendEmail, baseTemplate } = await import("./email");
+      const adminHtml = baseTemplate(
+        `<div style="text-align:center;margin-bottom:14px;">
+          <span style="background:#25D366;color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;">📱 تسجيل جديد — واتساب OTP</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;">
+          <tr><td style="padding:6px 0;color:#666;width:120px;">الجوال</td><td style="padding:6px 0;font-weight:700;direction:ltr;">${normPhone}</td></tr>
+          <tr><td style="padding:6px 0;color:#666;">رمز OTP</td><td style="padding:6px 0;"><strong style="font-size:28px;letter-spacing:6px;color:#1a1a1a;font-family:monospace;">${otp}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#666;">صالح حتى</td><td style="padding:6px 0;color:#888;">${expiresAt.toLocaleString("ar-SA")}</td></tr>
+        </table>
+        <div style="text-align:center;margin:20px 0 8px;">
+          <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:700;">📲 أرسل الرمز عبر واتساب</a>
+        </div>
+        <p style="font-size:11px;color:#aaa;text-align:center;margin-top:10px;">المستخدم ينتظر الرمز — أرسله في أقرب وقت.</p>`
+      );
+      sendEmail("youssefd.business@gmail.com", "Youssef",
+        `📱 رمز تسجيل جوال — ${normPhone} — كود: ${otp}`,
+        adminHtml
+      ).catch(() => {});
+
+      res.json({ sent: true, expiresAt, phone: normPhone });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/pre-register/phone-otp-verify
+  app.post("/api/pre-register/phone-otp-verify", otpLimiter, async (req, res) => {
+    try {
+      const { PreRegPhoneOtpModel } = await import("./models");
+      const { phone, otp } = req.body;
+      if (!phone || !otp) return res.status(400).json({ error: "الجوال والرمز مطلوبان" });
+      const normPhone = normalisePhone(String(phone).trim());
+      const record = await (PreRegPhoneOtpModel as any).findOne({
+        phone: normPhone,
+        otp: String(otp).trim(),
+        verified: false,
+        expiresAt: { $gt: new Date() },
+      });
+      if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      record.verified = true;
+      await record.save();
+      res.json({ success: true, phoneToken: record.phoneToken, phone: normPhone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

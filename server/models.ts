@@ -1740,6 +1740,16 @@ const phoneVerifyOtpSchema = new mongoose.Schema({
 phoneVerifyOtpSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const PhoneVerifyOtpModel = mongoose.models.PhoneVerifyOtp || mongoose.model("PhoneVerifyOtp", phoneVerifyOtpSchema);
 
+// ── Pre-Registration Phone OTP (قبل إنشاء الحساب) ───────────────────────────
+const preRegPhoneOtpSchema = new mongoose.Schema({
+  phone:      { type: String, required: true, index: true },
+  otp:        { type: String, required: true },
+  phoneToken: { type: String, required: true, unique: true },
+  verified:   { type: Boolean, default: false },
+  expiresAt:  { type: Date, required: true },
+}, { timestamps: true });
+export const PreRegPhoneOtpModel = mongoose.models.PreRegPhoneOtp || mongoose.model("PreRegPhoneOtp", preRegPhoneOtpSchema);
+
 // ── Review (تقييمات العملاء) ─────────────────────────────────────────────────
 const reviewSchema = new mongoose.Schema({
   orderId:    { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, index: true },
