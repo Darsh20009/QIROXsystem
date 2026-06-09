@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Search } from "lucide-react";
 import { getCountryCode } from "@/hooks/use-currency";
 
@@ -229,7 +230,9 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
   const [search, setSearch] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [detected, setDetected] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -242,14 +245,31 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
     }).catch(() => setDetected(true));
   }, []);
 
+  // Position the fixed portal dropdown relative to the trigger (fixed = viewport coords, no scroll offset)
+  useLayoutEffect(() => {
+    if (!open || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setDropPos({
+      top: rect.bottom + 6,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, [open]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      const inContainer = containerRef.current?.contains(target);
+      const inPortal = dropdownPortalRef.current?.contains(target);
+      if (!inContainer && !inPortal) setOpen(false);
     };
+    const handleScroll = () => setOpen(false);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -278,68 +298,86 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
 
   const activePlaceholder = placeholder || selected.placeholder;
 
-  return (
+  const dropdown = open ? (
     <div
-      className={`relative flex h-12 rounded-xl border border-black/[0.08] bg-black/[0.02] overflow-hidden focus-within:border-black/20 transition-colors ${className || ""}`}
-      ref={dropdownRef}
+      ref={dropdownPortalRef}
+      className="bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
+      style={{
+        position: "fixed",
+        top: dropPos.top,
+        left: dropPos.left,
+        width: dropPos.width,
+        zIndex: 99999,
+        maxHeight: "240px",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 border-r border-black/[0.06] bg-black/[0.01] hover:bg-black/[0.03] transition-colors min-w-[90px] flex-shrink-0"
-        data-testid="btn-country-dial"
-      >
-        <span className="text-lg leading-none">{selected.flag}</span>
-        <span className="text-xs font-semibold text-black/60">{selected.dial}</span>
-        <ChevronDown className={`w-3 h-3 text-black/30 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      <input
-        type="tel"
-        value={phoneNumber}
-        onChange={handlePhoneChange}
-        placeholder={activePlaceholder}
-        className="flex-1 bg-transparent px-3 text-sm text-black placeholder:text-black/25 outline-none"
-        data-testid="input-phone-number"
-        dir="ltr"
-      />
-
-      {open && (
-        <div className="absolute top-full right-0 left-0 mt-1.5 bg-white border border-black/[0.07] rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="p-2 border-b border-black/[0.04]">
-            <div className="flex items-center gap-2 px-3 py-2 bg-black/[0.02] rounded-lg">
-              <Search className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
-              <input
-                ref={searchRef}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="ابحث عن الدولة..."
-                className="flex-1 bg-transparent text-xs outline-none text-black placeholder:text-black/30"
-                data-testid="input-country-search"
-              />
-            </div>
-          </div>
-          <div className="max-h-52 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="p-4 text-center text-xs text-black/30">لا توجد نتائج</div>
-            ) : (
-              filtered.map(c => (
-                <button
-                  key={c.code + c.dial}
-                  type="button"
-                  onClick={() => handleSelect(c)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-right hover:bg-black/[0.02] transition-colors ${selected.code === c.code && selected.dial === c.dial ? "bg-black/[0.03]" : ""}`}
-                  data-testid={`btn-country-${c.code}`}
-                >
-                  <span className="text-lg">{c.flag}</span>
-                  <span className="flex-1 text-xs text-black/70 text-right">{c.nameAr}</span>
-                  <span className="text-[10px] text-black/35 font-mono">{c.dial}</span>
-                </button>
-              ))
-            )}
-          </div>
+      <div className="p-2 border-b border-black/[0.04] dark:border-white/[0.04] shrink-0">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.02] dark:bg-white/[0.04] rounded-lg">
+          <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30 shrink-0" />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ابحث عن الدولة..."
+            className="flex-1 bg-transparent text-xs outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+            data-testid="input-country-search"
+            dir="rtl"
+          />
         </div>
-      )}
+      </div>
+      <div className="overflow-y-auto flex-1">
+        {filtered.length === 0 ? (
+          <div className="p-4 text-center text-xs text-black/30 dark:text-white/30">لا توجد نتائج</div>
+        ) : (
+          filtered.map(c => (
+            <button
+              key={c.code + c.dial}
+              type="button"
+              onClick={() => handleSelect(c)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors ${selected.code === c.code && selected.dial === c.dial ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}`}
+              data-testid={`btn-country-${c.code}`}
+            >
+              <span className="text-base shrink-0">{c.flag}</span>
+              <span className="flex-1 text-xs text-black/70 dark:text-white/70 text-right truncate" dir="rtl">{c.nameAr}</span>
+              <span className="text-[10px] text-black/35 dark:text-white/35 font-mono shrink-0">{c.dial}</span>
+            </button>
+          ))
+        )}
+      </div>
     </div>
+  ) : null;
+
+  return (
+    <>
+      <div
+        className={`relative flex h-12 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] focus-within:border-black/20 dark:focus-within:border-white/20 transition-colors ${className || ""}`}
+        ref={containerRef}
+        dir="ltr"
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-1.5 px-3 border-r border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors min-w-[90px] shrink-0 rounded-l-xl"
+          data-testid="btn-country-dial"
+        >
+          <span className="text-lg leading-none">{selected.flag}</span>
+          <span className="text-xs font-semibold text-black/60 dark:text-white/60">{selected.dial}</span>
+          <ChevronDown className={`w-3 h-3 text-black/30 dark:text-white/30 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={handlePhoneChange}
+          placeholder={activePlaceholder}
+          className="flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
+          data-testid="input-phone-number"
+          dir="ltr"
+        />
+      </div>
+      {typeof document !== "undefined" && createPortal(dropdown, document.body)}
+    </>
   );
 }

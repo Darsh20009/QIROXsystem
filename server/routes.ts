@@ -13448,10 +13448,15 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         </div>
         <p style="font-size:11px;color:#aaa;text-align:center;margin-top:10px;">المستخدم ينتظر الرمز — أرسله في أقرب وقت.</p>`
       );
+      // Always log OTP to server console for admin visibility
+      console.log(`[PreReg OTP] 📱 Phone: ${normPhone} | OTP: ${otp} | Expires: ${expiresAt.toISOString()}`);
+
       sendEmail("youssefd.business@gmail.com", "Youssef",
         `📱 رمز تسجيل جوال — ${normPhone} — كود: ${otp}`,
         adminHtml
-      ).catch(() => {});
+      ).catch((emailErr: any) => {
+        console.error(`[PreReg OTP] ⚠️ Failed to send admin email for ${normPhone}:`, emailErr?.message || emailErr);
+      });
 
       res.json({ sent: true, expiresAt, phone: normPhone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
