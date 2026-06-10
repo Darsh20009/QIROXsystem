@@ -382,6 +382,11 @@ export default function Navigation() {
                 }`} data-testid="badge-country-indicator">
                   <span className="text-base leading-none">{countryFlag}</span>
                   <span className="hidden xl:inline">{lang === "ar" ? `QIROX معك في ${countryName}` : `QIROX in ${countryName}`}</span>
+                  {!currency.isSaudi && (
+                    <span className={`text-[10px] font-mono opacity-60 ${isOnDarkHero ? "text-white/50" : "text-black/40 dark:text-white/40"}`}>
+                      {currency.symbolShort}
+                    </span>
+                  )}
                 </div>
 
                 <button
