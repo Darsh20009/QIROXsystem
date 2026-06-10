@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Loader2, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Star, ArrowRight } from "lucide-react";
@@ -25,16 +25,23 @@ export default function VerifyEmail() {
   const [isResending, setIsResending] = useState(false);
   const [verifyError, setVerifyError] = useState("");
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
+  const justVerifiedRef = useRef(false);
 
   const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
+
+  function getNextStep(u: any) {
+    if (!isRegisterFlow) return "/dashboard";
+    return u?.phoneVerified ? "/onboarding" : "/phone-verify?flow=register";
+  }
 
   // Redirect if not authenticated or already verified
   useEffect(() => {
     if (isLoading) return;
     if (!user) { setLocation("/login"); return; }
-    // Don't auto-redirect while showing the success animation (setTimeout handles it)
+    // Skip if we just finished verifying (let the success animation + setTimeout handle it)
+    if (justVerifiedRef.current) return;
     if ((user as any).emailVerified && !verifySuccess) {
-      setLocation(isRegisterFlow ? "/phone-verify?flow=register" : "/dashboard");
+      setLocation(getNextStep(user));
     }
   }, [user, isLoading, verifySuccess]);
 
@@ -88,13 +95,17 @@ export default function VerifyEmail() {
       return;
     }
 
-    // Update user cache synchronously to prevent stale-data redirects
-    queryClient.setQueryData(["/api/user"], (old: any) => old ? { ...old, emailVerified: true } : old);
+    // Mark as just-verified so the useEffect guard doesn't redirect prematurely
+    justVerifiedRef.current = true;
+
+    // Update user cache
+    const updatedUser = { ...(user as any), emailVerified: true };
+    queryClient.setQueryData(["/api/user"], updatedUser);
     queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
     setIsVerifying(false);
     setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
-    setTimeout(() => setLocation(isRegisterFlow ? "/phone-verify?flow=register" : "/dashboard"), 2000);
+    setTimeout(() => setLocation(getNextStep(updatedUser)), 2000);
   };
 
   const handleResend = async () => {

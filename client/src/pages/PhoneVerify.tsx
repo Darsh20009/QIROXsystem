@@ -87,22 +87,16 @@ export default function PhoneVerify() {
     initMutation.mutate();
   }, [phone, method, initMutation]);
 
-  if ((user as any)?.phoneVerified && stage !== "done") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950 p-4" dir={dir}>
-        <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.06] rounded-full flex items-center justify-center mx-auto mb-5">
-            <ShieldCheck className="w-10 h-10 text-black dark:text-white" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{L ? "رقمك موثّق" : "Phone Already Verified"}</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">{L ? "رقم جوالك تم توثيقه مسبقاً." : "Your phone number has already been verified."}</p>
-          <Button onClick={() => navigate("/dashboard")} className="rounded-2xl px-8 h-12 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black">
-            {L ? "لوحة التحكم" : "Go to Dashboard"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Auto-redirect if phone already verified
+  useEffect(() => {
+    if (!(user as any)?.phoneVerified) return;
+    if (stage === "done") return;
+    if (isRegisterFlow) {
+      navigate("/onboarding");
+    } else {
+      navigate("/dashboard");
+    }
+  }, [user, stage, isRegisterFlow]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex flex-col" dir={dir}>
