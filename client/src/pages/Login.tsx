@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine, MessageSquare, KeyRound } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X, QrCode, ScanLine, MessageSquare, KeyRound, UserPlus } from "lucide-react";
 import { QrLoginScanner } from "@/components/QrLoginScanner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
@@ -324,7 +324,7 @@ export default function Login() {
   const appleCallbackHandled = useRef(false);
 
   const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
-  const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp">("phone");
+  const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp" | "not-registered">("phone");
   const [phoneLoginPhone, setPhoneLoginPhone] = useState("");
   const [phoneLoginOtp, setPhoneLoginOtp] = useState("");
   const [phoneLoginPending, setPhoneLoginPending] = useState(false);
@@ -718,7 +718,11 @@ export default function Login() {
         body: JSON.stringify({ phone: phoneLoginPhone, method: "whatsapp" }),
       });
       const data = await r.json();
-      if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      if (data.notRegistered) {
+        setPhoneLoginStep("not-registered");
+        return;
+      }
+      if (!r.ok || data.error) { toast({ title: data.error || "حدث خطأ، حاول مرة أخرى", variant: "destructive" }); return; }
       const expiry = new Date(Date.now() + 15 * 60 * 1000);
       setPhoneLoginExpiry(expiry);
       setPhoneLoginSecsLeft(900);
@@ -2063,6 +2067,31 @@ export default function Login() {
                     : <><MessageSquare className="w-4 h-4" /> إرسال رمز التحقق</>
                   }
                 </Button>
+              </div>
+            )}
+
+            {phoneLoginStep === "not-registered" && (
+              <div className="space-y-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center space-y-2">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-sm font-bold text-amber-800">رقم غير مسجّل</p>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    هذا الرقم غير مسجّل لدينا.
+                    <br />أنشئ حساباً جديداً للمتابعة.
+                  </p>
+                </div>
+                <Button type="button"
+                  onClick={() => { togglePhoneLogin(); setLocation("/register"); }}
+                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm gap-2">
+                  <UserPlus className="w-4 h-4" /> إنشاء حساب جديد
+                </Button>
+                <button type="button"
+                  onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginPhone(""); }}
+                  className="w-full text-center text-xs text-black/30 hover:text-black/50 py-1 transition-colors">
+                  تغيير رقم الجوال
+                </button>
               </div>
             )}
 

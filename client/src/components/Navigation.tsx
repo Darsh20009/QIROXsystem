@@ -381,7 +381,7 @@ export default function Navigation() {
                     : "border-black/[0.07] dark:border-white/[0.07] text-black/50 dark:text-white/50 bg-black/[0.03] dark:bg-white/[0.03]"
                 }`} data-testid="badge-country-indicator">
                   <span className="text-base leading-none">{countryFlag}</span>
-                  <span className="hidden xl:inline">{lang === "ar" ? `قيروكس معك في ${countryName}` : `QIROX in ${countryName}`}</span>
+                  <span className="hidden xl:inline">{lang === "ar" ? `QIROX معك في ${countryName}` : `QIROX in ${countryName}`}</span>
                 </div>
 
                 <button

@@ -13635,9 +13635,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
       const dbUser = await (UserModel as any).findOne({ phone: normPhone }).lean() as any;
       if (!dbUser) {
-        // Don't reveal whether phone exists — return success silently
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-        return res.json({ sent: true, expiresAt, phone: normPhone });
+        return res.status(404).json({ error: "رقم الجوال غير مسجّل، سجّل حساباً أولاً", notRegistered: true });
       }
       // Expire previous login OTPs for this user
       await (PhoneVerifyOtpModel as any).updateMany(
