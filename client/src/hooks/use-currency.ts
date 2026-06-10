@@ -555,6 +555,27 @@ function buildCurrencyInfo(countryCode: string, def: CurrencyDef): CurrencyInfo 
   };
 }
 
+/* ─── Manual Country Override (localStorage + custom event) ─── */
+const LOCALE_KEY = "qirox_locale";
+const COUNTRY_CHANGE_EVENT = "qirox-country-change";
+
+export function getManualCountry(): string {
+  try { return localStorage.getItem(LOCALE_KEY) || ""; } catch { return ""; }
+}
+
+export function setManualCountry(code: string): void {
+  try {
+    if (code) localStorage.setItem(LOCALE_KEY, code);
+    else localStorage.removeItem(LOCALE_KEY);
+    window.dispatchEvent(new CustomEvent(COUNTRY_CHANGE_EVENT, { detail: code }));
+  } catch { /* noop */ }
+}
+
+export function clearManualCountry(): void {
+  setManualCountry("");
+}
+
+/* ─── IP-based detection ─── */
 let cachedCountryCode: string | null = null;
 let fetchPromise: Promise<string> | null = null;
 
@@ -572,6 +593,8 @@ async function fetchCountryCode(): Promise<string> {
 }
 
 export async function getCountryCode(): Promise<string> {
+  const manual = getManualCountry();
+  if (manual) return manual;
   const byTz = detectCountryByTimezone();
   if (byTz) return byTz;
   return fetchCountryCode();
@@ -580,21 +603,23 @@ export async function getCountryCode(): Promise<string> {
 export function useCurrency(forceSAR = false): CurrencyInfo {
   const [countryCode, setCountryCode] = useState<string>(() => {
     if (forceSAR) return "SA";
-    return detectCountryByTimezone();
+    return getManualCountry() || detectCountryByTimezone();
   });
 
   useEffect(() => {
     if (forceSAR) return;
-    if (countryCode) return;
-    fetchCountryCode().then(code => {
-      if (code) setCountryCode(code);
-    });
+    if (!countryCode) {
+      fetchCountryCode().then(code => { if (code) setCountryCode(code); });
+    }
+    const onCountryChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string;
+      setCountryCode(detail || detectCountryByTimezone() || "SA");
+    };
+    window.addEventListener(COUNTRY_CHANGE_EVENT, onCountryChange);
+    return () => window.removeEventListener(COUNTRY_CHANGE_EVENT, onCountryChange);
   }, [forceSAR]);
 
-  if (forceSAR) {
-    return buildCurrencyInfo("SA", FALLBACK);
-  }
-
+  if (forceSAR) return buildCurrencyInfo("SA", FALLBACK);
   const def = CURRENCY_MAP[countryCode] || FALLBACK;
   return buildCurrencyInfo(countryCode || "SA", def);
 }
@@ -610,3 +635,55 @@ export function getCurrencyForCountry(countryCode: string): CurrencyDef {
 export function getSupportedCountryCodes(): string[] {
   return Object.keys(CURRENCY_MAP);
 }
+
+/* ─── Country metadata for UI display ─── */
+export function countryToFlag(cc: string): string {
+  const code = (cc || "SA").toUpperCase().slice(0, 2);
+  return [...code].map(c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0))).join("");
+}
+
+export const COUNTRY_NAMES_AR: Record<string, string> = {
+  SA: "السعودية", AE: "الإمارات", KW: "الكويت", QA: "قطر", BH: "البحرين",
+  OM: "عُمان", EG: "مصر", JO: "الأردن", IQ: "العراق", LY: "ليبيا",
+  SD: "السودان", TN: "تونس", DZ: "الجزائر", MA: "المغرب", LB: "لبنان",
+  SY: "سوريا", YE: "اليمن", PS: "فلسطين", IL: "إسرائيل",
+  US: "الولايات المتحدة", CA: "كندا", GB: "المملكة المتحدة",
+  DE: "ألمانيا", FR: "فرنسا", IT: "إيطاليا", ES: "إسبانيا",
+  PT: "البرتغال", NL: "هولندا", BE: "بلجيكا", AT: "النمسا",
+  GR: "اليونان", FI: "فنلندا", IE: "أيرلندا", CH: "سويسرا",
+  SE: "السويد", NO: "النرويج", DK: "الدنمارك", PL: "بولندا",
+  CZ: "التشيك", HU: "المجر", RO: "رومانيا", BG: "بلغاريا",
+  HR: "كرواتيا", SK: "سلوفاكيا", SI: "سلوفينيا",
+  RU: "روسيا", UA: "أوكرانيا", TR: "تركيا",
+  IN: "الهند", PK: "باكستان", BD: "بنغلاديش", LK: "سريلانكا", NP: "نيبال",
+  JP: "اليابان", CN: "الصين", KR: "كوريا الجنوبية",
+  SG: "سنغافورة", MY: "ماليزيا", TH: "تايلاند",
+  PH: "الفلبين", ID: "إندونيسيا", VN: "فيتنام",
+  AU: "أستراليا", NZ: "نيوزيلندا",
+  BR: "البرازيل", MX: "المكسيك", AR: "الأرجنتين",
+  ZA: "جنوب أفريقيا", NG: "نيجيريا", KE: "كينيا",
+  GH: "غانا", ET: "إثيوبيا",
+};
+
+export const COUNTRY_NAMES_EN: Record<string, string> = {
+  SA: "Saudi Arabia", AE: "UAE", KW: "Kuwait", QA: "Qatar", BH: "Bahrain",
+  OM: "Oman", EG: "Egypt", JO: "Jordan", IQ: "Iraq", LY: "Libya",
+  SD: "Sudan", TN: "Tunisia", DZ: "Algeria", MA: "Morocco", LB: "Lebanon",
+  SY: "Syria", YE: "Yemen", PS: "Palestine", IL: "Israel",
+  US: "United States", CA: "Canada", GB: "United Kingdom",
+  DE: "Germany", FR: "France", IT: "Italy", ES: "Spain",
+  PT: "Portugal", NL: "Netherlands", BE: "Belgium", AT: "Austria",
+  GR: "Greece", FI: "Finland", IE: "Ireland", CH: "Switzerland",
+  SE: "Sweden", NO: "Norway", DK: "Denmark", PL: "Poland",
+  CZ: "Czech Rep.", HU: "Hungary", RO: "Romania", BG: "Bulgaria",
+  HR: "Croatia", SK: "Slovakia", SI: "Slovenia",
+  RU: "Russia", UA: "Ukraine", TR: "Turkey",
+  IN: "India", PK: "Pakistan", BD: "Bangladesh", LK: "Sri Lanka", NP: "Nepal",
+  JP: "Japan", CN: "China", KR: "South Korea",
+  SG: "Singapore", MY: "Malaysia", TH: "Thailand",
+  PH: "Philippines", ID: "Indonesia", VN: "Vietnam",
+  AU: "Australia", NZ: "New Zealand",
+  BR: "Brazil", MX: "Mexico", AR: "Argentina",
+  ZA: "South Africa", NG: "Nigeria", KE: "Kenya",
+  GH: "Ghana", ET: "Ethiopia",
+};
