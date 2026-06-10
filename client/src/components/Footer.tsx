@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { Link } from "wouter";
-const qiroxLogoPath = "/qirox-icon.png";
-import { ArrowUpRight, Globe, RotateCcw } from "lucide-react";
+import { ArrowUpRight, Globe, RotateCcw, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -20,114 +20,172 @@ type AppDownloads = {
 };
 
 type PublicSettings = {
-  instagram?: string;
-  twitter?: string;
-  linkedin?: string;
-  snapchat?: string;
-  youtube?: string;
-  tiktok?: string;
-  whatsapp?: string;
-  linktree?: string;
-  contactPhone?: string;
-  contactEmail?: string;
+  instagram?: string; twitter?: string; linkedin?: string; snapchat?: string;
+  youtube?: string; tiktok?: string; whatsapp?: string; linktree?: string;
 };
 
-/* ─── Supported countries list (ordered by priority) ─── */
-const SUPPORTED_COUNTRIES: { code: string; region: "gulf" | "arab" | "europe" | "asia" | "americas" | "africa" | "oceania" }[] = [
-  /* الخليج العربي */
-  { code: "SA", region: "gulf" }, { code: "AE", region: "gulf" }, { code: "KW", region: "gulf" },
-  { code: "QA", region: "gulf" }, { code: "BH", region: "gulf" }, { code: "OM", region: "gulf" },
-  /* المنطقة العربية */
-  { code: "EG", region: "arab" }, { code: "JO", region: "arab" }, { code: "IQ", region: "arab" },
-  { code: "MA", region: "arab" }, { code: "TN", region: "arab" }, { code: "DZ", region: "arab" },
-  { code: "LY", region: "arab" }, { code: "SD", region: "arab" }, { code: "LB", region: "arab" },
-  { code: "SY", region: "arab" }, { code: "YE", region: "arab" }, { code: "PS", region: "arab" },
-  /* أوروبا */
-  { code: "GB", region: "europe" }, { code: "DE", region: "europe" }, { code: "FR", region: "europe" },
-  { code: "IT", region: "europe" }, { code: "ES", region: "europe" }, { code: "NL", region: "europe" },
-  { code: "PT", region: "europe" }, { code: "BE", region: "europe" }, { code: "CH", region: "europe" },
-  { code: "AT", region: "europe" }, { code: "GR", region: "europe" }, { code: "SE", region: "europe" },
-  { code: "NO", region: "europe" }, { code: "DK", region: "europe" }, { code: "FI", region: "europe" },
-  { code: "PL", region: "europe" }, { code: "CZ", region: "europe" }, { code: "HU", region: "europe" },
-  { code: "RO", region: "europe" }, { code: "IE", region: "europe" }, { code: "TR", region: "europe" },
-  { code: "RU", region: "europe" }, { code: "UA", region: "europe" },
-  /* آسيا */
-  { code: "IN", region: "asia" }, { code: "PK", region: "asia" }, { code: "BD", region: "asia" },
-  { code: "JP", region: "asia" }, { code: "CN", region: "asia" }, { code: "KR", region: "asia" },
-  { code: "SG", region: "asia" }, { code: "MY", region: "asia" }, { code: "TH", region: "asia" },
-  { code: "PH", region: "asia" }, { code: "ID", region: "asia" }, { code: "VN", region: "asia" },
-  /* أمريكا */
-  { code: "US", region: "americas" }, { code: "CA", region: "americas" }, { code: "BR", region: "americas" },
-  { code: "MX", region: "americas" }, { code: "AR", region: "americas" },
-  /* أفريقيا */
-  { code: "ZA", region: "africa" }, { code: "NG", region: "africa" }, { code: "KE", region: "africa" },
-  { code: "GH", region: "africa" }, { code: "ET", region: "africa" },
-  /* أوقيانوسيا */
-  { code: "AU", region: "oceania" }, { code: "NZ", region: "oceania" },
+/* ─── Regions ─── */
+type Region = "gulf" | "arab" | "europe" | "asia" | "americas" | "africa";
+
+const REGIONS: { id: Region; emoji: string; labelAr: string; labelEn: string }[] = [
+  { id: "gulf",     emoji: "🛢️", labelAr: "الخليج",       labelEn: "Gulf" },
+  { id: "arab",     emoji: "🌙", labelAr: "العالم العربي", labelEn: "Arab World" },
+  { id: "europe",   emoji: "🏰", labelAr: "أوروبا",        labelEn: "Europe" },
+  { id: "asia",     emoji: "🎋", labelAr: "آسيا",           labelEn: "Asia" },
+  { id: "americas", emoji: "🗽", labelAr: "الأمريكتان",   labelEn: "Americas" },
+  { id: "africa",   emoji: "🌍", labelAr: "أفريقيا",       labelEn: "Africa" },
 ];
 
-const REGION_LABEL_AR: Record<string, string> = {
-  gulf: "الخليج", arab: "العالم العربي", europe: "أوروبا",
-  asia: "آسيا", americas: "الأمريكتان", africa: "أفريقيا", oceania: "أوقيانوسيا",
-};
-const REGION_LABEL_EN: Record<string, string> = {
-  gulf: "Gulf", arab: "Arab World", europe: "Europe",
-  asia: "Asia", americas: "Americas", africa: "Africa", oceania: "Oceania",
+/* Egypt appears in BOTH arab + africa since it is geographically in NE Africa */
+const REGION_COUNTRIES: Record<Region, string[]> = {
+  gulf:     ["SA","AE","KW","QA","BH","OM"],
+  arab:     ["EG","JO","IQ","MA","TN","DZ","LY","SD","LB","SY","YE","PS"],
+  europe:   ["GB","DE","FR","IT","ES","NL","PT","BE","CH","AT","GR","SE","NO","DK","FI","PL","CZ","HU","RO","IE","TR","RU","UA"],
+  asia:     ["IN","PK","BD","JP","CN","KR","SG","MY","TH","PH","ID","VN"],
+  americas: ["US","CA","BR","MX","AR"],
+  africa:   ["EG","ZA","NG","KE","GH","ET","MA","TN"],
 };
 
-function CountrySwitcher({ lang }: { lang: string }) {
-  const currency = useCurrency();
+/* ─── Country Card ─── */
+function CountryCard({ code, isActive, lang }: { code: string; isActive: boolean; lang: string }) {
+  const def = getCurrencyForCountry(code);
   const L = lang === "ar";
-
-  const regions = Array.from(new Set(SUPPORTED_COUNTRIES.map(c => c.region)));
+  const name = L ? (COUNTRY_NAMES_AR[code] || code) : (COUNTRY_NAMES_EN[code] || code);
 
   return (
-    <div className="space-y-5">
-      {regions.map(region => {
-        const countries = SUPPORTED_COUNTRIES.filter(c => c.region === region);
-        return (
-          <div key={region}>
-            <p className="text-[10px] font-semibold text-black/25 dark:text-white/25 uppercase tracking-[2px] mb-2.5">
-              {L ? REGION_LABEL_AR[region] : REGION_LABEL_EN[region]}
+    <button
+      onClick={() => setManualCountry(code)}
+      title={`${name} · ${def.symbolShort}`}
+      data-testid={`footer-country-${code}`}
+      className={`relative flex flex-col items-center gap-1 p-2.5 rounded-2xl border transition-all duration-200 min-w-[72px] w-[72px] sm:w-auto sm:min-w-0 group ${
+        isActive
+          ? "bg-black dark:bg-white border-black dark:border-white shadow-md"
+          : "bg-white dark:bg-white/[0.04] border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.03] dark:hover:bg-white/[0.06]"
+      }`}
+    >
+      {isActive && (
+        <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-white dark:bg-black flex items-center justify-center">
+          <Check className="w-2 h-2 text-black dark:text-white" strokeWidth={3} />
+        </span>
+      )}
+      <span className="text-xl leading-none">{countryToFlag(code)}</span>
+      <span className={`text-[10px] font-semibold leading-tight text-center max-w-[64px] truncate ${
+        isActive ? "text-white dark:text-black" : "text-black/60 dark:text-white/60"
+      }`}>
+        {name}
+      </span>
+      <span className={`text-[9px] font-mono ${
+        isActive ? "text-white/60 dark:text-black/50" : "text-black/30 dark:text-white/30"
+      }`}>
+        {def.symbolShort}
+      </span>
+    </button>
+  );
+}
+
+/* ─── Countries Switcher ─── */
+function CountrySwitcher({ lang }: { lang: string }) {
+  const currency = useCurrency();
+  const [activeRegion, setActiveRegion] = useState<Region>("gulf");
+  const L = lang === "ar";
+  const isManual = !!getManualCountry();
+
+  const countries = REGION_COUNTRIES[activeRegion];
+
+  return (
+    <div>
+      {/* ── Founders Banner ── */}
+      <div className="flex items-center justify-center gap-3 py-4 mb-6 rounded-2xl bg-gradient-to-r from-[#f0fdf4] via-white to-[#fff1f2] dark:from-green-950/30 dark:via-transparent dark:to-red-950/20 border border-black/[0.05] dark:border-white/[0.05]">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-3xl leading-none">🇸🇦</span>
+          <span className="text-[9px] font-bold text-black/30 dark:text-white/30 tracking-wider">
+            {L ? "السعودية" : "Saudi Arabia"}
+          </span>
+        </div>
+        <div className="text-center px-2">
+          <p className="text-lg leading-none mb-1">❤️</p>
+          <p className="text-[9px] font-bold text-black/35 dark:text-white/35 tracking-[1.5px] uppercase whitespace-nowrap">
+            {L ? "بدأت منهم الحكاية" : "Where It All Started"}
+          </p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-3xl leading-none">🇪🇬</span>
+          <span className="text-[9px] font-bold text-black/30 dark:text-white/30 tracking-wider">
+            {L ? "مصر" : "Egypt"}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Region Tabs (horizontal scroll on mobile) ── */}
+      <div className="overflow-x-auto pb-1 mb-4 scrollbar-none -mx-1">
+        <div className="flex gap-1.5 px-1 min-w-max">
+          {REGIONS.map(r => (
+            <button
+              key={r.id}
+              onClick={() => setActiveRegion(r.id)}
+              data-testid={`footer-region-${r.id}`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all duration-200 border ${
+                activeRegion === r.id
+                  ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white"
+                  : "bg-transparent text-black/45 dark:text-white/45 border-black/[0.07] dark:border-white/[0.07] hover:bg-black/[0.05] dark:hover:bg-white/[0.07] hover:text-black/70 dark:hover:text-white/70"
+              }`}
+            >
+              <span>{r.emoji}</span>
+              <span>{L ? r.labelAr : r.labelEn}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Country Grid (horizontal scroll on mobile, wrap on desktop) ── */}
+      <div className="overflow-x-auto pb-2 scrollbar-none -mx-1">
+        <div className="flex flex-nowrap sm:flex-wrap gap-2 px-1 min-w-max sm:min-w-0">
+          {countries.map(code => (
+            <CountryCard
+              key={code}
+              code={code}
+              isActive={currency.countryCode === code}
+              lang={lang}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Current + Reset ── */}
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-black/[0.05] dark:border-white/[0.05]">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{countryToFlag(currency.countryCode || "SA")}</span>
+          <div>
+            <p className="text-[11px] font-semibold text-black/60 dark:text-white/60">
+              {L
+                ? `الموقع يعمل بـ ${COUNTRY_NAMES_AR[currency.countryCode] || currency.countryCode}`
+                : `Showing ${COUNTRY_NAMES_EN[currency.countryCode] || currency.countryCode}`
+              }
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {countries.map(({ code }) => {
-                const def = getCurrencyForCountry(code);
-                const isActive = currency.countryCode === code;
-                const nameAr = COUNTRY_NAMES_AR[code] || code;
-                const nameEn = COUNTRY_NAMES_EN[code] || code;
-                return (
-                  <button
-                    key={code}
-                    onClick={() => setManualCountry(code)}
-                    title={L ? `${nameAr} · ${def.symbolShort}` : `${nameEn} · ${def.symbolShort}`}
-                    data-testid={`footer-country-${code}`}
-                    className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${
-                      isActive
-                        ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-sm"
-                        : "bg-black/[0.03] dark:bg-white/[0.04] border-black/[0.07] dark:border-white/[0.07] text-black/45 dark:text-white/45 hover:bg-black/[0.07] dark:hover:bg-white/[0.08] hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20"
-                    }`}
-                  >
-                    <span className="text-sm leading-none">{countryToFlag(code)}</span>
-                    <span className="hidden sm:inline">{L ? nameAr : nameEn}</span>
-                    <span className={`text-[10px] font-mono ${isActive ? "opacity-70" : "opacity-40 group-hover:opacity-70"}`}>
-                      {def.symbolShort}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-[10px] text-black/30 dark:text-white/30">
+              {currency.symbol} · {currency.symbolShort}
+            </p>
           </div>
-        );
-      })}
+        </div>
+        {isManual && (
+          <button
+            onClick={clearManualCountry}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60 transition-colors bg-black/[0.04] dark:bg-white/[0.05] px-3 py-2 rounded-xl border border-black/[0.06] dark:border-white/[0.06]"
+            data-testid="btn-reset-country"
+          >
+            <RotateCcw className="w-3 h-3" />
+            {L ? "كشف تلقائي" : "Auto-detect"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
+/* ─── Footer ─── */
 export default function Footer() {
   const { t, lang } = useI18n();
   const { data: user } = useUser();
-  const currency = useCurrency();
   const L = lang === "ar";
 
   const { data: downloads } = useQuery<AppDownloads>({
@@ -141,49 +199,27 @@ export default function Footer() {
   });
 
   const SOCIAL_LINKS = [
-    { key: "instagram",  icon: <SiInstagram className="w-4 h-4" />,  url: publicSettings?.instagram,  label: "Instagram" },
-    { key: "twitter",    icon: <SiX className="w-4 h-4" />,           url: publicSettings?.twitter,    label: "X / Twitter" },
-    { key: "linkedin",   icon: <Linkedin className="w-4 h-4" />,      url: publicSettings?.linkedin,   label: "LinkedIn" },
-    { key: "tiktok",     icon: <SiTiktok className="w-4 h-4" />,      url: publicSettings?.tiktok,     label: "TikTok" },
-    { key: "snapchat",   icon: <SiSnapchat className="w-4 h-4" />,    url: publicSettings?.snapchat,   label: "Snapchat" },
-    { key: "youtube",    icon: <SiYoutube className="w-4 h-4" />,     url: publicSettings?.youtube,    label: "YouTube" },
-    { key: "whatsapp",   icon: <SiWhatsapp className="w-4 h-4" />,    url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
-    { key: "linktree",   icon: <SiLinktree className="w-4 h-4" />,    url: publicSettings?.linktree,   label: "Linktree" },
+    { key: "instagram", icon: <SiInstagram className="w-4 h-4" />, url: publicSettings?.instagram, label: "Instagram" },
+    { key: "twitter",   icon: <SiX className="w-4 h-4" />,          url: publicSettings?.twitter,   label: "X / Twitter" },
+    { key: "linkedin",  icon: <Linkedin className="w-4 h-4" />,     url: publicSettings?.linkedin,  label: "LinkedIn" },
+    { key: "tiktok",    icon: <SiTiktok className="w-4 h-4" />,     url: publicSettings?.tiktok,    label: "TikTok" },
+    { key: "snapchat",  icon: <SiSnapchat className="w-4 h-4" />,   url: publicSettings?.snapchat,  label: "Snapchat" },
+    { key: "youtube",   icon: <SiYoutube className="w-4 h-4" />,    url: publicSettings?.youtube,   label: "YouTube" },
+    { key: "whatsapp",  icon: <SiWhatsapp className="w-4 h-4" />,   url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
+    { key: "linktree",  icon: <SiLinktree className="w-4 h-4" />,   url: publicSettings?.linktree,  label: "Linktree" },
   ].filter(s => !!s.url);
 
   const STORES = [
-    {
-      key: "playStore",
-      icon: <SiGoogleplay className="w-5 h-5 text-white" />,
-      iconBg: "bg-[#01875f]",
-      label: L ? "احصل عليه من" : "Get it on",
-      name: "Google Play",
-      url: downloads?.playStore.url || "",
-      enabled: downloads?.playStore.enabled ?? false,
-    },
-    {
-      key: "appStore",
-      icon: <SiApple className="w-5 h-5 text-white" />,
-      iconBg: "bg-black dark:bg-white",
-      label: L ? "حمّل من" : "Download on the",
-      name: "App Store",
-      url: downloads?.appStore.url || "",
-      enabled: downloads?.appStore.enabled ?? false,
-    },
-    {
-      key: "msStore",
-      icon: <AppWindow className="w-5 h-5 text-white" />,
-      iconBg: "bg-[#0078d4]",
-      label: L ? "احصل عليه من" : "Get it from",
-      name: "Microsoft Store",
-      url: downloads?.msStore.url || "",
-      enabled: downloads?.msStore.enabled ?? false,
-    },
+    { key: "playStore", icon: <SiGoogleplay className="w-5 h-5 text-white" />, iconBg: "bg-[#01875f]", label: L ? "احصل عليه من" : "Get it on", name: "Google Play", url: downloads?.playStore.url || "", enabled: downloads?.playStore.enabled ?? false },
+    { key: "appStore",  icon: <SiApple className="w-5 h-5 text-white" />,       iconBg: "bg-black",     label: L ? "حمّل من" : "Download on the", name: "App Store",    url: downloads?.appStore.url || "",  enabled: downloads?.appStore.enabled ?? false },
+    { key: "msStore",   icon: <AppWindow className="w-5 h-5 text-white" />,     iconBg: "bg-[#0078d4]", label: L ? "احصل عليه من" : "Get it from",  name: "Microsoft Store", url: downloads?.msStore.url || "", enabled: downloads?.msStore.enabled ?? false },
   ].filter(s => s.url);
 
   return (
     <footer className="relative bg-[#fafafa] dark:bg-gray-950 pt-24 pb-10 overflow-hidden border-t border-black/[0.06] dark:border-white/[0.06]">
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
+
+        {/* ── Top grid ── */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           <div className="md:col-span-5">
             <div className="mb-6">
@@ -212,9 +248,9 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { href: "/systems", label: t("nav.portfolio") },
-                { href: "/prices", label: t("nav.prices") },
-                { href: "/about", label: t("nav.about") },
-                { href: "/jobs", label: L ? "التوظيف" : "Careers" },
+                { href: "/prices",  label: t("nav.prices") },
+                { href: "/about",   label: t("nav.about") },
+                { href: "/jobs",    label: L ? "التوظيف" : "Careers" },
                 { href: "/contact", label: t("nav.contact") },
               ].map(link => (
                 <li key={link.href}>
@@ -232,9 +268,9 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { href: "/contact", label: t("nav.contact") },
-                { href: "/news", label: L ? "الأخبار" : "News" },
-                { href: "/jobs", label: L ? "التوظيف" : "Careers" },
-                { href: "/join", label: t("nav.startProject") },
+                { href: "/news",    label: L ? "الأخبار" : "News" },
+                { href: "/jobs",    label: L ? "التوظيف" : "Careers" },
+                { href: "/join",    label: t("nav.startProject") },
                 ...(user ? [{ href: "/clients-group", label: L ? "مجموعة العملاء" : "Client Group" }] : []),
               ].map(link => (
                 <li key={link.href}>
@@ -252,7 +288,7 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { href: "/privacy", label: t("footer.privacy") },
-                { href: "/terms", label: t("footer.terms") },
+                { href: "/terms",   label: t("footer.terms") },
               ].map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white transition-colors text-sm flex items-center gap-1 group" data-testid={`footer-link-${link.href.replace('/', '')}`}>
@@ -265,41 +301,26 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ── Supported Countries Section ── */}
+        {/* ── Supported Countries ── */}
         <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-black/[0.05] dark:bg-white/[0.06] flex items-center justify-center">
-                <Globe className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
-              </div>
-              <div>
-                <p className="text-[11px] tracking-[2px] uppercase text-black/40 dark:text-white/40 font-semibold">
-                  {L ? "الدول المدعومة" : "Supported Countries"}
-                </p>
-                <p className="text-[10px] text-black/25 dark:text-white/25 mt-0.5">
-                  {L
-                    ? `الموقع يعمل الآن بـ ${COUNTRY_NAMES_AR[currency.countryCode] || currency.countryCode} · ${currency.symbol} — اضغط لتغيير الدولة`
-                    : `Currently showing ${COUNTRY_NAMES_EN[currency.countryCode] || currency.countryCode} · ${currency.symbol} — click to switch`
-                  }
-                </p>
-              </div>
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-7 h-7 rounded-xl bg-black/[0.05] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+              <Globe className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
             </div>
-            {getManualCountry() && (
-              <button
-                onClick={clearManualCountry}
-                className="flex items-center gap-1.5 text-[10px] font-semibold text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
-                data-testid="btn-reset-country"
-              >
-                <RotateCcw className="w-3 h-3" />
-                {L ? "إعادة الكشف التلقائي" : "Reset to auto-detect"}
-              </button>
-            )}
+            <div>
+              <p className="text-[11px] tracking-[2px] uppercase text-black/50 dark:text-white/50 font-bold">
+                {L ? "الدول المدعومة" : "Supported Countries"}
+              </p>
+              <p className="text-[10px] text-black/25 dark:text-white/25">
+                {L ? "اضغط على أي دولة لتبديل العملة واللغة تلقائياً" : "Tap any country to switch currency & language"}
+              </p>
+            </div>
           </div>
           <CountrySwitcher lang={lang} />
         </div>
 
-        {/* App Download Strip */}
+        {/* ── App Download Strip ── */}
         {STORES.length > 0 && (
           <>
             <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
@@ -310,31 +331,18 @@ export default function Footer() {
               <div className="flex flex-wrap gap-2">
                 {STORES.map(store => (
                   store.enabled ? (
-                    <a
-                      key={store.key}
-                      href={store.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid={`footer-download-${store.key}`}
-                      className="flex items-center gap-2.5 bg-black dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 border border-white/5 text-white rounded-xl px-3 py-2 transition-all duration-200 group"
-                    >
-                      <span className={`${store.iconBg} w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        {store.icon}
-                      </span>
+                    <a key={store.key} href={store.url} target="_blank" rel="noopener noreferrer" data-testid={`footer-download-${store.key}`}
+                      className="flex items-center gap-2.5 bg-black dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 border border-white/5 text-white rounded-xl px-3 py-2 transition-all duration-200 group">
+                      <span className={`${store.iconBg} w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0`}>{store.icon}</span>
                       <div className="leading-tight">
                         <p className="text-[9px] text-white/40 group-hover:text-white/60 transition-colors">{store.label}</p>
                         <p className="text-[11px] font-bold text-white whitespace-nowrap">{store.name}</p>
                       </div>
                     </a>
                   ) : (
-                    <div
-                      key={store.key}
-                      data-testid={`footer-coming-soon-${store.key}`}
-                      className="relative flex items-center gap-2.5 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-2 cursor-default overflow-hidden"
-                    >
-                      <span className="w-7 h-7 rounded-lg bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0 text-black/20 dark:text-white/20">
-                        {store.icon}
-                      </span>
+                    <div key={store.key} data-testid={`footer-coming-soon-${store.key}`}
+                      className="relative flex items-center gap-2.5 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-2 cursor-default overflow-hidden">
+                      <span className="w-7 h-7 rounded-lg bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0 text-black/20 dark:text-white/20">{store.icon}</span>
                       <div className="leading-tight">
                         <p className="text-[9px] text-black/25 dark:text-white/25">{store.label}</p>
                         <p className="text-[11px] font-bold text-black/40 dark:text-white/40 whitespace-nowrap">{store.name}</p>
@@ -350,16 +358,11 @@ export default function Footer() {
           </>
         )}
 
-        {/* WhatsApp Channel Banner */}
+        {/* ── WhatsApp Channel ── */}
         <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
         <div className="mb-8">
-          <a
-            href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="footer-whatsapp-channel"
-            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-2xl px-6 py-5 transition-all duration-300 hover:shadow-lg hover:shadow-[#25D366]/10"
-          >
+          <a href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i" target="_blank" rel="noopener noreferrer" data-testid="footer-whatsapp-channel"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-2xl px-6 py-5 transition-all duration-300 hover:shadow-lg hover:shadow-[#25D366]/10">
             <div className="flex items-center gap-4">
               <div className="w-11 h-11 rounded-xl bg-[#25D366] flex items-center justify-center shadow-md shadow-[#25D366]/30 shrink-0">
                 <SiWhatsapp className="w-5 h-5 text-white" />
@@ -379,6 +382,7 @@ export default function Footer() {
           </a>
         </div>
 
+        {/* ── Social Links ── */}
         {SOCIAL_LINKS.length > 0 && (
           <>
             <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
@@ -388,15 +392,8 @@ export default function Footer() {
               </p>
               <div className="flex flex-wrap gap-2">
                 {SOCIAL_LINKS.map(s => (
-                  <a
-                    key={s.key}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.label}
-                    data-testid={`footer-social-${s.key}`}
-                    className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-black/40 dark:text-white/40 hover:text-white dark:hover:text-black transition-all duration-200"
-                  >
+                  <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer" aria-label={s.label} data-testid={`footer-social-${s.key}`}
+                    className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-black/40 dark:text-white/40 hover:text-white dark:hover:text-black transition-all duration-200">
                     {s.icon}
                   </a>
                 ))}
@@ -405,8 +402,8 @@ export default function Footer() {
           </>
         )}
 
+        {/* ── Copyright ── */}
         <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
-
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-black/25 dark:text-white/25 text-xs">
             © {new Date().getFullYear()} QIROX Systems Factory. {t("footer.rights")}.

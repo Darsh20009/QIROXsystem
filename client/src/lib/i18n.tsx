@@ -359,6 +359,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("qirox-lang", lang);
   }, [lang]);
 
+  /* ── Auto-switch language when country changes ── */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { country?: string; lang?: string } | null;
+      const newLang = detail?.lang as Lang | undefined;
+      if (newLang === "ar" || newLang === "en") setLang(newLang);
+    };
+    window.addEventListener("qirox-country-change", handler);
+    return () => window.removeEventListener("qirox-country-change", handler);
+  }, []);
+
   const t = (key: TranslationKey): string => {
     const entry = translations[key];
     if (!entry) return key;

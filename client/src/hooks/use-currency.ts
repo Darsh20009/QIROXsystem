@@ -559,6 +559,11 @@ function buildCurrencyInfo(countryCode: string, def: CurrencyDef): CurrencyInfo 
 const LOCALE_KEY = "qirox_locale";
 const COUNTRY_CHANGE_EVENT = "qirox-country-change";
 
+/** Countries where Arabic is the primary language — auto-switch lang to "ar" */
+export const ARAB_COUNTRIES = new Set([
+  "SA","AE","KW","QA","BH","OM","EG","JO","IQ","LY","SD","TN","DZ","MA","LB","SY","YE","PS",
+]);
+
 export function getManualCountry(): string {
   try { return localStorage.getItem(LOCALE_KEY) || ""; } catch { return ""; }
 }
@@ -567,12 +572,20 @@ export function setManualCountry(code: string): void {
   try {
     if (code) localStorage.setItem(LOCALE_KEY, code);
     else localStorage.removeItem(LOCALE_KEY);
-    window.dispatchEvent(new CustomEvent(COUNTRY_CHANGE_EVENT, { detail: code }));
+    const lang = code ? (ARAB_COUNTRIES.has(code) ? "ar" : "en") : null;
+    if (lang) localStorage.setItem("qirox-lang", lang);
+    window.dispatchEvent(new CustomEvent(COUNTRY_CHANGE_EVENT, { detail: { country: code, lang } }));
   } catch { /* noop */ }
 }
 
 export function clearManualCountry(): void {
-  setManualCountry("");
+  try {
+    localStorage.removeItem(LOCALE_KEY);
+    const tzCountry = detectCountryByTimezone();
+    const lang = tzCountry ? (ARAB_COUNTRIES.has(tzCountry) ? "ar" : "en") : "ar";
+    localStorage.setItem("qirox-lang", lang);
+    window.dispatchEvent(new CustomEvent(COUNTRY_CHANGE_EVENT, { detail: { country: "", lang } }));
+  } catch { /* noop */ }
 }
 
 /* ─── IP-based detection ─── */
@@ -612,8 +625,9 @@ export function useCurrency(forceSAR = false): CurrencyInfo {
       fetchCountryCode().then(code => { if (code) setCountryCode(code); });
     }
     const onCountryChange = (e: Event) => {
-      const detail = (e as CustomEvent).detail as string;
-      setCountryCode(detail || detectCountryByTimezone() || "SA");
+      const detail = (e as CustomEvent).detail as { country?: string; lang?: string } | string;
+      const country = typeof detail === "string" ? detail : (detail?.country ?? "");
+      setCountryCode(country || detectCountryByTimezone() || "SA");
     };
     window.addEventListener(COUNTRY_CHANGE_EVENT, onCountryChange);
     return () => window.removeEventListener(COUNTRY_CHANGE_EVENT, onCountryChange);

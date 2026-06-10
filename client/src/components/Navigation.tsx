@@ -236,9 +236,8 @@ export default function Navigation() {
   const { t, lang, dir, setLang } = useI18n();
   const { theme, toggle } = useTheme();
   const currency = useCurrency();
-  const rawCC = getCountryCode();
-  const countryCode = (typeof rawCC === "string" && rawCC.length === 2) ? rawCC.toUpperCase() : "SA";
-  const countryName = lang === "ar" ? (COUNTRY_AR[countryCode] || "السعودية") : (COUNTRY_EN[countryCode] || "Saudi Arabia");
+  const countryCode = currency.countryCode || "SA";
+  const countryName = lang === "ar" ? (COUNTRY_AR[countryCode] || COUNTRY_AR["SA"]) : (COUNTRY_EN[countryCode] || COUNTRY_EN["SA"]);
   const countryFlag = countryToFlag(countryCode);
 
   /* ── Country-aware SEO ── */
