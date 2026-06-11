@@ -19,7 +19,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 // ─────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────
-function timeAgo(date: string, L = true) {
+function timeAgo(date: string | null, L = true) {
+    if (!date) return "";
     const d = new Date(date);
     const now = new Date();
     const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
@@ -433,6 +434,7 @@ export default function Inbox() {
   // ── Contacts ──
   const contacts = (() => {
     const map = new Map<string, any>();
+    // First: build contacts from past conversations (with lastMsg/lastAt info)
     for (const msg of allMessages) {
       const other = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id)
         ? msg.toUserId : msg.fromUserId;
@@ -458,7 +460,34 @@ export default function Inbox() {
         if (c) c.unread++;
       }
     }
-    return [...map.values()].sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
+    // Second: add ALL employees/admins who aren't already in the map
+    // so users can start new conversations without needing a prior message
+    if (me?.role !== "client") {
+      for (const emp of employees) {
+        const eid = String(emp.id || emp._id);
+        if (eid === String(me?.id)) continue;
+        if (!map.has(eid)) {
+          map.set(eid, {
+            id: eid,
+            fullName: emp.fullName || emp.username || (L ? "موظف" : "Employee"),
+            role: emp.role,
+            profilePhotoUrl: emp.profilePhotoUrl || "",
+            avatarConfig: emp.avatarConfig || "",
+            lastMsg: null,
+            lastAt: null,
+            unread: 0,
+          });
+        }
+      }
+    }
+    const all = [...map.values()];
+    // Sort: conversations with messages first (by date desc), then alphabetically
+    return all.sort((a, b) => {
+      if (a.lastAt && b.lastAt) return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+      if (a.lastAt && !b.lastAt) return -1;
+      if (!a.lastAt && b.lastAt) return 1;
+      return (a.fullName || "").localeCompare(b.fullName || "");
+    });
   })();
 
   const filteredContacts = contacts.filter(c =>

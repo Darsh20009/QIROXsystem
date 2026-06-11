@@ -6369,17 +6369,36 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { UserModel, InboxMessageModel } = await import("./models");
     const me = req.user as any;
-    // Find all users who have had conversations with me
-    const msgs = await InboxMessageModel.find({ $or: [{ fromUserId: me.id }, { toUserId: me.id }] }).select("fromUserId toUserId");
-    const userIds = new Set<string>();
-    for (const m of msgs) {
-      const fid = String(m.fromUserId);
-      const tid = String(m.toUserId);
-      if (fid !== String(me.id)) userIds.add(fid);
-      if (tid !== String(me.id)) userIds.add(tid);
+    const myId = String(me.id);
+    try {
+      // Always return all employees/admins/managers (so new conversations can be started)
+      const EMPLOYEE_ROLES = ["admin","manager","ceo","cto","developer","designer","support","sales","sales_manager","accountant","merchant","employee"];
+      const allEmployees = await UserModel.find({
+        role: { $in: EMPLOYEE_ROLES },
+        _id: { $ne: myId },
+      }).select("username fullName role profilePhotoUrl avatarConfig employeeCode").lean();
+
+      // Also include clients who have had conversations with me (for employee->client messaging)
+      const msgs = await InboxMessageModel.find({ $or: [{ fromUserId: myId }, { toUserId: myId }] }).select("fromUserId toUserId");
+      const clientIds = new Set<string>();
+      for (const m of msgs) {
+        const fid = String(m.fromUserId);
+        const tid = String(m.toUserId);
+        if (fid !== myId) clientIds.add(fid);
+        if (tid !== myId) clientIds.add(tid);
+      }
+      // Remove any IDs already covered by employees
+      const employeeIdSet = new Set(allEmployees.map((u: any) => String(u._id)));
+      const remainingClientIds = [...clientIds].filter(id => !employeeIdSet.has(id));
+      const clients = remainingClientIds.length > 0
+        ? await UserModel.find({ _id: { $in: remainingClientIds } }).select("username fullName role profilePhotoUrl avatarConfig employeeCode").lean()
+        : [];
+
+      const contacts = [...allEmployees, ...clients].map((u: any) => ({ ...u, id: u._id.toString() }));
+      res.json(contacts);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    const users = await UserModel.find({ _id: { $in: [...userIds] } }).select("username fullName role id employeeCode");
-    res.json(users);
   });
 
   // Get client context for employee inbox (orders, projects, etc.)
