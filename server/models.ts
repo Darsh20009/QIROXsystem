@@ -2132,3 +2132,38 @@ const deploymentRunSchema = new mongoose.Schema({
 }, { timestamps: true });
 deploymentRunSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const DeploymentRunModel = mongoose.models.DeploymentRun || mongoose.model("DeploymentRun", deploymentRunSchema);
+
+// ── KANBAN PLAN TASKS ────────────────────────────────────────────────────────
+const kanbanTaskSchema = new mongoose.Schema({
+  title:          { type: String, required: true },
+  description:    { type: String, default: "" },
+  status:         { type: String, enum: ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"], default: "new" },
+  priority:       { type: String, enum: ["low","medium","high","urgent"], default: "medium" },
+  assignedTo:     { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  createdBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  deadline:       { type: Date, default: null },
+  templateType:   { type: String, enum: ["custom","website_plan"], default: "custom" },
+  // Website plan fields
+  plan: {
+    projectConcept:       { type: String, default: "" },
+    techStack:            { type: String, default: "" },
+    framework:            { type: String, default: "" },
+    language:             { type: String, default: "" },
+    database:             { type: String, default: "" },
+    databaseDesign:       { type: String, default: "" },
+    hosting:              { type: String, default: "" },
+    deploymentStrategy:   { type: String, default: "" },
+    domain:               { type: String, default: "" },
+    serverIp:             { type: String, default: "" },
+    githubRepo:           { type: String, default: "" },
+    stagingUrl:           { type: String, default: "" },
+    productionUrl:        { type: String, default: "" },
+    sslEnabled:           { type: Boolean, default: false },
+    mainFeatures:         { type: String, default: "" },
+    targetAudience:       { type: String, default: "" },
+    estimatedHours:       { type: String, default: "" },
+    notes:                { type: String, default: "" },
+  },
+}, { timestamps: true });
+kanbanTaskSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const KanbanTaskModel = mongoose.models.KanbanTask || mongoose.model("KanbanTask", kanbanTaskSchema);

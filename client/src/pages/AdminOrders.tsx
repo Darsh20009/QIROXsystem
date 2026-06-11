@@ -110,6 +110,8 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
+  const { data: currentUser } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
   const roleLabels = getRoleLabels(L);
@@ -550,7 +552,7 @@ export default function AdminOrders() {
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "اسم المشروع" : "Project Name"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المسؤول" : "Assignee"}</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المبلغ" : "Amount"}</th>
+                {canSeeFinance && <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المبلغ" : "Amount"}</th>}
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "التاريخ" : "Date"}</th>
                 <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "إجراءات" : "Actions"}</th>
               </tr>
@@ -591,9 +593,11 @@ export default function AdminOrders() {
                         <span className="text-xs text-black/20 italic">{L ? "غير معين" : "Unassigned"}</span>
                       )}
                     </td>
+                    {canSeeFinance && (
                     <td className="p-4 text-sm font-semibold text-black/70">
                       {order.totalAmount ? <span className="flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={11} className="opacity-60" /></span> : "—"}
                     </td>
+                    )}
                     <td className="p-4 text-xs text-black/30">
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' }) : "—"}
                     </td>
@@ -654,7 +658,7 @@ export default function AdminOrders() {
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${statusMap[selectedOrder.status]?.color || ""}`}>
                         {statusMap[selectedOrder.status]?.label || selectedOrder.status}
                       </span>
-                      {selectedOrder.totalAmount && (
+                      {canSeeFinance && selectedOrder.totalAmount && (
                         <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                       )}
                       {selectedOrder.client?.fullName && (
@@ -978,7 +982,8 @@ export default function AdminOrders() {
                         ))}
                       </div>
 
-                      {/* Payment */}
+                      {/* Payment — visible to finance roles only */}
+                      {canSeeFinance && (
                       <div>
                         <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "بيانات الدفع" : "Payment Details"}</p>
                         <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
@@ -1004,6 +1009,7 @@ export default function AdminOrders() {
                           )}
                         </div>
                       </div>
+                      )}
 
                       {/* Client Documents */}
                       {(() => {
@@ -1070,18 +1076,22 @@ export default function AdminOrders() {
                                 onChange={e => setSpecsForm(f => ({ ...f, clientEmail: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-specs-email" />
                             </div>
+                            {canSeeFinance && (
                             <div>
                               <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">{L ? "الميزانية الكلية" : "Total Budget"} (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.totalBudget}
                                 onChange={e => setSpecsForm(f => ({ ...f, totalBudget: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-budget" />
                             </div>
+                            )}
+                            {canSeeFinance && (
                             <div>
                               <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">{L ? "المدفوع حالياً" : "Amount Paid"} (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.paidAmount}
                                 onChange={e => setSpecsForm(f => ({ ...f, paidAmount: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-paid" />
                             </div>
+                            )}
                             <div>
                               <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "تاريخ البداية" : "Start Date"}</label>
                               <Input type="date" value={specsForm.startDate}
@@ -1374,12 +1384,14 @@ export default function AdminOrders() {
                             </SelectContent>
                           </Select>
                         </div>
+                        {canSeeFinance && (
                         <div>
                           <label className="flex items-center gap-1 text-xs font-medium text-black/50 mb-1.5">{L ? "المبلغ" : "Amount"} (<SARIcon size={9} className="opacity-60" />)</label>
                           <Input type="number" value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
                             className="h-10" data-testid="input-order-amount" />
                         </div>
+                        )}
                       </div>
 
                       <div>

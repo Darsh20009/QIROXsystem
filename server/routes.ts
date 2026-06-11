@@ -13086,6 +13086,71 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // GET /api/admin/kanban/tasks — list all plan tasks
+  app.get("/api/admin/kanban/tasks", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { KanbanTaskModel } = await import("./models");
+      const tasks = await (KanbanTaskModel as any).find()
+        .sort({ createdAt: -1 })
+        .populate("assignedTo", "fullName username")
+        .populate("createdBy", "fullName username")
+        .lean();
+      res.json(tasks);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/admin/kanban/tasks — create a new plan task
+  app.post("/api/admin/kanban/tasks", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { KanbanTaskModel } = await import("./models");
+      const me = req.user as any;
+      const { title, description, status, priority, assignedTo, deadline, templateType, plan } = req.body;
+      if (!title?.trim()) return res.status(400).json({ error: "العنوان مطلوب" });
+      const task = await (KanbanTaskModel as any).create({
+        title: title.trim(),
+        description: description || "",
+        status: status || "new",
+        priority: priority || "medium",
+        assignedTo: assignedTo || null,
+        createdBy: me._id || me.id,
+        deadline: deadline ? new Date(deadline) : null,
+        templateType: templateType || "custom",
+        plan: plan || {},
+      });
+      const populated = await (KanbanTaskModel as any).findById(task._id)
+        .populate("assignedTo", "fullName username")
+        .populate("createdBy", "fullName username")
+        .lean();
+      res.status(201).json(populated);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // PATCH /api/admin/kanban/tasks/:id/status — move task between stages
+  app.patch("/api/admin/kanban/tasks/:id/status", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { KanbanTaskModel } = await import("./models");
+      const { status } = req.body;
+      const allowed = ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"];
+      if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
+      const task = await (KanbanTaskModel as any).findByIdAndUpdate(req.params.id, { status }, { returnDocument: "after", new: true })
+        .populate("assignedTo", "fullName username").lean();
+      res.json(task);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // DELETE /api/admin/kanban/tasks/:id — delete a task
+  app.delete("/api/admin/kanban/tasks/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { KanbanTaskModel } = await import("./models");
+      await (KanbanTaskModel as any).findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   /* ══ Phone Correction Requests ══════════════════════════════════════════ */
 
   app.post("/api/phone-requests", async (req, res) => {
@@ -13323,20 +13388,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
         const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
         const { sendEmail, baseTemplate } = await import("./email");
-        const otpHtml = `<div style="text-align:center;margin-bottom:12px;">
-            <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال — واتساب</span>
-          </div>
-          <p style="font-size:15px;text-align:center;margin-bottom:8px;">مرحباً ${clientName}،</p>
-          <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;">رمز التحقق من رقم جوالك على منصة QIROX هو:</p>
-          <div style="text-align:center;margin:20px 0;">
-            <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1a1a1a;font-family:monospace;">${otp}</span>
-          </div>
-          <p style="font-size:12px;color:#999;text-align:center;">الرمز صالح لمدة 15 دقيقة فقط.<br>إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>`;
-        // Send OTP to the user's own email directly
-        if (dbUser?.email) {
-          sendEmail(dbUser.email, clientName, `رمز توثيق جوالك على QIROX: ${otp}`, baseTemplate(otpHtml)).catch(() => {});
-        }
-        // Also notify admin with wa.me link so they can send via WhatsApp too
+        // Only notify the internal admin — OTP is NOT sent to the client's email.
+        // The employee will forward it to the client via WhatsApp manually.
         const adminHtml = baseTemplate(
           `<div style="text-align:center;margin-bottom:12px;">
             <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال</span>
