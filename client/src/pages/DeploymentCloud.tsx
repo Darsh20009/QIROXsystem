@@ -116,8 +116,8 @@ function formatDuration(sec: number): string {
 // ── Standalone Layout ──────────────────────────────────────────────────────
 function CloudLayout({ children, onNewProject }: { children: React.ReactNode; onNewProject?: () => void }) {
   return (
-    <div className="min-h-screen bg-[#080808] text-white" dir="rtl">
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#080808]/90 backdrop-blur-md">
+    <div className="min-h-screen bg-[#080c16] text-white" dir="rtl">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#080c16]/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/employee/role-dashboard">
@@ -204,7 +204,7 @@ function Terminal_({ logs, status, isActive }: { logs: any[]; status: string; is
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
   return (
-    <div className="bg-[#0d0d0d] border border-white/[0.07] rounded-xl overflow-hidden">
+    <div className="bg-[#090e1a] border border-white/[0.08] rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
@@ -288,7 +288,7 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a10] border border-white/[0.07] rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#090e1a] border border-white/[0.08] rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-violet-500/10 to-blue-500/10">
         <div className="p-1.5 rounded-lg bg-violet-500/20"><BrainCircuit size={15} className="text-violet-400" /></div>
         <div>
@@ -598,7 +598,7 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-        className="w-full sm:max-w-lg bg-[#0f0f14] border border-white/[0.1] rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl">
+        className="w-full sm:max-w-lg bg-[#0c1322] border border-white/[0.1] rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
