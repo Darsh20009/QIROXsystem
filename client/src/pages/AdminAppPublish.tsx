@@ -26,7 +26,7 @@ type Platform = "android" | "windows" | "macos" | "ios" | "harmony";
 const PLATFORMS: { id: Platform; label: string; labelEn: string; icon: any; color: string; bg: string; ext: string; desc: string; badge?: string }[] = [
   { id: "android", label: "أندرويد", labelEn: "Android", icon: Smartphone, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "APK", desc: "Google Play — Trusted Web Activity" },
   { id: "windows", label: "ويندوز", labelEn: "Windows", icon: Monitor, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "EXE", desc: "Electron — Windows Desktop App" },
-  { id: "macos", label: "ماك", labelEn: "macOS", icon: Apple, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "DMG", desc: "Electron — macOS Desktop App (.dmg)", badge: "جديد" },
+  { id: "macos", label: "ماك", labelEn: "macOS", icon: Apple, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "DMG", desc: "Electron — macOS Desktop App (.dmg)" },
   { id: "ios", label: "آيفون iOS", labelEn: "iOS", icon: Apple, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "IPA", desc: "Capacitor — Apple App Store" },
   { id: "harmony", label: "هارموني", labelEn: "HarmonyOS", icon: Cpu, color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", ext: "HAP", desc: "DevEco Studio — Huawei App Gallery" },
 ];

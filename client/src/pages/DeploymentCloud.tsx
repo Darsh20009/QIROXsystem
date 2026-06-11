@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import EmployeeLayout from "@/components/EmployeeLayout";
+import { useLocation, useRoute, Link } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +16,7 @@ import {
   FolderGit2, ChevronDown, Lock, Unlock, Link2, Rocket,
   BookOpen, Code2, Database, Wifi, WifiOff, TrendingUp,
   AlertCircle, Info, CheckCheck, RotateCcw, FlaskConical,
+  ChevronLeft, LayoutDashboard, BrainCircuit, Timer,
 } from "lucide-react";
 
 const BASE_DOMAIN = "deployment.qiroxstudio.online";
@@ -53,6 +54,49 @@ const LOG_COLORS: Record<string, string> = {
   warn:    "text-amber-400",
 };
 
+const SERVICE_TYPES = [
+  {
+    id: "web",
+    icon: Globe,
+    title: "خدمة ويب",
+    titleEn: "Web Service",
+    desc: "تطبيق ويب كامل يستجيب لطلبات HTTP",
+    color: "#6366f1",
+    bg: "from-violet-600/20 to-violet-600/5",
+    border: "border-violet-500/30 hover:border-violet-500/60",
+  },
+  {
+    id: "static",
+    icon: Zap,
+    title: "موقع ثابت",
+    titleEn: "Static Site",
+    desc: "ملفات HTML/CSS/JS سريعة عبر CDN",
+    color: "#3b82f6",
+    bg: "from-blue-600/20 to-blue-600/5",
+    border: "border-blue-500/30 hover:border-blue-500/60",
+  },
+  {
+    id: "cron",
+    icon: Timer,
+    title: "مهمة مجدولة",
+    titleEn: "Cron Job",
+    desc: "سكريبت يعمل بجدول زمني محدد تلقائياً",
+    color: "#f59e0b",
+    bg: "from-amber-600/20 to-amber-600/5",
+    border: "border-amber-500/30 hover:border-amber-500/60",
+  },
+  {
+    id: "worker",
+    icon: Cpu,
+    title: "عملية خلفية",
+    titleEn: "Background Worker",
+    desc: "عملية تعمل بدون HTTP في الخلفية",
+    color: "#10b981",
+    bg: "from-emerald-600/20 to-emerald-600/5",
+    border: "border-emerald-500/30 hover:border-emerald-500/60",
+  },
+];
+
 function timeAgo(date: string | Date | null): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
@@ -69,23 +113,67 @@ function formatDuration(sec: number): string {
   return `${Math.floor(sec / 60)}د ${sec % 60}ث`;
 }
 
+// ── Standalone Layout ──────────────────────────────────────────────────────
+function CloudLayout({ children, onNewProject }: { children: React.ReactNode; onNewProject?: () => void }) {
+  return (
+    <div className="min-h-screen bg-[#080808] text-white" dir="rtl">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#080808]/90 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link href="/employee/role-dashboard">
+              <button className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.05]">
+                <ChevronLeft size={14} />
+                <LayoutDashboard size={12} />
+                <span className="hidden sm:inline">لوحة التحكم</span>
+              </button>
+            </Link>
+            <div className="w-px h-4 bg-white/[0.08]" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-violet-600 rounded-lg flex items-center justify-center">
+                <Cloud size={12} className="text-white" />
+              </div>
+              <span className="text-sm font-bold text-white">Qirox Cloud</span>
+              <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Online
+              </span>
+            </div>
+          </div>
+          {onNewProject && (
+            <button
+              onClick={onNewProject}
+              className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-violet-500/20"
+            >
+              <Plus size={14} />
+              مشروع جديد
+            </button>
+          )}
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {children}
+      </main>
+    </div>
+  );
+}
+
 // ── Stats Bar ──────────────────────────────────────────────────────────────
 function StatsBar({ stats }: { stats: any }) {
   const cards = [
-    { label: "إجمالي المشاريع", value: stats?.totalProjects ?? 0, icon: Boxes, color: "text-violet-400" },
-    { label: "مشاريع مباشرة", value: stats?.liveProjects ?? 0, icon: CheckCircle2, color: "text-emerald-400" },
-    { label: "فشل النشر", value: stats?.failedProjects ?? 0, icon: AlertTriangle, color: "text-red-400" },
-    { label: "إجمالي النشرات", value: stats?.totalRuns ?? 0, icon: Rocket, color: "text-blue-400" },
+    { label: "إجمالي المشاريع", value: stats?.totalProjects ?? 0, icon: Boxes, color: "text-violet-400", bg: "bg-violet-500/10" },
+    { label: "مشاريع مباشرة", value: stats?.liveProjects ?? 0, icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { label: "فشل النشر", value: stats?.failedProjects ?? 0, icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
+    { label: "إجمالي النشرات", value: stats?.totalRuns ?? 0, icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10" },
   ];
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
       {cards.map((c) => (
         <motion.div key={c.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white/[0.03] border border-white/8 rounded-xl p-4 flex items-center gap-3">
-          <div className={`p-2 rounded-lg bg-white/5 ${c.color}`}><c.icon size={18} /></div>
+          className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4 flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${c.bg} ${c.color}`}><c.icon size={16} /></div>
           <div>
-            <p className="text-2xl font-black text-white">{c.value}</p>
-            <p className="text-[11px] text-white/40">{c.label}</p>
+            <p className="text-xl font-black text-white">{c.value}</p>
+            <p className="text-[10px] text-white/40">{c.label}</p>
           </div>
         </motion.div>
       ))}
@@ -98,10 +186,12 @@ function LogLine({ log, index }: { log: any; index: number }) {
   const color = LOG_COLORS[log.level] || "text-white/60";
   const prefix = log.level === "error" ? "✖" : log.level === "success" ? "✔" : log.level === "cmd" ? "$" : "›";
   return (
-    <motion.div initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: Math.min(index * 0.02, 0.5) }}
-      className={`flex gap-2 font-mono text-[12px] leading-relaxed ${color}`}>
-      <span className="shrink-0 opacity-50 select-none">{prefix}</span>
+    <motion.div
+      initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: Math.min(index * 0.02, 0.3) }}
+      className={`flex items-start gap-2 font-mono text-[11px] leading-relaxed ${color}`}
+    >
+      <span className="shrink-0 opacity-60 select-none">{prefix}</span>
       <span className="break-all">{log.message}</span>
     </motion.div>
   );
@@ -109,36 +199,32 @@ function LogLine({ log, index }: { log: any; index: number }) {
 
 // ── Terminal ───────────────────────────────────────────────────────────────
 function Terminal_({ logs, status, isActive }: { logs: any[]; status: string; isActive: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
-
   return (
-    <div className="bg-[#0d0d0d] border border-white/8 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/8 bg-white/[0.02]">
+    <div className="bg-[#0d0d0d] border border-white/[0.07] rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
         <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500/60" />
-          <div className="w-3 h-3 rounded-full bg-amber-500/60" />
-          <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
         </div>
-        <span className="text-white/30 text-xs font-mono ml-2">deploy.log</span>
+        <span className="text-[10px] text-white/30 font-mono mr-1">build output</span>
         {isActive && (
-          <div className="ml-auto flex items-center gap-1.5 text-[11px] text-blue-400">
-            <Loader2 size={10} className="animate-spin" /><span>مباشر</span>
-          </div>
+          <span className="mr-auto flex items-center gap-1 text-[10px] text-blue-400">
+            <Loader2 size={9} className="animate-spin" /> building...
+          </span>
         )}
       </div>
-      <div ref={ref} className="p-4 h-72 overflow-y-auto space-y-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
-        {logs.length === 0 && (
-          <p className="text-white/20 text-[12px] font-mono">في انتظار بدء النشر...</p>
+      <div className="p-4 h-64 overflow-y-auto space-y-0.5 scrollbar-hide">
+        {logs.length === 0 ? (
+          <p className="text-white/20 text-xs font-mono text-center py-8">في انتظار النشر...</p>
+        ) : (
+          logs.map((log: any, i: number) => <LogLine key={i} log={log} index={i} />)
         )}
-        {logs.map((log, i) => <LogLine key={i} log={log} index={i} />)}
-        {isActive && (
-          <div className="flex gap-2 font-mono text-[12px] text-white/30 mt-1">
-            <span className="animate-pulse">█</span>
-          </div>
-        )}
+        <div ref={bottomRef} />
       </div>
     </div>
   );
@@ -149,32 +235,36 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
   const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const hasError = run?.status === "failed" || run?.logs?.some((l: any) => l.level === "error");
+  const hasError = run?.status === "failed";
 
   const analyzeAuto = useCallback(async () => {
-    if (!hasError || !run) return;
     setLoading(true);
     try {
       const r = await apiRequest("POST", "/api/deploy/ai/analyze", {
-        logs: run.logs,
+        logs: run?.logs || [],
         framework: project?.framework,
         buildCommand: project?.buildCommand,
-        runId: run.id || run._id,
+        errorMessage: run?.error,
+        runId: run?.id || run?._id,
       });
       const data = await r.json();
       setMessages([{ role: "ai", text: data.suggestion }]);
-    } catch { toast({ title: "خطأ", description: "تعذر الاتصال بالذكاء الاصطناعي", variant: "destructive" }); }
+    } catch (e: any) {
+      toast({ title: "خطأ", description: "تعذر تحليل الأخطاء", variant: "destructive" });
+    }
     setLoading(false);
   }, [run, project]);
 
-  useEffect(() => { if (messages.length === 0 && hasError) analyzeAuto(); }, [hasError]);
+  useEffect(() => {
+    if (hasError && messages.length === 0) analyzeAuto();
+  }, [hasError]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -188,23 +278,24 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
         framework: project?.framework,
         buildCommand: project?.buildCommand,
         question: q,
-        runId: run?.id || run?._id,
       });
       const data = await r.json();
       setMessages(m => [...m, { role: "ai", text: data.suggestion }]);
-    } catch { toast({ title: "خطأ", description: "تعذر الاتصال بالذكاء الاصطناعي", variant: "destructive" }); }
+    } catch {
+      setMessages(m => [...m, { role: "ai", text: "عذراً، حدث خطأ في الاتصال." }]);
+    }
     setLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a] border border-white/8 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8 bg-gradient-to-r from-violet-500/10 to-blue-500/10">
-        <div className="p-1.5 rounded-lg bg-violet-500/20"><Bot size={16} className="text-violet-400" /></div>
+    <div className="flex flex-col h-full bg-[#0a0a10] border border-white/[0.07] rounded-xl overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] bg-gradient-to-r from-violet-500/10 to-blue-500/10">
+        <div className="p-1.5 rounded-lg bg-violet-500/20"><BrainCircuit size={15} className="text-violet-400" /></div>
         <div>
-          <p className="text-sm font-bold text-white">Qirox AI — محلل النشر</p>
-          <p className="text-[10px] text-white/40">يحلل الأخطاء ويقترح الحلول</p>
+          <p className="text-sm font-bold text-white">Qirox AI</p>
+          <p className="text-[10px] text-white/40">محلل أخطاء النشر</p>
         </div>
-        <button onClick={onClose} className="ml-auto text-white/30 hover:text-white/70 transition-colors"><X size={16} /></button>
+        <button onClick={onClose} className="mr-auto text-white/30 hover:text-white/70 transition-colors"><X size={15} /></button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading && messages.length === 0 && (
@@ -215,18 +306,15 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
         )}
         {!loading && messages.length === 0 && !hasError && (
           <div className="text-center text-white/30 text-sm py-8">
-            <Bot size={32} className="mx-auto mb-2 opacity-30" />
+            <BrainCircuit size={28} className="mx-auto mb-2 opacity-30" />
             <p>اسألني عن أي مشكلة في النشر</p>
           </div>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] rounded-xl px-3 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-              m.role === "user"
-                ? "bg-violet-600 text-white"
-                : "bg-white/[0.05] border border-white/8 text-white/80"
+              m.role === "user" ? "bg-violet-600 text-white" : "bg-white/[0.05] border border-white/8 text-white/80"
             }`}>
-              {m.role === "ai" && <Bot size={12} className="text-violet-400 mb-1" />}
               {m.text}
             </div>
           </div>
@@ -245,7 +333,7 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
           </button>
         </div>
       )}
-      <div className="p-3 border-t border-white/8 flex gap-2">
+      <div className="p-3 border-t border-white/[0.06] flex gap-2">
         <input
           value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && sendMessage()}
@@ -261,9 +349,131 @@ function AIAssistant({ run, project, onClose }: { run: any; project: any; onClos
   );
 }
 
+// ── Service Type Step (Render-like) ────────────────────────────────────────
+function ServiceTypeStep({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-semibold text-white mb-0.5">ما نوع الخدمة التي تريد نشرها؟</p>
+        <p className="text-xs text-white/40">اختر النوع المناسب لمشروعك</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {SERVICE_TYPES.map(s => {
+          const Icon = s.icon;
+          const isSelected = selected === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => onSelect(s.id)}
+              className={`relative group flex flex-col gap-2.5 p-4 rounded-xl border transition-all text-right ${
+                isSelected
+                  ? `bg-gradient-to-br ${s.bg} border-opacity-100`
+                  : "bg-white/[0.025] border-white/[0.08] hover:bg-white/[0.04]"
+              } ${isSelected ? s.border.split(" ")[0] : s.border}`}
+            >
+              {isSelected && (
+                <div className="absolute top-2.5 left-2.5 w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                  <CheckCheck size={9} className="text-white" />
+                </div>
+              )}
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: s.color + "25", color: s.color }}>
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">{s.title}</p>
+                <p className="text-[10px] text-white/40 mt-0.5 leading-relaxed">{s.desc}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── GitHub OAuth Step ──────────────────────────────────────────────────────
+function GitHubConnectStep({
+  ghUser, token, setToken, onConnect, loading, onUseOAuth,
+}: {
+  ghUser: any; token: string; setToken: (t: string) => void;
+  onConnect: () => void; loading: boolean; onUseOAuth: () => void;
+}) {
+  const [showPAT, setShowPAT] = useState(false);
+
+  if (ghUser) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl">
+          <img src={ghUser.avatar_url} alt="" className="w-10 h-10 rounded-full ring-2 ring-emerald-500/30" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">{ghUser.name || ghUser.login}</p>
+            <p className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 size={10} /> @{ghUser.login} — متصل بـ GitHub</p>
+          </div>
+          <Github size={20} className="text-white/30" />
+        </div>
+        <p className="text-xs text-white/40 text-center">حساب GitHub متصل. تابع لاختيار المستودع.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="p-4 bg-[#161b22] border border-white/[0.1] rounded-xl flex items-start gap-3">
+        <Github size={18} className="text-white shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-white mb-1">ربط حساب GitHub</p>
+          <p className="text-xs text-white/50">نحتاج للوصول لمستودعاتك لنشر مشروعك تلقائياً</p>
+        </div>
+      </div>
+
+      <button
+        onClick={onUseOAuth}
+        className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-100 text-black font-semibold text-sm py-3 rounded-xl transition-all"
+      >
+        <Github size={17} />
+        تسجيل الدخول بـ GitHub
+      </button>
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-white/[0.07]" />
+        <button onClick={() => setShowPAT(p => !p)} className="text-[11px] text-white/30 hover:text-white/60 transition-colors">
+          أو استخدام Personal Access Token
+        </button>
+        <div className="flex-1 h-px bg-white/[0.07]" />
+      </div>
+
+      <AnimatePresence>
+        {showPAT && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-300 flex gap-2.5">
+              <Info size={13} className="shrink-0 mt-0.5" />
+              <span>GitHub → Settings → Developer Settings → Personal Access Tokens → صلاحية <code className="bg-blue-500/20 px-1 rounded">repo</code></span>
+            </div>
+            <input
+              type="password" value={token} onChange={e => setToken(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && onConnect()}
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-white/20 outline-none focus:border-violet-500/50 transition-colors"
+            />
+            <button onClick={onConnect} disabled={loading || !token.trim()}
+              className="w-full bg-[#161b22] hover:bg-[#21262d] border border-white/10 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+              {loading ? <Loader2 size={15} className="animate-spin" /> : <Github size={15} />}
+              {loading ? "جاري الاتصال..." : "ربط بـ Token"}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Create Project Modal ───────────────────────────────────────────────────
-function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [step, setStep] = useState<"token" | "repo" | "config">("token");
+function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
+  onClose: () => void; onCreated: () => void; initialStep?: string;
+}) {
+  const [step, setStep] = useState<"service" | "github" | "repo" | "config">(initialStep as any);
+  const [serviceType, setServiceType] = useState("web");
   const [token, setToken] = useState("");
   const [ghUser, setGhUser] = useState<any>(null);
   const [repos, setRepos] = useState<any[]>([]);
@@ -279,6 +489,16 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const STEPS = ["service", "github", "repo", "config"];
+  const STEP_LABELS = ["الخدمة", "GitHub", "المستودع", "الإعدادات"];
+  const currentStepIdx = STEPS.indexOf(step);
+
+  const goToGitHub = () => {
+    sessionStorage.setItem("deploy_service_type", serviceType);
+    sessionStorage.setItem("deploy_reopen_modal", "1");
+    window.location.href = "/api/deploy/github/oauth/start";
+  };
+
   const connectGitHub = async () => {
     if (!token.trim()) return;
     setLoading(true);
@@ -289,10 +509,15 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
       ]);
       const uData = await uR.json();
       const rData = await rR.json();
-      if (uData.login) { setGhUser(uData); setRepos(rData); setStep("repo"); }
+      if (uData.login) { setGhUser(uData); setRepos(rData); }
       else throw new Error("Invalid token");
-    } catch { toast({ title: "خطأ", description: "تعذر الاتصال بـ GitHub. تأكد من صحة التوكن", variant: "destructive" }); }
+    } catch { toast({ title: "خطأ", description: "تعذر الاتصال بـ GitHub", variant: "destructive" }); }
     setLoading(false);
+  };
+
+  const nextFromGithub = () => {
+    if (!ghUser) { toast({ title: "ربط GitHub أولاً", variant: "destructive" }); return; }
+    setStep("repo");
   };
 
   const selectRepo = async (repo: any) => {
@@ -301,7 +526,8 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
     setLoading(true);
     try {
       const r = await apiRequest("POST", "/api/deploy/github/branches", {
-        token, owner: repo.full_name.split("/")[0], repo: repo.name,
+        token: token || (ghUser?.token || ""),
+        owner: repo.full_name.split("/")[0], repo: repo.name,
       });
       const data = await r.json();
       setBranches(data.map((b: any) => b.name));
@@ -316,14 +542,13 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
     try {
       const [owner, repoName] = selectedRepo.full_name.split("/");
       await apiRequest("POST", "/api/deploy/projects", {
-        ...form,
-        githubOwner: owner,
-        githubRepo: repoName,
-        githubToken: token,
+        ...form, serviceType,
+        githubOwner: owner, githubRepo: repoName,
+        githubToken: token || ghUser?.token || "",
       });
       qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
       qc.invalidateQueries({ queryKey: ["/api/deploy/stats"] });
-      toast({ title: "تم الإنشاء!", description: `مشروع "${form.name}" جاهز للنشر` });
+      toast({ title: "تم الإنشاء! 🚀", description: `مشروع "${form.name}" جاهز للنشر` });
       onCreated();
       onClose();
     } catch (e: any) { toast({ title: "خطأ", description: e.message, variant: "destructive" }); }
@@ -335,152 +560,174 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+        className="w-full sm:max-w-lg bg-[#0f0f14] border border-white/[0.1] rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-violet-500/15 rounded-xl"><Rocket size={18} className="text-violet-400" /></div>
+            <div className="w-8 h-8 bg-violet-600/20 border border-violet-500/30 rounded-xl flex items-center justify-center">
+              <Rocket size={15} className="text-violet-400" />
+            </div>
             <div>
-              <h2 className="text-base font-bold text-white">مشروع جديد</h2>
-              <p className="text-xs text-white/40">ربط مستودع GitHub ونشره</p>
+              <h2 className="text-sm font-bold text-white">مشروع جديد</h2>
+              <p className="text-[11px] text-white/35">ربط مستودع GitHub ونشره</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.05] transition-all">
+            <X size={16} />
+          </button>
         </div>
 
-        {/* Step Indicator */}
-        <div className="flex items-center gap-0 px-6 py-3 border-b border-white/8 bg-white/[0.02]">
-          {[["token","GitHub Token"],["repo","اختيار المستودع"],["config","الإعدادات"]].map(([s, label], i) => (
-            <div key={s} className="flex items-center">
-              <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg transition-all ${
-                step === s ? "bg-violet-500/20 text-violet-400" :
-                ["token","repo","config"].indexOf(step) > i ? "text-emerald-400" : "text-white/30"
+        {/* Progress */}
+        <div className="flex items-center px-5 py-3 border-b border-white/[0.05] gap-1">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center flex-1">
+              <div className={`flex items-center gap-1.5 text-[11px] font-medium transition-all ${
+                step === s ? "text-violet-400" :
+                currentStepIdx > i ? "text-emerald-400" : "text-white/25"
               }`}>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
                   step === s ? "bg-violet-500 text-white" :
-                  ["token","repo","config"].indexOf(step) > i ? "bg-emerald-500 text-white" : "bg-white/10 text-white/40"
-                }`}>{["token","repo","config"].indexOf(step) > i ? "✓" : i+1}</span>
-                <span className="hidden sm:inline">{label}</span>
+                  currentStepIdx > i ? "bg-emerald-500 text-white" : "bg-white/[0.07] text-white/30"
+                }`}>
+                  {currentStepIdx > i ? "✓" : i + 1}
+                </span>
+                <span className="hidden sm:inline">{STEP_LABELS[i]}</span>
               </div>
-              {i < 2 && <ChevronRight size={12} className="text-white/20 mx-1" />}
+              {i < STEPS.length - 1 && <div className={`flex-1 h-px mx-1 transition-all ${currentStepIdx > i ? "bg-emerald-500/40" : "bg-white/[0.06]"}`} />}
             </div>
           ))}
         </div>
 
-        <div className="p-6 space-y-4">
-          {/* Step 1: Token */}
-          {step === "token" && (
-            <div className="space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-300 flex gap-3">
-                <Info size={16} className="shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold mb-1">Personal Access Token مطلوب</p>
-                  <p className="text-xs text-blue-300/70">انتقل إلى GitHub → Settings → Developer Settings → Personal Access Tokens → Generate new token. اختر صلاحيات: <code className="bg-blue-500/20 px-1 rounded">repo</code></p>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-white/50 mb-1.5 block">GitHub Personal Access Token</label>
-                <input
-                  type="password" value={token} onChange={e => setToken(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && connectGitHub()}
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-white/20 outline-none focus:border-violet-500/50 transition-colors"
-                />
-              </div>
-              <button onClick={connectGitHub} disabled={loading || !token.trim()}
-                className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                {loading ? <Loader2 size={16} className="animate-spin" /> : <Github size={16} />}
-                {loading ? "جاري الاتصال..." : "ربط GitHub"}
+        {/* Step Content */}
+        <div className="p-5 space-y-4">
+          {step === "service" && (
+            <>
+              <ServiceTypeStep selected={serviceType} onSelect={setServiceType} />
+              <button onClick={() => setStep("github")}
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                التالي
+                <ChevronLeft size={15} />
               </button>
-            </div>
+            </>
           )}
 
-          {/* Step 2: Repo */}
+          {step === "github" && (
+            <>
+              <GitHubConnectStep
+                ghUser={ghUser} token={token} setToken={setToken}
+                onConnect={connectGitHub} loading={loading} onUseOAuth={goToGitHub}
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setStep("service")} className="flex-1 bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white rounded-xl py-2.5 text-sm font-medium transition-all">
+                  رجوع
+                </button>
+                <button onClick={nextFromGithub} disabled={!ghUser}
+                  className="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5">
+                  التالي <ChevronLeft size={14} />
+                </button>
+              </div>
+            </>
+          )}
+
           {step === "repo" && (
             <div className="space-y-3">
               {ghUser && (
-                <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                  <img src={ghUser.avatar_url} alt="" className="w-8 h-8 rounded-full" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">{ghUser.name || ghUser.login}</p>
-                    <p className="text-xs text-emerald-400">@{ghUser.login} — متصل</p>
-                  </div>
-                  <CheckCircle2 size={16} className="ml-auto text-emerald-400" />
+                <div className="flex items-center gap-2.5 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <img src={ghUser.avatar_url} alt="" className="w-7 h-7 rounded-full" />
+                  <span className="text-sm font-semibold text-white">{ghUser.name || ghUser.login}</span>
+                  <CheckCircle2 size={13} className="mr-auto text-emerald-400" />
                 </div>
               )}
               <input
                 value={repoSearch} onChange={e => setRepoSearch(e.target.value)}
                 placeholder="ابحث عن مستودع..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 transition-colors"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 transition-colors"
               />
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
                 {filteredRepos.map(repo => (
                   <button key={repo.id} onClick={() => selectRepo(repo)}
-                    className="w-full flex items-center gap-3 p-3 bg-white/[0.03] hover:bg-violet-500/10 border border-white/8 hover:border-violet-500/30 rounded-xl transition-all text-left">
-                    <FolderGit2 size={16} className="text-white/40 shrink-0" />
+                    className="w-full flex items-center gap-3 p-3 bg-white/[0.025] hover:bg-violet-500/10 border border-white/[0.07] hover:border-violet-500/30 rounded-xl transition-all text-right">
+                    <FolderGit2 size={15} className="text-white/35 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{repo.name}</p>
-                      <p className="text-xs text-white/30 truncate">{repo.description || repo.full_name}</p>
+                      <p className="text-[11px] text-white/30 truncate">{repo.full_name}</p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {repo.private && <Lock size={11} className="text-amber-400" />}
-                      {repo.language && <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{repo.language}</span>}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {repo.private && <Lock size={10} className="text-amber-400" />}
+                      {repo.language && <span className="text-[10px] text-white/30 bg-white/[0.05] px-1.5 py-0.5 rounded">{repo.language}</span>}
                     </div>
                   </button>
                 ))}
+                {filteredRepos.length === 0 && (
+                  <p className="text-center text-xs text-white/30 py-6">لا توجد مستودعات</p>
+                )}
               </div>
+              <button onClick={() => setStep("github")} className="w-full bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white rounded-xl py-2.5 text-sm font-medium transition-all">
+                رجوع
+              </button>
             </div>
           )}
 
-          {/* Step 3: Config */}
           {step === "config" && (
             <div className="space-y-3">
+              {selectedRepo && (
+                <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.07] rounded-xl">
+                  <FolderGit2 size={13} className="text-violet-400 shrink-0" />
+                  <span className="text-xs text-white/60">{selectedRepo.full_name}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-white/50 mb-1 block">اسم المشروع</label>
+                  <label className="text-[11px] text-white/40 mb-1 block">اسم المشروع</label>
                   <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors" />
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors" />
                 </div>
                 <div>
-                  <label className="text-xs text-white/50 mb-1 block">الفرع</label>
+                  <label className="text-[11px] text-white/40 mb-1 block">الفرع</label>
                   <select value={form.githubBranch} onChange={e => setForm(f => ({ ...f, githubBranch: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors">
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors">
                     {branches.length ? branches.map(b => <option key={b} value={b}>{b}</option>) : <option value="main">main</option>}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-xs text-white/50 mb-1 block">أمر البناء</label>
+                <label className="text-[11px] text-white/40 mb-1 block">أمر البناء</label>
                 <input value={form.buildCommand} onChange={e => setForm(f => ({ ...f, buildCommand: e.target.value }))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
+                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-white/50 mb-1 block">مجلد الإخراج</label>
+                  <label className="text-[11px] text-white/40 mb-1 block">مجلد الإخراج</label>
                   <input value={form.outputDir} onChange={e => setForm(f => ({ ...f, outputDir: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
                 </div>
                 <div>
-                  <label className="text-xs text-white/50 mb-1 block">Node.js</label>
+                  <label className="text-[11px] text-white/40 mb-1 block">Node.js</label>
                   <select value={form.nodeVersion} onChange={e => setForm(f => ({ ...f, nodeVersion: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors">
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 transition-colors">
                     {["18","20","21","22"].map(v => <option key={v} value={v}>Node {v}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="p-3 bg-white/[0.03] border border-white/8 rounded-xl">
-                <p className="text-xs text-white/40 mb-1">النطاق المخصص</p>
-                <p className="text-sm text-violet-400 font-mono">
+              <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+                <p className="text-[11px] text-white/40 mb-1">الرابط بعد النشر</p>
+                <p className="text-xs text-violet-300 font-mono">
                   {form.name ? `${form.name.toLowerCase().replace(/[^a-z0-9]/g,"-")}` : "your-project"}.{BASE_DOMAIN}
                 </p>
               </div>
-              <button onClick={createProject} disabled={loading || !form.name.trim()}
-                className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-                {loading ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
-                {loading ? "جاري الإنشاء..." : "إنشاء المشروع"}
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setStep("repo")} className="flex-1 bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white rounded-xl py-2.5 text-sm font-medium transition-all">
+                  رجوع
+                </button>
+                <button onClick={createProject} disabled={loading || !form.name.trim()}
+                  className="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
+                  {loading ? "جاري الإنشاء..." : "إنشاء المشروع"}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -492,59 +739,60 @@ function CreateProjectModal({ onClose, onCreated }: { onClose: () => void; onCre
 // ── Project Card ───────────────────────────────────────────────────────────
 function ProjectCard({ project, onClick }: { project: any; onClick: () => void }) {
   const isActive = ["building", "deploying"].includes(project.status);
+  const serviceIcon = SERVICE_TYPES.find(s => s.id === project.serviceType);
   return (
     <motion.div layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
       onClick={onClick}
-      className="group cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] border border-white/8 hover:border-white/15 rounded-2xl p-5 transition-all">
-      <div className="flex items-start gap-4">
+      className="group cursor-pointer bg-white/[0.025] hover:bg-white/[0.04] border border-white/[0.07] hover:border-white/[0.14] rounded-2xl p-5 transition-all">
+      <div className="flex items-start gap-3.5">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 font-bold"
-          style={{ backgroundColor: project.avatarColor + "25", color: project.avatarColor }}>
+          style={{ backgroundColor: (project.avatarColor || "#6366f1") + "22", color: project.avatarColor || "#6366f1" }}>
           {FRAMEWORK_ICONS[project.framework] || "🌐"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-bold text-white truncate">{project.name}</h3>
-            {isActive && <Loader2 size={12} className="text-blue-400 animate-spin shrink-0" />}
+            {isActive && <Loader2 size={11} className="text-blue-400 animate-spin shrink-0" />}
           </div>
-          <p className="text-xs text-white/40 truncate mb-2">{project.description || `${project.githubOwner}/${project.githubRepo}`}</p>
+          <p className="text-[11px] text-white/35 truncate mb-2.5">{project.description || `${project.githubOwner}/${project.githubRepo}`}</p>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[project.status] || STATUS_COLORS.idle}`}>
               {STATUS_LABELS[project.status] || project.status}
             </span>
-            <span className="text-[10px] text-white/30 flex items-center gap-1">
-              <GitBranch size={9} />{project.githubBranch}
+            <span className="text-[10px] text-white/25 flex items-center gap-1">
+              <GitBranch size={8} />{project.githubBranch}
             </span>
-            {project.framework && project.framework !== "auto" && (
-              <span className="text-[10px] text-white/30">{project.framework}</span>
+            {project.serviceType && (
+              <span className="text-[10px] text-white/25">{SERVICE_TYPES.find(s => s.id === project.serviceType)?.title || project.serviceType}</span>
             )}
           </div>
         </div>
-        <ChevronRight size={16} className="text-white/20 group-hover:text-white/50 transition-colors shrink-0 mt-1" />
+        <ChevronLeft size={15} className="text-white/20 group-hover:text-white/50 transition-colors shrink-0 mt-1" />
       </div>
       {project.domain && project.status === "live" && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2">
-          <Globe size={11} className="text-emerald-400 shrink-0" />
+        <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-center gap-2">
+          <Globe size={10} className="text-emerald-400 shrink-0" />
           <a href={`https://${project.domain}`} target="_blank" rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono truncate transition-colors">
+            className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono truncate transition-colors flex-1">
             {project.domain}
           </a>
-          <ExternalLink size={10} className="text-emerald-400/50 shrink-0" />
+          <ExternalLink size={9} className="text-emerald-400/50 shrink-0" />
         </div>
       )}
-      <div className="mt-2 flex items-center gap-3 text-[11px] text-white/25">
-        <span className="flex items-center gap-1"><Rocket size={9} />{project.deployCount} نشر</span>
+      <div className="mt-2.5 flex items-center gap-3 text-[10px] text-white/20">
+        <span className="flex items-center gap-1"><Rocket size={8} />{project.deployCount || 0} نشر</span>
         <span>آخر نشر: {timeAgo(project.lastDeployAt)}</span>
       </div>
     </motion.div>
   );
 }
 
-// ── Project Detail Panel ───────────────────────────────────────────────────
+// ── Project Detail ─────────────────────────────────────────────────────────
 function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }) {
   const [activeRun, setActiveRun] = useState<any>(null);
   const [showAI, setShowAI] = useState(false);
-  const [activeTab, setActiveTab] = useState<"logs" | "settings" | "env">("logs");
+  const [activeTab, setActiveTab] = useState<"logs" | "settings">("logs");
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -558,13 +806,9 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
   });
 
   useEffect(() => {
-    if (runs.length > 0) {
-      const latest = runs[0];
-      setActiveRun(latest);
-    }
+    if (runs.length > 0) setActiveRun(runs[0]);
   }, [runs]);
 
-  // Poll active run
   const { data: liveRun } = useQuery<any>({
     queryKey: ["/api/deploy/runs", activeRun?.id || activeRun?._id],
     queryFn: async () => {
@@ -575,25 +819,23 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
     refetchInterval: 1200,
   });
 
-  const displayRun = liveRun || activeRun;
-  const isDeploying = displayRun && ["queued","building","deploying"].includes(displayRun.status);
-
   const { data: freshProject } = useQuery<any>({
     queryKey: ["/api/deploy/projects", project.id || project._id],
     queryFn: async () => {
       const r = await fetch(`/api/deploy/projects/${project.id || project._id}`);
       return r.json();
     },
-    refetchInterval: isDeploying ? 2000 : 10000,
+    refetchInterval: 5000,
   });
 
   const currentProject = freshProject || project;
+  const displayRun = liveRun || activeRun;
+  const isDeploying = displayRun && ["queued","building","deploying"].includes(displayRun.status);
 
   const deployMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/deploy/projects/${project.id || project._id}/deploy`, {}),
-    onSuccess: async (res) => {
-      const data = await res.json();
-      toast({ title: "🚀 النشر بدأ!", description: "جاري بناء ونشر المشروع..." });
+    onSuccess: () => {
+      toast({ title: "🚀 النشر بدأ!", description: "جاري بناء المشروع..." });
       qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
       refetchRuns();
     },
@@ -602,36 +844,23 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
 
   const cancelMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/deploy/runs/${displayRun?.id || displayRun?._id}/cancel`, {}),
-    onSuccess: () => {
-      toast({ title: "تم الإلغاء" });
-      refetchRuns();
-      qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
-    },
+    onSuccess: () => { toast({ title: "تم الإلغاء" }); refetchRuns(); qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] }); },
   });
-
-  const copyDomain = () => {
-    if (currentProject.domain) {
-      navigator.clipboard.writeText(`https://${currentProject.domain}`);
-      toast({ title: "تم النسخ", description: currentProject.domain });
-    }
-  };
 
   return (
     <div className="space-y-4">
-      {/* Back + Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors">
-          <ChevronRight size={16} className="rotate-180" /> المشاريع
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.05]">
+          <ChevronRight size={15} /> المشاريع
         </button>
         <span className="text-white/20">/</span>
         <span className="text-sm text-white font-semibold">{currentProject.name}</span>
       </div>
 
-      {/* Project Header */}
-      <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-5">
+      <div className="bg-white/[0.025] border border-white/[0.08] rounded-2xl p-5">
         <div className="flex items-start gap-4 flex-wrap">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-            style={{ backgroundColor: currentProject.avatarColor + "25", color: currentProject.avatarColor }}>
+            style={{ backgroundColor: (currentProject.avatarColor || "#6366f1") + "22", color: currentProject.avatarColor || "#6366f1" }}>
             {FRAMEWORK_ICONS[currentProject.framework] || "🌐"}
           </div>
           <div className="flex-1 min-w-0">
@@ -642,51 +871,49 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
                 {STATUS_LABELS[currentProject.status] || currentProject.status}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-white/40">
-              <span className="flex items-center gap-1"><Github size={11} />{currentProject.githubOwner}/{currentProject.githubRepo}</span>
-              <span className="flex items-center gap-1"><GitBranch size={11} />{currentProject.githubBranch}</span>
-              <span className="flex items-center gap-1"><Package size={11} />Node {currentProject.nodeVersion}</span>
-              <span className="flex items-center gap-1"><Server size={11} />Region: {currentProject.region}</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-white/35">
+              <span className="flex items-center gap-1"><Github size={10} />{currentProject.githubOwner}/{currentProject.githubRepo}</span>
+              <span className="flex items-center gap-1"><GitBranch size={10} />{currentProject.githubBranch}</span>
+              <span className="flex items-center gap-1"><Package size={10} />Node {currentProject.nodeVersion}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <a href={`https://github.com/${currentProject.githubOwner}/${currentProject.githubRepo}`}
               target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white bg-white/5 hover:bg-white/10 border border-white/8 px-3 py-2 rounded-xl transition-all">
-              <Github size={13} /> GitHub
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] px-3 py-2 rounded-xl transition-all">
+              <Github size={12} /> GitHub
             </a>
-            {currentProject.status === "live" && (
+            {currentProject.status === "live" && currentProject.domain && (
               <a href={`https://${currentProject.domain}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-3 py-2 rounded-xl transition-all">
-                <ExternalLink size={13} /> فتح الموقع
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 px-3 py-2 rounded-xl transition-all">
+                <ExternalLink size={12} /> فتح الموقع
               </a>
             )}
             {isDeploying ? (
               <button onClick={() => cancelMutation.mutate()}
-                className="flex items-center gap-1.5 text-xs text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-2 rounded-xl transition-all">
-                <Square size={13} /> إلغاء
+                className="flex items-center gap-1.5 text-xs text-red-400 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 px-3 py-2 rounded-xl transition-all">
+                <Square size={12} /> إلغاء
               </button>
             ) : (
               <button onClick={() => deployMutation.mutate()} disabled={deployMutation.isPending}
-                className="flex items-center gap-1.5 text-xs text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 px-3 py-2 rounded-xl transition-all font-semibold">
-                {deployMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Rocket size={13} />}
+                className="flex items-center gap-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-3 py-2 rounded-xl transition-all font-semibold">
+                {deployMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />}
                 نشر الآن
               </button>
             )}
           </div>
         </div>
-        {/* Domain */}
         {currentProject.domain && (
-          <div className="mt-4 flex items-center gap-2 p-3 bg-white/[0.02] border border-white/8 rounded-xl">
-            <Globe size={13} className="text-violet-400 shrink-0" />
+          <div className="mt-4 flex items-center gap-2 p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
+            <Globe size={12} className="text-violet-400 shrink-0" />
             <span className="text-sm text-violet-300 font-mono flex-1">{currentProject.domain}</span>
-            <button onClick={copyDomain} className="text-white/30 hover:text-white/70 transition-colors"><Copy size={12} /></button>
+            <button onClick={() => { navigator.clipboard.writeText(`https://${currentProject.domain}`); }}
+              className="text-white/30 hover:text-white/70 transition-colors"><Copy size={11} /></button>
           </div>
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white/[0.02] p-1 rounded-xl border border-white/8 w-fit">
+      <div className="flex gap-1 bg-white/[0.025] p-1 rounded-xl border border-white/[0.07] w-fit">
         {([["logs","سجل النشر",Terminal],["settings","الإعدادات",Settings2]] as const).map(([t, label, Icon]) => (
           <button key={t} onClick={() => setActiveTab(t as any)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -697,11 +924,9 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
         ))}
       </div>
 
-      {/* Tab: Logs */}
       {activeTab === "logs" && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2 space-y-4">
-            {/* Runs history */}
             {runs.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {runs.slice(0, 8).map((run: any) => (
@@ -710,7 +935,7 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
                     className={`flex items-center gap-1.5 shrink-0 text-[11px] px-3 py-1.5 rounded-xl border transition-all ${
                       (activeRun?.id || activeRun?._id) === (run.id || run._id)
                         ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
-                        : "bg-white/[0.02] border-white/8 text-white/40 hover:border-white/20"
+                        : "bg-white/[0.02] border-white/[0.07] text-white/35 hover:border-white/20"
                     }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       run.status === "success" ? "bg-emerald-400" :
@@ -722,8 +947,6 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
                 ))}
               </div>
             )}
-
-            {/* Run info */}
             {displayRun && (
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -731,16 +954,16 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
                   { label: "المدة", value: formatDuration(displayRun.buildDuration) },
                   { label: "الفرع", value: displayRun.branch },
                 ].map(item => (
-                  <div key={item.label} className="bg-white/[0.02] border border-white/8 rounded-xl p-3 text-center">
-                    <p className="text-xs text-white/30 mb-1">{item.label}</p>
+                  <div key={item.label} className="bg-white/[0.025] border border-white/[0.07] rounded-xl p-3 text-center">
+                    <p className="text-[11px] text-white/30 mb-1">{item.label}</p>
                     <p className="text-sm font-bold text-white">{item.value}</p>
                   </div>
                 ))}
               </div>
             )}
-            {displayRun && displayRun.commitMsg && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] border border-white/8 rounded-xl text-xs text-white/50">
-                <GitCommit size={11} />
+            {displayRun?.commitMsg && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.025] border border-white/[0.07] rounded-xl text-xs text-white/40">
+                <GitCommit size={10} />
                 <span className="font-mono">{displayRun.commitSha?.slice(0,7)}</span>
                 <span>—</span>
                 <span className="truncate">{displayRun.commitMsg}</span>
@@ -752,34 +975,28 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
               isActive={!!isDeploying}
             />
           </div>
-
-          {/* AI Panel */}
           <div className="h-[480px]">
             {showAI ? (
               <AIAssistant run={displayRun} project={currentProject} onClose={() => setShowAI(false)} />
             ) : (
               <button onClick={() => setShowAI(true)}
                 className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-violet-500/10 to-blue-500/10 border border-violet-500/20 hover:border-violet-500/40 rounded-xl transition-all group">
-                <div className="p-4 rounded-2xl bg-violet-500/20 group-hover:bg-violet-500/30 transition-all">
-                  <Bot size={28} className="text-violet-400" />
+                <div className="p-4 rounded-2xl bg-violet-500/15 group-hover:bg-violet-500/25 transition-all">
+                  <BrainCircuit size={26} className="text-violet-400" />
                 </div>
                 <div className="text-center">
                   <p className="font-bold text-white text-sm">Qirox AI</p>
-                  <p className="text-xs text-white/40">محلل أخطاء النشر</p>
+                  <p className="text-xs text-white/35">محلل أخطاء النشر</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-500/15 px-3 py-1.5 rounded-full">
-                  <Sparkles size={11} /> تحليل ذكي للأخطاء
+                <div className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-500/10 border border-violet-500/20 px-3 py-1.5 rounded-full">
+                  <Sparkles size={10} /> تحليل ذكي للأخطاء
                 </div>
               </button>
             )}
           </div>
         </div>
       )}
-
-      {/* Tab: Settings */}
-      {activeTab === "settings" && (
-        <ProjectSettings project={currentProject} />
-      )}
+      {activeTab === "settings" && <ProjectSettings project={currentProject} />}
     </div>
   );
 }
@@ -815,12 +1032,10 @@ function ProjectSettings({ project }: { project: any }) {
     setEnvKey(""); setEnvVal(""); setEnvSecret(false);
   };
 
-  const removeEnv = (i: number) => setEnvVars(v => v.filter((_, j) => j !== i));
-
   return (
     <div className="space-y-4 max-w-2xl">
-      <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-5 space-y-4">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2"><Settings2 size={14} />إعدادات البناء</h3>
+      <div className="bg-white/[0.025] border border-white/[0.07] rounded-2xl p-5 space-y-4">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2"><Settings2 size={13} />إعدادات البناء</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: "أمر البناء", key: "buildCommand" },
@@ -829,61 +1044,62 @@ function ProjectSettings({ project }: { project: any }) {
             { label: "إصدار Node.js", key: "nodeVersion" },
           ].map(({ label, key }) => (
             <div key={key}>
-              <label className="text-xs text-white/50 mb-1 block">{label}</label>
+              <label className="text-[11px] text-white/40 mb-1 block">{label}</label>
               <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-violet-500/50 transition-colors" />
             </div>
           ))}
         </div>
         <label className="flex items-center gap-3 cursor-pointer">
           <div onClick={() => setForm(f => ({ ...f, autoDeploy: !f.autoDeploy }))}
-            className={`w-10 h-5 rounded-full transition-all ${form.autoDeploy ? "bg-violet-600" : "bg-white/10"} flex items-center`}>
-            <div className={`w-4 h-4 rounded-full bg-white shadow transition-all ${form.autoDeploy ? "translate-x-5" : "translate-x-0.5"}`} />
+            className={`w-9 h-5 rounded-full transition-all ${form.autoDeploy ? "bg-violet-600" : "bg-white/10"} relative`}>
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${form.autoDeploy ? "right-0.5" : "left-0.5"}`} />
           </div>
-          <span className="text-sm text-white/70">نشر تلقائي عند push</span>
+          <span className="text-sm text-white/60">نشر تلقائي عند push</span>
         </label>
       </div>
 
-      <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-5 space-y-3">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2"><Lock size={14} />متغيرات البيئة</h3>
+      <div className="bg-white/[0.025] border border-white/[0.07] rounded-2xl p-5 space-y-3">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2"><Lock size={13} />متغيرات البيئة</h3>
         <div className="flex gap-2">
           <input value={envKey} onChange={e => setEnvKey(e.target.value)} placeholder="KEY"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-violet-500/50" />
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-violet-500/50" />
           <input value={envVal} onChange={e => setEnvVal(e.target.value)} placeholder="VALUE"
             type={envSecret ? "password" : "text"}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-violet-500/50" />
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white font-mono outline-none focus:border-violet-500/50" />
           <button onClick={() => setEnvSecret(s => !s)}
-            className={`p-2 rounded-xl border transition-all ${envSecret ? "border-amber-500/40 bg-amber-500/10 text-amber-400" : "border-white/10 bg-white/5 text-white/40"}`}>
-            {envSecret ? <Lock size={14} /> : <Unlock size={14} />}
+            className={`p-2 rounded-xl border transition-all ${envSecret ? "border-amber-500/40 bg-amber-500/10 text-amber-400" : "border-white/[0.08] bg-white/[0.04] text-white/40"}`}>
+            {envSecret ? <Lock size={13} /> : <Unlock size={13} />}
           </button>
-          <button onClick={addEnv} className="px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm transition-colors">
-            <Plus size={14} />
+          <button onClick={addEnv} className="px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm transition-colors">
+            <Plus size={13} />
           </button>
         </div>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
           {envVars.map((ev, i) => (
-            <div key={i} className="flex items-center gap-2 p-2.5 bg-white/[0.02] border border-white/8 rounded-xl">
+            <div key={i} className="flex items-center gap-2 p-2.5 bg-white/[0.02] border border-white/[0.07] rounded-xl">
               <span className="text-xs text-violet-300 font-mono flex-1">{ev.key}</span>
-              <span className="text-xs text-white/40 font-mono flex-1 truncate">
+              <span className="text-xs text-white/35 font-mono flex-1 truncate">
                 {ev.isSecret && !showSecrets[i] ? "••••••••" : ev.value}
               </span>
               {ev.isSecret && (
-                <button onClick={() => setShowSecrets(s => ({ ...s, [i]: !s[i] }))}
-                  className="text-white/30 hover:text-white/70">
-                  {showSecrets[i] ? <EyeOff size={12} /> : <Eye size={12} />}
+                <button onClick={() => setShowSecrets(s => ({ ...s, [i]: !s[i] }))} className="text-white/25 hover:text-white/70">
+                  {showSecrets[i] ? <EyeOff size={11} /> : <Eye size={11} />}
                 </button>
               )}
-              {ev.isSecret && <Lock size={11} className="text-amber-400" />}
-              <button onClick={() => removeEnv(i)} className="text-red-400/50 hover:text-red-400 transition-colors"><X size={12} /></button>
+              {ev.isSecret && <Lock size={10} className="text-amber-400" />}
+              <button onClick={() => setEnvVars(v => v.filter((_, j) => j !== i))} className="text-red-400/40 hover:text-red-400 transition-colors">
+                <X size={11} />
+              </button>
             </div>
           ))}
-          {envVars.length === 0 && <p className="text-xs text-white/25 text-center py-4">لا توجد متغيرات بيئة</p>}
+          {envVars.length === 0 && <p className="text-[11px] text-white/25 text-center py-4">لا توجد متغيرات بيئة</p>}
         </div>
       </div>
 
       <button onClick={saveSettings}
-        className="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
-        <CheckCheck size={14} /> حفظ الإعدادات
+        className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
+        <CheckCheck size={13} /> حفظ الإعدادات
       </button>
     </div>
   );
@@ -891,9 +1107,10 @@ function ProjectSettings({ project }: { project: any }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function DeploymentCloud() {
-  const { lang } = useI18n();
-  const { data: user } = useUser();
+  const [, setLocation] = useLocation();
+  const [matchDetail, params] = useRoute("/employee/deployment-cloud/:id");
   const [showCreate, setShowCreate] = useState(false);
+  const [createInitialStep, setCreateInitialStep] = useState<string>("service");
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
@@ -916,112 +1133,112 @@ export default function DeploymentCloud() {
     refetchInterval: 10000,
   });
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("oauth") === "success") {
+      const savedService = sessionStorage.getItem("deploy_service_type") || "web";
+      const reopen = sessionStorage.getItem("deploy_reopen_modal");
+      sessionStorage.removeItem("deploy_service_type");
+      sessionStorage.removeItem("deploy_reopen_modal");
+      if (reopen) {
+        setCreateInitialStep("repo");
+        setShowCreate(true);
+      }
+      window.history.replaceState({}, "", "/employee/deployment-cloud");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (matchDetail && params?.id && projects.length > 0) {
+      const found = projects.find((p: any) => (p._id || p.id) === params.id);
+      if (found) setSelectedProject(found);
+    }
+  }, [matchDetail, params?.id, projects]);
+
+  const handleProjectClick = (p: any) => {
+    setSelectedProject(p);
+    setLocation(`/employee/deployment-cloud/${p._id || p.id}`);
+  };
+
+  const handleBack = () => {
+    setSelectedProject(null);
+    setLocation("/employee/deployment-cloud");
+  };
+
   const filtered = projects.filter(p =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
     p.githubRepo?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const showDetail = matchDetail && params?.id && selectedProject;
+
   return (
-    <EmployeeLayout>
-      <div className="min-h-screen bg-[#080808] text-white">
-        {/* Hero Header */}
-        <div className="relative overflow-hidden border-b border-white/5">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-transparent to-blue-900/10 pointer-events-none" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-violet-600/5 blur-3xl pointer-events-none" />
-          <div className="relative max-w-6xl mx-auto px-6 py-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-xl bg-violet-500/20"><Cloud size={20} className="text-violet-400" /></div>
-                  <span className="text-xs text-violet-400 font-semibold tracking-widest uppercase">Qirox Deployment Cloud</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">نشر المشاريع السحابي</h1>
-                <p className="text-sm text-white/40">ربط GitHub، بناء ونشر تلقائي بذكاء اصطناعي لحل الأخطاء</p>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span className="text-[11px] text-white/30 bg-white/5 px-2 py-1 rounded-full flex items-center gap-1">
-                    <Globe size={9} /> deployment.qiroxstudio.online
-                  </span>
-                  <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
-                    <Wifi size={9} /> الخوادم تعمل
-                  </span>
-                  <span className="text-[11px] text-violet-400 bg-violet-500/10 px-2 py-1 rounded-full flex items-center gap-1">
-                    <Bot size={9} /> Kimi AI مفعّل
-                  </span>
-                </div>
+    <CloudLayout onNewProject={showDetail ? undefined : () => setShowCreate(true)}>
+      <AnimatePresence mode="wait">
+        {showDetail ? (
+          <motion.div key="detail" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+            <ProjectDetail project={selectedProject} onBack={handleBack} />
+          </motion.div>
+        ) : (
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Header */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-black text-white mb-1">نشر المشاريع السحابي</h1>
+              <p className="text-sm text-white/40">ربط GitHub · بناء ونشر تلقائي · ذكاء اصطناعي لحل الأخطاء</p>
+            </div>
+
+            <StatsBar stats={stats} />
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="relative flex-1">
+                <Terminal size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25" />
+                <input
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="بحث عن مشروع..."
+                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl pr-9 pl-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/40 transition-colors"
+                />
               </div>
-              <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-violet-500/20">
-                <Plus size={16} /> مشروع جديد
+              <button onClick={() => refetch()} className="p-2.5 bg-white/[0.03] border border-white/[0.07] hover:border-white/20 rounded-xl text-white/35 hover:text-white/70 transition-all">
+                <RefreshCw size={14} />
               </button>
             </div>
-          </div>
-        </div>
 
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          {selectedProject ? (
-            <AnimatePresence mode="wait">
-              <motion.div key={selectedProject.id || selectedProject._id}
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                <ProjectDetail
-                  project={selectedProject}
-                  onBack={() => setSelectedProject(null)}
-                />
-              </motion.div>
-            </AnimatePresence>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <StatsBar stats={stats} />
-                {/* Search + Filter */}
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="relative flex-1">
-                    <Terminal size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30" />
-                    <input
-                      value={search} onChange={e => setSearch(e.target.value)}
-                      placeholder="بحث عن مشروع..."
-                      className="w-full bg-white/[0.03] border border-white/8 rounded-xl pr-9 pl-4 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-violet-500/40 transition-colors"
-                    />
-                  </div>
-                  <button onClick={() => refetch()} className="p-2.5 bg-white/[0.03] border border-white/8 hover:border-white/20 rounded-xl text-white/40 hover:text-white/70 transition-all">
-                    <RefreshCw size={15} />
-                  </button>
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 size={28} className="text-violet-400 animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-24">
+                <div className="inline-flex p-6 rounded-2xl bg-white/[0.025] border border-white/[0.07] mb-5">
+                  <Cloud size={36} className="text-white/20" />
                 </div>
-
-                {loadingProjects ? (
-                  <div className="flex items-center justify-center py-20">
-                    <Loader2 size={28} className="text-violet-400 animate-spin" />
-                  </div>
-                ) : filtered.length === 0 ? (
-                  <div className="text-center py-20">
-                    <div className="inline-flex p-6 rounded-2xl bg-white/[0.02] border border-white/8 mb-4">
-                      <Cloud size={40} className="text-white/20" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white/60 mb-2">لا توجد مشاريع</h3>
-                    <p className="text-sm text-white/30 mb-6">أنشئ مشروعك الأول وانشره في ثوانٍ</p>
-                    <button onClick={() => setShowCreate(true)}
-                      className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all">
-                      <Plus size={15} /> مشروع جديد
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <AnimatePresence>
-                      {filtered.map(p => (
-                        <ProjectCard key={p.id || p._id} project={p}
-                          onClick={() => setSelectedProject(p)} />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          )}
-        </div>
-      </div>
+                <h3 className="text-lg font-bold text-white/50 mb-2">لا توجد مشاريع</h3>
+                <p className="text-sm text-white/25 mb-6">أنشئ مشروعك الأول وانشره في ثوانٍ</p>
+                <button onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all">
+                  <Plus size={14} /> مشروع جديد
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <AnimatePresence>
+                  {filtered.map(p => (
+                    <ProjectCard key={p.id || p._id} project={p} onClick={() => handleProjectClick(p)} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showCreate && (
-        <CreateProjectModal onClose={() => setShowCreate(false)} onCreated={() => refetch()} />
+        <CreateProjectModal
+          initialStep={createInitialStep}
+          onClose={() => setShowCreate(false)}
+          onCreated={() => refetch()}
+        />
       )}
-    </EmployeeLayout>
+    </CloudLayout>
   );
 }

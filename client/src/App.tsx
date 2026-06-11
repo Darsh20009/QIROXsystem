@@ -339,6 +339,7 @@ function AdminRouter() {
         <Route path="/employee/sector-guide" component={SectorGuide} />
         <Route path="/employee/system-builder/:id" component={SystemBuilderIDE} />
         <Route path="/employee/system-builder" component={SystemBuilder} />
+        <Route path="/employee/deployment-cloud/:id" component={DeploymentCloud} />
         <Route path="/employee/deployment-cloud" component={DeploymentCloud} />
         <Route path="/admin/kanban" component={AdminKanban} />
         <Route path="/admin/ai-sessions" component={AdminAISessions} />

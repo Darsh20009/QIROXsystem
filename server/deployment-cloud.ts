@@ -448,5 +448,89 @@ ${logText}
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
+  // ── GitHub OAuth: start ───────────────────────────────────────────────────
+  app.get("/api/deploy/github/oauth/start", (req: Request, res: Response) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    if (!clientId) {
+      return res.redirect("/employee/deployment-cloud?oauth=no_config");
+    }
+    const siteUrl = process.env.EMAIL_SITE_URL || `https://${req.hostname}`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: `${siteUrl}/api/deploy/github/oauth/callback`,
+      scope: "repo user:email",
+      state: "qirox_deploy",
+    });
+    res.redirect(`https://github.com/login/oauth/authorize?${params}`);
+  });
+
+  // ── GitHub OAuth: callback ─────────────────────────────────────────────────
+  app.get("/api/deploy/github/oauth/callback", async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (!code || !clientId || !clientSecret) {
+      return res.redirect("/employee/deployment-cloud?oauth=error");
+    }
+    try {
+      const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
+      });
+      const tokenData = await tokenRes.json();
+      const accessToken = tokenData.access_token;
+      if (!accessToken) return res.redirect("/employee/deployment-cloud?oauth=error");
+
+      // Store token in session
+      (req as any).session.githubDeployToken = accessToken;
+
+      // Store in user document too
+      const user = (req as any).user;
+      if (user) {
+        try {
+          const { UserModel } = await import("./models");
+          await UserModel.findByIdAndUpdate(user._id, { githubDeployToken: accessToken });
+        } catch {}
+      }
+
+      res.redirect("/employee/deployment-cloud?oauth=success");
+    } catch {
+      res.redirect("/employee/deployment-cloud?oauth=error");
+    }
+  });
+
+  // ── GitHub OAuth: connection status ───────────────────────────────────────
+  app.get("/api/deploy/github/oauth/status", async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ connected: false });
+
+      const token = (req as any).session?.githubDeployToken || (user as any).githubDeployToken;
+      if (!token) return res.json({ connected: false });
+
+      const ghUser = await githubFetch("/user", token);
+      res.json({ connected: true, login: ghUser.login, avatar_url: ghUser.avatar_url, token });
+    } catch {
+      res.json({ connected: false });
+    }
+  });
+
+  // ── GitHub OAuth: disconnect ───────────────────────────────────────────────
+  app.post("/api/deploy/github/oauth/disconnect", async (req: Request, res: Response) => {
+    try {
+      if ((req as any).session) (req as any).session.githubDeployToken = undefined;
+      const user = (req as any).user;
+      if (user) {
+        try {
+          const { UserModel } = await import("./models");
+          await UserModel.findByIdAndUpdate(user._id, { $unset: { githubDeployToken: 1 } });
+        } catch {}
+      }
+      res.json({ ok: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
   console.log("[DeploymentCloud] Routes registered");
 }

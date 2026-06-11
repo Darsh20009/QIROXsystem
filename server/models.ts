@@ -78,6 +78,8 @@ const userSchema = new mongoose.Schema({
   assignedSalesId: { type: String, default: null },
   assignedSalesName: { type: String, default: null },
   assignedSalesUsername: { type: String, default: null },
+  // ── GitHub Deploy OAuth ──
+  githubDeployToken: { type: String, default: null, select: false },
 }, { timestamps: true });
 userSchema.index({ role: 1 });
 userSchema.index({ role: 1, createdAt: -1 });
