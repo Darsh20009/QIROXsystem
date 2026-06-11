@@ -892,7 +892,7 @@ export default function Home() {
                   {ar ? "نظام كيروكس في العمل" : "QIROX in action"}
                 </div>
                 <h2 className="text-white text-xl md:text-3xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
-                  {ar ? "شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
+                  {ar ? " شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
                 </h2>
               </div>
             </div>
