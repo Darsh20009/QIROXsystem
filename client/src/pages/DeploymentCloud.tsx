@@ -473,7 +473,12 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
   onClose: () => void; onCreated: () => void; initialStep?: string;
 }) {
   const [step, setStep] = useState<"service" | "github" | "repo" | "config">(initialStep as any);
-  const [serviceType, setServiceType] = useState("web");
+  const [serviceType, setServiceType] = useState(() => {
+    if (initialStep === "repo" || initialStep === "github") {
+      return sessionStorage.getItem("deploy_service_type") || "web";
+    }
+    return "web";
+  });
   const [token, setToken] = useState("");
   const [ghUser, setGhUser] = useState<any>(null);
   const [repos, setRepos] = useState<any[]>([]);
@@ -493,6 +498,36 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
   const STEP_LABELS = ["الخدمة", "GitHub", "المستودع", "الإعدادات"];
   const currentStepIdx = STEPS.indexOf(step);
 
+  // After OAuth redirect → auto-fetch status + repos
+  useEffect(() => {
+    if (initialStep !== "repo") return;
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await fetch("/api/deploy/github/oauth/status");
+        const data = await r.json();
+        if (data.connected && data.token) {
+          setGhUser(data);
+          setToken(data.token);
+          const rR = await fetch("/api/deploy/github/repos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: data.token }),
+          });
+          const rData = await rR.json();
+          setRepos(Array.isArray(rData) ? rData : []);
+        } else {
+          // Token expired or not connected — fall back to GitHub step
+          setStep("github");
+          toast({ title: "انتهت صلاحية الاتصال", description: "أعد ربط GitHub", variant: "destructive" });
+        }
+      } catch {
+        setStep("github");
+      }
+      setLoading(false);
+    })();
+  }, []);
+
   const goToGitHub = () => {
     sessionStorage.setItem("deploy_service_type", serviceType);
     sessionStorage.setItem("deploy_reopen_modal", "1");
@@ -509,9 +544,9 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
       ]);
       const uData = await uR.json();
       const rData = await rR.json();
-      if (uData.login) { setGhUser(uData); setRepos(rData); }
-      else throw new Error("Invalid token");
-    } catch { toast({ title: "خطأ", description: "تعذر الاتصال بـ GitHub", variant: "destructive" }); }
+      if (uData.login) { setGhUser({ ...uData, token }); setRepos(Array.isArray(rData) ? rData : []); setStep("repo"); }
+      else throw new Error("Token غير صالح");
+    } catch (e: any) { toast({ title: "خطأ", description: e.message || "تعذر الاتصال بـ GitHub", variant: "destructive" }); }
     setLoading(false);
   };
 
@@ -522,11 +557,12 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
 
   const selectRepo = async (repo: any) => {
     setSelectedRepo(repo);
-    setForm(f => ({ ...f, name: repo.name, githubBranch: repo.default_branch }));
+    setForm(f => ({ ...f, name: repo.name, githubBranch: repo.default_branch || "main" }));
     setLoading(true);
     try {
+      const activeToken = token || ghUser?.token || "";
       const r = await apiRequest("POST", "/api/deploy/github/branches", {
-        token: token || (ghUser?.token || ""),
+        token: activeToken,
         owner: repo.full_name.split("/")[0], repo: repo.name,
       });
       const data = await r.json();
@@ -634,40 +670,49 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
 
           {step === "repo" && (
             <div className="space-y-3">
-              {ghUser && (
-                <div className="flex items-center gap-2.5 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                  <img src={ghUser.avatar_url} alt="" className="w-7 h-7 rounded-full" />
-                  <span className="text-sm font-semibold text-white">{ghUser.name || ghUser.login}</span>
-                  <CheckCircle2 size={13} className="mr-auto text-emerald-400" />
+              {loading && repos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 size={24} className="text-violet-400 animate-spin" />
+                  <p className="text-sm text-white/40">جاري جلب مستودعاتك...</p>
                 </div>
-              )}
-              <input
-                value={repoSearch} onChange={e => setRepoSearch(e.target.value)}
-                placeholder="ابحث عن مستودع..."
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 transition-colors"
-              />
-              <div className="space-y-1.5 max-h-60 overflow-y-auto">
-                {filteredRepos.map(repo => (
-                  <button key={repo.id} onClick={() => selectRepo(repo)}
-                    className="w-full flex items-center gap-3 p-3 bg-white/[0.025] hover:bg-violet-500/10 border border-white/[0.07] hover:border-violet-500/30 rounded-xl transition-all text-right">
-                    <FolderGit2 size={15} className="text-white/35 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{repo.name}</p>
-                      <p className="text-[11px] text-white/30 truncate">{repo.full_name}</p>
+              ) : (
+                <>
+                  {ghUser && (
+                    <div className="flex items-center gap-2.5 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      {ghUser.avatar_url && <img src={ghUser.avatar_url} alt="" className="w-7 h-7 rounded-full" />}
+                      <span className="text-sm font-semibold text-white">{ghUser.name || ghUser.login}</span>
+                      <CheckCircle2 size={13} className="mr-auto text-emerald-400" />
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {repo.private && <Lock size={10} className="text-amber-400" />}
-                      {repo.language && <span className="text-[10px] text-white/30 bg-white/[0.05] px-1.5 py-0.5 rounded">{repo.language}</span>}
-                    </div>
+                  )}
+                  <input
+                    value={repoSearch} onChange={e => setRepoSearch(e.target.value)}
+                    placeholder="ابحث عن مستودع..."
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 transition-colors"
+                  />
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                    {filteredRepos.map(repo => (
+                      <button key={repo.id} onClick={() => selectRepo(repo)}
+                        className="w-full flex items-center gap-3 p-3 bg-white/[0.025] hover:bg-violet-500/10 border border-white/[0.07] hover:border-violet-500/30 rounded-xl transition-all text-right">
+                        <FolderGit2 size={15} className="text-white/35 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{repo.name}</p>
+                          <p className="text-[11px] text-white/30 truncate">{repo.full_name}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {repo.private && <Lock size={10} className="text-amber-400" />}
+                          {repo.language && <span className="text-[10px] text-white/30 bg-white/[0.05] px-1.5 py-0.5 rounded">{repo.language}</span>}
+                        </div>
+                      </button>
+                    ))}
+                    {filteredRepos.length === 0 && (
+                      <p className="text-center text-xs text-white/30 py-6">لا توجد مستودعات</p>
+                    )}
+                  </div>
+                  <button onClick={() => setStep("github")} className="w-full bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white rounded-xl py-2.5 text-sm font-medium transition-all">
+                    رجوع
                   </button>
-                ))}
-                {filteredRepos.length === 0 && (
-                  <p className="text-center text-xs text-white/30 py-6">لا توجد مستودعات</p>
-                )}
-              </div>
-              <button onClick={() => setStep("github")} className="w-full bg-white/[0.04] hover:bg-white/[0.07] text-white/60 hover:text-white rounded-xl py-2.5 text-sm font-medium transition-all">
-                رجوع
-              </button>
+                </>
+              )}
             </div>
           )}
 
@@ -1114,6 +1159,7 @@ export default function DeploymentCloud() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const { data: projects = [], isLoading: loadingProjects, refetch } = useQuery<any[]>({
     queryKey: ["/api/deploy/projects"],
@@ -1135,15 +1181,32 @@ export default function DeploymentCloud() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("oauth") === "success") {
-      const savedService = sessionStorage.getItem("deploy_service_type") || "web";
-      const reopen = sessionStorage.getItem("deploy_reopen_modal");
+    const oauthParam = urlParams.get("oauth");
+    if (oauthParam === "success") {
       sessionStorage.removeItem("deploy_service_type");
       sessionStorage.removeItem("deploy_reopen_modal");
-      if (reopen) {
-        setCreateInitialStep("repo");
-        setShowCreate(true);
-      }
+      setCreateInitialStep("repo");
+      setShowCreate(true);
+      window.history.replaceState({}, "", "/employee/deployment-cloud");
+    } else if (oauthParam === "no_config") {
+      toast({
+        title: "GitHub OAuth غير مفعّل",
+        description: "أضف GITHUB_CLIENT_ID و GITHUB_CLIENT_SECRET في إعدادات البيئة، أو استخدم Personal Access Token",
+        variant: "destructive",
+      });
+      sessionStorage.removeItem("deploy_service_type");
+      sessionStorage.removeItem("deploy_reopen_modal");
+      setCreateInitialStep("github");
+      setShowCreate(true);
+      window.history.replaceState({}, "", "/employee/deployment-cloud");
+    } else if (oauthParam === "error") {
+      toast({
+        title: "فشل ربط GitHub",
+        description: "تعذر الاتصال بـ GitHub. حاول مجدداً أو استخدم Personal Access Token",
+        variant: "destructive",
+      });
+      setCreateInitialStep("github");
+      setShowCreate(true);
       window.history.replaceState({}, "", "/employee/deployment-cloud");
     }
   }, []);
