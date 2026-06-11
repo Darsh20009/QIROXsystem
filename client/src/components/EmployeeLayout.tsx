@@ -13,6 +13,7 @@ import {
   BarChart3, Megaphone, Globe, PlusCircle, Newspaper,
   ShoppingBag, LogOut, Menu, X, Star, Moon, Sun,
   ClipboardList, Building2, Headphones, Loader2, Sparkles,
+  CloudUpload,
 } from "lucide-react";
 
 interface NavItem {
@@ -37,8 +38,9 @@ const ALL_NAV: Record<string, NavItem> = {
   products:        { id: "products",        labelAr: "المنتجات",          labelEn: "Products",           icon: ShoppingBag,     href: "/admin/products",           group: "main" },
   news:            { id: "news",            labelAr: "الأخبار والمدونة",  labelEn: "News & Blog",        icon: Newspaper,       href: "/admin/news",               group: "main" },
   marketing_posts: { id: "marketing_posts", labelAr: "أدوات التسويق",    labelEn: "Marketing Tools",    icon: Megaphone,       href: "/sales/marketing",          group: "main" },
-  builder:         { id: "builder",         labelAr: "صانع الأنظمة",     labelEn: "System Builder",     icon: Code2,           href: "/employee/system-builder",  group: "tools" },
-  sector_guide:    { id: "sector_guide",    labelAr: "دليل القطاعات",    labelEn: "Sector Guide",       icon: Globe,           href: "/employee/sector-guide",    group: "tools" },
+  builder:         { id: "builder",         labelAr: "صانع الأنظمة",     labelEn: "System Builder",     icon: Code2,           href: "/employee/system-builder",     group: "tools" },
+  deployment:      { id: "deployment",      labelAr: "نشر المشاريع",     labelEn: "Deployment Cloud",   icon: CloudUpload,     href: "/employee/deployment-cloud",   group: "tools" },
+  sector_guide:    { id: "sector_guide",    labelAr: "دليل القطاعات",    labelEn: "Sector Guide",       icon: Globe,           href: "/employee/sector-guide",       group: "tools" },
   qmeet:           { id: "qmeet",           labelAr: "الاجتماعات",       labelEn: "Meetings",           icon: Video,           href: "/admin/qmeet",              group: "tools" },
   kanban:          { id: "kanban",          labelAr: "لوحة المهام",       labelEn: "Task Board",         icon: ClipboardList,   href: "/admin/kanban",             group: "tools" },
   finance:         { id: "finance",         labelAr: "المالية",           labelEn: "Finance",            icon: DollarSign,      href: "/admin/finance",            group: "finance" },
@@ -55,9 +57,9 @@ const ALL_NAV: Record<string, NavItem> = {
 };
 
 const ROLE_ITEMS: Record<string, string[]> = {
-  admin:         ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "sector_guide", "settings", "mail", "profile", "changelog"],
-  manager:       ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "mail", "profile", "changelog"],
-  developer:     ["dashboard", "mod_requests", "orders", "builder", "sector_guide", "qmeet", "kanban", "mail", "profile", "changelog"],
+  admin:         ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "settings", "mail", "profile", "changelog"],
+  manager:       ["dashboard", "orders", "customers", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "mail", "profile", "changelog"],
+  developer:     ["dashboard", "mod_requests", "orders", "builder", "deployment", "sector_guide", "qmeet", "kanban", "mail", "profile", "changelog"],
   designer:      ["dashboard", "mod_requests", "builder", "qmeet", "mail", "profile", "changelog"],
   sales:         ["dashboard", "customers", "new_order", "quotations", "mail", "profile"],
   sales_manager: ["dashboard", "customers", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "mail", "profile"],

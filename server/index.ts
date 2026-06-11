@@ -11,6 +11,7 @@ import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetR
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
+import { registerDeploymentCloudRoutes } from "./deployment-cloud";
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
@@ -922,6 +923,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   await registerInstallmentRoutes(app);
   registerAiRoutes(app);
   registerSandboxRoutes(app, httpServer);
+  registerDeploymentCloudRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
