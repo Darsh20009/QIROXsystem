@@ -10,7 +10,7 @@ function getEmailCfg() {
     smtpHost: process.env.CPANEL_SMTP_HOST || process.env.SMTP_HOST || "",
     smtpPort: parseInt(process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465"),
     smtpUser: process.env.CPANEL_SMTP_USER || process.env.SMTP_USER || "",
-    smtpPass: process.env.SMTP_PASS || "",
+    smtpPass: process.env.CPANEL_SMTP_PASS || process.env.SMTP_PASS || "",
     smtpSecure: (process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465") !== "587",
   };
 }
