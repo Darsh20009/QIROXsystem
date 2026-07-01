@@ -285,7 +285,6 @@ export default function Navigation() {
     { href: "/about", label: lang === "ar" ? "من نحن" : "About" },
     { href: "/prices", label: lang === "ar" ? "الباقات" : "Plans" },
     { href: "/devices", label: lang === "ar" ? "الأجهزة" : "Devices" },
-    { href: "/alliances", label: lang === "ar" ? "تحالفاتنا" : "Alliances" },
     { href: "/consultation", label: lang === "ar" ? "الاستشارات" : "Consultations" },
     { href: "/contact", label: lang === "ar" ? "تواصل معنا" : "Contact Us" },
   ];

@@ -24,7 +24,6 @@ import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import PixelTracking from "@/components/PixelTracking";
-import GlobalMusicPlayer from "@/components/GlobalMusicPlayer";
 import RoleGuard from "@/components/RoleGuard";
 
 const Home = lazy(() => import("@/pages/Home"));
@@ -1294,7 +1293,6 @@ function App() {
             <AntiDevTools />
             <OfflineBanner />
             <PixelTracking />
-            <GlobalMusicPlayer />
             <AppInner />
           </I18nProvider>
         </ThemeProvider>
