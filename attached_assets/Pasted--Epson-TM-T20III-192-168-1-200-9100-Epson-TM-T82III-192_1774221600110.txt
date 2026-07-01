@@ -1,0 +1,182 @@
+طابعات الإيصالات (شبكة)
+Epson TM-T20III🇸🇦
+192.168.1.200
+:9100
+Epson TM-T82III🇸🇦
+192.168.1.201
+:9100
+Epson TM-T88VII
+192.168.1.202
+:9100
+Epson TM-T70II
+192.168.1.203
+:9100
+Epson TM-m30II
+192.168.1.204
+:9100
+Star Micronics TSP100
+192.168.1.210
+:9100
+Star Micronics TSP143IIIW
+192.168.1.211
+:9100
+Star Micronics TSP650II
+192.168.1.212
+:9100
+Star Micronics TSP700II
+192.168.1.213
+:9100
+Star Micronics mC-Print3
+192.168.1.214
+:9100
+Bixolon SRP-350
+192.168.1.220
+:9100
+Bixolon SRP-380
+192.168.1.221
+:9100
+Bixolon SRP-500
+192.168.1.222
+:9100
+Bixolon SRP-Q300
+192.168.1.223
+:9100
+Xprinter XP-80C🇸🇦
+192.168.1.230
+:9100
+Sewoo LK-T200
+192.168.1.240
+:9100
+Sewoo LK-T210
+192.168.1.241
+:9100
+SNBC BTP-R880
+192.168.1.245
+:9100
+Citizen CT-S600
+192.168.1.250
+:9100
+Citizen CT-S800
+192.168.1.251
+:9100
+Posiflex AURA-7000
+192.168.1.252
+:9100
+Sam4s ELLIX 55
+192.168.1.253
+:9100
+Custom VKP80
+192.168.1.254
+:9100
+Rongta RP80USE
+192.168.2.200
+:9100
+Gainscha GP-80160
+192.168.2.201
+:9100
+طابعات المطبخ (شبكة)
+Epson TM-T82III (Kitchen)
+192.168.1.150
+:9100
+Epson TM-T20III (Kitchen)
+192.168.1.151
+:9100
+Star Micronics TSP650II (Kitchen)
+192.168.1.152
+:9100
+Custom Q3 Kitchen
+192.168.1.153
+:9100
+Xprinter XP-80C (Kitchen)
+192.168.1.154
+:9100
+أجهزة البصمة (شبكة)
+ZKTeco K40🇸🇦
+192.168.1.201
+:4370
+ZKTeco K50🇸🇦
+192.168.1.202
+:4370
+ZKTeco F18🇸🇦
+192.168.1.203
+:4370
+ZKTeco F22
+192.168.1.204
+:4370
+ZKTeco iClock560
+192.168.1.205
+:4370
+ZKTeco uFace202
+192.168.1.206
+:4370
+ZKTeco SpeedFace-H5L
+192.168.1.207
+:4370
+ZKTeco MB360
+192.168.1.208
+:4370
+ZKTeco K80
+192.168.1.209
+:4370
+ZKTeco G3 Pro
+192.168.1.210
+:4370
+Suprema BioStation T2
+192.168.1.220
+:1480
+Anviz W1 Pro
+192.168.1.225
+:5010
+Anviz EP300
+192.168.1.226
+:5010
+Hikvision DS-K1T342🇸🇦
+192.168.1.64
+:80
+Dahua ASI3214A
+192.168.1.108
+:37777
+أجهزة الدفع (شبكة)
+Geidea Geidea POS🇸🇦
+api.geidea.net
+:443
+Verifone V200c Plus
+192.168.1.120
+:443
+بروتوكولات الشبكة المدعومة
+ESC/POS TCP
+
+بورت: 9100
+
+طابعات Epson/Star/Bixolon
+
+ZKTeco TCP
+
+بورت: 4370
+
+أجهزة بصمة ZK
+
+HTTP REST
+
+بورت: 80/443
+
+Hikvision / KDS
+
+Star Mode TCP
+
+بورت: 9100
+
+Star Micronics شبكة
+
+Geidea API
+
+بورت: 443
+
+دفع جيدية ✅ مدمج
+
+Android SDK
+
+بورت: Wi-Fi
+
+Sunmi / IMIN / Telpo
+

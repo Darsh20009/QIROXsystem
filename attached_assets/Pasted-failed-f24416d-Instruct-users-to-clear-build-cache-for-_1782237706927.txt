@@ -1,0 +1,114 @@
+failed
+f24416d
+Instruct users to clear build cache for successful deployment Provide specific instructions for clearing the Render build cache and redeploying to resolve runtime errors caused by a missing module. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: ba130dd3-e7fb-482e-aeaa-a3e243f91fdc Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while running your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit f24416dfb0a633bc6c8b2741fec095cfc9018b0e in branch main
+==> Downloaded 582MB in 5s. Extraction took 11s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] dist/public already built (pre-built in repo) ✓
+[build] Installing esbuild into /tmp...
+[build] $ npm install esbuild --prefix /tmp/qirox-build-tools --no-save --ignore-scripts
+added 2 packages in 1s
+[build] Bundling server...
+[build] $ /tmp/qirox-build-tools/node_modules/.bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\"production\" --minify --packages=external
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+    server/pdf.ts:9:65:
+      9 │ ...= createRequire((globalThis as any).__filename ?? import.meta.url);
+        ╵                                                      ~~~~~~~~~~~
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+1 warning
+  dist/index.cjs  1.2mb ⚠️
+⚡ Done in 92ms
+[build] ✅ Done! (client was pre-built, server bundled)
+==> Uploading build...
+==> Uploaded in 16.5s. Compression took 54.1s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0

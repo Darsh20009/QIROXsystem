@@ -1,0 +1,26 @@
+:42:11 AM [express] GET /api/auth/apple/status 304 in 1ms :: {"enabled":false}
+12:42:18 AM [express] POST /api/login 200 in 1276ms :: {"username":"shd2004","email":"hsvshzvbxj@gmail.com","role":"developer","employeeCode":"EMP-003","fullName":"ش عصام يوسف محمد","phone":"+201129085240","address":"","ci…
+12:42:19 AM [express] GET /api/inbox/unread-count 200 in 1624ms :: {"count":3}
+12:42:20 AM [express] GET /api/admin/kanban/tasks 200 in 1734ms :: []
+12:42:20 AM [express] GET /api/admin/system-overview 403 in 1410ms
+12:42:21 AM [express] GET /api/modification-requests 200 in 472ms :: []
+12:42:22 AM [express] GET /api/qmeet/meetings 200 in 1598ms :: []
+12:42:32 AM [express] GET /api/employee/payroll 200 in 466ms :: []
+12:42:32 AM [express] GET /api/employee/qr-token 200 in 466ms :: {"token":null,"createdAt":null}
+12:42:32 AM [express] GET /api/employee/profile 200 in 710ms :: {"userId":"6a3a5aa8ebc072988ce4ef16","commissionRate":10,"createdAt":"2026-06-23T10:06:32.581Z","fixedSalary":0,"hourlyRate":0,"managerId":null,"portfolioItem…
+12:42:32 AM [express] GET /api/auth/webauthn/credentials 200 in 466ms :: []
+12:42:32 AM [express] GET /api/auth/face-recognition/status 200 in 472ms :: {"registered":false,"updatedAt":null}
+12:42:37 AM [express] POST /api/employee/generate-qr-token 200 in 515ms :: {"token":"qrl_01cfabfae00c43d2b920f5faff27d2f7b4aaef4b76090da8475c2132de24093d"}
+12:42:38 AM [express] GET /api/employee/qr-token 200 in 494ms :: {"token":"qrl_01cfabfae00c43d2b920f5faff27d2f7b4aaef4b76090da8475c2132de24093d","createdAt":"2026-06-27T00:42:37.431Z"}
+12:43:00 AM [express] POST /api/internal/push/promotional 200 in 237ms :: {"ok":true,"sent":77,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:43:13 AM [express] GET /api/inbox/unread-count 304 in 245ms :: {"count":3}
+12:43:43 AM [express] GET /api/admin/kanban/tasks 304 in 474ms :: []
+12:43:43 AM [express] GET /api/inbox/unread-count 304 in 475ms :: {"count":3}
+12:44:00 AM [express] POST /api/internal/push/promotional 200 in 226ms :: {"ok":true,"sent":77,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:44:14 AM [express] GET /api/inbox/unread-count 304 in 238ms :: {"count":3}
+[AI Stream Error] 400 Invalid request: tokenization failed
+12:44:41 AM [express] POST /api/ai/stream 200 in 515ms
+[AI Stream Error] 400 Invalid request: Image input not supported for model moonshot-v1-32k
+12:44:55 AM [express] POST /api/ai/stream 200 in 891ms
+12:45:00 AM [express] POST /api/internal/push/promotional 200 in 231ms :: {"ok":true,"sent":77,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:45:05 AM [express] GET /api/inbox/unread-count 304 in 475ms :: {"count":3}

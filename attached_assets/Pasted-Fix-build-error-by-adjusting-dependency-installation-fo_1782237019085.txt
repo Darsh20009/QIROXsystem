@@ -1,0 +1,82 @@
+Fix build error by adjusting dependency installation for esbuild Addresses an error where the esbuild platform binary was not found due to the "--no-optional" flag during installation. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 3a44de65-e29b-4e14-b77f-01d1061ee6cc Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 873a3904a52d3eb566ed0e5f1da8bc748a4b30a0 in branch main
+==> Downloaded 582MB in 5s. Extraction took 14s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] dist/public already built (pre-built in repo) ✓
+[build] Installing esbuild into /tmp...
+[build] $ npm install esbuild --prefix /tmp/qirox-build-tools --no-save --ignore-scripts
+added 2 packages in 930ms
+[build] Bundling server...
+[build] $ /tmp/qirox-build-tools/node_modules/.bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\"production\" --minify --external:tsx --external:@capacitor/app --external:@capacitor/browser --external:@capacitor/cli --external:@capacitor/core --external:@capacitor/haptics --external:@capacitor/ios --external:@capacitor/keyboard --external:@capacitor/push-notifications --external:@capacitor/status-bar --external:@hookform/resolvers --external:@jridgewell/trace-mapping --external:@monaco-editor/react --external:@pdf-lib/fontkit --external:@radix-ui/react-accordion --external:@radix-ui/react-alert-dialog --external:@radix-ui/react-aspect-ratio --external:@radix-ui/react-avatar --external:@radix-ui/react-checkbox --external:@radix-ui/react-collapsible --external:@radix-ui/react-context-menu --external:@radix-ui/react-dialog --external:@radix-ui/react-dropdown-menu --external:@radix-ui/react-hover-card --external:@radix-ui/react-label --external:@radix-ui/react-menubar --external:@radix-ui/react-navigation-menu --external:@radix-ui/react-popover --external:@radix-ui/react-progress --external:@radix-ui/react-radio-group --external:@radix-ui/react-scroll-area --external:@radix-ui/react-select --external:@radix-ui/react-separator --external:@radix-ui/react-slider --external:@radix-ui/react-slot --external:@radix-ui/react-switch --external:@radix-ui/react-tabs --external:@radix-ui/react-toast --external:@radix-ui/react-toggle --external:@radix-ui/react-toggle-group --external:@radix-ui/react-tooltip --external:@simplewebauthn/browser --external:@simplewebauthn/server --external:@simplewebauthn/types --external:@tanstack/react-query --external:@types/bcrypt --external:@types/bcryptjs --external:@types/compression --external:@types/mailparser --external:@types/multer --external:@types/node-cron --external:@types/nodemailer --external:@types/passport-github2 --external:@types/passport-google-oauth20 --external:@types/speakeasy --external:@types/web-push --external:arabic-reshaper --external:archiver --external:bcryptjs --external:class-variance-authority --external:clsx --external:cmdk --external:compression --external:drizzle-kit --external:embla-carousel-react --external:face-api.js --external:framer-motion --external:googleapis --external:html5-qrcode --external:http-proxy-middleware --external:imapflow --external:lucide-react --external:mailparser --external:mongodb --external:next-themes --external:passport-apple --external:passport-github2 --external:react --external:react-day-picker --external:react-dom --external:react-hook-form --external:react-icons --external:react-resizable-panels --external:simple-git --external:speakeasy --external:tailwind-merge --external:tailwindcss-animate --external:tw-animate-css --external:unzipper --external:vaul --external:wouter --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-dev-banner --external:@replit/vite-plugin-runtime-error-modal --external:@tailwindcss/typography --external:@tailwindcss/vite --external:@types/connect-pg-simple --external:@types/express --external:@types/express-session --external:@types/node --external:@types/passport --external:@types/passport-local --external:@types/react --external:@types/react-dom --external:@types/ws --external:@vitejs/plugin-react --external:autoprefixer --external:esbuild --external:postcss --external:sharp --external:tailwindcss --external:typescript --external:vite
+✘ [ERROR] Could not resolve "side-channel"
+    node_modules/qs/lib/stringify.js:3:29:
+      3 │ var getSideChannel = require('side-channel');
+        ╵                              ~~~~~~~~~~~~~~
+  You can mark the path "side-channel" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle. You can also surround this "require" call with a try/catch block to handle this failure at run-time instead of bundle-time.
+✘ [ERROR] Could not resolve "side-channel"
+    node_modules/qs/lib/utils.js:4:29:
+      4 │ var getSideChannel = require('side-channel');
+        ╵                              ~~~~~~~~~~~~~~
+  You can mark the path "side-channel" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle. You can also surround this "require" call with a try/catch block to handle this failure at run-time instead of bundle-time.
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+    server/pdf.ts:9:65:
+      9 │ ...= createRequire((globalThis as any).__filename ?? import.meta.url);
+        ╵                                                      ~~~~~~~~~~~
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+1 warning and 2 errors
+node:child_process:930
+    throw err;
+    ^
+Error: Command failed: /tmp/qirox-build-tools/node_modules/@esbuild/linux-x64/bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV="production" --minify --external:tsx --external:@capacitor/app --external:@capacitor/browser --external:@capacitor/cli --external:@capacitor/core --external:@capacitor/haptics --external:@capacitor/ios --external:@capacitor/keyboard --external:@capacitor/push-notifications --external:@capacitor/status-bar --external:@hookform/resolvers --external:@jridgewell/trace-mapping --external:@monaco-editor/react --external:@pdf-lib/fontkit --external:@radix-ui/react-accordion --external:@radix-ui/react-alert-dialog --external:@radix-ui/react-aspect-ratio --external:@radix-ui/react-avatar --external:@radix-ui/react-checkbox --external:@radix-ui/react-collapsible --external:@radix-ui/react-context-menu --external:@radix-ui/react-dialog --external:@radix-ui/react-dropdown-menu --external:@radix-ui/react-hover-card --external:@radix-ui/react-label --external:@radix-ui/react-menubar --external:@radix-ui/react-navigation-menu --external:@radix-ui/react-popover --external:@radix-ui/react-progress --external:@radix-ui/react-radio-group --external:@radix-ui/react-scroll-area --external:@radix-ui/react-select --external:@radix-ui/react-separator --external:@radix-ui/react-slider --external:@radix-ui/react-slot --external:@radix-ui/react-switch --external:@radix-ui/react-tabs --external:@radix-ui/react-toast --external:@radix-ui/react-toggle --external:@radix-ui/react-toggle-group --external:@radix-ui/react-tooltip --external:@simplewebauthn/browser --external:@simplewebauthn/server --external:@simplewebauthn/types --external:@tanstack/react-query --external:@types/bcrypt --external:@types/bcryptjs --external:@types/compression --external:@types/mailparser --external:@types/multer --external:@types/node-cron --external:@types/nodemailer --external:@types/passport-github2 --external:@types/passport-google-oauth20 --external:@types/speakeasy --external:@types/web-push --external:arabic-reshaper --external:archiver --external:bcryptjs --external:class-variance-authority --external:clsx --external:cmdk --external:compression --external:drizzle-kit --external:embla-carousel-react --external:face-api.js --external:framer-motion --external:googleapis --external:html5-qrcode --external:http-proxy-middleware --external:imapflow --external:lucide-react --external:mailparser --external:mongodb --external:next-themes --external:passport-apple --external:passport-github2 --external:react --external:react-day-picker --external:react-dom --external:react-hook-form --external:react-icons --external:react-resizable-panels --external:simple-git --external:speakeasy --external:tailwind-merge --external:tailwindcss-animate --external:tw-animate-css --external:unzipper --external:vaul --external:wouter --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-dev-banner --external:@replit/vite-plugin-runtime-error-modal --external:@tailwindcss/typography --external:@tailwindcss/vite --external:@types/connect-pg-simple --external:@types/express --external:@types/express-session --external:@types/node --external:@types/passport --external:@types/passport-local --external:@types/react --external:@types/react-dom --external:@types/ws --external:@vitejs/plugin-react --external:autoprefixer --external:esbuild --external:postcss --external:sharp --external:tailwindcss --external:typescript --external:vite
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at Object.execFileSync (node:child_process:927:15)
+    at Object.<anonymous> (/tmp/qirox-build-tools/node_modules/esbuild/bin/esbuild:222:28)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 92,
+  stdout: null,
+  stderr: null
+}
+Node.js v20.20.0
+Error: Command failed: /tmp/qirox-build-tools/node_modules/.bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\"production\" --minify --external:tsx --external:@capacitor/app --external:@capacitor/browser --external:@capacitor/cli --external:@capacitor/core --external:@capacitor/haptics --external:@capacitor/ios --external:@capacitor/keyboard --external:@capacitor/push-notifications --external:@capacitor/status-bar --external:@hookform/resolvers --external:@jridgewell/trace-mapping --external:@monaco-editor/react --external:@pdf-lib/fontkit --external:@radix-ui/react-accordion --external:@radix-ui/react-alert-dialog --external:@radix-ui/react-aspect-ratio --external:@radix-ui/react-avatar --external:@radix-ui/react-checkbox --external:@radix-ui/react-collapsible --external:@radix-ui/react-context-menu --external:@radix-ui/react-dialog --external:@radix-ui/react-dropdown-menu --external:@radix-ui/react-hover-card --external:@radix-ui/react-label --external:@radix-ui/react-menubar --external:@radix-ui/react-navigation-menu --external:@radix-ui/react-popover --external:@radix-ui/react-progress --external:@radix-ui/react-radio-group --external:@radix-ui/react-scroll-area --external:@radix-ui/react-select --external:@radix-ui/react-separator --external:@radix-ui/react-slider --external:@radix-ui/react-slot --external:@radix-ui/react-switch --external:@radix-ui/react-tabs --external:@radix-ui/react-toast --external:@radix-ui/react-toggle --external:@radix-ui/react-toggle-group --external:@radix-ui/react-tooltip --external:@simplewebauthn/browser --external:@simplewebauthn/server --external:@simplewebauthn/types --external:@tanstack/react-query --external:@types/bcrypt --external:@types/bcryptjs --external:@types/compression --external:@types/mailparser --external:@types/multer --external:@types/node-cron --external:@types/nodemailer --external:@types/passport-github2 --external:@types/passport-google-oauth20 --external:@types/speakeasy --external:@types/web-push --external:arabic-reshaper --external:archiver --external:bcryptjs --external:class-variance-authority --external:clsx --external:cmdk --external:compression --external:drizzle-kit --external:embla-carousel-react --external:face-api.js --external:framer-motion --external:googleapis --external:html5-qrcode --external:http-proxy-middleware --external:imapflow --external:lucide-react --external:mailparser --external:mongodb --external:next-themes --external:passport-apple --external:passport-github2 --external:react --external:react-day-picker --external:react-dom --external:react-hook-form --external:react-icons --external:react-resizable-panels --external:simple-git --external:speakeasy --external:tailwind-merge --external:tailwindcss-animate --external:tw-animate-css --external:unzipper --external:vaul --external:wouter --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-dev-banner --external:@replit/vite-plugin-runtime-error-modal --external:@tailwindcss/typography --external:@tailwindcss/vite --external:@types/connect-pg-simple --external:@types/express --external:@types/express-session --external:@types/node --external:@types/passport --external:@types/passport-local --external:@types/react --external:@types/react-dom --external:@types/ws --external:@vitejs/plugin-react --external:autoprefixer --external:esbuild --external:postcss --external:sharp --external:tailwindcss --external:typescript --external:vite
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at run (file:///opt/render/project/src/script/build.mjs:21:3)
+    at buildAll (file:///opt/render/project/src/script/build.mjs:66:3) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 84,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

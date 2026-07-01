@@ -1,0 +1,70 @@
+HTTP
+June 27, 2026 at 5:08 AM
+failed
+bd804df
+new edit
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit bd804df6eaabef3dcfa6dd6d1873dd262eab6dfe in branch main
+==> Downloaded 12MB in 1s. Extraction took 0s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'npm install --include=dev && npm run build'...
+added 958 packages in 16s
+> rest-express@1.0.0 build
+> npx tsx script/build.ts
+building client...
+vite v7.3.5 building client environment for production...
+transforming...
+✓ 3129 modules transformed.
+✗ Build failed in 8.79s
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/opt/render/project/src/client/src/pages/QiroxStudio.tsx:420:60: ERROR: Expected ":" but found ","
+file: /opt/render/project/src/client/src/pages/QiroxStudio.tsx:420:60
+Expected ":" but found ","
+418 |                  { icon: Paperclip, label: L ? "رفع المهام" : "Task Attach", color: "text-yellow-400 bg-yellow-500/10 ...
+419 |                  { icon: Brain, label: L ? "تحليل عميق" : "Deep Analysis", color: "text-purple-400 bg-purple-500/10 bo...
+420 |                  { icon: Star, label: L ? "إبداعي 100%", color: "text-orange-400 bg-orange-500/10 border-orange-500/20...
+    |                                                              ^
+421 |                ].map(({ icon: Icon, label, color }, i) => (
+422 |                  <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-sem...
+    at failureErrorWithLog (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:1748:15)
+    at /opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+Error: Command failed: ./node_modules/.bin/vite build
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at buildAll (/opt/render/project/src/script/build.ts:24:3) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 231,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

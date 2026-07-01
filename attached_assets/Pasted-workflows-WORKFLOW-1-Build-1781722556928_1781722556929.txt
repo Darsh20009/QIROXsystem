@@ -1,0 +1,242 @@
+workflows:
+
+  # ─────────────────────────────────────────────────────────────
+  # WORKFLOW 1 — Build only (simulator, no signing needed)
+  # ─────────────────────────────────────────────────────────────
+  ios-build:
+    name: iOS Build (No Signing)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      node: 20
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "blackrose.com.sa"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci || npm install
+
+      - name: Build web assets
+        script: npm run build
+
+      - name: Add iOS platform if missing
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios || true
+          fi
+
+      - name: Patch — iOS 16.0 minimum deployment target
+        script: |
+          if [ -f "ios/App/Podfile" ]; then
+            sed -i '' "s/platform :ios, .*/platform :ios, '16.0'/" ios/App/Podfile 2>/dev/null || \
+              sed -i "s/platform :ios, .*/platform :ios, '16.0'/" ios/App/Podfile
+          fi
+          find ios -name "project.pbxproj" | while read f; do
+            perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' "$f"
+          done
+
+      - name: Sync Capacitor
+        script: npx cap sync ios
+
+      - name: Inject Black Rose App Icon
+        script: |
+          ICON_SRC="$(pwd)/public/blackrose-icon-1024.png"
+          ICONSET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICONSET"
+          if command -v magick &>/dev/null; then
+            magick "$ICON_SRC" -background "#0d0d0d" -flatten -resize 1024x1024 /tmp/icon_no_alpha.png
+          else
+            convert "$ICON_SRC" -background "#0d0d0d" -flatten -resize 1024x1024 /tmp/icon_no_alpha.png
+          fi
+          sips -z 20   20   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20.png"
+          sips -z 40   40   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20@2x.png"
+          sips -z 60   60   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20@3x.png"
+          sips -z 29   29   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29.png"
+          sips -z 58   58   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29@2x.png"
+          sips -z 87   87   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29@3x.png"
+          sips -z 40   40   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40.png"
+          sips -z 80   80   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40@2x.png"
+          sips -z 120  120  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40@3x.png"
+          sips -z 120  120  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-60@2x.png"
+          sips -z 180  180  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-60@3x.png"
+          sips -z 76   76   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-76.png"
+          sips -z 152  152  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-76@2x.png"
+          sips -z 167  167  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-167.png"
+          sips -z 1024 1024 /tmp/icon_no_alpha.png --out "$ICONSET/Icon-1024.png"
+          ICONSET="$ICONSET" node -e "var fs=require('fs'),p=process.env.ICONSET+'/Contents.json',d={images:[{filename:'Icon-20.png',idiom:'iphone',scale:'1x',size:'20x20'},{filename:'Icon-20@2x.png',idiom:'iphone',scale:'2x',size:'20x20'},{filename:'Icon-20@3x.png',idiom:'iphone',scale:'3x',size:'20x20'},{filename:'Icon-29.png',idiom:'iphone',scale:'1x',size:'29x29'},{filename:'Icon-29@2x.png',idiom:'iphone',scale:'2x',size:'29x29'},{filename:'Icon-29@3x.png',idiom:'iphone',scale:'3x',size:'29x29'},{filename:'Icon-40.png',idiom:'iphone',scale:'1x',size:'40x40'},{filename:'Icon-40@2x.png',idiom:'iphone',scale:'2x',size:'40x40'},{filename:'Icon-40@3x.png',idiom:'iphone',scale:'3x',size:'40x40'},{filename:'Icon-60@2x.png',idiom:'iphone',scale:'2x',size:'60x60'},{filename:'Icon-60@3x.png',idiom:'iphone',scale:'3x',size:'60x60'},{filename:'Icon-20.png',idiom:'ipad',scale:'1x',size:'20x20'},{filename:'Icon-20@2x.png',idiom:'ipad',scale:'2x',size:'20x20'},{filename:'Icon-29.png',idiom:'ipad',scale:'1x',size:'29x29'},{filename:'Icon-29@2x.png',idiom:'ipad',scale:'2x',size:'29x29'},{filename:'Icon-40.png',idiom:'ipad',scale:'1x',size:'40x40'},{filename:'Icon-40@2x.png',idiom:'ipad',scale:'2x',size:'40x40'},{filename:'Icon-76.png',idiom:'ipad',scale:'1x',size:'76x76'},{filename:'Icon-76@2x.png',idiom:'ipad',scale:'2x',size:'76x76'},{filename:'Icon-167.png',idiom:'ipad',scale:'2x',size:'83.5x83.5'},{filename:'Icon-1024.png',idiom:'ios-marketing',scale:'1x',size:'1024x1024'}],info:{author:'xcode',version:1}};fs.writeFileSync(p,JSON.stringify(d,null,2));console.log('Written '+p)"
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          echo "✅ App icon injected"
+          ls -la "$ICONSET/"
+
+      - name: Inject Info.plist permissions
+        script: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'يستخدم التطبيق الكاميرا لمسح رموز QR'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'يستخدم التطبيق الكاميرا لمسح رموز QR'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'يستخدم التطبيق الموقع لإيجاد الفروع القريبة'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'يستخدم التطبيق الموقع لإيجاد الفروع القريبة'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'يستخدم التطبيق الصور لرفع إيصالات الدفع'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'يستخدم التطبيق الصور لرفع إيصالات الدفع'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST" 2>/dev/null || true
+
+      - name: Build for simulator (no signing)
+        script: |
+          xcodebuild \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphonesimulator \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_STYLE=Automatic \
+            clean build | xcpretty
+
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+
+  # ─────────────────────────────────────────────────────────────
+  # WORKFLOW 2 — App Store / TestFlight
+  # ─────────────────────────────────────────────────────────────
+  ios-release:
+    name: iOS Release — App Store / TestFlight
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: blackrose_appstore
+
+    environment:
+      xcode: latest
+      node: 20
+      cocoapods: default
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: blackrose.com.sa
+
+      vars:
+        BUNDLE_ID: "blackrose.com.sa"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APPLE_TEAM_ID: "V4K6RM59LS"
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci || npm install
+
+      - name: Build web assets
+        script: npm run build
+
+      - name: Add iOS platform if missing
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios || true
+          fi
+
+      - name: Patch — iOS 16.0 minimum deployment target
+        script: |
+          if [ -f "ios/App/Podfile" ]; then
+            sed -i '' "s/platform :ios, .*/platform :ios, '16.0'/" ios/App/Podfile 2>/dev/null || \
+              sed -i "s/platform :ios, .*/platform :ios, '16.0'/" ios/App/Podfile
+          fi
+          find ios -name "project.pbxproj" | while read f; do
+            perl -i -pe 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' "$f"
+          done
+
+      - name: Sync Capacitor with iOS
+        script: npx cap sync ios
+
+      - name: Inject Black Rose App Icon
+        script: |
+          ICON_SRC="$(pwd)/public/blackrose-icon-1024.png"
+          ICONSET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICONSET"
+          if command -v magick &>/dev/null; then
+            magick "$ICON_SRC" -background "#0d0d0d" -flatten -resize 1024x1024 /tmp/icon_no_alpha.png
+          else
+            convert "$ICON_SRC" -background "#0d0d0d" -flatten -resize 1024x1024 /tmp/icon_no_alpha.png
+          fi
+          sips -z 20   20   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20.png"
+          sips -z 40   40   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20@2x.png"
+          sips -z 60   60   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-20@3x.png"
+          sips -z 29   29   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29.png"
+          sips -z 58   58   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29@2x.png"
+          sips -z 87   87   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-29@3x.png"
+          sips -z 40   40   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40.png"
+          sips -z 80   80   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40@2x.png"
+          sips -z 120  120  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-40@3x.png"
+          sips -z 120  120  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-60@2x.png"
+          sips -z 180  180  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-60@3x.png"
+          sips -z 76   76   /tmp/icon_no_alpha.png --out "$ICONSET/Icon-76.png"
+          sips -z 152  152  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-76@2x.png"
+          sips -z 167  167  /tmp/icon_no_alpha.png --out "$ICONSET/Icon-167.png"
+          sips -z 1024 1024 /tmp/icon_no_alpha.png --out "$ICONSET/Icon-1024.png"
+          ICONSET="$ICONSET" node -e "var fs=require('fs'),p=process.env.ICONSET+'/Contents.json',d={images:[{filename:'Icon-20.png',idiom:'iphone',scale:'1x',size:'20x20'},{filename:'Icon-20@2x.png',idiom:'iphone',scale:'2x',size:'20x20'},{filename:'Icon-20@3x.png',idiom:'iphone',scale:'3x',size:'20x20'},{filename:'Icon-29.png',idiom:'iphone',scale:'1x',size:'29x29'},{filename:'Icon-29@2x.png',idiom:'iphone',scale:'2x',size:'29x29'},{filename:'Icon-29@3x.png',idiom:'iphone',scale:'3x',size:'29x29'},{filename:'Icon-40.png',idiom:'iphone',scale:'1x',size:'40x40'},{filename:'Icon-40@2x.png',idiom:'iphone',scale:'2x',size:'40x40'},{filename:'Icon-40@3x.png',idiom:'iphone',scale:'3x',size:'40x40'},{filename:'Icon-60@2x.png',idiom:'iphone',scale:'2x',size:'60x60'},{filename:'Icon-60@3x.png',idiom:'iphone',scale:'3x',size:'60x60'},{filename:'Icon-20.png',idiom:'ipad',scale:'1x',size:'20x20'},{filename:'Icon-20@2x.png',idiom:'ipad',scale:'2x',size:'20x20'},{filename:'Icon-29.png',idiom:'ipad',scale:'1x',size:'29x29'},{filename:'Icon-29@2x.png',idiom:'ipad',scale:'2x',size:'29x29'},{filename:'Icon-40.png',idiom:'ipad',scale:'1x',size:'40x40'},{filename:'Icon-40@2x.png',idiom:'ipad',scale:'2x',size:'40x40'},{filename:'Icon-76.png',idiom:'ipad',scale:'1x',size:'76x76'},{filename:'Icon-76@2x.png',idiom:'ipad',scale:'2x',size:'76x76'},{filename:'Icon-167.png',idiom:'ipad',scale:'2x',size:'83.5x83.5'},{filename:'Icon-1024.png',idiom:'ios-marketing',scale:'1x',size:'1024x1024'}],info:{author:'xcode',version:1}};fs.writeFileSync(p,JSON.stringify(d,null,2));console.log('Written '+p)"
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
+          echo "✅ App icon injected"
+
+      - name: Set Team ID in project
+        script: |
+          find ios -name "project.pbxproj" | while read f; do
+            perl -i -pe "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" "$f"
+            perl -i -pe "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/g" "$f"
+            echo "DEVELOPMENT_TEAM after patch:"
+            grep "DEVELOPMENT_TEAM" "$f" | head -4
+          done
+
+      - name: Inject Info.plist permissions & encryption flag
+        script: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'يستخدم التطبيق الكاميرا لمسح رموز QR'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'يستخدم التطبيق الكاميرا لمسح رموز QR'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'يستخدم التطبيق الموقع لإيجاد الفروع القريبة'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'يستخدم التطبيق الموقع لإيجاد الفروع القريبة'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'يستخدم التطبيق الصور لرفع إيصالات الدفع'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'يستخدم التطبيق الصور لرفع إيصالات الدفع'" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST" 2>/dev/null || true
+
+      - name: Auto-increment build number
+        script: |
+          MARKETING_VERSION=$(node -p "require('./package.json').version")
+          BUILD_NUMBER=$(date +%s)
+          echo "▶ Version: $MARKETING_VERSION  Build: $BUILD_NUMBER"
+          cd ios/App
+          agvtool new-marketing-version "$MARKETING_VERSION"
+          agvtool new-version -all "$BUILD_NUMBER"
+
+      - name: Inject provisioning profiles
+        script: xcode-project use-profiles
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release \
+            --archive-xcargs "COMPILER_INDEX_STORE_ENABLE=NO"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/export/**/*.xcarchive
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - cafe@qiroxstudio.online
+        notify:
+          success: true
+          failure: true

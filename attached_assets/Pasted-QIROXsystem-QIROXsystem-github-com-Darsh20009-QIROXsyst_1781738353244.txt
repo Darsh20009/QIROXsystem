@@ -1,0 +1,82 @@
+QIROXsystem
+QIROXsystem
+github.com/Darsh20009/QIROXsystem
+
+
+Start new build
+Build overview
+Click on the build steps for details.
+Preparing build machine
+26s
+Fetching app sources
+9s
+Install Node dependencies
+2m 21s
+Build web assets
+4s
+
+
+
+Show command
+
+> rest-express@1.0.0 build
+> npx tsx script/build.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.22.4
+building client...
+Error: Cannot find package '/Users/builder/clone/node_modules/vite/index.js' imported from /Users/builder/clone/script/build.ts
+    at legacyMainResolve (node:internal/modules/esm/resolve:215:26)
+    at packageResolve (node:internal/modules/esm/resolve:860:14)
+    at moduleResolve (node:internal/modules/esm/resolve:946:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:8141)
+    at resolveDirectory (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:9227)
+    at resolveTsPaths (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:10757)
+    at async resolve2 (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:11932)
+    at async nextResolve (node:internal/modules/esm/hooks:864:22) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+
+Build failed :|
+Step 3 script `Build web assets` exited with status code 1
+
+> rest-express@1.0.0 build
+> npx tsx script/build.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.22.4
+building client...
+Error: Cannot find package '/Users/builder/clone/node_modules/vite/index.js' imported from /Users/builder/clone/script/build.ts
+    at legacyMainResolve (node:internal/modules/esm/resolve:215:26)
+    at packageResolve (node:internal/modules/esm/resolve:860:14)
+    at moduleResolve (node:internal/modules/esm/resolve:946:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:8141)
+    at resolveDirectory (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:9227)
+    at resolveTsPaths (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:10757)
+    at async resolve2 (file:///Users/builder/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-CqMfTiWi.mjs:2:11932)
+    at async nextResolve (node:internal/modules/esm/hooks:864:22) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+
+Build failed :|
+Step 3 script `Build web assets` exited with status code 1
+
+Add iOS platform (if not present)
+< 1s
+Sync Capacitor to iOS
+< 1s
+Set App Icon
+< 1s
+Install CocoaPods
+< 1s
+Build iOS (no signing)
+< 1s
+Publishing
+< 1s
+Cleaning up
+< 1s
+Step 3 script `Build web assets` exited with status code 1

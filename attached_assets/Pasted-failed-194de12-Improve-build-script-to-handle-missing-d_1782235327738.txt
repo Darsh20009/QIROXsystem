@@ -1,0 +1,54 @@
+failed
+194de12
+Improve build script to handle missing development tools Update `script/build.mjs` to install missing build tools like Vite and Tailwind CSS if they are not found in the cache, preventing deployment failures, by using `--no-package-lock` to avoid npm `ENOTEMPTY` errors. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 6cb72283-718b-47b4-bb9d-0d165ccb178e Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 194de12042f9567d9898fc21d60a159721b636b6 in branch main
+==> Downloaded 582MB in 5s. Extraction took 10s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] Prod deps: cache warm ✓
+[build] Installing build tools: vite, @vitejs/plugin-react, tailwindcss, @tailwindcss/vite, postcss, autoprefixer, esbuild
+[build] $ npm install vite @vitejs/plugin-react tailwindcss @tailwindcss/vite postcss autoprefixer esbuild --no-save --no-package-lock --ignore-scripts --no-optional --prefer-offline
+npm error code ENOTEMPTY
+npm error syscall rename
+npm error path /opt/render/project/src/node_modules/native-run
+npm error dest /opt/render/project/src/node_modules/.native-run-JCbnL5GY
+npm error errno -39
+npm error ENOTEMPTY: directory not empty, rename '/opt/render/project/src/node_modules/native-run' -> '/opt/render/project/src/node_modules/.native-run-JCbnL5GY'
+npm error A complete log of this run can be found in: /opt/render/.cache/_logs/2026-06-23T17_21_31_554Z-debug-0.log
+Error: Command failed: npm install vite @vitejs/plugin-react tailwindcss @tailwindcss/vite postcss autoprefixer esbuild --no-save --no-package-lock --ignore-scripts --no-optional --prefer-offline
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at run (file:///opt/render/project/src/script/build.mjs:53:3)
+    at ensureBuildTools (file:///opt/render/project/src/script/build.mjs:86:3)
+    at buildAll (file:///opt/render/project/src/script/build.mjs:106:9)
+    at file:///opt/render/project/src/script/build.mjs:132:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24) {
+  status: 217,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 69,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

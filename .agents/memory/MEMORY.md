@@ -1,0 +1,8 @@
+- [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
+- [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
+- [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.
+- [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.
+- [QIROX Studio AI](qirox-studio-ai.md) — Smart provider: OPENAI_API_KEY→GPT-4o (vision on, no Chinese), MOONSHOT_API_KEY→Kimi (vision off). Video gen via /api/ai/video-proxy. Images use Arabic→English translation + flux+enhance. Anti-Chinese rule in ALL system prompts.
+- [Vite public directory](vite-public-dir.md) — Static files must be in client/public/ NOT root public/; Vite root is client/ so publicDir is client/public/.
+- [react-icons v5 breaking change](react-icons-v5.md) — SiLinkedin removed in v5; replace with lucide-react Linkedin. Also add react-icons to optimizeDeps.exclude in vite.config.ts to avoid pre-bundle named-export failures.
+- [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.

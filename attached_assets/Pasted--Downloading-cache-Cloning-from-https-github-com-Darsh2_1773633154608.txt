@@ -1,0 +1,166 @@
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 551e87b5bc1b18bb67b504ee8545e11df1df69d3 in branch main
+==> Downloaded 367MB in 5s. Extraction took 7s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install; npm run build'...
+up to date in 1s
+> rest-express@1.0.0 build
+> ./node_modules/.bin/tsx script/build.ts
+building client...
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 1050 modules transformed.
+✗ Build failed in 4.38s
+[vite:esbuild] Transform failed with 1 error:
+/opt/render/project/src/client/src/pages/AdminSubscriptionPlans.tsx:68:3: ERROR: Unexpected "}"
+file: /opt/render/project/src/client/src/pages/AdminSubscriptionPlans.tsx:68:3
+Unexpected "}"
+66 |    annual: L ? "سنوي" : "Annual",
+67 |    renewal: L ? "تجديد سنوي" : "Annual Renewal",
+68 |  }; }
+   |     ^
+69 |  
+70 |  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+    at failureErrorWithLog (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:1467:15)
+    at /opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:736:50
+    at responseCallbacks.<computed> (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/opt/render/project/src/node_modules/vite/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:191:23) {
+  errors: [Getter/Setter],
+  warnings: [Getter/Setter],
+  frame: '\n' +
+    'Unexpected "}"\n' +
+    '66 |    annual: L ? "سنوي" : "Annual",\n' +
+    '67 |    renewal: L ? "تجديد سنوي" : "Annual Renewal",\n' +
+    '68 |  }; }\n' +
+    '   |     ^\n' +
+    '69 |  \n' +
+    '70 |  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {\n',
+  loc: {
+    column: 3,
+    file: '/opt/render/project/src/client/src/pages/AdminSubscriptionPlans.tsx',
+    length: 1,
+    line: 68,
+    lineText: '}; }',
+    namespace: '',
+    suggestion: ''
+  },
+  code: 'PLUGIN_ERROR',
+  plugin: 'vite:esbuild',
+  hook: 'transform',
+  id: '/opt/render/project/src/client/src/pages/AdminSubscriptionPlans.tsx',
+  watchFiles: [
+    '/opt/render/project/src/client/index.html',
+    '/opt/render/project/src/client/src/main.tsx',
+    '/opt/render/project/src/package.json',
+    '/opt/render/project/src/node_modules/react/jsx-runtime.js',
+    '/opt/render/project/src/node_modules/react-dom/client.js',
+    '/opt/render/project/src/client/src/App.tsx',
+    '/opt/render/project/src/client/src/index.css',
+    '/opt/render/project/src/tailwind.config.ts',
+    '/opt/render/project/src/node_modules/react/cjs/react-jsx-runtime.production.min.js',
+    '/opt/render/project/src/node_modules/react-dom/index.js',
+    '/opt/render/project/src/node_modules/wouter/src/index.js',
+    '/opt/render/project/src/node_modules/@tanstack/react-query/build/modern/index.js',
+    '/opt/render/project/src/node_modules/react/index.js',
+    '/opt/render/project/src/client/src/lib/queryClient.ts',
+    '/opt/render/project/src/client/src/components/ui/tooltip.tsx',
+    '/opt/render/project/src/client/src/components/ui/toaster.tsx',
+    '/opt/render/project/src/client/src/components/SARIcon.tsx',
+    '/opt/render/project/src/client/src/components/qirox-brand.tsx',
+    '/opt/render/project/src/client/src/lib/theme.tsx',
+    '/opt/render/project/src/node_modules/lucide-react/dist/esm/lucide-react.js',
+    '/opt/render/project/src/client/src/hooks/use-auth.ts',
+    '/opt/render/project/src/client/src/lib/i18n.tsx',
+    '/opt/render/project/src/client/src/hooks/usePushNotifications.ts',
+    '/opt/render/project/src/client/src/components/ui/sidebar.tsx',
+    '/opt/render/project/src/client/src/hooks/useWebSocket.ts',
+    '/opt/render/project/src/client/src/components/MobileBottomNav.tsx',
+    '/opt/render/project/src/client/src/components/app-sidebar.tsx',
+    '/opt/render/project/src/client/src/components/FloatingBrandPulse.tsx',
+    '/opt/render/project/src/client/src/components/GlobalNotificationBanner.tsx',
+    '/opt/render/project/src/client/src/components/PushPermissionBanner.tsx',
+    '/opt/render/project/src/client/src/components/PageHintCard.tsx',
+    '/opt/render/project/src/client/src/pages/Home.tsx',
+    '/opt/render/project/src/client/src/pages/ClientOnboarding.tsx',
+    '/opt/render/project/src/client/src/pages/ProjectDetailsSetup.tsx',
+    '/opt/render/project/src/client/src/pages/QiroxAuthenticator.tsx',
+    '/opt/render/project/src/client/src/pages/PhoneVerify.tsx',
+    '/opt/render/project/src/client/src/pages/AdminSystemMap.tsx',
+    '/opt/render/project/src/client/src/pages/AdminServices.tsx',
+    '/opt/render/project/src/client/src/pages/AdminOrders.tsx',
+    '/opt/render/project/src/client/src/pages/Dashboard.tsx',
+    '/opt/render/project/src/client/src/pages/AdminEmployees.tsx',
+    '/opt/render/project/src/client/src/pages/ProjectDetails.tsx',
+    '/opt/render/project/src/client/src/pages/Login.tsx',
+    '/opt/render/project/src/client/src/pages/AdminFinance.tsx',
+    '/opt/render/project/src/client/src/pages/About.tsx',
+    '/opt/render/project/src/client/src/pages/Customers.tsx',
+    '/opt/render/project/src/client/src/pages/Prices.tsx',
+    '/opt/render/project/src/client/src/pages/OrderFlow.tsx',
+    '/opt/render/project/src/client/src/pages/News.tsx',
+    '/opt/render/project/src/client/src/pages/Contact.tsx',
+    '/opt/render/project/src/client/src/pages/Jobs.tsx',
+    '/opt/render/project/src/client/src/pages/JoinUs.tsx',
+    '/opt/render/project/src/client/src/pages/Privacy.tsx',
+    '/opt/render/project/src/client/src/pages/Segments.tsx',
+    '/opt/render/project/src/client/src/pages/Terms.tsx',
+    '/opt/render/project/src/client/src/pages/AdminTemplates.tsx',
+    '/opt/render/project/src/client/src/pages/AdminPartners.tsx',
+    '/opt/render/project/src/client/src/pages/AdminNews.tsx',
+    '/opt/render/project/src/client/src/pages/AdminBankSettings.tsx',
+    '/opt/render/project/src/client/src/pages/AdminJobs.tsx',
+    '/opt/render/project/src/client/src/pages/AdminModRequests.tsx',
+    '/opt/render/project/src/client/src/pages/AdminSubscriptionPlans.tsx',
+    '/opt/render/project/src/client/src/pages/AdminPhoneVerifications.tsx',
+    '/opt/render/project/src/client/src/pages/AdminCustomers.tsx',
+    '/opt/render/project/src/client/src/pages/AdminProducts.tsx',
+    '/opt/render/project/src/client/src/pages/AdminShipping.tsx',
+    '/opt/render/project/src/client/src/pages/Devices.tsx',
+    '/opt/render/project/src/client/src/pages/InternalGate.tsx',
+    '/opt/render/project/src/client/src/pages/Checkout.tsx',
+    '/opt/render/project/src/client/src/pages/ForgotPassword.tsx',
+    '/opt/render/project/src/client/src/pages/Cart.tsx',
+    '/opt/render/project/src/client/src/pages/GroupChat.tsx',
+    '/opt/render/project/src/client/src/pages/Inbox.tsx',
+    '/opt/render/project/src/client/src/pages/VerifyEmail.tsx',
+    '/opt/render/project/src/client/src/pages/AdminAnalytics.tsx',
+    '/opt/render/project/src/client/src/pages/AdminCountries.tsx',
+    '/opt/render/project/src/client/src/pages/AdminActivityLog.tsx',
+    '/opt/render/project/src/client/src/pages/AdminSupportTickets.tsx',
+    '/opt/render/project/src/client/src/pages/AdminPayroll.tsx',
+    '/opt/render/project/src/client/src/pages/AdminAttendance.tsx',
+    '/opt/render/project/src/client/src/pages/AdminProfitReport.tsx',
+    '/opt/render/project/src/client/src/pages/EmployeeDemos.tsx',
+    '/opt/render/project/src/client/src/pages/EmployeeProfile.tsx',
+    '/opt/render/project/src/client/src/pages/SupportTickets.tsx',
+    '/opt/render/project/src/client/src/pages/PaymentHistory.tsx',
+    '/opt/render/project/src/client/src/pages/DevChecklist.tsx',
+    '/opt/render/project/src/client/src/pages/EmployeeNewOrder.tsx',
+    '/opt/render/project/src/client/src/pages/AdminInvoices.tsx',
+    '/opt/render/project/src/client/src/pages/AdminAbandonedCarts.tsx',
+    '/opt/render/project/src/client/src/pages/ReceiptPrint.tsx',
+    '/opt/render/project/src/client/src/pages/InvoicePrint.tsx',
+    '/opt/render/project/src/client/src/pages/AdminReceipts.tsx',
+    '/opt/render/project/src/client/src/pages/DevPortal.tsx',
+    '/opt/render/project/src/client/src/pages/not-found.tsx',
+    '/opt/render/project/src/client/src/pages/EmployeeRoleDashboard.tsx',
+Menu
+    '/opt/render/project/src/client/src/pages/SalesMarketing.tsx',
+    '/opt/render/project/src/client/src/pages/Partners.tsx',
+    '/opt/render/project/src/client/src/pages/AdminConsultation.tsx',
+    '/opt/render/project/src/client/src/pages/Consultation.tsx',
+    '/opt/render/project/src/client/src/pages/AdminCronJobs.tsx',
+    ... 1148 more items
+  ]
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+Need better ways to work with logs? Try theRender CLI, Rende

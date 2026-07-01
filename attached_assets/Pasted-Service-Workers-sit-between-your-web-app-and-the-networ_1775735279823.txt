@@ -1,0 +1,20 @@
+Service Workers sit between your web app and the network. They are intended to enable the creation of effective offline experiences, intercept network requests, and take appropriate action based on whether the network is available. They also allow access to push notifications and background sync APIs.
+
+The related_applications member specifies an array of objects that are related applications to the web app. This can include native applications that the user can install or use in conjunction with the web app.
+
+The iarc_rating_id member is a string that represents the International Age Rating Coalition (IARC) certification code of the web application. It is intended to be used to determine which ages the web application is appropriate for.
+
+Scope extensions allow your PWA to define additional URL domains that are considered in-scope for your app. For example, for a PWA hosted on example.com, you may add auth.example.com and en.example.com to your scope extensions. Without scope extensions, any navigation outside of your PWA's domain may show a browser address bar inside your PWA.
+
+The file_handlers member specifies an array of objects representing the types of files an installed PWA can open.
+
+The protocol_handlers member specifies an array of objects that are protocols which this web app can register and handle. Protocol handlers register the application in an OS's application preferences; the registration associates a specific application with the given protocol scheme. For example, when using the protocol handler mailto:// on a web page, registered email applications open.
+
+share_target enables your app to receive content shared from other apps.
+
+Widgets are adaptive cards with text, images, an actions related to your app. On Windows, widgets appear over the desktop when the user clicks the widget taskbar icon or presses Win+W.
+
+The tabbed display mode allows your PWA to act as a multi-document interface, allowing for multiple tabs to be opened inside your PWA.
+
+The note_taking member identifies a web app as a note-taking app and defines related information, for example a URL pointing to functionality for taking a new note. This enables operating systems to integrate the app's note taking functionality, for example including a "New note" option in the app's context menu, or providing the app as an option for taking a note in other apps.
+

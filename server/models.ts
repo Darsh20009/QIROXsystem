@@ -1,0 +1,2339 @@
+import mongoose from "mongoose";
+import { roles } from "@shared/schema";
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, default: "" },
+  email: { type: String, required: true, unique: true },
+  googleId: { type: String, sparse: true, index: true },
+  googleAvatarUrl: String,
+  githubId: { type: String, sparse: true, index: true },
+  githubAvatarUrl: String,
+  appleId: { type: String, sparse: true, index: true },
+  role: { type: String, enum: [...roles], default: "client", required: true },
+  employeeCode: { type: String, unique: true, sparse: true, index: true },
+  fullName: { type: String, required: true },
+  phone: String,
+  country: String,
+  businessType: String,
+  // ── Billing/legal fields (used on quotations & invoices) ──
+  address: { type: String, default: "" },
+  city: { type: String, default: "" },
+  taxNumber: { type: String, default: "" },
+  organizationName: { type: String, default: "" },
+  commercialRegistration: { type: String, default: "" },
+  nationalAddress: { type: String, default: "" },
+  emailVerified: { type: Boolean, default: false },
+  whatsappNumber: String,
+  logoUrl: String,
+  avatarUrl: String,
+  subscriptionSegmentId: String,
+  subscriptionSegmentNameAr: String,
+  subscriptionPeriod: { type: String, enum: ["monthly", "6months", "annual", "renewal"], default: null },
+  subscriptionStartDate: Date,
+  subscriptionExpiresAt: Date,
+  subscriptionStatus: { type: String, enum: ["active", "expired", "none", "suspended"], default: "none" },
+  renewalReminderSentAt: { type: Date, default: null },
+  isProjectLive: { type: Boolean, default: false },
+  projectLiveAt: { type: Date, default: null },
+  walletCardNumber: { type: String, unique: true, sparse: true, select: false },
+  walletPin: { type: String, select: false },
+  walletCardActive: { type: Boolean, default: false },
+  walletBalance: { type: Number, default: 0, min: 0 },
+  // ── Enhanced Profile Fields ──
+  jobTitle: { type: String, default: "" },
+  workEmail: { type: String, default: "" },
+  bio: { type: String, default: "" },
+  profilePhotoUrl: { type: String, default: "" },
+  additionalRoles: { type: [String], default: [] },
+  trustedIp: String,
+  trustedUntil: Date,
+  quickPin: { type: String, select: false },
+  quickPinSetAt: { type: Date, select: false },
+  avatarConfig: { type: String, default: "" },
+  instagram: { type: String, default: "" },
+  twitter: { type: String, default: "" },
+  linkedin: { type: String, default: "" },
+  snapchat: { type: String, default: "" },
+  tiktok: { type: String, default: "" },
+  youtube: { type: String, default: "" },
+  linktree: { type: String, default: "" },
+  // ── 2FA TOTP ──
+  totpSecret: { type: String, select: false },
+  totpEnabled: { type: Boolean, default: false },
+  emailOtpEnabled: { type: Boolean, default: false },
+  recoveryPassphrase: { type: String, select: false },
+  recoveryPassphraseEnabled: { type: Boolean, default: false },
+  pushApprovalEnabled: { type: Boolean, default: false },
+  // ── Phone Verification ──
+  phoneVerified: { type: Boolean, default: false },
+  // ── Referral ──
+  referralCode: { type: String, sparse: true, index: true },
+  referredBy: { type: String, default: null },
+  referralCreditsEarned: { type: Number, default: 0 },
+  // ── QR / Barcode Login ──
+  qrLoginToken: { type: String, sparse: true, index: true },
+  qrLoginTokenCreatedAt: { type: Date, default: null },
+  // ── Sales Rep Assignment ──
+  assignedSalesId: { type: String, default: null },
+  assignedSalesName: { type: String, default: null },
+  assignedSalesUsername: { type: String, default: null },
+  // ── GitHub Deploy OAuth ──
+  githubDeployToken: { type: String, default: null, select: false },
+  // ── Per-employee custom page permissions (overrides role default when set) ──
+  allowedPages: { type: [String], default: null },
+}, { timestamps: true });
+userSchema.index({ role: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ createdAt: -1 });
+
+const serviceSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
+  priceMin: Number,
+  priceMax: Number,
+  estimatedDuration: String,
+  features: [String],
+  icon: String,
+  portfolioImages: [String],
+  portfolioUrl: String,
+  platformUrl: String,
+  usageInstructions: String,
+  portfolioFiles: [{
+    url: { type: String, required: true },
+    name: { type: String, required: true },
+    type: { type: String, enum: ["pdf", "video", "document", "other"], default: "other" },
+  }],
+});
+
+const orderSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+  status: { type: String, default: "pending", required: true, index: true },
+  // Plan info (from order flow)
+  serviceType: String,
+  planTier: { type: String, enum: ['lite', 'pro', 'infinite', 'lifetime'] },
+  planPeriod: { type: String, enum: ['monthly', 'sixmonth', 'annual', 'lifetime'] },
+  planSegment: String,
+  businessName: String,
+  phone: String,
+  notes: String,
+  items: { type: mongoose.Schema.Types.Mixed },
+  // Smart Questionnaire Fields
+  projectType: String,
+  sector: String,
+  competitors: String,
+  visualStyle: String,
+  favoriteExamples: String,
+  requiredFunctions: String,
+  requiredSystems: String,
+  siteLanguage: String,
+  whatsappIntegration: { type: Boolean, default: false },
+  socialIntegration: { type: Boolean, default: false },
+  hasLogo: { type: Boolean, default: false },
+  needsLogoDesign: { type: Boolean, default: false },
+  hasHosting: { type: Boolean, default: false },
+  hasDomain: { type: Boolean, default: false },
+  // Uploads (stored as arrays of file URLs)
+  logoUrl: String,
+  brandIdentityUrl: String,
+  filesUrl: String,
+  contentUrl: String,
+  imagesUrl: String,
+  videoUrl: String,
+  accessCredentials: String,
+  commercialRegUrl: String,
+  taxRegUrl: String,
+  nationalIdUrl: String,
+  ibanCertUrl: String,
+  files: { type: mongoose.Schema.Types.Mixed },
+  // Shipping
+  shippingCompanyId: String,
+  shippingCompanyName: String,
+  shippingFee: { type: Number, default: 0 },
+  // Payment
+  paymentMethod: { type: String, enum: ["bank_transfer", "paypal", "paypal_card", "wallet", "mixed", "stc_pay", "apple_pay", "cash", "other"] },
+  paymentProofUrl: String,
+  paymentStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  paymentRejectionReason: { type: String, default: "" },
+  totalAmount: Number,
+  walletAmountUsed: { type: Number, default: 0 },
+  isDepositPaid: { type: Boolean, default: false },
+  requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
+  // Wizard brief data (full form from CartWizardPage)
+  wizardData: { type: mongoose.Schema.Types.Mixed },
+  // Scheduled meeting (set by employee from client preferred times)
+  scheduledMeeting: {
+    date: String,           // e.g. "2026-03-30"
+    time: String,           // e.g. "10:00 ص"
+    meetingLink: String,
+    confirmedAt: Date,
+    confirmedBy: String,    // employee username
+  },
+  // Assignment
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  adminNotes: String,
+  orderNumber: { type: String, sparse: true },
+}, { timestamps: true });
+orderSchema.index({ userId: 1, status: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+
+const projectSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: { type: String, enum: ["new", "under_study", "pending_payment", "in_progress", "testing", "review", "delivery", "closed"], default: "new", required: true },
+  progress: { type: Number, default: 0 },
+  repoUrl: String,
+  stagingUrl: String,
+  productionUrl: String,
+  deliveredAt: Date,
+  startDate: Date,
+  deadline: Date,
+  usageGuide: {
+    title: { type: String, default: "شرح استخدام النظام" },
+    description: { type: String },
+    files: [{ type: String }],
+    updatedAt: { type: Date },
+  },
+  deliveryVideoUrl: String,
+  deliveryFiles: [{ nameAr: String, url: String, icon: String }],
+  projectFiles: [{
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    title: { type: String, required: true },
+    url: { type: String, required: true },
+    fileType: { type: String, enum: ['identity', 'logo', 'commercial_reg', 'tax_reg', 'iban', 'contract', 'payment_proof', 'custom'], default: 'custom' },
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    addedAt: { type: Date, default: Date.now },
+  }],
+}, { timestamps: true });
+
+const taskSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  title: { type: String, required: true },
+  description: String,
+  status: { type: String, default: "pending", required: true },
+  priority: { type: String, default: "medium" },
+  dueDate: Date,
+  parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
+}, { timestamps: true });
+
+const projectMemberSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  role: String,
+}, { timestamps: true });
+
+const messageSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  content: { type: String, required: true },
+  isInternal: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const projectVaultSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  category: { type: String, required: true },
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  isSecret: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const attendanceSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  checkIn: { type: Date, required: true },
+  checkOut: Date,
+  ipAddress: String,
+  location: { lat: Number, lng: Number },
+  locationHistory: [{ lat: Number, lng: Number, timestamp: Date }],
+  workHours: Number,
+  checkInNotes: { type: String, default: "" },
+  checkOutNotes: { type: String, default: "" },
+  achievements: { type: String, default: "" },
+  activeMinutes: { type: Number, default: 0 },
+  lastActivityAt: Date,
+}, { timestamps: true });
+attendanceSchema.index({ userId: 1, checkIn: -1 });
+attendanceSchema.index({ userId: 1, checkOut: 1 });
+
+const transform = (doc: any, ret: any) => {
+  ret.id = ret._id ? ret._id.toString() : ret.id;
+  delete ret._id;
+  delete ret.__v;
+};
+
+const newsSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  excerpt: String,
+  imageUrl: String,
+  authorId: { type: mongoose.Schema.Types.Mixed },
+  status: { type: String, enum: ["draft", "published", "archived"], default: "draft" },
+  publishedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+const jobQuestionSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  type: { type: String, enum: ["text", "textarea", "select", "radio", "checkbox"], default: "text" },
+  required: { type: Boolean, default: false },
+  options: [String],
+}, { _id: false });
+
+const jobSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  requirements: [String],
+  location: String,
+  type: { type: String, default: "full-time" },
+  salaryRange: String,
+  status: { type: String, enum: ["open", "closed", "paused"], default: "open" },
+  questions: { type: [jobQuestionSchema], default: [] },
+}, { timestamps: true });
+
+const applicationSchema = new mongoose.Schema({
+  jobId: { type: mongoose.Schema.Types.Mixed },
+  fullName: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: String,
+  resumeUrl: String,
+  coverLetter: String,
+  answers: { type: mongoose.Schema.Types.Mixed, default: {} },
+  technicalScore: Number,
+  internalEvaluation: String,
+  status: { type: String, default: "new" },
+  appliedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+const featureDetailSchema = new mongoose.Schema({
+  titleAr: { type: String, default: "" },
+  title:   { type: String, default: "" },
+  descAr:  { type: String, default: "" },
+  icon:    { type: String, default: "✨" },
+  // Which pricing tiers include this feature (empty = all tiers)
+  tiers:   { type: [String], default: ["lite", "pro", "infinite"] },
+}, { _id: false });
+
+const sectorTemplateSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  description: { type: String, required: true },
+  descriptionAr: { type: String, required: true },
+  category: { type: String, required: true },
+  icon: String,
+  features: [String],
+  featuresAr: [String],
+  featuresDetails: { type: [featureDetailSchema], default: [] },
+  tags: [String],
+  priceMin: Number,
+  priceMax: Number,
+  currency: { type: String, default: "SAR" },
+  estimatedDuration: String,
+  status: { type: String, enum: ["active", "coming_soon", "archived"], default: "active" },
+  sortOrder: { type: Number, default: 0 },
+  demoUrl: String,
+  heroColor: String,
+  howToUseAr: String,
+  howToUseVideoUrl: String,
+  templateFiles: [{ nameAr: String, url: String }],
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
+
+const pricingPlanSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  description: String,
+  descriptionAr: String,
+  price: { type: Number, default: 0 },
+  originalPrice: { type: Number },
+  offerLabel: { type: String },
+  currency: { type: String, default: "SAR" },
+  billingCycle: { type: String, enum: ["monthly", "sixmonth", "yearly", "lifetime", "one_time"], default: "lifetime" },
+  tier: { type: String, enum: ["lite", "pro", "infinite", "custom"], default: "pro" },
+  segment: { type: String, default: "general" },
+  monthlyPrice: { type: Number, default: 0 },
+  sixMonthPrice: { type: Number, default: 0 },
+  annualPrice: { type: Number, default: 0 },
+  lifetimePrice: { type: Number, default: 0 },
+  features: [String],
+  featuresAr: [String],
+  addonsAr: [String],
+  maxProjects: Number,
+  isPopular: { type: Boolean, default: false },
+  isCustom: { type: Boolean, default: false },
+  status: { type: String, enum: ["active", "archived"], default: "active" },
+  sortOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const partnerSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: String,
+  logoUrl: { type: String, required: true },
+  websiteUrl: String,
+  category: String,
+  sortOrder: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  features: { type: [String], default: [] },
+  featuresAr: { type: [String], default: [] },
+  relatedService: { type: String, default: "" },
+  description: { type: String, default: "" },
+  descriptionAr: { type: String, default: "" },
+}, { timestamps: true });
+
+const modificationRequestSchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  projectId: String,
+  orderId: String,
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
+  status: { type: String, enum: ['pending', 'in_review', 'in_progress', 'completed', 'rejected', 'cancelled'], default: 'pending' },
+  adminNotes: String,
+  attachments: [String],
+  modificationTypeId: String,
+  modificationPrice: Number,
+}, { timestamps: true });
+
+const modPlanConfigSchema = new mongoose.Schema({
+  planTier: { type: String, enum: ['lite', 'pro', 'infinite'], required: true },
+  planPeriod: { type: String, enum: ['monthly', 'sixmonth', 'annual'], required: true },
+  modificationsPerPeriod: { type: Number, required: true, default: 5 },
+  quotaMonths: { type: Number, required: true, default: 1 },
+  isActive: { type: Boolean, default: true },
+  notes: { type: String, default: "" },
+}, { timestamps: true });
+
+const modTypePriceSchema = new mongoose.Schema({
+  nameAr: { type: String, required: true },
+  name: { type: String, default: "" },
+  description: { type: String, default: "" },
+  price: { type: Number, required: true, max: 50 },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const modQuotaAddonSchema = new mongoose.Schema({
+  clientId: { type: String, required: true },
+  orderId: { type: String, required: true },
+  validFrom: Date,
+  validUntil: Date,
+  price: { type: Number, default: 1000 },
+  status: { type: String, enum: ['pending', 'active', 'expired', 'rejected'], default: 'pending' },
+  paymentProofUrl: { type: String, default: "" },
+  adminNotes: { type: String, default: "" },
+}, { timestamps: true });
+
+const qiroxProductSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  description: String,
+  descriptionAr: String,
+  category: { type: String, enum: ['device', 'domain', 'email', 'hosting', 'gift', 'software', 'other'], required: true },
+  price: { type: Number, required: true },
+  comparePrice: { type: Number },
+  discount: { type: Number, default: 0 },
+  currency: { type: String, default: 'SAR' },
+  images: [String],
+  serviceSlug: String,
+  badge: String,
+  isActive: { type: Boolean, default: true },
+  featured: { type: Boolean, default: false },
+  specs: { type: mongoose.Schema.Types.Mixed },
+  stock: { type: Number, default: -1 },
+  displayOrder: { type: Number, default: 0 },
+  weight: { type: Number },
+  dimensions: String,
+  brand: String,
+  model: String,
+  warrantyMonths: { type: Number, default: 0 },
+  linkedPlanSlug: String,
+  planBundles: [{
+    linkedPlanId: String,
+    planNameAr: { type: String, required: true },
+    planDescAr: String,
+    planTier: { type: String, enum: ['lite', 'pro', 'infinite', 'custom'], default: 'custom' },
+    planSegment: String,
+    customPrice: { type: Number, default: 0 },
+    isFree: { type: Boolean, default: false },
+    features: [String],
+  }],
+  requiresShipping: { type: Boolean, default: false },
+  shippingProviders: [{
+    companyId:   { type: String, required: true },
+    nameAr:      String,
+    customPrice: Number,
+    customOutsideCityPrice: Number,
+    isActive:    { type: Boolean, default: true },
+  }],
+}, { timestamps: true });
+
+const cartItemSchema = new mongoose.Schema({
+  type: { type: String, enum: ['service', 'product', 'domain', 'email', 'hosting', 'gift', 'plan'], required: true },
+  refId: String,
+  name: { type: String, required: true },
+  nameAr: String,
+  price: { type: Number, required: true },
+  qty: { type: Number, default: 1 },
+  config: { type: mongoose.Schema.Types.Mixed },
+  imageUrl: String,
+}, { _id: true });
+
+const cartSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  items: [cartItemSchema],
+  couponCode: String,
+  discountAmount: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const orderSpecsSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, unique: true },
+
+  // === PROJECT INFO ===
+  projectName: String,
+  clientEmail: String,
+  totalBudget: Number,
+  paidAmount: Number,
+  projectStatus: { type: String, default: "planning" }, // planning, in_dev, testing, delivery, closed
+
+  // === TECH STACK ===
+  techStack: String,
+  database: String,
+  hosting: String,
+  framework: String,
+  language: String,
+
+  // === INFRASTRUCTURE / DEVOPS ===
+  githubRepoUrl: String,
+  databaseUri: String,
+  serverIp: String,
+  deploymentUsername: String,
+  deploymentPassword: String,
+  customDomain: String,
+  stagingUrl: String,
+  productionUrl: String,
+  sslEnabled: { type: Boolean, default: false },
+  cdnEnabled: { type: Boolean, default: false },
+
+  // === ENVIRONMENT VARIABLES ===
+  variables: String,
+
+  // === PROJECT CONCEPT ===
+  projectConcept: String,
+  targetAudience: String,
+  mainFeatures: String,
+  referenceLinks: String,
+  colorPalette: String,
+
+  // === TIMELINE ===
+  estimatedHours: Number,
+  deadline: Date,
+  startDate: Date,
+
+  // === NOTES ===
+  notes: String,
+  teamNotes: String,
+
+  // === LEGACY COMPAT ===
+  technologies: [String],
+  features: [String],
+  clientBrief: String,
+  projectIdeas: String,
+  customVars: { type: mongoose.Schema.Types.Mixed },
+}, { timestamps: true });
+
+const otpSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  code: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+  used: { type: Boolean, default: false },
+  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp", "2fa_email"], default: "forgot_password" },
+}, { timestamps: true });
+
+const notificationSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  forAdmins: { type: Boolean, default: false, index: true },
+  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system', 'info', 'success', 'error', 'warning', 'task', 'project', 'subscription', 'ai_digest'], default: 'system' },
+  title: { type: String, required: true },
+  body: { type: String, default: '' },
+  link: String,
+  read: { type: Boolean, default: false, index: true },
+  icon: String,
+}, { timestamps: true });
+notificationSchema.index({ userId: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, read: 1 });
+notificationSchema.index({ forAdmins: 1, read: 1 });
+
+const inboxMessageSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
+  csSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'CsSession', index: true },
+  fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  body: { type: String, default: "" },
+  read: { type: Boolean, default: false, index: true },
+  attachmentUrl: String,
+  attachmentType: { type: String, enum: ["image", "file", "voice", null] },
+  attachmentName: String,
+  attachmentSize: Number,
+  isAutoMessage: { type: Boolean, default: false },
+  autoSender: { type: String, default: "" },
+  deletedBy: [{ type: String }],
+}, { timestamps: true });
+inboxMessageSchema.index({ toUserId: 1, read: 1 });
+inboxMessageSchema.index({ fromUserId: 1, toUserId: 1, createdAt: 1 });
+
+const csSessionSchema = new mongoose.Schema({
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  status: { type: String, enum: ['waiting', 'active', 'closed'], default: 'waiting', index: true },
+  subject: { type: String, default: "" },
+  transferNote: { type: String, default: "" },
+  previousAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  closedAt: Date,
+  closedReason: { type: String, default: "" },
+  rating: { type: Number, min: 1, max: 5, default: null },
+  ratingNote: { type: String, default: "" },
+  lastMessageAt: { type: Date, default: Date.now },
+  isUrgent: { type: Boolean, default: false },
+  urgentNotifiedAt: { type: Date, default: null },
+}, { timestamps: true });
+csSessionSchema.index({ status: 1, lastMessageAt: -1 });
+csSessionSchema.index({ clientId: 1, status: 1 });
+csSessionSchema.index({ agentId: 1, status: 1 });
+
+const invoiceSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  invoiceNumber: { type: String, required: true, unique: true },
+  title: { type: String, default: "" },
+  amount: { type: Number, required: true },
+  vatRate: { type: Number, default: 15 },
+  vatAmount: { type: Number, default: 0 },
+  totalAmount: { type: Number, required: true },
+  status: { type: String, enum: ['unpaid', 'paid', 'cancelled'], default: 'unpaid' },
+  dueDate: Date,
+  paidAt: Date,
+  notes: String,
+  items: [{ name: String, qty: Number, unitPrice: Number, total: Number }],
+  // External recipient (when invoice is for a non-registered client)
+  externalName: { type: String, default: "" },
+  externalEmail: { type: String, default: "" },
+  externalCompany: { type: String, default: "" },
+  // Snapshot of client billing info at issue time (legal record)
+  clientSnapshot: {
+    fullName: { type: String, default: "" },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    city: { type: String, default: "" },
+    taxNumber: { type: String, default: "" },
+    organizationName: { type: String, default: "" },
+    commercialRegistration: { type: String, default: "" },
+    nationalAddress: { type: String, default: "" },
+  },
+}, { timestamps: true });
+
+const activityLogSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  action: { type: String, required: true },
+  entity: { type: String, required: true },
+  entityId: String,
+  details: { type: mongoose.Schema.Types.Mixed },
+  ip: String,
+}, { timestamps: true });
+
+const supportTicketSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  subject: { type: String, required: true },
+  category: { type: String, enum: ['technical', 'billing', 'general', 'complaint'], default: 'general' },
+  body: { type: String, required: true },
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  status: { type: String, enum: ['open', 'in_review', 'resolved', 'closed'], default: 'open' },
+  adminReply: String,
+  repliedAt: Date,
+  closedAt: Date,
+}, { timestamps: true });
+supportTicketSchema.index({ status: 1 });
+supportTicketSchema.index({ userId: 1, status: 1 });
+
+const employeeProfileSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  bio: String,
+  skills: [String],
+  hourlyRate: { type: Number, default: 0 },
+  salaryType: { type: String, enum: ['fixed', 'hourly', 'commission'], default: 'hourly' },
+  fixedSalary: { type: Number, default: 0 },
+  commissionRate: { type: Number, default: 0 },
+  managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  vacationDays: { type: Number, default: 21 },
+  vacationUsed: { type: Number, default: 0 },
+  bankName: String,
+  bankAccount: String,
+  bankIBAN: String,
+  nationalId: String,
+  hireDate: Date,
+  jobTitle: String,
+  portfolioItems: [{
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    title: { type: String, required: true },
+    type: { type: String, enum: ['template', 'file', 'video'], default: 'template' },
+    url: { type: String, required: true },
+    description: { type: String, default: '' },
+  }],
+}, { timestamps: true });
+
+const payrollRecordSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  month: { type: Number, required: true },
+  year: { type: Number, required: true },
+  workHours: { type: Number, default: 0 },
+  hourlyRate: { type: Number, default: 0 },
+  baseSalary: { type: Number, default: 0 },
+  bonuses: { type: Number, default: 0 },
+  deductions: { type: Number, default: 0 },
+  netSalary: { type: Number, default: 0 },
+  status: { type: String, enum: ['pending', 'approved', 'paid'], default: 'pending' },
+  paidAt: Date,
+  notes: String,
+}, { timestamps: true });
+
+const receiptVoucherSchema = new mongoose.Schema({
+  receiptNumber: { type: String, required: true, unique: true },
+  invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  amountInWords: { type: String },
+  paymentMethod: { type: String, enum: ['bank_transfer', 'cash', 'paypal', 'stc_pay', 'apple_pay', 'other'], default: 'bank_transfer' },
+  paymentRef: { type: String },
+  description: { type: String },
+  receivedBy: { type: String },
+  notes: { type: String },
+  status: { type: String, enum: ['issued', 'cancelled'], default: 'issued' },
+}, { timestamps: true });
+
+const pushSubscriptionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  endpoint: { type: String, required: true, unique: true },
+  keys: {
+    p256dh: { type: String, required: true },
+    auth: { type: String, required: true },
+  },
+  userAgent: String,
+}, { timestamps: true });
+
+const checklistItemSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  title: { type: String, required: true },
+  description: String,
+  done: { type: Boolean, default: false },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
+  category: { type: String, default: 'عام' },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+  dueDate: Date,
+  order: { type: Number, default: 0 },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignNote: { type: String, default: "" },
+  personalGroup: { type: String, default: "" },
+  tags: [{ type: String }],
+  estimatedHours: { type: Number, default: 0 },
+  attachments: [{ type: String }],
+  sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  subTasks: [{ title: String, done: { type: Boolean, default: false } }],
+  link: { type: String, default: "" },
+}, { timestamps: true });
+
+const bankSettingsSchema = new mongoose.Schema({
+  key: { type: String, default: "main", unique: true },
+  bankName: { type: String, default: "بنك الراجحي" },
+  beneficiaryName: { type: String, default: "QIROX Studio" },
+  iban: { type: String, default: "SA0380205098017222121010" },
+  accountNumber: { type: String, default: "" },
+  swiftCode: { type: String, default: "" },
+  currency: { type: String, default: "SAR" },
+  notes: { type: String, default: "" },
+}, { timestamps: true });
+
+const segmentPricingSchema = new mongoose.Schema({
+  segmentKey: { type: String, required: true, unique: true },
+  segmentNameAr: { type: String, required: true },
+  monthlyPrice: { type: Number, default: 0 },
+  sixMonthPrice: { type: Number, default: 0 },
+  annualPrice: { type: Number, default: 0 },
+  renewalPrice: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  notes: { type: String, default: "" },
+}, { timestamps: true });
+
+const subServiceRequestSchema = new mongoose.Schema({
+  clientId: { type: String, required: true },
+  projectId: { type: String },
+  projectLabel: { type: String },
+  serviceType: { type: String, required: true },
+  notes: { type: String, default: "" },
+  status: { type: String, enum: ["pending", "reviewing", "approved", "rejected"], default: "pending" },
+  adminNotes: { type: String, default: "" },
+}, { timestamps: true });
+
+const orderExpenseSchema = new mongoose.Schema({
+  orderId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
+  category:    { type: String, enum: ['hosting', 'domain', 'freelancer', 'license', 'ads', 'design', 'salary', 'commission', 'other'], default: 'other' },
+  description: { type: String, required: true },
+  amount:      { type: Number, required: true },
+  currency:    { type: String, default: 'SAR' },
+  addedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+
+const paymobOnboardingSchema = new mongoose.Schema({
+  userId:           { type: String },
+  orderId:          { type: String },
+  docType:          { type: String, enum: ['freelance', 'commercial'], required: true },
+  docNumber:        { type: String, required: true },
+  docFileUrl:       { type: String },
+  ibanCertUrl:      { type: String },
+  vatNumber:        { type: String },
+  nationalId:       { type: String, required: true },
+  nationalIdFront:  { type: String, required: true },
+  nationalIdBack:   { type: String },
+  paymobRegistered: { type: Boolean, default: false },
+  policyAccepted:   { type: Boolean, default: false },
+  signatureName:    { type: String },
+  acceptedAt:       { type: Date },
+  status:           { type: String, enum: ['pending', 'reviewing', 'approved', 'rejected'], default: 'pending' },
+}, { timestamps: true });
+
+const priceRequestSchema = new mongoose.Schema({
+  ticketNumber:   { type: String, unique: true, required: true, index: true },
+  sector:         { type: String, required: true },
+  sectorLabel:    { type: String, default: '' },
+  duration:       { type: String, default: '' },
+  requirements:   { type: String, required: true },
+  contactName:    { type: String, required: true },
+  contactPhone:   { type: String, required: true },
+  contactEmail:   { type: String, default: '' },
+  userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  status:         { type: String, enum: ['pending', 'reviewing', 'quoted', 'accepted', 'rejected'], default: 'pending' },
+  quotedPrice:    { type: Number, default: null },
+  quotedCurrency: { type: String, default: 'SAR' },
+  quotedAt:       { type: Date, default: null },
+  adminNotes:     { type: String, default: '' },
+}, { timestamps: true });
+
+const employeePaymentSchema = new mongoose.Schema({
+  userId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  addedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  projectId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  projectName: { type: String, default: '' },
+  amount:      { type: Number, required: true },
+  type:        { type: String, enum: ['salary','bonus','commission','allowance','other'], default: 'salary' },
+  description: { type: String, default: '' },
+  status:      { type: String, enum: ['pending','approved','paid'], default: 'pending' },
+  dueDate:     { type: Date },
+  paidAt:      { type: Date },
+  notes:       { type: String, default: '' },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema, orderExpenseSchema, priceRequestSchema, employeePaymentSchema].forEach(s => {
+  s.set('toJSON', { transform });
+  s.set('toObject', { transform });
+});
+
+export const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+export const AttendanceModel = mongoose.models.Attendance || mongoose.model("Attendance", attendanceSchema);
+export const ServiceModel = mongoose.models.Service || mongoose.model("Service", serviceSchema);
+export const OrderModel = mongoose.models.Order || mongoose.model("Order", orderSchema);
+export const ProjectModel = mongoose.models.Project || mongoose.model("Project", projectSchema);
+export const TaskModel = mongoose.models.Task || mongoose.model("Task", taskSchema);
+export const MessageModel = mongoose.models.Message || mongoose.model("Message", messageSchema);
+export const ProjectVaultModel = mongoose.models.ProjectVault || mongoose.model("ProjectVault", projectVaultSchema);
+export const ProjectMemberModel = mongoose.models.ProjectMember || mongoose.model("ProjectMember", projectMemberSchema);
+export const NewsModel = mongoose.models.News || mongoose.model("News", newsSchema);
+export const JobModel = mongoose.models.Job || mongoose.model("Job", jobSchema);
+export const ApplicationModel = mongoose.models.Application || mongoose.model("Application", applicationSchema);
+export const SectorTemplateModel = mongoose.models.SectorTemplate || mongoose.model("SectorTemplate", sectorTemplateSchema);
+export const PricingPlanModel = mongoose.models.PricingPlan || mongoose.model("PricingPlan", pricingPlanSchema);
+export const PartnerModel = mongoose.models.Partner || mongoose.model("Partner", partnerSchema);
+export const ModificationRequestModel = mongoose.models.ModificationRequest || mongoose.model("ModificationRequest", modificationRequestSchema);
+export const ModPlanConfigModel = mongoose.models.ModPlanConfig || mongoose.model("ModPlanConfig", modPlanConfigSchema);
+export const ModTypePriceModel = mongoose.models.ModTypePrice || mongoose.model("ModTypePrice", modTypePriceSchema);
+export const ModQuotaAddonModel = mongoose.models.ModQuotaAddon || mongoose.model("ModQuotaAddon", modQuotaAddonSchema);
+export const QiroxProductModel = mongoose.models.QiroxProduct || mongoose.model("QiroxProduct", qiroxProductSchema);
+export const CartModel = mongoose.models.Cart || mongoose.model("Cart", cartSchema);
+export const OrderSpecsModel = mongoose.models.OrderSpecs || mongoose.model("OrderSpecs", orderSpecsSchema);
+export const OtpModel = mongoose.models.Otp || mongoose.model("Otp", otpSchema);
+export const NotificationModel = mongoose.models.Notification || mongoose.model("Notification", notificationSchema);
+export const InboxMessageModel = mongoose.models.InboxMessage || mongoose.model("InboxMessage", inboxMessageSchema);
+export const CsSessionModel = mongoose.models.CsSession || mongoose.model("CsSession", csSessionSchema);
+export const InvoiceModel = mongoose.models.Invoice || mongoose.model("Invoice", invoiceSchema);
+export const ActivityLogModel = mongoose.models.ActivityLog || mongoose.model("ActivityLog", activityLogSchema);
+export const SupportTicketModel = mongoose.models.SupportTicket || mongoose.model("SupportTicket", supportTicketSchema);
+export const EmployeeProfileModel = mongoose.models.EmployeeProfile || mongoose.model("EmployeeProfile", employeeProfileSchema);
+export const PayrollRecordModel = mongoose.models.PayrollRecord || mongoose.model("PayrollRecord", payrollRecordSchema);
+export const ReceiptVoucherModel = mongoose.models.ReceiptVoucher || mongoose.model("ReceiptVoucher", receiptVoucherSchema);
+export const PushSubscriptionModel = mongoose.models.PushSubscription || mongoose.model("PushSubscription", pushSubscriptionSchema);
+export const ChecklistItemModel = mongoose.models.ChecklistItem || mongoose.model("ChecklistItem", checklistItemSchema);
+export const BankSettingsModel = mongoose.models.BankSettings || mongoose.model("BankSettings", bankSettingsSchema);
+export const SegmentPricingModel = mongoose.models.SegmentPricing || mongoose.model("SegmentPricing", segmentPricingSchema);
+export const SubServiceRequestModel = mongoose.models.SubServiceRequest || mongoose.model("SubServiceRequest", subServiceRequestSchema);
+export const OrderExpenseModel = mongoose.models.OrderExpense || mongoose.model("OrderExpense", orderExpenseSchema);
+export const EmployeePaymentModel = mongoose.models.EmployeePayment || mongoose.model("EmployeePayment", employeePaymentSchema);
+
+const marketingPostSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: String,
+  imageUrl: { type: String, required: true },
+  platform: { type: String, default: "instagram" },
+  status: { type: String, default: "published" },
+  uploadedBy: String,
+  createdAt: { type: Date, default: Date.now },
+});
+export const MarketingPostModel = mongoose.models.MarketingPost || mongoose.model("MarketingPost", marketingPostSchema);
+
+const consultationSlotSchema = new mongoose.Schema({
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  employeeName: { type: String, required: true },
+  title: { type: String, required: true },
+  titleAr: { type: String, required: true },
+  description: String,
+  daysOfWeek: [{ type: Number }],
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  slotDurationMinutes: { type: Number, default: 30 },
+  maxBookingsPerSlot: { type: Number, default: 1 },
+  price: { type: Number, default: 0 },
+  currency: { type: String, default: 'SAR' },
+  isActive: { type: Boolean, default: true },
+  consultationType: { type: String, enum: ['video', 'phone', 'in_person', 'any'], default: 'any' },
+  color: { type: String, default: '#000000' },
+  validFrom: Date,
+  validUntil: Date,
+}, { timestamps: true });
+
+const consultationBookingSchema = new mongoose.Schema({
+  slotId: { type: mongoose.Schema.Types.ObjectId, ref: 'ConsultationSlot' },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  clientName: { type: String, required: true },
+  clientEmail: { type: String, default: "" },
+  clientPhone: String,
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  employeeName: String,
+  date: Date,
+  startTime: String,
+  endTime: String,
+  status: { type: String, enum: ['pending', 'confirmed', 'rejected', 'cancelled', 'completed'], default: 'pending' },
+  consultationType: { type: String, enum: ['video', 'phone', 'in_person', 'any'], default: 'phone' },
+  topic: String,
+  notes: String,
+  meetingLink: String,
+  adminNotes: String,
+  price: { type: Number, default: 0 },
+  isPaid: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const discountCodeSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true, uppercase: true },
+  description: String,
+  descriptionAr: String,
+  type: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+  value: { type: Number, required: true },
+  minOrderAmount: { type: Number, default: 0 },
+  maxDiscountAmount: { type: Number },
+  usageLimit: { type: Number },
+  usageCount: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  isGlobal: { type: Boolean, default: false },
+  showOnHome: { type: Boolean, default: false },
+  appliesTo: { type: String, enum: ['all', 'products', 'packages', 'devices'], default: 'all' },
+  expiresAt: Date,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  bannerText: String,
+  bannerTextAr: String,
+  bannerColor: { type: String, default: '#000000' },
+}, { timestamps: true });
+
+const deviceShipmentSchema = new mongoose.Schema({
+  cartOrderId: String,
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  clientName: String,
+  clientEmail: String,
+  clientPhone: String,
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'QiroxProduct', required: true },
+  productName: String,
+  quantity: { type: Number, default: 1 },
+  totalPrice: Number,
+  shippingAddress: {
+    name: String,
+    phone: String,
+    city: String,
+    district: String,
+    street: String,
+    postalCode: String,
+    country: { type: String, default: 'SA' },
+  },
+  status: { type: String, enum: ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'], default: 'pending' },
+  trackingNumber: String,
+  courierName: String,
+  courierUrl: String,
+  estimatedDelivery: Date,
+  deliveredAt: Date,
+  adminNotes: String,
+  statusHistory: [{ status: String, note: String, timestamp: { type: Date, default: Date.now } }],
+}, { timestamps: true });
+
+const shippingCompanySchema = new mongoose.Schema({
+  name:              { type: String, required: true },
+  nameAr:            { type: String, required: true },
+  logo:              { type: String, default: "🚚" },
+  color:             { type: String, default: "#000000" },
+  basePrice:         { type: Number, default: 0 },
+  outsideCityPrice:  { type: Number, default: 0 },
+  estimatedDays:     { type: String, default: "2-3 أيام" },
+  outsideCityDays:   { type: String, default: "3-5 أيام" },
+  trackingUrlTemplate: { type: String, default: "" },
+  regions: { type: [String], default: ["riyadh"] },
+  notes:   { type: String, default: "" },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const countrySchema = new mongoose.Schema({
+  nameAr:       { type: String, required: true },
+  nameEn:       { type: String, required: true },
+  code:         { type: String, required: true, unique: true, uppercase: true },
+  flag:         { type: String, default: "🌍" },
+  phoneCode:    { type: String, default: "" },
+  currency:     { type: String, default: "" },
+  currencyAr:   { type: String, default: "" },
+  continent:    { type: String, default: "آسيا" },
+  isActive:     { type: Boolean, default: true },
+  sortOrder:    { type: Number, default: 0 },
+}, { timestamps: true });
+
+[consultationSlotSchema, consultationBookingSchema, discountCodeSchema, deviceShipmentSchema, shippingCompanySchema, countrySchema].forEach(s => {
+  s.set('toJSON', { transform });
+  s.set('toObject', { transform });
+});
+
+export const ConsultationSlotModel = mongoose.models.ConsultationSlot || mongoose.model("ConsultationSlot", consultationSlotSchema);
+export const ConsultationBookingModel = mongoose.models.ConsultationBooking || mongoose.model("ConsultationBooking", consultationBookingSchema);
+export const DiscountCodeModel = mongoose.models.DiscountCode || mongoose.model("DiscountCode", discountCodeSchema);
+export const DeviceShipmentModel = mongoose.models.DeviceShipment || mongoose.model("DeviceShipment", deviceShipmentSchema);
+export const ShippingCompanyModel = mongoose.models.ShippingCompany || mongoose.model("ShippingCompany", shippingCompanySchema);
+export const CountryModel = mongoose.models.Country || mongoose.model("Country", countrySchema);
+
+const cronRunLogSchema = new mongoose.Schema({
+  runAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ["success", "error"], required: true },
+  duration: { type: Number, default: 0 },
+  response: { type: String, default: "" },
+  triggeredBy: { type: String, enum: ["schedule", "manual"], default: "schedule" },
+}, { _id: false });
+
+const cronJobSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, default: "" },
+  description: { type: String, default: "" },
+  url: { type: String, required: true },
+  method: { type: String, enum: ["GET", "POST", "PUT", "PATCH", "DELETE"], default: "GET" },
+  headers: { type: Map, of: String, default: {} },
+  body: { type: String, default: "" },
+  schedule: { type: String, required: true },
+  isActive: { type: Boolean, default: true },
+  lastRunAt: Date,
+  lastRunStatus: { type: String, enum: ["success", "error", "pending", "never"], default: "never" },
+  lastRunResponse: { type: String, default: "" },
+  lastRunDuration: { type: Number, default: 0 },
+  successCount: { type: Number, default: 0 },
+  errorCount: { type: Number, default: 0 },
+  runLogs: { type: [cronRunLogSchema], default: [] },
+  createdBy: String,
+  projectId: String,
+}, { timestamps: true });
+
+const atlasConfigSchema = new mongoose.Schema({
+  label: { type: String, required: true },
+  publicKey: { type: String, required: true },
+  privateKey: { type: String, required: true },
+  orgId: { type: String, default: "" },
+  projectId: { type: String, default: "" },
+  projectName: { type: String, default: "" },
+  clusterName: { type: String, default: "" },
+  isDefault: { type: Boolean, default: false },
+  createdBy: String,
+}, { timestamps: true });
+
+const atlasDbUserSchema = new mongoose.Schema({
+  configId: { type: mongoose.Schema.Types.ObjectId, ref: 'AtlasConfig', required: true },
+  clientId: String,
+  clientName: String,
+  username: { type: String, required: true },
+  password: { type: String, required: true },
+  databaseName: { type: String, required: true },
+  roles: [{ type: String }],
+  connectionString: { type: String, default: "" },
+  notes: { type: String, default: "" },
+  createdBy: String,
+}, { timestamps: true });
+
+const appPublishConfigSchema = new mongoose.Schema({
+  clientId: String,
+  clientName: String,
+  projectId: String,
+  appName: { type: String, required: true },
+  appNameAr: { type: String, default: "" },
+  appVersion: { type: String, default: "1.0.0" },
+  buildNumber: { type: String, default: "1" },
+  framework: { type: String, enum: ["react-native", "expo", "flutter", "ionic", "capacitor", "pwa", "other"], default: "expo" },
+  androidPackageName: { type: String, default: "" },
+  iosBundleId: { type: String, default: "" },
+  googlePlayListingUrl: { type: String, default: "" },
+  appStoreListingUrl: { type: String, default: "" },
+  logoUrl: { type: String, default: "" },
+  splashColor: { type: String, default: "#000000" },
+  primaryColor: { type: String, default: "#000000" },
+  siteUrl: { type: String, default: "" },
+  apiBaseUrl: { type: String, default: "" },
+  firebaseConfigAndroid: { type: String, default: "" },
+  firebaseConfigIos: { type: String, default: "" },
+  signingKeyAlias: { type: String, default: "" },
+  signingKeyPassword: { type: String, default: "" },
+  description: { type: String, default: "" },
+  descriptionAr: { type: String, default: "" },
+  keywords: { type: String, default: "" },
+  createdBy: String,
+}, { timestamps: true });
+
+const systemFeatureSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, default: "" },
+  description: { type: String, default: "" },
+  icon: { type: String, default: "Star" },
+  isInLite: { type: Boolean, default: false },
+  isInPro: { type: Boolean, default: true },
+  isInInfinite: { type: Boolean, default: true },
+  category: { type: String, default: "general" },
+  sortOrder: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+}, { timestamps: true });
+
+const extraAddonSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  description: { type: String, default: "" },
+  descriptionAr: { type: String, default: "" },
+  icon: { type: String, default: "Plus" },
+  price: { type: Number, required: true },
+  currency: { type: String, default: "SAR" },
+  category: { type: String, default: "feature" },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  segments: { type: [String], default: [] },
+  plans: { type: [String], default: [] },
+  // Billing type: one_time | monthly | annual | lifetime
+  billingType: { type: String, enum: ["one_time","monthly","annual","lifetime"], default: "one_time" },
+  // Compatible periods (empty = all): monthly | annual | lifetime
+  compatiblePeriods: { type: [String], default: [] },
+  // Quota tracking (count-based addons like SMS, email)
+  quotaCount: { type: Number, default: 0 },
+  quotaLabel: { type: String, default: "" },
+  // Plans that get this addon included for free
+  includedInPlans: { type: [String], default: [] },
+  // Free quota for included plans
+  freeQuotaForIncluded: { type: Number, default: 0 },
+  // Optional image
+  imageUrl: { type: String, default: "" },
+  // ── Profit tracking (staff-only, never sent to client) ──
+  cost: { type: Number, default: 0 },          // internal cost used to compute profit
+  // ── Custom client features ──
+  isCustom: { type: Boolean, default: false }, // created specifically for one client
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  promotedToStandardAt: { type: Date, default: null }, // when staff promoted to standard catalog
+  createdByEmployeeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+}, { timestamps: true });
+
+// ── ProjectAddonSubscription (اشتراك ميزة لمشروع) ──────────────────────────
+const projectAddonSubscriptionSchema = new mongoose.Schema({
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+  clientId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  addonId:      { type: mongoose.Schema.Types.ObjectId, ref: "ExtraAddon", required: true },
+  addonNameAr:  { type: String, default: "" },
+  billingType:  { type: String, default: "one_time" },
+  status:       { type: String, enum: ["active","expired","exhausted","cancelled"], default: "active" },
+  quotaTotal:   { type: Number, default: 0 },
+  quotaUsed:    { type: Number, default: 0 },
+  expiresAt:    { type: Date, default: null },
+  startedAt:    { type: Date, default: Date.now },
+  lastNotifiedAt: { type: Date, default: null },
+  renewalRequestedAt: { type: Date, default: null },
+}, { timestamps: true });
+
+[cronJobSchema, atlasConfigSchema, atlasDbUserSchema, appPublishConfigSchema, systemFeatureSchema, extraAddonSchema, projectAddonSubscriptionSchema].forEach(s => {
+  s.set('toJSON', { transform });
+  s.set('toObject', { transform });
+});
+
+export const CronJobModel = mongoose.models.CronJob || mongoose.model("CronJob", cronJobSchema);
+export const AtlasConfigModel = mongoose.models.AtlasConfig || mongoose.model("AtlasConfig", atlasConfigSchema);
+export const AtlasDbUserModel = mongoose.models.AtlasDbUser || mongoose.model("AtlasDbUser", atlasDbUserSchema);
+export const AppPublishConfigModel = mongoose.models.AppPublishConfig || mongoose.model("AppPublishConfig", appPublishConfigSchema);
+export const SystemFeatureModel = mongoose.models.SystemFeature || mongoose.model("SystemFeature", systemFeatureSchema);
+export const ExtraAddonModel = mongoose.models.ExtraAddon || mongoose.model("ExtraAddon", extraAddonSchema);
+export const ProjectAddonSubscriptionModel = mongoose.models.ProjectAddonSubscription || mongoose.model("ProjectAddonSubscription", projectAddonSubscriptionSchema);
+
+const projectFeatureSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  category: { type: String, default: 'feature' },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'critical'], default: 'medium' },
+  status: { type: String, enum: ['pending', 'in_progress', 'completed', 'cancelled'], default: 'pending' },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  order: { type: Number, default: 0 },
+  startedAt: { type: Date },
+  completedAt: { type: Date },
+  startedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  completedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+
+const projectIssueSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  status: { type: String, enum: ['open', 'in_progress', 'resolved', 'closed'], default: 'open' },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'critical'], default: 'medium' },
+  resolvedAt: { type: Date },
+  resolvedNote: { type: String, default: '' },
+}, { timestamps: true });
+
+const meetingRequestSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  notes: { type: String, default: '' },
+  scheduledAt: { type: Date },
+  meetingLink: { type: String, default: '' },
+  duration: { type: Number, default: 60 },
+  status: { type: String, enum: ['pending', 'scheduled', 'cancelled', 'completed'], default: 'pending' },
+}, { timestamps: true });
+
+[projectFeatureSchema, projectIssueSchema, meetingRequestSchema].forEach(s => {
+  s.set('toJSON', { transform });
+  s.set('toObject', { transform });
+});
+
+export const ProjectFeatureModel = mongoose.models.ProjectFeature || mongoose.model("ProjectFeature", projectFeatureSchema);
+export const ProjectIssueModel = mongoose.models.ProjectIssue || mongoose.model("ProjectIssue", projectIssueSchema);
+export const MeetingRequestModel = mongoose.models.MeetingRequest || mongoose.model("MeetingRequest", meetingRequestSchema);
+
+const walletTransactionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, enum: ['debit', 'credit'], required: true },
+  amount: { type: Number, required: true },
+  description: { type: String, required: true },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  note: { type: String, default: '' },
+}, { timestamps: true });
+
+walletTransactionSchema.set('toJSON', { transform });
+walletTransactionSchema.set('toObject', { transform });
+
+export const WalletTransactionModel = mongoose.models.WalletTransaction || mongoose.model("WalletTransaction", walletTransactionSchema);
+
+const walletTopupSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  bankName: { type: String },
+  bankRef: { type: String },
+  note: { type: String },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approvedAt: { type: Date },
+  rejectionReason: { type: String },
+}, { timestamps: true });
+
+walletTopupSchema.set('toJSON', { transform });
+walletTopupSchema.set('toObject', { transform });
+
+export const WalletTopupModel = mongoose.models.WalletTopup || mongoose.model("WalletTopup", walletTopupSchema);
+
+const walletPayOtpSchema = new mongoose.Schema({
+  cardOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  description: { type: String, required: true },
+  otp: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+  used: { type: Boolean, default: false },
+}, { timestamps: true });
+
+walletPayOtpSchema.set('toJSON', { transform });
+walletPayOtpSchema.set('toObject', { transform });
+
+export const WalletPayOtpModel = mongoose.models.WalletPayOtp || mongoose.model("WalletPayOtp", walletPayOtpSchema);
+
+/* ─── Client Data Request ─────────────────────────────────────────────── */
+const clientDataRequestSchema = new mongoose.Schema({
+  orderId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  projectId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+  clientId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  title:       { type: String, required: true },
+  description: { type: String },
+  priority:    { type: String, enum: ['low', 'normal', 'high', 'urgent'], default: 'normal' },
+  dueDate:     { type: Date },
+  status:      { type: String, enum: ['pending', 'submitted', 'approved', 'revision_needed'], default: 'pending' },
+  requestItems: [{
+    label:    String,
+    type:     { type: String, enum: ['file', 'image', 'text', 'link'], default: 'file' },
+    required: { type: Boolean, default: false },
+    hint:     String,
+    accept:   String,
+  }],
+  response: {
+    items:       { type: mongoose.Schema.Types.Mixed },
+    notes:       String,
+    submittedAt: Date,
+  },
+  adminNote: String,
+}, { timestamps: true });
+
+clientDataRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const ClientDataRequestModel = mongoose.models.ClientDataRequest || mongoose.model("ClientDataRequest", clientDataRequestSchema);
+
+// ── HTML Publisher ──────────────────────────────────────────────────────────
+const htmlPublishSchema = new mongoose.Schema({
+  ownerId:  { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  title:    { type: String, default: "صفحتي" },
+  content:  { type: String, required: true },
+  views:    { type: Number, default: 0 },
+  isPublic: { type: Boolean, default: true },
+}, { timestamps: true });
+htmlPublishSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const HtmlPublishModel = mongoose.models.HtmlPublish || mongoose.model("HtmlPublish", htmlPublishSchema);
+
+// ── URL Shortener ───────────────────────────────────────────────────────────
+const shortUrlSchema = new mongoose.Schema({
+  ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  originalUrl: { type: String, required: true },
+  shortCode:   { type: String, required: true, unique: true, index: true },
+  title:       { type: String, default: "" },
+  clicks:      { type: Number, default: 0 },
+}, { timestamps: true });
+shortUrlSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const ShortUrlModel = mongoose.models.ShortUrl || mongoose.model("ShortUrl", shortUrlSchema);
+
+// ── Qirox System Settings ────────────────────────────────────────────────────
+const qiroxSystemSettingsSchema = new mongoose.Schema({
+  key: { type: String, default: "main", unique: true },
+  // Company Info
+  companyName:        { type: String, default: "QIROX Studio" },
+  companyNameAr:      { type: String, default: "كيروكس ستوديو" },
+  domain:             { type: String, default: "qiroxstudio.online" },
+  tagline:            { type: String, default: "مصنع الأنظمة" },
+  taglineAr:          { type: String, default: "مصنع الأنظمة الرقمية" },
+  description:        { type: String, default: "" },
+  logoUrl:            { type: String, default: "" },
+  faviconUrl:         { type: String, default: "" },
+  // Contacts
+  contactEmail:       { type: String, default: "info@qiroxstudio.online" },
+  contactPhone:       { type: String, default: "" },
+  whatsapp:           { type: String, default: "" },
+  address:            { type: String, default: "" },
+  city:               { type: String, default: "" },
+  country:            { type: String, default: "المملكة العربية السعودية" },
+  // Social Links
+  instagram:          { type: String, default: "" },
+  twitter:            { type: String, default: "" },
+  linkedin:           { type: String, default: "" },
+  snapchat:           { type: String, default: "" },
+  youtube:            { type: String, default: "" },
+  tiktok:             { type: String, default: "" },
+  linktree:           { type: String, default: "" },
+  // Business
+  taxNumber:          { type: String, default: "" },
+  commercialReg:      { type: String, default: "" },
+  foundedYear:        { type: Number, default: 2024 },
+  teamSize:           { type: Number, default: 1 },
+  // Financial Settings
+  systemValuation:    { type: Number, default: 0 },   // Total company value in SAR
+  currency:           { type: String, default: "SAR" },
+  profitDistribution: { type: [{ roleType: String, percentage: Number, label: String }], default: [] },
+  // TURN Server (WebRTC NAT traversal)
+  turnEnabled:        { type: Boolean, default: false },
+  turnServers:        { type: [{ url: String, username: String, credential: String }], default: [] },
+  // Pixel Tracking & Analytics
+  metaPixelId:        { type: String, default: "" },
+  tiktokPixelId:      { type: String, default: "" },
+  snapPixelId:        { type: String, default: "" },
+  ga4Id:              { type: String, default: "" },
+  gtmId:              { type: String, default: "" },
+  // Employee Welcome Page
+  welcomeVideoUrl:    { type: String, default: "" },
+  // Modification Tracking
+  lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const QiroxSystemSettingsModel = mongoose.models.QiroxSystemSettings || mongoose.model("QiroxSystemSettings", qiroxSystemSettingsSchema);
+
+// ── Investor Profile ─────────────────────────────────────────────────────────
+const investorProfileSchema = new mongoose.Schema({
+  userId:           { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+  stakePercentage:  { type: Number, default: 0, min: 0, max: 100 },  // Admin sets this
+  totalInvested:    { type: Number, default: 0 },
+  isVerified:       { type: Boolean, default: false },
+  isActive:         { type: Boolean, default: true },
+  notes:            { type: String, default: "" },  // Admin notes
+  joinedAt:         { type: Date, default: Date.now },
+}, { timestamps: true });
+investorProfileSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const InvestorProfileModel = mongoose.models.InvestorProfile || mongoose.model("InvestorProfile", investorProfileSchema);
+
+// ── Investment Payment ────────────────────────────────────────────────────────
+const investmentPaymentSchema = new mongoose.Schema({
+  investorId:      { type: mongoose.Schema.Types.ObjectId, ref: "InvestorProfile", required: true, index: true },
+  userId:          { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  amount:          { type: Number, required: true },
+  currency:        { type: String, default: "SAR" },
+  paymentMethod:   { type: String, default: "bank_transfer" },
+  proofUrl:        { type: String, default: "" },   // Uploaded payment proof
+  signatureData:   { type: String, default: "" },   // Base64 canvas signature
+  signatureText:   { type: String, default: "" },   // Typed name as backup
+  description:     { type: String, default: "" },
+  status:          { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  adminNote:       { type: String, default: "" },
+  approvedBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  approvedAt:      { type: Date },
+}, { timestamps: true });
+investmentPaymentSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const InvestmentPaymentModel = mongoose.models.InvestmentPayment || mongoose.model("InvestmentPayment", investmentPaymentSchema);
+
+// ── Promotion Log ─────────────────────────────────────────────────────────────
+const promotionLogSchema = new mongoose.Schema({
+  targetUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  promotedById:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  fromRole:       { type: String, required: true },
+  toRole:         { type: String, required: true },
+  fromAdditional: { type: [String], default: [] },
+  toAdditional:   { type: [String], default: [] },
+  reason:         { type: String, default: "" },
+  type:           { type: String, enum: ["promote", "demote", "role_add", "role_remove"], default: "promote" },
+}, { timestamps: true });
+promotionLogSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const PromotionLogModel = mongoose.models.PromotionLog || mongoose.model("PromotionLog", promotionLogSchema);
+
+// ── QMeet: Meeting Management System (uses main MongoDB) ──────────────────────
+const qMeetingSchema = new mongoose.Schema({
+  title:          { type: String, required: true },
+  description:    { type: String, default: "" },
+  hostId:         { type: String, required: true },
+  hostName:       { type: String, required: true },
+  scheduledAt:    { type: Date, required: true },
+  endsAt:         { type: Date },  // Computed on create
+  durationMinutes:{ type: Number, default: 60 },
+  roomName:       { type: String, required: true, unique: true },
+  meetingLink:    { type: String, required: true },
+  type:           { type: String, enum: ["internal", "client_individual", "client_all", "consultation"], default: "client_individual" },
+  participantIds:    { type: [String], default: [] },
+  participantEmails: { type: [String], default: [] },
+  participantNames:  { type: [String], default: [] },
+  consultationBookingId: { type: String, default: null },
+  status:         { type: String, enum: ["scheduled", "live", "completed", "cancelled"], default: "scheduled" },
+  reminderSent:   { type: Boolean, default: false },
+  reminder24hSent:{ type: Boolean, default: false },
+  notes:          { type: String, default: "" },
+  agenda:         { type: [String], default: [] },
+  recordingUrl:   { type: String, default: "" },
+  lobbyEnabled:   { type: Boolean, default: false },
+}, { timestamps: true });
+qMeetingSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const QMeetingModel = mongoose.models.QMeeting || mongoose.model("QMeeting", qMeetingSchema);
+
+const qFeedbackSchema = new mongoose.Schema({
+  meetingId:    { type: mongoose.Schema.Types.ObjectId, ref: "QMeeting", required: true, index: true },
+  fromUserId:   { type: String, required: true },
+  fromUserName: { type: String, required: true },
+  rating:       { type: Number, min: 1, max: 5, required: true },
+  comment:      { type: String, default: "" },
+}, { timestamps: true });
+qFeedbackSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const QFeedbackModel = mongoose.models.QFeedback || mongoose.model("QFeedback", qFeedbackSchema);
+
+const qReportSchema = new mongoose.Schema({
+  meetingId:    { type: mongoose.Schema.Types.ObjectId, ref: "QMeeting", required: true, index: true },
+  authorId:     { type: String, required: true },
+  authorName:   { type: String, required: true },
+  summary:      { type: String, required: true },
+  actionItems:  { type: [String], default: [] },
+  attendeesCount: { type: Number, default: 0 },
+  duration:     { type: Number, default: 0 },
+  content:      { type: String, default: "" },
+}, { timestamps: true });
+qReportSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+export const QReportModel = mongoose.models.QReport || mongoose.model("QReport", qReportSchema);
+
+/* ─── Installment System (قسط عبر كيروكس) ────────────────────────────── */
+const installmentOfferSchema = new mongoose.Schema({
+  title:           { type: String, required: true },
+  titleAr:         { type: String, required: true },
+  description:     { type: String, default: '' },
+  descriptionAr:   { type: String, default: '' },
+  planTier:        { type: String, enum: ['lite', 'pro', 'infinite', 'lifetime', 'any'], default: 'any' },
+  planPeriod:      { type: String, enum: ['monthly', 'sixmonth', 'annual', 'lifetime', 'any'], default: 'any' },
+  planSegment:     { type: String, default: '' },
+  installmentCount:{ type: Number, min: 2, max: 8, required: true },
+  serviceFee:      { type: Number, default: 0 },
+  penaltyAmount:   { type: Number, default: 50 },
+  gracePeriodDays: { type: Number, default: 7 },
+  isActive:        { type: Boolean, default: false },
+  createdBy:       { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+installmentOfferSchema.set('toJSON', { transform });
+installmentOfferSchema.set('toObject', { transform });
+export const InstallmentOfferModel = mongoose.models.InstallmentOffer || mongoose.model('InstallmentOffer', installmentOfferSchema);
+
+const installmentApplicationSchema = new mongoose.Schema({
+  clientId:            { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  offerId:             { type: mongoose.Schema.Types.ObjectId, ref: 'InstallmentOffer', required: true },
+  planTier:            { type: String, required: true },
+  planPeriod:          { type: String, required: true },
+  planSegment:         { type: String, default: '' },
+  planSegmentNameAr:   { type: String, default: '' },
+  totalAmount:         { type: Number, required: true },
+  serviceFee:          { type: Number, required: true },
+  grandTotal:          { type: Number, required: true },
+  installmentCount:    { type: Number, required: true },
+  installmentAmount:   { type: Number, required: true },
+  paidInstallments:    { type: Number, default: 0 },
+  status:              { type: String, enum: ['pending', 'approved', 'rejected', 'active', 'completed', 'suspended', 'cancelled'], default: 'pending' },
+  adminNotes:          { type: String, default: '' },
+  clientNotes:         { type: String, default: '' },
+  approvedBy:          { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approvedAt:          { type: Date },
+  rejectedAt:          { type: Date },
+  rejectionReason:     { type: String, default: '' },
+  lockedAt:            { type: Date },
+  nextDueDate:         { type: Date },
+  completedAt:         { type: Date },
+}, { timestamps: true });
+installmentApplicationSchema.set('toJSON', { transform });
+installmentApplicationSchema.set('toObject', { transform });
+export const InstallmentApplicationModel = mongoose.models.InstallmentApplication || mongoose.model('InstallmentApplication', installmentApplicationSchema);
+
+const installmentPaymentSchema = new mongoose.Schema({
+  applicationId:       { type: mongoose.Schema.Types.ObjectId, ref: 'InstallmentApplication', required: true },
+  clientId:            { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  installmentNumber:   { type: Number, required: true },
+  amount:              { type: Number, required: true },
+  penalty:             { type: Number, default: 0 },
+  totalDue:            { type: Number, required: true },
+  dueDate:             { type: Date, required: true },
+  paidAt:              { type: Date },
+  status:              { type: String, enum: ['pending', 'paid', 'late', 'penalized', 'waived'], default: 'pending' },
+  walletTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'WalletTransaction' },
+  note:                { type: String, default: '' },
+}, { timestamps: true });
+installmentPaymentSchema.set('toJSON', { transform });
+installmentPaymentSchema.set('toObject', { transform });
+export const InstallmentPaymentModel = mongoose.models.InstallmentPayment || mongoose.model('InstallmentPayment', installmentPaymentSchema);
+
+const storePublishConfigSchema = new mongoose.Schema({
+  siteUrl:            { type: String, default: "https://qiroxstudio.online" },
+  appName:            { type: String, default: "QIROX Studio" },
+  appNameAr:          { type: String, default: "كيروكس ستوديو" },
+  appVersion:         { type: String, default: "1.0.0" },
+  androidPackage:     { type: String, default: "" },
+  androidFingerprint: { type: String, default: "" },
+  huaweiPackage:      { type: String, default: "" },
+  huaweiFingerprint:  { type: String, default: "" },
+  appleTeamId:        { type: String, default: "" },
+  appleBundleId:      { type: String, default: "" },
+  msAppId:            { type: String, default: "" },
+  playStoreUrl:       { type: String, default: "" },
+  appStoreUrl:        { type: String, default: "" },
+  huaweiStoreUrl:     { type: String, default: "" },
+  msStoreUrl:         { type: String, default: "" },
+  // Public download visibility (false = "coming soon")
+  playStoreEnabled:   { type: Boolean, default: false },
+  appStoreEnabled:    { type: Boolean, default: false },
+  msStoreEnabled:     { type: Boolean, default: false },
+  huaweiStoreEnabled: { type: Boolean, default: false },
+}, { timestamps: true });
+storePublishConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const StorePublishConfigModel = mongoose.models.StorePublishConfig || mongoose.model("StorePublishConfig", storePublishConfigSchema);
+
+// ── Device Trust Tokens ──
+const webAuthnCredentialSchema = new mongoose.Schema({
+  userId:              { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  credentialId:        { type: String, required: true, unique: true },
+  credentialPublicKey: { type: Buffer, required: true },
+  counter:             { type: Number, required: true, default: 0 },
+  transports:          { type: [String], default: [] },
+  deviceName:          { type: String, default: "جهاز محفوظ" },
+  userAgent:           { type: String, default: "" },
+  lastUsed:            { type: Date },
+}, { timestamps: true });
+webAuthnCredentialSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret._id; delete ret.__v; delete ret.credentialPublicKey; return ret; } });
+export const WebAuthnCredentialModel = mongoose.models.WebAuthnCredential || mongoose.model("WebAuthnCredential", webAuthnCredentialSchema);
+
+const deviceTokenSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  tokenHash: { type: String, required: true, index: true },
+  userAgent: { type: String, default: "" },
+  expiresAt: { type: Date, required: true },
+}, { timestamps: true });
+deviceTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+deviceTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const DeviceTokenModel = mongoose.models.DeviceToken || mongoose.model("DeviceToken", deviceTokenSchema);
+
+// ── Client API Keys ──────────────────────────────────────────────────────────
+const clientApiKeySchema = new mongoose.Schema({
+  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:          { type: String, required: true },
+  projectName:   { type: String, default: "" },
+  keyHash:       { type: String, required: true, index: true },
+  keyPrefix:     { type: String, required: true },
+  scopes:        { type: [String], default: ["orders", "projects", "invoices", "stats"] },
+  isActive:      { type: Boolean, default: true },
+  expiresAt:     { type: Date, default: null },
+  lastUsedAt:    { type: Date, default: null },
+  requestCount:  { type: Number, default: 0 },
+  allowedOrigins:{ type: [String], default: [] },
+}, { timestamps: true });
+clientApiKeySchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.keyHash; return ret; } });
+export const ClientApiKeyModel = mongoose.models.ClientApiKey || mongoose.model("ClientApiKey", clientApiKeySchema);
+
+// ── Switch Reminder (تذكير التحويل من مزود آخر) ────────────────────────────
+const switchReminderSchema = new mongoose.Schema({
+  name:                { type: String, required: true },
+  phone:               { type: String, required: true },
+  email:               { type: String, default: "" },
+  currentProvider:     { type: String, required: true },
+  serviceType:         { type: String, default: "" },
+  subscriptionEndDate: { type: Date, required: true },
+  notes:               { type: String, default: "" },
+  status:              { type: String, enum: ["pending", "contacted", "converted", "not_interested"], default: "pending" },
+  adminNotes:          { type: String, default: "" },
+  contactedAt:         { type: Date, default: null },
+  userId:              { type: String, default: null },
+}, { timestamps: true });
+switchReminderSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SwitchReminderModel = mongoose.models.SwitchReminder || mongoose.model("SwitchReminder", switchReminderSchema);
+
+// ── Group Chat ─────────────────────────────────────────────────────────────
+const groupChatSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  description: { type: String, default: "" },
+  icon:        { type: String, default: "💬" },
+  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  adminIds:    [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  memberIds:   [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  isActive:    { type: Boolean, default: true },
+  lastMessage: { type: String, default: "" },
+  lastMessageAt: { type: Date, default: null },
+}, { timestamps: true });
+groupChatSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const GroupChatModel = mongoose.models.GroupChat || mongoose.model("GroupChat", groupChatSchema);
+
+const groupMessageSchema = new mongoose.Schema({
+  groupId:        { type: mongoose.Schema.Types.ObjectId, ref: "GroupChat", required: true, index: true },
+  fromUserId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  body:           { type: String, default: "" },
+  attachmentUrl:  { type: String, default: "" },
+  attachmentType: { type: String, enum: ["image", "file", "voice", ""], default: "" },
+  attachmentName: { type: String, default: "" },
+  attachmentSize: { type: Number, default: 0 },
+  deletedBy:      [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  readBy:         [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+}, { timestamps: true });
+groupMessageSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const GroupMessageModel = mongoose.models.GroupMessage || mongoose.model("GroupMessage", groupMessageSchema);
+
+// ── Time Log (تتبع وقت العمل على المهام) ───────────────────────────────────
+const timeLogSchema = new mongoose.Schema({
+  taskId:          { type: mongoose.Schema.Types.ObjectId, ref: "Task", required: true, index: true },
+  projectId:       { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  userId:          { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  description:     { type: String, default: "" },
+  startedAt:       { type: Date, required: true },
+  endedAt:         { type: Date, default: null },
+  durationMinutes: { type: Number, default: 0 },
+}, { timestamps: true });
+timeLogSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const TimeLogModel = mongoose.models.TimeLog || mongoose.model("TimeLog", timeLogSchema);
+
+// ── Project Comment (تعليقات العميل والفريق على المشروع) ────────────────────
+const projectCommentSchema = new mongoose.Schema({
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  userId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  body:         { type: String, required: true },
+  isInternal:   { type: Boolean, default: false },
+  pinned:       { type: Boolean, default: false },
+  attachmentUrl: { type: String, default: "" },
+}, { timestamps: true });
+projectCommentSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ProjectCommentModel = mongoose.models.ProjectComment || mongoose.model("ProjectComment", projectCommentSchema);
+
+// ── Contract (عقد مشروع إلكتروني) ──────────────────────────────────────────
+const contractSchema = new mongoose.Schema({
+  orderId:         { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+  projectId:       { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+  clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  terms:           { type: String, required: true },
+  totalAmount:     { type: Number, default: 0 },
+  status:          { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
+  acknowledgedAt:  { type: Date, default: null },
+  rejectedAt:      { type: Date, default: null },
+  notes:           { type: String, default: "" },
+  signatureData:   { type: String, default: "" },
+  signatureText:   { type: String, default: "" },
+  signedOtpVerified: { type: Boolean, default: false },
+  signerIp:        { type: String, default: "" },
+  signerUserAgent: { type: String, default: "" },
+  signOtp:         { type: String, default: "" },
+  signOtpExpiresAt:{ type: Date, default: null },
+  contractNumber:  { type: String, default: "" },
+}, { timestamps: true });
+contractSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ContractModel = mongoose.models.Contract || mongoose.model("Contract", contractSchema);
+
+// ── Referral (نظام الإحالات) ────────────────────────────────────────────────
+const referralSchema = new mongoose.Schema({
+  referrerId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  referredId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  code:         { type: String, required: true },
+  status:       { type: String, enum: ["pending", "rewarded", "expired"], default: "pending" },
+  creditAmount: { type: Number, default: 50 },
+  rewardedAt:   { type: Date, default: null },
+}, { timestamps: true });
+referralSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ReferralModel = mongoose.models.Referral || mongoose.model("Referral", referralSchema);
+
+// ── Contact Messages (رسائل التواصل) ────────────────────────────────────────
+const contactMessageSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  email:       { type: String, required: true },
+  phone:       { type: String, required: true },
+  subject:     { type: String, default: "" },
+  message:     { type: String, required: true },
+  read:        { type: Boolean, default: false },
+  adminReply:  { type: String, default: "" },
+  repliedAt:   { type: Date, default: null },
+  status:      { type: String, enum: ["new", "read", "replied", "archived"], default: "new" },
+}, { timestamps: true });
+contactMessageSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ContactMessageModel = mongoose.models.ContactMessage || mongoose.model("ContactMessage", contactMessageSchema);
+
+const phoneRequestSchema = new mongoose.Schema({
+  clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  clientName:      { type: String },
+  clientPhone:     { type: String },
+  requestedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  requestedByName: { type: String },
+  notes:           { type: String },
+  status:          { type: String, enum: ["pending", "resolved", "cancelled"], default: "pending" },
+  resolvedBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  resolvedByName:  { type: String },
+  newPhone:        { type: String },
+  resolvedAt:      { type: Date },
+}, { timestamps: true });
+phoneRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const PhoneRequestModel = mongoose.models.PhoneRequest || mongoose.model("PhoneRequest", phoneRequestSchema);
+
+// ── Phone Verification OTP (Telegram deep-link or call) ──────────────────────
+const phoneVerifyOtpSchema = new mongoose.Schema({
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  phone:     { type: String, required: true, index: true },
+  token:     { type: String, required: true, unique: true },
+  otp:       { type: String },
+  otpSent:   { type: Boolean, default: false },
+  telegramChatId: { type: String },
+  method:    { type: String, enum: ["telegram", "call", "whatsapp"], required: true },
+  purpose:   { type: String, enum: ["verify", "login"], default: "verify" },
+  verified:  { type: Boolean, default: false },
+  expiresAt: { type: Date, required: true },
+  callStatus: { type: String, enum: ["pending", "called", "resolved", "cancelled"], default: "pending" },
+  resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  resolvedAt: { type: Date },
+}, { timestamps: true });
+phoneVerifyOtpSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const PhoneVerifyOtpModel = mongoose.models.PhoneVerifyOtp || mongoose.model("PhoneVerifyOtp", phoneVerifyOtpSchema);
+
+// ── Pre-Registration Phone OTP (قبل إنشاء الحساب) ───────────────────────────
+const preRegPhoneOtpSchema = new mongoose.Schema({
+  phone:      { type: String, required: true, index: true },
+  otp:        { type: String, required: true },
+  phoneToken: { type: String, required: true, unique: true },
+  verified:   { type: Boolean, default: false },
+  expiresAt:  { type: Date, required: true },
+}, { timestamps: true });
+export const PreRegPhoneOtpModel = mongoose.models.PreRegPhoneOtp || mongoose.model("PreRegPhoneOtp", preRegPhoneOtpSchema);
+
+// ── Review (تقييمات العملاء) ─────────────────────────────────────────────────
+const reviewSchema = new mongoose.Schema({
+  orderId:    { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, index: true },
+  clientId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  rating:     { type: Number, min: 1, max: 5, required: true },
+  comment:    { type: String, default: "" },
+  isPublic:   { type: Boolean, default: true },
+  serviceTitle: { type: String, default: "" },
+  adminReply: { type: String, default: "" },
+  repliedAt:  { type: Date, default: null },
+}, { timestamps: true });
+reviewSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ReviewModel = mongoose.models.Review || mongoose.model("Review", reviewSchema);
+
+// ── Loyalty Account (حساب نقاط الولاء) ────────────────────────────────────────
+const loyaltyAccountSchema = new mongoose.Schema({
+  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+  points:        { type: Number, default: 0 },
+  totalEarned:   { type: Number, default: 0 },
+  totalRedeemed: { type: Number, default: 0 },
+}, { timestamps: true });
+loyaltyAccountSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyAccountModel = mongoose.models.LoyaltyAccount || mongoose.model("LoyaltyAccount", loyaltyAccountSchema);
+
+// ── Loyalty Transaction (معاملات نقاط الولاء) ─────────────────────────────────
+const loyaltyTransactionSchema = new mongoose.Schema({
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  type:     { type: String, enum: ["earned", "redeemed", "adjusted", "expired"], required: true },
+  points:   { type: Number, required: true },
+  reason:   { type: String, default: "" },
+  orderId:  { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+}, { timestamps: true });
+loyaltyTransactionSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyTransactionModel = mongoose.models.LoyaltyTransaction || mongoose.model("LoyaltyTransaction", loyaltyTransactionSchema);
+
+// ── SLA Config (إعدادات اتفاقيات مستوى الخدمة) ───────────────────────────────
+const slaConfigSchema = new mongoose.Schema({
+  name:         { type: String, required: true },
+  responseHours:{ type: Number, default: 24 },
+  resolutionHours:{ type: Number, default: 72 },
+  isDefault:    { type: Boolean, default: false },
+  priority:     { type: String, enum: ["low", "medium", "high", "critical"], default: "medium" },
+}, { timestamps: true });
+slaConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SlaConfigModel = mongoose.models.SlaConfig || mongoose.model("SlaConfig", slaConfigSchema);
+
+// ── Supplier Offer (عروض الموردين) ────────────────────────────────────────────
+const supplierOfferSchema = new mongoose.Schema({
+  supplierId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  supplierName: { type: String, default: "" },
+  title:        { type: String, required: true },
+  description:  { type: String, default: "" },
+  price:        { type: Number, default: 0 },
+  currency:     { type: String, default: "SAR" },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
+  category:     { type: String, default: "" },
+  attachmentUrl:{ type: String, default: "" },
+  status:       { type: String, enum: ["pending", "reviewing", "accepted", "rejected"], default: "pending" },
+  adminNote:    { type: String, default: "" },
+  respondedAt:  { type: Date, default: null },
+}, { timestamps: true });
+supplierOfferSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SupplierOfferModel = mongoose.models.SupplierOffer || mongoose.model("SupplierOffer", supplierOfferSchema);
+
+// ── Loyalty Config (إعدادات نظام الولاء) ──────────────────────────────────────
+const loyaltyConfigSchema = new mongoose.Schema({
+  pointsPerSAR:      { type: Number, default: 1 },
+  minRedeemPoints:   { type: Number, default: 100 },
+  sarPerPoint:       { type: Number, default: 0.1 },
+  isEnabled:         { type: Boolean, default: true },
+  expiryDays:        { type: Number, default: 365 },
+}, { timestamps: true });
+loyaltyConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyConfigModel = mongoose.models.LoyaltyConfig || mongoose.model("LoyaltyConfig", loyaltyConfigSchema);
+
+// ── Pending2FA Sessions (جلسات التحقق الثنائي) ──────────────────────────────
+const pending2FASchema = new mongoose.Schema({
+  tempToken:   { type: String, required: true, unique: true, index: true },
+  userId:      { type: String, required: true },
+  methods:     { type: [String], default: [] },
+  pushApproved:{ type: Boolean, default: false },
+  expiresAt:   { type: Date, required: true, index: { expires: 0 } },
+});
+export const Pending2FAModel = mongoose.models.Pending2FA || mongoose.model("Pending2FA", pending2FASchema);
+
+// ── Push Challenges (تحديات تسجيل الدخول بالإشعار) ──────────────────────────
+const pushChallengeSchema = new mongoose.Schema({
+  challengeId: { type: String, required: true, unique: true, index: true },
+  userId:      { type: String, required: true },
+  number:      { type: Number, required: true },
+  status:      { type: String, enum: ["pending", "approved", "denied"], default: "pending" },
+  tempToken:   { type: String, required: true },
+  deviceInfo:  { type: String, default: "" },
+  expiresAt:   { type: Date, required: true, index: { expires: 0 } },
+});
+export const PushChallengeModel = mongoose.models.PushChallenge || mongoose.model("PushChallenge", pushChallengeSchema);
+
+// ── QiroxAuth External App (تطبيقات الربط الخارجي) ───────────────────────────
+const authAppSchema = new mongoose.Schema({
+  ownerId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:          { type: String, required: true },
+  description:   { type: String, default: "" },
+  domain:        { type: String, default: "" },
+  logoUrl:       { type: String, default: "" },
+  clientId:      { type: String, required: true, unique: true, index: true },
+  clientSecretHash: { type: String, required: true, select: false },
+  isActive:      { type: Boolean, default: true },
+  allowedOrigins:{ type: [String], default: [] },
+  webhookUrl:    { type: String, default: "" },
+  callCount:     { type: Number, default: 0 },
+  lastUsedAt:    { type: Date, default: null },
+}, { timestamps: true });
+authAppSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.clientSecretHash; ret.id = ret._id?.toString(); return ret; } });
+export const AuthAppModel = mongoose.models.AuthApp || mongoose.model("AuthApp", authAppSchema);
+
+// ── QiroxAuth Enrollment (اشتراكات المستخدمين الخارجيين) ─────────────────────
+const authAppEnrollmentSchema = new mongoose.Schema({
+  appId:          { type: mongoose.Schema.Types.ObjectId, ref: "AuthApp", required: true, index: true },
+  externalUserId: { type: String, required: true },
+  totpSecret:     { type: String, required: true, select: false },
+  confirmed:      { type: Boolean, default: false },
+  confirmedAt:    { type: Date, default: null },
+  lastVerifiedAt: { type: Date, default: null },
+  failCount:      { type: Number, default: 0 },
+  lockedUntil:    { type: Date, default: null },
+}, { timestamps: true });
+authAppEnrollmentSchema.index({ appId: 1, externalUserId: 1 }, { unique: true });
+authAppEnrollmentSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.totpSecret; ret.id = ret._id?.toString(); return ret; } });
+export const AuthAppEnrollmentModel = mongoose.models.AuthAppEnrollment || mongoose.model("AuthAppEnrollment", authAppEnrollmentSchema);
+
+// ── Sandbox Project (صانع الأنظمة — مشاريع الساندبوكس) ──────────────────────
+const sandboxProjectSchema = new mongoose.Schema({
+  ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:        { type: String, required: true },
+  nameAr:      { type: String, default: "" },
+  description: { type: String, default: "" },
+  template:    { type: String, default: "blank" },
+  runtime:     { type: String, enum: ["node", "static", "python"], default: "node" },
+  port:        { type: Number, default: null },
+  status:      { type: String, enum: ["stopped", "running", "error", "building"], default: "stopped" },
+  entryFile:   { type: String, default: "index.js" },
+  installCmd:  { type: String, default: "npm install" },
+  startCmd:    { type: String, default: "node index.js" },
+  buildCmd:    { type: String, default: "" },
+  githubRepo:  { type: String, default: "" },
+  githubBranch:{ type: String, default: "main" },
+  lastStartedAt: { type: Date, default: null },
+  lastStoppedAt: { type: Date, default: null },
+  diskUsageMB: { type: Number, default: 0 },
+  maxDiskMB:   { type: Number, default: 100 },
+  isPublic:    { type: Boolean, default: false },
+  tags:        { type: [String], default: [] },
+}, { timestamps: true });
+sandboxProjectSchema.index({ ownerId: 1, createdAt: -1 });
+export const SandboxProjectModel = mongoose.models.SandboxProject || mongoose.model("SandboxProject", sandboxProjectSchema);
+
+// ── Sandbox Env Vars (متغيرات البيئة المشفرة) ──────────────────────────────
+const sandboxEnvVarSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  key:       { type: String, required: true },
+  value:     { type: String, required: true },
+  iv:        { type: String, required: true },
+}, { timestamps: true });
+sandboxEnvVarSchema.index({ projectId: 1, key: 1 }, { unique: true });
+export const SandboxEnvVarModel = mongoose.models.SandboxEnvVar || mongoose.model("SandboxEnvVar", sandboxEnvVarSchema);
+
+// ── Sandbox File (ملفات الساندبوكس — محتوى + بيانات وصفية) ─────────────────
+const sandboxFileSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  path:      { type: String, required: true },
+  type:      { type: String, enum: ["file", "directory"], default: "file" },
+  content:   { type: String, default: "" },
+  size:      { type: Number, default: 0 },
+  mimeType:  { type: String, default: "" },
+  hash:      { type: String, default: "" },
+  syncedAt:  { type: Date, default: null },
+}, { timestamps: true });
+sandboxFileSchema.index({ projectId: 1, path: 1 }, { unique: true });
+export const SandboxFileModel = mongoose.models.SandboxFile || mongoose.model("SandboxFile", sandboxFileSchema);
+
+// ── Sandbox Deployment (نشر مشاريع الساندبوكس) ─────────────────────────────
+const sandboxDeploymentSchema = new mongoose.Schema({
+  projectId:  { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  deployedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  version:    { type: String, default: "1.0.0" },
+  status:     { type: String, enum: ["pending", "building", "live", "failed", "stopped"], default: "pending" },
+  url:        { type: String, default: "" },
+  port:       { type: Number, default: null },
+  buildLog:   { type: String, default: "" },
+  errorLog:   { type: String, default: "" },
+  startedAt:  { type: Date, default: null },
+  stoppedAt:  { type: Date, default: null },
+}, { timestamps: true });
+sandboxDeploymentSchema.index({ projectId: 1, createdAt: -1 });
+export const SandboxDeploymentModel = mongoose.models.SandboxDeployment || mongoose.model("SandboxDeployment", sandboxDeploymentSchema);
+
+// ── Client Webhook (إدارة Webhooks) ─────────────────────────────────────────
+const webhookSchema = new mongoose.Schema({
+  clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  label:           { type: String, required: true },
+  url:             { type: String, required: true },
+  events:          { type: [String], default: ["order.created"] },
+  secret:          { type: String, default: "" },
+  isActive:        { type: Boolean, default: true },
+  lastDeliveredAt: { type: Date, default: null },
+  lastError:       { type: String, default: null },
+  deliveryCount:   { type: Number, default: 0 },
+  failCount:       { type: Number, default: 0 },
+}, { timestamps: true });
+webhookSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ClientWebhookModel = mongoose.models.ClientWebhook || mongoose.model("ClientWebhook", webhookSchema);
+
+// ── Embed Token (رموز تضمين لوحة التحكم) ─────────────────────────────────────
+const embedTokenSchema = new mongoose.Schema({
+  clientId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  label:          { type: String, default: "لوحة التضمين الرئيسية" },
+  tokenHash:      { type: String, required: true, index: true },
+  tokenPrefix:    { type: String, required: true },
+  allowedOrigins: { type: [String], default: [] },
+  isActive:       { type: Boolean, default: true },
+  lastUsedAt:     { type: Date, default: null },
+  useCount:       { type: Number, default: 0 },
+  expiresAt:      { type: Date, default: null },
+}, { timestamps: true });
+embedTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.tokenHash; return ret; } });
+export const EmbedTokenModel = mongoose.models.EmbedToken || mongoose.model("EmbedToken", embedTokenSchema);
+
+paymobOnboardingSchema.set('toJSON', { transform });
+paymobOnboardingSchema.set('toObject', { transform });
+export const PaymobOnboardingModel = mongoose.models.PaymobOnboarding || mongoose.model("PaymobOnboarding", paymobOnboardingSchema);
+
+// ── Quotation (عروض الأسعار) ──────────────────────────────────────────────────
+const quotationSchema = new mongoose.Schema({
+  quotationNumber:  { type: String, required: true, unique: true },
+  userId:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  externalName:     { type: String, default: "" },
+  externalEmail:    { type: String, default: "" },
+  externalCompany:  { type: String, default: "" },
+  title:            { type: String, default: "" },
+  items:          [{ name: String, description: String, qty: Number, unitPrice: Number, total: Number }],
+  amount:         { type: Number, default: 0 },
+  vatRate:        { type: Number, default: 15 },
+  vatAmount:      { type: Number, default: 0 },
+  totalAmount:    { type: Number, default: 0 },
+  validUntil:     { type: Date },
+  status:         { type: String, enum: ['draft', 'sent', 'accepted', 'rejected', 'expired'], default: 'draft' },
+  notes:          { type: String, default: "" },
+  termsAndConditions: { type: String, default: "" },
+  createdBy:      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  orderId:        { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
+}, { timestamps: true });
+quotationSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const QuotationModel = mongoose.models.Quotation || mongoose.model("Quotation", quotationSchema);
+
+// ─── Mail Accounts ───────────────────────────────────────────────────────────
+const mailAccountSchema = new mongoose.Schema({
+  emailAddress:   { type: String, required: true, unique: true },
+  password:       { type: String, required: true },
+  displayName:    { type: String, default: "" },
+  jobTitle:       { type: String, default: "" },
+  imapHost:       { type: String, default: "server222.web-hosting.com" },
+  imapPort:       { type: Number, default: 993 },
+  smtpHost:       { type: String, default: "server222.web-hosting.com" },
+  smtpPort:       { type: Number, default: 465 },
+  assignedUserId:  { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // legacy single-assignee
+  assignedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],               // new multi-assignee list
+  isShared:        { type: Boolean, default: false },
+  sharedWith:      [{ type: String }], // roles that can see this inbox: "admin","ceo","cto"
+}, { timestamps: true });
+mailAccountSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.password; ret.id = ret._id?.toString(); return ret; } });
+export const MailAccountModel = mongoose.models.MailAccount || mongoose.model("MailAccount", mailAccountSchema);
+
+// ─── Mail Cache (locally cached email list per account) ──────────────────────
+const mailCacheSchema = new mongoose.Schema({
+  accountId:  { type: mongoose.Schema.Types.ObjectId, ref: "MailAccount", required: true, index: true },
+  folder:     { type: String, default: "INBOX" },
+  uid:        { type: Number, required: true },
+  subject:    { type: String, default: "" },
+  from:       { type: String, default: "" },
+  to:         { type: String, default: "" },
+  date:       { type: Date },
+  seen:       { type: Boolean, default: false },
+  html:       { type: String, default: "" },
+  text:       { type: String, default: "" },
+  snippet:    { type: String, default: "" },
+}, { timestamps: true });
+mailCacheSchema.index({ accountId: 1, folder: 1, uid: 1 }, { unique: true });
+mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const MailCacheModel = mongoose.models.MailCache || mongoose.model("MailCache", mailCacheSchema);
+
+export const PriceRequestModel = mongoose.models.PriceRequest || mongoose.model("PriceRequest", priceRequestSchema);
+
+const operationalExpenseSchema = new mongoose.Schema({
+  category: { type: String, enum: ["operational", "marketing", "admin", "product", "other"], default: "operational" },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
+  month: { type: String },
+  notes: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+operationalExpenseSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const OperationalExpenseModel = mongoose.models.OperationalExpense || mongoose.model("OperationalExpense", operationalExpenseSchema);
+
+// ── ACCOUNTING JOURNAL ENTRIES (دفتر القيود المحاسبية) ─────────────────────────
+const journalEntrySchema = new mongoose.Schema({
+  date:        { type: String, required: true },      // YYYY-MM-DD
+  refNumber:   { type: String },                      // e.g. JE-2025-001
+  description: { type: String, required: true },
+  entries: [{
+    account:   { type: String, required: true },      // account name
+    accountCode: { type: String },                    // optional chart-of-accounts code
+    debit:     { type: Number, default: 0 },
+    credit:    { type: Number, default: 0 },
+    notes:     { type: String },
+  }],
+  category:    { type: String, enum: ["revenue", "expense", "asset", "liability", "equity", "transfer", "payroll", "other"], default: "other" },
+  status:      { type: String, enum: ["draft", "posted", "voided"], default: "posted" },
+  attachmentUrl: { type: String },
+  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+journalEntrySchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const JournalEntryModel = mongoose.models.JournalEntry || mongoose.model("JournalEntry", journalEntrySchema);
+
+// ── FACE RECOGNITION PROFILES ──────────────────────────────────────────────
+const faceDescriptorSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  descriptors: { type: [[Number]], required: true },
+  angles: { type: [String], default: ["front", "left", "right"] },
+}, { timestamps: true });
+faceDescriptorSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const FaceDescriptorModel = mongoose.models.FaceDescriptor || mongoose.model("FaceDescriptor", faceDescriptorSchema);
+
+// ── DEPLOYMENT CLOUD ────────────────────────────────────────────────────────
+const deploymentProjectSchema = new mongoose.Schema({
+  name:                { type: String, required: true },
+  slug:                { type: String, required: true, unique: true, index: true },
+  description:         { type: String, default: "" },
+  githubOwner:         { type: String, required: true },
+  githubRepo:          { type: String, required: true },
+  githubBranch:        { type: String, default: "main" },
+  githubRepoId:        { type: String, default: "" },
+  buildCommand:        { type: String, default: "npm run build" },
+  startCommand:        { type: String, default: "npm start" },
+  outputDir:           { type: String, default: "dist" },
+  nodeVersion:         { type: String, default: "20" },
+  framework:           { type: String, default: "auto" },
+  serviceType:         { type: String, default: "web" },
+  envVars:             [{ key: String, value: String, isSecret: { type: Boolean, default: false } }],
+  domain:              { type: String, default: "" },
+  customDomain:        { type: String, default: "" },
+  status:              { type: String, enum: ["idle", "building", "deploying", "live", "failed", "suspended"], default: "idle" },
+  githubToken:         { type: String, default: "" },
+  autoDeploy:          { type: Boolean, default: true },
+  region:              { type: String, default: "me-1" },
+  plan:                { type: String, enum: ["free", "starter", "pro", "enterprise"], default: "starter" },
+  ownerId:             { type: String, required: true },
+  ownerName:           { type: String, default: "" },
+  lastDeployAt:        { type: Date, default: null },
+  deployCount:         { type: Number, default: 0 },
+  avatarColor:         { type: String, default: "" },
+  logoUrl:             { type: String, default: "" },
+  documentation:       { type: String, default: "" },
+  isSimulated:         { type: Boolean, default: false },
+  vercelProjectId:     { type: String, default: "" },
+  vercelDeploymentId:  { type: String, default: "" },
+}, { timestamps: true });
+deploymentProjectSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const DeploymentProjectModel = mongoose.models.DeploymentProject || mongoose.model("DeploymentProject", deploymentProjectSchema);
+
+const deploymentRunSchema = new mongoose.Schema({
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "DeploymentProject", required: true, index: true },
+  projectSlug:  { type: String, required: true },
+  projectName:  { type: String, required: true },
+  status:       { type: String, enum: ["queued", "building", "deploying", "success", "failed", "cancelled"], default: "queued" },
+  triggeredBy:  { type: String, default: "manual" },
+  commitSha:    { type: String, default: "" },
+  commitMsg:    { type: String, default: "" },
+  branch:       { type: String, default: "main" },
+  logs:         [{ time: Date, level: String, message: String }],
+  buildDuration: { type: Number, default: 0 },
+  error:         { type: String, default: "" },
+  aiFixSuggestion: { type: String, default: "" },
+  startedAt:    { type: Date, default: null },
+  completedAt:  { type: Date, default: null },
+}, { timestamps: true });
+deploymentRunSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const DeploymentRunModel = mongoose.models.DeploymentRun || mongoose.model("DeploymentRun", deploymentRunSchema);
+
+// ── KANBAN PLAN TASKS ────────────────────────────────────────────────────────
+const kanbanTaskSchema = new mongoose.Schema({
+  title:          { type: String, required: true },
+  description:    { type: String, default: "" },
+  status:         { type: String, enum: ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"], default: "new" },
+  priority:       { type: String, enum: ["low","medium","high","urgent"], default: "medium" },
+  assignedTo:     { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  createdBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  deadline:       { type: Date, default: null },
+  templateType:   { type: String, enum: ["custom","website_plan"], default: "custom" },
+  // Website plan fields
+  plan: {
+    projectConcept:       { type: String, default: "" },
+    techStack:            { type: String, default: "" },
+    framework:            { type: String, default: "" },
+    language:             { type: String, default: "" },
+    database:             { type: String, default: "" },
+    databaseDesign:       { type: String, default: "" },
+    hosting:              { type: String, default: "" },
+    deploymentStrategy:   { type: String, default: "" },
+    domain:               { type: String, default: "" },
+    serverIp:             { type: String, default: "" },
+    githubRepo:           { type: String, default: "" },
+    stagingUrl:           { type: String, default: "" },
+    productionUrl:        { type: String, default: "" },
+    sslEnabled:           { type: Boolean, default: false },
+    mainFeatures:         { type: String, default: "" },
+    targetAudience:       { type: String, default: "" },
+    estimatedHours:       { type: String, default: "" },
+    notes:                { type: String, default: "" },
+  },
+}, { timestamps: true });
+kanbanTaskSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const KanbanTaskModel = mongoose.models.KanbanTask || mongoose.model("KanbanTask", kanbanTaskSchema);
+
+const nativePushTokenSchema = new mongoose.Schema({
+  userId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  token:    { type: String, required: true, unique: true },
+  platform: { type: String, enum: ["ios", "android"], required: true },
+  bundleId: { type: String, default: "sa.qirox.studio" },
+}, { timestamps: true });
+nativePushTokenSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const NativePushTokenModel = mongoose.models.NativePushToken || mongoose.model("NativePushToken", nativePushTokenSchema);
+
+// ── CRM ──────────────────────────────────────────────────────────────────────
+const crmActivitySchema = new mongoose.Schema({
+  type:      { type: String, enum: ["call","email","whatsapp","meeting","note","task"], default: "note" },
+  content:   { type: String, required: true },
+  createdBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const crmLeadSchema = new mongoose.Schema({
+  name:            { type: String, required: true },
+  phone:           { type: String, default: "" },
+  email:           { type: String, default: "" },
+  company:         { type: String, default: "" },
+  source:          { type: String, enum: ["website","instagram","twitter","tiktok","referral","cold_call","exhibition","other"], default: "other" },
+  stage:           { type: String, enum: ["new","contacted","qualified","proposal","won","lost"], default: "new" },
+  value:           { type: Number, default: 0 },
+  currency:        { type: String, default: "SAR" },
+  assignedTo:      { type: String, default: "" },
+  assignedToName:  { type: String, default: "" },
+  notes:           { type: String, default: "" },
+  lostReason:      { type: String, default: "" },
+  tags:            { type: [String], default: [] },
+  nextFollowUpAt:  { type: Date, default: null },
+  lastContactedAt: { type: Date, default: null },
+  activities:      { type: [crmActivitySchema], default: [] },
+}, { timestamps: true });
+crmLeadSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); ret.activities = (ret.activities || []).map((a: any) => ({ ...a, id: a._id?.toString() })); return ret; } });
+export const CrmLeadModel = mongoose.models.CrmLead || mongoose.model("CrmLead", crmLeadSchema);
+
+// ─── Email Marketing System ───────────────────────────────────────────────────
+
+const marketingEmailSchema = new mongoose.Schema({
+  email:      { type: String, required: true, unique: true, lowercase: true, trim: true },
+  name:       { type: String, default: "" },
+  source:     { type: String, default: "manual" }, // manual, import, contact_form, order, crm
+  unsubscribed: { type: Boolean, default: false },
+  bounced:    { type: Boolean, default: false },
+  addedAt:    { type: Date, default: Date.now },
+});
+export const MarketingEmailModel = mongoose.models.MarketingEmail || mongoose.model("MarketingEmail", marketingEmailSchema);
+
+const emailCampaignSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  subject:     { type: String, required: true },
+  htmlBody:    { type: String, required: true },
+  type:        { type: String, enum: ["daily_bulk", "manual", "weekly_interested"], default: "manual" },
+  status:      { type: String, enum: ["draft", "running", "completed", "failed"], default: "draft" },
+  totalTarget: { type: Number, default: 0 },
+  totalSent:   { type: Number, default: 0 },
+  totalOpened: { type: Number, default: 0 },
+  totalClicked:{ type: Number, default: 0 },
+  batchSize:   { type: Number, default: 1000 },
+  createdAt:   { type: Date, default: Date.now },
+  completedAt: { type: Date, default: null },
+  createdBy:   { type: String, default: "system" },
+});
+export const EmailCampaignModel = mongoose.models.EmailCampaign || mongoose.model("EmailCampaign", emailCampaignSchema);
+
+const emailCampaignRecipientSchema = new mongoose.Schema({
+  campaignId:  { type: mongoose.Schema.Types.ObjectId, ref: "EmailCampaign", required: true, index: true },
+  email:       { type: String, required: true },
+  name:        { type: String, default: "" },
+  sentAt:      { type: Date, default: null },
+  opened:      { type: Boolean, default: false },
+  openedAt:    { type: Date, default: null },
+  clicked:     { type: Boolean, default: false },
+  clickedAt:   { type: Date, default: null },
+  trackId:     { type: String, required: true, unique: true },
+  status:      { type: String, enum: ["pending","sent","failed"], default: "pending" },
+});
+emailCampaignRecipientSchema.index({ email: 1 });
+export const EmailCampaignRecipientModel = mongoose.models.EmailCampaignRecipient || mongoose.model("EmailCampaignRecipient", emailCampaignRecipientSchema);
+
+const interestedLeadSchema = new mongoose.Schema({
+  email:            { type: String, required: true, unique: true, lowercase: true, trim: true },
+  name:             { type: String, default: "" },
+  firstEngagedAt:   { type: Date, default: Date.now },
+  lastEngagedAt:    { type: Date, default: Date.now },
+  engagementType:   { type: String, enum: ["opened","clicked"], default: "opened" },
+  campaignIds:      { type: [mongoose.Schema.Types.ObjectId], default: [] },
+  followUpSentAt:   { type: Date, default: null },
+  followUpCount:    { type: Number, default: 0 },
+});
+export const InterestedLeadModel = mongoose.models.InterestedLead || mongoose.model("InterestedLead", interestedLeadSchema);
+
+// Track which emails have already been sent a campaign (global dedup across all campaigns)
+const globalSentEmailSchema = new mongoose.Schema({
+  email:       { type: String, required: true, unique: true, lowercase: true, trim: true },
+  firstSentAt: { type: Date, default: Date.now },
+  lastSentAt:  { type: Date, default: Date.now },
+  sendCount:   { type: Number, default: 1 },
+});
+export const GlobalSentEmailModel = mongoose.models.GlobalSentEmail || mongoose.model("GlobalSentEmail", globalSentEmailSchema);
+
+// ─── Lead Data (داتا العملاء المحتملين) ──────────────────────────────────────
+const leadDataSchema = new mongoose.Schema({
+  companyName:     { type: String, required: true },
+  contactName:     { type: String, default: "" },
+  phone:           { type: String, default: "" },
+  email:           { type: String, default: "", lowercase: true, trim: true },
+  sector:          { type: String, default: "" },
+  source:          { type: String, default: "manual" },
+  status:          { type: String, enum: ["new","contacted","interested","appointment_needed","reminder_needed","not_interested","needs_something","converted"], default: "new" },
+  notes:           { type: String, default: "" },
+  assignedTo:      { type: String, default: "" },
+  assignedToName:  { type: String, default: "" },
+  lastContactedAt: { type: Date, default: null },
+  reminderAt:      { type: Date, default: null },
+  addedToMarketing: { type: Boolean, default: false },
+  convertedAt:     { type: Date, default: null },
+  statusHistory: [{
+    status:    { type: String },
+    changedAt: { type: Date, default: Date.now },
+    changedBy: { type: String, default: "" },
+    note:      { type: String, default: "" },
+  }],
+  callRatingToken:     { type: String, default: null, index: true, sparse: true },
+  callRatingScore:     { type: Number, default: null },
+  callRatingComment:   { type: String, default: "" },
+  callRatingSubmittedAt: { type: Date, default: null },
+  callRatingSentAt:    { type: Date, default: null },
+}, { timestamps: true });
+leadDataSchema.index({ status: 1 });
+leadDataSchema.index({ email: 1 });
+leadDataSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LeadDataModel = mongoose.models.LeadData || mongoose.model("LeadData", leadDataSchema);

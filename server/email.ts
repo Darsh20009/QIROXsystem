@@ -1,0 +1,1314 @@
+import { connManager } from "./connection-manager";
+import nodemailer from "nodemailer";
+
+function getEmailCfg() {
+  const s = connManager.emailSettings;
+  return {
+    senderName: s.senderName || "Qirox",
+    siteUrl: s.siteUrl || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online",
+    logoUrl: s.logoUrl || process.env.EMAIL_LOGO_URL || `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/logo.png`,
+    smtpHost: process.env.CPANEL_SMTP_HOST || process.env.SMTP_HOST || "",
+    smtpPort: parseInt(process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465"),
+    smtpUser: process.env.CPANEL_SMTP_USER || process.env.SMTP_USER || "",
+    smtpPass: process.env.SMTP_PASS || "",
+    smtpSecure: (process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465") !== "587",
+  };
+}
+
+function cleanName(name: string): string {
+  if (!name) return "عزيزي العميل";
+  if (name.includes("@")) return name.split("@")[0];
+  return name;
+}
+
+interface EmailAttachment {
+  filename: string;
+  fileblob: string;
+  mimetype: string;
+}
+
+async function sendViaSmtp(cfg: ReturnType<typeof getEmailCfg>, to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
+  const transporter = nodemailer.createTransport({
+    host: cfg.smtpHost,
+    port: cfg.smtpPort,
+    secure: cfg.smtpSecure,
+    auth: { user: cfg.smtpUser, pass: cfg.smtpPass },
+    tls: { rejectUnauthorized: false },
+  });
+
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: `"${cfg.senderName}" <${cfg.smtpUser}>`,
+    to: `${toName} <${to}>`,
+    subject,
+    html: htmlBody,
+    text: textBody || stripHtml(htmlBody),
+  };
+
+  if (attachments && attachments.length > 0) {
+    mailOptions.attachments = attachments.map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.fileblob, "base64"),
+      contentType: a.mimetype,
+    }));
+  }
+
+  await transporter.sendMail(mailOptions);
+  return true;
+}
+
+export async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
+  const cfg = getEmailCfg();
+  try {
+    if (cfg.smtpHost && cfg.smtpUser && cfg.smtpPass) {
+      console.log(`[Email] Sending via cPanel SMTP (${cfg.smtpHost}) to ${to}`);
+      return await sendViaSmtp(cfg, to, toName, subject, htmlBody, textBody, attachments);
+    } else {
+      console.warn("[Email] No email provider configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
+      return false;
+    }
+  } catch (err) {
+    console.error("[Email] send error:", err);
+    return false;
+  }
+}
+
+/**
+ * Send email from a specific cPanel account (e.g. hr@qirox.online, marketing@qirox.online).
+ * Looks up credentials from MailAccountModel in MongoDB. Falls back to default sendEmail if not found.
+ */
+export async function sendEmailAs(fromEmail: string, to: string, toName: string, subject: string, htmlBody: string, textBody?: string): Promise<boolean> {
+  try {
+    const { MailAccountModel } = await import("./models");
+    const account = await MailAccountModel.findOne({ emailAddress: fromEmail }).lean() as any;
+    if (!account) {
+      console.warn(`[Email] sendEmailAs: account not found for ${fromEmail}, falling back to default`);
+      return sendEmail(to, toName, subject, htmlBody, textBody);
+    }
+    const cfg = getEmailCfg();
+    const customCfg = {
+      ...cfg,
+      smtpHost: account.smtpHost || cfg.smtpHost,
+      smtpPort: account.smtpPort || cfg.smtpPort,
+      smtpUser: account.emailAddress,
+      smtpPass: account.password || cfg.smtpPass,
+      smtpSecure: (account.smtpPort || cfg.smtpPort) !== 587,
+      senderName: account.displayName || cfg.senderName,
+    };
+    console.log(`[Email] Sending as ${fromEmail} via cPanel SMTP to ${to}`);
+    return await sendViaSmtp(customCfg, to, toName, subject, htmlBody, textBody);
+  } catch (err) {
+    console.error(`[Email] sendEmailAs(${fromEmail}) error:`, err);
+    return sendEmail(to, toName, subject, htmlBody, textBody);
+  }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s{2,}/g, "\n")
+    .trim();
+}
+
+/* ── Inline style helpers (email-safe, no class names needed) ── */
+const S = {
+  wrap:       'max-width:580px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e2e2;font-family:Arial,Helvetica,sans-serif;direction:rtl;',
+  header:     'background:#000000;padding:24px 32px;text-align:center;',
+  logo:       'color:#ffffff;font-size:26px;font-weight:900;letter-spacing:4px;text-decoration:none;',
+  body:       'padding:36px 32px;background:#ffffff;',
+  footer:     'background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #f0f0f0;',
+  footerText: 'margin:0;font-size:11px;color:#9ca3af;',
+  tag:        'display:inline-block;background:#f3f4f6;color:#6b7280;padding:4px 12px;border-radius:20px;font-size:11px;margin-bottom:14px;',
+  title:      'margin:0 0 16px 0;font-size:20px;font-weight:800;color:#111111;',
+  text:       'margin:0 0 14px 0;font-size:14px;color:#555555;line-height:1.8;',
+  otpBox:     'background:#f3f4f6;border-radius:12px;padding:24px;text-align:center;margin:20px 0;',
+  otpCode:    'margin:0;font-size:44px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier New,Courier,monospace;',
+  otpNote:    'margin:10px 0 0 0;font-size:12px;color:#9ca3af;',
+  btn:        'display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:14px;margin:14px 0;',
+  divider:    'border:none;border-top:1px solid #f0f0f0;margin:22px 0;',
+  highlight:  'background:#fafafa;border-right:3px solid #000000;padding:11px 14px;margin:10px 0;font-size:13px;color:#374151;',
+  labelCell:  'padding:8px 12px;font-size:12px;color:#9ca3af;background:#f9fafb;border:1px solid #f0f0f0;font-weight:600;width:35%;text-align:right;',
+  valueCell:  'padding:8px 12px;font-size:13px;color:#111111;border:1px solid #f0f0f0;font-weight:600;text-align:right;',
+  badgeBlack: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#000000;color:#ffffff;',
+  badgeGreen: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#d1fae5;color:#065f46;',
+  badgeBlue:  'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#dbeafe;color:#1e40af;',
+  badgeAmber: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fef3c7;color:#92400e;',
+  badgeRed:   'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fee2e2;color:#991b1b;',
+};
+
+function emailBanner() {
+  const cfg = getEmailCfg();
+  const logoUrl = cfg.logoUrl;
+  return `<tr>
+  <td style="padding:0;margin:0;background:#000000;border-radius:16px 16px 0 0;overflow:hidden;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background:#000000;padding:32px 32px 24px 32px;text-align:center;">
+          ${logoUrl
+            ? `<img src="${logoUrl}" alt="QIROX Studio" width="120" height="120"
+                style="border:0;display:block;margin:0 auto;width:120px;height:120px;object-fit:contain;border-radius:24px;background:#111111;padding:8px;" />`
+            : `<div style="width:96px;height:96px;border-radius:24px;background:#111111;margin:0 auto;display:inline-block;line-height:96px;text-align:center;">
+                <span style="color:#ffffff;font-family:Arial,sans-serif;font-size:36px;font-weight:900;letter-spacing:2px;">Q</span>
+               </div>`
+          }
+          <p style="margin:14px 0 2px 0;font-family:Arial,sans-serif;font-size:18px;font-weight:900;color:#ffffff;letter-spacing:3px;">QIROX STUDIO</p>
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;">qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+    <div style="height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000000);font-size:0;line-height:0;">&nbsp;</div>
+  </td>
+</tr>`;
+}
+
+export function baseTemplate(content: string) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap}">
+  ${emailBanner()}
+  <tr><td style="${S.body}">${content}</td></tr>
+  <tr><td style="${S.footer}">
+    <p style="${S.footerText}">&#169; 2026 QIROX Studio &bull; <a href="${getEmailCfg().siteUrl}" style="color:#9ca3af;text-decoration:none;">qiroxstudio.online</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+function tag(text: string)                    { return `<p style="${S.tag}">${text}</p>`; }
+function title(html: string)                  { return `<p style="${S.title}">${html}</p>`; }
+function text(html: string, extra = '')        { return `<p style="${S.text}${extra}">${html}</p>`; }
+function highlight(html: string, extra = '')   { return `<p style="${S.highlight}${extra}">${html}</p>`; }
+function btn(url: string, label: string)       { return `<a href="${url}" style="${S.btn}">${label}</a>`; }
+function divider()                             { return `<hr style="${S.divider}" />`; }
+function badge(cls: keyof typeof S, lbl: string) { return `<span style="${S[cls]}">${lbl}</span>`; }
+function infoTable(rows: [string, string][])  {
+  const rowsHtml = rows.map(([l, v]) =>
+    `<tr><td style="${S.labelCell}">${l}</td><td style="${S.valueCell}">${v}</td></tr>`
+  ).join('');
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;">${rowsHtml}</table>`;
+}
+function otpBox(code: string, note: string)   {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+<tr><td style="${S.otpBox}">
+  <p style="${S.otpNote}">الرمز السري &mdash; OTP Code</p>
+  <p style="${S.otpCode}">${code}</p>
+  <p style="${S.otpNote}">${note}</p>
+</td></tr></table>`;
+}
+
+export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = baseTemplate(
+    tag("مرحباً بك") +
+    title(`اهلاً بك في QIROX، ${displayName}!`) +
+    text("تم انشاء حسابك بنجاح. انت الآن جزء من منظومة QIROX لبناء الانظمة الرقمية الاحترافية.") +
+    highlight("لوحة التحكم الخاصة بك جاهزة &mdash; تصفح خدماتنا وابدأ مشروعك الأول") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الذهاب للوحة التحكم") +
+    divider() +
+    text("اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.", "font-size:12px;color:#9ca3af;")
+  );
+  return sendEmail(to, displayName, "مرحباً بك في QIROX", html);
+}
+
+export async function sendOtpEmail(to: string, name: string, otp: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${emailBanner()}
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#6b7280;">اعادة تعيين كلمة المرور</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">رمز التحقق الخاص بك</h2>
+          <p style="margin:0 0 24px 0;font-size:15px;color:#555555;line-height:1.7;">
+            مرحبا ${displayName}، استخدم الرمز التالي لاعادة تعيين كلمة المرور:
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#f3f4f6;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">الرمز السري — OTP Code</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">صالح لمدة 10 دقائق فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:12px;color:#9ca3af;">
+            اذا لم تطلب هذا، تجاهل البريد وسيبقى حسابك آمنا.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio - رمز التحقق
+
+مرحبا ${displayName}،
+
+رمز اعادة تعيين كلمة المرور:
+
+${otp}
+
+صالح لمدة 10 دقائق فقط. لا تشاركه مع احد.
+
+اذا لم تطلب هذا، تجاهل البريد.
+
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, `${otp} - رمز التحقق | QIROX`, html, text);
+}
+
+export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${emailBanner()}
+      <!-- body -->
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#6b7280;">رمز تفعيل الحساب</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">مرحباً ${displayName}</h2>
+          <p style="margin:0 0 24px 0;font-size:15px;color:#555555;line-height:1.7;">
+            رمز التحقق الخاص بك لتفعيل حسابك في QIROX Studio:
+          </p>
+          <!-- OTP box -->
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#f3f4f6;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">الرمز السري — OTP Code</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">صالح لمدة 30 دقيقة فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:12px;color:#9ca3af;">
+            اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.
+          </p>
+        </td>
+      </tr>
+      <!-- footer -->
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio
+
+مرحبا ${displayName}،
+
+رمز التحقق الخاص بك:
+
+${otp}
+
+صالح لمدة 30 دقيقة فقط. لا تشاركه مع احد.
+
+اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.
+
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, `${otp} - رمز تفعيل حسابك | QIROX`, html, text);
+}
+
+export async function sendLoginOtpEmail(to: string, name: string, otp: string, userAgent?: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const device = userAgent ? userAgent.replace(/[^a-zA-Z0-9\s\/\.\(\)]/g, "").slice(0, 80) : "جهاز غير معروف";
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${emailBanner()}
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#dc2626;font-weight:600;">&#9888; تنبيه أمني — محاولة تسجيل دخول</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">مرحباً ${displayName}</h2>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#555555;line-height:1.7;">
+            تم طلب تسجيل دخول إلى حسابك من جهاز جديد. استخدم الرمز التالي لتوثيق الجهاز:
+          </p>
+          <p style="margin:0 0 24px 0;font-size:12px;color:#9ca3af;background:#fff8f0;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;">
+            الجهاز: ${device}
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#111111;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">رمز توثيق الجهاز — Device OTP</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#ffffff;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#6b7280;">صالح لمدة 15 دقيقة فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:13px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;">
+            &#128275; إذا لم تقم بمحاولة تسجيل الدخول هذه، قم بتغيير كلمة مرورك فوراً وتواصل معنا.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio — رمز توثيق الجهاز
+
+مرحبا ${displayName}،
+
+تم طلب تسجيل دخول من جهاز جديد. رمز التوثيق:
+
+${otp}
+
+صالح لمدة 15 دقيقة فقط. لا تشاركه مع احد.
+
+إذا لم تقم بهذا، قم بتغيير كلمة المرور فوراً.
+
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, `${otp} - رمز توثيق جهازك | QIROX`, html, text);
+}
+
+export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
+  const displayName = cleanName(name);
+  const itemsList = items.map(i => highlight(`&#8226; ${i}`)).join("");
+  const html = baseTemplate(
+    tag("تأكيد الطلب") +
+    title("تم استلام طلبك!") +
+    text(`شكراً ${displayName}، تم استلام طلبك بنجاح ورقم الطلب هو:`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:10px;padding:20px;text-align:center;">
+        <p style="margin:0;font-size:20px;font-weight:900;color:#111111;letter-spacing:3px;font-family:Courier New,Courier,monospace;">#${orderId.slice(-8).toUpperCase()}</p>
+      </td></tr>
+    </table>` +
+    text("محتويات الطلب:") +
+    itemsList +
+    text(`سيتواصل معك فريق QIROX خلال <strong>24 ساعة</strong> لإتمام الدفع والبدء في التنفيذ.`) +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة الطلب")
+  );
+  return sendEmail(to, displayName, `تأكيد طلبك #${orderId.slice(-8).toUpperCase()} | QIROX`, html);
+}
+
+export async function sendOrderStatusEmail(to: string, name: string, orderId: string, status: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const statusMap: Record<string, { label: string; icon: string; desc: string; badgeKey: keyof typeof S }> = {
+    pending:     { label: "قيد المراجعة",  icon: "◌", desc: "طلبك قيد المراجعة من قبل فريقنا",           badgeKey: "badgeAmber" },
+    approved:    { label: "تمت الموافقة",   icon: "✓", desc: "تمت الموافقة على طلبك وبدأ العمل عليه",      badgeKey: "badgeBlue" },
+    in_progress: { label: "قيد التنفيذ",    icon: "⚙", desc: "يعمل فريقنا على تنفيذ مشروعك",             badgeKey: "badgeBlue" },
+    review:      { label: "مراجعة العميل", icon: "◉", desc: "المشروع جاهز لمراجعتك",                     badgeKey: "badgeAmber" },
+    completed:   { label: "مكتمل",          icon: "✓", desc: "تم تسليم مشروعك بنجاح",                     badgeKey: "badgeGreen" },
+    rejected:    { label: "مرفوض",          icon: "✕", desc: "للأسف تم رفض الطلب. تواصل معنا للمزيد",    badgeKey: "badgeRed" },
+  };
+  const s = statusMap[status] || { label: status, icon: "•", desc: "تم تحديث حالة طلبك", badgeKey: "badgeBlack" as keyof typeof S };
+  const html = baseTemplate(
+    tag("تحديث حالة الطلب") +
+    title(`${s.icon} ${s.label}`) +
+    badge(s.badgeKey, s.label) +
+    text(s.desc) +
+    highlight(`رقم الطلب: #${orderId.slice(-8).toUpperCase()}`) +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الطلب")
+  );
+  return sendEmail(to, displayName, `تحديث طلبك: ${s.label} | QIROX`, html);
+}
+
+export async function sendMessageNotificationEmail(to: string, name: string, senderName: string, preview: string): Promise<boolean> {
+  const html = baseTemplate(
+    tag("رسالة جديدة") +
+    title(`لديك رسالة جديدة من ${senderName}`) +
+    highlight(`&ldquo;${preview.slice(0, 120)}${preview.length > 120 ? '...' : ''}&rdquo;`) +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الرد على الرسالة")
+  );
+  return sendEmail(to, name, `رسالة من ${senderName} | QIROX`, html);
+}
+
+export async function sendProjectUpdateEmail(to: string, name: string, projectName: string, status: string, progress: number, note?: string): Promise<boolean> {
+  const statusLabels: Record<string, { label: string; icon: string; badgeKey: keyof typeof S }> = {
+    planning:    { label: "التخطيط",      icon: "◌", badgeKey: "badgeAmber" },
+    in_progress: { label: "قيد التنفيذ",  icon: "⚙", badgeKey: "badgeBlue" },
+    review:      { label: "المراجعة",     icon: "◉", badgeKey: "badgeAmber" },
+    completed:   { label: "مكتمل",        icon: "✓", badgeKey: "badgeGreen" },
+    on_hold:     { label: "متوقف مؤقتاً", icon: "⏸", badgeKey: "badgeRed" },
+  };
+  const s = statusLabels[status] || { label: status, icon: "•", badgeKey: "badgeBlack" as keyof typeof S };
+  const progressBar = `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:999px;height:10px;overflow:hidden;">
+        <table height="10" cellpadding="0" cellspacing="0" border="0">
+          <tr><td width="${Math.min(progress, 100)}%" style="background:#000000;height:10px;border-radius:999px;"></td></tr>
+        </table>
+      </td></tr>
+    </table>
+    <p style="font-size:12px;color:#6b7280;text-align:center;margin:4px 0;">${progress}% مكتمل</p>
+  `;
+  const html = baseTemplate(
+    tag("تحديث المشروع") +
+    title(`${s.icon} تحديث على مشروعك`) +
+    text(`مرحباً ${cleanName(name)}، هناك تحديث جديد على مشروعك:`) +
+    infoTable([
+      ["اسم المشروع", projectName],
+      ["الحالة الحالية", badge(s.badgeKey, s.label)],
+      ["نسبة الإنجاز", `${progress}%`],
+    ]) +
+    progressBar +
+    (note ? highlight(`ملاحظة: ${note}`) : "") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
+  );
+  return sendEmail(to, name, `تحديث مشروع: ${projectName} | QIROX`, html);
+}
+
+export async function sendTaskAssignedEmail(to: string, name: string, taskTitle: string, projectName: string, priority: string, deadline?: string): Promise<boolean> {
+  const priorityLabels: Record<string, { label: string; badgeKey: keyof typeof S }> = {
+    low:    { label: "منخفض", badgeKey: "badgeBlack" },
+    medium: { label: "متوسط", badgeKey: "badgeBlue" },
+    high:   { label: "عالي",  badgeKey: "badgeAmber" },
+    urgent: { label: "عاجل",  badgeKey: "badgeRed" },
+  };
+  const p = priorityLabels[priority] || { label: priority, badgeKey: "badgeBlack" as keyof typeof S };
+  const rows: [string, string][] = [
+    ["المهمة", taskTitle],
+    ["المشروع", projectName],
+    ["الأولوية", badge(p.badgeKey, p.label)],
+  ];
+  if (deadline) rows.push(["الموعد النهائي", new Date(deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })]);
+  const html = baseTemplate(
+    tag("مهمة جديدة") +
+    title("تم تكليفك بمهمة جديدة") +
+    text(`مرحباً ${cleanName(name)}، تم اسناد مهمة جديدة اليك في مشروع <strong>${projectName}</strong>:`) +
+    infoTable(rows) +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض المهمة")
+  );
+  return sendEmail(to, name, `مهمة جديدة: ${taskTitle} | QIROX`, html);
+}
+
+export async function sendTaskCompletedEmail(to: string, name: string, taskTitle: string, projectName: string, completedBy: string): Promise<boolean> {
+  const html = baseTemplate(
+    tag("انجاز مهمة") +
+    title("تم انجاز مهمة في مشروعك") +
+    text(`مرحباً ${cleanName(name)}، تم الانتهاء من مهمة في مشروع <strong>${projectName}</strong>:`) +
+    infoTable([
+      ["المهمة", taskTitle],
+      ["المشروع", projectName],
+      ["انجزها", completedBy],
+      ["التاريخ", new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })],
+    ]) +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
+  );
+  return sendEmail(to, name, `انجاز مهمة: ${taskTitle} | QIROX`, html);
+}
+
+export async function sendFeaturesEmail(
+  to: string, toName: string,
+  projectName: string,
+  features: { title: string; description: string; category: string; priority: string; status: string }[]
+): Promise<boolean> {
+  const statusLabel = (s: string) => ({ pending: "قيد الانتظار", in_progress: "جارٍ التنفيذ", completed: "مكتملة", cancelled: "ملغاة" }[s] || s);
+  const priorityLabel = (p: string) => ({ low: "منخفضة", medium: "متوسطة", high: "عالية", critical: "حرجة" }[p] || p);
+  const categoryLabel = (c: string) => ({ feature: "ميزة", design: "تصميم", development: "تطوير", integration: "تكامل", security: "أمان", performance: "أداء", content: "محتوى", other: "أخرى" }[c] || c);
+  const completed = features.filter(f => f.status === 'completed').length;
+  const pct = features.length > 0 ? Math.round((completed / features.length) * 100) : 0;
+
+  const rows = features.map((f, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fafafa' : '#fff'}">
+      <td style="padding:10px 14px;font-size:13px;color:#111;font-weight:600;font-family:Cairo,sans-serif;">${f.title}</td>
+      <td style="padding:10px 14px;font-size:12px;color:#555;">${categoryLabel(f.category)}</td>
+      <td style="padding:10px 14px;font-size:12px;color:#555;">${priorityLabel(f.priority)}</td>
+      <td style="padding:10px 14px;"><span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;${f.status === 'completed' ? 'background:#dcfce7;color:#166534;' : f.status === 'in_progress' ? 'background:#fef9c3;color:#713f12;' : 'background:#f1f5f9;color:#475569;'}">${statusLabel(f.status)}</span></td>
+    </tr>`).join('');
+
+  const html = baseTemplate(
+    tag("ملف مميزات المشروع") +
+    title(`مميزات مشروع: ${projectName}`) +
+    text(`مرحباً ${cleanName(toName)}، يسعدنا مشاركتك قائمة المميزات والعناصر الخاصة بمشروعك.`) +
+    `<div style="background:#f8faff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin:0 0 20px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:14px;color:#555;">نسبة الإنجاز الكلية</p>
+      <p style="margin:0;font-size:32px;font-weight:900;color:#111;">${pct}%</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#888;">${completed} مكتملة من أصل ${features.length} ميزة</p>
+    </div>` +
+    `<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:20px;">
+      <thead><tr style="background:#000;">
+        <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;font-family:Cairo,sans-serif;">الميزة</th>
+        <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;">الفئة</th>
+        <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;">الأولوية</th>
+        <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;">الحالة</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` +
+    divider() +
+    text("يمكنك متابعة تقدم مشروعك وجميع التفاصيل من خلال لوحة التحكم.", "font-size:12px;color:#9ca3af;") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
+  );
+  return sendEmail(to, toName, `ملف مميزات مشروعك | ${projectName} | QIROX`, html);
+}
+
+export async function sendDirectEmail(to: string, toName: string, subject: string, body: string): Promise<boolean> {
+  const html = baseTemplate(
+    tag("رسالة من فريق QIROX") +
+    title(subject) +
+    `<p style="margin:0 0 14px 0;font-size:14px;color:#555555;line-height:1.8;white-space:pre-line;">${body}</p>` +
+    divider() +
+    text("هذه الرسالة ارسلت اليك من فريق QIROX.", "font-size:12px;color:#9ca3af;")
+  );
+  return sendEmail(to, toName || to, subject, html);
+}
+
+export async function sendAdminNewClientEmail(adminEmail: string, clientName: string, clientEmail: string, clientPhone: string, registeredBy?: string): Promise<boolean> {
+  const html = baseTemplate(
+    tag("عميل جديد") +
+    title("تم تسجيل عميل جديد") +
+    text(`تم انشاء حساب عميل جديد على منصة QIROX${registeredBy ? ` عن طريق <strong>${registeredBy}</strong>` : ''}:`) +
+    infoTable([
+      ["الاسم", clientName],
+      ["البريد الالكتروني", clientEmail],
+      ["الهاتف", clientPhone || "—"],
+      ["التاريخ", new Date().toLocaleString('ar-SA')],
+    ]) +
+    btn(`${getEmailCfg().siteUrl}/admin/customers`, "عرض العميل")
+  );
+  return sendEmail(adminEmail, "فريق QIROX", `عميل جديد: ${clientName} | QIROX`, html);
+}
+
+export async function sendAdminNewOrderEmail(adminEmail: string, clientName: string, clientEmail: string, orderId: string, services: string[], totalAmount?: number): Promise<boolean> {
+  const servicesList = services.map(s => highlight(`&#8226; ${s}`)).join("") || highlight("—");
+  const rows: [string, string][] = [
+    ["العميل", clientName],
+    ["البريد", clientEmail],
+    ["رقم الطلب", `#${orderId.slice(-8).toUpperCase()}`],
+  ];
+  if (totalAmount) rows.push(["المبلغ", `${totalAmount.toLocaleString('ar-SA')} ر.س`]);
+  rows.push(["التاريخ", new Date().toLocaleString('ar-SA')]);
+  const html = baseTemplate(
+    tag("طلب جديد") +
+    title("طلب جديد بانتظار المراجعة") +
+    text(`ورد طلب جديد من العميل <strong>${clientName}</strong> ويحتاج الى مراجعة:`) +
+    infoTable(rows) +
+    `<p style="${S.text}font-weight:700;">الخدمات المطلوبة:</p>` +
+    servicesList +
+    btn(`${getEmailCfg().siteUrl}/admin/orders`, "مراجعة الطلب الآن")
+  );
+  return sendEmail(adminEmail, "فريق QIROX", `طلب جديد من ${clientName} | QIROX`, html);
+}
+
+/* ── Owner WhatsApp Notification Email ──────────────────────────────────────
+   Sent to youssefd.business@gmail.com for every key client event.
+   Contains a big green "Open WhatsApp" button pre-filled with the right message.
+   This makes it a one-click action for the system owner to reach the client.
+─────────────────────────────────────────────────────────────────────────── */
+const OWNER_EMAIL = "youssefd.business@gmail.com";
+
+export async function sendOwnerWAEmail(opts: {
+  event: string;
+  clientName: string;
+  clientPhone?: string;
+  orderId?: string;
+  details?: [string, string][];
+  waMessage?: string;
+}): Promise<boolean> {
+  const { event, clientName, clientPhone, orderId, details = [], waMessage } = opts;
+  const waPhone = (clientPhone || "").replace(/\D/g, "");
+  const defaultMsg = waMessage ||
+    `مرحباً ${clientName} 👋\nتواصل معك فريق QIROX Studio.\n${orderId ? `رقم الطلب: #${orderId.slice(-8).toUpperCase()}\n` : ""}يسعدنا خدمتك دائماً. 🙏`;
+  const waMsg = encodeURIComponent(defaultMsg);
+  const waLink = waPhone ? `https://wa.me/${waPhone}?text=${waMsg}` : "";
+
+  const rows: [string, string][] = [
+    ["العميل", clientName],
+    ...(clientPhone ? [["الجوال", clientPhone] as [string, string]] : []),
+    ...(orderId ? [["رقم الطلب", `#${orderId.slice(-8).toUpperCase()}`] as [string, string]] : []),
+    ["الوقت", new Date().toLocaleString("ar-SA")],
+    ...details,
+  ];
+
+  const waButton = waLink
+    ? `<div style="text-align:center;margin:24px 0 8px;">
+        <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:900;font-family:Arial,sans-serif;letter-spacing:0.5px;">
+          📲 فتح واتساب — ${clientName}
+        </a>
+       </div>
+       <p style="font-size:11px;color:#aaa;text-align:center;margin:4px 0 0;">أو انسخ الرابط: <a href="${waLink}" style="color:#25D366;word-break:break-all;">${waLink}</a></p>`
+    : `<p style="font-size:13px;color:#e74c3c;text-align:center;margin:16px 0;">⚠️ لا يوجد رقم جوال لهذا العميل</p>`;
+
+  const html = baseTemplate(
+    `<div style="text-align:center;margin-bottom:12px;">
+      <span style="background:#25D366;color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;font-family:Arial,sans-serif;">🔔 ${event}</span>
+     </div>` +
+    title(`إشعار واتساب — ${clientName}`) +
+    infoTable(rows) +
+    waButton +
+    divider() +
+    text("هذا الإشعار تلقائي — اضغط الزر لفتح محادثة واتساب مع العميل مباشرةً.", "font-size:11px;color:#9ca3af;")
+  );
+
+  return sendEmail(OWNER_EMAIL, "Youssef", `${event} — ${clientName} | QIROX`, html);
+}
+
+export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = baseTemplate(
+    tag("مرحباً بك") +
+    title(`اهلاً بك في QIROX، ${displayName}!`) +
+    text("تم انشاء حسابك على منصة QIROX بنجاح. اليك بيانات الدخول الخاصة بك:") +
+    infoTable([
+      ["اسم المستخدم", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${username}</span>`],
+      ["كلمة المرور", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${password}</span>`],
+    ]) +
+    `<p style="margin:0 0 14px 0;font-size:13px;color:#ef4444;">يُرجى تغيير كلمة المرور فور تسجيل الدخول لأول مرة.</p>` +
+    btn(`${getEmailCfg().siteUrl}/login`, "تسجيل الدخول الآن") +
+    divider() +
+    text("اذا لم تطلب انشاء هذا الحساب، تواصل معنا فوراً.", "font-size:12px;color:#9ca3af;")
+  );
+  // Route employee onboarding emails through hr@qirox.online
+  return sendEmailAs("hr@qirox.online", to, displayName, "بيانات حسابك في QIROX", html);
+}
+
+export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
+  invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
+  status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  orderId?: string; createdAt?: string;
+}): Promise<boolean> {
+  const itemsHtml = invoice.items && invoice.items.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
+        <tr style="background:#f9fafb;">
+          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الوصف</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الاجمالي</th>
+        </tr>
+        ${invoice.items.map(i => `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+        </tr>`).join("")}
+      </table>`
+    : "";
+  const statusBadge = invoice.status === 'paid'
+    ? badge("badgeGreen", "مدفوع")
+    : badge("badgeAmber", "غير مدفوع");
+  const invoiceRows: [string, string][] = [
+    ["رقم الفاتورة", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${invoice.invoiceNumber}</span>`],
+    ["تاريخ الاصدار", invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')],
+  ];
+  if (invoice.dueDate) invoiceRows.push(["تاريخ الاستحقاق", new Date(invoice.dueDate).toLocaleDateString('ar-SA')]);
+  invoiceRows.push(["الحالة", statusBadge]);
+  const totalsRows: [string, string][] = [["المبلغ", `${invoice.amount.toLocaleString()} ر.س`]];
+  totalsRows.push(["الاجمالي", `<strong style="font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</strong>`]);
+  const html = baseTemplate(
+    tag("فاتورة") +
+    title(`فاتورة رقم ${invoice.invoiceNumber}`) +
+    text(`عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة ادناه:`) +
+    infoTable(invoiceRows) +
+    itemsHtml +
+    infoTable(totalsRows) +
+    (invoice.notes ? text(`<strong>ملاحظات:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    text("معلومات التحويل البنكي: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الفاتورة في لوحة التحكم")
+  );
+  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html);
+}
+
+export async function sendReceiptEmail(to: string, clientName: string, receipt: {
+  receiptNumber: string; amount: number; amountInWords?: string;
+  paymentMethod: string; description?: string; createdAt?: string;
+}): Promise<boolean> {
+  const methodLabels: Record<string, string> = {
+    bank_transfer: "تحويل بنكي", cash: "نقداً", paypal: "PayPal",
+    stc_pay: "STC Pay", apple_pay: "Apple Pay", other: "أخرى"
+  };
+  const rows: [string, string][] = [
+    ["رقم السند", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${receipt.receiptNumber}</span>`],
+    ["تاريخ الاستلام", receipt.createdAt ? new Date(receipt.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')],
+    ["طريقة الدفع", methodLabels[receipt.paymentMethod] || receipt.paymentMethod],
+  ];
+  if (receipt.description) rows.push(["الوصف", receipt.description]);
+  const html = baseTemplate(
+    tag("سند قبض") +
+    title(`سند قبض رقم ${receipt.receiptNumber}`) +
+    text(`عزيزي ${clientName}، تم استلام مبلغك بنجاح. تفاصيل سند القبض:`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:10px;padding:24px;text-align:center;">
+        <p style="margin:0 0 4px 0;font-size:32px;font-weight:900;color:#111111;">${receipt.amount.toLocaleString()} ر.س</p>
+        ${receipt.amountInWords ? `<p style="margin:0;text-align:center;color:#555555;font-size:13px;">${receipt.amountInWords}</p>` : ""}
+      </td></tr>
+    </table>` +
+    infoTable(rows) +
+    `<p style="margin:14px 0;font-size:13px;font-weight:700;color:#16a34a;">تم استلام المبلغ بنجاح &mdash; شكراً لثقتك في QIROX</p>` +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض لوحة التحكم")
+  );
+  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html);
+}
+
+export async function sendQuotationEmail(to: string, clientName: string, quotation: {
+  quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
+  validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  notes?: string; link?: string; pdfBytes?: Uint8Array;
+}): Promise<boolean> {
+  const itemsHtml = quotation.items && quotation.items.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
+        <tr style="background:#f9fafb;">
+          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">البند</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">المجموع</th>
+        </tr>
+        ${quotation.items.map(i => `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+        </tr>`).join("")}
+      </table>`
+    : "";
+  const rows: [string, string][] = [
+    ["رقم العرض", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${quotation.quotationNumber}</span>`],
+    ["تاريخ الإصدار", new Date().toLocaleDateString('ar-SA')],
+  ];
+  if (quotation.title) rows.push(["الموضوع", quotation.title]);
+  if (quotation.validUntil) rows.push(["صالح حتى", new Date(quotation.validUntil).toLocaleDateString('ar-SA')]);
+  if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
+  rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
+
+  const pdfNote = quotation.pdfBytes
+    ? text(`<span style="font-size:13px;color:#666;">📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF.</span>`)
+    : "";
+
+  const html = baseTemplate(
+    tag("عرض سعر") +
+    title(`عرض سعر رقم ${quotation.quotationNumber}`) +
+    text(`عزيزي ${clientName}، نرفق لكم عرض السعر التالي من فريق QIROX:`) +
+    infoTable(rows) +
+    itemsHtml +
+    (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    pdfNote
+  );
+
+  const attachments: EmailAttachment[] = quotation.pdfBytes ? [{
+    filename: `quotation-${quotation.quotationNumber}.pdf`,
+    fileblob: Buffer.from(quotation.pdfBytes).toString("base64"),
+    mimetype: "application/pdf",
+  }] : [];
+
+  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html, undefined, attachments);
+}
+
+export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {
+  bookingId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  employeeName: string;
+  consultationType: string;
+  topic: string;
+  meetingLink?: string;
+}): Promise<boolean> {
+  const typeLabel = data.consultationType === 'video' ? 'اجتماع فيديو' : data.consultationType === 'phone' ? 'مكالمة هاتفية' : 'حضوري';
+  const html = baseTemplate(
+    tag("تأكيد موعد الاستشارة") +
+    title("تم تأكيد موعد استشارتك ✓") +
+    text(`مرحباً ${cleanName(clientName)}، نُعلمك بأن موعد استشارتك قد تم تأكيده بنجاح.`) +
+    infoTable([
+      ["رقم الحجز", `#${data.bookingId.slice(-6).toUpperCase()}`],
+      ["التاريخ", data.date],
+      ["الوقت", `${data.startTime} - ${data.endTime}`],
+      ["نوع الاستشارة", typeLabel],
+      ["الموظف المسؤول", data.employeeName],
+      ["الموضوع", data.topic || "استشارة عامة"],
+    ]) +
+    (data.meetingLink ? btn(data.meetingLink, "انضم للاجتماع") : "") +
+    text("إذا أردت إلغاء أو تعديل الموعد، تواصل معنا قبل 24 ساعة على الأقل.") +
+    btn(`${getEmailCfg().siteUrl}/consultation`, "عرض تفاصيل الحجز")
+  );
+  return sendEmail(to, clientName, "تأكيد موعد الاستشارة | QIROX", html);
+}
+
+export async function sendConsultationNotificationEmail(to: string, staffName: string, data: {
+  bookingId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  consultationType: string;
+  topic: string;
+}): Promise<boolean> {
+  const typeLabel = data.consultationType === 'video' ? 'اجتماع فيديو' : data.consultationType === 'phone' ? 'مكالمة هاتفية' : 'حضوري';
+  const html = baseTemplate(
+    tag("حجز استشارة جديد") +
+    title("تم حجز موعد استشارة جديد") +
+    text(`مرحباً ${cleanName(staffName)}، تم حجز موعد استشارة جديد يحتاج إلى تأكيدك.`) +
+    infoTable([
+      ["رقم الحجز", `#${data.bookingId.slice(-6).toUpperCase()}`],
+      ["العميل", data.clientName],
+      ["البريد", data.clientEmail],
+      ["الهاتف", data.clientPhone || "—"],
+      ["التاريخ", data.date],
+      ["الوقت", `${data.startTime} - ${data.endTime}`],
+      ["نوع الاستشارة", typeLabel],
+      ["الموضوع", data.topic || "استشارة عامة"],
+    ]) +
+    btn(`${getEmailCfg().siteUrl}/dashboard/consultations`, "تأكيد الموعد")
+  );
+  return sendEmail(to, staffName, `حجز استشارة جديد من ${data.clientName} | QIROX`, html);
+}
+
+export async function sendShipmentUpdateEmail(to: string, clientName: string, data: {
+  orderId: string;
+  productName: string;
+  status: string;
+  trackingNumber?: string;
+  courierName?: string;
+  courierUrl?: string;
+  estimatedDelivery?: string;
+  note?: string;
+}): Promise<boolean> {
+  const statusLabels: Record<string, string> = {
+    pending: 'قيد الانتظار', processing: 'قيد التجهيز', shipped: 'تم الشحن',
+    out_for_delivery: 'في الطريق إليك', delivered: 'تم التوصيل', cancelled: 'ملغي', returned: 'مُرتجع',
+  };
+  const html = baseTemplate(
+    tag("تحديث حالة الشحنة") +
+    title(`تحديث طلبك: ${statusLabels[data.status] || data.status}`) +
+    text(`مرحباً ${cleanName(clientName)}، نُعلمك بتحديث حالة شحنتك.`) +
+    infoTable([
+      ["رقم الطلب", `#${data.orderId.slice(-6).toUpperCase()}`],
+      ["المنتج", data.productName],
+      ["الحالة", badge("badgeGreen", statusLabels[data.status] || data.status)],
+      ...(data.trackingNumber ? [["رقم التتبع", data.trackingNumber] as [string,string]] : []),
+      ...(data.courierName ? [["شركة الشحن", data.courierName] as [string,string]] : []),
+      ...(data.estimatedDelivery ? [["الوصول المتوقع", data.estimatedDelivery] as [string,string]] : []),
+    ]) +
+    (data.note ? `<p style="${S.text}">${data.note}</p>` : "") +
+    (data.courierUrl ? btn(data.courierUrl, "تتبع شحنتك") : btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض طلباتي"))
+  );
+  return sendEmail(to, clientName, `تحديث شحنة: ${data.productName} | QIROX`, html);
+}
+
+// ── QMeet Email Functions ────────────────────────────────────────────
+
+interface QMeetEmailData {
+  title: string;
+  scheduledAt: Date;
+  meetingLink: string;
+  joinCode?: string;
+  hostName: string;
+  durationMinutes?: number;
+}
+
+export async function sendQMeetInviteEmail(to: string, name: string, data: QMeetEmailData): Promise<boolean> {
+  const dateStr = data.scheduledAt.toLocaleString("ar-SA", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh"
+  });
+  const tableRows: [string, string][] = [
+    ["عنوان الاجتماع", data.title],
+    ["موعد الاجتماع", dateStr],
+    ["المدة المتوقعة", `${data.durationMinutes || 60} دقيقة`],
+    ["المضيف", data.hostName],
+  ];
+  if (data.joinCode) tableRows.push(["كود الانضمام", `<strong style="font-size:18px;letter-spacing:3px;color:#2563eb">${data.joinCode}</strong>`]);
+  const html = baseTemplate(
+    tag("QMeet — دعوة اجتماع") +
+    title(`📅 دعوة: ${data.title}`) +
+    text(`مرحباً ${cleanName(name)}، تمت دعوتك للمشاركة في اجتماع عبر منصة QMeet.`) +
+    infoTable(tableRows) +
+    text("انضم للاجتماع مباشرةً عبر الرابط التالي. ستصلك رسالة تذكيرية قبل الاجتماع بدقيقتين.") +
+    btn(data.meetingLink, "🎥 انضم للاجتماع الآن") +
+    highlight("يدعم الاجتماع: الفيديو والصوت، مشاركة الشاشة، السبورة التفاعلية.") +
+    text("إذا لم تتوقع هذا الإيميل يمكنك تجاهله.", "color:#9ca3af;font-size:12px;")
+  );
+  return sendEmail(to, name, `دعوة QMeet: ${data.title}`, html);
+}
+
+export async function sendQMeetReminderEmail(to: string, name: string, data: QMeetEmailData): Promise<boolean> {
+  const dateStr = data.scheduledAt.toLocaleString("ar-SA", {
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh"
+  });
+  const html = baseTemplate(
+    tag("QMeet — تذكير فوري") +
+    title(`⏰ اجتماعك يبدأ خلال دقيقتين!`) +
+    text(`مرحباً ${cleanName(name)}، اجتماع <strong>${data.title}</strong> سيبدأ الساعة ${dateStr} — أي بعد دقيقتين فقط!`) +
+    infoTable([
+      ["الاجتماع", data.title],
+      ["الوقت", dateStr],
+      ["المضيف", data.hostName],
+    ]) +
+    btn(data.meetingLink, "🚀 انضم الآن") +
+    text("لا تتأخر، الاجتماع على وشك البدء.", "font-weight:bold;")
+  );
+  return sendEmail(to, name, `⏰ تذكير: ${data.title} — يبدأ خلال دقيقتين`, html);
+}
+
+export async function sendWeeklyReportEmail(to: string, name: string, data: {
+  weekLabel: string;
+  newClients: number;
+  newOrders: number;
+  completedOrders: number;
+  weekRevenue: number;
+  activeProjects: number;
+  newMeetings: number;
+  openTickets: number;
+  currency?: string;
+}): Promise<boolean> {
+  const displayName = cleanName(name);
+  const cur = data.currency || "ر.س";
+  const html = baseTemplate(
+    tag("تقرير أسبوعي") +
+    title(`ملخص أسبوع ${data.weekLabel}`) +
+    text(`مرحباً ${displayName}، إليك ملخص أداء المنصة للأسبوع الماضي:`) +
+    infoTable([
+      ["عملاء جدد", `${data.newClients} عميل`],
+      ["طلبات جديدة", `${data.newOrders} طلب`],
+      ["طلبات مكتملة", `${data.completedOrders} طلب`],
+      ["إيرادات الأسبوع", `${data.weekRevenue.toLocaleString("ar-SA")} ${cur}`],
+      ["مشاريع نشطة", `${data.activeProjects} مشروع`],
+      ["اجتماعات QMeet", `${data.newMeetings} اجتماع`],
+      ["تذاكر دعم مفتوحة", `${data.openTickets} تذكرة`],
+    ]) +
+    text("للاطلاع على التفاصيل الكاملة، قم بزيارة لوحة التحكم.") +
+    btn(`${getEmailCfg().siteUrl}/admin/analytics`, "عرض التحليلات الكاملة")
+  );
+  return sendEmail(to, displayName, `📊 التقرير الأسبوعي | ${data.weekLabel} | QIROX`, html);
+}
+
+export async function sendTestEmail(to: string, name: string): Promise<boolean> {
+  const html = baseTemplate(
+    tag("بريد تجريبي") +
+    title("اختبار نظام البريد الالكتروني") +
+    text(`مرحباً ${name}، هذا بريد تجريبي للتأكد من ان نظام ارسال البريد الالكتروني في QIROX يعمل بشكل صحيح.`) +
+    infoTable([
+      ["النظام", "SMTP2GO"],
+      ["المرسل", getEmailCfg().sender],
+      ["التوقيت", new Date().toLocaleString('ar-SA')],
+      ["الحالة", badge("badgeGreen", "يعمل")],
+    ]) +
+    text("جميع انواع البريد الالكتروني جاهزة: ترحيب، تأكيد طلب، تحديث حالة، اشعار مشروع، اسناد مهمة.") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الذهاب للوحة التحكم")
+  );
+  return sendEmail(to, name, "اختبار نظام البريد | QIROX", html);
+}
+
+export async function sendWalletPayOtpEmail(to: string, name: string, otp: string, amount: number, description: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${emailBanner()}
+      <tr>
+        <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
+          <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
+          <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:2px;"> PAY</span>
+          <p style="margin:4px 0 0 0;color:#94a3b8;font-size:11px;">محفظة كيروكس الإلكترونية</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#06b6d4;font-weight:700;">🔐 رمز تأكيد الدفع</p>
+          <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0f172a;">طلب دفع من بطاقتك</h2>
+          <p style="margin:0 0 20px 0;font-size:14px;color:#555555;line-height:1.7;">
+            مرحباً ${displayName}، تم طلب استخدام بطاقة <strong>Qirox Pay</strong> الخاصة بك للدفع. الرجاء مشاركة الرمز أدناه مع الدافع إذا وافقت على العملية.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+              <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;color:#475569;">
+                <strong>المبلغ:</strong> ${amount.toLocaleString('ar-SA')} ر.س<br/>
+                <strong>الوصف:</strong> ${description}
+              </td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:14px;padding:30px;text-align:center;">
+                <p style="margin:0 0 10px 0;font-size:12px;color:#94a3b8;">رمز OTP لتأكيد الدفع</p>
+                <p style="margin:0;font-size:52px;font-weight:900;color:#06b6d4;letter-spacing:16px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:11px;color:#64748b;">صالح لمدة 10 دقائق فقط &bull; لا تشاركه إلا مع الدافع</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:20px 0 0 0;font-size:12px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;">
+            ⚠️ إذا لم تطلب هذه العملية، تجاهل هذا البريد ولا تشارك الرمز مع أحد.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  return sendEmail(to, displayName, `${otp} - رمز تأكيد الدفع | Qirox Pay`, html);
+}
+
+export async function sendWalletTopupStatusEmail(to: string, name: string, amount: number, status: 'approved' | 'rejected', reason?: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const isApproved = status === 'approved';
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${emailBanner()}
+      <tr>
+        <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
+          <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
+          <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:2px;"> PAY</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:${isApproved ? '#16a34a' : '#dc2626'};font-weight:700;">
+            ${isApproved ? '✅ تم شحن المحفظة' : '❌ رُفض طلب الشحن'}
+          </p>
+          <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0f172a;">
+            ${isApproved ? 'تم إضافة الرصيد بنجاح' : 'لم يتم قبول طلب الشحن'}
+          </h2>
+          <p style="margin:0 0 20px 0;font-size:14px;color:#555555;line-height:1.7;">
+            مرحباً ${displayName},
+            ${isApproved
+              ? `تمت مراجعة طلب شحن محفظتك وقد تم <strong>اعتماده وإضافة ${amount.toLocaleString('ar-SA')} ر.س</strong> لرصيد بطاقتك Qirox Pay.`
+              : `تمت مراجعة طلب شحن محفظتك بمبلغ ${amount.toLocaleString('ar-SA')} ر.س ولكن لم يتم قبوله.`
+            }
+          </p>
+          ${!isApproved && reason ? `<p style="margin:0 0 20px 0;font-size:13px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;"><strong>السبب:</strong> ${reason}</p>` : ''}
+          <a href="${getEmailCfg().siteUrl}/dashboard/wallet" style="display:inline-block;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#06b6d4;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;">
+            عرض المحفظة
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  return sendEmail(to, displayName, `${isApproved ? '✅ تم شحن محفظتك' : '❌ رُفض طلب الشحن'} | Qirox Pay`, html);
+}
+
+export async function sendSupportTicketCreatedEmail(to: string, name: string, subject: string, category: string, priority: string, ticketId: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const catMap: Record<string, string> = { technical: 'مشكلة تقنية', billing: 'مالية', general: 'استفسار عام', complaint: 'شكوى' };
+  const priMap: Record<string, string> = { low: 'منخفض', medium: 'متوسط', high: 'عالٍ' };
+  const priKey: Record<string, keyof typeof S> = { low: 'badgeAmber', medium: 'badgeBlue', high: 'badgeRed' };
+  const html = baseTemplate(
+    tag("دعم العملاء") +
+    title("تم استلام تذكرتك ✓") +
+    text(`شكراً ${displayName}، وصلت تذكرتك وسيردّ عليها فريق الدعم قريباً.`) +
+    infoTable([
+      ["رقم التذكرة", `#${ticketId.slice(-8).toUpperCase()}`],
+      ["الموضوع", subject],
+      ["التصنيف", catMap[category] || category],
+      ["الأولوية", badge(priKey[priority] || 'badgeBlack', priMap[priority] || priority)],
+    ]) +
+    text("سنتواصل معك عبر البريد الإلكتروني بمجرد مراجعة تذكرتك.") +
+    btn(`${getEmailCfg().siteUrl}/support-tickets`, "متابعة التذكرة")
+  );
+  return sendEmail(to, displayName, `تذكرة دعم #${ticketId.slice(-8).toUpperCase()} | QIROX`, html);
+}
+
+export async function sendSupportTicketReplyEmail(to: string, name: string, subject: string, adminReply: string, status: string, ticketId: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const statusMap: Record<string, string> = { resolved: 'تم الحل', in_review: 'قيد المراجعة', closed: 'مغلقة', open: 'مفتوحة' };
+  const html = baseTemplate(
+    tag("ردّ فريق الدعم") +
+    title(`${displayName}، لديك ردٌّ جديد على تذكرتك`) +
+    highlight(`رقم التذكرة: #${ticketId.slice(-8).toUpperCase()} — ${subject}`) +
+    text(`<strong>الحالة الحالية:</strong> ${statusMap[status] || status}`) +
+    divider() +
+    text(`<strong>ردّ الفريق:</strong>`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 20px;">
+      <tr><td style="background:#f9fafb;border-right:3px solid #000;border-radius:0 8px 8px 0;padding:16px 18px;font-size:14px;color:#374151;line-height:1.8;white-space:pre-line;">${adminReply}</td></tr>
+    </table>` +
+    btn(`${getEmailCfg().siteUrl}/support-tickets`, "عرض التذكرة والرد")
+  );
+  return sendEmail(to, displayName, `ردّ على تذكرتك: ${subject} | QIROX`, html);
+}
+
+export async function sendAdminNewTicketEmail(to: string, adminName: string, clientName: string, subject: string, body: string, priority: string, ticketId: string): Promise<boolean> {
+  const priMap: Record<string, string> = { low: 'منخفض', medium: 'متوسط', high: 'عالٍ 🔴' };
+  const html = baseTemplate(
+    tag("تذكرة دعم جديدة") +
+    title(`تذكرة جديدة من ${clientName}`) +
+    infoTable([
+      ["رقم التذكرة", `#${ticketId.slice(-8).toUpperCase()}`],
+      ["العميل", clientName],
+      ["الموضوع", subject],
+      ["الأولوية", priMap[priority] || priority],
+    ]) +
+    text(`<strong>المحتوى:</strong>`) +
+    highlight(body.slice(0, 300) + (body.length > 300 ? '...' : '')) +
+    btn(`${getEmailCfg().siteUrl}/admin/support-tickets`, "الرد على التذكرة الآن")
+  );
+  return sendEmail(to, adminName, `🎫 تذكرة دعم جديدة: ${subject} | QIROX`, html);
+}
+
+export async function sendTaskStatusEmail(to: string, name: string, taskTitle: string, projectName: string, oldStatus: string, newStatus: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const statusMap: Record<string, { label: string; badgeKey: keyof typeof S }> = {
+    new:             { label: 'جديدة',            badgeKey: 'badgeBlack' },
+    under_study:     { label: 'قيد الدراسة',      badgeKey: 'badgeAmber' },
+    pending_payment: { label: 'بانتظار الدفع',     badgeKey: 'badgeAmber' },
+    in_progress:     { label: 'قيد التنفيذ',       badgeKey: 'badgeBlue' },
+    testing:         { label: 'في مرحلة الاختبار', badgeKey: 'badgeBlue' },
+    review:          { label: 'في المراجعة',       badgeKey: 'badgeAmber' },
+    delivery:        { label: 'التسليم',            badgeKey: 'badgeGreen' },
+    closed:          { label: 'مغلقة ✓',           badgeKey: 'badgeGreen' },
+  };
+  const ns = statusMap[newStatus] || { label: newStatus, badgeKey: 'badgeBlack' as keyof typeof S };
+  const os = statusMap[oldStatus] || { label: oldStatus, badgeKey: 'badgeBlack' as keyof typeof S };
+  const html = baseTemplate(
+    tag("تحديث المهمة") +
+    title(`تم تحديث مهمتك`) +
+    text(`مرحباً ${displayName}، تم تحديث حالة مهمتك في المشروع.`) +
+    infoTable([
+      ["المهمة", taskTitle],
+      ["المشروع", projectName || "—"],
+      ["الحالة السابقة", badge(os.badgeKey, os.label)],
+      ["الحالة الجديدة", badge(ns.badgeKey, ns.label)],
+    ]) +
+    btn(`${getEmailCfg().siteUrl}/admin/kanban`, "عرض المهام")
+  );
+  return sendEmail(to, displayName, `تحديث المهمة: ${taskTitle} | QIROX`, html);
+}
+
+export async function sendIncomingCallEmail(to: string, name: string, callerName: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = baseTemplate(
+    tag("مكالمة فائتة") +
+    title(`مكالمة فائتة من ${callerName}`) +
+    text(`${displayName}، حاول ${callerName} الاتصال بك على QIROX ولم يتمكن من الوصول إليك.`) +
+    btn(`${getEmailCfg().siteUrl}/inbox`, "فتح الرسائل والرد")
+  );
+  return sendEmail(to, displayName, `📞 مكالمة فائتة من ${callerName} | QIROX`, html);
+}
+
+export async function sendDataRequestEmail(to: string, name: string, title: string, description: string, priority: string): Promise<boolean> {
+  const displayName = name || to.split("@")[0];
+  const priorityLabel: Record<string, string> = { low: 'منخفضة', normal: 'عادية', high: 'عالية', urgent: 'عاجل جداً' };
+  const priorityColor: Record<string, string> = { low: '#64748b', normal: '#0f172a', high: '#f59e0b', urgent: '#ef4444' };
+  const html = `
+  <div style="direction:rtl;font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;min-height:100vh;padding:32px 16px;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:32px 28px;text-align:center;">
+        <div style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;margin-bottom:12px;">📋</div>
+        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">طلب بيانات جديد</h1>
+        <p style="color:rgba(255,255,255,0.65);margin:6px 0 0;font-size:13px;">QIROX — فريق العمل يحتاج معلومات منك</p>
+      </div>
+      <div style="padding:28px;">
+        <p style="color:#374151;font-size:15px;margin-bottom:20px;">مرحباً <strong>${displayName}</strong>،</p>
+        <p style="color:#6b7280;font-size:14px;line-height:1.7;margin-bottom:20px;">أرسل إليك فريق العمل طلباً جديداً لتزويدهم ببعض البيانات أو الملفات الضرورية لاستكمال مشروعك.</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:20px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+            <div style="background:#0f172a;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;white-space:nowrap;">الطلب</div>
+            <p style="color:#0f172a;font-size:16px;font-weight:700;margin:0;">${title}</p>
+          </div>
+          ${description ? `<p style="color:#6b7280;font-size:13px;line-height:1.7;margin:0;border-top:1px solid #e2e8f0;padding-top:12px;">${description}</p>` : ''}
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <span style="font-size:16px;">⚡</span>
+          <div>
+            <p style="color:#92400e;font-size:12px;font-weight:700;margin:0 0 2px;">الأولوية</p>
+            <p style="color:${priorityColor[priority] || '#0f172a'};font-size:13px;font-weight:700;margin:0;">${priorityLabel[priority] || priority}</p>
+          </div>
+        </div>
+        <a href="https://qiroxstudio.online/my-requests" style="display:block;background:linear-gradient(135deg,#06b6d4,#0284c7);color:#fff;text-align:center;padding:14px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;margin-bottom:20px;">
+          📎 رفع البيانات المطلوبة الآن
+        </a>
+        <p style="color:#9ca3af;font-size:12px;text-align:center;">يمكنك رفع الملفات والرد على هذا الطلب من لوحة تحكم العميل.</p>
+      </div>
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px;text-align:center;">
+        <p style="color:#9ca3af;font-size:11px;margin:0;">© ${new Date().getFullYear()} QIROX Studio — qiroxstudio.online</p>
+      </div>
+    </div>
+  </div>`;
+  return sendEmail(to, displayName, `📋 طلب بيانات جديد: ${title} | QIROX`, html);
+}
+
+export async function sendCallRatingEmail(
+  to: string,
+  name: string,
+  companyName: string,
+  agentName: string,
+  ratingUrl: string,
+): Promise<boolean> {
+  const displayName = cleanName(name || companyName);
+  const cfg = getEmailCfg();
+  const html = baseTemplate(
+    tag("تقييم المكالمة") +
+    title(`شكراً على وقتك، ${displayName}!`) +
+    text(`تواصل معك مؤخراً <strong>${agentName}</strong> من فريق QIROX Studio، ونودّ معرفة رأيك في تجربة التواصل معنا.`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td style="background:#f8fafc;border-radius:16px;padding:28px;text-align:center;border:1px solid #e2e8f0;">
+          <p style="margin:0 0 6px 0;font-size:13px;color:#6b7280;">كيف كانت تجربتك معنا؟</p>
+          <p style="margin:0 0 20px 0;font-size:28px;letter-spacing:6px;">⭐️⭐️⭐️⭐️⭐️</p>
+          <a href="${ratingUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:15px;letter-spacing:0.5px;">
+            قيّم تجربتك الآن
+          </a>
+          <p style="margin:16px 0 0 0;font-size:11px;color:#9ca3af;">لن يستغرق التقييم أكثر من ثانية واحدة</p>
+        </td>
+      </tr>
+    </table>` +
+    divider() +
+    text("رأيك يساعدنا على تحسين خدمتنا وتطوير فريقنا باستمرار.", `font-size:12px;color:#6b7280;`) +
+    text(`إذا لم تتلقَّ أي اتصال من فريقنا، يُرجى تجاهل هذا البريد.`, `font-size:11px;color:#9ca3af;`)
+  );
+  return sendEmail(to, displayName, `⭐ قيّم تجربتك مع QIROX Studio`, html);
+}

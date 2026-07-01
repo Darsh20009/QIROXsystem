@@ -1,0 +1,49 @@
+qiroxstudio.online
+
+Internal Address
+qiroxsystem:10000
+
+HTTP
+June 23, 2026 at 7:46 PM
+failed
+39419b0
+Create a JavaScript build script to simplify the deployment process Add a new build script `script/build.mjs` that uses Node.js to build the project, bypassing the need for `tsx` and mitigating potential memory issues during dependency installation on constrained environments. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: dcf2b87e-7d38-44ac-b162-936a4cd8a30d Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 39419b0c072fe1809e0f1fd40125242c272e56b6 in branch main
+==> Downloaded 521MB in 5s. Extraction took 11s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] Warm cache — skipping npm install
+Building client...
+/bin/sh: 1: vite: not found
+Error: Command failed: vite build
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at buildAll (file:///opt/render/project/src/script/build.mjs:87:3) {
+  status: 127,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 69,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

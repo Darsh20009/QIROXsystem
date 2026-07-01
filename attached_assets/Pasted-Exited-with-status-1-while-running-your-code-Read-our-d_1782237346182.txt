@@ -1,0 +1,116 @@
+Exited with status 1 while running your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 30efa7e30af15b52adc7833497eac36eed9bf083 in branch main
+==> Downloaded 582MB in 4s. Extraction took 10s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] dist/public already built (pre-built in repo) ✓
+[build] Installing esbuild into /tmp...
+[build] $ npm install esbuild --prefix /tmp/qirox-build-tools --no-save --ignore-scripts
+added 2 packages in 549ms
+[build] Bundling server...
+[build] $ /tmp/qirox-build-tools/node_modules/.bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\"production\" --minify --packages=external
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+    server/pdf.ts:9:65:
+      9 │ ...= createRequire((globalThis as any).__filename ?? import.meta.url);
+        ╵                                                      ~~~~~~~~~~~
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+1 warning
+  dist/index.cjs  1.2mb ⚠️
+⚡ Done in 72ms
+[build] ✅ Done! (client was pre-built, server bundled)
+==> Uploading build...
+==> Uploaded in 16.0s. Compression took 8.2s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Instance srv-d668g97pm1nc73b6b690-bsgfk restarted
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0

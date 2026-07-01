@@ -1,0 +1,275 @@
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit b115781dd6173b65485045c8281aad407f7cf99f in branch main
+==> Downloaded 405MB in 5s. Extraction took 8s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install; npm run build'...
+up to date in 1s
+> rest-express@1.0.0 build
+> tsx script/build.ts
+building client...
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 4585 modules transformed.
+rendering chunks...
+[esbuild css minify]
+▲ [WARNING] Unexpected "#0a0a0a\\]" [css-syntax-error]
+    <stdin>:12163:12:
+      12163 │ .dark .bg-\[#0a0a0a\],
+            ╵             ~~~~~~~~~
+computing gzip size...
+../dist/public/index.html                                                                        10.11 kB │ gzip:   3.12 kB
+../dist/public/assets/Screenshot_2026-01-28_130014_1771717301779-CqqCj20o.png                    12.48 kB
+../dist/public/assets/Screenshot_2026-03-22_103429_1774164988237-DVWksjh4.png                    31.42 kB
+../dist/public/assets/Screenshot_2025-12-24_203835_1771717230405-uq57Z162.png                    33.24 kB
+../dist/public/assets/Screenshot_2026-03-22_083144_1774164974564-C6hNHpfO.png                    36.26 kB
+../dist/public/assets/Screenshot_2026-03-22_103353_1774164974572-CHp8CGQr.png                    43.23 kB
+../dist/public/assets/Screenshot_2026-03-24_135129_1774349716335-ey-dI1I3.png                    44.75 kB
+../dist/public/assets/Screenshot_2026-01-27_123515_1771717312922-Sxse6n5j.png                    50.59 kB
+../dist/public/assets/Screenshot_2026-01-28_010045_1771717287296-BYxAvZ0_.png                    57.63 kB
+../dist/public/assets/Screenshot_2026-01-25_182548_1771717248784-DXQyna8z.png                    60.00 kB
+../dist/public/assets/Screenshot_2026-03-22_103443_1774164988237-C8DKFQQC.png                    61.32 kB
+../dist/public/assets/Screenshot_2026-03-22_103343_1774164974572-pmkE6Ny2.png                    70.91 kB
+../dist/public/assets/Screenshot_2026-03-24_135234_1774349716341-b2eEk2tB.png                    76.78 kB
+../dist/public/assets/Screenshot_2026-02-20_030415_1771717262310-DiHrldJw.png                    82.82 kB
+../dist/public/assets/Screenshot_2026-03-24_135057_1774349708189-e4zvxlTF.png                    99.99 kB
+../dist/public/assets/Screenshot_2026-03-22_103254_1774164974572-BL9YGl2b.png                   102.18 kB
+../dist/public/assets/Screenshot_2026-03-24_135202_1774349716341-DzyrEUl4.png                   111.54 kB
+../dist/public/assets/Screenshot_2026-03-24_135305_1774349716342-D9P3YaSq.png                   124.07 kB
+../dist/public/assets/Screenshot_2026-01-28_130058_1771717301779-CCeIj93s.png                   174.48 kB
+../dist/public/assets/Screenshot_2026-03-22_103245_1774164974572-zA-9869y.png                   176.49 kB
+../dist/public/assets/Screenshot_2026-03-22_103228_1774164974571-C1NaaeTQ.png                   178.78 kB
+../dist/public/assets/Screenshot_2026-03-22_103237_1774164974571-COkGmwYK.png                   190.95 kB
+../dist/public/assets/Screenshot_2026-03-22_102916_1774164974569-DReUa-hs.png                   191.60 kB
+../dist/public/assets/Screenshot_2026-01-28_125929_1771717287296-DNiCp_LX.png                   202.10 kB
+../dist/public/assets/QIROX_LOGO_1770391223929-BemkE2ZT.png                                     224.04 kB
+../dist/public/assets/Screenshot_2026-03-22_103406_1774164974573-DZGzlUxj.png                   275.99 kB
+../dist/public/assets/Screenshot_2026-03-22_103419_1774164988228-DBLrvofM.png                   285.36 kB
+../dist/public/assets/image_1773100299004-BzqBcce1.png                                          290.78 kB
+../dist/public/assets/Screenshot_2026-03-22_103114_1774164974570-DpK4mvWU.png                   292.41 kB
+../dist/public/assets/Screenshot_2026-03-22_103122_1774164974570-Bw3rNXgs.png                   308.08 kB
+../dist/public/assets/Screenshot_2026-03-13_022223_1774351431935-BgPlw3N2.png                   430.00 kB
+../dist/public/assets/Screenshot_2026-03-22_103058_1774164974569-DcA4DfUc.png                   658.92 kB
+../dist/public/assets/Screenshot_2026-03-24_135039_1774349708184-ecTdYWGl.png                   661.97 kB
+../dist/public/assets/Screenshot_2026-03-22_102704_1774164974568-D_-ZuXxr.png                   836.61 kB
+../dist/public/assets/Screenshot_2026-03-22_103213_1774164974570-BIXfEg6P.png                   837.51 kB
+../dist/public/assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775-DJFzRGmL.png  1,526.44 kB
+../dist/public/assets/qirox_without_background_1771716363944-Co3ilz54.png                     2,099.95 kB
+../dist/public/assets/index-Ce4sI2Am.css                                                        342.03 kB │ gzip:  47.62 kB
+../dist/public/assets/index-BdQq_4o_.js                                                           0.06 kB │ gzip:   0.08 kB
+../dist/public/assets/qirox_without_background_1771716363944-D_lj-wmK.js                          0.09 kB │ gzip:   0.11 kB
+../dist/public/assets/index-C9qv9fp1.js                                                           0.15 kB │ gzip:   0.15 kB
+../dist/public/assets/use-templates-DApBNekq.js                                                   0.16 kB │ gzip:   0.14 kB
+../dist/public/assets/skeleton-D6EMLFX8.js                                                        0.21 kB │ gzip:   0.18 kB
+../dist/public/assets/index-D3z3n6Ca.js                                                           0.24 kB │ gzip:   0.18 kB
+../dist/public/assets/_commonjs-dynamic-modules-TDtrdbi3.js                                       0.24 kB │ gzip:   0.19 kB
+../dist/public/assets/use-projects-CGpP8mhR.js                                                    0.31 kB │ gzip:   0.24 kB
+../dist/public/assets/textarea-DcfdpH57.js                                                        0.54 kB │ gzip:   0.35 kB
+../dist/public/assets/Screenshot_2026-01-27_123515_1771717312922-D4YKZrRc.js                      0.70 kB │ gzip:   0.34 kB
+../dist/public/assets/badge-NQxowL9D.js                                                           0.77 kB │ gzip:   0.42 kB
+../dist/public/assets/label-BQPy45V4.js                                                           0.92 kB │ gzip:   0.57 kB
+../dist/public/assets/alert-uMMUImD4.js                                                           0.95 kB │ gzip:   0.49 kB
+../dist/public/assets/card-BKzXIxJk.js                                                            1.10 kB │ gzip:   0.43 kB
+../dist/public/assets/useInboxSocket-DNsu0G0M.js                                                  1.46 kB │ gzip:   0.66 kB
+../dist/public/assets/table-Cf2ymkLA.js                                                           1.53 kB │ gzip:   0.54 kB
+../dist/public/assets/InternalGate-C5cBVEC5.js                                                    1.72 kB │ gzip:   0.93 kB
+../dist/public/assets/Customers-S3lVdpka.js                                                       2.04 kB │ gzip:   1.05 kB
+../dist/public/assets/dialog-DoghuvrD.js                                                          2.21 kB │ gzip:   0.87 kB
+../dist/public/assets/switch-CsEjRz_G.js                                                          2.52 kB │ gzip:   1.26 kB
+../dist/public/assets/PayPalCheckoutButton-1BFQvb-a.js                                            2.57 kB │ gzip:   1.44 kB
+../dist/public/assets/Segments-CM3E7fXI.js                                                        2.67 kB │ gzip:   1.36 kB
+../dist/public/assets/form-BJfx6bEF.js                                                            2.76 kB │ gzip:   1.21 kB
+../dist/public/assets/AnimatedPageGraphics-BbhBXfzN.js                                            2.81 kB │ gzip:   0.86 kB
+../dist/public/assets/ImageUpload-DK-vbG98.js                                                     2.98 kB │ gzip:   1.45 kB
+../dist/public/assets/not-found-DfWuv_uX.js                                                       3.01 kB │ gzip:   1.33 kB
+../dist/public/assets/tabs-CENu1Drn.js                                                            3.29 kB │ gzip:   1.39 kB
+../dist/public/assets/download_1774503289938-SaiGMjMc.js                                          3.32 kB │ gzip:   2.46 kB
+../dist/public/assets/index-CMr2MMbp.js                                                           3.53 kB │ gzip:   1.61 kB
+../dist/public/assets/WelcomeAssistant-CySsvWMy.js                                                4.32 kB │ gzip:   1.90 kB
+../dist/public/assets/ClientInvoices-DDJ_G7oQ.js                                                  4.49 kB │ gzip:   1.75 kB
+../dist/public/assets/alert-dialog-4jvROO9k.js                                                    4.87 kB │ gzip:   1.80 kB
+../dist/public/assets/AdminAISessions-ChLpXTTg.js                                                 5.16 kB │ gzip:   1.92 kB
+../dist/public/assets/AdminPhoneVerifications-DSMo1Rl6.js                                         6.02 kB │ gzip:   2.22 kB
+../dist/public/assets/ClientReferral-cyxFwrob.js                                                  6.42 kB │ gzip:   2.36 kB
+../dist/public/assets/News-BqnRCJYA.js                                                            6.48 kB │ gzip:   2.32 kB
+../dist/public/assets/AdminBankSettings-DEvdpSyA.js                                               6.53 kB │ gzip:   2.56 kB
+../dist/public/assets/CartesianGrid-CIEfKhh4.js                                                   6.78 kB │ gzip:   2.36 kB
+../dist/public/assets/ClientQuotations-BcpnsQO2.js                                                6.85 kB │ gzip:   2.24 kB
+../dist/public/assets/AdminKanban-CUnce6Bc.js                                                     7.11 kB │ gzip:   2.54 kB
+../dist/public/assets/AdminActivityLog-D7ZNcq0b.js                                                7.21 kB │ gzip:   2.54 kB
+../dist/public/assets/AdminSupportTickets-ClJHTkEe.js                                             7.41 kB │ gzip:   2.87 kB
+../dist/public/assets/PaymentHistory-BQaqTZA7.js                                                  7.58 kB │ gzip:   2.39 kB
+../dist/public/assets/SystemBuilder-JvlngcRN.js                                                   7.85 kB │ gzip:   2.77 kB
+../dist/public/assets/ReceiptPrint-D2RD4fK7.js                                                    7.99 kB │ gzip:   2.52 kB
+../dist/public/assets/MyTools-CiCvzg7x.js                                                         8.02 kB │ gzip:   2.81 kB
+../dist/public/assets/QiroxAuthenticator-D3lCFyqO.js                                              8.12 kB │ gzip:   3.26 kB
+../dist/public/assets/SupportTickets-CPn3pF9C.js                                                  8.17 kB │ gzip:   2.85 kB
+../dist/public/assets/AdminGamification-BVMeUaMM.js                                               8.30 kB │ gzip:   2.84 kB
+../dist/public/assets/SupplierDashboard-CuddnLke.js                                               8.43 kB │ gzip:   2.86 kB
+../dist/public/assets/ClientShipments-D6HTrFo6.js                                                 8.46 kB │ gzip:   2.81 kB
+../dist/public/assets/AdminPayroll-DtVNKw0S.js                                                    8.73 kB │ gzip:   3.05 kB
+../dist/public/assets/PushApproval-CYLEZ60q.js                                                    8.79 kB │ gzip:   3.22 kB
+../dist/public/assets/AdminContactMessages-dBM5JMvv.js                                            8.80 kB │ gzip:   3.11 kB
+../dist/public/assets/AdminReviews-H2155ZbE.js                                                    8.97 kB │ gzip:   3.16 kB
+../dist/public/assets/AdminModRequests-C4ZctmCp.js                                                9.18 kB │ gzip:   3.10 kB
+../dist/public/assets/Partners-B7w5YjBz.js                                                        9.36 kB │ gzip:   3.14 kB
+../dist/public/assets/EmbedDashboard-CYrTJvg4.js                                                  9.52 kB │ gzip:   2.81 kB
+../dist/public/assets/AdminSystemFeatures-R7wTCi9E.js                                             9.75 kB │ gzip:   3.45 kB
+../dist/public/assets/ClientOnboarding-DD0pVs4q.js                                                9.80 kB │ gzip:   3.81 kB
+../dist/public/assets/AdminFinance-C1R6JES4.js                                                    9.94 kB │ gzip:   3.44 kB
+../dist/public/assets/Privacy-BYdI9a-t.js                                                        10.10 kB │ gzip:   4.20 kB
+../dist/public/assets/AdminNews-D-raGvNu.js                                                      10.19 kB │ gzip:   3.31 kB
+../dist/public/assets/ServiceDetail-Bl4B6YTN.js                                                  10.20 kB │ gzip:   2.68 kB
+../dist/public/assets/InvoicePrint-BBoTeVGE.js                                                   10.40 kB │ gzip:   3.17 kB
+../dist/public/assets/AdminReferrals-mLD02hzw.js                                                 10.40 kB │ gzip:   2.65 kB
+../dist/public/assets/ClientHelp-BXiXvg6Q.js                                                     10.71 kB │ gzip:   3.66 kB
+../dist/public/assets/BiometricManager-BpiaxApX.js                                               10.74 kB │ gzip:   3.17 kB
+../dist/public/assets/ClientLoyalty-KJtIoNH5.js                                                  10.86 kB │ gzip:   3.33 kB
+../dist/public/assets/Contact-B2KqXv-Z.js                                                        10.96 kB │ gzip:   3.32 kB
+../dist/public/assets/use-quick-pin-BYiA9bDt.js                                                  11.23 kB │ gzip:   3.71 kB
+../dist/public/assets/AdminApiKeys-o2s1SWXc.js                                                   11.34 kB │ gzip:   3.62 kB
+../dist/public/assets/EmployeeChangelog-BNA97AUy.js                                              11.37 kB │ gzip:   3.10 kB
+../dist/public/assets/AdminLoyalty-DVsYEGrb.js                                                   11.90 kB │ gzip:   3.46 kB
+../dist/public/assets/UserAvatar-CryC18Ux.js                                                     12.16 kB │ gzip:   4.17 kB
+../dist/public/assets/PhoneVerify-CSAZ2kb-.js                                                    12.25 kB │ gzip:   4.07 kB
+../dist/public/assets/VerifyEmail-0F5Jerdb.js                                                    12.42 kB │ gzip:   4.74 kB
+../dist/public/assets/AdminCountries-B2hEyKn9.js                                                 12.46 kB │ gzip:   3.60 kB
+../dist/public/assets/scroll-area-CQCq-IZD.js                                                    12.49 kB │ gzip:   3.94 kB
+../dist/public/assets/Demos-D7wt0oKO.js                                                          12.84 kB │ gzip:   4.26 kB
+../dist/public/assets/SwitchReminder-CxmYoukE.js                                                 12.84 kB │ gzip:   4.05 kB
+../dist/public/assets/AdminSLA-D4CI19ZW.js                                                       13.13 kB │ gzip:   3.72 kB
+../dist/public/assets/AdminProfitReport-CLnDerVZ.js                                              13.18 kB │ gzip:   3.80 kB
+../dist/public/assets/ProjectDetailsSetup-_9mBTFsj.js                                            13.49 kB │ gzip:   3.74 kB
+../dist/public/assets/AdminSwitchReminders-BkGXZpd3.js                                           13.56 kB │ gzip:   4.45 kB
+../dist/public/assets/AdminSuppliers-zEd_vDXQ.js                                                 13.58 kB │ gzip:   3.69 kB
+../dist/public/assets/ClientQMeet-VbQMCfd2.js                                                    13.62 kB │ gzip:   3.78 kB
+../dist/public/assets/Terms-CjUYuWou.js                                                          13.76 kB │ gzip:   5.49 kB
+../dist/public/assets/AdminReceipts-Br71bkNF.js                                                  14.05 kB │ gzip:   4.53 kB
+../dist/public/assets/AdminPromotions-p58Uz6Y2.js                                                14.21 kB │ gzip:   4.52 kB
+../dist/public/assets/SalesMarketing-dRwKXfnu.js                                                 14.35 kB │ gzip:   4.29 kB
+../dist/public/assets/ClientsGroup-CrKsdf_J.js                                                   14.38 kB │ gzip:   4.28 kB
+../dist/public/assets/QuotationPrint-C9dwPFm6.js                                                 14.65 kB │ gzip:   4.66 kB
+../dist/public/assets/AdminDiscountCodes-BnPlWBBH.js                                             14.79 kB │ gzip:   4.40 kB
+../dist/public/assets/ClientDataRequests-DLyTZ3S9.js                                             15.07 kB │ gzip:   4.90 kB
+../dist/public/assets/JoinUs-BFolcDll.js                                                         15.10 kB │ gzip:   4.93 kB
+../dist/public/assets/ForgotPassword-Cam_ox3H.js                                                 15.34 kB │ gzip:   4.43 kB
+../dist/public/assets/QMeetJoinByCode-BIkQa23B.js                                                15.69 kB │ gzip:   4.88 kB
+../dist/public/assets/AdminProjectFeatures-CiNx_0Zi.js                                           15.81 kB │ gzip:   4.59 kB
+../dist/public/assets/AdminInvoices-DEZYameM.js                                                  16.20 kB │ gzip:   4.97 kB
+../dist/public/assets/AdminAddonSubscriptions-CZDY8D0n.js                                        16.25 kB │ gzip:   4.32 kB
+../dist/public/assets/AdminMongoAtlas-DIvHEu1-.js                                                16.27 kB │ gzip:   4.84 kB
+../dist/public/assets/MarketingVisual-CQRN0xVa.js                                                16.32 kB │ gzip:   4.00 kB
+../dist/public/assets/ClientContracts-CzK-AmyN.js                                                16.36 kB │ gzip:   5.15 kB
+../dist/public/assets/index-DM8_H466.js                                                          16.45 kB │ gzip:   6.16 kB
+../dist/public/assets/AdminExtraAddons-BcdX0C9q.js                                               16.61 kB │ gzip:   5.57 kB
+../dist/public/assets/AdminShipments-DRI_cTlf.js                                                 16.78 kB │ gzip:   4.61 kB
+../dist/public/assets/AdminInvestors-snoQlpFs.js                                                 16.84 kB │ gzip:   4.75 kB
+../dist/public/assets/AdminAttendance-DS_ipIKQ.js                                                17.00 kB │ gzip:   4.79 kB
+../dist/public/assets/Consultation-6Ykd1Fu5.js                                                   17.25 kB │ gzip:   5.25 kB
+../dist/public/assets/AdminAbandonedCarts-Osoofhj9.js                                            17.64 kB │ gzip:   4.86 kB
+../dist/public/assets/AdminShipping-DvopD3yG.js                                                  17.73 kB │ gzip:   4.89 kB
+../dist/public/assets/AdminServices-CeWp3AA4.js                                                  17.80 kB │ gzip:   5.33 kB
+../dist/public/assets/TwoFactorSetup-D3NsKySd.js                                                 18.02 kB │ gzip:   4.69 kB
+../dist/public/assets/AdminPartners-CmVDId4-.js                                                  18.07 kB │ gzip:   5.37 kB
+../dist/public/assets/AdminCustomers-DG61_7Yj.js                                                 18.34 kB │ gzip:   5.27 kB
+../dist/public/assets/About-BvpmBvkt.js                                                          18.88 kB │ gzip:   4.80 kB
+../dist/public/assets/EcommerceStore-CiMJr8iI.js                                                 18.99 kB │ gzip:   4.96 kB
+../dist/public/assets/EmployeeProfile-CwvJMfmS.js                                                19.71 kB │ gzip:   5.48 kB
+../dist/public/assets/InvestorPortal-KBT4EoXA.js                                                 20.02 kB │ gzip:   5.80 kB
+../dist/public/assets/ClientProfile-DA5OFcAj.js                                                  20.12 kB │ gzip:   5.43 kB
+../dist/public/assets/AdminConnectionSettings-CAcD0uP9.js                                        20.44 kB │ gzip:   5.22 kB
+../dist/public/assets/GroupChat-DESy1knH.js                                                      20.49 kB │ gzip:   5.77 kB
+../dist/public/assets/AdminDataRequests-Byh6aFgr.js                                              20.73 kB │ gzip:   6.06 kB
+../dist/public/assets/AdminModConfig-BR5FBa1J.js                                                 20.97 kB │ gzip:   5.32 kB
+../dist/public/assets/AdminQuotations-GA65G4jD.js                                                21.15 kB │ gzip:   5.62 kB
+../dist/public/assets/AdminContracts-TrWEw2Pq.js                                                 21.23 kB │ gzip:   5.98 kB
+../dist/public/assets/ClientInstallments-DogP-V2f.js                                             21.58 kB │ gzip:   6.05 kB
+../dist/public/assets/AdminPushNotifications-uYNy0QeR.js                                         21.85 kB │ gzip:   6.05 kB
+../dist/public/assets/dropdown-menu-BpYzCc-y.js                                                  22.03 kB │ gzip:   6.54 kB
+../dist/public/assets/select-VWAD3XFa.js                                                         22.27 kB │ gzip:   7.76 kB
+../dist/public/assets/DevChecklist-QnUBnD3Q.js                                                   22.28 kB │ gzip:   6.43 kB
+../dist/public/assets/AdminQMeetDetail-INMsjG8V.js                                               22.38 kB │ gzip:   6.04 kB
+../dist/public/assets/purify.es-Bzr520pe.js                                                      22.45 kB │ gzip:   8.63 kB
+../dist/public/assets/AdminCronJobs-CD1q49fk.js                                                  23.10 kB │ gzip:   6.53 kB
+../dist/public/assets/EmployeeSubscriptions-C1Uy6zQX.js                                          23.54 kB │ gzip:   5.94 kB
+../dist/public/assets/AdminQiroxSettings-C181onuO.js                                             23.70 kB │ gzip:   6.50 kB
+../dist/public/assets/Footer-BvFJ7oWG.js                                                         23.72 kB │ gzip:   5.74 kB
+../dist/public/assets/AdminWallet-qQQE_EYy.js                                                    23.76 kB │ gzip:   5.83 kB
+../dist/public/assets/AdminConsultation-CvVmvHMV.js                                              24.35 kB │ gzip:   6.21 kB
+../dist/public/assets/EmployeeDemos-NMp_mRcI.js                                                  24.52 kB │ gzip:   6.53 kB
+../dist/public/assets/AdminEmployees-D-FtUy3o.js                                                 24.67 kB │ gzip:   7.09 kB
+../dist/public/assets/QiroxAI-hR1kQsra.js                                                        24.99 kB │ gzip:   7.16 kB
+../dist/public/assets/AdminInstallments-DhS1vJDO.js                                              25.07 kB │ gzip:   6.07 kB
+../dist/public/assets/AdminSystemMap-BhUvkCnN.js                                                 25.55 kB │ gzip:   6.20 kB
+../dist/public/assets/DevPortal-Duhik-HR.js                                                      28.03 kB │ gzip:   8.23 kB
+../dist/public/assets/ar-DWhCP77U.js                                                             28.03 kB │ gzip:   7.44 kB
+../dist/public/assets/vendor-form-CFYxHw5_.js                                                    28.25 kB │ gzip:  10.37 kB
+../dist/public/assets/Systems-CKqyJGml.js                                                        28.47 kB │ gzip:   8.62 kB
+../dist/public/assets/ProjectWorkspace-BssYb9u5.js                                               30.92 kB │ gzip:   7.38 kB
+../dist/public/assets/PaymobOnboarding-DzHBJIln.js                                               30.96 kB │ gzip:   8.81 kB
+../dist/public/assets/Devices-Cg4FtweC.js                                                        31.38 kB │ gzip:   8.52 kB
+../dist/public/assets/AdminProjectData-owGGgz_o.js                                               31.91 kB │ gzip:   8.03 kB
+../dist/public/assets/AdminSubscriptionPlans-9spOmg27.js                                         31.93 kB │ gzip:   7.49 kB
+../dist/public/assets/Inbox-eo3b8uxV.js                                                          32.50 kB │ gzip:   9.07 kB
+../dist/public/assets/AdminJobs-D7caWnTN.js                                                      34.93 kB │ gzip:   9.15 kB
+../dist/public/assets/ClientWallet-BI4FTJfv.js                                                   36.22 kB │ gzip:   8.81 kB
+../dist/public/assets/AdminProducts-Bwz9sN8m.js                                                  36.34 kB │ gzip:   9.42 kB
+../dist/public/assets/AdminTemplates-D0DcgQaV.js                                                 36.71 kB │ gzip:   9.18 kB
+../dist/public/assets/EmployeeNewOrder-QI9_mTCA.js                                               36.84 kB │ gzip:   9.27 kB
+../dist/public/assets/Jobs-B6tpQ47B.js                                                           37.64 kB │ gzip:  10.50 kB
+../dist/public/assets/EmployeeRoleDashboard-B46TZDhZ.js                                          38.00 kB │ gzip:   8.55 kB
+../dist/public/assets/CSChat-Biq2c2di.js                                                         41.46 kB │ gzip:  10.50 kB
+../dist/public/assets/vendor-query-C_RpKfpZ.js                                                   43.26 kB │ gzip:  13.32 kB
+../dist/public/assets/AIStudio-AXtDT9bH.js                                                       45.32 kB │ gzip:  10.84 kB
+../dist/public/assets/MyApiKeys-Bg_6tAoK.js                                                      47.08 kB │ gzip:  10.04 kB
+../dist/public/assets/Prices-chU8heSP.js                                                         50.60 kB │ gzip:  14.88 kB
+../dist/public/assets/CartWizardPage-BYdkxqWc.js                                                 50.61 kB │ gzip:  12.50 kB
+../dist/public/assets/ProjectDetails-BugDdfHg.js                                                 50.74 kB │ gzip:  12.80 kB
+../dist/public/assets/Checkout-DIgHZkAO.js                                                       50.83 kB │ gzip:  12.85 kB
+../dist/public/assets/SystemBuilderIDE-F4o_zP_5.js                                               51.94 kB │ gzip:  14.75 kB
+../dist/public/assets/OrderFlow-5ryHXbFj.js                                                      55.20 kB │ gzip:  14.44 kB
+../dist/public/assets/AdminQMeet-C9RG47Fr.js                                                     58.48 kB │ gzip:  13.63 kB
+../dist/public/assets/Login-DN17muXj.js                                                          61.50 kB │ gzip:  14.82 kB
+../dist/public/assets/AdminOrders-DynvoG5j.js                                                    63.40 kB │ gzip:  14.85 kB
+../dist/public/assets/AdminAnalytics-CrhbPfM8.js                                                 69.96 kB │ gzip:  16.68 kB
+../dist/public/assets/MeetingRoom-UKDVNEpf.js                                                    70.58 kB │ gzip:  16.63 kB
+../dist/public/assets/Cart-D60_mf8z.js                                                           76.53 kB │ gzip:  18.31 kB
+../dist/public/assets/BarcodeStudio-XVJdOZg2.js                                                  92.69 kB │ gzip:  20.68 kB
+../dist/public/assets/TemplateDetail-13OAZZWC.js                                                108.90 kB │ gzip:  22.98 kB
+../dist/public/assets/Home-D9-ZZw0g.js                                                          132.61 kB │ gzip:  30.48 kB
+../dist/public/assets/vendor-react-CCM808oV.js                                                  134.08 kB │ gzip:  43.06 kB
+../dist/public/assets/ToolPage-EKjjpyZP.js                                                      137.26 kB │ gzip:  33.38 kB
+../dist/public/assets/index.es-Bjq6ggUd.js                                                      158.72 kB │ gzip:  53.00 kB
+../dist/public/assets/vendor-ui-DFtUtRYi.js                                                     189.21 kB │ gzip:  60.20 kB
+../dist/public/assets/html2canvas.esm-DXEQVQnt.js                                               201.04 kB │ gzip:  47.43 kB
+../dist/public/assets/AdminAppPublish-DNxXGn2w.js                                               210.35 kB │ gzip:  57.80 kB
+../dist/public/assets/Dashboard-BQ8MjKiF.js                                                     218.72 kB │ gzip:  48.02 kB
+../dist/public/assets/BarChart-B0lrn0d3.js                                                      377.53 kB │ gzip: 104.42 kB
+../dist/public/assets/jspdf.es.min-Cbop1I8I.js                                                  385.97 kB │ gzip: 126.19 kB
+../dist/public/assets/index-CxBpvocb.js                                                         530.26 kB │ gzip: 211.30 kB
+../dist/public/assets/index-B0CXk-hb.js                                                         631.21 kB │ gzip: 172.86 kB
+../dist/public/assets/excel-Ci-3whWs.js                                                         936.89 kB │ gzip: 270.73 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 28.05s
+building server...
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+    server/pdf.ts:7:31:
+      7 │ const _require = createRequire(import.meta.url);
+        ╵                                ~~~~~~~~~~~
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+1 warning
+  dist/index.cjs  6.8mb ⚠️
+⚡ Done in 2581ms
+==> Uploading build...
+==> Uploaded in 14.0s. Compression took 34.5s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Timed Out
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Port scan timeout reached, no open ports detected. Bind your service to at least one port. If you don't need to receive traffic on any port, create a background worker instead.
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding

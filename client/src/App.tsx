@@ -1,0 +1,1307 @@
+import { Switch, Route, useLocation, Link } from "wouter";
+import SARIcon from "@/components/SARIcon";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState, useRef, useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
+import { I18nProvider, useI18n } from "@/lib/i18n";
+import { ThemeProvider, useTheme } from "@/lib/theme";
+import { useUser } from "@/hooks/use-auth";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import EmployeeLayout from "@/components/EmployeeLayout";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
+import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
+import { PushPermissionBanner } from "@/components/PushPermissionBanner";
+import { PageHintCard } from "@/components/PageHintCard";
+import QiroxCompanion from "@/components/QiroxCompanion";
+import { AntiDevTools } from "@/components/AntiDevTools";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import PixelTracking from "@/components/PixelTracking";
+import GlobalMusicPlayer from "@/components/GlobalMusicPlayer";
+import RoleGuard from "@/components/RoleGuard";
+
+const Home = lazy(() => import("@/pages/Home"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const ClientOnboarding = lazy(() => import("@/pages/ClientOnboarding"));
+const QiroxAuthenticator = lazy(() => import("@/pages/QiroxAuthenticator"));
+const ProjectDetailsSetup = lazy(() => import("@/pages/ProjectDetailsSetup"));
+const PhoneVerify = lazy(() => import("@/pages/PhoneVerify"));
+const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
+const AdminServices = lazy(() => import("@/pages/AdminServices"));
+const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
+const AdminEmployees = lazy(() => import("@/pages/AdminEmployees"));
+const AdminGamification = lazy(() => import("@/pages/AdminGamification"));
+const AdminFinance = lazy(() => import("@/pages/AdminFinance"));
+const Login = lazy(() => import("@/pages/Login"));
+const OrderFlow = lazy(() => import("@/pages/OrderFlow"));
+const ProjectDetails = lazy(() => import("@/pages/ProjectDetails"));
+const About = lazy(() => import("@/pages/About"));
+const ServiceDetail = lazy(() => import("@/pages/ServiceDetail"));
+const Prices = lazy(() => import("@/pages/Prices"));
+const Customers = lazy(() => import("@/pages/Customers"));
+const News = lazy(() => import("@/pages/News"));
+const Jobs = lazy(() => import("@/pages/Jobs"));
+const PaymobOnboarding = lazy(() => import("@/pages/PaymobOnboarding"));
+const JoinUs = lazy(() => import("@/pages/JoinUs"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const Privacy = lazy(() => import("@/pages/Privacy"));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Segments = lazy(() => import("@/pages/Segments"));
+const AdminTemplates = lazy(() => import("@/pages/AdminTemplates"));
+const AdminPartners = lazy(() => import("@/pages/AdminPartners"));
+const AdminNews = lazy(() => import("@/pages/AdminNews"));
+const AdminJobs = lazy(() => import("@/pages/AdminJobs"));
+const AdminBankSettings = lazy(() => import("@/pages/AdminBankSettings"));
+const AdminSubscriptionPlans = lazy(() => import("@/pages/AdminSubscriptionPlans"));
+const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
+const AdminPhoneVerifications = lazy(() => import("@/pages/AdminPhoneVerifications"));
+const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
+const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
+const AdminShipping = lazy(() => import("@/pages/AdminShipping"));
+const AdminCountries = lazy(() => import("@/pages/AdminCountries"));
+const Devices = lazy(() => import("@/pages/Devices"));
+const Cart = lazy(() => import("@/pages/Cart"));
+const CartWizardPage = lazy(() => import("@/pages/CartWizardPage"));
+const QuickStart = lazy(() => import("@/pages/QuickStart"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
+const InternalGate = lazy(() => import("@/pages/InternalGate"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
+const Inbox = lazy(() => import("@/pages/Inbox"));
+const GroupChat = lazy(() => import("@/pages/GroupChat"));
+const AdminAISessions = lazy(() => import("@/pages/AdminAISessions"));
+const PushApproval = lazy(() => import("@/pages/PushApproval"));
+const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
+const AdminActivityLog = lazy(() => import("@/pages/AdminActivityLog"));
+const AdminSupportTickets = lazy(() => import("@/pages/AdminSupportTickets"));
+const AdminPayroll = lazy(() => import("@/pages/AdminPayroll"));
+const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
+const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
+const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
+const EmployeeHub = lazy(() => import("@/pages/EmployeeHub"));
+const EmployeeWelcome = lazy(() => import("@/pages/EmployeeWelcome"));
+const EmployeeMail = lazy(() => import("@/pages/EmployeeMail"));
+const AdminMailAccounts = lazy(() => import("@/pages/AdminMailAccounts"));
+const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
+const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
+const DevChecklist = lazy(() => import("@/pages/DevChecklist"));
+const EmployeeCRM = lazy(() => import("@/pages/EmployeeCRM"));
+const EmployeeWhatsappCRM = lazy(() => import("@/pages/EmployeeWhatsappCRM"));
+const EmployeeLeadsData = lazy(() => import("@/pages/EmployeeLeadsData"));
+const LeadCallRating = lazy(() => import("@/pages/LeadCallRating"));
+const EmployeeMyFinance = lazy(() => import("@/pages/EmployeeMyFinance"));
+const PaymentHistory = lazy(() => import("@/pages/PaymentHistory"));
+const AdminAbandonedCarts = lazy(() => import("@/pages/AdminAbandonedCarts"));
+const AdminInvoices = lazy(() => import("@/pages/AdminInvoices"));
+const InvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
+const AdminReceipts = lazy(() => import("@/pages/AdminReceipts"));
+const ReceiptPrint = lazy(() => import("@/pages/ReceiptPrint"));
+const SalesMarketing = lazy(() => import("@/pages/SalesMarketing"));
+const AdminEmailMarketing = lazy(() => import("@/pages/AdminEmailMarketing"));
+const AdminEmailGuide = lazy(() => import("@/pages/AdminEmailGuide"));
+const DevPortal = lazy(() => import("@/pages/DevPortal"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+const Partners = lazy(() => import("@/pages/Partners"));
+const Alliances = lazy(() => import("@/pages/Alliances"));
+const Consultation = lazy(() => import("@/pages/Consultation"));
+const AdminConsultation = lazy(() => import("@/pages/AdminConsultation"));
+const AdminDiscountCodes = lazy(() => import("@/pages/AdminDiscountCodes"));
+const AdminShipments = lazy(() => import("@/pages/AdminShipments"));
+const AdminCronJobs = lazy(() => import("@/pages/AdminCronJobs"));
+const AdminMongoAtlas = lazy(() => import("@/pages/AdminMongoAtlas"));
+const AdminConnectionSettings = lazy(() => import("@/pages/AdminConnectionSettings"));
+const AdminAppPublish = lazy(() => import("@/pages/AdminAppPublish"));
+const AdminSystemFeatures = lazy(() => import("@/pages/AdminSystemFeatures"));
+const AdminExtraAddons = lazy(() => import("@/pages/AdminExtraAddons"));
+const AdminModConfig = lazy(() => import("@/pages/AdminModConfig"));
+const CSChat = lazy(() => import("@/pages/CSChat"));
+const AdminProjectFeatures = lazy(() => import("@/pages/AdminProjectFeatures"));
+const ProjectWorkspace = lazy(() => import("@/pages/ProjectWorkspace"));
+const ClientWallet = lazy(() => import("@/pages/ClientWallet"));
+const AdminWallet = lazy(() => import("@/pages/AdminWallet"));
+const AdminInstallments = lazy(() => import("@/pages/AdminInstallments"));
+const ClientInstallments = lazy(() => import("@/pages/ClientInstallments"));
+const Systems = lazy(() => import("@/pages/Systems"));
+const ClientsGroup = lazy(() => import("@/pages/ClientsGroup"));
+const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
+const AdminQMeet = lazy(() => import("@/pages/AdminQMeet"));
+const AdminQMeetDetail = lazy(() => import("@/pages/AdminQMeetDetail"));
+const MeetingRoom = lazy(() => import("@/pages/MeetingRoom"));
+const QMeetJoinByCode = lazy(() => import("@/pages/QMeetJoinByCode"));
+const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
+const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
+const MyTools = lazy(() => import("@/pages/MyTools"));
+const ToolPage = lazy(() => import("@/pages/ToolPage"));
+const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
+const AdminQiroxSettings = lazy(() => import("@/pages/AdminQiroxSettings"));
+const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
+const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
+const AdminSwitchReminders = lazy(() => import("@/pages/AdminSwitchReminders"));
+const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
+const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
+const EmbedDashboard = lazy(() => import("@/pages/EmbedDashboard"));
+const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
+const Demos = lazy(() => import("@/pages/Demos"));
+const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
+const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
+const SectorGuide = lazy(() => import("@/pages/SectorGuide"));
+const AdminRoles = lazy(() => import("@/pages/AdminRoles"));
+const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
+const SystemBuilder = lazy(() => import("@/pages/SystemBuilder"));
+const SystemBuilderIDE = lazy(() => import("@/pages/SystemBuilderIDE"));
+const DeploymentCloud = lazy(() => import("@/pages/DeploymentCloud"));
+const QiroxStudio = lazy(() => import("@/pages/QiroxStudio"));
+const OurTools = lazy(() => import("@/pages/OurTools"));
+const TwoFactorSetup = lazy(() => import("@/pages/TwoFactorSetup"));
+const ClientReferral = lazy(() => import("@/pages/ClientReferral"));
+const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
+const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
+const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
+const AdminContactMessages = lazy(() => import("@/pages/AdminContactMessages"));
+const AdminProjectData = lazy(() => import("@/pages/AdminProjectData"));
+const ClientHelp = lazy(() => import("@/pages/ClientHelp"));
+const AdminReviews = lazy(() => import("@/pages/AdminReviews"));
+const AdminContracts = lazy(() => import("@/pages/AdminContracts"));
+const ClientContracts = lazy(() => import("@/pages/ClientContracts"));
+const ClientInvoices = lazy(() => import("@/pages/ClientInvoices"));
+const ClientInvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
+const AdminSLA = lazy(() => import("@/pages/AdminSLA"));
+const AdminLoyalty = lazy(() => import("@/pages/AdminLoyalty"));
+const ClientLoyalty = lazy(() => import("@/pages/ClientLoyalty"));
+const ClientShipments = lazy(() => import("@/pages/ClientShipments"));
+const ClientQMeet = lazy(() => import("@/pages/ClientQMeet"));
+const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
+const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
+const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
+const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
+const AdminQuotations = lazy(() => import("@/pages/AdminQuotations"));
+const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
+const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
+const TrackOrder = lazy(() => import("@/pages/TrackOrder"));
+const AdminSalesReports = lazy(() => import("@/pages/AdminSalesReports"));
+const AdminSystemDashboards = lazy(() => import("@/pages/AdminSystemDashboards"));
+const Posters = lazy(() => import("@/pages/Posters"));
+const Community = lazy(() => import("@/pages/Community"));
+// ── Role-guarded admin pages ─────────────────────────────────────────────────
+const ADMIN_MANAGER = ["admin", "manager"] as const;
+const ADMIN_MANAGER_ACCOUNTANT = ["admin", "manager", "accountant"] as const;
+const ADMIN_MANAGER_HR = ["admin", "manager", "hr"] as const;
+const ADMIN_MANAGER_ACCOUNTANT_HR = ["admin", "manager", "accountant", "hr"] as const;
+const ADMIN_ONLY = ["admin"] as const;
+const ADMIN_MANAGER_SALES_ACCOUNTANT = ["admin", "manager", "sales_manager", "accountant"] as const;
+
+function G_Employees() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_HR]}><AdminEmployees /></RoleGuard>; }
+function G_Finance()   { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminFinance /></RoleGuard>; }
+function G_Analytics() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_SALES_ACCOUNTANT]}><AdminAnalytics /></RoleGuard>; }
+function G_ActivityLog(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminActivityLog /></RoleGuard>; }
+function G_Payroll()   { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT_HR]}><AdminPayroll /></RoleGuard>; }
+function G_Attendance(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_HR]}><AdminAttendance /></RoleGuard>; }
+function G_ProfitReport(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminProfitReport /></RoleGuard>; }
+function G_BankSettings(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminBankSettings /></RoleGuard>; }
+function G_CronJobs()  { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminCronJobs /></RoleGuard>; }
+function G_Atlas()     { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminMongoAtlas /></RoleGuard>; }
+function G_ConnSettings(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminConnectionSettings /></RoleGuard>; }
+function G_AppPublish(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminAppPublish /></RoleGuard>; }
+function G_SysFeatures(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminSystemFeatures /></RoleGuard>; }
+function G_ExtraAddons(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminExtraAddons /></RoleGuard>; }
+function G_AdminRoles(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminRoles /></RoleGuard>; }
+function G_ModConfig() { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminModConfig /></RoleGuard>; }
+function G_AdminWallet(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminWallet /></RoleGuard>; }
+function G_Dashboard()  { return <RoleGuard allowedRoles={["admin", "manager", "client"]} redirectTo="/employee/role-dashboard"><Dashboard /></RoleGuard>; }
+
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community"];
+
+
+function PublicRouter() {
+  return (
+    <Suspense fallback={null}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/about" component={About} />
+        <Route path="/service/:id" component={ServiceDetail} />
+        <Route path="/prices" component={Prices} />
+        <Route path="/customers" component={Customers} />
+        <Route path="/news" component={News} />
+        <Route path="/jobs" component={Jobs} />
+        <Route path="/paymob-onboarding" component={PaymobOnboarding} />
+        <Route path="/join" component={JoinUs} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/segments" component={Segments} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Login} />
+        <Route path="/employee/register-secret" component={Login} />
+        <Route path="/order" component={OrderFlow} />
+        <Route path="/start" component={QuickStart} />
+        <Route path="/quick-start" component={QuickStart} />
+        <Route path="/internal-gate" component={InternalGate} />
+        <Route path="/devices" component={Devices} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/verify-email" component={VerifyEmail} />
+        <Route path="/developers" component={DevPortal} />
+        <Route path="/partners" component={Partners} />
+        <Route path="/alliances" component={Alliances} />
+        <Route path="/consultation" component={Consultation} />
+        <Route path="/systems" component={Systems} />
+        <Route path="/clients-group" component={ClientsGroup} />
+        <Route path="/barcode-studio" component={BarcodeStudio} />
+        <Route path="/our-tools" component={OurTools} />
+        <Route path="/demos" component={Demos} />
+        <Route path="/templates/:slug" component={TemplateDetail} />
+        <Route path="/switch-reminder" component={SwitchReminder} />
+        <Route path="/embed" component={EmbedDashboard} />
+        <Route path="/track" component={TrackOrder} />
+        <Route path="/rate-call/:token" component={LeadCallRating} />
+        <Route path="/posters" component={Posters} />
+        <Route path="/community" component={Community} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
+}
+
+function AdminRouter() {
+  return (
+    <Suspense fallback={null}>
+      <Switch>
+        <Route path="/dashboard" component={G_Dashboard} />
+        <Route path="/onboarding" component={ClientOnboarding} />
+        <Route path="/authenticator" component={QiroxAuthenticator} />
+        <Route path="/auth/push-approve" component={PushApproval} />
+        <Route path="/order-setup/:orderId" component={ProjectDetailsSetup} />
+        <Route path="/phone-verify" component={PhoneVerify} />
+        <Route path="/projects/:id" component={ProjectDetails} />
+        <Route path="/project/:section" component={ProjectDetails} />
+        <Route path="/admin" component={AdminSystemMap} />
+        <Route path="/admin/services" component={AdminServices} />
+        <Route path="/admin/orders" component={AdminOrders} />
+        <Route path="/admin/project-data" component={AdminProjectData} />
+        <Route path="/admin/employees" component={G_Employees} />
+        <Route path="/admin/gamification" component={AdminGamification} />
+        <Route path="/admin/finance" component={G_Finance} />
+        <Route path="/admin/templates" component={AdminTemplates} />
+        <Route path="/admin/partners" component={AdminPartners} />
+        <Route path="/admin/news" component={AdminNews} />
+        <Route path="/admin/jobs" component={AdminJobs} />
+        <Route path="/admin/bank-settings" component={G_BankSettings} />
+        <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
+        <Route path="/admin/mod-requests" component={AdminModRequests} />
+        <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />
+        <Route path="/admin/customers" component={AdminCustomers} />
+        <Route path="/admin/products" component={AdminProducts} />
+        <Route path="/admin/shipping" component={AdminShipping} />
+        <Route path="/admin/countries" component={AdminCountries} />
+        <Route path="/admin/analytics" component={G_Analytics} />
+        <Route path="/admin/activity-log" component={G_ActivityLog} />
+        <Route path="/admin/support-tickets" component={AdminSupportTickets} />
+        <Route path="/admin/payroll" component={G_Payroll} />
+        <Route path="/admin/attendance" component={G_Attendance} />
+        <Route path="/admin/profit-report" component={G_ProfitReport} />
+        <Route path="/admin/sales-reports" component={AdminSalesReports} />
+        <Route path="/admin/kimi-ai" component={QiroxStudio} />
+        <Route path="/admin/system-dashboards" component={AdminSystemDashboards} />
+        <Route path="/admin/invoices" component={AdminInvoices} />
+        <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
+        <Route path="/admin/receipts" component={AdminReceipts} />
+        <Route path="/admin/receipt-print/:id" component={ReceiptPrint} />
+        <Route path="/admin/quotations" component={AdminQuotations} />
+        <Route path="/admin/quotation-print/:id" component={QuotationPrint} />
+        <Route path="/admin/consultations" component={AdminConsultation} />
+        <Route path="/admin/qmeet" component={AdminQMeet} />
+        <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
+        <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
+        <Route path="/admin/shipments" component={AdminShipments} />
+        <Route path="/admin/cron-jobs" component={G_CronJobs} />
+        <Route path="/admin/atlas" component={G_Atlas} />
+        <Route path="/admin/connection-settings" component={G_ConnSettings} />
+        <Route path="/admin/app-publish" component={G_AppPublish} />
+        <Route path="/admin/roles" component={G_AdminRoles} />
+        <Route path="/admin/system-features" component={G_SysFeatures} />
+        <Route path="/admin/extra-addons" component={G_ExtraAddons} />
+        <Route path="/admin/mod-config" component={G_ModConfig} />
+        <Route path="/cs-chat" component={CSChat} />
+        <Route path="/admin/project-features" component={AdminProjectFeatures} />
+        <Route path="/project/:id/workspace" component={ProjectWorkspace} />
+        <Route path="/wallet" component={ClientWallet} />
+        <Route path="/admin/wallet" component={G_AdminWallet} />
+        <Route path="/installments" component={ClientInstallments} />
+        <Route path="/admin/installments" component={AdminInstallments} />
+        <Route path="/my-requests" component={ClientDataRequests} />
+        <Route path="/admin/data-requests" component={AdminDataRequests} />
+        <Route path="/my-tools/:toolId" component={ToolPage} />
+        <Route path="/my-tools" component={MyTools} />
+        <Route path="/admin/qirox-settings" component={AdminQiroxSettings} />
+        <Route path="/admin/promotions" component={AdminPromotions} />
+        <Route path="/admin/email-marketing" component={AdminEmailMarketing} />
+        <Route path="/admin/email-guide" component={AdminEmailGuide} />
+        <Route path="/admin/investors" component={AdminInvestors} />
+        <Route path="/admin/switch-reminders" component={AdminSwitchReminders} />
+        <Route path="/my-api-keys" component={MyApiKeys} />
+        <Route path="/admin/api-keys" component={AdminApiKeys} />
+        <Route path="/investor/portal" component={InvestorPortal} />
+        <Route path="/support" component={SupportTickets} />
+        <Route path="/employee" component={EmployeeWelcome} />
+        <Route path="/employee/profile" component={EmployeeHub} />
+        <Route path="/employee/mail" component={EmployeeMail} />
+        <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
+        <Route path="/employee/demos" component={EmployeeDemos} />
+        <Route path="/profile" component={ClientProfile} />
+        <Route path="/employee/new-order" component={EmployeeNewOrder} />
+        <Route path="/employee/subscriptions" component={EmployeeSubscriptions} />
+        <Route path="/employee/checklist" component={DevChecklist} />
+        <Route path="/employee/role-dashboard" component={EmployeeHub} />
+        <Route path="/employee/changelog" component={EmployeeHub} />
+        <Route path="/employee/sector-guide" component={SectorGuide} />
+        <Route path="/employee/system-builder/:id" component={SystemBuilderIDE} />
+        <Route path="/employee/system-builder" component={SystemBuilder} />
+        <Route path="/employee/deployment-cloud/:id" component={DeploymentCloud} />
+        <Route path="/employee/deployment-cloud" component={DeploymentCloud} />
+        <Route path="/employee/qi-agent" component={QiroxStudio} />
+        <Route path="/employee/studio" component={QiroxStudio} />
+        <Route path="/admin/studio" component={QiroxStudio} />
+        <Route path="/employee/crm" component={EmployeeCRM} />
+        <Route path="/employee/whatsapp-crm" component={EmployeeWhatsappCRM} />
+        <Route path="/employee/leads-data" component={EmployeeLeadsData} />
+        <Route path="/employee/my-finance" component={EmployeeMyFinance} />
+        <Route path="/admin/kanban" component={AdminKanban} />
+        <Route path="/admin/ai-sessions" component={AdminAISessions} />
+        <Route path="/admin/referrals" component={AdminReferrals} />
+        <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
+        <Route path="/admin/contact-messages" component={AdminContactMessages} />
+        <Route path="/help" component={ClientHelp} />
+        <Route path="/admin/reviews" component={AdminReviews} />
+        <Route path="/admin/contracts" component={AdminContracts} />
+        <Route path="/admin/sla" component={AdminSLA} />
+        <Route path="/admin/loyalty" component={AdminLoyalty} />
+        <Route path="/admin/suppliers" component={AdminSuppliers} />
+        <Route path="/admin/push-notifications" component={AdminPushNotifications} />
+        <Route path="/admin/stores" component={EcommerceStore} />
+        <Route path="/client/contracts" component={ClientContracts} />
+        <Route path="/client/invoices" component={ClientInvoices} />
+        <Route path="/client/quotations" component={ClientQuotations} />
+        <Route path="/client/quotation-print/:id" component={QuotationPrint} />
+        <Route path="/client/invoice-print/:id" component={ClientInvoicePrint} />
+        <Route path="/client/loyalty" component={ClientLoyalty} />
+        <Route path="/client/shipments" component={ClientShipments} />
+        <Route path="/qmeet" component={ClientQMeet} />
+        <Route path="/supplier/dashboard" component={SupplierDashboard} />
+        <Route path="/security/2fa" component={TwoFactorSetup} />
+        <Route path="/referral" component={ClientReferral} />
+        <Route path="/sales/marketing" component={SalesMarketing} />
+        <Route path="/payment-history" component={PaymentHistory} />
+        <Route path="/employee/abandoned-carts" component={AdminAbandonedCarts} />
+        <Route path="/cart" component={Cart} />
+        <Route path="/cart-wizard" component={CartWizardPage} />
+        <Route path="/start" component={QuickStart} />
+        <Route path="/quick-start" component={QuickStart} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/inbox" component={Inbox} />
+        <Route path="/groups/:id" component={GroupChat} />
+        <Route path="/groups" component={GroupChat} />
+        <Route path="/admin/settings"><AdminSettingsRedirect /></Route>
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
+}
+
+function AdminSettingsRedirect() {
+  const [, nav] = useLocation();
+  useEffect(() => { nav("/admin/qirox-settings"); }, []);
+  return null;
+}
+
+const ALL_PAGES = [
+  // Client pages
+  { title: "لوحة التحكم", titleEn: "Dashboard", url: "/dashboard", group: "client" },
+  { title: "سلة التسوق", titleEn: "Cart", url: "/cart", group: "client" },
+  { title: "الرسائل", titleEn: "Messages", url: "/inbox", group: "client" },
+  { title: "خدمة العملاء", titleEn: "Customer Service", url: "/cs-chat", group: "client" },
+  { title: "الدعم الفني", titleEn: "Support", url: "/support", group: "client" },
+  { title: "سجل المدفوعات", titleEn: "Payment History", url: "/payment-history", group: "client" },
+  { title: "محفظتي الإلكترونية", titleEn: "My Wallet", url: "/wallet", group: "client" },
+  { title: "طلبات البيانات", titleEn: "Data Requests", url: "/my-requests", group: "client" },
+  { title: "الأجهزة والإضافات", titleEn: "Devices & Add-ons", url: "/devices", group: "client" },
+  { title: "أدواتي ومميزاتي", titleEn: "My Tools", url: "/my-tools", group: "client" },
+  { title: "الباقات والأسعار", titleEn: "Pricing", url: "/prices", group: "public" },
+  { title: "مركز المساعدة", titleEn: "Help Center", url: "/help", group: "client" },
+  { title: "عروضي وتحقق الهوية", titleEn: "Phone Verify", url: "/phone-verify", group: "client" },
+  { title: "المصادقة الثنائية", titleEn: "Two-Factor Auth", url: "/settings/2fa", group: "client" },
+  // Employee / Admin pages
+  { title: "المشاريع", titleEn: "Projects", url: "/admin/orders", group: "employee" },
+  { title: "عربات التسوق المتروكة", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
+  { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
+  { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
+  { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
+  { title: "المالية والحسابات", titleEn: "Finance", url: "/admin/finance", group: "employee" },
+  { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
+  { title: "الفواتير", titleEn: "Invoices", url: "/admin/invoices", group: "employee" },
+  { title: "الإيصالات", titleEn: "Receipts", url: "/admin/receipts", group: "employee" },
+  { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor/portal", group: "employee" },
+  { title: "الصندوق البريدي", titleEn: "Mail Inbox", url: "/employee/mail", group: "employee" },
+  { title: "إدارة البريد الإلكتروني", titleEn: "Email Accounts", url: "/admin/mail-accounts", group: "employee" },
+  { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
+  { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
+  { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
+  { title: "رسائل التواصل", titleEn: "Contact Messages", url: "/admin/contact-messages", group: "employee" },
+  { title: "صانع الأنظمة", titleEn: "System Builder", url: "/employee/system-builder", group: "employee" },
+  { title: "العملاء والمستخدمون", titleEn: "Customers", url: "/admin/customers", group: "employee" },
+  { title: "الموظفون", titleEn: "Employees", url: "/admin/employees", group: "employee" },
+  { title: "الإحصاءات والتحليلات", titleEn: "Analytics", url: "/admin/analytics", group: "employee" },
+  { title: "المنتجات والخدمات", titleEn: "Products", url: "/admin/products", group: "employee" },
+  { title: "الخدمات", titleEn: "Services", url: "/admin/services", group: "employee" },
+  { title: "التسويق البريدي", titleEn: "Email Marketing", url: "/admin/email-marketing", group: "employee" },
+  { title: "العروض والخصومات", titleEn: "Promotions", url: "/admin/promotions", group: "employee" },
+  { title: "أكواد الخصم", titleEn: "Discount Codes", url: "/admin/discount-codes", group: "employee" },
+  { title: "الإشعارات الدفعية", titleEn: "Push Notifications", url: "/admin/push", group: "employee" },
+  { title: "العقود", titleEn: "Contracts", url: "/admin/contracts", group: "employee" },
+  { title: "عروض الأسعار", titleEn: "Quotations", url: "/admin/quotations", group: "employee" },
+  { title: "الاستشارات", titleEn: "Consultations", url: "/admin/consultations", group: "employee" },
+  { title: "التقسيط", titleEn: "Installments", url: "/admin/installments", group: "employee" },
+  { title: "التقارير المالية", titleEn: "Profit Report", url: "/admin/profit-report", group: "employee" },
+  { title: "الشحنات والتوصيل", titleEn: "Shipments", url: "/admin/shipments", group: "employee" },
+  { title: "الموردين", titleEn: "Suppliers", url: "/admin/suppliers", group: "employee" },
+  { title: "الموارد البشرية والرواتب", titleEn: "Payroll", url: "/admin/payroll", group: "employee" },
+  { title: "الحضور والانصراف", titleEn: "Attendance", url: "/admin/attendance", group: "employee" },
+  { title: "الشركاء", titleEn: "Partners", url: "/admin/partners", group: "employee" },
+  { title: "لوحة كانبان", titleEn: "Kanban Board", url: "/admin/kanban", group: "employee" },
+  { title: "برنامج الولاء", titleEn: "Loyalty Program", url: "/admin/loyalty", group: "employee" },
+  { title: "الإحالات", titleEn: "Referrals", url: "/admin/referrals", group: "employee" },
+  { title: "التقييمات والآراء", titleEn: "Reviews", url: "/admin/reviews", group: "employee" },
+  { title: "الوظائف والتوظيف", titleEn: "Jobs", url: "/admin/jobs", group: "employee" },
+  { title: "الأخبار والمدونة", titleEn: "News", url: "/admin/news", group: "employee" },
+  { title: "الدول والمناطق", titleEn: "Countries", url: "/admin/countries", group: "employee" },
+  { title: "سجل النشاطات", titleEn: "Activity Log", url: "/admin/activity", group: "employee" },
+  { title: "جلسات الذكاء الاصطناعي", titleEn: "AI Sessions", url: "/admin/ai-sessions", group: "employee" },
+  { title: "إعدادات QIROX", titleEn: "QIROX Settings", url: "/admin/qirox-settings", group: "employee" },
+  { title: "تكوين الوحدات", titleEn: "Module Config", url: "/admin/mod-config", group: "employee" },
+  { title: "اجتماعات QMeet", titleEn: "QMeet", url: "/admin/qmeet", group: "employee" },
+  { title: "بيانات المشاريع", titleEn: "Project Data", url: "/admin/project-data", group: "employee" },
+  { title: "مميزات المشاريع", titleEn: "Project Features", url: "/admin/project-features", group: "employee" },
+  { title: "الألعاب والمكافآت", titleEn: "Gamification", url: "/admin/gamification", group: "employee" },
+  { title: "مفاتيح API", titleEn: "API Keys", url: "/admin/api-keys", group: "employee" },
+  { title: "إعدادات الاتصال", titleEn: "Connection Settings", url: "/admin/connection-settings", group: "employee" },
+  { title: "تحقق الهاتف", titleEn: "Phone Verifications", url: "/admin/phone-verifications", group: "employee" },
+  { title: "الاشتراكات الإضافية", titleEn: "Addon Subscriptions", url: "/admin/addon-subscriptions", group: "employee" },
+];
+
+function GlobalSearch() {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { data: user } = useUser();
+  const { lang } = useI18n();
+  const ar = lang === "ar";
+  const [, navigate] = useLocation();
+
+  const { data: results, isLoading } = useQuery({
+    queryKey: ["/api/search", q],
+    queryFn: async () => {
+      if (q.length < 2) return { orders: [], projects: [], clients: [] };
+      const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      if (!r.ok) return { orders: [], projects: [], clients: [] };
+      return r.json();
+    },
+    enabled: q.length >= 2,
+  });
+
+  useEffect(() => {
+    const handle = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setOpen(true);
+      }
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQ("");
+        inputRef.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
+
+  const isAdmin = user?.role !== "client";
+  const ql = q.toLowerCase();
+  // Normalize Arabic text: remove diacritics and normalize alef variants for fuzzy matching
+  const normalizeAr = (s: string) => s
+    .replace(/[\u064B-\u065F]/g, "")
+    .replace(/[أإآا]/g, "ا")
+    .replace(/[ةه]/g, "ه")
+    .replace(/[يى]/g, "ي")
+    .toLowerCase();
+  const qNorm = normalizeAr(q);
+
+  const pageResults = q.length >= 2
+    ? ALL_PAGES.filter(p => {
+        const matchesGroup = isAdmin ? (p.group === "employee" || p.group === "client" || p.group === "public") : p.group !== "employee";
+        const matchesQuery =
+          normalizeAr(p.title).includes(qNorm) ||
+          p.titleEn.toLowerCase().includes(ql) ||
+          p.url.includes(ql);
+        return matchesGroup && matchesQuery;
+      }).slice(0, 6)
+    : [];
+
+  const totalResults =
+    (results?.orders?.length || 0) +
+    (results?.projects?.length || 0) +
+    (results?.clients?.length || 0) +
+    pageResults.length;
+
+  const hasResults = totalResults > 0;
+
+  const statusColor = (s: string) => {
+    if (s === "completed" || s === "done") return "text-emerald-500";
+    if (s === "in_progress" || s === "active") return "text-cyan-500";
+    if (s === "pending") return "text-amber-500";
+    if (s === "cancelled") return "text-red-500";
+    return "text-black/40 dark:text-white/40";
+  };
+
+  const go = (url: string) => {
+    setOpen(false);
+    setQ("");
+    if (url.startsWith("http")) window.open(url, "_blank", "noopener");
+    else navigate(url);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-1.5">
+        {isLoading && q.length >= 2
+          ? <Loader2 className="w-3.5 h-3.5 text-black/30 dark:text-white/30 animate-spin" />
+          : <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+        }
+        <input
+          ref={inputRef}
+          value={q}
+          onChange={e => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder={ar ? "ابحث... (Ctrl+K)" : "Search... (Ctrl+K)"}
+          className="bg-transparent border-none outline-none text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 w-36 md:w-52"
+          data-testid="input-global-search"
+        />
+        {q ? (
+          <button onClick={() => { setQ(""); setOpen(false); }} className="text-black/30 dark:text-white/30 hover:text-black/50 dark:hover:text-white/50">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-black/10 dark:border-white/10 text-[10px] text-black/30 dark:text-white/30 font-mono select-none">
+            Ctrl+K
+          </kbd>
+        )}
+      </div>
+
+      {open && q.length >= 2 && (
+        <div className="absolute top-full mt-2 left-0 w-72 bg-white dark:bg-[#111] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl shadow-2xl z-[200] overflow-hidden" data-testid="search-results-dropdown">
+          {!hasResults && !isLoading && (
+            <div className="px-4 py-6 text-center text-sm text-black/30 dark:text-white/30">
+              {ar ? "لا توجد نتائج" : "No results found"}
+            </div>
+          )}
+
+          {pageResults.length > 0 && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <Navigation className="w-3 h-3" />
+                {ar ? "الصفحات" : "Pages"}
+              </div>
+              {pageResults.map(p => (
+                <button key={p.url} onClick={() => go(p.url)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center shrink-0">
+                    <LayoutDashboard className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <span className="text-sm font-semibold text-black dark:text-white">{ar ? p.title : p.titleEn}</span>
+                  <span className="text-[10px] text-black/25 dark:text-white/25 mr-auto font-mono">{p.url}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.clients?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <Users className="w-3 h-3" />
+                {ar ? "العملاء" : "Clients"}
+              </div>
+              {results.clients.map((c: any) => (
+                <button key={c.id} onClick={() => go(`/admin/customers`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-violet-600 dark:text-violet-400">{(c.fullName || c.username || "?")[0]?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm font-semibold text-black dark:text-white truncate">{c.fullName}</span>
+                    <span className="text-[10px] text-black/30 dark:text-white/30">@{c.username}</span>
+                  </div>
+                  <span className="text-[10px] text-black/25 dark:text-white/25 mr-auto">{c.role}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.orders?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <FileText className="w-3 h-3" />
+                {ar ? "الطلبات" : "Orders"}
+              </div>
+              {results.orders.map((o: any) => (
+                <button key={o.id} onClick={() => go(isAdmin ? `/admin/orders` : `/dashboard`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm font-semibold text-black dark:text-white truncate">{o.projectType || o.sector || ar ? "طلب" : "Order"}</span>
+                    {o.clientName && <span className="text-[10px] text-black/30 dark:text-white/30">{o.clientName}</span>}
+                  </div>
+                  <span className={`text-[10px] font-semibold mr-auto ${statusColor(o.status)}`}>{o.status}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.projects?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <FolderOpen className="w-3 h-3" />
+                {ar ? "المشاريع" : "Projects"}
+              </div>
+              {results.projects.map((p: any) => (
+                <button key={p.id} onClick={() => go(`/projects/${p.id}`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                    <FolderOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    {p.clientName && <span className="text-sm font-semibold text-black dark:text-white truncate">{p.clientName}</span>}
+                    <span className="text-[10px] text-black/30 dark:text-white/30">{p.progress ?? 0}% — {p.status}</span>
+                  </div>
+                  <span className={`text-[10px] font-semibold mr-auto ${statusColor(p.status)}`}>{p.status}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClientQuickNav() {
+  const { data: user } = useUser();
+  const { data: cartData } = useQuery<any>({
+    queryKey: ['/api/cart'],
+    enabled: user?.role === 'client',
+    refetchInterval: 30000,
+  });
+  const { data: walletData } = useQuery<any>({
+    queryKey: ['/api/wallet'],
+    enabled: user?.role === 'client',
+    refetchInterval: 60000,
+  });
+  const { data: orders } = useQuery<any[]>({
+    queryKey: ['/api/orders'],
+    enabled: user?.role === 'client',
+    refetchInterval: 60000,
+  });
+
+  if (!user || user.role !== 'client') return null;
+
+  const cartCount = cartData?.items?.length ?? 0;
+  const outstanding = walletData?.outstanding ?? null;
+  const pendingOrders = orders?.filter((o: any) => o.status === 'pending' || o.status === 'approved' || o.status === 'in_progress')?.length ?? 0;
+
+  return (
+    <div className="flex items-center gap-1" data-testid="client-quick-nav">
+      {/* Orders */}
+      <Link href="/dashboard">
+        <button
+          className="relative flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] hover:bg-black/[0.06] dark:hover:bg-white/[0.07] transition-all group"
+          title="طلباتي"
+          data-testid="button-quick-orders"
+        >
+          <FileText className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70 transition-colors" />
+          {pendingOrders > 0 && (
+            <>
+              <span className="text-[10px] font-bold text-black/60 dark:text-white/60 group-hover:text-black/90 dark:group-hover:text-white/90 transition-colors hidden sm:inline">{pendingOrders}</span>
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-500 text-white text-[7px] font-black rounded-full flex items-center justify-center sm:hidden">{pendingOrders}</span>
+            </>
+          )}
+        </button>
+      </Link>
+
+      {/* Wallet */}
+      <Link href="/wallet">
+        <button
+          className="relative flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] hover:bg-black/[0.06] dark:hover:bg-white/[0.07] transition-all group"
+          title="محفظتي"
+          data-testid="button-quick-wallet"
+        >
+          <Wallet className={`w-3.5 h-3.5 transition-colors ${outstanding > 0 ? "text-amber-500" : "text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70"}`} />
+          {outstanding !== null && (
+            <span className={`text-[10px] font-bold hidden sm:inline transition-colors ${outstanding > 0 ? "text-amber-600 dark:text-amber-400" : "text-black/60 dark:text-white/60 group-hover:text-black/90 dark:group-hover:text-white/90"}`}>
+              {Number(outstanding).toLocaleString('ar-SA')} <SARIcon size={10} className="opacity-70" />
+            </span>
+          )}
+          {outstanding > 0 && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full sm:hidden" />
+          )}
+        </button>
+      </Link>
+
+      {/* Cart */}
+      <Link href="/cart">
+        <button
+          className={`relative flex items-center gap-1.5 h-8 px-2.5 rounded-lg border transition-all group ${
+            cartCount > 0
+              ? "bg-black dark:bg-white border-black dark:border-white hover:opacity-80"
+              : "bg-black/[0.03] dark:bg-white/[0.04] border-black/[0.07] dark:border-white/[0.07] hover:bg-black/[0.06] dark:hover:bg-white/[0.07]"
+          }`}
+          title="عربة التسوق"
+          data-testid="button-quick-cart"
+        >
+          <ShoppingCart className={`w-3.5 h-3.5 transition-colors ${cartCount > 0 ? "text-white dark:text-black" : "text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70"}`} />
+          {cartCount > 0 && (
+            <span className="text-[10px] font-black text-white dark:text-black hidden sm:inline">{cartCount}</span>
+          )}
+          {cartCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center leading-none sm:hidden">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      </Link>
+    </div>
+  );
+}
+
+class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    // If we already retried (tracked via sessionStorage), start with retried=true
+    this.state = { hasError: false, retried: !!sessionStorage.getItem("__errRetried") };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[QIROX] Page error caught:", error?.name, error?.message);
+    console.error("[QIROX] Component stack:", info?.componentStack);
+
+    if (!this.state.retried) {
+      // Auto-reload once for ANY error (chunk errors, transient auth errors, etc.)
+      sessionStorage.setItem("__errRetried", "1");
+      this.setState({ retried: true }, () => {
+        window.location.reload();
+      });
+    } else {
+      // Second crash — clear the flag so next fresh load can retry again
+      sessionStorage.removeItem("__errRetried");
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // First error: silently reloading — don't flash the error page
+      if (!this.state.retried) return null;
+      return (
+        <div dir="rtl" style={{
+          minHeight: "100vh", display: "flex", flexDirection: "column",
+          background: "#0e0e12", fontFamily: "'Cairo', 'Segoe UI', sans-serif",
+          position: "relative", overflow: "hidden",
+        }}>
+
+          {/* Subtle dot grid */}
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.025, pointerEvents: "none",
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }} />
+          {/* Top-right bloom */}
+          <div style={{
+            position: "absolute", top: -120, right: -120, width: 400, height: 400,
+            borderRadius: "50%", pointerEvents: "none",
+            background: "radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 65%)",
+          }} />
+          {/* Bottom-left bloom */}
+          <div style={{
+            position: "absolute", bottom: -80, left: -80, width: 280, height: 280,
+            borderRadius: "50%", pointerEvents: "none",
+            background: "radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 65%)",
+          }} />
+          {/* Left accent stripe */}
+          <div style={{
+            position: "absolute", right: 0, top: 0, bottom: 0, width: 3,
+            background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.1) 30%, rgba(255,255,255,0.16) 65%, transparent 100%)",
+          }} />
+
+          {/* ── Top bar ── */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "1.5rem 2.5rem", borderBottom: "1px solid rgba(255,255,255,0.05)",
+            position: "relative", zIndex: 10,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <img src="/qirox-icon-nobg.png" alt="QIROX" style={{ height: 32, width: "auto", objectFit: "contain" }} />
+              <div>
+                <div style={{ color: "#fff", fontWeight: 900, fontSize: "1rem", letterSpacing: "0.15em", lineHeight: 1 }}>QIROX</div>
+                <div style={{ color: "rgba(255,255,255,0.28)", fontSize: "0.6rem", letterSpacing: "0.25em", textTransform: "uppercase", marginTop: 2 }}>Systems Factory</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.5)",
+                boxShadow: "0 0 0 0 rgba(255,255,255,0.3)",
+                animation: "pulse-dot 2s infinite",
+              }} />
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "monospace" }}>Maintenance</span>
+            </div>
+          </div>
+
+          {/* ── Main content ── */}
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "2rem", position: "relative", zIndex: 10,
+          }}>
+            <div style={{ maxWidth: 780, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: "2rem" }}>
+
+              {/* Status badge */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "0.35rem 1rem", borderRadius: 100,
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.72rem", letterSpacing: "0.15em", fontFamily: "monospace" }}>قيد التحديث — سيعود النظام قريباً</span>
+              </div>
+
+              {/* Headline */}
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.7rem", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 12, fontFamily: "monospace" }}>— system update</div>
+                <h1 style={{
+                  color: "#fff", fontWeight: 900, margin: 0, lineHeight: 1.1,
+                  fontSize: "clamp(2rem, 5vw, 3.2rem)", fontFamily: "'Cairo', sans-serif",
+                }}>
+                  هذه الصفحة تحت الصيانة
+                </h1>
+                <div style={{ color: "rgba(255,255,255,0.25)", fontWeight: 400, fontSize: "clamp(1rem, 2vw, 1.15rem)", marginTop: 8 }}>
+                  نعمل على تطويرها
+                </div>
+              </div>
+
+              {/* Description */}
+              <p style={{
+                color: "rgba(255,255,255,0.4)", fontSize: "0.95rem", textAlign: "center",
+                maxWidth: 480, lineHeight: 1.8, margin: 0,
+              }}>
+                فريق QIROX يعمل على تحسين هذه الصفحة لتقديم تجربة أفضل وأسرع.
+                يُرجى المحاولة مرة أخرى بعد لحظات، أو تابعنا عبر مواقع التواصل للاطلاع على آخر التحديثات.
+              </p>
+
+              {/* ── Video section ── */}
+              <div style={{
+                width: "100%", maxWidth: 620, borderRadius: 18, overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "#141418", position: "relative",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+              }}>
+                {/* Window chrome */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "10px 16px",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)",
+                }}>
+                  {["rgba(255,255,255,0.1)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.06)"].map((c, i) => (
+                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
+                  ))}
+                  <span style={{ color: "rgba(255,255,255,0.18)", fontSize: "0.65rem", fontFamily: "monospace", marginRight: 6 }}>qirox.sa — تعرّف علينا</span>
+                </div>
+                {/* YouTube embed */}
+                <div style={{ position: "relative", paddingBottom: "52%", height: 0 }}>
+                  <iframe
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                    src="https://www.youtube.com/embed?listType=user_uploads&list=qiroxsa&rel=0&modestbranding=1&color=white"
+                    title="QIROX على يوتيوب"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+
+              {/* ── Social media ── */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.75rem", letterSpacing: "0.2em", textTransform: "uppercase", margin: 0, fontFamily: "monospace" }}>تابعنا على</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* Instagram */}
+                  <a href="https://www.instagram.com/qirox.sa" target="_blank" rel="noopener noreferrer"
+                    style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8"/>
+                        <circle cx="12" cy="12" r="4" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8"/>
+                        <circle cx="17.5" cy="6.5" r="1.2" fill="rgba(255,255,255,0.6)"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* Twitter / X */}
+                  <a href="https://x.com/qiroxsa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* TikTok */}
+                  <a href="https://www.tiktok.com/@qirox.sa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V9.01a8.16 8.16 0 004.77 1.52V7.1a4.85 4.85 0 01-1.01-.41z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* YouTube */}
+                  <a href="https://www.youtube.com/@qiroxsa" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="16" viewBox="0 0 24 18" fill="rgba(255,255,255,0.6)">
+                        <path d="M23.5 3S23.2 1 22.2.1C21 -1 19.6 0 19 .1 16 .3 12 .3 12 .3s-4 0-7 .2c-.6 0-2 .1-3.2 1.1C.8 2.5.5 4 .5 4S.2 5.8.2 7.5v1.7c0 1.7.3 3.5.3 3.5s.3 1.5 1.3 2.4c1.2 1 2.7.9 3.4 1 2.4.2 10.8.3 10.8.3s4 0 7-.2c.6-.1 2-.1 3.2-1.1 1-1 1.3-2.4 1.3-2.4s.3-1.7.3-3.5V6.9c0-1.7-.3-3.4-.3-3.4V3zm-14 7.5V4.3l8.6 3.2-8.6 3z"/>
+                      </svg>
+                    </div>
+                  </a>
+                  {/* WhatsApp */}
+                  <a href="https://wa.me/966500000000" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)"; }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                      transition: "background 0.2s", cursor: "pointer",
+                    }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              {/* ── Action buttons ── */}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                <button
+                  onClick={() => { this.setState({ hasError: false, retried: false }); window.location.reload(); }}
+                  style={{
+                    padding: "0.8rem 2rem", background: "#fff", color: "#0e0e12",
+                    border: "none", borderRadius: 12, cursor: "pointer",
+                    fontSize: "0.9rem", fontWeight: 800, letterSpacing: "0.03em",
+                    fontFamily: "'Cairo', sans-serif",
+                    boxShadow: "0 4px 20px rgba(255,255,255,0.1)",
+                    transition: "opacity 0.2s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.88"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                >
+                  ↻ إعادة التحميل
+                </button>
+                <button
+                  onClick={() => { window.location.href = "/"; }}
+                  style={{
+                    padding: "0.8rem 2rem",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "rgba(255,255,255,0.65)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 12, cursor: "pointer",
+                    fontSize: "0.9rem", fontWeight: 600,
+                    fontFamily: "'Cairo', sans-serif",
+                    transition: "background 0.2s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.09)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
+                >
+                  الرئيسية
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* ── Bottom bar ── */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "1rem 2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)",
+            position: "relative", zIndex: 10,
+          }}>
+            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.65rem", fontFamily: "monospace", letterSpacing: "0.15em" }}>
+              QIROX © 2025 · v2.0
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["2FA", "AES-256", "TLS 1.3"].map(t => (
+                <span key={t} style={{
+                  color: "rgba(255,255,255,0.2)", fontSize: "0.6rem", fontFamily: "monospace",
+                  padding: "2px 7px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.07)",
+                }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
+function AppInner() {
+  const [location, navigate] = useLocation();
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location === "/employee/qi-agent" || location === "/employee/studio" || location === "/admin/studio" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const { data: user, isLoading: userLoading } = useUser();
+  const { t, lang, setLang, dir } = useI18n();
+  const { theme, toggle } = useTheme();
+
+  useWebSocket(user?.id);
+  const { status: pushStatus, subscribe: pushSubscribe } = usePushNotifications();
+
+  // Auto-subscribe silently if permission was already granted (e.g. on re-install)
+  useEffect(() => {
+    if (!user) return;
+    if (pushStatus !== "default") return;
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    pushSubscribe().catch(() => {});
+  }, [user, pushStatus]);
+
+  useEffect(() => {
+    import("@/lib/capacitor-init").then(m => m.initCapacitor()).catch(() => {});
+  }, []);
+
+  // Subdomain auto-redirect: if server injected window.__QIROX_TOOL_ROUTE__, navigate to that route
+  useEffect(() => {
+    const toolRoute = (window as any).__QIROX_TOOL_ROUTE__;
+    if (toolRoute && location === "/") {
+      navigate(toolRoute);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "NAVIGATE" && event.data?.url) {
+        navigate(event.data.url);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
+  if (location.startsWith("/meet/") || location === "/meet/join") {
+    return (
+      <PageErrorBoundary>
+        <Suspense fallback={null}>
+          <Switch>
+            <Route path="/meet/join" component={QMeetJoinByCode} />
+            <Route path="/meet/:roomId" component={MeetingRoom} />
+          </Switch>
+          <Toaster />
+        </Suspense>
+      </PageErrorBoundary>
+    );
+  }
+
+  const isPublicRoute = publicRoutes.some(r => location === r)
+    || location.startsWith("/templates/");
+
+  // Guard: redirect unauthenticated users to /login (must be before any early returns)
+  useEffect(() => {
+    if (!isPublicRoute && !userLoading && user === null) {
+      try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
+      navigate(`/login?redirect=${encodeURIComponent(location)}`);
+    }
+  }, [isPublicRoute, userLoading, user, location]);
+
+  // While auth is still resolving on private routes, show a blank screen
+  if (!isPublicRoute && userLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950">
+        <Loader2 className="w-5 h-5 animate-spin text-black/15 dark:text-white/15" />
+      </div>
+    );
+  }
+
+  if (!isPublicRoute && !userLoading && user === null) {
+    return null;
+  }
+
+  if (isPublicRoute) {
+    return (
+      <PageErrorBoundary>
+        <TooltipProvider>
+          <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`} data-public-layout>
+            <PublicRouter />
+            {location === "/" && <FloatingBrandPulse />}
+            <Toaster />
+          </div>
+        </TooltipProvider>
+      </PageErrorBoundary>
+    );
+  }
+
+  // Employee roles (not admin/manager/client) → dedicated EmployeeLayout (no AppSidebar duplication)
+  const ADMIN_SIDEBAR_ROLES = ["admin", "manager", "client"];
+  const isEmployeeRole = user && !ADMIN_SIDEBAR_ROLES.includes(user.role);
+
+  if (isEmployeeRole) {
+    return (
+      <PageErrorBoundary>
+        <TooltipProvider>
+          <EmployeeLayout>
+            <AdminRouter />
+            <Toaster />
+          </EmployeeLayout>
+        </TooltipProvider>
+      </PageErrorBoundary>
+    );
+  }
+
+  const style = {
+    "--sidebar-width": "18rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
+  return (
+    <PageErrorBoundary>
+    <TooltipProvider>
+      <SidebarProvider style={style as React.CSSProperties}>
+        <div className={`min-h-screen flex w-full bg-slate-50 dark:bg-gray-950 overflow-x-hidden ${dir}`}>
+          <AppSidebar />
+          <div className="flex-1 flex flex-col min-h-screen">
+            <header
+              className="border-b border-black/[0.06] dark:border-white/[0.06] bg-slate-50 dark:bg-gray-950 md:bg-slate-50/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl sticky top-0 z-40"
+              style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+            >
+              <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-4">
+                <div className="flex items-center gap-2 md:gap-4">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                </div>
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  {user && <div className="hidden sm:block"><GlobalSearch /></div>}
+                  <ClientQuickNav />
+                  <button
+                    onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                    className="bg-black/[0.03] dark:bg-white/[0.04] text-black/70 dark:text-white/70 border border-black/[0.08] dark:border-white/[0.08] px-2.5 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
+                    data-testid="button-lang-toggle"
+                  >
+                    {lang === "ar" ? "EN" : "ع"}
+                  </button>
+                  <button
+                    onClick={toggle}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
+                    data-testid="button-theme-toggle"
+                    title={theme === "dark" ? "وضع نهاري" : "وضع ليلي"}
+                  >
+                    {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-black/50" />}
+                  </button>
+                  {user && (
+                    <div className="flex items-center gap-1.5 md:hidden">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black">
+                        {(user.fullName || "U")[0]}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </header>
+            <GlobalNotificationBanner />
+            <main
+              className={`flex-1 bg-slate-50 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 pb-[80px] sm:p-5 sm:pb-[80px] md:p-8"}`}
+              id="main-content"
+            >
+              {isFullBleed ? (
+                <AdminRouter />
+              ) : (
+                <div className="max-w-7xl mx-auto w-full">
+                  <AdminRouter />
+                </div>
+              )}
+            </main>
+            <MobileBottomNav />
+            <PageHintCard />
+            <PushPermissionBanner show={!!user} />
+            <QiroxCompanion />
+            <Toaster />
+          </div>
+        </div>
+      </SidebarProvider>
+    </TooltipProvider>
+    </PageErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <>
+    <PageErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <I18nProvider>
+            <AntiDevTools />
+            <OfflineBanner />
+            <PixelTracking />
+            <GlobalMusicPlayer />
+            <AppInner />
+          </I18nProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </PageErrorBoundary>
+    </>
+  );
+}
+
+export default App;

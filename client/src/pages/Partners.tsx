@@ -1,0 +1,288 @@
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Link } from "wouter";
+import { Handshake, ArrowLeft, ExternalLink, CheckCircle2, Layers } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Partner } from "@shared/schema";
+import { useI18n } from "@/lib/i18n";
+import { useSEO } from "@/hooks/use-seo";
+
+import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
+import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
+import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
+import tuwaiqLogo from "@assets/Screenshot_2026-02-20_030415_1771717262310.png";
+import blackRoseLogo from "@assets/Screenshot_2026-01-28_010045_1771717287296.png";
+import qodratakLogo from "@assets/Screenshot_2026-01-28_125929_1771717287296.png";
+import subwayLogo from "@assets/Screenshot_2026-01-28_130014_1771717301779.png";
+import maestroLogo from "@assets/Screenshot_2026-01-28_130058_1771717301779.png";
+import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
+
+const staticPartners = [
+  { name: "QahwaCup",        nameAr: "قهوة كوب",        logo: qahwaCupLogo,   sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },
+  { name: "Gen M&Z",         nameAr: "Gen M&Z",          logo: genMZLogo,      sector: "تسويق رقمي",      sectorEn: "Marketing",    url: null },
+  { name: "Be Fluent",       nameAr: "Be Fluent",        logo: beFluentLogo,   sector: "التعليم",          sectorEn: "Education",    url: null },
+  { name: "جمعية طويق",     nameAr: "جمعية طويق",      logo: tuwaiqLogo,     sector: "القطاع غير الربحي", sectorEn: "Non-Profit",  url: "https://tuwaiq.edu.sa" },
+  { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه",  logo: blackRoseLogo,  sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },
+  { name: "Qodratak",        nameAr: "قدراتك",           logo: qodratakLogo,   sector: "التعليم والتطوير", sectorEn: "EdTech",       url: null },
+  { name: "Subway",          nameAr: "صبواي",            logo: subwayLogo,     sector: "سلاسل المطاعم",    sectorEn: "F&B Chain",    url: "https://subway.com" },
+  { name: "Maestro",         nameAr: "مايسترو",          logo: maestroLogo,    sector: "تقنية",            sectorEn: "Tech",         url: null },
+  { name: "InstaPay",        nameAr: "إنستاباي",         logo: instapayLogo,   sector: "المدفوعات",        sectorEn: "Fintech",      url: null },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.6, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }
+  })
+};
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } }
+};
+
+export default function Partners() {
+  const { lang, dir, t } = useI18n();
+  const { data: dbPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+
+  useSEO({
+    title: lang === "ar"
+      ? "شركاء كيروكس استوديو — عملاؤنا ومشاريعنا الناجحة"
+      : "Qirox Studio Partners — Our Clients & Successful Projects",
+    description: lang === "ar"
+      ? "تعرّف على شركاء كيروكس استوديو: مطاعم، متاجر، منصات تعليمية، وشركات سعودية تثق بنا لبناء أنظمتها الرقمية. أكثر من 50 مشروع ناجح في المملكة العربية السعودية."
+      : "Meet Qirox Studio partners: restaurants, stores, education platforms, and Saudi companies that trust us to build their digital systems. Over 50 successful projects in Saudi Arabia.",
+    keywords: "شركاء كيروكس, عملاء كيروكس استوديو, Qirox partners, مشاريع برمجة سعودية, شركات سعودية, portfolio كيروكس, أعمال كيروكس, Qirox Studio clients, نتائج كيروكس, مشاريع ناجحة السعودية",
+    canonical: "/partners",
+    ogType: "website",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": lang === "ar" ? "شركاء كيروكس استوديو" : "Qirox Studio Partners",
+      "url": "https://qiroxstudio.online/partners",
+      "description": lang === "ar" ? "عملاء ومشاريع كيروكس استوديو الناجحة" : "Qirox Studio successful clients and projects",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Qirox Studio",
+        "sameAs": "https://qiroxstudio.online"
+      }
+    }
+  });
+
+  const T = {
+    title1: t("partners.title1"),
+    title2: t("partners.title2"),
+    subtitle: t("partners.subtitle"),
+    ctaTitle: lang === "ar" ? "كن شريكنا القادم" : "Become Our Next Partner",
+    ctaDesc: lang === "ar" ? "انضم لعائلة QIROX وابدأ رحلة التحول الرقمي مع مصنع الأنظمة الأول" : "Join the QIROX family and start your digital transformation journey with the leading systems factory",
+    ctaBtn: lang === "ar" ? "تواصل معنا" : "Contact Us",
+  };
+
+  const hasDbPartners = dbPartners && dbPartners.length > 0;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950" dir={dir}>
+      <Navigation />
+
+      {/* Hero */}
+      <section className="pt-36 pb-16 relative overflow-hidden" data-testid="section-partners-hero">
+        <PageGraphics variant="rings-sides" />
+        <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, black 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+        <div className="container mx-auto px-4 relative z-10 text-center">
+          <motion.div initial="hidden" animate="visible">
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.04] dark:bg-white/[0.04] mb-6">
+              <Handshake className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("partners.badge")}</span>
+            </motion.div>
+            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-black dark:text-white mb-6 tracking-tight">
+              {T.title1} <span className="text-gray-400">{T.title2}</span>
+            </motion.h1>
+            <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-lg max-w-2xl mx-auto">
+              {T.subtitle}
+            </motion.p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* DB Partners (Rich Cards — with features/service) */}
+      {hasDbPartners && (
+        <section className="pb-10 container mx-auto px-4" data-testid="section-partners-featured">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white mb-3">
+              <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />
+              <span className="text-xs font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70">
+                {lang === "ar" ? "شركاء موثّقون" : "Verified Partners"}
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+          >
+            {dbPartners.map((partner, idx) => {
+              const features = lang === "ar" && partner.featuresAr?.length ? partner.featuresAr : partner.features || [];
+              const desc = lang === "ar" ? (partner.descriptionAr || partner.description) : (partner.description || partner.descriptionAr);
+              const name = lang === "ar" && partner.nameAr ? partner.nameAr : partner.name;
+
+              return (
+                <motion.div key={partner.id} variants={fadeUp} custom={idx} className="group"
+                  data-testid={`partner-featured-card-${partner.id}`}>
+                  <div className="h-full rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.06] hover:-translate-y-1">
+
+                    {/* Top colored accent */}
+                    <div className="h-1 bg-gradient-to-r from-black dark:from-white to-black/[0.08] dark:to-white/[0.1] opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="p-6">
+                      <div className="flex items-start gap-4 mb-4">
+                        {/* Logo */}
+                        <div className="w-16 h-16 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0">
+                          {partner.websiteUrl ? (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                            </a>
+                          ) : (
+                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          {partner.websiteUrl ? (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                              className="font-bold text-black dark:text-white hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors leading-tight block"
+                              data-testid={`link-partner-name-${partner.id}`}>
+                              {name}
+                            </a>
+                          ) : (
+                            <h3 className="font-bold text-black dark:text-white leading-tight">{name}</h3>
+                          )}
+
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {partner.category && (
+                              <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full font-medium">
+                                {partner.category}
+                              </span>
+                            )}
+                            {partner.relatedService && (
+                              <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                <Layers className="w-2.5 h-2.5" />
+                                {partner.relatedService}
+                              </span>
+                            )}
+                          </div>
+
+                          {partner.websiteUrl && (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white mt-1 transition-colors"
+                              data-testid={`link-partner-website-${partner.id}`}>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return partner.websiteUrl; } })()}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      {desc && (
+                        <p className="text-sm text-black/50 dark:text-white/50 leading-relaxed mb-4 line-clamp-2">{desc}</p>
+                      )}
+
+                      {/* Features */}
+                      {features.length > 0 && (
+                        <div className="space-y-1.5 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                          <p className="text-[10px] font-semibold text-black/30 dark:text-white/30 uppercase tracking-wider mb-2">
+                            {lang === "ar" ? "مميزات النظام" : "System Features"}
+                          </p>
+                          {features.map((f, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-black/60 dark:text-white/60">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
+                              {f}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </section>
+      )}
+
+      {/* Static Partners Grid */}
+      <section className={`${hasDbPartners ? "pt-4 pb-20" : "py-20"} container mx-auto px-4`} data-testid="section-partners-grid">
+        {hasDbPartners && (
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-8">
+            <p className="text-xs font-semibold text-black/30 dark:text-white/30 uppercase tracking-widest text-center">
+              {lang === "ar" ? "شركاء آخرون" : "More Partners"}
+            </p>
+          </motion.div>
+        )}
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+        >
+          {staticPartners.map((partner, idx) => (
+            <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
+              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
+                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden">
+                  {partner.url ? (
+                    <a href={partner.url} target="_blank" rel="noopener noreferrer">
+                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                    </a>
+                  ) : (
+                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                  )}
+                </div>
+                {partner.url ? (
+                  <a href={partner.url} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-bold text-black dark:text-white text-center hover:underline" data-testid={`link-static-partner-${idx}`}>
+                    {lang === "ar" ? partner.nameAr : partner.name}
+                  </a>
+                ) : (
+                  <h3 className="text-xs font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
+                )}
+                <span className="text-[9px] text-black/35 dark:text-white/35 mt-1 font-medium">
+                  {lang === "ar" ? partner.sector : partner.sectorEn}
+                </span>
+                {partner.url && (
+                  <ExternalLink className="w-2.5 h-2.5 text-black/20 dark:text-white/20 absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20" data-testid="section-partners-cta">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true }}
+            variants={fadeUp} custom={0}
+            className="rounded-[24px] bg-black dark:bg-gray-900 p-10 md:p-14 text-center"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-6">
+              <Handshake className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold font-heading text-white mb-4">{T.ctaTitle}</h2>
+            <p className="text-white/60 text-base mb-8 max-w-lg mx-auto">{T.ctaDesc}</p>
+            <Link href="/contact">
+              <Button size="lg" className="h-14 px-10 text-base rounded-md gap-2 font-semibold bg-white text-black hover:bg-white/90" data-testid="button-become-partner">
+                {T.ctaBtn}
+                {lang === "ar" ? <ArrowLeft className="w-5 h-5" /> : <ExternalLink className="w-5 h-5" />}
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}

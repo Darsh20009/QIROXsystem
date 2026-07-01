@@ -1,0 +1,455 @@
+import { ImapFlow } from "imapflow";
+import nodemailer from "nodemailer";
+import { simpleParser } from "mailparser";
+import { MailAccountModel, MailCacheModel, UserModel } from "./models";
+import type { Document } from "mongoose";
+
+export interface MailAccountDoc {
+  _id: string;
+  id: string;
+  emailAddress: string;
+  password: string;
+  displayName: string;
+  jobTitle: string;
+  imapHost: string;
+  imapPort: number;
+  smtpHost: string;
+  smtpPort: number;
+  assignedUserId: string | null;
+  isShared: boolean;
+  sharedWith: string[];
+}
+
+export interface EmailMessage {
+  uid: number;
+  subject: string;
+  from: string;
+  to: string;
+  date: Date | null;
+  seen: boolean;
+  html: string;
+  text: string;
+  snippet: string;
+  folder: string;
+}
+
+async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> {
+  const doc = await MailAccountModel.findById(accountId).lean() as any;
+  if (!doc) return null;
+  return { ...doc, id: doc._id.toString(), password: doc.password };
+}
+
+export async function fetchInbox(accountId: string, folder = "INBOX", maxMessages = 30): Promise<EmailMessage[]> {
+  const account = await getAccountRaw(accountId);
+  if (!account) throw new Error("Account not found");
+
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
+  });
+
+  const messages: EmailMessage[] = [];
+
+  // Race against a timeout to avoid hanging the API response
+  const connectWithTimeout = () => Promise.race([
+    client.connect(),
+    new Promise<never>((_, rej) => setTimeout(() => rej(new Error("IMAP connection timeout")), 9000)),
+  ]);
+
+  try {
+    await connectWithTimeout();
+    const mailbox = await client.mailboxOpen(folder);
+    const total = mailbox.exists;
+
+    if (total === 0) {
+      await client.logout();
+      return [];
+    }
+
+    const start = Math.max(1, total - maxMessages + 1);
+    const range = `${start}:${total}`;
+
+    for await (const msg of client.fetch(range, { uid: true, flags: true, envelope: true, source: true })) {
+      try {
+        const parsed = await simpleParser(msg.source as any);
+        const from = parsed.from?.text || "";
+        const to = parsed.to ? (Array.isArray(parsed.to) ? parsed.to.map((a: any) => a.text).join(", ") : (parsed.to as any).text) : "";
+        const html = parsed.html || "";
+        const text = parsed.text || "";
+        const snippet = text.slice(0, 160).replace(/\s+/g, " ").trim();
+        const seen = msg.flags?.has("\\Seen") || false;
+
+        const message: EmailMessage = {
+          uid: msg.uid,
+          subject: parsed.subject || "(بدون موضوع)",
+          from,
+          to,
+          date: parsed.date || null,
+          seen,
+          html,
+          text,
+          snippet,
+          folder,
+        };
+        messages.push(message);
+
+        // Cache it
+        await MailCacheModel.findOneAndUpdate(
+          { accountId, folder, uid: msg.uid },
+          { $set: { subject: message.subject, from, to, date: message.date, seen, html, text, snippet } },
+          { upsert: true }
+        );
+      } catch (e) {
+        // skip malformed message
+      }
+    }
+
+    await client.logout();
+  } catch (err) {
+    try { await client.logout(); } catch {}
+    throw err;
+  }
+
+  return messages.reverse();
+}
+
+export async function fetchFolders(accountId: string): Promise<string[]> {
+  const account = await getAccountRaw(accountId);
+  if (!account) throw new Error("Account not found");
+
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
+  });
+
+  try {
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000)),
+    ]);
+    const list = await client.list();
+    await client.logout();
+    return list.map((f: any) => f.path).filter(Boolean);
+  } catch (err) {
+    try { await client.logout(); } catch {}
+    return ["INBOX", "Sent", "Drafts", "Trash", "Junk"];
+  }
+}
+
+export async function markSeen(accountId: string, folder: string, uid: number): Promise<void> {
+  const account = await getAccountRaw(accountId);
+  if (!account) return;
+
+  // Update cache immediately regardless of IMAP result
+  await MailCacheModel.findOneAndUpdate({ accountId, folder, uid }, { $set: { seen: true } });
+
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 6000,
+    connectionTimeout: 6000,
+  });
+
+  try {
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000)),
+    ]);
+    await client.mailboxOpen(folder);
+    await client.messageFlagsAdd({ uid }, ["\\Seen"], { uid: true });
+    await client.logout();
+  } catch {
+    try { await client.logout(); } catch {}
+  }
+}
+
+export async function deleteMessage(accountId: string, folder: string, uid: number): Promise<void> {
+  const account = await getAccountRaw(accountId);
+  if (!account) return;
+
+  // Remove from cache immediately
+  await MailCacheModel.deleteOne({ accountId, folder, uid });
+
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 6000,
+    connectionTimeout: 6000,
+  });
+
+  try {
+    await Promise.race([
+      client.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 7000)),
+    ]);
+    await client.mailboxOpen(folder);
+    await client.messageFlagsAdd({ uid }, ["\\Deleted"], { uid: true });
+    await client.mailboxClose();
+    await client.logout();
+  } catch {
+    try { await client.logout(); } catch {}
+  }
+}
+
+export function buildBrandedHtml(opts: {
+  senderName: string;
+  senderTitle: string;
+  body: string;
+  logoUrl?: string;
+}): string {
+  const logoUrl = opts.logoUrl || "https://qiroxstudio.online/logo.png";
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  body{margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;}
+  .wrapper{max-width:620px;margin:30px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);}
+  .header{background:#000000;padding:24px 32px;text-align:center;}
+  .header img{height:40px;width:auto;object-fit:contain;}
+  .body-content{padding:32px 36px;color:#111111;font-size:15px;line-height:1.75;}
+  .body-content p{margin:0 0 16px;}
+  .signature{margin-top:32px;padding-top:20px;border-top:1px solid #e5e5e5;}
+  .sig-name{font-size:16px;font-weight:700;color:#000000;}
+  .sig-title{font-size:13px;color:#555555;margin-top:2px;}
+  .sig-company{font-size:12px;color:#888888;margin-top:6px;}
+  .footer{background:#000000;padding:16px 32px;text-align:center;}
+  .footer p{color:#ffffff;font-size:11px;margin:0;opacity:0.6;letter-spacing:0.05em;}
+  .footer a{color:#ffffff;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <img src="${logoUrl}" alt="QIROX"/>
+  </div>
+  <div class="body-content">
+    ${opts.body.split("\n").map(l => `<p>${l || "&nbsp;"}</p>`).join("")}
+    <div class="signature">
+      <div class="sig-name">${opts.senderName}</div>
+      <div class="sig-title">${opts.senderTitle}</div>
+      <div class="sig-company">QIROX Studio · qiroxstudio.online</div>
+    </div>
+  </div>
+  <div class="footer">
+    <p>© ${new Date().getFullYear()} QIROX Studio — <a href="https://qiroxstudio.online">qiroxstudio.online</a></p>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+export async function sendMail(opts: {
+  accountId: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  body: string;
+  attachments?: { filename: string; content: string; contentType: string; encoding?: string }[];
+}): Promise<void> {
+  const account = await getAccountRaw(opts.accountId);
+  if (!account) throw new Error("Account not found");
+
+  const html = buildBrandedHtml({
+    senderName: account.displayName || account.emailAddress.split("@")[0],
+    senderTitle: account.jobTitle || "QIROX Studio",
+    body: opts.body,
+  });
+
+  const transport = nodemailer.createTransport({
+    host: account.smtpHost,
+    port: account.smtpPort,
+    secure: account.smtpPort === 465,
+    auth: { user: account.emailAddress, pass: account.password },
+    tls: { rejectUnauthorized: false },
+  });
+
+  await transport.sendMail({
+    from: `"${account.displayName || "QIROX"}" <${account.emailAddress}>`,
+    to: opts.to,
+    ...(opts.cc ? { cc: opts.cc } : {}),
+    subject: opts.subject,
+    html,
+    text: opts.body,
+    attachments: (opts.attachments || []).map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, "base64"),
+      contentType: a.contentType,
+    })),
+  });
+}
+
+export async function testMailConnection(creds: {
+  emailAddress: string;
+  password: string;
+  imapHost: string;
+  imapPort: number;
+  smtpHost: string;
+  smtpPort: number;
+}): Promise<{ imap: boolean; smtp: boolean; imapError?: string; smtpError?: string }> {
+  // Test IMAP
+  let imapOk = false;
+  let imapError: string | undefined;
+  const imapClient = new ImapFlow({
+    host: creds.imapHost,
+    port: creds.imapPort,
+    secure: true,
+    auth: { user: creds.emailAddress, pass: creds.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
+  });
+  try {
+    await Promise.race([
+      imapClient.connect(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connection timeout")), 9000)),
+    ]);
+    imapOk = true;
+    await imapClient.logout();
+  } catch (e: any) {
+    imapError = e.responseText || e.message || "Unknown error";
+    try { await imapClient.logout(); } catch {}
+  }
+
+  // Test SMTP
+  let smtpOk = false;
+  let smtpError: string | undefined;
+  const transport = nodemailer.createTransport({
+    host: creds.smtpHost,
+    port: creds.smtpPort,
+    secure: creds.smtpPort === 465,
+    auth: { user: creds.emailAddress, pass: creds.password },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 8000,
+    socketTimeout: 8000,
+  });
+  try {
+    await Promise.race([
+      transport.verify(),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("SMTP timeout")), 9000)),
+    ]);
+    smtpOk = true;
+  } catch (e: any) {
+    smtpError = e.message || "Unknown error";
+  } finally {
+    transport.close();
+  }
+
+  return { imap: imapOk, smtp: smtpOk, imapError, smtpError };
+}
+
+export async function seedDefaultAccounts(): Promise<void> {
+  const defaults = [
+    {
+      emailAddress: "m.adbani@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "محمد الدباني",
+      jobTitle: "المدير التنفيذي - CEO",
+      isShared: false,
+      sharedWith: [],
+    },
+    {
+      emailAddress: "y.business@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "يوسف درويش",
+      jobTitle: "المدير التقني - CTO",
+      isShared: false,
+      sharedWith: [],
+    },
+    {
+      emailAddress: "info@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "QIROX Info",
+      jobTitle: "البريد العام",
+      isShared: true,
+      sharedWith: ["admin", "ceo", "cto", "manager"],
+    },
+    {
+      emailAddress: "support@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "QIROX Support",
+      jobTitle: "الدعم الفني",
+      isShared: true,
+      sharedWith: ["admin", "ceo", "cto", "manager", "support"],
+    },
+  ];
+
+  // Remove stale accounts from old domain or with old typo email
+  const validEmails = defaults.map(d => d.emailAddress);
+  await MailAccountModel.deleteMany({
+    emailAddress: { $regex: /qiroxstudio\.online$/i, $nin: validEmails },
+  }).catch(() => {});
+  // Remove old typo version of Mohammed's account
+  await MailAccountModel.deleteOne({ emailAddress: "m.aldbani@qirox.online" }).catch(() => {});
+
+  for (const acc of defaults) {
+    const { password, ...rest } = acc;
+    await MailAccountModel.findOneAndUpdate(
+      { emailAddress: acc.emailAddress },
+      {
+        $setOnInsert: rest,
+        $set: { password },
+      },
+      { upsert: true }
+    );
+  }
+
+  // Update known users' jobTitle and auto-assign their personal mail accounts
+  const KNOWN_USERS = [
+    {
+      patterns: [/يوسف/i, /youssef/i, /y\.darwish/i, /ydarwish/i, /درويش/i, /darwish/i, /y\.business/i],
+      jobTitle: "المدير التقني · CTO",
+      mailEmail: "y.business@qirox.online",
+    },
+    {
+      patterns: [/m\.adbani/i, /madbani/i, /m\.aldbani/i, /maldbani/i, /الدباني/i, /aldbani/i, /adbani/i],
+      jobTitle: "المدير التنفيذي · CEO",
+      mailEmail: "m.adbani@qirox.online",
+    },
+  ];
+
+  for (const ku of KNOWN_USERS) {
+    // Build OR query to find user by username, email, or fullName
+    const orConditions = ku.patterns.flatMap(p => [
+      { username: p },
+      { email: p },
+      { fullName: p },
+    ]);
+    const foundUser = await UserModel.findOne({ $or: orConditions }).select("_id fullName").catch(() => null);
+
+    if (foundUser) {
+      // Set jobTitle + workEmail on the user record
+      await UserModel.updateOne({ _id: foundUser._id }, { $set: { jobTitle: ku.jobTitle, workEmail: ku.mailEmail } }).catch(() => {});
+      // Auto-assign personal mail account (store as ObjectId)
+      await MailAccountModel.updateOne(
+        { emailAddress: ku.mailEmail },
+        { $set: { assignedUserId: foundUser._id } }
+      ).catch(() => {});
+      console.log(`[Mail] Auto-assigned ${ku.mailEmail} → ${(foundUser as any).fullName || foundUser._id}`);
+    }
+  }
+
+  console.log("[Mail] Default accounts seeded");
+}

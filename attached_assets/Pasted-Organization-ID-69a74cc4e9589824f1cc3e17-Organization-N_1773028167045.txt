@@ -1,0 +1,38 @@
+Organization ID
+69a74cc4e9589824f1cc3e17
+Organization Name
+qirox studio
+Created On
+03/03/26 - 09:04:04 PM
+Require Multi-Factor Authentication (MFA)
+This will require users to set up MFA before accessing your organization. We will not prompt users to set up MFA in this organization if they login with Google, GitHub, or use Single-Sign-On through federated authentication.
+
+Configure Session Timeout
+Preview
+
+Configure the absolute duration and the maximum idle (inactive) time allowed before requiring re-authentication within the Atlas UI. Updated timeouts will be reflected on a user's next login. If a user belongs to more than one organization, the session timeout policy from the organization with the strictest settings will be applied for each duration.
+Note: Session timeout settings are not enforced across all MongoDB services. Learn More
+
+Absolute Session Timeout: 12 hours
+Idle Session Timeout: None
+Atlas Security Contact Information
+Incomplete
+
+The designated Atlas security contact will receive security-related notifications, including notifications from the MongoDB Security Team. Note that this contact point is for notifications only and is not authorized for security decisions or approvals. Learn More
+
+No security contact email added
+Service Accounts Client Secret Maximum Expiration Time
+Manage the maximum allowed expiration for client secrets created for Atlas service accounts. You can still change individual client secret expiration time when managing the service account.
+
+Require IP Access List for the Atlas Administration API
+This will force all Atlas Administration API operations for your organization to originate from an IP Address added to your Access List by the API Key or Service Account. Docs 
+Block MongoDB Support Access to Atlas Cluster Infrastructure and Logs
+This will block MongoDB Support from accessing any cluster in this organization, their underlying infrastructure, and any logs without your explicit permission. Once this setting is turned on, you can grant MongoDB Support a 24-hour bypass at the cluster level for the cluster infrastructure or database logs to resolve any support issues. You can revoke this 24-hour bypass at any time.
+
+Note that blocking infrastructure and logs access from MongoDB Support may negatively impact cluster availability and increase support issue resolution time. Docs 
+Enable Atlas Stream Processing Across Projects
+This will allow Atlas Stream Processors to create connections to clusters in other projects within this organization.
+
+Enable Atlas features that use generative AI
+This will allow Atlas features using generative AI to be enabled in all projects. When this setting is turned on, Project Owners may be able to enable or disable individual AI features at the project level. Please see our FAQ for more information.
+

@@ -1,0 +1,43 @@
+$ git push
+Enumerating objects: 893, done.
+Counting objects: 100% (893/893), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (741/741), done.
+Writing objects: 100% (807/807), 7.87 MiB | 1.58 MiB/s, done.
+Total 807 (delta 497), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (497/497), completed with 54 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote:
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote:
+remote:     - Push cannot contain secrets
+remote:
+remote:
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:
+remote:
+remote:       —— Google OAuth Client ID ————————————————————————————
+remote:        locations:
+remote:          - commit: 66703604a720cee4c58a74a89fc3c7c9a7ab10aa
+remote:            path: .replit:56
+remote:
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/Darsh20009/QIROXsystem/security/secret-scanning/unblock-secret/3AdwRGWhT3wNzdC1c6DNKgw62cA
+remote:
+remote:
+remote:       —— Google OAuth Client Secret ————————————————————————
+remote:        locations:
+remote:          - commit: 66703604a720cee4c58a74a89fc3c7c9a7ab10aa
+remote:            path: .replit:57
+remote:
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/Darsh20009/QIROXsystem/security/secret-scanning/unblock-secret/3AdwRJFDB4rWdUVWVUgWXSxG9nF
+remote:
+remote:
+remote:
+To https://github.com/Darsh20009/QIROXsystem
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/Darsh20009/QIROXsystem

@@ -1,0 +1,1727 @@
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Loader2, Wallet, TrendingUp, Users, CreditCard, Clock, Ban, Plus, Trash2,
+  BarChart3, FileText, Building2, ShoppingBag, AlertCircle, CheckCircle, XCircle, Mail,
+  TrendingDown, Percent, ChevronDown, ChevronUp, Search, Globe, Layers,
+  UtensilsCrossed, GraduationCap, Heart, Coffee, Home, Dumbbell, ShoppingCart,
+  BookOpen, ArrowLeftRight, CheckCircle2, MinusCircle, X,
+} from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ComposedChart, Area } from "recharts";
+
+type Period = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannual" | "annual";
+
+const PERIOD_LABELS: Record<Period, string> = {
+  daily: "يومي", weekly: "أسبوعي", biweekly: "أسبوعان",
+  monthly: "شهري", quarterly: "ربع سنوي", semiannual: "نصف سنوي", annual: "سنوي",
+};
+
+const EXPENSE_CATS: Record<string, { label: string; color: string }> = {
+  operational: { label: "تشغيلي", color: "bg-black/10 text-black" },
+  marketing: { label: "تسويقي", color: "bg-black/[0.06] text-black" },
+  admin: { label: "إداري", color: "bg-black/[0.04] text-black/70" },
+  product: { label: "منتج", color: "bg-black/[0.08] text-black" },
+  other: { label: "أخرى", color: "bg-black/[0.03] text-black/60" },
+};
+
+export default function AdminFinance() {
+  const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const qc = useQueryClient();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [period, setPeriod] = useState<Period>("monthly");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects" | "systems" | "ledger" | "profits" | "expenses" | "email" | "journal">("overview");
+  const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
+  const [ledgerMonth, setLedgerMonth] = useState(currentMonth);
+  const [quickExp, setQuickExp] = useState({ orderId: "", category: "other", description: "", amount: "" });
+  const [ledgerProjectSearch, setLedgerProjectSearch] = useState("");
+  const [newOpExp, setNewOpExp] = useState({ category: "operational", description: "", amount: "" });
+  const [testEmail, setTestEmail] = useState("");
+  const [emailType, setEmailType] = useState("welcome");
+  const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [newExp, setNewExp] = useState({ category: "operational", description: "", amount: "", date: "", notes: "" });
+  const [expMonth, setExpMonth] = useState(currentMonth);
+  const [projectFilter, setProjectFilter] = useState<"pending" | "all" | "paid">("pending");
+  // Journal Entries state
+  const [journalMonth, setJournalMonth] = useState(currentMonth);
+  const [journalCategory, setJournalCategory] = useState("");
+  const [journalStatus, setJournalStatus] = useState("");
+  const [expandedJE, setExpandedJE] = useState<string | null>(null);
+  const [showAddJE, setShowAddJE] = useState(false);
+  const [newJE, setNewJE] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    description: "",
+    category: "other",
+    refNumber: "",
+    lines: [
+      { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+      { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+    ],
+  });
+  const [profitSearch, setProfitSearch] = useState("");
+  const [profitSort, setProfitSort] = useState<"profit" | "revenue" | "margin">("profit");
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  // Queries
+  const { data: summary } = useQuery<{
+    totalRevenue: number; monthRevenue: number; unpaidTotal: number;
+    cancelledTotal: number; totalOrders: number; activeClients: number;
+    monthlyBreakdown?: { name: string; value: number }[];
+    totalProjectCosts: number; totalOperationalCosts: number;
+    totalCosts: number; trueNetProfit: number; profitMargin: number;
+  }>({
+    queryKey: ["/api/admin/finance/summary"],
+    queryFn: async () => { const r = await fetch("/api/admin/finance/summary", { credentials: "include" }); return r.json(); },
+  });
+
+  const { data: profitData, isLoading: profitLoading } = useQuery<any>({
+    queryKey: ["/api/admin/profit-report"],
+    queryFn: async () => { const r = await fetch("/api/admin/profit-report", { credentials: "include" }); if (!r.ok) throw new Error("Failed"); return r.json(); },
+    enabled: activeTab === "profits",
+    refetchInterval: 60000,
+  });
+
+  const { data: reports, isLoading: reportsLoading } = useQuery<{ period: string; data: { name: string; value: number; count: number }[] }>({
+    queryKey: ["/api/admin/finance/reports", period],
+    queryFn: async () => { const r = await fetch(`/api/admin/finance/reports?period=${period}`, { credentials: "include" }); return r.json(); },
+  });
+
+  const { data: projectsData } = useQuery<{
+    projects: any[];
+    totalRemaining: number;
+    count: number;
+    bySystem: { segment: string; projects: any[]; totalAmount: number; totalPaid: number; totalRemaining: number }[];
+  }>({
+    queryKey: ["/api/admin/finance/projects-payments"],
+    queryFn: async () => { const r = await fetch("/api/admin/finance/projects-payments", { credentials: "include" }); return r.json(); },
+    enabled: activeTab === "projects" || activeTab === "systems",
+  });
+
+  const { data: expensesData, isLoading: expLoading } = useQuery<{ expenses: any[]; total: number }>({
+    queryKey: ["/api/admin/finance/operational-expenses", expMonth],
+    queryFn: async () => { const r = await fetch(`/api/admin/finance/operational-expenses?month=${expMonth}`, { credentials: "include" }); return r.json(); },
+    enabled: activeTab === "expenses",
+  });
+
+  const { data: plData, isLoading: plLoading } = useQuery<any>({
+    queryKey: ["/api/admin/finance/monthly-pl", ledgerMonth],
+    queryFn: async () => { const r = await fetch(`/api/admin/finance/monthly-pl?month=${ledgerMonth}`, { credentials: "include" }); return r.json(); },
+    enabled: activeTab === "ledger",
+  });
+
+  const { data: journalData, isLoading: journalLoading } = useQuery<{
+    entries: any[]; totalDebit: number; totalCredit: number; count: number;
+  }>({
+    queryKey: ["/api/admin/finance/journal-entries", journalMonth, journalCategory, journalStatus],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (journalMonth) params.set("month", journalMonth);
+      if (journalCategory) params.set("category", journalCategory);
+      if (journalStatus) params.set("status", journalStatus);
+      const r = await fetch(`/api/admin/finance/journal-entries?${params}`, { credentials: "include" });
+      return r.json();
+    },
+    enabled: activeTab === "journal",
+  });
+
+  const addJEMutation = useMutation({
+    mutationFn: async () => {
+      const entries = newJE.lines.filter(l => l.account.trim()).map(l => ({
+        account: l.account.trim(),
+        accountCode: l.accountCode.trim() || undefined,
+        debit: Number(l.debit) || 0,
+        credit: Number(l.credit) || 0,
+        notes: l.notes.trim() || undefined,
+      }));
+      const r = await apiRequest("POST", "/api/admin/finance/journal-entries", {
+        date: newJE.date,
+        description: newJE.description.trim(),
+        category: newJE.category,
+        refNumber: newJE.refNumber.trim() || undefined,
+        entries,
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.error || "فشل إضافة القيد");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      setShowAddJE(false);
+      setNewJE({
+        date: new Date().toISOString().slice(0, 10),
+        description: "", category: "other", refNumber: "",
+        lines: [
+          { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+          { account: "", accountCode: "", debit: "", credit: "", notes: "" },
+        ],
+      });
+      toast({ title: L ? "تم إضافة القيد المحاسبي" : "Journal entry added" });
+    },
+    onError: (err: any) => toast({ title: err.message || "فشل إضافة القيد", variant: "destructive" }),
+  });
+
+  const voidJEMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest("PATCH", `/api/admin/finance/journal-entries/${id}/void`, {});
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      toast({ title: L ? "تم إلغاء القيد" : "Entry voided" });
+    },
+    onError: () => toast({ title: L ? "فشل إلغاء القيد" : "Failed to void entry", variant: "destructive" }),
+  });
+
+  const deleteJEMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/admin/finance/journal-entries/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/journal-entries"] });
+      toast({ title: L ? "تم حذف القيد" : "Entry deleted" });
+    },
+    onError: () => toast({ title: L ? "فشل حذف القيد" : "Failed to delete entry", variant: "destructive" }),
+  });
+
+  const addQuickExpMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", `/api/admin/orders/${quickExp.orderId}/expenses`, {
+        category: quickExp.category, description: quickExp.description, amount: Number(quickExp.amount),
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/monthly-pl"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/profit-report"] });
+      setQuickExp(q => ({ ...q, description: "", amount: "" }));
+      toast({ title: "تم تسجيل المصروف وتحديث الأرباح تلقائياً" });
+    },
+    onError: () => toast({ title: "فشل تسجيل المصروف", variant: "destructive" }),
+  });
+
+  const addQuickOpExpMutation = useMutation({
+    mutationFn: async (data: { category: string; description: string; amount: number; date?: string }) => {
+      const r = await apiRequest("POST", "/api/admin/finance/operational-expenses", { ...data, notes: "" });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/monthly-pl"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/operational-expenses"] });
+      toast({ title: "تم تسجيل المصروف التشغيلي" });
+    },
+    onError: () => toast({ title: "فشل التسجيل", variant: "destructive" }),
+  });
+
+  const addExpMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/admin/finance/operational-expenses", {
+        category: newExp.category, description: newExp.description,
+        amount: Number(newExp.amount), date: newExp.date || undefined, notes: newExp.notes,
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/operational-expenses"] });
+      setNewExp({ category: "operational", description: "", amount: "", date: "", notes: "" });
+      toast({ title: L ? "تم إضافة المصروف" : "Expense added" });
+    },
+    onError: () => toast({ title: L ? "فشل إضافة المصروف" : "Failed", variant: "destructive" }),
+  });
+
+  const deleteExpMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/admin/finance/operational-expenses/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/operational-expenses"] });
+      toast({ title: L ? "تم حذف المصروف" : "Expense deleted" });
+    },
+    onError: () => toast({ title: L ? "فشل حذف المصروف" : "Failed to delete expense", variant: "destructive" }),
+  });
+
+  const testEmailMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/admin/test-email", { type: emailType, to: testEmail || undefined });
+      return r.json();
+    },
+    onSuccess: (d) => {
+      setEmailResult({ ok: true, msg: d.message || (L ? "تم الإرسال" : "Sent") });
+      toast({ title: L ? "تم إرسال البريد التجريبي" : "Test email sent" });
+    },
+    onError: async (err: any) => {
+      const msg = err?.message || (L ? "فشل الإرسال" : "Send failed");
+      setEmailResult({ ok: false, msg });
+      toast({ title: L ? "فشل إرسال البريد" : "Email send failed", variant: "destructive" });
+    },
+  });
+
+  const chartData = reports?.data || [];
+  const totalChartRevenue = chartData.reduce((s, d) => s + d.value, 0);
+  const totalExpenses = expensesData?.total || 0;
+  const netProfit = (summary?.totalRevenue || 0) - totalExpenses;
+
+  const expByCategory = (expensesData?.expenses || []).reduce((acc: Record<string, number>, e: any) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount;
+    return acc;
+  }, {});
+
+  const tabs = [
+    { key: "overview", label: L ? "نظرة عامة" : "Overview",           icon: BarChart3 },
+    { key: "journal",  label: L ? "دفتر القيود" : "Journal",           icon: BookOpen },
+    { key: "ledger",   label: L ? "السجل المالي" : "P&L Ledger",       icon: CreditCard },
+    { key: "projects", label: L ? "دفعات المشاريع" : "Payments",       icon: FileText },
+    { key: "systems",  label: L ? "حسب النظام" : "By System",          icon: Layers },
+    { key: "profits",  label: L ? "أرباح المشاريع" : "Profits",        icon: TrendingUp },
+    { key: "expenses", label: L ? "المصاريف" : "Expenses",             icon: ShoppingBag },
+    { key: "email",    label: L ? "نظام البريد" : "Email System",      icon: Mail },
+  ];
+
+  // Segment label + icon map (mirrors AdminTemplates.tsx SEGMENT_META)
+  const SEG_META: Record<string, { labelAr: string; icon: any }> = {
+    restaurant:   { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed },
+    clinic:       { labelAr: "عيادات وصحة",      icon: Heart },
+    education:    { labelAr: "تعليم وتدريب",     icon: GraduationCap },
+    ecommerce:    { labelAr: "متاجر إلكترونية",  icon: ShoppingCart },
+    realestate:   { labelAr: "عقارات",           icon: Home },
+    gym:          { labelAr: "رياضة ولياقة",     icon: Dumbbell },
+    hotel:        { labelAr: "فنادق وسياحة",     icon: Building2 },
+    cafe:         { labelAr: "مقاهي",            icon: Coffee },
+    other:        { labelAr: "أخرى",             icon: Globe },
+  };
+
+  // Profit report helpers
+  const profitOrders: any[] = profitData?.orders || [];
+  const profitTotals = profitData?.totals || { revenue: 0, expenses: 0, netProfit: 0 };
+  const filteredProfitOrders = profitOrders
+    .filter(o => !profitSearch || o.businessName?.toLowerCase().includes(profitSearch.toLowerCase()) || o.client?.fullName?.toLowerCase().includes(profitSearch.toLowerCase()))
+    .sort((a, b) => profitSort === "profit" ? b.netProfit - a.netProfit : profitSort === "revenue" ? b.revenue - a.revenue : b.margin - a.margin);
+  const PROFIT_CAT_LABELS: Record<string, string> = {
+    hosting: L ? "استضافة" : "Hosting", domain: L ? "دومين" : "Domain",
+    freelancer: L ? "مستقل" : "Freelancer", license: L ? "ترخيص" : "License",
+    ads: L ? "إعلانات" : "Ads", design: L ? "تصميم" : "Design",
+    salary: L ? "راتب" : "Salary", commission: L ? "عمولة" : "Commission",
+    other: L ? "أخرى" : "Other",
+  };
+
+  return (
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
+      <PageGraphics variant="dashboard" />
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+          <Wallet className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-black text-black">{L ? "الإدارة المالية" : "Finance Management"}</h1>
+          <p className="text-xs text-black/35">{L ? "تحليلات شاملة — الإيرادات والمصاريف والأرباح" : "Full analytics — revenue, expenses & profit"}</p>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="border-black/[0.07] shadow-none rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-medium text-black/60">{L ? "إجمالي الإيرادات" : "Total Revenue"}</CardTitle>
+            <TrendingUp className="h-4 w-4 text-black" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-revenue">
+              {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            </div>
+            <p className="text-xs text-black/30 mt-1">{L ? "فواتير مدفوعة فقط" : "Paid invoices only"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-black/[0.07] shadow-none rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-medium text-black/60">{L ? "إجمالي التكاليف" : "Total Costs"}</CardTitle>
+            <TrendingDown className="h-4 w-4 text-black/60" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-costs">
+              {(summary?.totalCosts || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            </div>
+            <p className="text-xs text-black/30 mt-1">
+              {L ? "مشاريع" : "Projects"}: {(summary?.totalProjectCosts || 0).toLocaleString()} · {L ? "تشغيل" : "Ops"}: {(summary?.totalOperationalCosts || 0).toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-black/10 shadow-none rounded-2xl bg-black/[0.04]">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-medium text-black">{L ? "مبالغ معلقة" : "Pending"}</CardTitle>
+            <Clock className="h-4 w-4 text-black" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-pending-amount">
+              {(summary?.unpaidTotal || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            </div>
+            <p className="text-xs text-black/60 mt-1">{L ? "فواتير غير مدفوعة" : "Unpaid invoices"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className={`shadow-none rounded-2xl border ${(summary?.trueNetProfit || 0) >= 0 ? "bg-black border-black" : "bg-black/[0.04] border-black/10"}`}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+            <CardTitle className={`text-xs font-medium ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/60" : "text-black/60"}`}>{L ? "صافي الربح" : "Net Profit"}</CardTitle>
+            <Percent className={`h-4 w-4 ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/70" : "text-black/50"}`} />
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className={`text-2xl font-black flex items-center gap-1 ${(summary?.trueNetProfit || 0) >= 0 ? "text-white" : "text-black"}`} data-testid="text-net-profit">
+              {(summary?.trueNetProfit || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
+            </div>
+            <p className={`text-xs mt-1 font-bold ${(summary?.trueNetProfit || 0) >= 0 ? "text-white/40" : "text-black/40"}`}>
+              {summary?.profitMargin || 0}% {L ? "هامش ربح" : "margin"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-black/[0.06] overflow-x-auto">
+        {tabs.map(t => {
+          const Icon = t.icon;
+          return (
+            <button key={t.key}
+              onClick={() => setActiveTab(t.key as any)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${activeTab === t.key ? "border-black text-black" : "border-transparent text-black/40 hover:text-black/60"}`}
+              data-testid={`tab-${t.key}`}>
+              <Icon className="w-3.5 h-3.5" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* === TAB: Overview === */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Period selector */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-semibold text-black/50">{L ? "عرض التقرير حسب:" : "Report by:"}</span>
+            <div className="flex gap-1 flex-wrap">
+              {(Object.keys(PERIOD_LABELS) as Period[]).map(p => (
+                <button key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${period === p ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.08]"}`}
+                  data-testid={`button-period-${p}`}>
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue chart */}
+          <Card className="border-black/[0.07] shadow-none rounded-2xl">
+            <CardHeader className="px-5 pt-5 pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-bold text-black/70">
+                  {L ? `تقرير الإيرادات — ${PERIOD_LABELS[period]}` : `Revenue Report — ${PERIOD_LABELS[period]}`}
+                </CardTitle>
+                <div className="flex items-center gap-1 text-sm font-black text-black">
+                  {totalChartRevenue.toLocaleString()} <SARIcon size={11} className="opacity-60" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="h-[260px] px-2">
+              {reportsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {period === "annual" ? (
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#00000008" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#00000050" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#00000050" }} />
+                      <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString()} ${L ? "ر.س" : "SAR"}`, L ? "الإيراد" : "Revenue"]} />
+                      <Line type="monotone" dataKey="value" stroke="#000" strokeWidth={2.5} dot={{ fill: "#000", r: 4 }} />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#00000008" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#00000050" }} />
+                      <YAxis tick={{ fontSize: 10, fill: "#00000050" }} />
+                      <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString()} ${L ? "ر.س" : "SAR"}`, L ? "الإيراد" : "Revenue"]} />
+                      <Bar dataKey="value" fill="#000" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Stats row */}
+          {chartData.length > 0 && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "المتوسط" : "Average"}</p>
+                <p className="text-lg font-black text-black flex items-center justify-center gap-1">
+                  {Math.round(totalChartRevenue / Math.max(chartData.filter(d => d.value > 0).length, 1)).toLocaleString()}
+                  <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "الأعلى" : "Highest"}</p>
+                <p className="text-lg font-black text-black flex items-center justify-center gap-1">
+                  {Math.max(...chartData.map(d => d.value)).toLocaleString()}
+                  <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "عدد الفواتير" : "Invoices"}</p>
+                <p className="text-lg font-black text-black">{chartData.reduce((s, d) => s + d.count, 0)}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Revenue vs Expenses summary row */}
+          {expensesData && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? `مصاريف ${expMonth}` : `${expMonth} Expenses`}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "مبالغ معلقة" : "Pending"}</p>
+                <p className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">
+                  {(summary?.unpaidTotal || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className={`border rounded-xl p-4 text-center ${netProfit >= 0 ? "bg-black border-black" : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800"}`}>
+                <p className={`text-[10px] mb-1 ${netProfit >= 0 ? "text-white/60" : "text-red-400"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+                <p className={`text-base font-black flex items-center justify-center gap-1 ${netProfit >= 0 ? "text-white" : "text-red-600"}`}>
+                  {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* === TAB: Project Payments === */}
+
+      {activeTab === "projects" && (
+        <div className="space-y-4">
+          {projectsData && (
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="bg-black rounded-2xl p-4 text-white">
+                <p className="text-xs text-white/60 mb-1">{L ? "إجمالي المبالغ المتبقية في السوق" : "Total Remaining in Market"}</p>
+                <p className="text-2xl font-black flex items-center gap-1">
+                  {(projectsData.totalRemaining || 0).toLocaleString()} <SARIcon size={14} className="opacity-70" />
+                </p>
+                <p className="text-xs text-white/50 mt-1">{projectsData.count} {L ? "مشروع بدفعات متبقية" : "projects with remaining"}</p>
+              </div>
+              <div className="bg-black/[0.04] border border-black/[0.07] rounded-2xl p-4">
+                <p className="text-xs text-black/50 mb-1">{L ? "إجمالي المشاريع" : "Total Projects"}</p>
+                <p className="text-2xl font-black text-black">{projectsData.projects?.length || 0}</p>
+                <p className="text-xs text-black/30 mt-1">{L ? "في حالة نشطة" : "in active states"}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Project filter tabs */}
+          <div className="flex gap-1 border-b border-black/[0.06] dark:border-white/[0.06] mb-3">
+            {[
+              { key: "pending", label: L ? "متبقية فقط" : "Pending Only" },
+              { key: "all",     label: L ? "كل المشاريع" : "All Projects" },
+              { key: "paid",    label: L ? "مدفوعة بالكامل" : "Fully Paid" },
+            ].map(t => (
+              <button key={t.key} onClick={() => setProjectFilter(t.key as any)}
+                className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${projectFilter === t.key ? "border-black dark:border-white text-black dark:text-white" : "border-transparent text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60"}`}
+                data-testid={`tab-project-filter-${t.key}`}>
+                {t.label}
+                {projectsData && (
+                  <span className="mr-1.5 text-[9px] bg-black/[0.06] dark:bg-white/[0.08] rounded-full px-1.5 py-0.5">
+                    {t.key === "pending" ? (projectsData.projects || []).filter((p: any) => p.remaining > 0).length
+                      : t.key === "paid" ? (projectsData.projects || []).filter((p: any) => p.remaining <= 0).length
+                      : (projectsData.projects || []).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {!projectsData ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
+            ) : (() => {
+              const filtered = (projectsData.projects || []).filter((p: any) =>
+                projectFilter === "pending" ? p.remaining > 0 :
+                projectFilter === "paid" ? p.remaining <= 0 : true
+              );
+              if (filtered.length === 0) return (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-10 h-10 text-black/15 dark:text-white/15 mx-auto mb-3" />
+                  <p className="text-black/30 dark:text-white/30 text-sm">
+                    {projectFilter === "pending" ? (L ? "جميع المشاريع مدفوعة بالكامل" : "All projects are fully paid") : (L ? "لا توجد مشاريع" : "No projects found")}
+                  </p>
+                </div>
+              );
+              return filtered.map((project: any) => {
+                const paidPct = project.totalAmount > 0 ? Math.min(100, Math.round((project.totalPaid / project.totalAmount) * 100)) : 0;
+                const isPaid = project.remaining <= 0;
+                return (
+                  <div key={project.id} className={`border rounded-2xl p-4 flex items-center justify-between gap-4 transition-colors ${isPaid ? "border-black/[0.04] dark:border-white/[0.04] opacity-60" : "border-black/[0.08] dark:border-white/[0.08]"}`}
+                    data-testid={`project-payment-row-${project.id}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-black dark:text-white text-sm truncate">{project.businessName}</span>
+                        <Badge variant="outline" className={`text-[10px] ${isPaid ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400" : "border-black/10 dark:border-white/10"}`}>
+                          {isPaid ? (L ? "مدفوع ✓" : "Paid ✓") : project.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{project.clientName} · #{project.orderNumber || project.id.slice(-6)}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className={`flex items-center gap-1 text-sm font-black ${isPaid ? "text-emerald-600 dark:text-emerald-400" : "text-black dark:text-white"}`}>
+                        {isPaid ? (L ? "مكتمل" : "Complete") : <>{project.remaining.toLocaleString()} <SARIcon size={11} className="opacity-60" /></>}
+                      </div>
+                      <div className="text-[10px] text-black/30 dark:text-white/30">
+                        {L ? "من" : "of"} {project.totalAmount.toLocaleString()} · {L ? "مدفوع" : "paid"}: {project.totalPaid.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="w-20 flex-shrink-0">
+                      <div className="h-1.5 bg-black/[0.06] dark:bg-white/[0.07] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${isPaid ? "bg-emerald-500" : "bg-black dark:bg-white"}`}
+                          style={{ width: `${paidPct}%` }} />
+                      </div>
+                      <p className="text-[10px] text-black/30 dark:text-white/30 text-center mt-0.5">{paidPct}%</p>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* === TAB: By System === */}
+      {activeTab === "systems" && (
+        <div className="space-y-4">
+          {/* Header KPIs */}
+          {!projectsData ? (
+            <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : (
+            <>
+              {/* Top summary bar */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-black rounded-2xl p-4 text-white col-span-1">
+                  <p className="text-[10px] text-white/50 mb-1">إجمالي الدفعات المتبقية في السوق</p>
+                  <p className="text-2xl font-black flex items-center gap-1">
+                    {(projectsData.totalRemaining || 0).toLocaleString()}
+                    <SARIcon size={13} className="opacity-70" />
+                  </p>
+                  <p className="text-[10px] text-white/40 mt-1">{projectsData.count} مشروع بدفعات لم تُسدَّد</p>
+                </div>
+                <div className="border border-black/[0.07] rounded-2xl p-4">
+                  <p className="text-[10px] text-black/40 mb-1">إجمالي المشاريع</p>
+                  <p className="text-2xl font-black text-black">{(projectsData.projects || []).length}</p>
+                  <p className="text-[10px] text-black/30 mt-1">موزّعة على {(projectsData.bySystem || []).length} أنظمة</p>
+                </div>
+                <div className="border border-black/[0.07] rounded-2xl p-4">
+                  <p className="text-[10px] text-black/40 mb-1">إجمالي العقود</p>
+                  <p className="text-2xl font-black text-black">
+                    {(projectsData.projects || []).reduce((s: number, p: any) => s + p.totalAmount, 0).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-black/30 mt-1 flex items-center gap-0.5">
+                    مدفوع: {(projectsData.projects || []).reduce((s: number, p: any) => s + p.totalPaid, 0).toLocaleString()}
+                    <SARIcon size={9} className="opacity-40 mr-0.5" />
+                  </p>
+                </div>
+              </div>
+
+              {/* Systems list */}
+              <div className="space-y-3">
+                {(projectsData.bySystem || []).map((sys) => {
+                  const meta = SEG_META[sys.segment] || SEG_META["other"];
+                  const Icon = meta.icon;
+                  const isExpanded = expandedSegment === sys.segment;
+                  const paidPct = sys.totalAmount > 0 ? Math.min(100, Math.round((sys.totalPaid / sys.totalAmount) * 100)) : 0;
+                  const pendingProjects = sys.projects.filter((p: any) => p.remaining > 0);
+
+                  return (
+                    <div key={sys.segment} className="border border-black/[0.08] rounded-2xl overflow-hidden" data-testid={`system-finance-${sys.segment}`}>
+                      {/* System header row */}
+                      <button
+                        onClick={() => setExpandedSegment(isExpanded ? null : sys.segment)}
+                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-black/[0.01] transition-colors text-right"
+                        data-testid={`button-expand-system-${sys.segment}`}
+                      >
+                        {/* Icon */}
+                        <div className="w-10 h-10 rounded-xl bg-black/[0.05] flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-5 h-5 text-black/60" />
+                        </div>
+
+                        {/* Name + counts */}
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="font-black text-sm text-black">{meta.labelAr || sys.segment}</p>
+                          <p className="text-[10px] text-black/35 mt-0.5">
+                            {sys.projects.length} مشروع إجمالي ·{" "}
+                            <span className={pendingProjects.length > 0 ? "text-black font-bold" : "text-black/30"}>
+                              {pendingProjects.length} بدفعات متبقية
+                            </span>
+                          </p>
+                        </div>
+
+                        {/* Amounts */}
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px] text-black/35 mb-0.5">إجمالي العقود</p>
+                          <p className="text-sm font-bold text-black/70 flex items-center gap-0.5 justify-end">
+                            {sys.totalAmount.toLocaleString()} <SARIcon size={9} className="opacity-40" />
+                          </p>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px] text-black/35 mb-0.5">مدفوع</p>
+                          <p className="text-sm font-bold text-black/50 flex items-center gap-0.5 justify-end">
+                            {sys.totalPaid.toLocaleString()} <SARIcon size={9} className="opacity-30" />
+                          </p>
+                        </div>
+
+                        {/* Remaining pill */}
+                        <div className={`rounded-xl px-3 py-2 flex-shrink-0 text-right min-w-[90px] ${sys.totalRemaining > 0 ? "bg-black" : "bg-black/[0.04] border border-black/[0.07]"}`}>
+                          <p className={`text-[9px] mb-0.5 ${sys.totalRemaining > 0 ? "text-white/50" : "text-black/30"}`}>متبقي</p>
+                          <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${sys.totalRemaining > 0 ? "text-white" : "text-black/30"}`}>
+                            {sys.totalRemaining > 0 ? <>{sys.totalRemaining.toLocaleString()} <SARIcon size={9} className="opacity-70" /></> : "✓ مكتمل"}
+                          </p>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-20 flex-shrink-0">
+                          <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${paidPct >= 100 ? "bg-black/40" : "bg-black"}`} style={{ width: `${paidPct}%` }} />
+                          </div>
+                          <p className="text-[9px] text-black/30 text-center mt-0.5">{paidPct}%</p>
+                        </div>
+
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-black/30 flex-shrink-0" />}
+                      </button>
+
+                      {/* Expanded: project list for this system */}
+                      {isExpanded && (
+                        <div className="border-t border-black/[0.06] bg-black/[0.01] divide-y divide-black/[0.04]">
+                          {sys.projects.length === 0 ? (
+                            <p className="text-center text-xs text-black/30 py-4">لا توجد مشاريع</p>
+                          ) : sys.projects.map((project: any) => {
+                            const ppct = project.totalAmount > 0 ? Math.min(100, Math.round((project.totalPaid / project.totalAmount) * 100)) : 0;
+                            const isPaid = project.remaining <= 0;
+                            return (
+                              <div key={project.id} className="flex items-center gap-3 px-5 py-3" data-testid={`system-project-${project.id}`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-xs text-black">{project.businessName}</span>
+                                    {project.planTier && (
+                                      <span className="text-[9px] bg-black/[0.06] text-black/50 rounded-full px-1.5 py-0.5 font-bold uppercase">{project.planTier}</span>
+                                    )}
+                                    {isPaid && <span className="text-[9px] text-black/30 font-bold">✓ مكتمل</span>}
+                                  </div>
+                                  <p className="text-[10px] text-black/35 mt-0.5">{project.clientName} · #{project.orderNumber || project.id.slice(-6)}</p>
+                                </div>
+                                {/* Mini progress */}
+                                <div className="w-16 flex-shrink-0">
+                                  <div className="h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${isPaid ? "bg-black/30" : "bg-black"}`} style={{ width: `${ppct}%` }} />
+                                  </div>
+                                  <p className="text-[9px] text-black/25 text-center">{ppct}%</p>
+                                </div>
+                                {/* Remaining amount */}
+                                <div className="text-right flex-shrink-0 min-w-[80px]">
+                                  {isPaid ? (
+                                    <p className="text-xs text-black/25 font-bold">مدفوع ✓</p>
+                                  ) : (
+                                    <p className="text-xs font-black text-black flex items-center gap-0.5 justify-end">
+                                      {project.remaining.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                    </p>
+                                  )}
+                                  <p className="text-[9px] text-black/25">من {project.totalAmount.toLocaleString()}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {(projectsData.bySystem || []).length === 0 && (
+                  <div className="text-center py-16">
+                    <Layers className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                    <p className="text-black/30 text-sm">لا توجد مشاريع مربوطة بأنظمة بعد</p>
+                    <p className="text-black/20 text-xs mt-1">تأكد من تحديد حقل "قطاع النظام" عند إنشاء الطلبات</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* === TAB: JOURNAL ENTRIES (دفتر القيود المحاسبية) === */}
+      {activeTab === "journal" && (() => {
+        const JE_CATS: Record<string, string> = {
+          revenue: L ? "إيرادات" : "Revenue",
+          expense: L ? "مصاريف" : "Expense",
+          asset: L ? "أصول" : "Asset",
+          liability: L ? "التزامات" : "Liability",
+          equity: L ? "حقوق ملكية" : "Equity",
+          transfer: L ? "تحويل" : "Transfer",
+          payroll: L ? "رواتب" : "Payroll",
+          other: L ? "أخرى" : "Other",
+        };
+        const JE_STATUS: Record<string, { label: string; color: string }> = {
+          posted: { label: L ? "مرحّل" : "Posted", color: "bg-black text-white border-black" },
+          draft:  { label: L ? "مسودة" : "Draft",  color: "bg-black/[0.05] text-black/60 border-black/10" },
+          voided: { label: L ? "ملغي" : "Voided",  color: "bg-red-50 text-red-600 border-red-200" },
+        };
+        const jeList: any[] = journalData?.entries || [];
+        const totalDebit = journalData?.totalDebit || 0;
+        const totalCredit = journalData?.totalCredit || 0;
+        const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+        const newJETotalDebit = newJE.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+        const newJETotalCredit = newJE.lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+        const newJEBalanced = Math.abs(newJETotalDebit - newJETotalCredit) < 0.01 && newJETotalDebit > 0;
+
+        return (
+          <div className="space-y-5">
+            {/* Header bar */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-black/40" />
+                <span className="text-sm font-bold text-black/70">{L ? "دفتر القيود المحاسبية" : "Accounting Journal"}</span>
+              </div>
+              <input type="month" value={journalMonth} onChange={e => setJournalMonth(e.target.value)}
+                className="h-8 px-3 border border-black/[0.1] rounded-xl text-xs font-mono outline-none focus:border-black/20 bg-transparent" />
+              <Select value={journalCategory || "all"} onValueChange={v => setJournalCategory(v === "all" ? "" : v)}>
+                <SelectTrigger className="h-8 text-xs border-black/10 w-32"><SelectValue placeholder={L ? "الفئة" : "Category"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{L ? "كل الفئات" : "All"}</SelectItem>
+                  {Object.entries(JE_CATS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={journalStatus || "all"} onValueChange={v => setJournalStatus(v === "all" ? "" : v)}>
+                <SelectTrigger className="h-8 text-xs border-black/10 w-28"><SelectValue placeholder={L ? "الحالة" : "Status"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{L ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="posted">{L ? "مرحّل" : "Posted"}</SelectItem>
+                  <SelectItem value="draft">{L ? "مسودة" : "Draft"}</SelectItem>
+                  <SelectItem value="voided">{L ? "ملغي" : "Voided"}</SelectItem>
+                </SelectContent>
+              </Select>
+              {journalLoading && <Loader2 className="w-4 h-4 animate-spin text-black/30" />}
+              <Button onClick={() => setShowAddJE(!showAddJE)} className="mr-auto h-8 text-xs gap-1.5 bg-black text-white" data-testid="button-add-je">
+                <Plus className="w-3.5 h-3.5" />{L ? "قيد جديد" : "New Entry"}
+              </Button>
+            </div>
+
+            {/* Balance summary bar */}
+            <div className={`flex items-center gap-4 px-5 py-3 rounded-2xl border ${isBalanced ? "bg-black/[0.02] border-black/[0.06]" : "bg-amber-50 border-amber-200"}`}>
+              <ArrowLeftRight className="w-4 h-4 text-black/40 flex-shrink-0" />
+              <div className="flex items-center gap-6 flex-1 flex-wrap">
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "إجمالي المدين" : "Total Debit"}</p>
+                  <p className="text-sm font-black text-black flex items-center gap-1">{totalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "إجمالي الدائن" : "Total Credit"}</p>
+                  <p className="text-sm font-black text-black flex items-center gap-1">{totalCredit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-black/40">{L ? "عدد القيود" : "Entries"}</p>
+                  <p className="text-sm font-black text-black">{journalData?.count || 0}</p>
+                </div>
+              </div>
+              {isBalanced && totalDebit > 0 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-black font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-black" />{L ? "متوازن" : "Balanced"}
+                </div>
+              )}
+            </div>
+
+            {/* Add new JE form */}
+            {showAddJE && (
+              <div className="border border-black/[0.1] rounded-2xl p-5 space-y-4 bg-black/[0.01]">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-black">{L ? "إضافة قيد محاسبي جديد" : "Add Journal Entry"}</p>
+                  <button onClick={() => setShowAddJE(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-black/[0.05] transition">
+                    <X className="w-4 h-4 text-black/40" />
+                  </button>
+                </div>
+                {/* Meta row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Input type="date" value={newJE.date} onChange={e => setNewJE(p => ({ ...p, date: e.target.value }))}
+                    className="h-8 text-xs border-black/10" data-testid="input-je-date" />
+                  <Input placeholder={L ? "رقم المرجع (اختياري)" : "Ref # (optional)"} value={newJE.refNumber}
+                    onChange={e => setNewJE(p => ({ ...p, refNumber: e.target.value }))}
+                    className="h-8 text-xs border-black/10" data-testid="input-je-ref" />
+                  <Input placeholder={L ? "وصف القيد *" : "Description *"} value={newJE.description}
+                    onChange={e => setNewJE(p => ({ ...p, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-je-desc" />
+                </div>
+                <Select value={newJE.category} onValueChange={v => setNewJE(p => ({ ...p, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10 w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(JE_CATS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                {/* Lines header */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-black/[0.08]">
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-8">#</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold">{L ? "اسم الحساب *" : "Account *"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-20">{L ? "كود" : "Code"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-28">{L ? "مدين ↑" : "Debit ↑"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold w-28">{L ? "دائن ↓" : "Credit ↓"}</th>
+                        <th className="text-right py-2 px-2 text-black/40 font-semibold">{L ? "ملاحظة" : "Notes"}</th>
+                        <th className="w-7" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newJE.lines.map((line, idx) => (
+                        <tr key={idx} className="border-b border-black/[0.04]">
+                          <td className="py-1.5 px-2 text-black/30 text-center">{idx + 1}</td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.account} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], account: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder={L ? "مثال: النقدية" : "e.g. Cash"} className="h-7 text-[11px] border-black/10" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.accountCode} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], accountCode: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="1-1" className="h-7 text-[11px] border-black/10" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input type="number" value={line.debit} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], debit: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="0" className="h-7 text-[11px] border-black/10 text-black font-bold" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input type="number" value={line.credit} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], credit: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="0" className="h-7 text-[11px] border-black/10 text-black/60" dir="ltr" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <Input value={line.notes} onChange={e => setNewJE(p => { const l = [...p.lines]; l[idx] = { ...l[idx], notes: e.target.value }; return { ...p, lines: l }; })}
+                              placeholder="..." className="h-7 text-[11px] border-black/10" />
+                          </td>
+                          <td className="py-1.5 px-2">
+                            {idx >= 2 && (
+                              <button onClick={() => setNewJE(p => { const l = p.lines.filter((_, i) => i !== idx); return { ...p, lines: l }; })}
+                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/[0.05]">
+                                <X className="w-3 h-3 text-black/40" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-black/[0.08] bg-black/[0.02]">
+                        <td colSpan={3} className="py-2 px-2">
+                          <button onClick={() => setNewJE(p => ({ ...p, lines: [...p.lines, { account: "", accountCode: "", debit: "", credit: "", notes: "" }] }))}
+                            className="text-[10px] font-semibold text-black/40 hover:text-black flex items-center gap-1">
+                            <Plus className="w-3 h-3" />{L ? "إضافة سطر" : "Add line"}
+                          </button>
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          <p className={`text-xs font-black flex items-center justify-end gap-0.5 ${newJEBalanced ? "text-black" : "text-amber-600"}`}>
+                            {newJETotalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                          </p>
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          <p className={`text-xs font-black flex items-center justify-end gap-0.5 ${newJEBalanced ? "text-black/60" : "text-amber-600"}`}>
+                            {newJETotalCredit.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                          </p>
+                        </td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                {!newJEBalanced && newJETotalDebit > 0 && (
+                  <p className="text-[10px] text-amber-600 font-semibold">⚠ {L ? `القيد غير متوازن — الفرق: ${Math.abs(newJETotalDebit - newJETotalCredit).toLocaleString()} ر.س` : `Unbalanced — diff: ${Math.abs(newJETotalDebit - newJETotalCredit).toLocaleString()} SAR`}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <Button onClick={() => addJEMutation.mutate()} disabled={addJEMutation.isPending || !newJE.description || !newJEBalanced}
+                    className="h-8 text-xs bg-black text-white gap-1" data-testid="button-save-je">
+                    {addJEMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                    {L ? "حفظ القيد" : "Save Entry"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowAddJE(false)} className="h-8 text-xs border-black/10">
+                    {L ? "إلغاء" : "Cancel"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Journal entries list */}
+            {journalLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+            ) : jeList.length === 0 ? (
+              <div className="text-center py-20">
+                <BookOpen className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                <p className="text-black/30 text-sm">{L ? "لا قيود محاسبية لهذه الفترة" : "No journal entries for this period"}</p>
+                <p className="text-black/20 text-xs mt-1">{L ? "ابدأ بإضافة قيد جديد من الزر أعلاه" : "Add your first entry using the button above"}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {jeList.map((je: any) => {
+                  const isExpanded = expandedJE === je._id;
+                  const jeTotalDebit = je.entries?.reduce((s: number, e: any) => s + (e.debit || 0), 0) || 0;
+                  const jeTotalCredit = je.entries?.reduce((s: number, e: any) => s + (e.credit || 0), 0) || 0;
+                  const statusInfo = JE_STATUS[je.status] || JE_STATUS.posted;
+                  const catLabel = JE_CATS[je.category] || je.category;
+                  return (
+                    <div key={je._id} data-testid={`je-${je._id}`} className={`border rounded-2xl overflow-hidden ${je.status === "voided" ? "border-red-100 opacity-60" : "border-black/[0.07]"}`}>
+                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-black/[0.01] transition"
+                        onClick={() => setExpandedJE(isExpanded ? null : je._id)}>
+                        <div className="flex-shrink-0 text-center min-w-[60px]">
+                          <p className="text-[10px] text-black/30">{new Date(je.date).toLocaleDateString("ar-SA", { day: "2-digit", month: "short" })}</p>
+                          <p className="text-[9px] font-mono text-black/20">{je.refNumber || "—"}</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-xs text-black truncate">{je.description}</p>
+                          <p className="text-[10px] text-black/30 mt-0.5">{catLabel} · {je.entries?.length || 0} {L ? "سطر" : "lines"}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-black text-black flex items-center gap-0.5 justify-end">{jeTotalDebit.toLocaleString()} <SARIcon size={9} className="opacity-50" /></p>
+                          <p className="text-[9px] text-black/30">{L ? "مدين/دائن" : "Dr/Cr"}</p>
+                        </div>
+                        <Badge className={`text-[9px] px-2 py-0 border flex-shrink-0 ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-black/30 flex-shrink-0" />}
+                      </div>
+                      {isExpanded && (
+                        <div className="border-t border-black/[0.06] bg-black/[0.01] px-4 py-3 space-y-3">
+                          {/* Lines table */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-black/[0.06]">
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold">{L ? "الحساب" : "Account"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-20">{L ? "كود" : "Code"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-28 text-emerald-700">{L ? "مدين ↑" : "Debit ↑"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold w-28 text-red-600">{L ? "دائن ↓" : "Credit ↓"}</th>
+                                  <th className="text-right py-1.5 px-2 text-black/30 font-semibold">{L ? "ملاحظة" : "Notes"}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {je.entries?.map((line: any, li: number) => (
+                                  <tr key={li} className="border-b border-black/[0.03]">
+                                    <td className="py-2 px-2 font-medium text-black">{line.account}</td>
+                                    <td className="py-2 px-2 text-black/40 font-mono text-[10px]">{line.accountCode || "—"}</td>
+                                    <td className="py-2 px-2">
+                                      {line.debit > 0 ? (
+                                        <span className="font-black text-black flex items-center gap-0.5">
+                                          {line.debit.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                        </span>
+                                      ) : <span className="text-black/15">—</span>}
+                                    </td>
+                                    <td className="py-2 px-2">
+                                      {line.credit > 0 ? (
+                                        <span className="font-bold text-black/60 flex items-center gap-0.5">
+                                          {line.credit.toLocaleString()} <SARIcon size={8} className="opacity-30" />
+                                        </span>
+                                      ) : <span className="text-black/15">—</span>}
+                                    </td>
+                                    <td className="py-2 px-2 text-black/35 text-[10px]">{line.notes || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="border-t border-black/[0.08] bg-black/[0.02]">
+                                  <td colSpan={2} className="py-2 px-2 text-[10px] font-black text-black/40">{L ? "الإجمالي" : "Total"}</td>
+                                  <td className="py-2 px-2 font-black text-black text-xs flex items-center gap-0.5">{jeTotalDebit.toLocaleString()} <SARIcon size={8} className="opacity-50" /></td>
+                                  <td className="py-2 px-2 font-black text-black/60 text-xs">{jeTotalCredit.toLocaleString()} <SARIcon size={8} className="opacity-30" /></td>
+                                  <td />
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          {/* Footer: metadata + actions */}
+                          <div className="flex items-center gap-3 flex-wrap pt-1">
+                            {je.createdBy && (
+                              <p className="text-[10px] text-black/30">{L ? "بواسطة:" : "By:"} {je.createdBy?.fullName || je.createdBy?.username}</p>
+                            )}
+                            <p className="text-[10px] text-black/25">{new Date(je.createdAt).toLocaleString("ar-SA")}</p>
+                            <div className="mr-auto flex gap-2">
+                              {je.status !== "voided" && (
+                                <button onClick={() => voidJEMutation.mutate(je._id)} disabled={voidJEMutation.isPending}
+                                  className="flex items-center gap-1 text-[10px] font-semibold text-black/40 hover:text-amber-600 transition">
+                                  <MinusCircle className="w-3.5 h-3.5" />{L ? "إلغاء القيد" : "Void"}
+                                </button>
+                              )}
+                              <button onClick={() => { if (confirm(L ? "حذف القيد نهائياً؟" : "Delete permanently?")) deleteJEMutation.mutate(je._id); }}
+                                disabled={deleteJEMutation.isPending}
+                                className="flex items-center gap-1 text-[10px] font-semibold text-black/40 hover:text-red-600 transition">
+                                <Trash2 className="w-3.5 h-3.5" />{L ? "حذف" : "Delete"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* === TAB: Financial Ledger (السجل المالي) === */}
+      {activeTab === "ledger" && (() => {
+        const ORDER_EXP_CATS: Record<string, string> = {
+          hosting: "استضافة", domain: "دومين", freelancer: "مستقل", license: "ترخيص",
+          ads: "إعلانات", design: "تصميم", salary: "راتب", commission: "عمولة", other: "أخرى",
+        };
+        const OP_EXP_CATS: Record<string, string> = {
+          operational: "تشغيلية", marketing: "تسويقية", admin: "إدارية", product: "منتج", other: "أخرى",
+        };
+        const ordersList: any[] = plData?.ordersList || [];
+        const filteredProjects: any[] = (plData?.perProject || []).filter((p: any) =>
+          !ledgerProjectSearch || p.businessName?.includes(ledgerProjectSearch) || p.clientName?.includes(ledgerProjectSearch)
+        );
+
+        const plRows = [
+          { label: "المقبوض من العملاء",       value: plData?.revenue        || 0, sign: 1,  bold: false, note: `${plData?.invoiceCount || 0} فاتورة مدفوعة` },
+          { label: "مصاريف تكاليف المشاريع",  value: plData?.totalProjExp   || 0, sign: -1, bold: false, note: Object.entries(plData?.projExpByCat || {}).map(([k,v]) => `${ORDER_EXP_CATS[k] || k}: ${(v as number).toLocaleString()}`).join(" · ") || "—" },
+          { label: "ربح المشاريع الخام",       value: plData?.grossProjectProfit || 0, sign: 1, bold: true, note: "الإيرادات ناقص تكاليف المشاريع" },
+          { label: "مصاريف تشغيلية",          value: plData?.opCosts        || 0, sign: -1, bold: false, note: "إيجار، خدمات، طاقة..." },
+          { label: "مصاريف تسويقية",          value: plData?.mktCosts       || 0, sign: -1, bold: false, note: "إعلانات، سوشيال ميديا..." },
+          { label: "مصاريف إدارية",           value: plData?.adminCosts     || 0, sign: -1, bold: false, note: "رواتب، مستلزمات مكتب..." },
+          { label: "مصاريف أخرى",            value: plData?.otherCosts     || 0, sign: -1, bold: false, note: "منتجات، أخرى..." },
+        ];
+
+        return (
+          <div className="space-y-5">
+            {/* Month selector */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-black/40" />
+                <span className="text-sm font-bold text-black/60">السجل المالي الشهري</span>
+              </div>
+              <input
+                type="month" value={ledgerMonth} onChange={e => setLedgerMonth(e.target.value)}
+                className="h-8 px-3 border border-black/[0.1] rounded-xl text-xs font-mono outline-none focus:border-black/20 bg-transparent"
+                data-testid="input-ledger-month"
+              />
+              {plLoading && <Loader2 className="w-4 h-4 animate-spin text-black/30" />}
+            </div>
+
+            {/* P&L Waterfall */}
+            <div className="border border-black/[0.08] rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 bg-black/[0.02] border-b border-black/[0.06]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">قائمة الأرباح والخسائر — {ledgerMonth}</p>
+              </div>
+              <div className="divide-y divide-black/[0.04]">
+                {plRows.map((row, i) => {
+                  const isNeg = row.value < 0 || (row.sign === -1 && row.value > 0);
+                  const displayVal = row.value;
+                  return (
+                    <div key={i} className={`flex items-center gap-4 px-5 py-3 ${row.bold ? "bg-black/[0.02]" : ""}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs ${row.bold ? "font-black text-black" : "font-medium text-black/60"}`}>{row.label}</p>
+                        {row.note && <p className="text-[10px] text-black/25 mt-0.5 truncate">{row.note}</p>}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${row.bold ? "text-black" : row.sign === -1 && displayVal > 0 ? "text-black/50" : "text-black"}`}>
+                          {row.sign === -1 && displayVal > 0 ? "−" : "+"} {displayVal.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Net Profit final row */}
+                <div className={`flex items-center gap-4 px-5 py-4 ${(plData?.netMonthlyProfit || 0) >= 0 ? "bg-black" : "bg-red-950/20"}`}>
+                  <div className="flex-1">
+                    <p className={`font-black text-sm ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white" : "text-red-400"}`}>صافي الربح الشهري</p>
+                    <p className={`text-[10px] mt-0.5 ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white/40" : "text-red-400/60"}`}>
+                      بعد خصم كافة المصاريف · هامش {plData?.profitMargin || 0}%
+                    </p>
+                  </div>
+                  <p className={`text-2xl font-black flex items-center gap-1 ${(plData?.netMonthlyProfit || 0) >= 0 ? "text-white" : "text-red-400"}`}>
+                    {(plData?.netMonthlyProfit || 0).toLocaleString()} <SARIcon size={14} className="opacity-70" />
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Two-column entry forms */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Form 1: Project expense entry */}
+              <div className="border border-dashed border-black/[0.12] rounded-2xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">تسجيل مصروف على مشروع</p>
+                <Select value={quickExp.orderId} onValueChange={v => setQuickExp(q => ({ ...q, orderId: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-quick-exp-order">
+                    <SelectValue placeholder="اختر المشروع..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ordersList.map((o: any) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.businessName} — {o.clientName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={quickExp.category} onValueChange={v => setQuickExp(q => ({ ...q, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-quick-exp-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ORDER_EXP_CATS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="وصف المصروف *" value={quickExp.description}
+                    onChange={e => setQuickExp(q => ({ ...q, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-quick-exp-desc" />
+                  <Input type="number" placeholder="المبلغ *" value={quickExp.amount}
+                    onChange={e => setQuickExp(q => ({ ...q, amount: e.target.value }))}
+                    className="h-8 text-xs border-black/10" dir="ltr" data-testid="input-quick-exp-amount" />
+                  <Button className="h-8 text-xs bg-black text-white gap-1" onClick={() => addQuickExpMutation.mutate()}
+                    disabled={addQuickExpMutation.isPending || !quickExp.orderId || !quickExp.description || !quickExp.amount}
+                    data-testid="button-add-quick-exp">
+                    {addQuickExpMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    تسجيل
+                  </Button>
+                </div>
+                <p className="text-[9px] text-black/25">سيتم احتساب هذا المصروف تلقائياً من ربح المشروع وصافي الشهر</p>
+              </div>
+
+              {/* Form 2: Operational/marketing/admin expense entry */}
+              <div className="border border-dashed border-black/[0.12] rounded-2xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-black/30">تسجيل مصروف تشغيلي / تسويقي / إداري</p>
+                <Select value={newOpExp.category} onValueChange={v => setNewOpExp(p => ({ ...p, category: v }))}>
+                  <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-op-exp-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(OP_EXP_CATS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="وصف المصروف *" value={newOpExp.description}
+                    onChange={e => setNewOpExp(p => ({ ...p, description: e.target.value }))}
+                    className="h-8 text-xs border-black/10 col-span-2" data-testid="input-op-exp-desc" />
+                  <Input type="number" placeholder="المبلغ *" value={newOpExp.amount}
+                    onChange={e => setNewOpExp(p => ({ ...p, amount: e.target.value }))}
+                    className="h-8 text-xs border-black/10" dir="ltr" data-testid="input-op-exp-amount" />
+                  <Button className="h-8 text-xs bg-black text-white gap-1"
+                    onClick={() => {
+                      addQuickOpExpMutation.mutate({ category: newOpExp.category, description: newOpExp.description, amount: Number(newOpExp.amount) });
+                      setNewOpExp(p => ({ ...p, description: "", amount: "" }));
+                    }}
+                    disabled={addQuickOpExpMutation.isPending || !newOpExp.description || !newOpExp.amount}
+                    data-testid="button-add-op-exp">
+                    {addQuickOpExpMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    تسجيل
+                  </Button>
+                </div>
+                <p className="text-[9px] text-black/25">يُخصم تلقائياً من صافي الربح الشهري لـ {ledgerMonth}</p>
+              </div>
+            </div>
+
+            {/* Per-project breakdown */}
+            {(plData?.perProject || []).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-black/30">صافي المشاريع — {ledgerMonth}</p>
+                  <div className="relative">
+                    <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-black/25 pointer-events-none" />
+                    <input value={ledgerProjectSearch} onChange={e => setLedgerProjectSearch(e.target.value)}
+                      placeholder="بحث..." className="h-7 pr-7 pl-3 text-[11px] border border-black/[0.08] rounded-xl outline-none bg-transparent" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {filteredProjects.map((p: any) => {
+                    const netColor = p.allTimeNet >= 0 ? "text-black" : "text-red-500";
+                    const paidPct = p.totalAmount > 0 ? Math.min(100, Math.round((p.totalPaid / p.totalAmount) * 100)) : 0;
+                    return (
+                      <div key={p.id} className="border border-black/[0.07] rounded-xl px-4 py-3 flex items-center gap-4" data-testid={`ledger-project-${p.id}`}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-black truncate">{p.businessName}</p>
+                          <p className="text-[10px] text-black/35">{p.clientName} · #{p.orderNumber || p.id.slice(-6)}</p>
+                        </div>
+                        {/* Mini collection progress */}
+                        <div className="text-center flex-shrink-0">
+                          <p className="text-[9px] text-black/30 mb-0.5">تحصيل</p>
+                          <div className="w-14 h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                            <div className="h-full bg-black rounded-full" style={{ width: `${paidPct}%` }} />
+                          </div>
+                          <p className="text-[9px] text-black/30">{paidPct}%</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[9px] text-black/30">مقبوض</p>
+                          <p className="text-xs font-bold text-black/70 flex items-center gap-0.5 justify-end">
+                            {p.totalPaid.toLocaleString()} <SARIcon size={8} className="opacity-40" />
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[9px] text-black/30">تكاليف</p>
+                          <p className="text-xs font-bold text-black/50 flex items-center gap-0.5 justify-end">
+                            {p.totalExpenses.toLocaleString()} <SARIcon size={8} className="opacity-30" />
+                          </p>
+                        </div>
+                        <div className={`rounded-xl px-3 py-1.5 flex-shrink-0 text-right ${p.allTimeNet >= 0 ? "bg-black" : "bg-red-950/20 border border-red-700/30"}`}>
+                          <p className={`text-[9px] mb-0.5 ${p.allTimeNet >= 0 ? "text-white/50" : "text-red-400/60"}`}>صافي</p>
+                          <p className={`text-xs font-black flex items-center gap-0.5 justify-end ${p.allTimeNet >= 0 ? "text-white" : "text-red-400"}`}>
+                            {p.allTimeNet.toLocaleString()} <SARIcon size={8} className="opacity-70" />
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Expense log for the month */}
+            {((plData?.projExpLog || []).length > 0 || (plData?.opExpLog || []).length > 0) && (
+              <div className="border border-black/[0.07] rounded-2xl overflow-hidden">
+                <div className="px-5 py-3 bg-black/[0.02] border-b border-black/[0.05]">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                    سجل المصاريف — {ledgerMonth} ({(plData?.projExpLog || []).length + (plData?.opExpLog || []).length} بند)
+                  </p>
+                </div>
+                <div className="divide-y divide-black/[0.04] max-h-72 overflow-y-auto">
+                  {[...(plData?.projExpLog || []).map((e: any) => ({ ...e, _type: "project" })),
+                    ...(plData?.opExpLog || []).map((e: any) => ({ ...e, _type: "operational" }))]
+                    .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+                    .map((e: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 px-5 py-2.5">
+                        <Badge className={`text-[9px] flex-shrink-0 ${e._type === "project"
+                          ? "bg-black/[0.05] text-black/60 border-0"
+                          : "bg-black/[0.1] text-black/70 border-0"}`}>
+                          {e._type === "project" ? (ORDER_EXP_CATS[e.category] || e.category) : (OP_EXP_CATS[e.category] || e.category)}
+                        </Badge>
+                        <span className="flex-1 text-xs text-black/70 truncate">{e.description}</span>
+                        {e._type === "project" && e.orderId && (
+                          <span className="text-[10px] text-black/30 truncate max-w-[100px]">
+                            {e.orderId?.businessName || e.orderId?.projectType || "مشروع"}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-black/30 flex-shrink-0">
+                          {new Date(e.createdAt || e.date).toLocaleDateString("ar-SA")}
+                        </span>
+                        <span className="text-xs font-black text-black flex items-center gap-0.5 flex-shrink-0">
+                          {e.amount.toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {!plData && !plLoading && (
+              <div className="text-center py-16">
+                <CreditCard className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                <p className="text-black/30 text-sm">لا بيانات لهذا الشهر</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* === TAB: Project Profits === */}
+      {activeTab === "profits" && (
+        <div className="space-y-4">
+          {/* Summary KPIs */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              <p className="text-xl font-black text-black flex items-center justify-center gap-1">
+                {profitTotals.revenue.toLocaleString()} <SARIcon size={11} className="opacity-50" />
+              </p>
+            </div>
+            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-black/40 mb-1">{L ? "تكاليف المشاريع" : "Project Costs"}</p>
+              <p className="text-xl font-black text-black flex items-center justify-center gap-1">
+                {profitTotals.expenses.toLocaleString()} <SARIcon size={11} className="opacity-50" />
+              </p>
+            </div>
+            <div className={`rounded-2xl p-4 text-center border ${profitTotals.netProfit >= 0 ? "bg-black border-black" : "bg-black/[0.04] border-black/10"}`}>
+              <p className={`text-[10px] mb-1 ${profitTotals.netProfit >= 0 ? "text-white/50" : "text-black/40"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+              <p className={`text-xl font-black flex items-center justify-center gap-1 ${profitTotals.netProfit >= 0 ? "text-white" : "text-black"}`}>
+                {profitTotals.netProfit.toLocaleString()} <SARIcon size={11} className="opacity-60" />
+              </p>
+              {profitTotals.revenue > 0 && (
+                <p className={`text-[10px] font-bold mt-0.5 ${profitTotals.netProfit >= 0 ? "text-white/40" : "text-black/40"}`}>
+                  {Math.round((profitTotals.netProfit / profitTotals.revenue) * 100)}% {L ? "هامش" : "margin"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Search + Sort */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 pointer-events-none" />
+              <input
+                value={profitSearch} onChange={e => setProfitSearch(e.target.value)}
+                placeholder={L ? "بحث بالمشروع أو العميل..." : "Search project or client..."}
+                className="w-full h-8 pr-9 pl-3 border border-black/[0.08] rounded-xl text-xs outline-none focus:border-black/20 bg-transparent"
+                data-testid="input-profit-search"
+              />
+            </div>
+            <div className="flex gap-1">
+              {[
+                { key: "profit", label: L ? "الأعلى ربحاً" : "Top Profit" },
+                { key: "revenue", label: L ? "الأعلى إيراداً" : "Top Revenue" },
+                { key: "margin", label: L ? "أعلى هامش" : "Best Margin" },
+              ].map(s => (
+                <button key={s.key} onClick={() => setProfitSort(s.key as any)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${profitSort === s.key ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.07]"}`}
+                  data-testid={`button-profit-sort-${s.key}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Orders list */}
+          {profitLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : filteredProfitOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-8 h-8 text-black/15 mx-auto mb-2" />
+              <p className="text-black/30 text-sm">{L ? "لا توجد مشاريع بعد" : "No projects yet"}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredProfitOrders.map((order: any) => {
+                const isExpanded = expandedOrder === order.orderId;
+                const isProfit = order.netProfit >= 0;
+                const margin = order.margin || 0;
+                return (
+                  <div key={order.orderId} className="border border-black/[0.08] rounded-2xl overflow-hidden"
+                    data-testid={`profit-order-${order.orderId}`}>
+                    {/* Row header */}
+                    <button
+                      onClick={() => setExpandedOrder(isExpanded ? null : order.orderId)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black/[0.01] transition-colors text-right"
+                    >
+                      {/* Project name */}
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="font-bold text-sm text-black truncate">{order.businessName || "—"}</p>
+                        <p className="text-[10px] text-black/35 mt-0.5">
+                          {order.client?.fullName || "—"} · #{order.orderId?.slice(-6)}
+                          {order.status && <span className="mr-1 text-black/25">· {order.status}</span>}
+                        </p>
+                      </div>
+
+                      {/* Revenue */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-black/35 mb-0.5">{L ? "الإيراد" : "Revenue"}</p>
+                        <p className="text-sm font-black text-black flex items-center gap-0.5 justify-end">
+                          {order.revenue.toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                        </p>
+                      </div>
+
+                      {/* Costs */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-black/35 mb-0.5">{L ? "التكاليف" : "Costs"}</p>
+                        <p className="text-sm font-bold text-black/60 flex items-center gap-0.5 justify-end">
+                          {order.totalExpenses.toLocaleString()} <SARIcon size={9} className="opacity-40" />
+                        </p>
+                      </div>
+
+                      {/* Net Profit */}
+                      <div className={`rounded-xl px-3 py-1.5 flex-shrink-0 text-right ${isProfit ? "bg-black" : "bg-black/[0.06]"}`}>
+                        <p className={`text-[10px] mb-0.5 ${isProfit ? "text-white/50" : "text-black/40"}`}>{L ? "صافي" : "Net"}</p>
+                        <p className={`text-sm font-black flex items-center gap-0.5 justify-end ${isProfit ? "text-white" : "text-black/60"}`}>
+                          {order.netProfit.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                        </p>
+                      </div>
+
+                      {/* Margin */}
+                      <div className="w-16 flex-shrink-0">
+                        <div className="h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${isProfit ? "bg-black" : "bg-black/30"}`}
+                            style={{ width: `${Math.min(Math.abs(margin), 100)}%` }} />
+                        </div>
+                        <p className="text-[10px] text-black/30 text-center mt-0.5">{margin}%</p>
+                      </div>
+
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-black/30 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />}
+                    </button>
+
+                    {/* Expanded: expense breakdown */}
+                    {isExpanded && (
+                      <div className="border-t border-black/[0.06] bg-black/[0.01] px-4 py-3 space-y-2">
+                        {(order.expenses || []).length === 0 ? (
+                          <p className="text-xs text-black/30 text-center py-2">{L ? "لا تكاليف مسجلة لهذا المشروع" : "No costs recorded for this project"}</p>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/25 mb-2">
+                              {L ? "تفاصيل التكاليف" : "Cost Breakdown"}
+                            </p>
+                            {(order.expenses || []).map((e: any) => (
+                              <div key={e.id || e._id} className="flex items-center justify-between gap-2">
+                                <Badge className="text-[10px] bg-black/[0.05] text-black border-0 flex-shrink-0">
+                                  {PROFIT_CAT_LABELS[e.category] || e.category}
+                                </Badge>
+                                <span className="flex-1 text-xs text-black/60 truncate">{e.description}</span>
+                                <span className="text-xs font-bold text-black flex-shrink-0 flex items-center gap-0.5">
+                                  {(e.amount || 0).toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between items-center pt-2 border-t border-black/[0.06]">
+                              <span className="text-[10px] text-black/40 font-bold">{L ? "إجمالي التكاليف" : "Total Costs"}</span>
+                              <span className="text-xs font-black text-black flex items-center gap-0.5">
+                                {order.totalExpenses.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* === TAB: Expenses === */}
+      {activeTab === "expenses" && (
+        <div className="space-y-5">
+          {/* Month selector */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-black/50">{L ? "الشهر:" : "Month:"}</span>
+            <Input type="month" value={expMonth} onChange={e => setExpMonth(e.target.value)}
+              className="h-8 w-40 text-xs border-black/10" data-testid="input-expense-month" />
+          </div>
+
+          {/* Net Profit Summary — A4 */}
+          {expensesData && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {(summary?.totalRevenue || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{L ? "كل الفواتير المدفوعة" : "All paid invoices"}</p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? `مصاريف ${expMonth}` : `${expMonth} Expenses`}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{(expensesData.expenses || []).length} {L ? "بند" : "items"}</p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "مبالغ معلقة" : "Pending"}</p>
+                <p className="text-lg font-black text-black flex items-center gap-1">
+                  {(summary?.unpaidTotal || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+                <p className="text-[10px] text-black/30 mt-0.5">{L ? "لم تُحصَّل بعد" : "Not yet collected"}</p>
+              </div>
+              <div className={`rounded-2xl p-4 border ${netProfit >= 0 ? "bg-black border-black" : "bg-red-950/20 border-red-700/40"}`}>
+                <p className={`text-[10px] mb-1 ${netProfit >= 0 ? "text-white/50" : "text-red-400"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+                <p className={`text-lg font-black flex items-center gap-1 ${netProfit >= 0 ? "text-white" : "text-red-400"}`}>
+                  {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </p>
+                {(summary?.totalRevenue || 0) > 0 && (
+                  <p className={`text-[10px] mt-0.5 font-bold ${netProfit >= 0 ? "text-white/40" : "text-red-500/70"}`}>
+                    {Math.round((netProfit / (summary?.totalRevenue || 1)) * 100)}% {L ? "هامش" : "margin"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Category breakdown with visual bars — A4 */}
+          {expensesData && expensesData.total > 0 && (
+            <div className="border border-black/[0.07] rounded-2xl p-4 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-black/30">
+                {L ? "توزيع المصاريف حسب الفئة" : "Expense Breakdown by Category"}
+              </p>
+              {Object.entries(expByCategory)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([cat, amt]) => {
+                  const pct = totalExpenses > 0 ? Math.round(((amt as number) / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-black/70">{EXPENSE_CATS[cat]?.label || cat}</span>
+                          <span className="text-[10px] text-black/30">{pct}%</span>
+                        </div>
+                        <span className="text-xs font-black text-black flex items-center gap-0.5">
+                          {(amt as number).toLocaleString()} <SARIcon size={8} className="opacity-50" />
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                        <div className="h-full bg-black rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              <div className="flex justify-between items-center pt-2 border-t border-black/[0.06]">
+                <span className="text-[10px] font-bold text-black/40">{L ? "الإجمالي" : "Total"}</span>
+                <span className="text-sm font-black text-black flex items-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Add expense form */}
+          <div className="border border-dashed border-black/[0.12] rounded-2xl p-4">
+            <p className="text-[10px] font-bold text-black/40 uppercase tracking-wide mb-3">{L ? "إضافة مصروف جديد" : "Add New Expense"}</p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <Select value={newExp.category} onValueChange={v => setNewExp(p => ({ ...p, category: v }))}>
+                <SelectTrigger className="h-8 text-xs border-black/10" data-testid="select-expense-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(EXPENSE_CATS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input placeholder={L ? "وصف المصروف *" : "Description *"} value={newExp.description}
+                onChange={e => setNewExp(p => ({ ...p, description: e.target.value }))}
+                className="h-8 text-xs border-black/10 col-span-1 md:col-span-2" data-testid="input-expense-description" />
+              <Input type="number" placeholder={L ? "المبلغ *" : "Amount *"} value={newExp.amount}
+                onChange={e => setNewExp(p => ({ ...p, amount: e.target.value }))}
+                className="h-8 text-xs border-black/10" dir="ltr" data-testid="input-expense-amount" />
+              <Input type="date" value={newExp.date} onChange={e => setNewExp(p => ({ ...p, date: e.target.value }))}
+                className="h-8 text-xs border-black/10" data-testid="input-expense-date" />
+            </div>
+            <Button className="mt-2 h-8 text-xs bg-black text-white gap-1" onClick={() => addExpMutation.mutate()}
+              disabled={addExpMutation.isPending || !newExp.description || !newExp.amount} data-testid="button-add-expense">
+              {addExpMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              {L ? "إضافة" : "Add"}
+            </Button>
+          </div>
+
+          {/* Expenses list */}
+          {expLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : (expensesData?.expenses || []).length === 0 ? (
+            <div className="text-center py-10">
+              <AlertCircle className="w-8 h-8 text-black/15 mx-auto mb-2" />
+              <p className="text-black/30 text-sm">{L ? `لا مصاريف مسجلة لـ ${expMonth}` : `No expenses for ${expMonth}`}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(expensesData?.expenses || []).map((e: any) => (
+                <div key={e.id} className="border border-black/[0.07] rounded-xl px-4 py-3 flex items-center gap-3"
+                  data-testid={`expense-row-${e.id}`}>
+                  <Badge className={`text-[10px] flex-shrink-0 ${EXPENSE_CATS[e.category]?.color || ""}`}>
+                    {EXPENSE_CATS[e.category]?.label || e.category}
+                  </Badge>
+                  <span className="flex-1 text-sm text-black truncate">{e.description}</span>
+                  {e.notes && <span className="text-xs text-black/30 truncate hidden md:block">{e.notes}</span>}
+                  <span className="text-xs text-black/40 flex-shrink-0">
+                    {new Date(e.date || e.createdAt).toLocaleDateString("ar-SA")}
+                  </span>
+                  <span className="font-black text-sm text-black flex items-center gap-0.5 flex-shrink-0">
+                    {e.amount.toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                  </span>
+                  <button onClick={() => { if (confirm(L ? "حذف؟" : "Delete?")) deleteExpMutation.mutate(e.id); }}
+                    className="text-black/25 hover:text-black transition-colors flex-shrink-0"
+                    data-testid={`button-delete-expense-${e.id}`}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <div className="border-t border-black/[0.06] pt-3 flex justify-between items-center px-1">
+                <span className="text-xs font-bold text-black/50">{L ? "إجمالي المصاريف" : "Total Expenses"}</span>
+                <span className="font-black text-black flex items-center gap-1">
+                  {totalExpenses.toLocaleString()} <SARIcon size={11} className="opacity-60" />
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* === TAB: Email === */}
+      {activeTab === "email" && (
+        <div className="bg-white border border-black/[0.07] rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 bg-black/[0.05] rounded-xl flex items-center justify-center">
+              <Mail className="w-4 h-4 text-black/50" />
+            </div>
+            <div>
+              <h2 className="font-black text-black text-sm">{L ? "اختبار نظام البريد الإلكتروني" : "Email System Test"}</h2>
+              <p className="text-[11px] text-black/35">{L ? "تحقق من عمل SMTP2GO" : "Verify SMTP2GO"}</p>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-black/50 mb-1.5 block">{L ? "نوع البريد" : "Email Type"}</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: "welcome", label: L ? "ترحيب" : "Welcome" },
+                { value: "otp", label: "OTP" },
+                { value: "order", label: L ? "تأكيد طلب" : "Order" },
+                { value: "status", label: L ? "تحديث حالة" : "Status" },
+                { value: "message", label: L ? "رسالة" : "Message" },
+              ].map(et => (
+                <button key={et.value} onClick={() => setEmailType(et.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${emailType === et.value ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.08]"}`}
+                  data-testid={`button-email-type-${et.value}`}>
+                  {et.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-black/50 mb-1.5 block">{L ? "البريد المستهدف" : "Target Email"}</label>
+            <Input type="email" placeholder="test@example.com" value={testEmail}
+              onChange={e => setTestEmail(e.target.value)} className="h-9 text-sm border-black/[0.10]" dir="ltr"
+              data-testid="input-test-email" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => { setEmailResult(null); testEmailMutation.mutate(); }}
+              disabled={testEmailMutation.isPending} className="bg-black text-white h-10 px-6 rounded-xl text-sm font-bold"
+              data-testid="button-send-test-email">
+              {testEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
+              {L ? "إرسال بريد تجريبي" : "Send Test Email"}
+            </Button>
+            {emailResult && (
+              <div className={`flex items-center gap-2 text-xs font-medium text-black`}>
+                {emailResult.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                {emailResult.msg}
+              </div>
+            )}
+          </div>
+          <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-xs space-y-1">
+            <p className="font-bold text-black/50 mb-2">{L ? "إعدادات SMTP2GO:" : "SMTP2GO Settings:"}</p>
+            <p className="text-black/35">{L ? "المرسل" : "Sender"}: <span className="font-mono text-black/60">noreply@qiroxstudio.online</span></p>
+            <p className="text-black/35">API: <span className="font-mono text-black/60">api-5CC7...D332 ✓</span></p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

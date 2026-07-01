@@ -1,0 +1,2416 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Mic, MicOff, Video, VideoOff, Monitor, PhoneOff,
+  MessageSquare, Users, Copy, Check, Loader2, Send,
+  Hand, Grid3X3, Maximize2, Smile, X, XCircle,
+  Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
+  CircleDot, Download, QrCode, Sparkles, FlipHorizontal2, Crown,
+  Volume2, VolumeOff, AlertTriangle, Wifi, ShieldAlert, Camera,
+} from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function avatarColor(name: string) {
+  const palette = ["#1d4ed8","#0891b2","#059669","#7c3aed","#dc2626","#d97706","#0284c7","#a855f7"];
+  return palette[((name?.charCodeAt(0) || 65) + (name?.charCodeAt(1) || 65)) % palette.length];
+}
+
+function useElapsedTimer(active: boolean) {
+  const [sec, setSec] = useState(0);
+  const t0 = useRef(Date.now());
+  useEffect(() => {
+    if (!active) return;
+    t0.current = Date.now();
+    setSec(0);
+    const id = setInterval(() => setSec(Math.floor((Date.now() - t0.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+    : `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+
+// Default ICE servers: STUN + free open TURN relays for NAT traversal
+const STUN: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  // Free TURN relay servers (Open Relay Project) — fallback when STUN fails
+  { urls: "turn:openrelay.metered.ca:80",   username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443",  username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+];
+async function getIce(): Promise<RTCIceServer[]> {
+  try {
+    const r = await fetch("/api/ice-servers");
+    if (r.ok) {
+      const servers = await r.json();
+      // Always include free TURN as last-resort fallback
+      const hasTurn = servers.some((s: any) => String(s.urls).startsWith("turn:") || (Array.isArray(s.urls) && s.urls.some((u: string) => u.startsWith("turn:"))));
+      if (!hasTurn) return [...servers, ...STUN.filter(s => String(s.urls).startsWith("turn:"))];
+      return servers;
+    }
+  } catch {}
+  return STUN;
+}
+
+// ── types ────────────────────────────────────────────────────────────────────
+
+interface PeerState {
+  id: string;
+  name: string;
+  stream: MediaStream | null;
+  audioOn: boolean;
+  videoOn: boolean;
+  photoUrl?: string;
+  raisedHand?: boolean;
+  facingMode?: "user" | "environment";
+  connectionState?: "connecting" | "connected" | "failed" | "disconnected";
+}
+
+interface ChatMsg {
+  id: string;
+  fromId: string;
+  name: string;
+  text: string;
+  time: string;
+  isSelf: boolean;
+}
+
+interface PollOption { text: string; votes: number }
+interface MeetingPoll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  hostId: string;
+  totalVotes?: number;
+}
+
+interface CaptionEntry { id: string; name: string; text: string; isSelf: boolean }
+interface AttendanceEntry { userId: string; name: string; action: "join" | "leave"; time: string }
+interface FloatReaction { id: string; emoji: string; left: number }
+
+// ── VideoTile ────────────────────────────────────────────────────────────────
+
+function VideoTile({
+  peer, isSelf, speaking, small, mirrored,
+}: {
+  peer: PeerState; isSelf: boolean; speaking: boolean; small?: boolean; mirrored?: boolean;
+}) {
+  const vidRef = useRef<HTMLVideoElement>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+
+  useEffect(() => {
+    const el = vidRef.current;
+    if (!el) return;
+    if (peer.stream) {
+      el.srcObject = peer.stream;
+      el.play().catch((err) => {
+        // NotAllowedError = browser blocked autoplay (requires user gesture)
+        if (err?.name === "NotAllowedError" || err?.name === "AbortError") {
+          if (!isSelf) setAudioBlocked(true);
+        }
+      });
+    } else {
+      el.srcObject = null;
+    }
+  }, [peer.stream, isSelf]);
+
+  const unlockAudio = () => {
+    const el = vidRef.current;
+    if (!el) return;
+    el.muted = false;
+    el.play().then(() => setAudioBlocked(false)).catch(() => {});
+  };
+
+  const showVideo = !!(peer.stream && peer.videoOn);
+  const bg = avatarColor(peer.name);
+  const label = isSelf ? "أنت" : peer.name;
+
+  return (
+    <div className={`relative w-full h-full bg-[#3c4043] rounded-xl overflow-hidden flex items-center justify-center
+      ${speaking && peer.audioOn ? "ring-2 ring-black/15 dark:ring-white/15" : ""}`}>
+      {showVideo
+        ? <video ref={vidRef} autoPlay playsInline muted={isSelf}
+            className="w-full h-full object-cover"
+            style={{ transform: (isSelf && mirrored !== false) ? "scaleX(-1)" : undefined }} />
+        : <>
+            <video ref={vidRef} autoPlay playsInline muted={isSelf} className="hidden" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="rounded-full flex items-center justify-center font-bold text-white"
+                style={{ background: bg, width: small ? 44 : 80, height: small ? 44 : 80, fontSize: small ? 18 : 30 }}>
+                {peer.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            </div>
+          </>
+      }
+      {/* Connecting overlay — shown while WebRTC is establishing */}
+      {!isSelf && !peer.stream && peer.connectionState !== "failed" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#3c4043]/80 gap-2 z-10">
+          <Loader2 className="w-5 h-5 text-black/70 dark:text-white/70 animate-spin" />
+          <span className="text-[#9aa0a6] text-xs">جارٍ الاتصال...</span>
+        </div>
+      )}
+      {/* Failed connection overlay */}
+      {!isSelf && peer.connectionState === "failed" && !peer.stream && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black dark:bg-white gap-2 z-10">
+          <Wifi className="w-5 h-5 text-black/70 dark:text-white/70" />
+          <span className="text-black/70 dark:text-white/70 text-xs">فشل الاتصال</span>
+        </div>
+      )}
+      {/* Audio unlock overlay — appears when browser blocks autoplay */}
+      {audioBlocked && !isSelf && (
+        <button
+          onClick={unlockAudio}
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 gap-2 z-10 cursor-pointer"
+          title="اضغط لتفعيل الصوت">
+          <VolumeOff className="w-6 h-6 text-black/70 dark:text-white/70" />
+          <span className="text-black/70 dark:text-white/70 text-xs font-medium">اضغط لتشغيل الصوت</span>
+        </button>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-1">
+        {!peer.audioOn && <MicOff className={`${small ? "w-3 h-3" : "w-3.5 h-3.5"} text-black/70 dark:text-white/70 shrink-0`} />}
+        {peer.raisedHand && <span className={small ? "text-xs" : "text-sm"}>✋</span>}
+        {speaking && peer.audioOn && <span className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse shrink-0" />}
+        <span className={`text-white font-medium truncate ${small ? "text-[10px]" : "text-xs"}`}>{label}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+export default function MeetingRoom() {
+  const { dir } = useI18n();
+  const { roomId } = useParams<{ roomId: string }>();
+  const [, navigate] = useLocation();
+  const { data: user } = useUser();
+  const { toast } = useToast();
+
+  // identity
+  const userId = (user as any)?._id || (user as any)?.id || "";
+  const defaultName = (user as any)?.fullName || (user as any)?.username || "";
+  const [guestName, setGuestName] = useState("");
+  const userName = defaultName || guestName || "مشارك";
+  const isHost = !!(user && userId);
+
+  // meeting data
+  const { data: meeting } = useQuery<any>({
+    queryKey: ["/api/qmeet/room", roomId],
+    queryFn: () => fetch(`/api/qmeet/room/${roomId}`, { credentials: "include" }).then(r => r.json()),
+    enabled: !!roomId,
+    retry: 2,
+  });
+
+  // ── core state ─────────────────────────────────────────────────────────────
+  const [joined, setJoined] = useState(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [peers, setPeers] = useState<Map<string, PeerState>>(new Map());
+  const [audioOn, setAudioOn] = useState(true);
+  const [videoOn, setVideoOn] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [raisedHand, setRaisedHand] = useState(false);
+
+  // ui state
+  const [panel, setPanel] = useState<"none" | "chat" | "participants" | "attendance" | "ai">("none");
+  const [unread, setUnread] = useState(0);
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [layout, setLayout] = useState<"grid" | "spotlight">("grid");
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [speakingIds, setSpeakingIds] = useState<Set<string>>(new Set());
+  const [lobbyWaiting, setLobbyWaiting] = useState(false);
+  const [lobbyRequests, setLobbyRequests] = useState<any[]>([]);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [floatReactions, setFloatReactions] = useState<FloatReaction[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  // ── Advanced features state ───────────────────────────────────────────────
+  const [isRoomHost, setIsRoomHost] = useState(false);
+  const [meetingLocked, setMeetingLocked] = useState(false);
+  // Polls
+  const [activePoll, setActivePoll] = useState<MeetingPoll | null>(null);
+  const [myPollVote, setMyPollVote] = useState<number | null>(null);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  // Captions
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [captions, setCaptions] = useState<CaptionEntry[]>([]);
+  // Recording
+  const [recording, setRecording] = useState(false);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  // QR
+  const [showQR, setShowQR] = useState(false);
+  // Attendance
+  const [attendanceLog, setAttendanceLog] = useState<AttendanceEntry[]>([]);
+  // AI
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+
+  const timer = useElapsedTimer(joined);
+
+  // ── refs ───────────────────────────────────────────────────────────────────
+  const myIdRef = useRef<string>("");          // effective user ID (logged-in or guest-xxx)
+  const wsRef = useRef<WebSocket | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingIce = useRef<Map<string, RTCIceCandidate[]>>(new Map());
+  const iceServersRef = useRef<RTCIceServer[]>(STUN);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const analyserRef = useRef<Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>>(new Map());
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const peerNamesRef = useRef<Map<string, string>>(new Map()); // id → name
+  const audioOnRef = useRef(true);
+  const videoOnRef = useRef(true);
+  const isRoomHostRef = useRef(false);
+  // Camera
+  const facingModeRef = useRef<"user" | "environment">("user");
+  const [flippingCamera, setFlippingCamera] = useState(false);
+
+  // Recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const keepaliveRef = useRef<number | null>(null);
+  // Captions
+  const speechRef = useRef<any>(null);
+  const captionsEndRef = useRef<HTMLDivElement>(null);
+  // Chat/captions for AI summary
+  const captionsLogRef = useRef<CaptionEntry[]>([]);
+
+  // Keep refs in sync with state
+  useEffect(() => { audioOnRef.current = audioOn; }, [audioOn]);
+  useEffect(() => { videoOnRef.current = videoOn; }, [videoOn]);
+  const panelRef = useRef<typeof panel>("none");
+  useEffect(() => { panelRef.current = panel; }, [panel]);
+
+  // resize
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+
+  // Auto-request media on pre-join screen
+  useEffect(() => {
+    if (!joined) {
+      getMedia().catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // scroll chat
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chat]);
+
+  // ── media helpers ──────────────────────────────────────────────────────────
+
+  const getMedia = useCallback(async (video = true, audio = true): Promise<MediaStream | null> => {
+    // Check HTTPS (required for getUserMedia in Chrome/Firefox)
+    if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      setMediaError("يجب فتح الاجتماع عبر HTTPS لاستخدام الكاميرا/الميك");
+      return null;
+    }
+    // Check API availability
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMediaError("متصفحك لا يدعم الكاميرا/الميك — استخدم Chrome أو Firefox أو Safari");
+      return null;
+    }
+    // Try with video + audio
+    if (video) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1,
+            latency: { ideal: 0.01 },
+          },
+        });
+        localStreamRef.current = s; setLocalStream(s); setMediaError(null);
+        return s;
+      } catch {
+        // Try with simpler constraints
+        try {
+          const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          localStreamRef.current = s; setLocalStream(s); setMediaError(null);
+          return s;
+        } catch {}
+      }
+    }
+    // Fallback: audio only
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      localStreamRef.current = s; setLocalStream(s);
+      setVideoOn(false); videoOnRef.current = false;
+      setMediaError("الكاميرا غير متاحة — انضممت بالصوت فقط");
+      return s;
+    } catch (e: any) {
+      const name = e?.name || "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        const browser = /Firefox/.test(navigator.userAgent) ? "Firefox: افتح القائمة > الخصوصية > الأذونات"
+          : /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? "Safari: افتح الإعدادات > Safari > الكاميرا والميكروفون"
+          : "Chrome/Edge: اضغط أيقونة القفل أو الكاميرا في شريط العنوان وامنح الإذن";
+        setMediaError(`رُفض الإذن — ${browser}`);
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        setMediaError("الكاميرا/الميك مستخدمة في تطبيق آخر — أغلقها وحاول مجدداً");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        setMediaError("لا توجد كاميرا أو ميكروفون متصلة بجهازك");
+      } else if (name === "OverconstrainedError") {
+        setMediaError("الكاميرا المتصلة لا تدعم الدقة المطلوبة");
+      } else {
+        setMediaError("تعذّر الوصول للكاميرا/الميك. تأكد من منح الإذن.");
+      }
+      return null;
+    }
+  }, []);
+
+  // ── WebRTC helpers ─────────────────────────────────────────────────────────
+
+  const sendWs = useCallback((msg: object) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(msg));
+    }
+  }, []);
+
+  const addStreamToPc = (pc: RTCPeerConnection, stream: MediaStream) => {
+    stream.getTracks().forEach(track => {
+      const existing = pc.getSenders().find(s => s.track?.kind === track.kind);
+      if (existing) existing.replaceTrack(track).catch(() => {});
+      else pc.addTrack(track, stream);
+    });
+  };
+
+  const createPc = useCallback(async (peerId: string, isInitiator: boolean): Promise<RTCPeerConnection> => {
+    // Close any existing connection
+    pcsRef.current.get(peerId)?.close();
+    const pc = new RTCPeerConnection({
+      iceServers: iceServersRef.current,
+      iceCandidatePoolSize: 10,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+    });
+    pcsRef.current.set(peerId, pc);
+
+    // Add local tracks
+    if (localStreamRef.current) addStreamToPc(pc, localStreamRef.current);
+
+    // ICE candidates
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: candidate.toJSON() });
+    };
+
+    // Remote stream — handle tracks arriving one-by-one or in a bundle
+    pc.ontrack = (evt) => {
+      setPeers(prev => {
+        const m = new Map(prev);
+        const existing = m.get(peerId);
+
+        let stream: MediaStream;
+        if (evt.streams && evt.streams[0]) {
+          // Tracks are bundled in a stream — use it directly
+          stream = evt.streams[0];
+        } else if (existing?.stream) {
+          // Track arrives without stream — add to existing stream
+          const s = existing.stream;
+          if (!s.getTracks().find(t => t.id === evt.track.id)) {
+            s.addTrack(evt.track);
+          }
+          // Create new object reference so React re-renders
+          stream = new MediaStream(s.getTracks());
+        } else {
+          stream = new MediaStream([evt.track]);
+        }
+
+        if (existing) {
+          m.set(peerId, { ...existing, stream });
+        } else {
+          m.set(peerId, {
+            id: peerId,
+            name: peerNamesRef.current.get(peerId) || peerId,
+            stream,
+            audioOn: true,
+            videoOn: true,
+          });
+        }
+        return m;
+      });
+    };
+
+    // Connection state — update UI + try ICE restart before giving up
+    let iceRestartAttempts = 0;
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+
+      // Update peer connection state in UI
+      if (state === "connected" || state === "connecting" || state === "failed" || state === "disconnected") {
+        setPeers(prev => {
+          const m = new Map(prev);
+          const p = m.get(peerId);
+          if (p) m.set(peerId, { ...p, connectionState: state as any });
+          return m;
+        });
+      }
+
+      if (state === "failed") {
+        if (isInitiator && iceRestartAttempts < 3 && pc.signalingState === "stable") {
+          iceRestartAttempts++;
+          pc.createOffer({ iceRestart: true })
+            .then(o => pc.setLocalDescription(o))
+            .then(() => sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription }))
+            .catch(() => {
+              pcsRef.current.delete(peerId);
+              setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+            });
+        } else {
+          pcsRef.current.delete(peerId);
+          setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+        }
+      }
+      if (state === "closed") {
+        pcsRef.current.delete(peerId);
+        setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+      }
+    };
+
+    // Flush pending ICE
+    pc.onsignalingstatechange = () => {
+      if (pc.signalingState === "stable") {
+        const candidates = pendingIce.current.get(peerId) || [];
+        pendingIce.current.delete(peerId);
+        candidates.forEach(c => pc.addIceCandidate(c).catch(() => {}));
+      }
+    };
+
+    if (isInitiator) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+    }
+
+    return pc;
+  }, [sendWs]);
+
+  // ── WebSocket message handler ──────────────────────────────────────────────
+
+  const handleMessage = useCallback(async (raw: string) => {
+    let msg: any;
+    try { msg = JSON.parse(raw); } catch { return; }
+
+    const myId = myIdRef.current;
+
+    // ── DB lobby join request (from qmeet API) ───────────────────────────────
+    if (msg.type === "qmeet_join_request") {
+      setLobbyRequests(prev => {
+        if (prev.find(r => r.userId === msg.userId)) return prev;
+        return [...prev, msg];
+      });
+      return;
+    }
+    if (msg.type === "webrtc_kicked") {
+      toast({ title: "تم إخراجك من الاجتماع", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_banned") {
+      toast({ title: "تم حظرك من هذا الاجتماع", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_meeting_ended") {
+      toast({ title: "انتهى الاجتماع", description: "أنهى المضيف الاجتماع للجميع" });
+      wsRef.current?.close();
+      pcsRef.current.forEach(pc => pc.close());
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_room_locked") {
+      // Legacy fallback — now redirected to lobby_waiting instead
+      toast({ title: "الاجتماع مقفل", description: "لا يمكن الانضمام حاليًا", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_room_lock_changed") {
+      setMeetingLocked(!!msg.locked);
+      toast({ title: msg.locked ? "🔒 الاجتماع مقفل" : "🔓 الاجتماع مفتوح" });
+      return;
+    }
+
+    // ── Screen share notifications from other peers ───────────────────────────
+    if (msg.type === "webrtc_screen_share") {
+      if (msg.active) {
+        toast({ title: `🖥️ ${msg.name || "مشارك"} بدأ مشاركة شاشته` });
+      } else {
+        toast({ title: `🖥️ ${msg.name || "مشارك"} أوقف مشاركة الشاشة` });
+      }
+      return;
+    }
+
+    // ── Screen share request/approval/denial ─────────────────────────────────
+    if (msg.type === "webrtc_screen_share_request") {
+      toast({ title: `${msg.name || "مشارك"} يطلب مشاركة شاشته`, description: "اعتمد الطلب من لوحة المشاركين" });
+      return;
+    }
+    if (msg.type === "webrtc_screen_share_approved") {
+      toast({ title: "✅ تمت الموافقة على مشاركة شاشتك" });
+      return;
+    }
+    if (msg.type === "webrtc_screen_share_denied") {
+      toast({ title: "❌ رُفض طلب مشاركة الشاشة", variant: "destructive" });
+      return;
+    }
+
+    // ── Host receives a lock-lobby join request ───────────────────────────────
+    if (msg.type === "webrtc_lock_join_request") {
+      setLobbyRequests(prev => {
+        if (prev.find(r => r.userId === msg.userId)) return prev;
+        return [...prev, { userId: msg.userId, userName: msg.userName }];
+      });
+      // Open participants panel so host sees the request
+      setPanel(p => p === "none" ? "participants" : p);
+      toast({ title: "🔔 طلب انضمام جديد", description: `${msg.userName} يطلب الدخول` });
+      return;
+    }
+
+    // ── Lobby waiting: room is locked ─────────────────────────────────────────
+    if (msg.type === "webrtc_lobby_waiting") {
+      setLobbyWaiting(true);
+      return;
+    }
+
+    // ── Lobby denied ─────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_lobby_denied") {
+      setLobbyWaiting(false);
+      toast({ title: "تم رفض طلبك", description: "لم يوافق المضيف على انضمامك", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+
+    // ── Join: list of existing peers ─────────────────────────────────────────
+    if (msg.type === "webrtc_peers") {
+      // Set host status
+      if (msg.hostId) {
+        const amHost = msg.hostId === myId;
+        setIsRoomHost(amHost);
+        isRoomHostRef.current = amHost;
+      }
+      // Set lock state
+      if (msg.isLocked !== undefined) setMeetingLocked(!!msg.isLocked);
+      // Set active poll
+      if (msg.activePoll) setActivePoll(msg.activePoll);
+      // Build peer info map
+      if (msg.peerInfoList) {
+        msg.peerInfoList.forEach((p: any) => {
+          peerNamesRef.current.set(p.userId, p.name);
+          if (p.userId !== myId) {
+            setPeers(prev => {
+              const m = new Map(prev);
+              if (!m.has(p.userId)) {
+                m.set(p.userId, { id: p.userId, name: p.name, stream: null, audioOn: true, videoOn: true, photoUrl: p.photoUrl, facingMode: p.facingMode || "user" });
+              }
+              return m;
+            });
+          }
+        });
+      }
+      // Initiate connection to each existing peer (we are the newcomer = initiator)
+      const existingIds: string[] = msg.peers || [];
+      // If no existing peers, we are the first → we are the host
+      if (existingIds.length === 0 && !msg.hostId) {
+        setIsRoomHost(true);
+        isRoomHostRef.current = true;
+      }
+      for (const peerId of existingIds) {
+        if (peerId !== myId) await createPc(peerId, true);
+      }
+      return;
+    }
+
+    // ── Someone new joined (we are existing = NOT initiator) ─────────────────
+    if (msg.type === "webrtc_peer_joined") {
+      const peerId: string = msg.peerId;
+      if (peerId === myId) return;
+      peerNamesRef.current.set(peerId, msg.name || peerId);
+      setPeers(prev => {
+        const m = new Map(prev);
+        if (!m.has(peerId)) {
+          m.set(peerId, { id: peerId, name: msg.name || peerId, stream: null, audioOn: true, videoOn: true, photoUrl: msg.photoUrl, facingMode: msg.facingMode || "user" });
+        }
+        return m;
+      });
+      // Create a receiver PC with full handlers (isInitiator=false → no offer sent)
+      createPc(peerId, false).catch(() => {});
+      return;
+    }
+
+    // ── Host transferred (automatic or manual) ────────────────────────────────
+    if (msg.type === "webrtc_host_changed") {
+      const amNowHost = String(msg.newHostId) === myId;
+      setIsRoomHost(amNowHost);
+      isRoomHostRef.current = amNowHost;
+      if (amNowHost) {
+        toast({ title: "👑 أنت الآن مضيف الاجتماع", description: "تمت إحالة إدارة الغرفة إليك" });
+      }
+      return;
+    }
+
+    // ── Peer left ─────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_peer_left") {
+      const peerId: string = msg.peerId;
+      pcsRef.current.get(peerId)?.close();
+      pcsRef.current.delete(peerId);
+      pendingIce.current.delete(peerId);
+      peerNamesRef.current.delete(peerId);
+      setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+      return;
+    }
+
+    // ── Offer received (we are existing peer, newcomer sent this) ─────────────
+    if (msg.type === "webrtc_offer") {
+      const peerId: string = msg.from;
+      let pc = pcsRef.current.get(peerId);
+      if (!pc) {
+        // Peer joined but webrtc_peer_joined wasn't processed yet — create full PC via createPc
+        pc = await createPc(peerId, false);
+      }
+      // If PC is in wrong state (e.g. after ICE restart), close and recreate
+      if (pc.signalingState !== "stable" && pc.signalingState !== "have-remote-offer") {
+        pc = await createPc(peerId, false);
+      }
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+      // Flush buffered ICE candidates after remote description is set
+      const cands = pendingIce.current.get(peerId) || [];
+      pendingIce.current.delete(peerId);
+      for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendWs({ type: "webrtc_answer", to: peerId, answer: pc.localDescription });
+      return;
+    }
+
+    // ── Answer received ────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_answer") {
+      const pc = pcsRef.current.get(msg.from);
+      if (pc && pc.signalingState === "have-local-offer") {
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+        // Flush buffered ICE
+        const cands = pendingIce.current.get(msg.from) || [];
+        pendingIce.current.delete(msg.from);
+        for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
+      }
+      return;
+    }
+
+    // ── ICE candidate ──────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_ice") {
+      const peerId: string = msg.from;
+      const pc = pcsRef.current.get(peerId);
+      if (!msg.candidate) return;
+      const candidate = new RTCIceCandidate(msg.candidate);
+      if (pc && pc.remoteDescription) {
+        pc.addIceCandidate(candidate).catch(() => {});
+      } else {
+        const arr = pendingIce.current.get(peerId) || [];
+        arr.push(candidate);
+        pendingIce.current.set(peerId, arr);
+      }
+      return;
+    }
+
+    // ── Chat ───────────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_chat") {
+      const time = new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
+      const chatMsg: ChatMsg = { id: `${Date.now()}-${msg.from}`, fromId: msg.from, name: msg.name || msg.from, text: msg.text, time, isSelf: false };
+      setChat(prev => [...prev, chatMsg]);
+      if (panelRef.current !== "chat") setUnread(n => n + 1);
+      return;
+    }
+
+    // ── Media state ────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_media_state") {
+      setPeers(prev => {
+        const m = new Map(prev);
+        const p = m.get(msg.from);
+        if (p) m.set(msg.from, { ...p, audioOn: !!msg.audio, videoOn: !!msg.video, ...(msg.facingMode ? { facingMode: msg.facingMode } : {}) });
+        return m;
+      });
+      return;
+    }
+
+    // ── Raise hand ────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_raise_hand") {
+      setPeers(prev => {
+        const m = new Map(prev);
+        const p = m.get(msg.userId || msg.from);
+        if (p) m.set(p.id, { ...p, raisedHand: !!msg.raised });
+        return m;
+      });
+      return;
+    }
+
+    // ── Reactions ─────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_reaction") {
+      const id = `${Date.now()}-${Math.random()}`;
+      const left = 20 + Math.random() * 60;
+      setFloatReactions(prev => [...prev, { id, emoji: msg.emoji, left }]);
+      setTimeout(() => setFloatReactions(prev => prev.filter(r => r.id !== id)), 3000);
+      return;
+    }
+
+    // ── Mute all (host command) ────────────────────────────────────────────────
+    if (msg.type === "webrtc_mute_all") {
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
+      audioOnRef.current = false;
+      setAudioOn(false);
+      sendWs({ type: "webrtc_media_state", roomId, audio: false, video: videoOnRef.current });
+      toast({ title: "🔇 تم كتم صوتك من المضيف" });
+      return;
+    }
+
+    // ── Mute individual (host command) ────────────────────────────────────────
+    if (msg.type === "webrtc_mute_me") {
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
+      audioOnRef.current = false;
+      setAudioOn(false);
+      sendWs({ type: "webrtc_media_state", roomId, audio: false, video: videoOnRef.current });
+      toast({ title: "🔇 تم كتم صوتك من المضيف" });
+      return;
+    }
+
+    // ── Polls ─────────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_poll_started") {
+      setActivePoll(msg.poll);
+      setMyPollVote(null);
+      toast({ title: "📊 استطلاع جديد!", description: msg.poll.question });
+      return;
+    }
+    if (msg.type === "webrtc_poll_updated") {
+      setActivePoll(msg.poll);
+      if (msg.myVote !== undefined) setMyPollVote(msg.myVote);
+      return;
+    }
+    if (msg.type === "webrtc_poll_ended") {
+      setActivePoll(msg.poll);
+      setTimeout(() => setActivePoll(null), 8000); // show final results for 8s
+      return;
+    }
+
+    // ── Live captions ─────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_caption") {
+      const cap: CaptionEntry = { id: `${Date.now()}-${msg.from}`, name: msg.name || msg.from, text: msg.text, isSelf: false };
+      captionsLogRef.current = [...captionsLogRef.current, cap];
+      setCaptions(prev => {
+        const next = [...prev.slice(-9), cap]; // keep last 10
+        return next;
+      });
+      captionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // ── Attendance log ────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_attendance_log") {
+      setAttendanceLog(msg.log || []);
+      return;
+    }
+
+    // ── Lobby approval ────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_lobby_approved") {
+      setLobbyWaiting(false);
+      return;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createPc, navigate, sendWs, toast, roomId]);
+
+  // ── Join meeting ───────────────────────────────────────────────────────────
+
+  const joinMeeting = useCallback(async () => {
+    if (!roomId) return;
+
+    // Determine effective ID
+    const effectiveId = userId || `guest-${Date.now()}`;
+    myIdRef.current = effectiveId;
+
+    // Reuse existing stream if already obtained from pre-join screen
+    // Only call getMedia if we don't have a stream yet — avoids duplicate streams
+    let stream = localStreamRef.current;
+    const hasLiveTracks = stream && stream.getTracks().some(t => t.readyState === "live");
+    if (!hasLiveTracks) {
+      stream = await getMedia();
+    }
+
+    // Apply initial track states (respect what user set on pre-join screen)
+    if (stream) {
+      stream.getAudioTracks().forEach(t => { t.enabled = audioOnRef.current; });
+      stream.getVideoTracks().forEach(t => { t.enabled = videoOnRef.current; });
+    }
+
+    // Load ICE servers
+    iceServersRef.current = await getIce();
+
+    // Connect WebSocket
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    wsRef.current = ws;
+
+    const doJoin = (socket: WebSocket, eId: string) => {
+      socket.send(JSON.stringify({ type: "auth", userId: eId }));
+      socket.send(JSON.stringify({
+        type: "webrtc_join",
+        roomId,
+        name: userName,
+        photoUrl: (user as any)?.photoUrl || "",
+        facingMode: facingModeRef.current,
+      }));
+    };
+
+    const attachWsHandlers = (socket: WebSocket) => {
+      socket.onopen = () => {
+        // Clean up stale peer connections before rejoining
+        pcsRef.current.forEach(pc => { try { pc.close(); } catch {} });
+        pcsRef.current.clear();
+        pendingIce.current.clear();
+        setPeers(new Map());
+        doJoin(socket, effectiveId);
+      };
+      socket.onmessage = (e) => handleMessage(e.data);
+      socket.onerror = () => {};
+      socket.onclose = () => {
+        if (wsRef.current !== socket) return; // already replaced
+        setTimeout(() => {
+          if (wsRef.current !== socket) return;
+          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const next = new WebSocket(`${proto}//${window.location.host}/ws`);
+          wsRef.current = next;
+          attachWsHandlers(next);
+        }, 2500);
+      };
+    };
+
+    // First connection: don't clean up PCs (they don't exist yet)
+    ws.onopen = () => doJoin(ws, effectiveId);
+    ws.onmessage = (e) => handleMessage(e.data);
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      if (wsRef.current !== ws) return;
+      setTimeout(() => {
+        if (wsRef.current !== ws) return;
+        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const next = new WebSocket(`${proto}//${window.location.host}/ws`);
+        wsRef.current = next;
+        attachWsHandlers(next);
+      }, 2500);
+    };
+
+    // ── Keepalive: send ping every 25s to prevent idle WS disconnect ───────
+    if (keepaliveRef.current) clearInterval(keepaliveRef.current);
+    keepaliveRef.current = window.setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 25000);
+
+    setJoined(true);
+  }, [roomId, userId, userName, user, getMedia, handleMessage]);
+
+  // ── Cleanup on unmount ────────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (keepaliveRef.current) clearInterval(keepaliveRef.current);
+      wsRef.current?.close();
+      pcsRef.current.forEach(pc => pc.close());
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      audioCtxRef.current?.close().catch(() => {});
+    };
+  }, []);
+
+  // ── Resume AudioContext on first user gesture (fixes Chrome audio policy) ──
+  useEffect(() => {
+    const resume = () => {
+      if (audioCtxRef.current?.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    };
+    document.addEventListener("click", resume);
+    document.addEventListener("touchstart", resume);
+    return () => {
+      document.removeEventListener("click", resume);
+      document.removeEventListener("touchstart", resume);
+    };
+  }, []);
+
+  // ── Speaking detection ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!joined) return;
+    const getCtx = () => {
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new AudioContext();
+      }
+      return audioCtxRef.current;
+    };
+    const attach = (id: string, stream: MediaStream) => {
+      if (analyserRef.current.has(id)) {
+        try { analyserRef.current.get(id)!.source.disconnect(); } catch {}
+        analyserRef.current.delete(id);
+      }
+      try {
+        const ctx = getCtx();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512; analyser.smoothingTimeConstant = 0.5;
+        const source = ctx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyserRef.current.set(id, { analyser, source });
+      } catch {}
+    };
+
+    const selfId = myIdRef.current;
+    if (localStream) attach(selfId, localStream);
+    peers.forEach((p) => { if (p.stream) attach(p.id, p.stream); });
+
+    const interval = setInterval(() => {
+      const speaking = new Set<string>();
+      analyserRef.current.forEach(({ analyser }, id) => {
+        if (id === selfId && !audioOn) return;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        const avg = data.slice(0, Math.floor(data.length / 2)).reduce((a, b) => a + b, 0) / (data.length / 2);
+        if (avg > 8) speaking.add(id);
+      });
+      setSpeakingIds(prev => {
+        if (prev.size === speaking.size && [...prev].every(id => speaking.has(id))) return prev;
+        return speaking;
+      });
+    }, 150);
+
+    return () => clearInterval(interval);
+  }, [joined, localStream, peers, audioOn]);
+
+  // ── Controls ──────────────────────────────────────────────────────────────
+
+  // Replace a track in all PCs and in the local stream ref
+  const replaceTrackInPcs = useCallback((newTrack: MediaStreamTrack, kind: "audio" | "video") => {
+    if (!localStreamRef.current) return;
+    // Remove old tracks of this kind from stream
+    localStreamRef.current.getTracks()
+      .filter(t => t.kind === kind && t.id !== newTrack.id)
+      .forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+    // Add new track to stream
+    if (!localStreamRef.current.getTracks().find(t => t.id === newTrack.id)) {
+      localStreamRef.current.addTrack(newTrack);
+    }
+    // Replace in each PC
+    pcsRef.current.forEach(pc => {
+      const sender = pc.getSenders().find(s => s.track?.kind === kind);
+      if (sender) {
+        sender.replaceTrack(newTrack).catch(() => {});
+      } else {
+        pc.addTrack(newTrack, localStreamRef.current!);
+      }
+    });
+    // Force React to re-render local video
+    setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+  }, []);
+
+  const toggleAudio = useCallback(async () => {
+    const on = !audioOnRef.current;
+
+    if (on) {
+      // Turning ON — check if existing audio tracks are live
+      const existingAudio = localStreamRef.current?.getAudioTracks() ?? [];
+      const liveTrack = existingAudio.find(t => t.readyState === "live");
+      if (liveTrack) {
+        liveTrack.enabled = true;
+      } else {
+        // Track ended or missing — request a fresh audio track
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          const newAudio = newStream.getAudioTracks()[0];
+          if (!localStreamRef.current) {
+            localStreamRef.current = newStream;
+            setLocalStream(newStream);
+          } else {
+            replaceTrackInPcs(newAudio, "audio");
+          }
+        } catch {
+          toast({ title: "تعذّر تشغيل الميكروفون", variant: "destructive" });
+          return;
+        }
+      }
+    } else {
+      // Turning OFF — just disable, don't stop (so re-enable works instantly)
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
+    }
+
+    audioOnRef.current = on;
+    setAudioOn(on);
+    sendWs({ type: "webrtc_media_state", roomId, audio: on, video: videoOnRef.current });
+  }, [roomId, sendWs, toast, replaceTrackInPcs]);
+
+  const toggleVideo = useCallback(async () => {
+    if (screenSharing) return;
+    const on = !videoOnRef.current;
+
+    if (on) {
+      // Turning ON — check if existing video tracks are live
+      const existingVideo = localStreamRef.current?.getVideoTracks() ?? [];
+      const liveTrack = existingVideo.find(t => t.readyState === "live");
+      if (liveTrack) {
+        liveTrack.enabled = true;
+      } else {
+        // Track ended or missing — request a fresh video track
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          const newVideo = newStream.getVideoTracks()[0];
+          if (!localStreamRef.current) {
+            localStreamRef.current = newStream;
+            setLocalStream(newStream);
+          } else {
+            replaceTrackInPcs(newVideo, "video");
+          }
+        } catch {
+          toast({ title: "تعذّر تشغيل الكاميرا", variant: "destructive" });
+          return;
+        }
+      }
+    } else {
+      // Turning OFF — just disable, don't stop
+      localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = false; });
+    }
+
+    videoOnRef.current = on;
+    setVideoOn(on);
+    sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: on });
+  }, [screenSharing, roomId, sendWs, toast, replaceTrackInPcs]);
+
+  const flipCamera = useCallback(async () => {
+    if (screenSharing || flippingCamera || !videoOnRef.current) return;
+    const next = facingModeRef.current === "user" ? "environment" : "user";
+    setFlippingCamera(true);
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: next } },
+        audio: false,
+      }).catch(async () => {
+        // Some devices don't support "exact" — try without exact
+        return await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: next },
+          audio: false,
+        });
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) throw new Error("no video track");
+      replaceTrackInPcs(newTrack, "video");
+      facingModeRef.current = next;
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: videoOnRef.current, facingMode: next });
+    } catch {
+      toast({ title: "تعذّر قلب الكاميرا — جهازك قد لا يدعم كاميرا خلفية", variant: "destructive" });
+    } finally {
+      setFlippingCamera(false);
+    }
+  }, [screenSharing, flippingCamera, replaceTrackInPcs, toast]);
+
+  const revertToCamera = useCallback(async () => {
+    try {
+      const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const camTrack = camStream.getVideoTracks()[0];
+      if (camTrack) {
+        camTrack.enabled = videoOnRef.current;
+        if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+          localStreamRef.current.addTrack(camTrack);
+          pcsRef.current.forEach(pc => {
+            const sender = pc.getSenders().find(s => s.track?.kind === "video");
+            if (sender) sender.replaceTrack(camTrack).catch(() => {});
+          });
+          setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+        }
+      }
+    } catch { /* camera unavailable — continue without video */ }
+    setScreenSharing(false);
+    sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
+  }, [roomId, sendWs, userName]);
+
+  const toggleScreen = useCallback(async () => {
+    if (screenSharing) {
+      await revertToCamera();
+      return;
+    }
+    // Check API availability
+    if (!(navigator.mediaDevices as any).getDisplayMedia) {
+      toast({ title: "متصفحك لا يدعم مشاركة الشاشة", description: "استخدم Chrome أو Edge أو Firefox" });
+      return;
+    }
+    try {
+      const screen = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: { frameRate: { ideal: 30, max: 60 }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 44100 },
+      });
+      const screenTrack = screen.getVideoTracks()[0];
+      if (!screenTrack) return;
+      // Swap into local stream
+      if (localStreamRef.current) {
+        localStreamRef.current.getVideoTracks().forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+        localStreamRef.current.addTrack(screenTrack);
+      } else {
+        localStreamRef.current = screen;
+      }
+      // Replace video track in all PCs
+      pcsRef.current.forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) sender.replaceTrack(screenTrack).catch(() => {});
+        else pc.addTrack(screenTrack, localStreamRef.current!);
+      });
+      setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+      // When user stops sharing from browser UI
+      screenTrack.onended = () => revertToCamera();
+      setScreenSharing(true);
+      sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
+      toast({ title: "🖥️ بدأت مشاركة الشاشة", description: "المشاركون الآخرون يرون شاشتك الآن" });
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError") {
+        toast({ title: "تعذّر مشاركة الشاشة", description: "تأكد من منح الإذن لمشاركة الشاشة", variant: "destructive" });
+      }
+    }
+  }, [screenSharing, roomId, sendWs, toast, userName, revertToCamera]);
+
+  const toggleHand = useCallback(() => {
+    const on = !raisedHand;
+    setRaisedHand(on);
+    sendWs({ type: "webrtc_raise_hand", roomId, raised: on, name: userName, userId: myIdRef.current });
+  }, [raisedHand, roomId, userName, sendWs]);
+
+  const sendReaction = useCallback((emoji: string) => {
+    const id = `${Date.now()}-local`;
+    const left = 20 + Math.random() * 60;
+    setFloatReactions(prev => [...prev, { id, emoji, left }]);
+    setTimeout(() => setFloatReactions(prev => prev.filter(r => r.id !== id)), 3000);
+    sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName, userId: myIdRef.current });
+    setShowEmojiPicker(false);
+  }, [roomId, userName, sendWs]);
+
+  const muteAll = useCallback(() => {
+    sendWs({ type: "webrtc_mute_all", roomId });
+    toast({ title: "تم كتم جميع المشاركين" });
+  }, [roomId, sendWs, toast]);
+
+  const sendChat = useCallback(() => {
+    if (!chatInput.trim()) return;
+    const time = new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
+    const msg: ChatMsg = { id: `${Date.now()}-self`, fromId: myIdRef.current, name: userName, text: chatInput.trim(), time, isSelf: true };
+    setChat(prev => [...prev, msg]);
+    sendWs({ type: "webrtc_chat", roomId, text: chatInput.trim(), name: userName });
+    setChatInput("");
+  }, [chatInput, userName, roomId, sendWs]);
+
+  const leave = useCallback(() => {
+    sendWs({ type: "webrtc_leave", roomId });
+    wsRef.current?.close();
+    pcsRef.current.forEach(pc => pc.close());
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
+    navigate("/qmeet");
+  }, [roomId, sendWs, navigate]);
+
+  const copyLink = useCallback(() => {
+    const url = `${window.location.origin}/meet/${roomId}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [roomId]);
+
+  const approveLobby = useCallback((reqUserId: string) => {
+    sendWs({ type: "webrtc_approve_lobby", roomId, targetId: reqUserId });
+    fetch(`/api/qmeet/room/${roomId}/approve-join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ userId: reqUserId }),
+    }).catch(() => {});
+    setLobbyRequests(prev => prev.filter(r => r.userId !== reqUserId));
+  }, [roomId, sendWs]);
+
+  const denyLobby = useCallback((reqUserId: string) => {
+    sendWs({ type: "webrtc_deny_lobby", roomId, targetId: reqUserId });
+    setLobbyRequests(prev => prev.filter(r => r.userId !== reqUserId));
+  }, [roomId, sendWs]);
+
+  // ── Host: Lock/Unlock room ────────────────────────────────────────────────
+  const toggleLock = useCallback(() => {
+    const newLocked = !meetingLocked;
+    sendWs({ type: "webrtc_lock_room", roomId, locked: newLocked });
+    setMeetingLocked(newLocked);
+    toast({ title: newLocked ? "🔒 الاجتماع مقفل" : "🔓 الاجتماع مفتوح" });
+  }, [meetingLocked, roomId, sendWs, toast]);
+
+  // ── Host: Kick participant ─────────────────────────────────────────────────
+  const kickPeer = useCallback((targetId: string, targetName: string) => {
+    if (!confirm(`هل تريد إخراج ${targetName} وحظره من إعادة الانضمام؟`)) return;
+    sendWs({ type: "webrtc_kick", roomId, targetId, ban: true });
+    toast({ title: `تم إخراج ${targetName}` });
+  }, [roomId, sendWs, toast]);
+
+  // ── Host: Mute individual peer ────────────────────────────────────────────
+  const mutePeer = useCallback((targetId: string) => {
+    sendWs({ type: "webrtc_mute_peer", roomId, targetId });
+    toast({ title: "تم كتم المشارك" });
+  }, [roomId, sendWs, toast]);
+
+  // ── Live Captions (Web Speech API) ───────────────────────────────────────
+  const toggleCaptions = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "التعليقات المباشرة غير متاحة", description: "استخدم Chrome أو Edge لهذه الميزة", variant: "destructive" });
+      return;
+    }
+    if (captionsOn) {
+      speechRef.current?.stop();
+      speechRef.current = null;
+      setCaptionsOn(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "ar-SA";
+    recognition.onresult = (e: any) => {
+      const latest = e.results[e.results.length - 1];
+      if (latest.isFinal) {
+        const text = latest[0].transcript.trim();
+        if (!text) return;
+        const cap: CaptionEntry = { id: `${Date.now()}-self`, name: userName, text, isSelf: true };
+        captionsLogRef.current = [...captionsLogRef.current, cap];
+        setCaptions(prev => [...prev.slice(-9), cap]);
+        captionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Relay to peers
+        sendWs({ type: "webrtc_caption", roomId, text, name: userName });
+      }
+    };
+    recognition.onerror = () => {};
+    recognition.onend = () => {
+      // Auto-restart if still enabled
+      if (speechRef.current) {
+        try { speechRef.current.start(); } catch {}
+      }
+    };
+    recognition.start();
+    speechRef.current = recognition;
+    setCaptionsOn(true);
+    toast({ title: "✏️ التعليقات المباشرة تعمل" });
+  }, [captionsOn, roomId, userName, sendWs, toast]);
+
+  // ── Recording (MediaRecorder + getDisplayMedia for full-room capture) ────
+  const captureStreamRef = useRef<MediaStream | null>(null);
+
+  const toggleRecording = useCallback(async () => {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    try {
+      recordedChunksRef.current = [];
+      let recordStream: MediaStream;
+
+      // Try screen/tab capture first — this records ALL participants on screen
+      try {
+        const displayStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { displaySurface: "browser", frameRate: 30 } as MediaTrackConstraints,
+          audio: { echoCancellation: false, noiseSuppression: false } as MediaTrackConstraints,
+        });
+        captureStreamRef.current = displayStream;
+
+        // Mix display audio + local mic for full audio
+        if (localStreamRef.current?.getAudioTracks().length) {
+          try {
+            const audioCtx = new AudioContext();
+            const dest = audioCtx.createMediaStreamDestination();
+            audioCtx.createMediaStreamSource(localStreamRef.current).connect(dest);
+            if (displayStream.getAudioTracks().length > 0) {
+              audioCtx.createMediaStreamSource(displayStream).connect(dest);
+            }
+            recordStream = new MediaStream([
+              ...displayStream.getVideoTracks(),
+              ...dest.stream.getAudioTracks(),
+            ]);
+          } catch {
+            recordStream = displayStream;
+          }
+        } else {
+          recordStream = displayStream;
+        }
+
+        // Auto-stop when user ends screen sharing
+        displayStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+          if (mediaRecorderRef.current?.state === "recording") {
+            mediaRecorderRef.current.stop();
+          }
+        });
+      } catch (displayErr: any) {
+        if (displayErr?.name === "NotAllowedError") {
+          toast({ title: "تم إلغاء التسجيل", variant: "destructive" });
+          return;
+        }
+        // Fallback: record local stream only
+        if (!localStreamRef.current) {
+          toast({ title: "لا يوجد stream للتسجيل", variant: "destructive" });
+          return;
+        }
+        recordStream = localStreamRef.current;
+        toast({ title: "⚠️ تسجيل الكاميرا فقط", description: "لم يتم السماح بتسجيل الشاشة" });
+      }
+
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+        ? "video/webm;codecs=vp8,opus"
+        : "video/webm";
+
+      const recorder = new MediaRecorder(recordStream, { mimeType });
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        setRecordingBlob(blob);
+        setRecording(false);
+        captureStreamRef.current?.getTracks().forEach(t => t.stop());
+        captureStreamRef.current = null;
+        toast({ title: "✅ التسجيل جاهز للتنزيل" });
+      };
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      setRecordingBlob(null);
+      toast({ title: "⏺ بدأ تسجيل الاجتماع", description: "اختر التبويب الحالي لتسجيل جميع المشاركين" });
+    } catch {
+      toast({ title: "تعذّر بدء التسجيل", variant: "destructive" });
+    }
+  }, [recording, toast]);
+
+  const downloadRecording = useCallback(() => {
+    if (!recordingBlob) return;
+    const url = URL.createObjectURL(recordingBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeTitle = (meeting?.title || roomId).replace(/[^a-zA-Z0-9\u0600-\u06FF_-]/g, "_").slice(0, 40);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `qmeet-${safeTitle}-${dateStr}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [recordingBlob, roomId]);
+
+  // ── Poll controls ─────────────────────────────────────────────────────────
+  const createPoll = useCallback(() => {
+    const validOptions = pollOptions.filter(o => o.trim());
+    if (!pollQuestion.trim() || validOptions.length < 2) {
+      toast({ title: "أدخل سؤالاً وخيارين على الأقل", variant: "destructive" });
+      return;
+    }
+    sendWs({ type: "webrtc_poll_create", roomId, question: pollQuestion.trim(), options: validOptions });
+    setPollQuestion("");
+    setPollOptions(["", ""]);
+    setShowPollCreator(false);
+  }, [pollQuestion, pollOptions, roomId, sendWs, toast]);
+
+  const votePoll = useCallback((optionIndex: number) => {
+    if (!activePoll || myPollVote !== null) return;
+    sendWs({ type: "webrtc_poll_vote", roomId, pollId: activePoll.id, optionIndex });
+    setMyPollVote(optionIndex);
+  }, [activePoll, myPollVote, roomId, sendWs]);
+
+  const endPoll = useCallback(() => {
+    if (!activePoll) return;
+    sendWs({ type: "webrtc_poll_end", roomId, pollId: activePoll.id });
+  }, [activePoll, roomId, sendWs]);
+
+  // ── AI Summary ────────────────────────────────────────────────────────────
+  const getAiSummary = useCallback(async () => {
+    setAiSummaryLoading(true);
+    setPanel("ai");
+    try {
+      const res = await fetch(`/api/qmeet/room/${roomId}/ai-summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          chat: chat.map(m => ({ name: m.name, text: m.text })),
+          captions: captionsLogRef.current.map(c => ({ name: c.name, text: c.text })),
+          title: meeting?.title || "اجتماع",
+        }),
+      });
+      const data = await res.json();
+      setAiSummary(data.summary || "تعذّر إنشاء الملخص");
+    } catch {
+      setAiSummary("خطأ في الاتصال بخدمة الذكاء الاصطناعي");
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [roomId, chat, meeting]);
+
+  // ── Attendance ────────────────────────────────────────────────────────────
+  const showAttendancePanel = useCallback(() => {
+    sendWs({ type: "webrtc_get_attendance", roomId });
+    setPanel("attendance");
+  }, [roomId, sendWs]);
+
+  // ── Render helpers ────────────────────────────────────────────────────────
+
+  const myId = myIdRef.current || "local";
+  const localPeer: PeerState = {
+    id: myId, name: userName,
+    stream: localStream, audioOn, videoOn, raisedHand,
+  };
+  const allPeers: PeerState[] = [localPeer, ...[...peers.values()]];
+  const total = allPeers.length;
+
+  const isSpotlight = layout === "spotlight" || pinnedId !== null;
+  const spotPeer = pinnedId ? (allPeers.find(p => p.id === pinnedId) ?? allPeers[0]) : (allPeers.find(p => speakingIds.has(p.id)) ?? allPeers[0]);
+  const thumbPeers = allPeers.filter(p => p.id !== spotPeer?.id);
+
+  const gridCols = isMobile ? 1 : (total <= 1 ? 1 : total === 2 ? 2 : total <= 4 ? 2 : total <= 6 ? 3 : 4);
+
+  // ── PRE-JOIN SCREEN ────────────────────────────────────────────────────────
+  if (!joined) {
+    const permissionDenied = mediaError?.includes("رُفض") || mediaError?.includes("غير مصرح");
+    const noDevice = mediaError?.includes("لا توجد");
+    const inUse = mediaError?.includes("مستخدمة");
+    return (
+      <div className="min-h-screen bg-[#202124] flex flex-col items-center justify-center px-4 py-6" dir={dir}>
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <h1 className="text-white text-2xl font-bold">{meeting?.title || "اجتماع QMeet"}</h1>
+          <p className="text-[#9aa0a6] text-sm mt-1">جهّز الكاميرا والميكروفون قبل الدخول</p>
+        </div>
+
+        <div className="w-full max-w-3xl flex flex-col lg:flex-row gap-5 items-start justify-center">
+          {/* Camera preview */}
+          <div className="w-full lg:flex-1 flex flex-col gap-3">
+            <div className="bg-[#3c4043] rounded-2xl overflow-hidden relative" style={{ aspectRatio: "16/9" }}>
+              {localStream && videoOn
+                ? <video ref={el => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); }}}
+                    autoPlay muted playsInline className="w-full h-full object-cover"
+                    style={{ transform: facingModeRef.current === "user" ? "scaleX(-1)" : undefined }} />
+                : <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold text-white"
+                      style={{ background: avatarColor(userName) }}>
+                      {userName?.charAt(0)?.toUpperCase() || "م"}
+                    </div>
+                    <span className="text-[#9aa0a6] text-sm">
+                      {mediaError ? "الكاميرا غير متاحة" : "الكاميرا مغلقة"}
+                    </span>
+                  </div>
+              }
+              {/* Controls overlay */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+                <button onClick={toggleAudio}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
+                  title={audioOn ? "إيقاف الميكروفون" : "تشغيل الميكروفون"}>
+                  {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+                </button>
+                <button onClick={toggleVideo}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
+                  title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}>
+                  {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+                </button>
+                {videoOn && (
+                  <button onClick={flipCamera} disabled={flippingCamera}
+                    className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition bg-black/50 hover:bg-black/70 backdrop-blur-sm disabled:opacity-50"
+                    title="قلب الكاميرا">
+                    {flippingCamera ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <FlipHorizontal2 className="w-5 h-5 text-white" />}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Device status indicators */}
+            <div className="flex gap-2">
+              <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                audioOn && localStream?.getAudioTracks()[0]?.readyState === "live"
+                  ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
+                  : mediaError ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
+                  : "bg-[#3c4043] text-[#9aa0a6]"
+              }`}>
+                <Mic className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{
+                  localStream?.getAudioTracks()[0]?.readyState === "live" ? "الميكروفون يعمل ✓"
+                  : mediaError ? "لا يوجد ميكروفون" : "في الانتظار..."
+                }</span>
+              </div>
+              <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                videoOn && localStream?.getVideoTracks()[0]?.readyState === "live"
+                  ? "bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70"
+                  : "bg-[#3c4043] text-[#9aa0a6]"
+              }`}>
+                <Camera className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{
+                  localStream?.getVideoTracks()[0]?.readyState === "live" ? "الكاميرا تعمل ✓"
+                  : videoOn ? "مغلقة" : "معطّلة"
+                }</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Join card */}
+          <div className="w-full lg:w-72 flex flex-col gap-3">
+
+            {/* Permission error with fix guide */}
+            {mediaError && (
+              <div className={`p-4 rounded-xl space-y-3 ${permissionDenied ? "bg-black dark:bg-white border border-black dark:border-white" : "bg-black dark:bg-white border border-black dark:border-white"}`}>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`} />
+                  <div>
+                    <p className={`text-xs font-semibold mb-1 ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`}>
+                      {permissionDenied ? "لم يتم منح الإذن" : noDevice ? "لا يوجد جهاز" : inUse ? "الجهاز مستخدم" : "مشكلة في الوصول"}
+                    </p>
+                    <p className={`text-xs leading-relaxed ${permissionDenied ? "text-black/70 dark:text-white/70" : "text-black/70 dark:text-white/70"}`}>
+                      {permissionDenied
+                        ? "اضغط على أيقونة القفل 🔒 في شريط العنوان واختر «السماح» للكاميرا والميكروفون"
+                        : noDevice
+                        ? "تأكد من توصيل كاميرا وميكروفون بجهازك ثم حاول مجدداً"
+                        : inUse
+                        ? "أغلق أي تطبيقات أخرى تستخدم الكاميرا أو الميكروفون (Zoom، Teams...) ثم حاول مجدداً"
+                        : mediaError}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => getMedia()}
+                  className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition flex items-center justify-center gap-2">
+                  <Camera className="w-3.5 h-3.5" /> أعد المحاولة
+                </button>
+              </div>
+            )}
+
+            {/* HTTPS warning */}
+            {window.location.protocol !== "https:" && window.location.hostname !== "localhost" && (
+              <div className="p-3 rounded-xl bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70 text-xs leading-relaxed flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>يجب فتح الاجتماع عبر رابط آمن (HTTPS) لاستخدام الكاميرا والميكروفون</span>
+              </div>
+            )}
+
+            {/* Name input for guests */}
+            {!defaultName && (
+              <div>
+                <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك في الاجتماع</label>
+                <input
+                  value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (guestName.trim() || defaultName) && joinMeeting()}
+                  placeholder="أدخل اسمك..."
+                  maxLength={40}
+                  className="w-full px-4 py-3 rounded-xl bg-[#3c4043] text-white placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition"
+                  data-testid="input-guest-name"
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* Logged-in user display */}
+            {defaultName && (
+              <div className="px-4 py-3 rounded-xl bg-[#3c4043] text-white text-sm flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                  style={{ background: avatarColor(defaultName) }}>
+                  {defaultName.charAt(0).toUpperCase()}
+                </div>
+                <span className="truncate">{defaultName}</span>
+              </div>
+            )}
+
+            {/* Permission request if no media yet */}
+            {!localStream && !mediaError && (
+              <button onClick={() => getMedia()}
+                className="w-full py-3 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-white text-sm font-medium transition flex items-center justify-center gap-2 border border-white/10">
+                <Camera className="w-4 h-4" /> تفعيل الكاميرا والميكروفون
+              </button>
+            )}
+
+            {/* Join button */}
+            <button
+              onClick={joinMeeting}
+              disabled={!defaultName && !guestName.trim()}
+              className="w-full py-3.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition shadow-lg"
+              data-testid="button-join-meeting"
+            >
+              انضمام الآن
+            </button>
+
+            {/* Tips */}
+            <div className="p-3 rounded-xl bg-white/[0.04] space-y-1.5">
+              <p className="text-[#9aa0a6] text-[11px] font-medium">نصائح للحصول على أفضل تجربة:</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• استخدم Chrome أو Edge للحصول على أفضل أداء</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• اضغط «السماح» عند طلب إذن الكاميرا/الميك</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• في بيئة مكتبية: تأكد من السماح بـ WebRTC</p>
+            </div>
+
+            <button onClick={() => navigate("/qmeet")}
+              className="w-full py-2.5 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-sm transition">
+              رجوع
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── LOBBY WAITING ──────────────────────────────────────────────────────────
+  if (lobbyWaiting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#202124] px-4" dir={dir}>
+        <div className="w-full max-w-sm bg-[#292b2f] rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl text-center">
+          {/* Animated waiting icon */}
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-[#3c4043] flex items-center justify-center">
+              <Lock className="w-8 h-8 text-black/70 dark:text-white/70" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black dark:bg-white flex items-center justify-center">
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-white text-xl font-bold mb-2">في انتظار الموافقة</h2>
+            <p className="text-[#9aa0a6] text-sm leading-relaxed">
+              هذا الاجتماع مقفل حاليًا.<br />
+              تم إرسال طلب انضمامك إلى المضيف.<br />
+              انتظر حتى يوافق على طلبك.
+            </p>
+          </div>
+
+          {/* Pulsing dots animation */}
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-2 h-2 rounded-full bg-black dark:bg-white animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+
+          {/* Wait timer */}
+          <div className="px-4 py-2 rounded-xl bg-[#3c4043] text-[#9aa0a6] text-sm flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>في انتظار الموافقة · {timer}</span>
+          </div>
+
+          <div className="w-full pt-2 border-t border-white/[0.08] space-y-2">
+            <p className="text-[#9aa0a6] text-xs">
+              {meeting?.title ? `«${meeting.title}»` : "الاجتماع"} · {userName}
+            </p>
+            <button
+              onClick={() => sendWs({ type: "webrtc_lobby_request", roomId, name: userName, userId: myIdRef.current })}
+              className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-black/70 dark:text-white/70 text-sm font-medium transition border border-black dark:border-white">
+              إعادة إرسال الطلب
+            </button>
+            <button onClick={leave}
+              className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-black/70 dark:text-white/70 text-sm font-medium transition border border-black dark:border-white">
+              إلغاء الطلب والخروج
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MEETING ROOM ───────────────────────────────────────────────────────────
+  return (
+    <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative select-none" dir={dir}>
+
+      {/* Floating emoji reactions */}
+      <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+        {floatReactions.map(r => (
+          <div key={r.id} className="absolute bottom-32 text-4xl animate-bounce" style={{ animationDuration: "0.6s", left: `${r.left}%` }}>
+            {r.emoji}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Top bar ── */}
+      <div className="flex items-center justify-between px-3 py-2 shrink-0 bg-[#202124]">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-white font-medium text-sm truncate max-w-[120px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
+          <span className="text-[#9aa0a6] text-xs tabular-nums shrink-0">{timer}</span>
+          {meetingLocked && <Lock className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />}
+          {recording && <span className="flex items-center gap-1 text-black/70 dark:text-white/70 text-xs animate-pulse shrink-0"><CircleDot className="w-3 h-3" />تسجيل</span>}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3c4043] text-[#9aa0a6] text-xs">
+            <Users className="w-3.5 h-3.5" /><span>{total}</span>
+          </div>
+          {lobbyRequests.length > 0 && (
+            <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
+              className="px-2.5 py-1 rounded-lg bg-black dark:bg-white border border-black dark:border-white text-black/70 dark:text-white/70 text-xs font-medium animate-pulse">
+              {lobbyRequests.length} ينتظر
+            </button>
+          )}
+          <button onClick={() => setShowQR(true)} title="رمز QR"
+            className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
+            <QrCode className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={copyLink} title="نسخ الرابط"
+            className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
+            {copied ? <Check className="w-3.5 h-3.5 text-black/70 dark:text-white/70" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* ── QR Code Modal ── */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowQR(false)}>
+          <div className="bg-[#292b2f] rounded-2xl p-6 flex flex-col items-center gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between w-full">
+              <span className="text-white font-semibold">رمز QR للانضمام</span>
+              <button onClick={() => setShowQR(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}/meet/${roomId}`)}&color=ffffff&bgcolor=292b2f`}
+              alt="QR" className="rounded-xl"
+              width={220} height={220}
+            />
+            <div className="text-[#9aa0a6] text-xs text-center break-all max-w-[220px]">
+              {`${window.location.origin}/meet/${roomId}`}
+            </div>
+            <button onClick={copyLink}
+              className="w-full py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition flex items-center justify-center gap-2">
+              {copied ? <><Check className="w-4 h-4" /> تم النسخ</> : <><Copy className="w-4 h-4" /> نسخ الرابط</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main area ── */}
+      <div className="flex flex-1 gap-2 px-2 pb-2 overflow-hidden min-h-0">
+
+        {/* Video area */}
+        {isSpotlight && spotPeer ? (
+          <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
+            <div className="flex-1 rounded-xl overflow-hidden relative min-h-0">
+              <VideoTile peer={spotPeer} isSelf={spotPeer.id === myId} speaking={speakingIds.has(spotPeer.id)} mirrored={facingModeRef.current === "user"} />
+              {pinnedId && (
+                <button onClick={() => setPinnedId(null)}
+                  className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 text-white text-xs hover:bg-black/80 transition backdrop-blur-sm">
+                  إلغاء التثبيت
+                </button>
+              )}
+            </div>
+            {thumbPeers.length > 0 && (
+              <div className="flex gap-2 shrink-0 overflow-x-auto pb-1" style={{ height: isMobile ? "80px" : "110px" }}>
+                {thumbPeers.map(p => (
+                  <div key={p.id} onClick={() => setPinnedId(p.id)}
+                    className="rounded-lg overflow-hidden relative shrink-0 cursor-pointer hover:ring-2 hover:ring-black/15 dark:ring-white/15 transition"
+                    style={{ aspectRatio: "16/9", height: "100%" }}>
+                    <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} small mirrored={facingModeRef.current === "user"} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 grid gap-1.5 sm:gap-2 content-center min-h-0"
+            style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}>
+            {allPeers.map(p => (
+              <div key={p.id}
+                onClick={() => { if (total > 1) setPinnedId(p.id); }}
+                className={`rounded-xl overflow-hidden relative aspect-video ${total > 1 ? "cursor-pointer" : ""}`}>
+                <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} mirrored={facingModeRef.current === "user"} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Live Captions Overlay ── */}
+        {captionsOn && captions.length > 0 && (
+          <div className="pointer-events-none absolute bottom-28 left-0 right-0 px-4 z-30 flex flex-col gap-1" style={{ direction: "rtl" }}>
+            {captions.slice(-3).map(cap => (
+              <div key={cap.id}
+                className={`self-center max-w-[80%] px-4 py-2 rounded-xl text-sm text-white shadow-lg backdrop-blur-sm ${cap.isSelf ? "bg-black dark:bg-white" : "bg-black/70"}`}>
+                <span className="font-semibold ml-2 text-xs opacity-70">{cap.name}:</span>{cap.text}
+              </div>
+            ))}
+            <div ref={captionsEndRef} />
+          </div>
+        )}
+
+        {/* ── Active Poll Widget ── */}
+        {activePoll && (
+          <div className="absolute top-3 left-3 z-30 bg-[#292b2f]/95 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-white/10 w-64" style={{ direction: "rtl" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> استطلاع</span>
+              {isRoomHost && <button onClick={endPoll} className="text-[#9aa0a6] hover:text-black/70 dark:text-white/70 text-xs transition">إنهاء</button>}
+            </div>
+            <p className="text-white text-sm font-medium mb-3 leading-snug">{activePoll.question}</p>
+            <div className="space-y-2">
+              {activePoll.options.map((opt: PollOption, i: number) => {
+                const total = activePoll.options.reduce((sum: number, o: PollOption) => sum + (o.votes ?? 0), 0);
+                const pct = total > 0 ? Math.round(((opt.votes ?? 0) / total) * 100) : 0;
+                return (
+                  <button key={i} onClick={() => votePoll(i)} disabled={myPollVote !== null}
+                    className={`w-full text-right px-3 py-2 rounded-xl text-sm transition relative overflow-hidden ${myPollVote === i ? "ring-2 ring-black dark:ring-white" : ""} ${myPollVote !== null ? "cursor-default" : "hover:bg-white/10"} bg-white/5`}>
+                    <div className="absolute inset-0 bg-black dark:bg-white transition-all" style={{ width: `${pct}%` }} />
+                    <div className="relative flex justify-between">
+                      <span className="text-white">{opt.text}</span>
+                      {myPollVote !== null && <span className="text-black/70 dark:text-white/70 text-xs">{pct}%</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {myPollVote !== null && (
+              <p className="text-[#9aa0a6] text-xs mt-2 text-center">
+                صوّت {activePoll.options.reduce((sum: number, o: PollOption) => sum + (o.votes ?? 0), 0)} مشارك
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Poll Creator Modal ── */}
+        {showPollCreator && isRoomHost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowPollCreator(false)}>
+            <div className="bg-[#292b2f] rounded-2xl p-5 shadow-2xl w-80 space-y-3" onClick={e => e.stopPropagation()} dir={dir}>
+              <div className="flex items-center justify-between">
+                <span className="text-white font-semibold flex items-center gap-2"><BarChart2 className="w-4 h-4 text-black/70 dark:text-white/70" /> إنشاء استطلاع</span>
+                <button onClick={() => setShowPollCreator(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
+              </div>
+              <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
+                placeholder="السؤال..."
+                className="w-full px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition" />
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex gap-2">
+                  <input value={opt} onChange={e => { const a = [...pollOptions]; a[i] = e.target.value; setPollOptions(a); }}
+                    placeholder={`خيار ${i + 1}`}
+                    className="flex-1 px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-black dark:border-white transition" />
+                  {pollOptions.length > 2 && (
+                    <button onClick={() => setPollOptions(prev => prev.filter((_, j) => j !== i))} className="text-black/70 dark:text-white/70 hover:text-black/70 dark:text-white/70">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {pollOptions.length < 6 && (
+                <button onClick={() => setPollOptions(prev => [...prev, ""])}
+                  className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#9aa0a6] text-sm transition">
+                  + إضافة خيار
+                </button>
+              )}
+              <button onClick={createPoll}
+                className="w-full py-2.5 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white font-medium text-sm transition">
+                بدء الاستطلاع
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Recording Download Banner ── */}
+        {recordingBlob && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-[#292b2f] rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl border border-white/10">
+            <span className="text-white text-sm">التسجيل جاهز</span>
+            <button onClick={downloadRecording}
+              className="px-3 py-1.5 rounded-lg bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs font-medium transition flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" /> تنزيل
+            </button>
+            <button onClick={() => setRecordingBlob(null)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+        )}
+
+        {/* Side panel (desktop) */}
+        {panel !== "none" && (
+          <div className="hidden md:flex w-72 lg:w-80 bg-[#292b2f] rounded-2xl flex-col overflow-hidden shrink-0">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08] shrink-0">
+              <div className="flex gap-0.5 flex-wrap">
+                <button onClick={() => { setPanel("chat"); setUnread(0); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  الدردشة {unread > 0 && panel !== "chat" && <span className="mr-1 w-4 h-4 rounded-full bg-black dark:bg-white text-[10px] inline-flex items-center justify-center">{unread}</span>}
+                </button>
+                <button onClick={() => setPanel("participants")}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  المشاركون
+                </button>
+                <button onClick={showAttendancePanel}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  الحضور
+                </button>
+                <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  AI
+                </button>
+              </div>
+              <button onClick={() => setPanel("none")} className="text-[#9aa0a6] hover:text-white transition shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Chat */}
+            {panel === "chat" && (
+              <>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {chat.length === 0 && <div className="text-center text-[#9aa0a6] text-sm mt-8">لا توجد رسائل بعد</div>}
+                  {chat.map(msg => (
+                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.isSelf ? "items-end" : "items-start"}`}>
+                      <span className="text-[#9aa0a6] text-xs">{msg.isSelf ? "أنت" : msg.name} · {msg.time}</span>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white leading-relaxed ${msg.isSelf ? "bg-black dark:bg-white" : "bg-[#3c4043]"}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+                <div className="p-3 border-t border-white/[0.08] shrink-0">
+                  <div className="flex gap-2 items-center bg-[#3c4043] rounded-full px-4 py-2">
+                    <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && sendChat()}
+                      placeholder="اكتب رسالة..." maxLength={500}
+                      className="flex-1 bg-transparent text-white text-sm placeholder:text-[#9aa0a6] outline-none"
+                      data-testid="input-chat-message" />
+                    <button onClick={sendChat} className="text-black/70 dark:text-white/70 hover:text-black/70 dark:text-white/70 transition" data-testid="button-send-chat">
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Participants */}
+            {panel === "participants" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {/* Host controls */}
+                {isRoomHost && (
+                  <div className="mb-3 p-3 rounded-xl bg-black dark:bg-white border border-black dark:border-white space-y-2">
+                    <p className="text-black/70 dark:text-white/70 text-xs font-semibold">🎛 أدوات المضيف</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={muteAll}
+                        className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs font-medium transition flex items-center justify-center gap-1">
+                        <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
+                      </button>
+                      <button onClick={toggleLock}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-black dark:bg-white text-black/70 dark:text-white/70 hover:bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6]"}`}>
+                        {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {lobbyRequests.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    <p className="text-black/70 dark:text-white/70 text-xs font-medium px-1">في الانتظار</p>
+                    {lobbyRequests.map(r => (
+                      <div key={r.userId} className="bg-black dark:bg-white border border-black dark:border-white rounded-xl p-3">
+                        <p className="text-white text-sm font-medium mb-2">{r.userName}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => approveLobby(r.userId)}
+                            className="flex-1 py-1.5 rounded-lg bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs font-medium transition">قبول</button>
+                          <button onClick={() => denyLobby(r.userId)}
+                            className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-black dark:bg-white text-white text-xs font-medium transition">رفض</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {allPeers.map(p => (
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition group">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                      style={{ background: avatarColor(p.name) }}>
+                      {p.name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm truncate">{p.id === myId ? `${p.name} (أنت)` : p.name}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
+                      {!p.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
+                      {p.raisedHand && <span className="text-sm">✋</span>}
+                      {/* Host controls per peer */}
+                      {isRoomHost && p.id !== myId && (
+                        <>
+                          <button onClick={() => {
+                              if (!confirm(`نقل صلاحية المضيف إلى ${p.name}؟`)) return;
+                              sendWs({ type: "webrtc_transfer_host", roomId, targetId: p.id });
+                            }} title="نقل المضيف"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black dark:bg-white text-[#9aa0a6] hover:text-black/70 dark:text-white/70 transition">
+                            <Crown className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => mutePeer(p.id)} title="كتم"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-[#9aa0a6] hover:text-white transition">
+                            <VolumeX className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => kickPeer(p.id, p.name)} title="إخراج"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black dark:bg-white text-[#9aa0a6] hover:text-black/70 dark:text-white/70 transition">
+                            <UserX className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Attendance */}
+            {panel === "attendance" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <p className="text-[#9aa0a6] text-xs mb-3">سجل حضور الاجتماع</p>
+                {attendanceLog.length === 0 ? (
+                  <div className="text-center text-[#9aa0a6] text-sm mt-8">لا يوجد سجل بعد</div>
+                ) : attendanceLog.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-white text-sm truncate">{entry.name}</span>
+                    </div>
+                    <div className="text-[#9aa0a6] text-xs shrink-0">
+                      {entry.action === "join" ? "انضم" : "غادر"} · {entry.time}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* AI Notes */}
+            {panel === "ai" && (
+              <div className="flex-1 overflow-y-auto p-3">
+                {aiSummaryLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <Loader2 className="w-8 h-8 text-black/70 dark:text-white/70 animate-spin" />
+                    <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
+                  </div>
+                ) : aiSummary ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> ملخص الذكاء الاصطناعي</span>
+                      <button onClick={getAiSummary} className="text-[#9aa0a6] hover:text-white text-xs transition">تحديث</button>
+                    </div>
+                    <div className="text-white text-sm leading-relaxed whitespace-pre-wrap bg-[#3c4043]/50 rounded-xl p-3">
+                      {aiSummary}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <Sparkles className="w-8 h-8 text-black/70 dark:text-white/70" />
+                    <p className="text-[#9aa0a6] text-sm text-center">اضغط لتوليد ملخص ذكي للاجتماع</p>
+                    <button onClick={getAiSummary}
+                      className="px-4 py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition">
+                      توليد الملخص
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile panel overlay */}
+      {panel !== "none" && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/60 flex flex-col justify-end" onClick={() => setPanel("none")}>
+          <div className="bg-[#292b2f] rounded-t-2xl max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08]">
+              <div className="flex gap-0.5 flex-wrap">
+                <button onClick={() => { setPanel("chat"); setUnread(0); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
+                  الدردشة
+                </button>
+                <button onClick={() => setPanel("participants")}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
+                  المشاركون
+                </button>
+                <button onClick={showAttendancePanel}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
+                  الحضور
+                </button>
+                <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-black dark:bg-white text-white" : "text-[#9aa0a6]"}`}>
+                  AI
+                </button>
+              </div>
+              <button onClick={() => setPanel("none")} className="text-[#9aa0a6]"><X className="w-4 h-4" /></button>
+            </div>
+
+            {panel === "chat" && (
+              <>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {chat.length === 0 && <div className="text-center text-[#9aa0a6] text-sm mt-6">لا توجد رسائل بعد</div>}
+                  {chat.map(msg => (
+                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.isSelf ? "items-end" : "items-start"}`}>
+                      <span className="text-[#9aa0a6] text-xs">{msg.isSelf ? "أنت" : msg.name} · {msg.time}</span>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.isSelf ? "bg-black dark:bg-white" : "bg-[#3c4043]"}`}>{msg.text}</div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+                <div className="p-3 border-t border-white/[0.08]">
+                  <div className="flex gap-2 items-center bg-[#3c4043] rounded-full px-4 py-2">
+                    <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && sendChat()}
+                      placeholder="اكتب رسالة..." maxLength={500}
+                      className="flex-1 bg-transparent text-white text-sm placeholder:text-[#9aa0a6] outline-none" />
+                    <button onClick={sendChat} className="text-black/70 dark:text-white/70"><Send className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {panel === "participants" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {isRoomHost && (
+                  <div className="mb-3 flex gap-2">
+                    <button onClick={muteAll}
+                      className="flex-1 py-2 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs font-medium transition flex items-center justify-center gap-1">
+                      <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
+                    </button>
+                    <button onClick={toggleLock}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-black dark:bg-white text-black/70 dark:text-white/70" : "bg-[#3c4043] text-[#9aa0a6]"}`}>
+                      {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
+                    </button>
+                  </div>
+                )}
+                {allPeers.map(p => (
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                      style={{ background: avatarColor(p.name) }}>
+                      {p.name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <p className="flex-1 text-white text-sm truncate">{p.id === myId ? `${p.name} (أنت)` : p.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />}
+                      {!p.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
+                      {p.raisedHand && <span>✋</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {panel === "attendance" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <p className="text-[#9aa0a6] text-xs mb-2">سجل الحضور</p>
+                {attendanceLog.length === 0 ? (
+                  <div className="text-center text-[#9aa0a6] text-sm mt-6">لا يوجد سجل بعد</div>
+                ) : attendanceLog.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
+                    <span className="text-white text-xs flex-1 truncate">{entry.name}</span>
+                    <span className="text-[#9aa0a6] text-xs">{entry.action === "join" ? "انضم" : "غادر"} · {entry.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {panel === "ai" && (
+              <div className="flex-1 overflow-y-auto p-3">
+                {aiSummaryLoading ? (
+                  <div className="flex flex-col items-center justify-center h-32 gap-3">
+                    <Loader2 className="w-7 h-7 text-black/70 dark:text-white/70 animate-spin" />
+                    <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
+                  </div>
+                ) : aiSummary ? (
+                  <div className="space-y-2">
+                    <span className="text-black/70 dark:text-white/70 text-xs font-semibold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> ملخص AI</span>
+                    <div className="text-white text-sm leading-relaxed whitespace-pre-wrap">{aiSummary}</div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 mt-4">
+                    <button onClick={getAiSummary}
+                      className="px-4 py-2 rounded-xl bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-sm font-medium transition">
+                      توليد الملخص
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#3c4043] rounded-2xl p-3 shadow-2xl">
+            <div className="flex gap-2 flex-wrap justify-center max-w-[220px]">
+              {["👍","❤️","😂","😮","😢","🎉","🔥","👏","💯","🙏"].map(e => (
+                <button key={e} onClick={() => sendReaction(e)}
+                  className="text-2xl hover:scale-125 transition-transform p-1">{e}</button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Control bar ── */}
+      <div className="shrink-0 bg-[#202124] pb-safe">
+        {/* Mobile: secondary row */}
+        <div className="flex md:hidden items-center justify-center gap-3 py-2 px-4">
+          <button onClick={toggleScreen}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+            data-testid="button-toggle-screen">
+            <Monitor className={`w-4 h-4 ${screenSharing ? "text-white" : "text-[#9aa0a6]"}`} />
+          </button>
+          <button onClick={toggleHand}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+            <Hand className={`w-4 h-4 ${raisedHand ? "text-white" : "text-[#9aa0a6]"}`} />
+          </button>
+          <button onClick={() => setShowEmojiPicker(s => !s)}
+            className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
+            <Smile className="w-4 h-4 text-[#9aa0a6]" />
+          </button>
+          {isRoomHost && (
+            <button onClick={muteAll}
+              className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
+              <MicOff className="w-4 h-4 text-[#9aa0a6]" />
+            </button>
+          )}
+          {isRoomHost && (
+            <button
+              onClick={() => {
+                if (confirm("هل تريد إنهاء الاجتماع للجميع المشاركين؟")) {
+                  sendWs({ type: "webrtc_end_meeting", roomId });
+                  wsRef.current?.close();
+                  pcsRef.current.forEach(pc => pc.close());
+                  localStreamRef.current?.getTracks().forEach(t => t.stop());
+                  navigate("/qmeet");
+                }
+              }}
+              className="w-10 h-10 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center transition"
+              title="إنهاء للجميع"
+              data-testid="button-end-for-all-mobile">
+              <XCircle className="w-4 h-4 text-black/70 dark:text-white/70" />
+            </button>
+          )}
+          <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+            {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
+          </button>
+        </div>
+
+        {/* Main control row */}
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left / Desktop secondary */}
+          <div className="hidden md:flex items-center gap-2 w-44">
+            <button onClick={toggleScreen}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${screenSharing ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-screen">
+              <Monitor className={`w-4 h-4 ${screenSharing ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            <button onClick={toggleHand}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${raisedHand ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <Hand className={`w-4 h-4 ${raisedHand ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            <button onClick={() => setShowEmojiPicker(s => !s)}
+              className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
+              <Smile className="w-4 h-4 text-[#9aa0a6]" />
+            </button>
+            {isRoomHost && (
+              <button onClick={muteAll}
+                className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition" title="كتم الجميع">
+                <MicOff className="w-4 h-4 text-[#9aa0a6]" />
+              </button>
+            )}
+          </div>
+
+          {/* Center: primary controls */}
+          <div className="flex items-center gap-3">
+            <button onClick={toggleAudio}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${audioOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
+              data-testid="button-toggle-audio">
+              {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+            </button>
+            <button onClick={toggleVideo}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg ${videoOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
+              data-testid="button-toggle-video">
+              {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+            </button>
+            {/* Flip camera — visible when video is on and not screen sharing */}
+            {videoOn && !screenSharing && (
+              <button onClick={flipCamera} disabled={flippingCamera}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition shadow-lg bg-[#3c4043] hover:bg-[#4a4d51] disabled:opacity-40"
+                title="قلب الكاميرا"
+                data-testid="button-flip-camera">
+                {flippingCamera
+                  ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  : <FlipHorizontal2 className="w-4 h-4 text-[#9aa0a6]" />}
+              </button>
+            )}
+            <button onClick={leave}
+              className="w-14 h-12 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center transition shadow-lg"
+              title="مغادرة الاجتماع"
+              data-testid="button-leave">
+              <PhoneOff className="w-5 h-5 text-white" />
+            </button>
+            {isRoomHost && (
+              <button
+                onClick={() => {
+                  if (confirm("هل تريد إنهاء الاجتماع للجميع المشاركين؟")) {
+                    sendWs({ type: "webrtc_end_meeting", roomId });
+                    wsRef.current?.close();
+                    pcsRef.current.forEach(pc => pc.close());
+                    localStreamRef.current?.getTracks().forEach(t => t.stop());
+                    navigate("/qmeet");
+                  }
+                }}
+                className="px-3 h-12 rounded-full bg-black dark:bg-white hover:bg-black dark:bg-white flex items-center justify-center gap-1.5 transition shadow-lg text-white text-xs font-semibold"
+                title="إنهاء الاجتماع للجميع"
+                data-testid="button-end-for-all">
+                <XCircle className="w-4 h-4" />
+                <span className="hidden sm:block">إنهاء للجميع</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right */}
+          <div className="hidden md:flex items-center gap-2 justify-end">
+            <button onClick={toggleCaptions} title="تعليقات مباشرة"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${captionsOn ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <Subtitles className={`w-4 h-4 ${captionsOn ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "بدء التسجيل"}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-black dark:bg-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            {isRoomHost && (
+              <button onClick={() => setShowPollCreator(true)} title="استطلاع"
+                className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
+                <BarChart2 className="w-4 h-4 text-[#9aa0a6]" />
+              </button>
+            )}
+            <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              title={isSpotlight ? "وضع الشبكة" : "وضع التركيز"}>
+              {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
+            </button>
+            <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-chat">
+              <MessageSquare className="w-5 h-5 text-white" />
+              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black dark:bg-white text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
+            </button>
+            <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-participants">
+              <Users className="w-5 h-5 text-white" />
+            </button>
+          </div>
+
+          {/* Mobile: chat + participants + recording */}
+          <div className="flex md:hidden items-center gap-2">
+            <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "تسجيل"}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-black dark:bg-white animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <MessageSquare className="w-5 h-5 text-white" />
+              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black dark:bg-white text-[10px] flex items-center justify-center font-bold text-white">{unread}</span>}
+            </button>
+            <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition ${panel === "participants" ? "bg-black dark:bg-white" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <Users className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

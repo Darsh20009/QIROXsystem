@@ -1,0 +1,15 @@
+node_modules
+dist/public/assets/*.png
+dist/public/assets/*.jpg
+dist/public/assets/*.jpeg
+dist/public/assets/*.webp
+dist/public/assets/*.gif
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+uploads/.local/state/
+
+# Large zip attachments — do NOT commit to git (GitHub 100MB limit)
+# These are dev-only uploaded files not needed in production
+attached_assets/*.zip

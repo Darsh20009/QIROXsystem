@@ -1,0 +1,857 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
+import {
+  Plus, Pencil, Trash2, Loader2, Crown, Clock, CheckCircle2, AlertCircle,
+  Users, CreditCard, Layers, ChevronRight, RefreshCcw, Bell, Zap, CalendarCheck
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useUser } from "@/hooks/use-auth";
+
+interface SegmentPricing {
+  id: string;
+  segmentKey: string;
+  segmentNameAr: string;
+  monthlyPrice: number;
+  sixMonthPrice: number;
+  annualPrice: number;
+  renewalPrice: number;
+  isActive: boolean;
+  sortOrder: number;
+  notes: string;
+}
+
+interface ClientSubscription {
+  id: string;
+  _id: string;
+  fullName: string;
+  email: string;
+  subscriptionSegmentNameAr: string;
+  subscriptionPeriod: string;
+  subscriptionStartDate: string;
+  subscriptionExpiresAt: string;
+  subscriptionStatus: string;
+  renewalReminderSentAt: string | null;
+  remainingDays: number | null;
+  percentRemaining: number | null;
+  needsRenewal: boolean;
+}
+
+interface SubServiceRequest {
+  id: string;
+  clientId: string;
+  projectId?: string;
+  projectLabel?: string;
+  serviceType: string;
+  notes: string;
+  status: string;
+  adminNotes: string;
+  createdAt: string;
+}
+
+
+const emptySegment: Partial<SegmentPricing> = {
+  segmentKey: "",
+  segmentNameAr: "",
+  monthlyPrice: 0,
+  sixMonthPrice: 0,
+  annualPrice: 0,
+  renewalPrice: 0,
+  isActive: true,
+  sortOrder: 0,
+  notes: "",
+};
+
+export default function AdminSubscriptionPlans() {
+  const { data: currentUser } = useUser();
+  const isAdmin = (currentUser as any)?.role === "admin";
+  const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+
+  const periodLabels: Record<string, string> = {
+    monthly: L ? "شهري" : "Monthly",
+    "6months": "6 أشهر",
+    annual: L ? "سنوي" : "Annual",
+    renewal: L ? "تجديد سنوي" : "Annual Renewal",
+  };
+
+  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+    active: { label: L ? "نشط" : "Active", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    expired: { label: L ? "منتهي" : "Expired", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
+    none: { label: L ? "بدون اشتراك" : "No Subscription", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
+    pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
+    reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: RefreshCcw },
+    approved: { label: L ? "مقبول" : "Approved", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
+  };
+  const [segmentDialog, setSegmentDialog] = useState(false);
+  const [editingSegment, setEditingSegment] = useState<Partial<SegmentPricing>>(emptySegment);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [subDialog, setSubDialog] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientSubscription | null>(null);
+  const [subForm, setSubForm] = useState({ segmentId: "", segmentNameAr: "", period: "monthly", startDate: "", expiresAt: "" });
+  const [reqDialog, setReqDialog] = useState(false);
+  const [selectedReq, setSelectedReq] = useState<SubServiceRequest | null>(null);
+  const [reqStatus, setReqStatus] = useState("");
+  const [reqAdminNotes, setReqAdminNotes] = useState("");
+  const [renewDialog, setRenewDialog] = useState(false);
+  const [renewTarget, setRenewTarget] = useState<ClientSubscription | null>(null);
+  const [renewFrom, setRenewFrom] = useState<"today"|"expiry">("expiry");
+
+  const { data: segments, isLoading: loadingSegments } = useQuery<SegmentPricing[]>({
+    queryKey: ["/api/admin/segment-pricing"],
+  });
+
+  const { data: subscriptions, isLoading: loadingSubs } = useQuery<ClientSubscription[]>({
+    queryKey: ["/api/admin/subscriptions"],
+  });
+
+  const { data: subRequests, isLoading: loadingReqs } = useQuery<SubServiceRequest[]>({
+    queryKey: ["/api/admin/sub-service-requests"],
+  });
+
+  const createSegment = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/admin/segment-pricing", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
+      setSegmentDialog(false);
+      toast({ title: L ? "تم إضافة القطاع بنجاح" : "Sector added successfully" });
+    },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const updateSegment = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/admin/segment-pricing/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
+      setSegmentDialog(false);
+      toast({ title: L ? "تم تحديث القطاع بنجاح" : "Sector updated successfully" });
+    },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteSegment = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/segment-pricing/${id}`),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
+      toast({ title: L ? "تم حذف القطاع" : "Sector deleted" });
+    },
+  });
+
+  const setSubscription = useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: any }) =>
+      apiRequest("POST", `/api/admin/users/${userId}/subscription`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
+      setSubDialog(false);
+      toast({ title: L ? "تم تعيين الاشتراك بنجاح" : "Subscription set successfully" });
+    },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const updateRequest = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest("PATCH", `/api/admin/sub-service-requests/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sub-service-requests"] });
+      setReqDialog(false);
+      toast({ title: L ? "تم تحديث الطلب" : "Request updated" });
+    },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const quickRenewMutation = useMutation({
+    mutationFn: ({ userId, startFrom }: { userId: string; startFrom: string }) =>
+      apiRequest("POST", `/api/admin/users/${userId}/subscription/renew`, { startFrom }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
+      setRenewDialog(false);
+      toast({ title: L ? "✅ تم تجديد الاشتراك بنجاح" : "✅ Subscription renewed", description: L ? "تم تجديد اشتراك العميل وإرسال إشعار له" : "Client subscription renewed and notification sent" });
+    },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const handleSaveSegment = () => {
+    const data = {
+      ...editingSegment,
+      monthlyPrice: Number(editingSegment.monthlyPrice || 0),
+      sixMonthPrice: Number(editingSegment.sixMonthPrice || 0),
+      annualPrice: Number(editingSegment.annualPrice || 0),
+      renewalPrice: Number(editingSegment.renewalPrice || 0),
+      sortOrder: Number(editingSegment.sortOrder || 0),
+    };
+    if (isEditMode && editingSegment.id) {
+      updateSegment.mutate({ id: editingSegment.id, data });
+    } else {
+      createSegment.mutate(data);
+    }
+  };
+
+  const handleSetSub = () => {
+    if (!selectedClient) return;
+    setSubscription.mutate({ userId: selectedClient.id, data: subForm });
+  };
+
+  const openSubDialog = (client: ClientSubscription) => {
+    setSelectedClient(client);
+    const today = new Date().toISOString().split("T")[0];
+    setSubForm({
+      segmentId: "",
+      segmentNameAr: client.subscriptionSegmentNameAr || "",
+      period: client.subscriptionPeriod || "monthly",
+      startDate: today,
+      expiresAt: "",
+    });
+    setSubDialog(true);
+  };
+
+  const openReqDialog = (req: SubServiceRequest) => {
+    setSelectedReq(req);
+    setReqStatus(req.status);
+    setReqAdminNotes(req.adminNotes || "");
+    setReqDialog(true);
+  };
+
+  const openNewSegment = () => {
+    setEditingSegment({ ...emptySegment });
+    setIsEditMode(false);
+    setSegmentDialog(true);
+  };
+
+  const openEditSegment = (seg: SegmentPricing) => {
+    setEditingSegment({ ...seg });
+    setIsEditMode(true);
+    setSegmentDialog(true);
+  };
+
+  const pendingReqs = subRequests?.filter(r => r.status === "pending").length || 0;
+
+  return (
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir={dir}>
+      <PageGraphics variant="dashboard" />
+      <div className="bg-white border-b border-black/[0.06]">
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-lg">
+                <Crown className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-black font-heading">إدارة الاشتراكات والأسعار</h1>
+                <p className="text-xs text-black/40 mt-0.5">{L ? "تحكم في أسعار القطاعات وإدارة اشتراكات العملاء" : "Control sector pricing and manage client subscriptions"}</p>
+              </div>
+            </div>
+            {pendingReqs > 0 && (
+              <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-2">
+                <AlertCircle className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-sm font-bold text-black dark:text-white">{pendingReqs} طلب جديد بانتظار المراجعة</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <Tabs defaultValue="pricing">
+          <TabsList className="mb-8 bg-white border border-black/[0.06] rounded-2xl p-1 gap-1 h-12">
+            <TabsTrigger value="pricing" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2">
+              <CreditCard className="w-3.5 h-3.5" /> أسعار القطاعات
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2 relative">
+              <Users className="w-3.5 h-3.5" /> اشتراكات العملاء
+              {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {subscriptions.filter(s => s.needsRenewal).length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 relative gap-2">
+              <Layers className="w-3.5 h-3.5" /> طلبات الخدمات الفرعية
+              {pendingReqs > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {pendingReqs}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ─── PRICING TAB ─── */}
+          <TabsContent value="pricing">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-black flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-3.5 h-3.5 text-white" />
+                </div>
+                قطاعات الأسعار
+              </h2>
+              {isAdmin && (
+                <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2 font-bold" data-testid="button-add-segment">
+                  <Plus className="w-3.5 h-3.5" /> إضافة قطاع
+                </Button>
+              )}
+            </div>
+
+            {loadingSegments ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+              </div>
+            ) : !segments || segments.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
+                <CreditCard className="w-10 h-10 text-black/10 mx-auto mb-4" />
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد قطاعات بعد" : "No sectors yet"}</h3>
+                <p className="text-xs text-black/30 mb-6">أضف قطاع وحدد الأسعار المناسبة لكل فترة</p>
+                {isAdmin && (
+                  <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
+                    <Plus className="w-3.5 h-3.5" /> إضافة أول قطاع
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {segments.map((seg, i) => (
+                  <motion.div key={seg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+                    <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden hover:shadow-lg transition-all duration-300 group" data-testid={`segment-card-${seg.id}`}>
+                      <div className="bg-black px-5 py-4 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-black text-white text-sm">{seg.segmentNameAr}</h3>
+                          <p className="text-white/40 text-[10px] mt-0.5">{seg.segmentKey}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {!seg.isActive && (
+                            <Badge className="bg-white/10 text-white/60 border-0 text-[10px]">{L ? "غير نشط" : "Inactive"}</Badge>
+                          )}
+                          {isAdmin && (
+                            <>
+                              <button onClick={() => openEditSegment(seg)} className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-edit-segment-${seg.id}`}>
+                                <Pencil className="w-3.5 h-3.5 text-white" />
+                              </button>
+                              <button onClick={() => { if (confirm(L ? "حذف هذا القطاع؟" : "Delete this sector?")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-black dark:bg-white rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
+                                <Trash2 className="w-3.5 h-3.5 text-white" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-5 grid grid-cols-2 gap-3">
+                        {[
+                          { label: L ? "شهري" : "Monthly", value: seg.monthlyPrice, accent: false },
+                          { label: "6 أشهر", value: seg.sixMonthPrice, accent: false },
+                          { label: L ? "سنوي" : "Annual", value: seg.annualPrice, accent: true },
+                          { label: L ? "تجديد سنوي" : "Annual Renewal", value: seg.renewalPrice, accent: false },
+                        ].map(({ label, value, accent }) => (
+                          <div key={label} className={`rounded-xl p-3 text-center ${accent ? "bg-black" : "bg-black/[0.03]"}`}>
+                            <p className={`text-[10px] mb-1 ${accent ? "text-white/50" : "text-black/40"}`}>{label}</p>
+                            <p className={`text-lg font-black ${accent ? "text-white" : "text-black"}`}>{value.toLocaleString()}</p>
+                            <p className={`text-[9px] ${accent ? "text-white/40" : "text-black/30"} flex items-center justify-center gap-0.5`}><SARIcon size={8} className="opacity-60" /> ريال</p>
+                          </div>
+                        ))}
+                      </div>
+                      {seg.notes && (
+                        <div className="px-5 pb-4">
+                          <p className="text-[10px] text-black/40 bg-black/[0.02] rounded-lg p-2">{seg.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ─── SUBSCRIPTIONS TAB ─── */}
+          <TabsContent value="subscriptions">
+            {/* Urgency banner */}
+            {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                className="mb-5 bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-4.5 h-4.5 text-black dark:text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-black dark:text-white text-sm">
+                    {subscriptions.filter(s => s.needsRenewal).length} عميل يحتاج التجديد الآن
+                  </p>
+                  <p className="text-black dark:text-white text-xs mt-0.5">{L ? "اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً" : "These clients' subscriptions are at 10% of their duration — contact them immediately"}</p>
+                </div>
+              </motion.div>
+            )}
+
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-black flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
+                  <Users className="w-3.5 h-3.5 text-white" />
+                </div>
+                اشتراكات العملاء ({subscriptions?.length || 0})
+              </h2>
+            </div>
+
+            {loadingSubs ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+              </div>
+            ) : !subscriptions || subscriptions.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
+                <Users className="w-10 h-10 text-black/10 mx-auto mb-4" />
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد اشتراكات" : "No subscriptions"}</h3>
+                <p className="text-xs text-black/30">{L ? "ستبدأ الاشتراكات تلقائياً عند تسليم المشاريع" : "Subscriptions will start automatically upon project delivery"}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Sort: urgent first */}
+                {[...subscriptions].sort((a, b) => {
+                  if (a.needsRenewal && !b.needsRenewal) return -1;
+                  if (!a.needsRenewal && b.needsRenewal) return 1;
+                  return (a.percentRemaining ?? 100) - (b.percentRemaining ?? 100);
+                }).map((sub, i) => {
+                  const st = statusConfig[sub.subscriptionStatus] || statusConfig.none;
+                  const StatusIcon = st.icon;
+                  const expiresAt = sub.subscriptionExpiresAt ? new Date(sub.subscriptionExpiresAt) : null;
+                  const pct = sub.percentRemaining ?? 0;
+                  const progressColor = sub.subscriptionStatus === "expired" ? "bg-gray-400"
+                    : pct <= 10 ? "bg-black dark:bg-white"
+                    : pct <= 25 ? "bg-black dark:bg-white"
+                    : pct <= 50 ? "bg-black/[0.08] dark:bg-white/[0.1]"
+                    : "bg-black dark:bg-white";
+                  const cardBorder = sub.needsRenewal ? "border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.06] bg-white";
+                  return (
+                    <motion.div key={sub.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                      <div className={`rounded-2xl border p-4 transition-all hover:shadow-sm ${cardBorder}`} data-testid={`sub-card-${sub.id}`}>
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          {/* Left: client info */}
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${sub.needsRenewal ? "bg-black/[0.04] dark:bg-white/[0.06]" : "bg-black/[0.04]"}`}>
+                              {sub.needsRenewal
+                                ? <Bell className="w-4 h-4 text-black dark:text-white animate-pulse" />
+                                : <StatusIcon className={`w-4 h-4 ${st.color}`} />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-black text-sm text-black">{sub.fullName}</p>
+                                <Badge className={`text-[10px] border gap-1 ${st.bg} ${st.color} py-0`}>
+                                  <StatusIcon className="w-2.5 h-2.5" /> {st.label}
+                                </Badge>
+                                {sub.needsRenewal && (
+                                  <span className="text-[10px] font-black bg-black dark:bg-white text-white px-2 py-0.5 rounded-full animate-pulse">
+                                    يحتاج مراسلة!
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-black/40 mt-0.5">{sub.email}</p>
+                              <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-black/50">
+                                {sub.subscriptionSegmentNameAr && <span className="bg-black/[0.04] px-2 py-0.5 rounded-full">{sub.subscriptionSegmentNameAr}</span>}
+                                {sub.subscriptionPeriod && <span>{periodLabels[sub.subscriptionPeriod] || sub.subscriptionPeriod}</span>}
+                                {expiresAt && <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{L ? "ينتهي:" : "Expires:"} {expiresAt.toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Right: countdown + actions */}
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            {sub.remainingDays !== null && sub.subscriptionStatus === "active" && (
+                              <div className="text-left">
+                                <p className={`text-xl font-black ${pct <= 10 ? "text-black dark:text-white" : pct <= 25 ? "text-black dark:text-white" : "text-black"}`}>
+                                  {sub.remainingDays}
+                                </p>
+                                <p className="text-[10px] text-black/40 text-center">{L ? "يوم متبقي" : "days left"}</p>
+                              </div>
+                            )}
+                            <div className="flex gap-1.5">
+                              <Button size="sm" onClick={() => { setRenewTarget(sub); setRenewFrom("expiry"); setRenewDialog(true); }}
+                                className={`h-7 px-3 text-[11px] rounded-lg gap-1 font-bold ${sub.needsRenewal ? "bg-black dark:bg-white hover:bg-black dark:bg-white text-white" : "bg-black text-white hover:bg-black/80"}`}
+                                data-testid={`btn-quick-renew-${sub.id}`}>
+                                <Zap className="w-3 h-3" /> تجديد سريع
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openSubDialog(sub)}
+                                className="h-7 px-3 text-[11px] rounded-lg border-black/[0.08] gap-1"
+                                data-testid={`button-set-sub-${sub.id}`}>
+                                <RefreshCcw className="w-3 h-3" /> يدوي
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        {sub.subscriptionStatus === "active" && sub.percentRemaining !== null && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-black/30">{L ? "المدة المتبقية" : "Time remaining"}</span>
+                              <span className={`text-[10px] font-black ${pct <= 10 ? "text-black dark:text-white" : pct <= 25 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
+                                {pct}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${progressColor}`} style={{ width: `${Math.max(2, pct)}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ─── SUB-SERVICE REQUESTS TAB ─── */}
+          <TabsContent value="requests">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-black flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
+                  <Layers className="w-3.5 h-3.5 text-white" />
+                </div>
+                طلبات الخدمات الفرعية
+              </h2>
+            </div>
+
+            {loadingReqs ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+              </div>
+            ) : !subRequests || subRequests.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
+                <Layers className="w-10 h-10 text-black/10 mx-auto mb-4" />
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد طلبات بعد" : "No requests yet"}</h3>
+                <p className="text-xs text-black/30">{L ? "طلبات العملاء للخدمات الفرعية ستظهر هنا" : "Client requests for sub-services will appear here"}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {subRequests.map((req, i) => {
+                  const st = statusConfig[req.status] || statusConfig.pending;
+                  const StatusIcon = st.icon;
+                  return (
+                    <motion.div key={req.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                      <div className="bg-white rounded-2xl border border-black/[0.06] p-5 flex items-center gap-4 hover:shadow-md transition-all" data-testid={`req-card-${req.id}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${st.bg} border ${st.bg}`}>
+                          <StatusIcon className={`w-4.5 h-4.5 ${st.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-sm text-black">{req.serviceType}</p>
+                            {req.projectLabel && (
+                              <Badge className="bg-black/[0.04] text-black/50 border-0 text-[10px]">{L ? "مشروع:" : "Project:"} {req.projectLabel}</Badge>
+                            )}
+                            <Badge className={`text-[10px] border ${st.bg} ${st.color}`}>
+                              {st.label}
+                            </Badge>
+                          </div>
+                          {req.notes && <p className="text-[11px] text-black/40 mt-1 truncate">{req.notes}</p>}
+                          <p className="text-[10px] text-black/30 mt-1">
+                            {new Date(req.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => openReqDialog(req)} className="h-8 px-3 text-[11px] rounded-xl border-black/[0.08] gap-1 flex-shrink-0" data-testid={`button-review-req-${req.id}`}>
+                          <ChevronRight className="w-3 h-3" /> مراجعة
+                        </Button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* ─── QUICK RENEWAL DIALOG ─── */}
+      <Dialog open={renewDialog} onOpenChange={setRenewDialog}>
+        <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg text-right flex items-center gap-2">
+              <Zap className="w-5 h-5 text-black dark:text-white" />
+              تجديد سريع — {renewTarget?.fullName}
+            </DialogTitle>
+          </DialogHeader>
+          {renewTarget && (
+            <div className="space-y-4">
+              <div className={`rounded-2xl p-3 border ${renewTarget.needsRenewal ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.02] border-black/[0.06]"}`}>
+                <p className="text-xs text-black/50 mb-1">{L ? "الخطة الحالية" : "Current Plan"}</p>
+                <p className="font-bold text-sm text-black">{renewTarget.subscriptionSegmentNameAr || "—"} · {periodLabels[renewTarget.subscriptionPeriod] || renewTarget.subscriptionPeriod}</p>
+                {renewTarget.subscriptionExpiresAt && (
+                  <p className="text-xs text-black/40 mt-1">{L ? "ينتهي:" : "Expires:"} {new Date(renewTarget.subscriptionExpiresAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/50 mb-2 block">{L ? "بداية الاشتراك الجديد" : "New Subscription Start"}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setRenewFrom("expiry")}
+                    className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "expiry" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
+                    data-testid="btn-renew-from-expiry"
+                  >
+                    <p className="text-xs font-bold">{L ? "من نهاية الحالي" : "From current end"}</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">{L ? "تجديد متواصل" : "Continuous renewal"}</p>
+                  </button>
+                  <button
+                    onClick={() => setRenewFrom("today")}
+                    className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "today" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
+                    data-testid="btn-renew-from-today"
+                  >
+                    <p className="text-xs font-bold">{L ? "من اليوم" : "From today"}</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">{L ? "بدء فوري" : "Immediate start"}</p>
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => quickRenewMutation.mutate({ userId: renewTarget.id || (renewTarget as any)._id, startFrom: renewFrom })}
+                disabled={quickRenewMutation.isPending}
+                className="w-full h-11 rounded-2xl bg-black hover:bg-black/80 text-white gap-2 font-bold"
+                data-testid="btn-confirm-renew"
+              >
+                {quickRenewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                تجديد الاشتراك الآن
+              </Button>
+              <p className="text-center text-[11px] text-black/30">{L ? "سيُرسَل إشعار للعميل تلقائياً بعد التجديد" : "A notification will be sent to the client automatically after renewal"}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── SEGMENT DIALOG ─── */}
+      <Dialog open={segmentDialog} onOpenChange={setSegmentDialog}>
+        <DialogContent className="max-w-lg rounded-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg">{isEditMode ? (L ? "تعديل القطاع" : "Edit Sector") : (L ? "إضافة قطاع جديد" : "Add New Sector")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "مفتاح القطاع (بالإنجليزية)" : "Sector Key (English)"}</label>
+                <Input
+                  value={editingSegment.segmentKey || ""}
+                  onChange={e => setEditingSegment(p => ({ ...p, segmentKey: e.target.value }))}
+                  placeholder="restaurants"
+                  className="rounded-xl h-9 text-sm border-black/[0.08]"
+                  data-testid="input-segment-key"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "اسم القطاع (بالعربية)" : "Sector Name (Arabic)"}</label>
+                <Input
+                  value={editingSegment.segmentNameAr || ""}
+                  onChange={e => setEditingSegment(p => ({ ...p, segmentNameAr: e.target.value }))}
+                  placeholder={L ? "المطاعم والكافيهات" : "Restaurants & Cafes"}
+                  className="rounded-xl h-9 text-sm border-black/[0.08]"
+                  data-testid="input-segment-name-ar"
+                />
+              </div>
+            </div>
+
+            <div className="bg-black/[0.02] rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-black text-black/50 mb-3 flex items-center gap-2">
+                <CreditCard className="w-3.5 h-3.5" /> أسعار الاشتراك
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { labelText: L ? "شهري" : "Monthly", key: "monthlyPrice" as keyof SegmentPricing },
+                  { labelText: "6 أشهر", key: "sixMonthPrice" as keyof SegmentPricing },
+                  { labelText: L ? "سنوي" : "Annual", key: "annualPrice" as keyof SegmentPricing },
+                  { labelText: L ? "تجديد سنوي" : "Annual Renewal", key: "renewalPrice" as keyof SegmentPricing },
+                ].map(({ labelText, key }) => (
+                  <div key={key}>
+                    <label className="text-[11px] font-bold text-black/50 mb-1 flex items-center gap-1">{labelText} (<SARIcon size={9} className="opacity-60" />)</label>
+                    <Input
+                      type="number"
+                      value={(editingSegment as any)[key] || ""}
+                      onChange={e => setEditingSegment(p => ({ ...p, [key]: e.target.value }))}
+                      className="rounded-xl h-9 text-sm border-black/[0.08]"
+                      data-testid={`input-${key}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "ملاحظات (اختياري)" : "Notes (optional)"}</label>
+              <Textarea
+                value={editingSegment.notes || ""}
+                onChange={e => setEditingSegment(p => ({ ...p, notes: e.target.value }))}
+                className="rounded-xl text-sm border-black/[0.08] resize-none"
+                rows={2}
+                data-testid="input-segment-notes"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-black/60">{L ? "مرتبة العرض" : "Display Order"}</label>
+              <Input
+                type="number"
+                value={editingSegment.sortOrder ?? 0}
+                onChange={e => setEditingSegment(p => ({ ...p, sortOrder: Number(e.target.value) }))}
+                className="rounded-xl h-9 text-sm border-black/[0.08] w-24"
+                data-testid="input-sort-order"
+              />
+              <label className="flex items-center gap-2 cursor-pointer mr-auto">
+                <input
+                  type="checkbox"
+                  checked={editingSegment.isActive ?? true}
+                  onChange={e => setEditingSegment(p => ({ ...p, isActive: e.target.checked }))}
+                  className="rounded"
+                />
+                <span className="text-xs font-bold text-black/60">{L ? "نشط" : "Active"}</span>
+              </label>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleSaveSegment} disabled={createSegment.isPending || updateSegment.isPending} className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold" data-testid="button-save-segment">
+                {(createSegment.isPending || updateSegment.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditMode ? (L ? "حفظ التعديلات" : "Save Changes") : (L ? "إضافة القطاع" : "Add Sector")}
+              </Button>
+              <Button onClick={() => setSegmentDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── SET SUBSCRIPTION DIALOG ─── */}
+      <Dialog open={subDialog} onOpenChange={setSubDialog}>
+        <DialogContent className="max-w-md rounded-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg">{L ? "تعيين اشتراك للعميل" : "Assign Client Subscription"}</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-black rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white font-black text-sm">
+                  {selectedClient.fullName?.charAt(0) || "U"}
+                </div>
+                <div>
+                  <p className="font-bold text-white text-sm">{selectedClient.fullName}</p>
+                  <p className="text-white/40 text-[11px]">{selectedClient.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "القطاع" : "Sector"}</label>
+                <Select value={subForm.segmentId} onValueChange={v => {
+                  const seg = segments?.find(s => s.id === v);
+                  setSubForm(p => ({ ...p, segmentId: v, segmentNameAr: seg?.segmentNameAr || "" }));
+                }}>
+                  <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
+                    <SelectValue placeholder={L ? "اختر القطاع" : "Select sector"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {segments?.map(seg => (
+                      <SelectItem key={seg.id} value={seg.id}>{seg.segmentNameAr}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "فترة الاشتراك" : "Subscription Period"}</label>
+                <Select value={subForm.period} onValueChange={v => setSubForm(p => ({ ...p, period: v }))}>
+                  <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">{L ? "شهري (30 يوم)" : "Monthly (30 days)"}</SelectItem>
+                    <SelectItem value="6months">6 أشهر (180 يوم)</SelectItem>
+                    <SelectItem value="annual">{L ? "سنوي (365 يوم)" : "Annual (365 days)"}</SelectItem>
+                    <SelectItem value="renewal">{L ? "تجديد سنوي" : "Annual Renewal"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "تاريخ البدء" : "Start Date"}</label>
+                  <Input type="date" value={subForm.startDate} onChange={e => setSubForm(p => ({ ...p, startDate: e.target.value }))} className="rounded-xl h-9 text-sm border-black/[0.08]" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "تاريخ الانتهاء" : "End Date"}</label>
+                  <Input type="date" value={subForm.expiresAt} onChange={e => setSubForm(p => ({ ...p, expiresAt: e.target.value }))} className="rounded-xl h-9 text-sm border-black/[0.08]" />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button onClick={handleSetSub} disabled={setSubscription.isPending || !subForm.segmentId || !subForm.expiresAt} className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold">
+                  {setSubscription.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "تعيين الاشتراك" : "Assign Subscription")}
+                </Button>
+                <Button onClick={() => setSubDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── REQUEST REVIEW DIALOG ─── */}
+      <Dialog open={reqDialog} onOpenChange={setReqDialog}>
+        <DialogContent className="max-w-md rounded-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg">{L ? "مراجعة طلب الخدمة الفرعية" : "Review Sub-Service Request"}</DialogTitle>
+          </DialogHeader>
+          {selectedReq && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-black/[0.03] rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-black/50">{L ? "نوع الخدمة:" : "Service Type:"}</p>
+                  <p className="text-sm font-bold text-black">{selectedReq.serviceType}</p>
+                </div>
+                {selectedReq.projectLabel && (
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-black/50">{L ? "المشروع:" : "Project:"}</p>
+                    <p className="text-sm text-black/70">{selectedReq.projectLabel}</p>
+                  </div>
+                )}
+                {selectedReq.notes && (
+                  <div>
+                    <p className="text-xs font-bold text-black/50 mb-1">{L ? "ملاحظات العميل:" : "Client Notes:"}</p>
+                    <p className="text-xs text-black/60 bg-white rounded-lg p-2">{selectedReq.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "الحالة" : "Status"}</label>
+                <Select value={reqStatus} onValueChange={setReqStatus}>
+                  <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">{L ? "قيد المراجعة" : "Pending Review"}</SelectItem>
+                    <SelectItem value="reviewing">{L ? "جاري المراجعة" : "Under Review"}</SelectItem>
+                    <SelectItem value="approved">{L ? "مقبول" : "Approved"}</SelectItem>
+                    <SelectItem value="rejected">{L ? "مرفوض" : "Rejected"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "ملاحظات الإدارة (اختياري)" : "Admin Notes (optional)"}</label>
+                <Textarea value={reqAdminNotes} onChange={e => setReqAdminNotes(e.target.value)} className="rounded-xl text-sm border-black/[0.08] resize-none" rows={3} placeholder="أضف ملاحظاتك هنا..." />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => updateRequest.mutate({ id: selectedReq.id, data: { status: reqStatus, adminNotes: reqAdminNotes } })}
+                  disabled={updateRequest.isPending}
+                  className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold"
+                >
+                  {updateRequest.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "حفظ" : "Save")}
+                </Button>
+                <Button onClick={() => setReqDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

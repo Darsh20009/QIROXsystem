@@ -1,0 +1,109 @@
+QIROXsystem
+
+
+Search
+Command+
+K
+
+New
+
+Upgrade
+
+
+q
+Environment
+QIROXsystem
+Events
+Settings
+Monitor
+Logs
+Metrics
+Manage
+Environment
+Shell
+Scaling
+Previews
+Disk
+One-Off Jobs
+
+Changelog
+Invite a friend
+
+Contact support
+Render Status
+Web Service
+QIROXsystem
+Node
+Starter
+
+Connect
+
+Manual Deploy
+Service ID:
+srv-d668g97pm1nc73b6b690
+
+Darsh20009 / QIROXsystem
+main
+qiroxstudio.online
+
+Internal Address
+qiroxsystem:10000
+
+HTTP
+June 24, 2026 at 12:41 AM
+failed
+48ed36b
+Ensure necessary dependencies are installed before building the application Add a check to install missing dependencies using npm ci if they are not found in the cached node_modules. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 704eaa25-4ede-40cb-a8a6-e7bc89f2ddb0 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while running your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Jun 24, 12:40 AM - 12:44 AM
+GMT+3
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 48ed36b6137f38f9036116604dcc3eb130daf6d2 in branch main
+==> Downloaded 582MB in 6s. Extraction took 10s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'echo "pre-built"'...
+pre-built
+==> Uploading build...
+==> Uploaded in 16.5s. Compression took 7.3s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module '/opt/render/project/src/dist/index.cjs'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+Node.js v20.20.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Instance srv-d668g97pm1nc73b6b690-fnj44 restarted
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module '/opt/render/project/src/dist/index.cjs'

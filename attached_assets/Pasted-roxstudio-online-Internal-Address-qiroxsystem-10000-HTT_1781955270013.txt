@@ -1,0 +1,65 @@
+roxstudio.online
+
+Internal Address
+qiroxsystem:10000
+
+HTTP
+June 20, 2026 at 2:19 PM
+failed
+17b6a9f
+Improve employee experience by fixing layout and sidebar issues Update App.tsx to conditionally render EmployeeLayout for specific employee roles, remove redundant EmployeeLayout wrappers from EmployeeCRM.tsx and EmployeeHub.tsx, and make autoprefixer conditional in postcss.config.js to handle missing baseline-browser-mapping. Replit-Commit-Author: Agent Replit-Commit-Session-Id: db44aac6-e5d2-477d-92bd-eb73bd8e32ae Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: bfe63652-a60f-4204-92d0-8227b31645cb Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/04b7a826-607b-4af3-9a67-a7eaa5ad6c8d/db44aac6-e5d2-477d-92bd-eb73bd8e32ae/nRVm5FG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Jun 20, 2:18 PM - 2:22 PM
+GMT+3
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 17b6a9f597976495fa80ae33dd0c8880958a7264 in branch main
+==> Downloaded 522MB in 3s. Extraction took 9s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'npm install; npm run build'...
+npm error code ENOTEMPTY
+npm error syscall rename
+npm error path /opt/render/project/src/node_modules/baseline-browser-mapping
+npm error dest /opt/render/project/src/node_modules/.baseline-browser-mapping-MmZmuJeM
+npm error errno -39
+npm error ENOTEMPTY: directory not empty, rename '/opt/render/project/src/node_modules/baseline-browser-mapping' -> '/opt/render/project/src/node_modules/.baseline-browser-mapping-MmZmuJeM'
+npm error A complete log of this run can be found in: /opt/render/.cache/_logs/2026-06-20T11_20_02_769Z-debug-0.log
+> rest-express@1.0.0 build
+> npx tsx script/build.ts
+[build] Running full dependency install...
+[build] Cleaned stale npm temp dirs
+npm error Exit handler never called!
+npm error This is an error with npm itself. Please report this error at:
+npm error   <https://github.com/npm/cli/issues>
+npm error A complete log of this run can be found in: /opt/render/.cache/_logs/2026-06-20T11_20_05_305Z-debug-0.log
+[build] npm ci completed successfully
+building client...
+/bin/sh: 1: ./node_modules/.bin/vite: not found
+Error: Command failed: ./node_modules/.bin/vite build
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at buildAll (/opt/render/project/src/script/build.ts:95:3) {
+  status: 127,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 135,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

@@ -1,0 +1,123 @@
+HTTP
+June 24, 2026 at 12:32 AM
+failed
+35bae66
+Add a new user profile image to the system Add a new user profile image to the uploads directory. Replit-Commit-Author: Agent Replit-Commit-Session-Id: bc229dfe-098d-4509-a737-b2f76d4812bb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 7501a223-d7f8-46e9-920c-ac3d871a5591 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/d683ff0d-f623-4cfb-83d0-6e946cced414/bc229dfe-098d-4509-a737-b2f76d4812bb/28GlChG Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while running your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Live tail
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 35bae66bf385a928ef855b47e2c646f1e4041616 in branch main
+==> Downloaded 582MB in 7s. Extraction took 9s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'node script/build.mjs'...
+[build] dist/public already built (pre-built in repo) ✓
+[build] Installing esbuild into /tmp...
+[build] $ npm install esbuild --prefix /tmp/qirox-build-tools --no-save --ignore-scripts
+added 2 packages in 795ms
+[build] Bundling server...
+[build] $ /tmp/qirox-build-tools/node_modules/.bin/esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\"production\" --minify --packages=external
+▲ [WARNING] "import.meta" is not available with the "cjs" output format and will be empty [empty-import-meta]
+    server/pdf.ts:9:65:
+      9 │ ...= createRequire((globalThis as any).__filename ?? import.meta.url);
+        ╵                                                      ~~~~~~~~~~~
+  You need to set the output format to "esm" for "import.meta" to work correctly.
+1 warning
+  dist/index.cjs  1.2mb ⚠️
+⚡ Done in 79ms
+[build] ✅ Done! (client was pre-built, server bundled)
+==> Uploading build...
+==> Uploaded in 15.7s. Compression took 7.9s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Instance srv-d668g97pm1nc73b6b690-bfkpx restarted
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:internal/modules/cjs/loader:1210
+  throw err;
+  ^
+Error: Cannot find module 'side-channel'
+Require stack:
+- /opt/render/project/src/node_modules/qs/lib/stringify.js
+- /opt/render/project/src/node_modules/qs/lib/index.js
+- /opt/render/project/src/node_modules/express/lib/utils.js
+- /opt/render/project/src/node_modules/express/lib/application.js
+- /opt/render/project/src/node_modules/express/lib/express.js
+- /opt/render/project/src/node_modules/express/index.js
+- /opt/render/project/src/dist/index.cjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/opt/render/project/src/node_modules/qs/lib/stringify.js:3:22)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/opt/render/project/src/node_modules/qs/lib/stringify.js',
+    '/opt/render/project/src/node_modules/qs/lib/index.js',
+    '/opt/render/project/src/node_modules/express/lib/utils.js',
+    '/opt/render/project/src/node_modules/express/lib/application.js',
+    '/opt/render/project/src/node_modules/express/lib/express.js',
+    '/opt/render/project/src/node_modules/express/index.js',
+    '/opt/render/project/src/dist/index.cjs'
+  ]
+}
+Node.js v20.20.0

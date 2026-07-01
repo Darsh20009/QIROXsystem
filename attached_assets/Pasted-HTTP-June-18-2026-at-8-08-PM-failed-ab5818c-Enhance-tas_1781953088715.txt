@@ -1,0 +1,69 @@
+HTTP
+June 18, 2026 at 8:08 PM
+failed
+ab5818c
+Enhance task management, add OurTools page, improve QMeet screen sharing, subdomain routing
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Jun 18, 8:07 PM - 8:11 PM
+GMT+3
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit ab5818c8e6e28b833dcbbf75ba5b1dc389f70497 in branch main
+==> Downloaded 508MB in 7s. Extraction took 8s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'npm install; npm run build'...
+npm error Exit handler never called!
+npm error This is an error with npm itself. Please report this error at:
+npm error   <https://github.com/npm/cli/issues>
+npm error A complete log of this run can be found in: /opt/render/.cache/_logs/2026-06-18T17_08_59_275Z-debug-0.log
+> rest-express@1.0.0 build
+> npx tsx script/build.ts
+building client...
+vite v7.3.5 building client environment for production...
+transforming...
+✓ 2 modules transformed.
+✗ Build failed in 246ms
+error during build:
+[vite:css] Failed to load PostCSS config (searchPath: /opt/render/project/src/client): [Error] Loading PostCSS Plugin failed: Cannot find module 'baseline-browser-mapping'
+Require stack:
+- /opt/render/project/src/node_modules/browserslist/index.js
+- /opt/render/project/src/node_modules/autoprefixer/lib/autoprefixer.js
+(@/opt/render/project/src/postcss.config.js)
+Error: Loading PostCSS Plugin failed: Cannot find module 'baseline-browser-mapping'
+Require stack:
+- /opt/render/project/src/node_modules/browserslist/index.js
+- /opt/render/project/src/node_modules/autoprefixer/lib/autoprefixer.js
+(@/opt/render/project/src/postcss.config.js)
+    at load (file:///opt/render/project/src/node_modules/vite/dist/node/chunks/config.js:7676:10)
+    at async Promise.all (index 1)
+    at async plugins (file:///opt/render/project/src/node_modules/vite/dist/node/chunks/config.js:7698:11)
+    at async processResult (file:///opt/render/project/src/node_modules/vite/dist/node/chunks/config.js:7737:13)
+file: /opt/render/project/src/client/index.html?html-proxy&inline-css&index=0.css
+Error: Command failed: ./node_modules/.bin/vite build
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at buildAll (/opt/render/project/src/script/build.ts:85:3) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 124,
+  stdout: null,
+  stderr: null
+}
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

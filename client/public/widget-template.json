@@ -1,0 +1,108 @@
+{
+  "$schema": "https://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "auto",
+          "items": [
+            {
+              "type": "Image",
+              "url": "/icon-70.png",
+              "size": "Small",
+              "style": "Default"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "QIROX Studio",
+              "weight": "Bolder",
+              "size": "Medium",
+              "color": "Default"
+            },
+            {
+              "type": "TextBlock",
+              "text": "مصنع الأنظمة الرقمية",
+              "size": "Small",
+              "color": "Accent",
+              "spacing": "None"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ColumnSet",
+      "separator": true,
+      "spacing": "Medium",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${totalOrders}",
+              "size": "ExtraLarge",
+              "weight": "Bolder",
+              "horizontalAlignment": "Center"
+            },
+            {
+              "type": "TextBlock",
+              "text": "إجمالي الطلبات",
+              "size": "Small",
+              "horizontalAlignment": "Center",
+              "color": "Accent",
+              "spacing": "None"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${activeUsers}",
+              "size": "ExtraLarge",
+              "weight": "Bolder",
+              "horizontalAlignment": "Center"
+            },
+            {
+              "type": "TextBlock",
+              "text": "عملاء نشطون",
+              "size": "Small",
+              "horizontalAlignment": "Center",
+              "color": "Accent",
+              "spacing": "None"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "آخر تحديث: ${lastUpdated}",
+      "size": "Small",
+      "color": "Accent",
+      "horizontalAlignment": "Right",
+      "spacing": "Small"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "فتح لوحة التحكم",
+      "url": "https://qiroxstudio.online/dashboard"
+    }
+  ]
+}

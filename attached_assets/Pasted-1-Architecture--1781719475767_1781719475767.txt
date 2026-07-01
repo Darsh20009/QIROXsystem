@@ -1,0 +1,219 @@
+1️⃣ المعمارية الأساسية (Architecture)
+┌─────────────────────────────────────────────────┐
+│           Web Server (blackrose.com.sa)           │
+│   Express.js + React (Vite) + MongoDB Atlas       │
+│              port 5000                            │
+└────────────────────┬────────────────────────────┘
+                     │ HTTPS
+          ┌──────────┴──────────┐
+          │                     │
+   ┌──────▼──────┐       ┌──────▼──────┐
+   │  iOS App    │       │ Android App │
+   │ (Capacitor) │       │ (Capacitor) │
+   │  WebView →  │       │  WebView →  │
+   │ server URL  │       │ server URL  │
+   └─────────────┘       └─────────────┘
+
+الفكرة الذكية: التطبيق لا يُحزّم الكود داخل الـ App — بل يُشغّل WebView يشير مباشرة للسيرفر الحي. هذا يعني كل تحديث على السيرفر يظهر فوراً في التطبيق بدون رفع إصدار جديد على المتجر.
+
+2️⃣ ملف capacitor.config.json (نسخه كما هو)
+{
+  "appId": "blackrose.com.sa",
+  "appName": "Black Rose Cafe",
+  "webDir": "dist/public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://blackrose.com.sa",
+    "cleartext": true
+  },
+  "ios": {
+    "minVersion": "16.0",
+    "buildVersion": "7",
+    "version": "2.7.0",
+    "backgroundColor": "#ffffff",
+    "scrollEnabled": true,
+    "allowsLinkPreview": false,
+    "handleApplicationNotifications": false,
+    "allowsBackForwardNavigationGestures": true
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DEFAULT",
+      "overlaysWebView": true
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 0,
+      "backgroundColor": "#0d0d0d",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
+
+⚠️ غيّر appId لاسم نطاقك المعكوس (مثلاً com.yourcafe.app)، و**server.url** لرابط سيرفرك الحقيقي.
+
+3️⃣ الكود السحري — client/src/lib/server-url.ts
+هذا الملف هو قلب التطبيق — يحدد إذا كنا في تطبيق native أم متصفح، ويوجّه كل طلبات API للسيرفر الصح:
+
+/**
+ * في المتصفح العادي: /api/... يعمل مباشرة (نفس الأصل)
+ * في Capacitor Native: الـ assets تُحمَّل من capacitor://localhost
+ * ولا يوجد backend — كل طلبات API يجب أن تذهب للسيرفر الحقيقي
+ */
+export function isCapacitorNative(): boolean {
+  try {
+    return (
+      !!(window as any).Capacitor?.isNative ||
+      window.location.protocol === 'capacitor:' ||
+      (window.location.hostname === 'localhost' && !!(window as any).Capacitor)
+    );
+  } catch {
+    return false;
+  }
+}
+export function getServerUrl(): string {
+  if (!isCapacitorNative()) return '';
+  // 1. من Build-time env: VITE_CAPACITOR_SERVER_URL
+  const buildTimeUrl = (import.meta.env.VITE_CAPACITOR_SERVER_URL as string) || '';
+  if (buildTimeUrl) return buildTimeUrl.replace(/\/$/, '');
+  // 2. من localStorage (قابل للتغيير في runtime)
+  try {
+    const runtime = localStorage.getItem('qirox_server_url') || '';
+    if (runtime) return runtime.replace(/\/$/, '');
+  } catch {}
+  return '';
+}
+export function apiUrl(path: string): string {
+  const base = getServerUrl();
+  if (!base) return path;
+  return base + (path.startsWith('/') ? path : '/' + path);
+}
+
+4️⃣ بوابة الدفع — اللماذا والكيف
+المشكلة: <iframe> لا يُشغّل Apple Pay أو Google Pay لأن هذه المدفوعات تحتاج صلاحيات top-level browsing context.
+
+الحل المطبّق:
+
+// ❌ القديم — iframe مضمّن (يكسر Apple Pay / Google Pay)
+<iframe src={checkoutUrl} />
+// ✅ الجديد — توجيه كامل للـ WebView
+useEffect(() => {
+  if (checkoutUrl) {
+    window.location.href = checkoutUrl; // WebView ينتقل بالكامل لصفحة الدفع
+  }
+}, [checkoutUrl]);
+
+دورة الدفع الكاملة:
+
+1. المستخدم يضغط "ادفع"
+2. السيرفر يُنشئ الطلب ويُعيد redirectUrl من PayMob
+3. window.location.href = redirectUrl  ← WebView يذهب لصفحة الدفع
+4. المستخدم يدفع (Apple Pay / Google Pay / بطاقة)
+5. PayMob يُعيد التوجيه لـ /payment-return?success=true&orderNumber=XXX
+6. صفحة /payment-return تتحقق من السيرفر وتُعيد التوجيه لـ /my-orders
+
+كود إعداد returnUrl (يُرسل للسيرفر مع طلب الدفع):
+
+const returnUrl = `${window.location.origin}/payment-return?provider=paymob&orderNumber=${encodeURIComponent(order.orderNumber)}`;
+await fetch("/api/payments/init", {
+  method: "POST",
+  body: JSON.stringify({
+    orderId: order.orderNumber,
+    amount: total,
+    currency: "SAR",
+    paymentMethod: "paymob-card",
+    returnUrl, // ← هذا يُخبر PayMob أين يرجع بعد الدفع
+  })
+});
+
+للتطبيق النيتف (Capacitor) — يفتح SFSafariViewController بدل iframe:
+
+if (isCapacitorNative()) {
+  const { Browser } = await import("@capacitor/browser");
+  
+  // راقب متى يُغلق المستخدم المتصفح
+  Browser.addListener("browserFinished", async () => {
+    const paid = await checkPaymentStatus(orderNumber);
+    if (paid) handleSuccess();
+  });
+  // افتح صفحة الدفع في SFSafariViewController (iOS) / Chrome Custom Tab (Android)
+  await Browser.open({
+    url: checkoutUrl,
+    toolbarColor: "#0d0d0d",
+    presentationStyle: "popover",
+  });
+}
+
+5️⃣ الـ packages المطلوبة
+# Capacitor Core
+npm install @capacitor/core @capacitor/cli
+npm install @capacitor/ios @capacitor/android
+# Capacitor Plugins المستخدمة في المشروع
+npm install @capacitor/browser   # فتح PayMob في SFSafariViewController
+npm install @capacitor/app       # App state / deep links
+npm install @capacitor/haptics   # اهتزاز عند التفاعل
+npm install @capacitor/keyboard  # التحكم في الكيبورد
+npm install @capacitor/status-bar # شريط الحالة iOS
+
+6️⃣ خطوات بناء ورفع الـ iOS App
+# 1. Build الـ Web App
+npm run build
+# يُنتج: dist/public/
+# 2. أضف منصة iOS (مرة واحدة فقط)
+npx cap add ios
+# 3. sync الـ web assets للـ native project
+npx cap sync ios
+# 4. افتح في Xcode
+npx cap open ios
+# --- داخل Xcode ---
+# 5. Signing: اختر Apple Developer Team
+# 6. Bundle ID: يطابق appId في capacitor.config.json
+# 7. Product → Archive → Distribute App → App Store Connect
+
+ملاحظة مهمة: لأن server.url في capacitor.config.json يشير للسيرفر الحي، فالـ app يُحمّل من السيرفر مباشرة — لا حاجة لـ npm run build أو npx cap sync عند كل تعديل على الكود. فقط عند تغيير Capacitor plugins.
+
+7️⃣ متطلبات Apple Developer
+المتطلب	التفاصيل
+Apple Developer Account	$99/سنة على developer.apple.com
+Bundle ID	يطابق appId في capacitor.config.json
+App Icons	1024×1024 PNG بدون شفافية (Xcode يولّد الباقي)
+Splash Screen	يُضبط في Xcode → LaunchScreen.storyboard
+Info.plist	أذونات: Camera (QR), Notifications, Location
+ATS	NSAllowsArbitraryLoads إذا server بدون HTTPS
+8️⃣ PWA Manifest و Service Worker
+// public/manifest.json
+{
+  "name": "Black Rose Cafe",
+  "short_name": "BLACK ROSE",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#2D9B6E",
+  "icons": [
+    { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+
+9️⃣ متغيرات البيئة المطلوبة
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
+SESSION_SECRET=اي_نص_عشوائي_طويل
+VAPID_PUBLIC_KEY=...   # للإشعارات
+VAPID_PRIVATE_KEY=...  # للإشعارات
+VAPID_SUBJECT=mailto:cafe@domain.com
+SMTP2GO_API_KEY=...    # للإيميلات
+SMTP_FROM=cafe@domain.com
+
+🔟 تلخيص أهم قرارات التصميم
+القرار	السبب
+WebView → Live Server بدل bundled assets	أي تعديل يظهر فوراً بدون إصدار جديد
+isCapacitorNative() في كل مكان	كود واحد يعمل في المتصفح والتطبيق
+Full-page redirect للدفع بدل iframe	Apple Pay/Google Pay يحتاج top-level context
+SFSafariViewController للدفع في Native	آمن، يثق فيه المستخدم، يعمل مع Apple Pay
+sessionStorage لحفظ وجهة الرجوع	لأن الصفحة تتنقل بعيداً عند الدفع
+MongoDB Atlas	Cloud database، لا يحتاج إدارة سيرفر
+هذا كل شيء اتبعناه — الكود الحقيقي موجود في المشروع ويمكن مشاركته مباشرة مع الفريق الآخر.
+

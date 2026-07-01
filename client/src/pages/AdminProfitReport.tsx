@@ -1,0 +1,332 @@
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { Loader2, TrendingUp, TrendingDown, DollarSign, BarChart3, Search, ChevronDown, ChevronUp, Percent } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+
+function getCategoryLabels(L: boolean): Record<string, { label: string; color: string }> { return {
+  hosting: { label: L ? "استضافة" : "Hosting", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  domain: { label: L ? "دومين" : "Domain", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  license: { label: L ? "ترخيص" : "License", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  ads: { label: L ? "إعلانات" : "Ads", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  design: { label: L ? "تصميم" : "Design", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  salary: { label: L ? "راتب" : "Salary", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  commission: { label: L ? "عمولة" : "Commission", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
+  other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
+};
+}
+
+function getStatusLabels(L: boolean): Record<string, { label: string; color: string }> { return {
+  pending: { label: L ? "قيد المراجعة" : "Pending", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  approved: { label: L ? "موافق عليه" : "Approved", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  completed: { label: L ? "مكتمل" : "Completed", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-black dark:text-white bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" },
+};
+}
+
+function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="h-1.5 bg-black/[0.04] rounded-full overflow-hidden w-24">
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+export default function AdminProfitReport() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const categoryLabels = getCategoryLabels(L);
+  const statusLabels = getStatusLabels(L);
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"profit" | "revenue" | "margin">("profit");
+
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ["/api/admin/profit-report"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/profit-report", { credentials: "include" });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const orders: any[] = data?.orders || [];
+  const totals = data?.totals || { revenue: 0, expenses: 0, netProfit: 0 };
+  const addonStats = data?.addonStats || { revenue: 0, cost: 0, profit: 0, count: 0, items: [] as any[] };
+  const overallMargin = totals.revenue > 0 ? ((totals.netProfit / totals.revenue) * 100).toFixed(1) : "0";
+
+  const filtered = orders
+    .filter(o => !search || o.businessName?.toLowerCase().includes(search.toLowerCase()) || o.client?.fullName?.toLowerCase().includes(search.toLowerCase()) || o.orderId?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === "profit") return b.netProfit - a.netProfit;
+      if (sortBy === "revenue") return b.revenue - a.revenue;
+      return b.margin - a.margin;
+    });
+
+  const maxRevenue = Math.max(...filtered.map((o: any) => o.revenue || 0), 1);
+
+  // Category breakdown across all orders
+  const categoryTotals: Record<string, number> = {};
+  orders.forEach(o => {
+    (o.expenses || []).forEach((e: any) => {
+      categoryTotals[e.category || "other"] = (categoryTotals[e.category || "other"] || 0) + (e.amount || 0);
+    });
+  });
+  const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="relative overflow-hidden space-y-5" dir={dir}>
+      <PageGraphics variant="dashboard" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-xl font-black text-black flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-4.5 h-4.5 text-white" />
+            </div>
+            {L ? "تقرير التكاليف والأرباح" : "Cost & Profit Report"}
+          </h1>
+          <p className="text-xs text-black/35 mt-0.5">{L ? "تحليل شامل لإيرادات ومصروفات وصافي أرباح كل الطلبات" : "Comprehensive revenue, expenses & net profit analysis"}</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+        </div>
+      ) : (
+        <>
+          {/* Totals */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-black dark:text-white" />
+                <p className="text-[11px] text-black dark:text-white font-bold">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              </div>
+              <p className="text-2xl font-black text-black dark:text-white">{totals.revenue.toLocaleString()}</p>
+              <p className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><SARIcon size={10} /> {L ? "من" : "from"} {orders.length} {L ? "طلب" : "orders"}</p>
+            </div>
+            <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="w-4 h-4 text-black dark:text-white" />
+                <p className="text-[11px] text-black dark:text-white font-bold">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
+              </div>
+              <p className="text-2xl font-black text-black dark:text-white">{totals.expenses.toLocaleString()}</p>
+              <p className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><SARIcon size={10} /> {L ? "مصروف" : "expenses"}</p>
+            </div>
+            <div className={`border rounded-2xl p-5 ${totals.netProfit >= 0 ? "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10" : "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10"}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className={`w-4 h-4 ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`} />
+                <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
+              </div>
+              <p className={`text-2xl font-black ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{totals.netProfit.toLocaleString()}</p>
+              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`}><SARIcon size={10} /> {L ? "صافي" : "net"}</p>
+            </div>
+            <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Percent className="w-4 h-4 text-black/40" />
+                <p className="text-[11px] text-black/50 font-bold">{L ? "هامش الربح الكلي" : "Overall Profit Margin"}</p>
+              </div>
+              <p className="text-2xl font-black text-black/70">{overallMargin}%</p>
+              <p className="text-[10px] text-black/30">{L ? "متوسط الهامش" : "Average margin"}</p>
+            </div>
+          </div>
+
+          {/* ── Add-on subscription profit (NEW QIROX catalog) ── */}
+          {addonStats.count > 0 && (
+            <div className="bg-black text-white rounded-2xl p-5" data-testid="card-addon-profit">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <div>
+                  <p className="text-[11px] text-white/60 font-bold uppercase tracking-wider">{L ? "أرباح الميزات الإضافية" : "Add-on Subscriptions Profit"}</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">{addonStats.count} {L ? "اشتراك نشط من كتالوج المميزات" : "active subscriptions across catalog"}</p>
+                </div>
+                <div className="flex gap-4 text-right">
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "الإيراد" : "Revenue"}</p>
+                    <p className="text-lg font-black flex items-center gap-1">{addonStats.revenue.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "التكلفة" : "Cost"}</p>
+                    <p className="text-lg font-black flex items-center gap-1 text-white/70">{addonStats.cost.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/50">{L ? "الربح" : "Profit"}</p>
+                    <p className="text-lg font-black flex items-center gap-1 text-white" data-testid="text-addon-total-profit">{addonStats.profit.toLocaleString()} <SARIcon size={12} className="opacity-60" /></p>
+                  </div>
+                </div>
+              </div>
+              {addonStats.items.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {addonStats.items.slice(0, 9).map((it: any) => (
+                    <div key={it.id} className="bg-white/[0.06] border border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-2" data-testid={`row-addon-${it.id}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold truncate flex items-center gap-1.5">
+                          {it.nameAr}
+                          {it.isCustom && <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-black">CUSTOM</span>}
+                        </p>
+                        <p className="text-[10px] text-white/40">{it.count} {L ? "اشتراك" : "subs"} · {L ? "ربح/وحدة" : "profit/unit"}: {it.profit.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-black">{(it.profit * it.count).toLocaleString()}</p>
+                        <p className="text-[9px] text-white/40">{L ? "ر.س" : "SAR"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Overall profit bar */}
+          {totals.revenue > 0 && (
+            <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
+              <div className="flex justify-between text-[10px] text-black/40 mb-2">
+                <span>{L ? "التكاليف" : "Expenses"} {((totals.expenses / totals.revenue) * 100).toFixed(1)}%</span>
+                <span>{L ? "صافي الربح" : "Net Profit"} {overallMargin}%</span>
+              </div>
+              <div className="h-4 bg-black/[0.04] rounded-full overflow-hidden flex">
+                <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] transition-all" style={{ width: `${Math.min((totals.expenses / totals.revenue) * 100, 100)}%` }} />
+                <div className="h-full bg-black/[0.08] dark:bg-white/[0.1] flex-1" />
+              </div>
+              <div className="flex gap-4 mt-2 text-[10px]">
+                <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "تكاليف" : "Expenses"}</span>
+                <span className="flex items-center gap-1 text-black dark:text-white"><span className="w-2 h-2 rounded-full bg-black/[0.08] dark:bg-white/[0.1] inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Category Breakdown */}
+          {sortedCategories.length > 0 && (
+            <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
+              <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-3">{L ? "توزيع التكاليف حسب الفئة" : "Cost Breakdown by Category"}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {sortedCategories.map(([cat, amt]) => {
+                  const { label, color } = categoryLabels[cat] || categoryLabels.other;
+                  const pct = totals.expenses > 0 ? ((amt / totals.expenses) * 100).toFixed(1) : "0";
+                  return (
+                    <div key={cat} className="bg-black/[0.02] rounded-xl p-3">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${color}`}>{label}</span>
+                      <p className="text-sm font-bold text-black/70 mt-1.5 flex items-center gap-1">{amt.toLocaleString()} <SARIcon size={11} /></p>
+                      <p className="text-[10px] text-black/30">{pct}% {L ? "من التكاليف" : "of expenses"}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Orders Table */}
+          <div className="bg-white border border-black/[0.06] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/25" />
+                <Input placeholder={L ? "بحث..." : "Search..."} value={search} onChange={e => setSearch(e.target.value)}
+                  className="h-8 text-xs pr-9 border-black/[0.08]" />
+              </div>
+              <div className="flex gap-1">
+                {(["profit", "revenue", "margin"] as const).map(s => (
+                  <Button key={s} size="sm" variant={sortBy === s ? "default" : "outline"}
+                    onClick={() => setSortBy(s)}
+                    className={`text-[10px] h-7 px-2 ${sortBy === s ? "bg-black text-white" : "border-black/10 text-black/50"}`}>
+                    {L ? (s === "profit" ? "الربح" : s === "revenue" ? "الإيراد" : "الهامش") : (s === "profit" ? "Profit" : s === "revenue" ? "Revenue" : "Margin")}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="py-16 text-center">
+                <BarChart3 className="w-10 h-10 text-black/10 mx-auto mb-3" />
+                <p className="text-sm text-black/30">{L ? "لا توجد بيانات" : "No data"}</p>
+                <p className="text-xs text-black/20 mt-1">{L ? "أضف مصروفات للطلبات من صفحة إدارة الطلبات" : "Add expenses from the orders management page"}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-black/[0.04]">
+                {filtered.map((order: any) => {
+                  const isExpanded = expanded === order.orderId;
+                  const isProfit = order.netProfit >= 0;
+                  const statusInfo = statusLabels[order.status] || { label: order.status, color: "text-black/50 bg-black/[0.03] border-black/[0.06]" };
+                  return (
+                    <div key={order.orderId}>
+                      <div
+                        className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-black/[0.01] transition-colors"
+                        onClick={() => setExpanded(isExpanded ? null : order.orderId)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-black truncate">{order.businessName || order.client?.fullName || "—"}</p>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
+                            {order.serviceType && <span className="text-[9px] text-black/30">{order.serviceType}</span>}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <MiniBar value={order.revenue} max={maxRevenue} color="bg-black/[0.08] dark:bg-white/[0.1]" />
+                            <span className="text-[10px] text-black/30">#{order.orderId?.slice(-8)}</span>
+                            {order.expenseCount > 0 && (
+                              <span className="text-[10px] text-black/30">{order.expenseCount} {L ? "مصروف" : "expenses"}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-left flex-shrink-0">
+                          <div className="text-left">
+                            <p className="text-[10px] text-black/30">{L ? "إيراد" : "Revenue"}</p>
+                            <p className="text-xs font-bold text-black dark:text-white">{order.revenue.toLocaleString()}</p>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-[10px] text-black/30">{L ? "تكاليف" : "Expenses"}</p>
+                            <p className="text-xs font-bold text-black dark:text-white">{order.totalExpenses.toLocaleString()}</p>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-[10px] text-black/30">{L ? "صافي" : "Net"}</p>
+                            <p className={`text-xs font-black ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{order.netProfit.toLocaleString()}</p>
+                          </div>
+                          <div className="w-12 text-left">
+                            <p className={`text-xs font-bold ${isProfit ? "text-black dark:text-white" : "text-black dark:text-white"}`}>{order.margin}%</p>
+                          </div>
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-black/25 flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-black/25 flex-shrink-0" />}
+                        </div>
+                      </div>
+
+                      {isExpanded && order.expenses?.length > 0 && (
+                        <div className="bg-black/[0.01] border-t border-black/[0.04] px-6 py-3 space-y-1.5">
+                          <p className="text-[10px] font-bold text-black/30 uppercase tracking-wider mb-2">{L ? "تفاصيل المصروفات" : "Expense Details"}</p>
+                          {order.expenses.map((e: any, i: number) => {
+                            const cat = categoryLabels[e.category] || categoryLabels.other;
+                            return (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
+                                <p className="text-xs text-black/50 flex-1">{e.description}</p>
+                                <p className="text-xs font-bold text-black dark:text-white flex items-center gap-1">{Number(e.amount).toLocaleString()} <SARIcon size={10} /></p>
+                              </div>
+                            );
+                          })}
+                          <div className="pt-1.5 mt-1.5 border-t border-black/[0.06] flex justify-between">
+                            <p className="text-[10px] text-black/30">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
+                            <p className="text-xs font-black text-black dark:text-white flex items-center gap-1">{order.totalExpenses.toLocaleString()} <SARIcon size={10} /></p>
+                          </div>
+                        </div>
+                      )}
+                      {isExpanded && order.expenses?.length === 0 && (
+                        <div className="bg-black/[0.01] border-t border-black/[0.04] px-6 py-3 text-center">
+                          <p className="text-xs text-black/25">{L ? "لا توجد مصروفات لهذا الطلب — أضفها من صفحة الطلبات" : "No expenses for this order — add them from the orders page"}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,53 @@
+{
+  "packageId":         "online.qiroxstudio.twa",
+  "host":              "qiroxstudio.online",
+  "name":              "QIROX Studio",
+  "launcherName":      "كيروكس",
+  "display":           "standalone",
+  "themeColor":        "#111111",
+  "navigationColor":   "#111111",
+  "navigationColorDark": "#111111",
+  "backgroundColor":   "#111111",
+  "startUrl":          "/?source=twa",
+  "iconUrl":           "https://qiroxstudio.online/icon-512.png",
+  "maskableIconUrl":   "https://qiroxstudio.online/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 400,
+  "signingKey": {
+    "path":  "./qirox-android.keystore",
+    "alias": "qirox"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name":      "لوحة التحكم",
+      "shortName": "Dashboard",
+      "url":       "/dashboard?source=twa-shortcut",
+      "icons": [{ "src": "https://qiroxstudio.online/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name":      "طلب جديد",
+      "shortName": "طلب",
+      "url":       "/order?source=twa-shortcut",
+      "icons": [{ "src": "https://qiroxstudio.online/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "features": {
+    "locationDelegation": { "enabled": false },
+    "playBilling":        { "enabled": false },
+    "notifications":      { "enabled": true }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://qiroxstudio.online/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "webManifestUrl": "https://qiroxstudio.online/manifest.json",
+  "generatorApp": "bubblewrap-cli",
+  "sdkVersion": 36,
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

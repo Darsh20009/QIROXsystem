@@ -1,0 +1,92 @@
+Production
+
+QIROXsystem
+
+
+Search
+Command+
+K
+
+New
+
+Upgrade
+
+
+q
+Environment
+QIROXsystem
+Events
+Settings
+Monitor
+Logs
+Metrics
+Manage
+Environment
+Shell
+Scaling
+Previews
+Disk
+One-Off Jobs
+
+Changelog
+Invite a friend
+
+Contact support
+Render Status
+Web Service
+QIROXsystem
+Node
+Starter
+
+Connect
+
+Manual Deploy
+Service ID:
+srv-d668g97pm1nc73b6b690
+
+Darsh20009 / QIROXsystem
+main
+qiroxstudio.online
+
+Internal Address
+qiroxsystem:10000
+
+HTTP
+July 1, 2026 at 5:49 AM
+failed
+670044a
+Improve notification deletion to remove all notifications Update the DELETE /api/notifications endpoint to allow deleting all notifications, not just read ones, and modify the UI to reflect this change with a "Delete All" button. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 7d458162-e2ba-4423-b735-e3ec8496f001 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: c8a9813f-0b90-4e69-a3a7-b0df246d0a51 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/570423d4-b900-4a2b-86b4-7c9a8bbf80d8/7d458162-e2ba-4423-b735-e3ec8496f001/LGMuteQ Replit-Helium-Checkpoint-Created: true
+
+Rollback
+Exited with status 1 while building your code.
+Read our docs for common ways to troubleshoot your deploy.
+
+All logs
+Search
+Search logs
+
+Jul 1, 5:48 AM - 5:52 AM
+GMT+3
+
+
+
+==> Downloading cache...
+==> Cloning from https://github.com/Darsh20009/QIROXsystem
+==> Checking out commit 670044a8497b093b1db3a039dad106763e941704 in branch main
+==> Downloaded 329MB in 4s. Extraction took 6s.
+==> Using Node.js version 20.20.0 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Installing Node.js version 20.20.0...
+==> Running build command 'npm install --include=dev && npm run build'...
+npm error code ENOTFOUND
+npm error syscall getaddrinfo
+npm error errno ENOTFOUND
+npm error network request to http://package-firewall.replit.local/npm/xlsx/-/xlsx-0.18.5.tgz failed, reason: getaddrinfo ENOTFOUND package-firewall.replit.local
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the
+npm error network 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: /opt/render/.cache/_logs/2026-07-01T02_50_22_836Z-debug-0.log
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

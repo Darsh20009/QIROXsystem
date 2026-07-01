@@ -1,0 +1,82 @@
+Build Command
+Render runs this command to build your app before each deploy.
+$
+echo "done"
+
+Edit
+Git Credentials
+User providing the credentials to pull the repository.
+qiroxsystem@gmail.com (you)
+Use My Credentials
+Build Filters
+Include or ignore specific paths in your repo when determining whether to trigger an auto-deploy. Paths are relative to your repo's root directory. Learn more.
+
+Edit
+Included Paths
+Changes that match these paths will trigger a new build.
+
+
+Add Included Path
+Ignored Paths
+Changes that match these paths will not trigger a new build.
+
+
+Add Ignored Path
+Deploy
+Pre-Deploy CommandOptional
+Render runs this command before the start command. Useful for database migrations and static asset uploads.
+$
+
+Edit
+Start Command
+Render runs this command to start your app with each deploy.
+$
+node dist/index.cjs
+
+Edit
+Auto-Deploy
+By default, Render automatically deploys your service whenever you update its code or configuration. Disable to handle deploys manually. Learn more.
+autoDeployTrigger
+
+Off
+
+Edit
+Deploy Hook
+Your private URL to trigger a deploy for this server. Remember to keep this a secret.
+••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+
+
+Regenerate hook
+Custom Domains
+You can point custom domains you own to this service.
+
+
+Name
+2
+
+Verified Status
+
+Certificate Status
+qiroxstudio.online	
+Loading
+Certificate Issued
+Menu
+www.qiroxstudio.onlineredirects to qiroxstudio.online	
+Loading
+Certificate Issued
+Menu
+
+Add Custom Domain
+Render Subdomain
+If enabled, your service remains reachable at its onrender.com subdomain in addition to all custom domains. Disable to serve exclusively from custom domains.
+
+
+enabled
+Your service is reachable at https://qiroxsystem.onrender.com.
+PR Previews
+Pull Request Previews
+Spin up temporary instances to test pull requests opened against the main branch of Darsh20009/QIROXsystem. Choose Automatic to preview all PRs, or Manual for only PRs with [render preview] in their title. Pull Request Previews create a new instance for just this service. Use Preview Environments to clone a group of services for every PR.
+prPreviewsEnabled
+
+Off
