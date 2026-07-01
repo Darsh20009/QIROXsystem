@@ -1638,67 +1638,38 @@ export default function Home() {
       </main>
 
       {/* ── Posters Teaser ── */}
-      <section className="relative py-20 bg-[#0a0a0a] overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/3 w-[500px] h-[280px] bg-purple-600/8 rounded-full blur-[80px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[200px] bg-indigo-600/6 rounded-full blur-[60px]" />
-        </div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 flex justify-center">
-
-          {/* Posters Card */}
+      <section className="bg-[#0a0a0a] py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="relative w-full max-w-md bg-white/[0.04] border border-white/[0.08] rounded-3xl p-7 overflow-hidden group"
+            transition={{ duration: 0.4 }}
+            className="max-w-3xl mx-auto flex items-center gap-4 bg-white/[0.03] border border-white/[0.08] rounded-2xl px-5 py-3.5"
             dir={ar ? "rtl" : "ltr"}
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
-            <span className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-[11px] font-semibold text-white/50 mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-              {ar ? "أعمالنا الإبداعية" : "Our Creative Work"}
-            </span>
-            <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-3">
-              {ar ? "🎨 معرض البوسترات" : "🎨 Posters Gallery"}
-            </h2>
-            <p className="text-white/40 text-sm leading-relaxed mb-6">
-              {ar
-                ? "كل بوستر يحكي قصة. استعرض أحدث تصاميمنا وحملاتنا التسويقية."
-                : "Every poster tells a story. Browse our latest designs and campaigns."}
-            </p>
-
-            {/* Mini poster showcase grid */}
-            <div className="grid grid-cols-3 gap-2.5 mb-6">
-              {["/posters/poster1.png", "/posters/poster2.png", "/posters/poster3.png", "/posters/poster5.png", "/posters/poster6.png", "/posters/poster7.png"].map((src, i) => (
-                <motion.div
+            <div className="flex -space-x-3 rtl:space-x-reverse shrink-0">
+              {["/posters/poster1.png", "/posters/poster3.png", "/posters/poster6.png"].map((src, i) => (
+                <img
                   key={src}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.06 }}
-                  whileHover={{ scale: 1.05, zIndex: 10 }}
-                  className={`relative rounded-xl overflow-hidden shadow-lg shadow-black/50 ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-                >
-                  <img
-                    src={src}
-                    alt=""
-                    loading="lazy"
-                    className={`w-full object-cover ${i === 0 ? "h-full" : "h-16"}`}
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                </motion.div>
+                  src={src}
+                  alt=""
+                  loading="lazy"
+                  className="w-9 h-9 rounded-lg object-cover border-2 border-[#0a0a0a] shadow-md"
+                  style={{ zIndex: 3 - i }}
+                />
               ))}
             </div>
-
-            <Link href="/posters" data-testid="btn-view-posters">
-              <Button className="w-full bg-white text-black hover:bg-white/90 font-bold rounded-xl h-11 px-5 gap-2 text-sm">
-                {ar ? "استعرض البوسترات" : "View Posters"}
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
+            <p className="flex-1 text-white/50 text-sm truncate">
+              {ar ? "🎨 شاهد أحدث بوستراتنا وتصاميمنا" : "🎨 See our latest posters & designs"}
+            </p>
+            <Link href="/posters" data-testid="btn-view-posters" className="shrink-0">
+              <span className="inline-flex items-center gap-1.5 text-white text-sm font-semibold hover:text-white/70 transition-colors">
+                {ar ? "استعرض" : "View"}
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </span>
             </Link>
           </motion.div>
-
         </div>
       </section>
 
