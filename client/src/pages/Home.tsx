@@ -1637,97 +1637,68 @@ export default function Home() {
         </section>
       </main>
 
-      {/* ── Posters + Community Teaser ── */}
+      {/* ── Posters Teaser ── */}
       <section className="relative py-20 bg-[#0a0a0a] overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/3 w-[500px] h-[280px] bg-purple-600/8 rounded-full blur-[80px]" />
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[200px] bg-indigo-600/6 rounded-full blur-[60px]" />
         </div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 flex justify-center">
 
-            {/* Posters Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="relative bg-white/[0.04] border border-white/[0.08] rounded-3xl p-7 overflow-hidden group"
-              dir={ar ? "rtl" : "ltr"}
-            >
-              <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
-              <span className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-[11px] font-semibold text-white/50 mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                {ar ? "أعمالنا الإبداعية" : "Our Creative Work"}
-              </span>
-              <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-3">
-                {ar ? "🎨 معرض البوسترات" : "🎨 Posters Gallery"}
-              </h2>
-              <p className="text-white/40 text-sm leading-relaxed mb-6">
-                {ar
-                  ? "كل بوستر يحكي قصة. استعرض أحدث تصاميمنا وحملاتنا التسويقية."
-                  : "Every poster tells a story. Browse our latest designs and campaigns."}
-              </p>
-              <Link href="/posters" data-testid="btn-view-posters">
-                <Button className="bg-white text-black hover:bg-white/90 font-bold rounded-xl h-11 px-5 gap-2 text-sm">
-                  {ar ? "استعرض البوسترات" : "View Posters"}
-                  <ArrowUpRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              {/* floating mini posters */}
-              <div className="absolute bottom-4 left-4 flex gap-2 opacity-60 group-hover:opacity-90 transition-opacity">
-                {["/posters/poster1.png", "/posters/poster3.png"].map((src, i) => (
-                  <motion.img key={src} src={src} alt="" loading="lazy"
-                    animate={{ y: [0, i % 2 === 0 ? -6 : 6, 0] }}
-                    transition={{ duration: 4 + i, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-14 h-auto rounded-lg shadow-lg shadow-black/50" />
-                ))}
-              </div>
-            </motion.div>
+          {/* Posters Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative w-full max-w-md bg-white/[0.04] border border-white/[0.08] rounded-3xl p-7 overflow-hidden group"
+            dir={ar ? "rtl" : "ltr"}
+          >
+            <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+            <span className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-[11px] font-semibold text-white/50 mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              {ar ? "أعمالنا الإبداعية" : "Our Creative Work"}
+            </span>
+            <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-3">
+              {ar ? "🎨 معرض البوسترات" : "🎨 Posters Gallery"}
+            </h2>
+            <p className="text-white/40 text-sm leading-relaxed mb-6">
+              {ar
+                ? "كل بوستر يحكي قصة. استعرض أحدث تصاميمنا وحملاتنا التسويقية."
+                : "Every poster tells a story. Browse our latest designs and campaigns."}
+            </p>
 
-            {/* Community Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative bg-gradient-to-br from-purple-500/10 to-indigo-600/5 border border-purple-500/20 rounded-3xl p-7 overflow-hidden"
-              dir={ar ? "rtl" : "ltr"}
-            >
-              <div className="absolute -top-8 -right-8 w-48 h-48 bg-purple-500/8 rounded-full blur-3xl pointer-events-none" />
-              <span className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full px-3 py-1 text-[11px] font-semibold text-white/50 mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                {ar ? "١٢٤٧+ عضو نشط" : "1,247+ Active Members"}
-              </span>
-              <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-3">
-                {ar ? "🌟 مجتمع كيروكس" : "🌟 Qirox Community"}
-              </h2>
-              <p className="text-white/40 text-sm leading-relaxed mb-6">
-                {ar
-                  ? "شارك تجربتك، اسأل الأعضاء، وتفاعل مع مئات العملاء العرب بلهجاتهم."
-                  : "Share your experience, ask members, and interact with hundreds of Arab clients."}
-              </p>
-              <Link href="/community" data-testid="btn-view-community">
-                <Button className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold rounded-xl h-11 px-5 gap-2 text-sm border-0">
-                  {ar ? "انضم للمجتمع" : "Join Community"}
-                  <ArrowUpRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              {/* fake chat bubbles */}
-              <div className="absolute bottom-4 left-4 space-y-1.5 opacity-50">
-                {[
-                  { t: ar ? "والله شغل رهيب 🔥" : "Amazing work 🔥", c: "bg-white/10" },
-                  { t: ar ? "ما شاء الله 💯" : "Incredible 💯", c: "bg-purple-500/20" },
-                ].map((b, i) => (
-                  <motion.div key={i} animate={{ x: [0, 3, 0] }} transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut" }}
-                    className={`${b.c} rounded-xl px-3 py-1.5 text-white text-[10px] font-medium w-fit`}>
-                    {b.t}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+            {/* Mini poster showcase grid */}
+            <div className="grid grid-cols-3 gap-2.5 mb-6">
+              {["/posters/poster1.png", "/posters/poster2.png", "/posters/poster3.png", "/posters/poster5.png", "/posters/poster6.png", "/posters/poster7.png"].map((src, i) => (
+                <motion.div
+                  key={src}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: i * 0.06 }}
+                  whileHover={{ scale: 1.05, zIndex: 10 }}
+                  className={`relative rounded-xl overflow-hidden shadow-lg shadow-black/50 ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    className={`w-full object-cover ${i === 0 ? "h-full" : "h-16"}`}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                </motion.div>
+              ))}
+            </div>
 
-          </div>
+            <Link href="/posters" data-testid="btn-view-posters">
+              <Button className="w-full bg-white text-black hover:bg-white/90 font-bold rounded-xl h-11 px-5 gap-2 text-sm">
+                {ar ? "استعرض البوسترات" : "View Posters"}
+                <ArrowUpRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </motion.div>
+
         </div>
       </section>
 
