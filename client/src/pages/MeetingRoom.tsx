@@ -632,7 +632,16 @@ export default function MeetingRoom() {
         isRoomHostRef.current = true;
       }
       for (const peerId of existingIds) {
-        if (peerId !== myId) await createPc(peerId, true);
+        if (peerId === myId) continue;
+        try {
+          await createPc(peerId, true);
+        } catch (err) {
+          // Don't let one failed connection block the rest of the mesh —
+          // otherwise later peers in the loop never get connected at all,
+          // causing partial-mesh audio ("some hear each other, some don't").
+          console.error("[QMeet] Failed to connect to peer", peerId, err);
+          pcsRef.current.delete(peerId);
+        }
       }
       return;
     }
@@ -679,35 +688,50 @@ export default function MeetingRoom() {
     // ── Offer received (we are existing peer, newcomer sent this) ─────────────
     if (msg.type === "webrtc_offer") {
       const peerId: string = msg.from;
-      let pc = pcsRef.current.get(peerId);
-      if (!pc) {
-        // Peer joined but webrtc_peer_joined wasn't processed yet — create full PC via createPc
-        pc = await createPc(peerId, false);
+      try {
+        let pc = pcsRef.current.get(peerId);
+        if (!pc) {
+          // Peer joined but webrtc_peer_joined wasn't processed yet — create full PC via createPc
+          pc = await createPc(peerId, false);
+        }
+        // If PC is in wrong state (e.g. after ICE restart), close and recreate
+        if (pc.signalingState !== "stable" && pc.signalingState !== "have-remote-offer") {
+          pc = await createPc(peerId, false);
+        }
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
+        // Flush buffered ICE candidates after remote description is set
+        const cands = pendingIce.current.get(peerId) || [];
+        pendingIce.current.delete(peerId);
+        for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        sendWs({ type: "webrtc_answer", to: peerId, answer: pc.localDescription });
+      } catch (err) {
+        // Isolate failure to this one peer so other peer connections in the
+        // mesh are unaffected (root cause of "some hear each other, some don't").
+        console.error("[QMeet] Failed to handle offer from", peerId, err);
       }
-      // If PC is in wrong state (e.g. after ICE restart), close and recreate
-      if (pc.signalingState !== "stable" && pc.signalingState !== "have-remote-offer") {
-        pc = await createPc(peerId, false);
-      }
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-      // Flush buffered ICE candidates after remote description is set
-      const cands = pendingIce.current.get(peerId) || [];
-      pendingIce.current.delete(peerId);
-      for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      sendWs({ type: "webrtc_answer", to: peerId, answer: pc.localDescription });
       return;
     }
 
     // ── Answer received ────────────────────────────────────────────────────────
     if (msg.type === "webrtc_answer") {
-      const pc = pcsRef.current.get(msg.from);
-      if (pc && pc.signalingState === "have-local-offer") {
-        await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
-        // Flush buffered ICE
-        const cands = pendingIce.current.get(msg.from) || [];
-        pendingIce.current.delete(msg.from);
-        for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
+      try {
+        const pc = pcsRef.current.get(msg.from);
+        if (pc && pc.signalingState === "have-local-offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
+          // Flush buffered ICE
+          const cands = pendingIce.current.get(msg.from) || [];
+          pendingIce.current.delete(msg.from);
+          for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
+        } else if (pc) {
+          // Signaling state mismatch (e.g. glare/race during renegotiation) —
+          // log it instead of silently dropping the answer forever, which used
+          // to leave that one peer permanently unconnected in the mesh.
+          console.warn("[QMeet] Dropped answer from", msg.from, "unexpected signalingState:", pc.signalingState);
+        }
+      } catch (err) {
+        console.error("[QMeet] Failed to handle answer from", msg.from, err);
       }
       return;
     }

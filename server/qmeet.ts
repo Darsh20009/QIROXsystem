@@ -245,10 +245,14 @@ export function registerQMeetRoutes(app: Express) {
 
       if (!title || !scheduledAt) return res.status(400).json({ message: "العنوان والتوقيت مطلوبان" });
 
+      const startTime = new Date(scheduledAt);
+      if (isNaN(startTime.getTime())) {
+        return res.status(400).json({ message: "صيغة موعد الاجتماع غير صحيحة" });
+      }
+
       const roomName = generateRoomName();
       const meetingLink = `/meet/${roomName}`;
       const duration = parseInt(durationMinutes) || 60;
-      const startTime = new Date(scheduledAt);
       const endsAt = new Date(startTime.getTime() + duration * 60 * 1000);
 
       const meeting = await QMeetingModel.create({
@@ -306,7 +310,8 @@ export function registerQMeetRoutes(app: Express) {
 
       res.status(201).json(meeting);
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      console.error("[QMeet] Create meeting error:", err);
+      res.status(500).json({ message: err.message || "فشل إنشاء الاجتماع" });
     }
   });
 
