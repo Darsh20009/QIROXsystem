@@ -18,18 +18,13 @@ workflows:
       - name: Install dependencies and build web assets
         script: |
           set -e
-          # --omit=optional skips bufferutil which triggers npm "Exit handler never called!" bug on macOS M2
           npm install --legacy-peer-deps --ignore-scripts --omit=optional
           npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
-
           GLOBAL=$(npm root -g)
           mkdir -p node_modules/@vitejs node_modules/@tailwindcss
-
           rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
           rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
           rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
-
-          echo "✅ vite: $(node node_modules/vite/bin/vite.js --version)"
           node node_modules/vite/bin/vite.js build
 
       - name: Add iOS platform (if not present)
@@ -40,20 +35,11 @@ workflows:
         script: |
           set -e
           CAP_VER="7.6.7"
-
-          # Re-run @capacitor/core postinstall (was skipped by --ignore-scripts)
           npm install --legacy-peer-deps --omit=optional @capacitor/core || true
-          echo "✅ @capacitor/core: $(node -e "console.log(require('./node_modules/@capacitor/core/package.json').version)")"
-
-          # Download @capacitor/ios directly from npm registry — bypasses npm install bug entirely
           mkdir -p node_modules/@capacitor/ios
           curl -sL "https://registry.npmjs.org/@capacitor/ios/-/ios-${CAP_VER}.tgz" \
             | tar -xz --strip-components=1 -C node_modules/@capacitor/ios
-          echo "✅ @capacitor/ios:  $(node -e "console.log(require('./node_modules/@capacitor/ios/package.json').version)")"
-
-          # Install @capacitor/cli globally with exact version
           npm install -g @capacitor/cli@${CAP_VER}
-          echo "✅ cap CLI: $(cap --version)"
           cap sync ios
 
       - name: Set App Icon
@@ -62,7 +48,6 @@ workflows:
           ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
           if [ -f "$ICON_SRC" ] && [ -d "$ICON_DEST" ]; then
             sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
-            echo "✅ AppIcon injected"
           fi
 
       - name: Install CocoaPods
@@ -83,7 +68,7 @@ workflows:
 
   # ─── iOS Release (App Store / TestFlight) ─────────────────────────────────
   ios-release:
-    name: iOS Release — TestFlight / App Store
+    name: iOS Release - TestFlight / App Store
     max_build_duration: 120
     instance_type: mac_mini_m2
 
@@ -91,11 +76,6 @@ workflows:
       node: v20.20.0
       xcode: latest
       cocoapods: default
-      # ── App Store Connect API — أضف المتغيرات في Codemagic Dashboard → Environment variables ──
-      # APP_STORE_CONNECT_KEY_IDENTIFIER   ← Key ID  (مثال: LQ28JB5CK7)
-      # APP_STORE_CONNECT_ISSUER_ID        ← Issuer ID (مثال: 1f96495e-ca18-401c-8f57-eedb187ebf64)
-      # APP_STORE_CONNECT_PRIVATE_KEY      ← محتوى ملف .p8 كاملاً — اختر Multiline عند الإضافة
-      # APPLE_TEAM_ID                      ← Team ID (من developer.apple.com → Membership)
       ios_signing:
         distribution_type: app_store
         bundle_identifier: qiroxstudio.online
@@ -111,15 +91,11 @@ workflows:
           set -e
           npm install --legacy-peer-deps --ignore-scripts --omit=optional
           npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
-
           GLOBAL=$(npm root -g)
           mkdir -p node_modules/@vitejs node_modules/@tailwindcss
-
           rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
           rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
           rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
-
-          echo "✅ vite: $(node node_modules/vite/bin/vite.js --version)"
           node node_modules/vite/bin/vite.js build
 
       - name: Add iOS platform (if not present)
@@ -130,32 +106,24 @@ workflows:
         script: |
           set -e
           CAP_VER="7.6.7"
-
           npm install --legacy-peer-deps --omit=optional @capacitor/core || true
-          echo "✅ @capacitor/core: $(node -e "console.log(require('./node_modules/@capacitor/core/package.json').version)")"
-
           mkdir -p node_modules/@capacitor/ios
           curl -sL "https://registry.npmjs.org/@capacitor/ios/-/ios-${CAP_VER}.tgz" \
             | tar -xz --strip-components=1 -C node_modules/@capacitor/ios
-          echo "✅ @capacitor/ios:  $(node -e "console.log(require('./node_modules/@capacitor/ios/package.json').version)")"
-
           npm install -g @capacitor/cli@${CAP_VER}
-          echo "✅ cap CLI: $(cap --version)"
           cap sync ios
 
       - name: Set minimum iOS version to 16.0
         script: |
           sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '16.0'/" ios/App/Podfile || true
-          sed -i '' \
-            's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' \
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' \
             ios/App/App.xcodeproj/project.pbxproj || true
 
-      - name: Set App Icon (1024px → جميع الأحجام)
+      - name: Set App Icon (all sizes)
         script: |
           ICON_SRC="client/public/qirox-icon.png"
           ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
           mkdir -p "$ICON_DEST"
-
           if [ -f "$ICON_SRC" ]; then
             sips -z 20   20   "$ICON_SRC" --out "$ICON_DEST/Icon-20.png"
             sips -z 29   29   "$ICON_SRC" --out "$ICON_DEST/Icon-29.png"
@@ -170,8 +138,7 @@ workflows:
             sips -z 167  167  "$ICON_SRC" --out "$ICON_DEST/Icon-167.png"
             sips -z 180  180  "$ICON_SRC" --out "$ICON_DEST/Icon-180.png"
             sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
-
-            cat > "$ICON_DEST/Contents.json" << 'EOF'
+            cat > "$ICON_DEST/Contents.json" << 'ICONEOF'
           {
             "images": [
               {"size":"20x20","scale":"1x","filename":"Icon-20.png"},
@@ -192,41 +159,29 @@ workflows:
             ],
             "info":{"version":1,"author":"xcode"}
           }
-          EOF
-            echo "✅ AppIcon: جميع الأحجام تم توليدها"
-          else
-            echo "⚠️ الأيقونة غير موجودة في: $ICON_SRC"
+          ICONEOF
           fi
 
       - name: Inject Info.plist (Permissions + URL Scheme)
         script: |
           PLIST="ios/App/App/Info.plist"
-
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'يحتاج التطبيق إلى الكاميرا لمسح الباركود والتعرف على الوجه'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'يحتاج التطبيق إلى الكاميرا لمسح الباركود والتعرف على الوجه'" "$PLIST"
-
-          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'يحتاج التطبيق إلى الميكروفون للاجتماعات الصوتية والمرئية'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'يحتاج التطبيق إلى الميكروفون للاجتماعات الصوتية والمرئية'" "$PLIST"
-
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'يحتاج التطبيق إلى مكتبة الصور لرفع الملفات والصور'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'يحتاج التطبيق إلى مكتبة الصور لرفع الملفات والصور'" "$PLIST"
-
-          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'يستخدم التطبيق Face ID للتحقق من الهوية بأمان'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSFaceIDUsageDescription 'يستخدم التطبيق Face ID للتحقق من الهوية بأمان'" "$PLIST"
-
-          # URL Scheme for deep links
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera access for QR and face recognition'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Camera access for QR and face recognition'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Microphone access for video meetings'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Microphone access for video meetings'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Photo library access for file uploads'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Photo library access for file uploads'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'Face ID for secure authentication'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSFaceIDUsageDescription 'Face ID for secure authentication'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string qiroxstudio.online" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string qirox" "$PLIST" 2>/dev/null || true
 
-          echo "✅ Info.plist injected"
-
-      - name: Inject App.entitlements (Push Notifications + Associated Domains)
+      - name: Inject App.entitlements
         script: |
-          ENTITLEMENTS="ios/App/App/App.entitlements"
-          cat > "$ENTITLEMENTS" << EOF
+          cat > "ios/App/App/App.entitlements" << 'ENTEOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -240,8 +195,7 @@ workflows:
             </array>
           </dict>
           </plist>
-          EOF
-          echo "✅ App.entitlements injected"
+          ENTEOF
 
       - name: Install CocoaPods
         script: cd ios/App && pod install
@@ -259,25 +213,28 @@ workflows:
         script: |
           set -e
 
-          # كتابة المفتاح — تحويل \n المشفرة إلى سطور حقيقية
-          printf "%s" "$APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY" \
-            | sed "s/\\n/\n/g" \
-            > /tmp/asc_key.p8
+          # Use Python3 to decode the key — handles both escaped \n and real newlines
+          python3 << 'PYEOF'
+          import os, sys
+          key = os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY', '')
+          # Replace escaped \n (literal backslash+n) with real newlines
+          key = key.replace('\\n', '\n').strip()
+          with open('/tmp/asc_key.p8', 'w') as f:
+              f.write(key + '\n')
+          lines = key.splitlines()
+          print(f"Key lines written: {len(lines)}")
+          print(f"First line: {lines[0] if lines else 'EMPTY'}")
+          PYEOF
 
-          # تحقق من PEM header
-          if ! head -1 /tmp/asc_key.p8 | grep -q "BEGIN"; then
-            echo "❌ المفتاح لا يبدأ بـ BEGIN — تأكد أنه Multiline في Codemagic"
-            head -3 /tmp/asc_key.p8
+          if ! head -1 /tmp/asc_key.p8 | grep -q 'BEGIN'; then
+            echo "Key does not start with BEGIN header. Content preview:"
+            head -5 /tmp/asc_key.p8
             exit 1
           fi
-          echo "✅ Key written: $(wc -l < /tmp/asc_key.p8) lines"
 
           IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
-          if [ -z "$IPA" ]; then
-            echo "❌ لم يتم العثور على IPA في build/ios/ipa/"
-            exit 1
-          fi
-          echo "📦 Publishing: $IPA"
+          [ -z "$IPA" ] && echo "No IPA found in build/ios/ipa/" && exit 1
+          echo "Publishing: $IPA"
 
           app-store-connect publish \
             --path "$IPA" \
@@ -286,7 +243,8 @@ workflows:
             --private-key @file:/tmp/asc_key.p8 \
             --testflight
 
-          echo "✅ Uploaded to TestFlight successfully"
+          echo "Uploaded to TestFlight successfully"
+
     publishing:
       email:
         recipients:
@@ -300,21 +258,15 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
-  # ─── Android TWA — Google Play ────────────────────────────────────────────
+  # ─── Android TWA - Google Play ─────────────────────────────────────────────
   android-release:
-    name: Android TWA — Google Play
+    name: Android TWA - Google Play
     max_build_duration: 60
     instance_type: linux_x2
 
     environment:
       node: v20.20.0
       java: 17
-      # ── Google Play متغيرات — أضفها في Codemagic Dashboard ──────────────
-      # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS  ← محتوى ملف service-account.json كاملاً (Multiline)
-      # KEYSTORE_PASSWORD                   ← كلمة مرور الـ keystore
-      # KEY_ALIAS                           ← اسم الـ alias (مثال: qirox)
-      # KEY_PASSWORD                        ← كلمة مرور المفتاح
-      # KEYSTORE_BASE64                     ← الـ keystore مشفّر بـ base64
       vars:
         PACKAGE_NAME: "online.qiroxstudio.twa"
         APP_URL: "https://qiroxstudio.online"
@@ -323,36 +275,26 @@ workflows:
       - name: Decode keystore
         script: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android-twa/qirox-android.keystore
-          echo "✅ Keystore decoded"
 
       - name: Install Bubblewrap CLI
-        script: |
-          npm install -g @bubblewrap/cli
-          echo "✅ Bubblewrap: $(bubblewrap --version)"
+        script: npm install -g @bubblewrap/cli
 
       - name: Build Android TWA (AAB)
         script: |
           set -e
           cd android-twa
-          bubblewrap build \
-            --skipPwaValidation \
-            --manifest twa-manifest.json
-          echo "✅ Android AAB built"
+          bubblewrap build --skipPwaValidation --manifest twa-manifest.json
 
       - name: Sign AAB
         script: |
           set -e
           cd android-twa
-          # Find the unsigned AAB
           AAB=$(find . -name "*.aab" | head -1)
-          echo "📦 Signing: $AAB"
           jarsigner \
             -keystore qirox-android.keystore \
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
-            "$AAB" \
-            "$KEY_ALIAS"
-          echo "✅ AAB signed"
+            "$AAB" "$KEY_ALIAS"
 
     publishing:
       google_play:
@@ -370,7 +312,7 @@ workflows:
       - android-twa/**/*.aab
       - android-twa/**/*.apk
 
-  # ─── Web Build ────────────────────────────────────────────────────────────
+  # ─── Web Build ─────────────────────────────────────────────────────────────
   web-build:
     name: QIROX Web Build
     max_build_duration: 30
@@ -383,15 +325,11 @@ workflows:
           set -e
           npm install --legacy-peer-deps --ignore-scripts
           npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
-
           GLOBAL=$(npm root -g)
           mkdir -p node_modules/@vitejs node_modules/@tailwindcss
-
           rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
           rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
           rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
-
-          echo "✅ vite: $(node node_modules/vite/bin/vite.js --version)"
           node node_modules/vite/bin/vite.js build
 
       - name: Build server
@@ -399,18 +337,14 @@ workflows:
           PKG_DEPS=$(node -e "
             const p = require('./package.json');
             const all = [...Object.keys(p.dependencies||{}), ...Object.keys(p.devDependencies||{})];
-            const allowlist = new Set(['axios','express','express-rate-limit','express-session','nodemailer','openai','passport','passport-local','pg','uuid','ws','zod','zod-validation-error','mongoose','connect-mongo','web-push','node-cron','pdf-lib','exceljs','mammoth','file-saver','fabric','recharts','digest-fetch','@paypal/paypal-server-sdk','bcrypt','bcryptjs','compression','multer','memorystore','simple-git','archiver','imapflow','mailparser','speakeasy']);
-            const ext = all.filter(d => !allowlist.has(d)).map(d => '--external:' + d).join(' ');
-            console.log(ext);
+            const allow = new Set(['axios','express','express-rate-limit','express-session','nodemailer','openai','passport','passport-local','pg','uuid','ws','zod','zod-validation-error','mongoose','connect-mongo','web-push','node-cron','pdf-lib','exceljs','mammoth','file-saver','fabric','recharts','digest-fetch','@paypal/paypal-server-sdk','bcrypt','bcryptjs','compression','multer','memorystore','simple-git','archiver','imapflow','mailparser','speakeasy']);
+            console.log(all.filter(d => !allow.has(d)).map(d => '--external:' + d).join(' '));
           ")
           node_modules/.bin/esbuild server/index.ts \
-            --platform=node \
-            --bundle \
-            --format=cjs \
+            --platform=node --bundle --format=cjs \
             --outfile=dist/index.cjs \
             "--define:process.env.NODE_ENV=\"production\"" \
-            --minify \
-            $PKG_DEPS
+            --minify $PKG_DEPS
 
     publishing:
       email:
