@@ -99,7 +99,7 @@ workflows:
       app_store_connect:
         key_identifier: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        private_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        private_key: $APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY
       ios_signing:
         distribution_type: app_store
         bundle_identifier: qiroxstudio.online

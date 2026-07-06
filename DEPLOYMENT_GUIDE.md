@@ -8,7 +8,7 @@
 ## 🔴 المشكلة التي تم إصلاحها
 
 **السبب:** في `codemagic.yaml` كان اسم المتغير `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` خطأ.  
-**الإصلاح:** تم تغييره إلى `APP_STORE_CONNECT_PRIVATE_KEY` وإضافة `app_store_connect` block صحيح.  
+**الإصلاح:** تم تغييره إلى `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` وإضافة `app_store_connect` block صحيح.  
 **إضافة جديدة:** workflow كامل لـ Android / Google Play.
 
 ---
@@ -19,7 +19,7 @@
 |---------|-----------------|-----------|
 | `APP_STORE_CONNECT_KEY_IDENTIFIER` | Apple Developer → Keys | Codemagic Dashboard |
 | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect → Users & Access → Keys | Codemagic Dashboard |
-| `APP_STORE_CONNECT_PRIVATE_KEY` | ملف `.p8` المحمّل من Apple | Codemagic Dashboard (Multiline) |
+| `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` | ملف `.p8` المحمّل من Apple | Codemagic Dashboard (Multiline) |
 | `APPLE_TEAM_ID` | developer.apple.com → Membership | Codemagic Dashboard |
 | `APPLE_CLIENT_ID` | Apple Developer → Services IDs | Replit Secrets |
 | `APPLE_KEY_ID` | Apple Developer → Keys | Replit Secrets |
@@ -56,7 +56,7 @@
 ```
 APP_STORE_CONNECT_KEY_IDENTIFIER  = LQ28JB5CK7          (النص كما هو)
 APP_STORE_CONNECT_ISSUER_ID       = 1f96495e-ca18-...    (النص كما هو)
-APP_STORE_CONNECT_PRIVATE_KEY     = -----BEGIN PRIVATE KEY-----\n...  (Multiline ✅)
+APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY     = -----BEGIN PRIVATE KEY-----\n...  (Multiline ✅)
 APPLE_TEAM_ID                     = XXXXXXXXXX           (10 أحرف من developer.apple.com → Membership)
 ```
 
@@ -226,7 +226,7 @@ https://qiroxstudio.online/api/paypal/webhook
 المرحلة 1 — الضروري للبناء:
   ✅ APP_STORE_CONNECT_KEY_IDENTIFIER  → Codemagic
   ✅ APP_STORE_CONNECT_ISSUER_ID       → Codemagic
-  ✅ APP_STORE_CONNECT_PRIVATE_KEY     → Codemagic (Multiline)
+  ✅ APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY     → Codemagic (Multiline)
   ✅ APPLE_TEAM_ID                     → Codemagic
 
 المرحلة 2 — للتطبيق يعمل بشكل كامل:
@@ -253,7 +253,7 @@ https://qiroxstudio.online/api/paypal/webhook
 
 | المشكلة | الإصلاح |
 |---------|---------|
-| `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` (اسم خاطئ) | ✅ تم تغييره إلى `APP_STORE_CONNECT_PRIVATE_KEY` |
+| `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` (اسم خاطئ) | ✅ تم تغييره إلى `APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY` |
 | Key ID و Issuer ID كانوا hardcoded | ✅ تم تحويلهم إلى متغيرات `$APP_STORE_CONNECT_KEY_IDENTIFIER` و `$APP_STORE_CONNECT_ISSUER_ID` |
 | لا يوجد `app_store_connect` block | ✅ تم إضافته في environment |
 | لا يوجد workflow لـ Android | ✅ تم إضافة `android-release` workflow كامل |
