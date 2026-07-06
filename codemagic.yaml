@@ -76,6 +76,8 @@ workflows:
       node: v20.20.0
       xcode: latest
       cocoapods: default
+      groups:
+        - ios-credentials
       ios_signing:
         distribution_type: app_store
         bundle_identifier: qiroxstudio.online
