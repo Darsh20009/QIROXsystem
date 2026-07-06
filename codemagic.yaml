@@ -91,6 +91,15 @@ workflows:
       node: v20.20.0
       xcode: latest
       cocoapods: default
+      # ── App Store Connect API — أضف المتغيرات في Codemagic Dashboard → Environment variables ──
+      # APP_STORE_CONNECT_KEY_IDENTIFIER   ← Key ID  (مثال: LQ28JB5CK7)
+      # APP_STORE_CONNECT_ISSUER_ID        ← Issuer ID (مثال: 1f96495e-ca18-401c-8f57-eedb187ebf64)
+      # APP_STORE_CONNECT_PRIVATE_KEY      ← محتوى ملف .p8 كاملاً — اختر Multiline عند الإضافة
+      # APPLE_TEAM_ID                      ← Team ID (من developer.apple.com → Membership)
+      app_store_connect:
+        key_identifier: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        private_key: $APP_STORE_CONNECT_PRIVATE_KEY
       ios_signing:
         distribution_type: app_store
         bundle_identifier: qiroxstudio.online
@@ -99,17 +108,11 @@ workflows:
         APP_NAME: "QIROX Studio"
         APP_URL: "https://qiroxstudio.online"
         NOTIFY_EMAIL: "qiroxsystem@gmail.com"
-        # ── يُضاف من Codemagic Dashboard → Environment variables ──────────
-        # APP_STORE_CONNECT_KEY_IDENTIFIER   ← Key ID  (مثال: LQ28JB5CK7)
-        # APP_STORE_CONNECT_ISSUER_ID        ← Issuer ID (مثال: 1f96495e-ca18-401c-8f57-eedb187ebf64)
-        # APP_STORE_CONNECT_PRIVATE_KEY      ← محتوى ملف .p8 كاملاً — اختر Multiline عند الإضافة
-        # APPLE_TEAM_ID                      ← Team ID (من developer.apple.com → Membership)
 
     scripts:
       - name: Install dependencies and build web assets
         script: |
           set -e
-          # --omit=optional skips bufferutil which triggers npm "Exit handler never called!" bug on macOS M2
           npm install --legacy-peer-deps --ignore-scripts --omit=optional
           npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
 
@@ -132,27 +135,21 @@ workflows:
           set -e
           CAP_VER="7.6.7"
 
-          # Re-run @capacitor/core postinstall (was skipped by --ignore-scripts)
           npm install --legacy-peer-deps --omit=optional @capacitor/core || true
           echo "✅ @capacitor/core: $(node -e "console.log(require('./node_modules/@capacitor/core/package.json').version)")"
 
-          # Download @capacitor/ios directly from npm registry — bypasses npm install bug entirely
           mkdir -p node_modules/@capacitor/ios
           curl -sL "https://registry.npmjs.org/@capacitor/ios/-/ios-${CAP_VER}.tgz" \
             | tar -xz --strip-components=1 -C node_modules/@capacitor/ios
           echo "✅ @capacitor/ios:  $(node -e "console.log(require('./node_modules/@capacitor/ios/package.json').version)")"
 
-          # Install @capacitor/cli globally with exact version
           npm install -g @capacitor/cli@${CAP_VER}
           echo "✅ cap CLI: $(cap --version)"
           cap sync ios
 
       - name: Set minimum iOS version to 16.0
         script: |
-          # Podfile
           sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '16.0'/" ios/App/Podfile || true
-
-          # project.pbxproj
           sed -i '' \
             's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' \
             ios/App/App.xcodeproj/project.pbxproj || true
@@ -164,7 +161,6 @@ workflows:
           mkdir -p "$ICON_DEST"
 
           if [ -f "$ICON_SRC" ]; then
-            # توليد جميع الأحجام المطلوبة من Apple
             sips -z 20   20   "$ICON_SRC" --out "$ICON_DEST/Icon-20.png"
             sips -z 29   29   "$ICON_SRC" --out "$ICON_DEST/Icon-29.png"
             sips -z 40   40   "$ICON_SRC" --out "$ICON_DEST/Icon-40.png"
@@ -179,7 +175,6 @@ workflows:
             sips -z 180  180  "$ICON_SRC" --out "$ICON_DEST/Icon-180.png"
             sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
 
-            # كتابة Contents.json
             cat > "$ICON_DEST/Contents.json" << 'EOF'
           {
             "images": [
@@ -223,7 +218,7 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'يستخدم التطبيق Face ID للتحقق من الهوية بأمان'" "$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :NSFaceIDUsageDescription 'يستخدم التطبيق Face ID للتحقق من الهوية بأمان'" "$PLIST"
 
-          # URL Scheme
+          # URL Scheme for deep links
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string qiroxstudio.online" "$PLIST" 2>/dev/null || true
@@ -258,13 +253,8 @@ workflows:
       - name: Set up code signing and build IPA
         script: |
           set -e
-
-          # ios_signing section handles cert fetching automatically
-          # just apply to keychain and Xcode project
           keychain add-certificates
           xcode-project use-profiles
-
-          # Build & sign IPA
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
             --scheme "App"
@@ -273,19 +263,25 @@ workflows:
         script: |
           set -e
 
-          # Write the private key to a temp file
-          printf '%s' "$APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY" > /tmp/asc_key.p8
+          # Preflight: تحقق أن APP_STORE_CONNECT_PRIVATE_KEY يبدأ بـ PEM header
+          if ! echo "$APP_STORE_CONNECT_PRIVATE_KEY" | grep -q "BEGIN"; then
+            echo "❌ APP_STORE_CONNECT_PRIVATE_KEY لا يبدو صحيحاً — تأكد أنه أُضيف بوضع Multiline في Codemagic Dashboard"
+            exit 1
+          fi
 
           # Find the built IPA
           IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          if [ -z "$IPA" ]; then
+            echo "❌ لم يتم العثور على ملف IPA في build/ios/ipa/"
+            exit 1
+          fi
           echo "📦 Publishing: $IPA"
 
-          # Upload to TestFlight
+          # app-store-connect مُهيَّأ تلقائياً عبر app_store_connect block في environment
+          # لا حاجة لتمرير --key-id أو --issuer-id أو --private-key يدوياً
           app-store-connect publish \
             --path "$IPA" \
-            --key-id "LQ28JB5CK7" \
-            --issuer-id "1f96495e-ca18-401c-8f57-eedb187ebf64" \
-            --private-key @file:/tmp/asc_key.p8
+            --testflight
 
           echo "✅ Uploaded to TestFlight successfully"
 
@@ -301,6 +297,76 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+  # ─── Android TWA — Google Play ────────────────────────────────────────────
+  android-release:
+    name: Android TWA — Google Play
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      node: v20.20.0
+      java: 17
+      # ── Google Play متغيرات — أضفها في Codemagic Dashboard ──────────────
+      # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS  ← محتوى ملف service-account.json كاملاً (Multiline)
+      # KEYSTORE_PASSWORD                   ← كلمة مرور الـ keystore
+      # KEY_ALIAS                           ← اسم الـ alias (مثال: qirox)
+      # KEY_PASSWORD                        ← كلمة مرور المفتاح
+      # KEYSTORE_BASE64                     ← الـ keystore مشفّر بـ base64
+      vars:
+        PACKAGE_NAME: "online.qiroxstudio.twa"
+        APP_URL: "https://qiroxstudio.online"
+
+    scripts:
+      - name: Decode keystore
+        script: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android-twa/qirox-android.keystore
+          echo "✅ Keystore decoded"
+
+      - name: Install Bubblewrap CLI
+        script: |
+          npm install -g @bubblewrap/cli
+          echo "✅ Bubblewrap: $(bubblewrap --version)"
+
+      - name: Build Android TWA (AAB)
+        script: |
+          set -e
+          cd android-twa
+          bubblewrap build \
+            --skipPwaValidation \
+            --manifest twa-manifest.json
+          echo "✅ Android AAB built"
+
+      - name: Sign AAB
+        script: |
+          set -e
+          cd android-twa
+          # Find the unsigned AAB
+          AAB=$(find . -name "*.aab" | head -1)
+          echo "📦 Signing: $AAB"
+          jarsigner \
+            -keystore qirox-android.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$AAB" \
+            "$KEY_ALIAS"
+          echo "✅ AAB signed"
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+      email:
+        recipients:
+          - qiroxsystem@gmail.com
+        notify:
+          success: true
+          failure: true
+
+    artifacts:
+      - android-twa/**/*.aab
+      - android-twa/**/*.apk
 
   # ─── Web Build ────────────────────────────────────────────────────────────
   web-build:
