@@ -96,10 +96,6 @@ workflows:
       # APP_STORE_CONNECT_ISSUER_ID        ← Issuer ID (مثال: 1f96495e-ca18-401c-8f57-eedb187ebf64)
       # APP_STORE_CONNECT_PRIVATE_KEY      ← محتوى ملف .p8 كاملاً — اختر Multiline عند الإضافة
       # APPLE_TEAM_ID                      ← Team ID (من developer.apple.com → Membership)
-      app_store_connect:
-        key_identifier: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        private_key: $APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY
       ios_signing:
         distribution_type: app_store
         bundle_identifier: qiroxstudio.online
@@ -263,28 +259,34 @@ workflows:
         script: |
           set -e
 
-          # Preflight: تحقق أن APP_STORE_CONNECT_PRIVATE_KEY يبدأ بـ PEM header
-          if ! echo "$APP_STORE_CONNECT_PRIVATE_KEY" | grep -q "BEGIN"; then
-            echo "❌ APP_STORE_CONNECT_PRIVATE_KEY لا يبدو صحيحاً — تأكد أنه أُضيف بوضع Multiline في Codemagic Dashboard"
+          # كتابة المفتاح — تحويل \n المشفرة إلى سطور حقيقية
+          printf "%s" "$APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY" \
+            | sed "s/\\n/\n/g" \
+            > /tmp/asc_key.p8
+
+          # تحقق من PEM header
+          if ! head -1 /tmp/asc_key.p8 | grep -q "BEGIN"; then
+            echo "❌ المفتاح لا يبدأ بـ BEGIN — تأكد أنه Multiline في Codemagic"
+            head -3 /tmp/asc_key.p8
             exit 1
           fi
+          echo "✅ Key written: $(wc -l < /tmp/asc_key.p8) lines"
 
-          # Find the built IPA
           IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
           if [ -z "$IPA" ]; then
-            echo "❌ لم يتم العثور على ملف IPA في build/ios/ipa/"
+            echo "❌ لم يتم العثور على IPA في build/ios/ipa/"
             exit 1
           fi
           echo "📦 Publishing: $IPA"
 
-          # app-store-connect مُهيَّأ تلقائياً عبر app_store_connect block في environment
-          # لا حاجة لتمرير --key-id أو --issuer-id أو --private-key يدوياً
           app-store-connect publish \
             --path "$IPA" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --private-key @file:/tmp/asc_key.p8 \
             --testflight
 
           echo "✅ Uploaded to TestFlight successfully"
-
     publishing:
       email:
         recipients:
