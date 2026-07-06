@@ -213,6 +213,13 @@ workflows:
         script: |
           set -e
 
+          # ── Diagnose: which APP_STORE_CONNECT_* vars are visible ──────────────
+          echo "=== Environment variable names (no values) ==="
+          env | grep -i "app_store\|apple_team\|asc_" | sed 's/=.*/=<SET>/' || echo "No APP_STORE vars found in env"
+          echo "=== Raw length of PUBLISHER_PRIVATE_KEY ==="
+          python3 -c "import os; v=os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY',''); print(f'Length: {len(v)}')"
+          echo "============================================="
+
           # Use Python3 to decode the key — handles both escaped \n and real newlines
           python3 << 'PYEOF'
           import os, sys
