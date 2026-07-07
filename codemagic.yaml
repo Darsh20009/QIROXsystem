@@ -1,6 +1,6 @@
 workflows:
 
-  # ─── iOS Build (No Signing) — للاختبار فقط ────────────────────────────────
+  # ─── iOS Build (No Signing) ────────────────────────────────────────────────
   ios-build:
     name: iOS Build (No Signing)
     max_build_duration: 60
@@ -123,71 +123,38 @@ workflows:
 
       - name: Set App Icon (all sizes)
         script: |
+          set -e
           ICON_SRC="client/public/qirox-icon.png"
           ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
           mkdir -p "$ICON_DEST"
-          if [ -f "$ICON_SRC" ]; then
-            sips -z 20   20   "$ICON_SRC" --out "$ICON_DEST/Icon-20.png"
-            sips -z 29   29   "$ICON_SRC" --out "$ICON_DEST/Icon-29.png"
-            sips -z 40   40   "$ICON_SRC" --out "$ICON_DEST/Icon-40.png"
-            sips -z 58   58   "$ICON_SRC" --out "$ICON_DEST/Icon-58.png"
-            sips -z 60   60   "$ICON_SRC" --out "$ICON_DEST/Icon-60.png"
-            sips -z 76   76   "$ICON_SRC" --out "$ICON_DEST/Icon-76.png"
-            sips -z 80   80   "$ICON_SRC" --out "$ICON_DEST/Icon-80.png"
-            sips -z 87   87   "$ICON_SRC" --out "$ICON_DEST/Icon-87.png"
-            sips -z 120  120  "$ICON_SRC" --out "$ICON_DEST/Icon-120.png"
-            sips -z 152  152  "$ICON_SRC" --out "$ICON_DEST/Icon-152.png"
-            sips -z 167  167  "$ICON_SRC" --out "$ICON_DEST/Icon-167.png"
-            sips -z 180  180  "$ICON_SRC" --out "$ICON_DEST/Icon-180.png"
-            sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
+          if [ ! -f "$ICON_SRC" ]; then echo "Icon not found: $ICON_SRC" && exit 1; fi
+          sips -z 20   20   "$ICON_SRC" --out "$ICON_DEST/Icon-20.png"
+          sips -z 29   29   "$ICON_SRC" --out "$ICON_DEST/Icon-29.png"
+          sips -z 40   40   "$ICON_SRC" --out "$ICON_DEST/Icon-40.png"
+          sips -z 58   58   "$ICON_SRC" --out "$ICON_DEST/Icon-58.png"
+          sips -z 60   60   "$ICON_SRC" --out "$ICON_DEST/Icon-60.png"
+          sips -z 76   76   "$ICON_SRC" --out "$ICON_DEST/Icon-76.png"
+          sips -z 80   80   "$ICON_SRC" --out "$ICON_DEST/Icon-80.png"
+          sips -z 87   87   "$ICON_SRC" --out "$ICON_DEST/Icon-87.png"
+          sips -z 120  120  "$ICON_SRC" --out "$ICON_DEST/Icon-120.png"
+          sips -z 152  152  "$ICON_SRC" --out "$ICON_DEST/Icon-152.png"
+          sips -z 167  167  "$ICON_SRC" --out "$ICON_DEST/Icon-167.png"
+          sips -z 180  180  "$ICON_SRC" --out "$ICON_DEST/Icon-180.png"
+          sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
+          cp ios-assets/AppIcon-Contents.json "$ICON_DEST/Contents.json"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "ios/App/App/Info.plist" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "ios/App/App/Info.plist"
+          echo "AppIcon done"
 
-            # Contents.json — required for asset catalog to be recognized
-            cat > "$ICON_DEST/Contents.json" << 'ICONEOF'
-{
-  "images": [
-    {"idiom":"iphone","size":"20x20","scale":"2x","filename":"Icon-40.png"},
-    {"idiom":"iphone","size":"20x20","scale":"3x","filename":"Icon-60.png"},
-    {"idiom":"iphone","size":"29x29","scale":"1x","filename":"Icon-29.png"},
-    {"idiom":"iphone","size":"29x29","scale":"2x","filename":"Icon-58.png"},
-    {"idiom":"iphone","size":"29x29","scale":"3x","filename":"Icon-87.png"},
-    {"idiom":"iphone","size":"40x40","scale":"2x","filename":"Icon-80.png"},
-    {"idiom":"iphone","size":"40x40","scale":"3x","filename":"Icon-120.png"},
-    {"idiom":"iphone","size":"60x60","scale":"2x","filename":"Icon-120.png"},
-    {"idiom":"iphone","size":"60x60","scale":"3x","filename":"Icon-180.png"},
-    {"idiom":"ipad","size":"20x20","scale":"1x","filename":"Icon-20.png"},
-    {"idiom":"ipad","size":"20x20","scale":"2x","filename":"Icon-40.png"},
-    {"idiom":"ipad","size":"29x29","scale":"1x","filename":"Icon-29.png"},
-    {"idiom":"ipad","size":"29x29","scale":"2x","filename":"Icon-58.png"},
-    {"idiom":"ipad","size":"40x40","scale":"1x","filename":"Icon-40.png"},
-    {"idiom":"ipad","size":"40x40","scale":"2x","filename":"Icon-80.png"},
-    {"idiom":"ipad","size":"76x76","scale":"1x","filename":"Icon-76.png"},
-    {"idiom":"ipad","size":"76x76","scale":"2x","filename":"Icon-152.png"},
-    {"idiom":"ipad","size":"83.5x83.5","scale":"2x","filename":"Icon-167.png"},
-    {"idiom":"ios-marketing","size":"1024x1024","scale":"1x","filename":"Icon-1024.png"}
-  ],
-  "info":{"version":1,"author":"xcode"}
-}
-ICONEOF
-
-            # Set CFBundleIconName in Info.plist — required by Apple (error 90713)
-            PLIST="ios/App/App/Info.plist"
-            /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST" 2>/dev/null || \
-            /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$PLIST"
-            echo "✅ AppIcon: all sizes generated + CFBundleIconName set"
-          else
-            echo "❌ Icon source not found: $ICON_SRC"
-            exit 1
-          fi
-
-      - name: Inject Info.plist (Permissions + URL Scheme)
+      - name: Inject Info.plist permissions
         script: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera access for QR and face recognition'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Camera access for QR and face recognition'" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Microphone access for video meetings'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Microphone access for video meetings'" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Photo library access for file uploads'" "$PLIST" 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Photo library access for file uploads'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera for QR and face recognition'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Camera for QR and face recognition'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Microphone for video meetings'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Microphone for video meetings'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Photo library for file uploads'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Photo library for file uploads'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'Face ID for secure authentication'" "$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :NSFaceIDUsageDescription 'Face ID for secure authentication'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" 2>/dev/null || true
@@ -198,21 +165,8 @@ ICONEOF
 
       - name: Inject App.entitlements
         script: |
-          cat > "ios/App/App/App.entitlements" << 'ENTEOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>aps-environment</key>
-            <string>production</string>
-            <key>com.apple.developer.associated-domains</key>
-            <array>
-              <string>applinks:qiroxstudio.online</string>
-              <string>webcredentials:qiroxstudio.online</string>
-            </array>
-          </dict>
-          </plist>
-          ENTEOF
+          cp ios-assets/App.entitlements ios/App/App/App.entitlements
+          echo "App.entitlements copied"
 
       - name: Install CocoaPods
         script: cd ios/App && pod install
@@ -229,45 +183,30 @@ ICONEOF
       - name: Publish to TestFlight
         script: |
           set -e
-
-          # ── Diagnose: which APP_STORE_CONNECT_* vars are visible ──────────────
-          echo "=== Environment variable names (no values) ==="
-          env | grep -i "app_store\|apple_team\|asc_" | sed 's/=.*/=<SET>/' || echo "No APP_STORE vars found in env"
-          echo "=== Raw length of PUBLISHER_PRIVATE_KEY ==="
-          python3 -c "import os; v=os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY',''); print(f'Length: {len(v)}')"
-          echo "============================================="
-
-          # Use Python3 to decode the key — handles both escaped \n and real newlines
           python3 << 'PYEOF'
           import os, sys
           key = os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY', '')
-          # Replace escaped \n (literal backslash+n) with real newlines
           key = key.replace('\\n', '\n').strip()
           with open('/tmp/asc_key.p8', 'w') as f:
               f.write(key + '\n')
           lines = key.splitlines()
-          print(f"Key lines written: {len(lines)}")
-          print(f"First line: {lines[0] if lines else 'EMPTY'}")
+          print(f"Key lines: {len(lines)}")
+          print(f"First: {lines[0] if lines else 'EMPTY'}")
           PYEOF
-
           if ! head -1 /tmp/asc_key.p8 | grep -q 'BEGIN'; then
-            echo "Key does not start with BEGIN header. Content preview:"
-            head -5 /tmp/asc_key.p8
+            echo "Key missing BEGIN header"
+            head -3 /tmp/asc_key.p8
             exit 1
           fi
-
           IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
-          [ -z "$IPA" ] && echo "No IPA found in build/ios/ipa/" && exit 1
-          echo "Publishing: $IPA"
-
+          [ -z "$IPA" ] && echo "No IPA found" && exit 1
           app-store-connect publish \
             --path "$IPA" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --private-key @file:/tmp/asc_key.p8 \
             --testflight
-
-          echo "Uploaded to TestFlight successfully"
+          echo "Uploaded to TestFlight"
 
     publishing:
       email:
@@ -287,7 +226,6 @@ ICONEOF
     name: Android TWA - Google Play
     max_build_duration: 60
     instance_type: linux_x2
-
     environment:
       node: v20.20.0
       java: 17
