@@ -1,0 +1,88 @@
+Artifacts
+Click on the build steps for details.
+Preparing build machine
+21s
+Fetching app sources
+8s
+Set up code signing identities
+2s
+Install dependencies and build web assets
+33s
+Add iOS platform (if not present)
+< 1s
+Sync Capacitor to iOS
+6s
+Set minimum iOS version to 16.0
+< 1s
+Set App Icon (all sizes)
+< 1s
+Inject Info.plist permissions
+< 1s
+Inject App.entitlements
+< 1s
+Install CocoaPods
+1s
+Set up code signing and build IPA
+1m 4s
+Publish to TestFlight
+1m 9s
+
+
+
+Show command
+Showing the last 50 lines. Click this button to load the full log
+
+Upload "build/ios/ipa/App.ipa" to App Store Connect
+Running altool at path '/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+26.30.4 (173004)
+Running altool at path '/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-07-07 00:18:17.994 ERROR: [ContentDelivery.Uploader.AC6C3C640] 
+=======================================
+UPLOAD FAILED with 1 error
+=======================================
+2026-07-07 00:18:18.001 ERROR: [altool.103652D80] ExitFailure (31)
+{
+  "os-version" : "Version 26.4.1 (Build 25E253)",
+  "product-errors" : [
+    {
+      "code" : 90717,
+      "message" : "Invalid large app icon. The large app icon in the asset catalog in “App.app” can’t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.",
+      "underlying-errors" : [
+        {
+          "code" : -19241,
+          "message" : "A server error occurred.",
+          "underlying-errors" : [
+
+          ],
+          "user-info" : {
+            "NSLocalizedDescription" : "A server error occurred.",
+            "code" : "90717",
+            "description" : "Invalid large app icon. The large app icon in the asset catalog in “App.app” can’t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons."
+          }
+        }
+      ],
+      "user-info" : {
+        "NSLocalizedDescription" : "Invalid large app icon. The large app icon in the asset catalog in “App.app” can’t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.",
+        "NSLocalizedFailureReason" : "The server’s response was: ‘{\n    code = 90717;\n    description = \"Invalid large app icon. The large app icon in the asset catalog in \\U201cApp.app\\U201d can\\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.\";\n}’.",
+        "NSUnderlyingError" : "Error Domain=IrisAPI Code=-19241 \"A server error occurred.\" UserInfo={code=90717, NSLocalizedDescription=A server error occurred., description=Invalid large app icon. The large app icon in the asset catalog in “App.app” can’t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.}",
+        "iris-code" : "90717"
+      }
+    }
+  ],
+  "tool-path" : "/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources",
+  "tool-version" : "26.30.4 (173004)"
+}
+
+Failed to upload archive at "build/ios/ipa/App.ipa"
+Failed to publish build/ios/ipa/App.ipa
+
+
+Build failed :|
+Step 12 script `Publish to TestFlight` exited with status code 1
+Publishing
+6s
+Cleaning up
+3s
+Step 12 script `Publish to TestFlight` exited with status code 1
