@@ -1,0 +1,56 @@
+
+3m 17s
+
+
+
+Show command
+Showing the last 50 lines. Click this button to load the full log
+Distribution type: App Store
+Min OS version: 16.0
+Provisioned devices: N/A
+Provisions all devices: No
+Supported platforms: iPhoneOS
+Version code: 1
+Version: 1.0
+
+Upload "build/ios/ipa/App.ipa" to App Store Connect
+Running altool at path '/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+26.30.4 (173004)
+Running altool at path '/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-07-07 00:23:50.922  INFO: [ContentDelivery.Uploader.7E2C30640] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 01f009da-65ed-43f5-97d0-72b32c007941
+Transferred 81563106 bytes in 1.066 seconds (76.5MB/s, 612.386Mbps)
+==========================================
+{
+  "details" : {
+    "delivery-uuid" : "01f009da-65ed-43f5-97d0-72b32c007941",
+    "transferred" : "81563106 bytes in 1.066 seconds (76.5MB/s, 612.386Mbps)"
+  },
+  "os-version" : "Version 26.4.1 (Build 25E253)",
+  "success-message" : "No errors uploading archive at 'build/ios/ipa/App.ipa'.",
+  "tool-path" : "/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources",
+  "tool-version" : "26.30.4 (173004)"
+}
+
+No errors uploading archive at 'build/ios/ipa/App.ipa'.
+
+Find application entry from App Store Connect for uploaded binary
+Found 1 App matching specified filters: bundleId=qiroxstudio.online.
+-- App --
+Id: 6761850685
+Type: apps
+Bundle id: qiroxstudio.online
+Name: QIROX STUDIO
+Primary locale: ar-SA
+Sku: qirox0123456789studio9876543210online
+Is or ever was made for kids: False
+
+Find uploaded build
+Build has finished uploading but is not available in App Store Connect yet. Could not find the build matching the uploaded version, waiting 30 seconds to try again. Timeout in 10 minutes.
+Could not find the build matching the uploaded version, waiting 30 seconds to try again.
+Could not find the build matching the uploaded version, waiting 30 seconds to try again.
+Could not find the build matching the uploaded version, waiting 30 seconds to try again.
