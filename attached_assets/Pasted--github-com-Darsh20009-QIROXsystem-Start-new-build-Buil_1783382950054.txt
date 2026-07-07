@@ -1,0 +1,94 @@
+
+github.com/Darsh20009/QIROXsystem
+
+
+Start new build
+Build overview
+Artifacts
+Click on the build steps for details.
+Preparing build machine
+45s
+Fetching app sources
+9s
+Set up code signing identities
+3s
+Install dependencies and build web assets
+58s
+Add iOS platform (if not present)
+< 1s
+Sync Capacitor to iOS
+12s
+Set minimum iOS version to 16.0
+< 1s
+Set App Icon (all sizes)
+< 1s
+Inject Info.plist (Permissions + URL Scheme)
+< 1s
+Inject App.entitlements
+< 1s
+Install CocoaPods
+1s
+Set up code signing and build IPA
+1m 14s
+Publish to TestFlight
+1m 17s
+
+
+
+Show command
+Showing the last 50 lines. Click this button to load the full log
+          ],
+          "user-info" : {
+            "NSLocalizedDescription" : "A server error occurred.",
+            "code" : "90713",
+            "description" : "Missing Info.plist value. A value for the Info.plist key 'CFBundleIconName' is missing in the bundle 'qiroxstudio.online'. Apps built with iOS 11 or later SDK must supply app icons in an asset catalog and must also provide a value for this Info.plist key. For more information see http://help.apple.com/xcode/mac/current/#/dev10510b1f7."
+          }
+        }
+      ],
+      "user-info" : {
+        "NSLocalizedDescription" : "Missing Info.plist value. A value for the Info.plist key 'CFBundleIconName' is missing in the bundle 'qiroxstudio.online'. Apps built with iOS 11 or later SDK must supply app icons in an asset catalog and must also provide a value for this Info.plist key. For more information see http://help.apple.com/xcode/mac/current/#/dev10510b1f7.",
+        "NSLocalizedFailureReason" : "The server’s response was: ‘{\n    code = 90713;\n    description = \"Missing Info.plist value. A value for the Info.plist key 'CFBundleIconName' is missing in the bundle 'qiroxstudio.online'. Apps built with iOS 11 or later SDK must supply app icons in an asset catalog and must also provide a value for this Info.plist key. For more information see http://help.apple.com/xcode/mac/current/#/dev10510b1f7.\";\n}’.",
+        "NSUnderlyingError" : "Error Domain=IrisAPI Code=-19241 \"A server error occurred.\" UserInfo={code=90713, NSLocalizedDescription=A server error occurred., description=Missing Info.plist value. A value for the Info.plist key 'CFBundleIconName' is missing in the bundle 'qiroxstudio.online'. Apps built with iOS 11 or later SDK must supply app icons in an asset catalog and must also provide a value for this Info.plist key. For more information see http://help.apple.com/xcode/mac/current/#/dev10510b1f7.}",
+        "iris-code" : "90713"
+      }
+    },
+    {
+      "code" : 90022,
+      "message" : "Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels, in .png format for iOS versions >= 10.0. To support older versions of iOS, the icon may be required in the bundle outside of an asset catalog. Make sure the Info.plist file includes appropriate entries referencing the file. See https://developer.apple.com/documentation/bundleresources/information_property_list/user_interface.",
+      "underlying-errors" : [
+        {
+          "code" : -19241,
+          "message" : "A server error occurred.",
+          "underlying-errors" : [
+
+          ],
+          "user-info" : {
+            "NSLocalizedDescription" : "A server error occurred.",
+            "code" : "90022",
+            "description" : "Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels, in .png format for iOS versions >= 10.0. To support older versions of iOS, the icon may be required in the bundle outside of an asset catalog. Make sure the Info.plist file includes appropriate entries referencing the file. See https://developer.apple.com/documentation/bundleresources/information_property_list/user_interface."
+          }
+        }
+      ],
+      "user-info" : {
+        "NSLocalizedDescription" : "Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels, in .png format for iOS versions >= 10.0. To support older versions of iOS, the icon may be required in the bundle outside of an asset catalog. Make sure the Info.plist file includes appropriate entries referencing the file. See https://developer.apple.com/documentation/bundleresources/information_property_list/user_interface.",
+        "NSLocalizedFailureReason" : "The server’s response was: ‘{\n    code = 90022;\n    description = \"Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels, in .png format for iOS versions >= 10.0. To support older versions of iOS, the icon may be required in the bundle outside of an asset catalog. Make sure the Info.plist file includes appropriate entries referencing the file. See https://developer.apple.com/documentation/bundleresources/information_property_list/user_interface.\";\n}’.",
+        "NSUnderlyingError" : "Error Domain=IrisAPI Code=-19241 \"A server error occurred.\" UserInfo={code=90022, NSLocalizedDescription=A server error occurred., description=Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels, in .png format for iOS versions >= 10.0. To support older versions of iOS, the icon may be required in the bundle outside of an asset catalog. Make sure the Info.plist file includes appropriate entries referencing the file. See https://developer.apple.com/documentation/bundleresources/information_property_list/user_interface.}",
+        "iris-code" : "90022"
+      }
+    }
+  ],
+  "tool-path" : "/Applications/Xcode-26.4.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources",
+  "tool-version" : "26.30.4 (173004)"
+}
+
+Failed to upload archive at "build/ios/ipa/App.ipa"
+Failed to publish build/ios/ipa/App.ipa
+
+
+Build failed :|
+Step 12 script `Publish to TestFlight` exited with status code 1
+Publishing
+6s
+Cleaning up
+< 1s
+Step 12 script `Publish to TestFlight` exited with status code 1
