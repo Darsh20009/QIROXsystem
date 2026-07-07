@@ -128,23 +128,28 @@ workflows:
           ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
           mkdir -p "$ICON_DEST"
           if [ ! -f "$ICON_SRC" ]; then echo "Icon not found: $ICON_SRC" && exit 1; fi
-          sips -z 20   20   "$ICON_SRC" --out "$ICON_DEST/Icon-20.png"
-          sips -z 29   29   "$ICON_SRC" --out "$ICON_DEST/Icon-29.png"
-          sips -z 40   40   "$ICON_SRC" --out "$ICON_DEST/Icon-40.png"
-          sips -z 58   58   "$ICON_SRC" --out "$ICON_DEST/Icon-58.png"
-          sips -z 60   60   "$ICON_SRC" --out "$ICON_DEST/Icon-60.png"
-          sips -z 76   76   "$ICON_SRC" --out "$ICON_DEST/Icon-76.png"
-          sips -z 80   80   "$ICON_SRC" --out "$ICON_DEST/Icon-80.png"
-          sips -z 87   87   "$ICON_SRC" --out "$ICON_DEST/Icon-87.png"
-          sips -z 120  120  "$ICON_SRC" --out "$ICON_DEST/Icon-120.png"
-          sips -z 152  152  "$ICON_SRC" --out "$ICON_DEST/Icon-152.png"
-          sips -z 167  167  "$ICON_SRC" --out "$ICON_DEST/Icon-167.png"
-          sips -z 180  180  "$ICON_SRC" --out "$ICON_DEST/Icon-180.png"
-          sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
+          # Remove alpha channel: PNG -> JPEG (loses alpha, white bg) -> PNG
+          sips -s format jpeg "$ICON_SRC" --out /tmp/icon_flat.jpg
+          sips -s format png  /tmp/icon_flat.jpg --out /tmp/icon_notalpha.png
+          FLAT=/tmp/icon_notalpha.png
+          echo "Alpha removed. Has alpha: $(sips -g hasAlpha $FLAT | grep -o 'yes\|no')"
+          sips -z 20   20   "$FLAT" --out "$ICON_DEST/Icon-20.png"
+          sips -z 29   29   "$FLAT" --out "$ICON_DEST/Icon-29.png"
+          sips -z 40   40   "$FLAT" --out "$ICON_DEST/Icon-40.png"
+          sips -z 58   58   "$FLAT" --out "$ICON_DEST/Icon-58.png"
+          sips -z 60   60   "$FLAT" --out "$ICON_DEST/Icon-60.png"
+          sips -z 76   76   "$FLAT" --out "$ICON_DEST/Icon-76.png"
+          sips -z 80   80   "$FLAT" --out "$ICON_DEST/Icon-80.png"
+          sips -z 87   87   "$FLAT" --out "$ICON_DEST/Icon-87.png"
+          sips -z 120  120  "$FLAT" --out "$ICON_DEST/Icon-120.png"
+          sips -z 152  152  "$FLAT" --out "$ICON_DEST/Icon-152.png"
+          sips -z 167  167  "$FLAT" --out "$ICON_DEST/Icon-167.png"
+          sips -z 180  180  "$FLAT" --out "$ICON_DEST/Icon-180.png"
+          sips -z 1024 1024 "$FLAT" --out "$ICON_DEST/Icon-1024.png"
           cp ios-assets/AppIcon-Contents.json "$ICON_DEST/Contents.json"
           /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "ios/App/App/Info.plist" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "ios/App/App/Info.plist"
-          echo "AppIcon done"
+          echo "AppIcon done - no alpha"
 
       - name: Inject Info.plist permissions
         script: |
