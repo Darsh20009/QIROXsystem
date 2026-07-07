@@ -179,6 +179,13 @@ workflows:
       - name: Install CocoaPods
         script: cd ios/App && pod install
 
+      - name: Set build number
+        script: |
+          # Use Codemagic BUILD_NUMBER (auto-increments each build) as CFBundleVersion
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          echo "CFBundleVersion set to: $BUILD_NUMBER"
+
       - name: Set up code signing and build IPA
         script: |
           set -e
