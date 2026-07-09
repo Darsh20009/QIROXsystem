@@ -1,5 +1,6 @@
 import cron, { ScheduledTask } from "node-cron";
 import { CronJobModel } from "./models";
+import { INTERNAL_CRON_SECRET } from "./internal-secret";
 
 const activeTasks = new Map<string, ScheduledTask>();
 
@@ -19,10 +20,9 @@ async function runJob(jobId: string, triggeredBy: "schedule" | "manual" = "sched
 
   const start = Date.now();
   try {
-    const internalSecret = process.env.SESSION_SECRET || "qirox-internal";
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "x-internal-cron": internalSecret,
+      "x-internal-cron": INTERNAL_CRON_SECRET,
     };
     if (job.headers) {
       for (const [k, v] of Object.entries(job.headers.toObject ? job.headers.toObject() : job.headers)) {

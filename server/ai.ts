@@ -3009,7 +3009,17 @@ async function executeQiTool(toolName: string, args: any): Promise<{ result: any
         const model = modelMap[args.collection];
         if (!model) return { result: `❌ Unknown collection: ${args.collection}. Available: ${Object.keys(modelMap).join(", ")}` };
         const lim = Math.min(args.limit || 20, 100);
-        let filter = args.filter || {};
+        // Sanitize AI-supplied filter: only allow plain field equality checks (no MongoDB operators)
+        const rawFilter: Record<string, any> = args.filter && typeof args.filter === "object" ? args.filter : {};
+        const safeFilter: Record<string, any> = {};
+        for (const [k, v] of Object.entries(rawFilter)) {
+          // Reject keys that are MongoDB operators ($where, $expr, etc.)
+          if (k.startsWith("$")) continue;
+          // Only allow primitive values (no nested operator objects)
+          if (v !== null && typeof v === "object" && !Array.isArray(v)) continue;
+          safeFilter[k] = v;
+        }
+        let filter = safeFilter;
         if (args.collection === "employees") filter = { ...filter, role: { $ne: "client" } };
         if (args.collection === "clients") filter = { ...filter, role: "client" };
         const selectFields = args.fields ? args.fields.split(",").map((f: string) => f.trim()).join(" ") : undefined;

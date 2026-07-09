@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
-const connectionString = process.env.MONGODB_URI || 'mongodb+srv://qahwacup:Loz123!@cluster0.jqvda7a.mongodb.net/test?retryWrites=true&w=majority';
+const connectionString = process.env.MONGODB_URI;
+if (!connectionString) { console.error('❌ MONGODB_URI is not defined'); process.exit(1); }
 
 async function test() {
   try {

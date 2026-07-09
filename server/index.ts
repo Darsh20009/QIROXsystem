@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
+import rateLimit from "express-rate-limit";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
 import { registerAiRoutes } from "./ai";
 import { serveStatic } from "./static";
@@ -213,6 +214,18 @@ app.use(
     },
   })
 );
+
+// ── Global API rate limiter — caps total requests per IP across all /api/ routes
+// Per-route limiters (login, OTP, register, contact) remain in effect as stricter overrides.
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15-minute window
+  max: 500,                    // 500 requests per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !req.path.startsWith("/api/"),
+  message: { error: "تجاوزت الحد المسموح به من الطلبات، يرجى المحاولة لاحقاً" },
+});
+app.use(globalApiLimiter);
 
 // ── Anti-scraping / bot detection ─────────────────────────────────────────────
 const suspiciousPatterns = [
@@ -966,9 +979,35 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     return res.status(status).json({ message });
   });
 
-  // 4. Vite / static LAST — so it only catches non-API requests (SPA fallback)
+  // 4. Frontend serving LAST — so it only catches non-API requests (SPA fallback)
+  // In development we first check whether a pre-built dist/public exists.
+  // If it does (common after `npm run build` or when cloned from a built repo),
+  // we serve those directly to avoid running Vite, which crashes with SIGBUS in
+  // memory-constrained environments.  If dist/public is absent we fall back to
+  // the in-process Vite dev server.
+  const workspaceRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  const distPublicPath = path.join(workspaceRoot, "dist", "public");
+  const hasPreBuiltDist = existsSync(path.join(distPublicPath, "index.html"));
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
+  } else if (hasPreBuiltDist) {
+    // Serve pre-built files with no-cache so they can be rebuilt without restart
+    app.use(express.static(distPublicPath, {
+      etag: true,
+      lastModified: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, must-revalidate");
+        } else if (filePath.includes("/assets/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }));
+    app.use("/{*path}", (_req: Request, res: Response) => {
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      res.sendFile(path.join(distPublicPath, "index.html"));
+    });
+    console.log("[Dev] Serving pre-built frontend from dist/public (Vite HMR disabled)");
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);

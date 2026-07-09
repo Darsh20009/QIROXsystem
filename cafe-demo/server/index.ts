@@ -280,7 +280,7 @@ app.disable('x-powered-by');
 // Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "dev-secret",
+    secret: process.env.SESSION_SECRET || (() => { throw new Error("SESSION_SECRET environment variable is required"); })(),
     resave: false,
     saveUninitialized: false, 
     name: 'qirox.sid', // custom cookie name
