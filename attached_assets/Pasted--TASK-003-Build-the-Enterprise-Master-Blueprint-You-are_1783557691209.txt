@@ -1,0 +1,425 @@
+# TASK 003 — Build the Enterprise Master Blueprint
+
+You are NOT fixing the application yet.
+
+You are now creating the engineering foundation that every future change must follow.
+
+The audit is complete.
+
+Now convert the audit into a complete execution blueprint.
+
+## Objective
+
+Create a professional enterprise documentation system for QIROX V4.
+
+This documentation will become the single source of truth for the company.
+
+Nothing can be implemented unless it follows this blueprint.
+
+---
+
+# 1. MASTER PROJECT STRUCTURE
+
+Design the complete folder structure for the future version of QIROX.
+
+Include:
+
+Frontend
+
+Backend
+
+Shared Packages
+
+Design System
+
+Authentication
+
+Authorization
+
+Payments
+
+AI
+
+Meeting System
+
+Mail
+
+CRM
+
+Analytics
+
+Infrastructure
+
+Deployment
+
+Documentation
+
+Testing
+
+Scripts
+
+Assets
+
+Brand
+
+SEO
+
+---
+
+# 2. COMPLETE SYSTEM MAP
+
+Generate diagrams showing:
+
+Frontend
+
+↓
+
+API Gateway
+
+↓
+
+Services
+
+↓
+
+Database
+
+↓
+
+Notifications
+
+↓
+
+Mail
+
+↓
+
+Storage
+
+↓
+
+AI
+
+↓
+
+Meetings
+
+↓
+
+Payments
+
+Explain every connection.
+
+---
+
+# 3. FEATURE INVENTORY
+
+List every feature currently inside QIROX.
+
+For each feature write:
+
+Current Status
+
+Dependencies
+
+Technical Debt
+
+Priority
+
+Should Keep?
+
+Should Refactor?
+
+Should Rewrite?
+
+Estimated Complexity
+
+---
+
+# 4. PAGE INVENTORY
+
+List every page.
+
+For every page explain:
+
+Purpose
+
+Target User
+
+Problems
+
+UX Problems
+
+SEO Problems
+
+Performance Problems
+
+Accessibility Problems
+
+Recommendation
+
+---
+
+# 5. COMPONENT INVENTORY
+
+List every React component.
+
+Show:
+
+Duplicate Components
+
+Large Components
+
+Unused Components
+
+Reusable Components
+
+Enterprise Replacement Strategy
+
+---
+
+# 6. DATABASE BLUEPRINT
+
+Generate a complete ER diagram.
+
+Explain:
+
+Collections
+
+Relationships
+
+Indexes
+
+Missing Indexes
+
+Slow Queries
+
+Optimization Plan
+
+---
+
+# 7. API BLUEPRINT
+
+Document every endpoint.
+
+Group by module.
+
+Explain:
+
+Authentication
+
+Permissions
+
+Validation
+
+Rate Limits
+
+Caching
+
+Error Responses
+
+---
+
+# 8. RBAC DESIGN
+
+Completely redesign the permission system.
+
+Support enterprise-grade role-based access control.
+
+Allow future custom permissions.
+
+Do not implement.
+
+Only design.
+
+---
+
+# 9. MAIL ARCHITECTURE
+
+Design a reliable mail infrastructure using our existing cPanel-hosted corporate email.
+
+Document:
+
+SMTP
+
+DNS
+
+SPF
+
+DKIM
+
+DMARC
+
+Password Reset
+
+Invitations
+
+Employee Accounts
+
+Delivery Flow
+
+Failure Recovery
+
+Monitoring
+
+---
+
+# 10. QMEET ARCHITECTURE
+
+Document how QMeet should work.
+
+Show:
+
+Room lifecycle
+
+Connection lifecycle
+
+Reconnect logic
+
+Media cleanup
+
+Scaling strategy
+
+Recording architecture
+
+Permissions
+
+---
+
+# 11. SEO ENGINEERING PLAN
+
+This is one of the highest priorities.
+
+Design a technical SEO architecture.
+
+Include:
+
+Server-side rendering strategy (or equivalent if applicable)
+
+Metadata engine
+
+Structured Data
+
+Dynamic OpenGraph
+
+Canonical URLs
+
+Breadcrumbs
+
+Sitemaps
+
+Internal Linking
+
+Robots
+
+Schema
+
+Performance
+
+Core Web Vitals
+
+Image Optimization
+
+Arabic SEO
+
+English SEO
+
+Local SEO
+
+International SEO
+
+Content strategy architecture
+
+Do not promise search rankings.
+
+Focus on technical excellence and best practices.
+
+---
+
+# 12. MOBILE ARCHITECTURE
+
+Design the future mobile strategy.
+
+Current state.
+
+Future native strategy.
+
+Authentication.
+
+Notifications.
+
+Offline support.
+
+Deep Links.
+
+Apple compliance.
+
+Android compliance.
+
+---
+
+# 13. BRAND BLUEPRINT
+
+Document:
+
+Brand Personality
+
+Voice
+
+Tone
+
+Motion
+
+Photography
+
+Illustration
+
+Iconography
+
+Color Usage
+
+Typography placeholders (do not choose fonts)
+
+Layout Philosophy
+
+---
+
+# 14. FINAL EXECUTION PLAN
+
+Break the rebuild into phases.
+
+Each phase must contain:
+
+Estimated duration
+
+Dependencies
+
+Risk
+
+Expected result
+
+Files affected
+
+Testing required
+
+Rollback strategy
+
+---
+
+IMPORTANT
+
+Do NOT modify production code.
+
+Do NOT redesign UI.
+
+Do NOT fix bugs.
+
+Do NOT choose colors.
+
+Do NOT choose typography.
+
+Do NOT invent layouts.
+
+Produce documentation only.
+
+When finished, stop and wait for approval.
