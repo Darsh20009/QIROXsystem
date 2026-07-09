@@ -13,3 +13,20 @@ uploads/.local/state/
 # Large zip attachments — do NOT commit to git (GitHub 100MB limit)
 # These are dev-only uploaded files not needed in production
 attached_assets/*.zip
+
+# ── Security credentials — NEVER commit these ─────────────────────────────────
+# Private keys and certificates are compromised if committed.
+# Treat any leaked file as compromised and revoke/regenerate immediately.
+*.pem
+*.p12
+*.key
+*.csr
+*.cer
+*.crt
+*.jks
+*.keystore
+distribution*
+QIROX_Distribution*
+attached_assets/*.cer
+attached_assets/*.csr
+attached_assets/*.key

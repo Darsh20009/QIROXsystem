@@ -1,4 +1,4 @@
-import { ChildProcess, spawn, execSync } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import path from "path";
 import { getProjectDir } from "./sandbox-fs";
 import { pushToUser, broadcastSandboxLog } from "./ws";
@@ -8,7 +8,7 @@ const ALLOWED_COMMANDS = [
   "serve", "vite", "next", "nuxt", "tsx", "ts-node",
 ];
 
-function sanitizeCommand(cmd: string): string {
+export function sanitizeCommand(cmd: string): string {
   const dangerous = /[;&|`(){}!><\n\r]/;
   if (dangerous.test(cmd)) {
     throw new Error("أمر غير آمن — يحتوي رموز ممنوعة");
@@ -165,14 +165,19 @@ export async function stopProcess(projectId: string): Promise<void> {
   if (!entry) return;
   try {
     const pid = entry.process.pid;
-    if (pid) {
-      try { execSync(`kill -- -${pid} 2>/dev/null || true`); } catch {}
+    // SEC-CRIT-002: Use process.kill() with a validated integer PID instead of
+    // execSync('kill -- -${pid}') which has shell injection risk. Negative PID
+    // sends the signal to the entire process group.
+    if (pid && Number.isInteger(pid) && pid > 0) {
+      try { process.kill(-pid, "SIGTERM"); } catch {}
     }
     entry.process.kill("SIGTERM");
     await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
         try { entry.process.kill("SIGKILL"); } catch {}
-        if (pid) { try { execSync(`kill -9 -- -${pid} 2>/dev/null || true`); } catch {} }
+        if (pid && Number.isInteger(pid) && pid > 0) {
+          try { process.kill(-pid, "SIGKILL"); } catch {}
+        }
         resolve();
       }, 5000);
       entry.process.on("exit", () => { clearTimeout(timeout); resolve(); });

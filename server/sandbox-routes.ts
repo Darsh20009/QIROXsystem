@@ -614,15 +614,25 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const { exec } = await import("child_process");
+      const { spawn } = await import("child_process");
       const { SandboxEnvVarModel } = await import("./models");
       const { broadcastSandboxLog } = await import("./ws");
+      const { sanitizeCommand } = await import("./sandbox-runner");
       const pid = String(ctx.project._id);
       const projectDir = path.join(SANDBOX_ROOT, pid);
       const buildCmd = ctx.project.buildCmd;
 
       if (!buildCmd) {
         return res.status(400).json({ error: "هذا المشروع لا يدعم البناء" });
+      }
+
+      // SEC-CRIT-002: Validate the build command against the allowlist before execution.
+      // sanitizeCommand() rejects shell metacharacters (;|&`(){}!><) and unknown commands.
+      let safeBuildCmd: string;
+      try {
+        safeBuildCmd = sanitizeCommand(buildCmd);
+      } catch (validationErr: any) {
+        return res.status(400).json({ error: `أمر البناء غير آمن: ${validationErr.message}` });
       }
 
       const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
@@ -632,16 +642,26 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         try { envVars[doc.key] = decrypt(doc.value, doc.iv); } catch {}
       }
 
-      broadcastSandboxLog(pid, "stdout", `Running build: ${buildCmd}`);
+      broadcastSandboxLog(pid, "stdout", `Running build: ${safeBuildCmd}`);
 
-      exec(buildCmd, { cwd: projectDir, env: envVars, timeout: 120000 }, (error, stdout, stderr) => {
-        if (stdout) broadcastSandboxLog(pid, "stdout", stdout);
-        if (stderr) broadcastSandboxLog(pid, "stderr", stderr);
-        if (error) {
-          broadcastSandboxLog(pid, "stderr", `Build failed: ${error.message}`);
-          return;
+      // Use spawn (not exec) so the command is not processed by /bin/sh.
+      // We pass it as a shell command to match original behavior but with the validated string.
+      const buildProcess = spawn("/bin/sh", ["-c", safeBuildCmd], {
+        cwd: projectDir,
+        env: envVars,
+        timeout: 120000,
+      });
+      buildProcess.stdout?.on("data", (d: Buffer) => broadcastSandboxLog(pid, "stdout", d.toString()));
+      buildProcess.stderr?.on("data", (d: Buffer) => broadcastSandboxLog(pid, "stderr", d.toString()));
+      buildProcess.on("exit", (code) => {
+        if (code === 0) {
+          broadcastSandboxLog(pid, "stdout", "Build completed successfully!");
+        } else {
+          broadcastSandboxLog(pid, "stderr", `Build failed with exit code ${code}`);
         }
-        broadcastSandboxLog(pid, "stdout", "Build completed successfully!");
+      });
+      buildProcess.on("error", (err) => {
+        broadcastSandboxLog(pid, "stderr", `Build error: ${err.message}`);
       });
 
       res.json({ success: true, message: "Build started" });

@@ -67,6 +67,23 @@ export function setupAuth(app: Express) {
   const SESSION_DAYS = 14;
   const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
+  // SEC-CRIT-001: SESSION_SECRET must be set — no hardcoded fallback allowed.
+  // In production a missing secret is a hard crash. In development a random
+  // ephemeral secret is generated so developers don't need to configure it,
+  // but sessions will not persist across server restarts.
+  let sessionSecret: string;
+  if (process.env.SESSION_SECRET) {
+    sessionSecret = process.env.SESSION_SECRET;
+  } else if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "[SECURITY] SESSION_SECRET environment variable is required in production. " +
+      "Generate one with: openssl rand -hex 32"
+    );
+  } else {
+    sessionSecret = randomBytes(32).toString("hex");
+    console.warn("[auth] SESSION_SECRET not set — using ephemeral random secret (sessions will not persist across restarts).");
+  }
+
   const mongoUri = (process.env.MONGODB_URI || "").replace(/\s+/g, "");
 
   const sessionSettings: session.SessionOptions = {
@@ -79,7 +96,7 @@ export function setupAuth(app: Express) {
           touchAfter: 24 * 3600,
         })
       : undefined,
-    secret: process.env.SESSION_SECRET || "qirox_super_secret_key_2024",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     rolling: true,
