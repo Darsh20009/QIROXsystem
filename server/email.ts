@@ -1,5 +1,6 @@
 import { connManager } from "./connection-manager";
 import nodemailer from "nodemailer";
+import { cleanName } from "./utils";
 
 function getEmailCfg() {
   const s = connManager.emailSettings;
@@ -15,11 +16,6 @@ function getEmailCfg() {
   };
 }
 
-function cleanName(name: string): string {
-  if (!name) return "عزيزي العميل";
-  if (name.includes("@")) return name.split("@")[0];
-  return name;
-}
 
 interface EmailAttachment {
   filename: string;

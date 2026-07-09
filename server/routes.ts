@@ -1,6 +1,7 @@
 // @ts-nocheck
 import type { Express } from "express";
 import type { Server } from "http";
+import { escapeHtml, translateError, sanitizeUser } from "./utils";
 import type { AuthenticatorTransportFuture } from "@simplewebauthn/types";
 import { setupAuth, hashPassword, invalidateUserCache } from "./auth";
 import { storage } from "./storage";
@@ -97,47 +98,12 @@ async function deletePushChallenge(challengeId: string) {
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-function sanitizeUser(user: any): any {
-  if (!user) return user;
-  if (Array.isArray(user)) return user.map(sanitizeUser);
-  const obj = typeof user.toJSON === "function" ? user.toJSON() : { ...user };
-  delete obj.password;
-  delete obj.walletPin;
-  delete obj.walletCardNumber;
-  delete obj.totpSecret;
-  delete obj.recoveryPassphrase;
-  return obj;
-}
-
-function escapeHtml(s: string): string {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
-}
 
 // ── Universal notification helpers (re-exported from ./notify) ──
 const fireNotify = _fireNotify as any;
 const fireNotifyAdmins = _fireNotifyAdmins as any;
 const fireNotifyMany = _fireNotifyMany as any;
 
-function translateError(err: any): string {
-  const msg: string = err?.message || err?.toString() || "";
-  if (msg.includes("E11000") || msg.includes("duplicate key")) {
-    if (msg.includes("email")) return "البريد الإلكتروني مستخدم من قبل، جرّب بريداً آخر";
-    if (msg.includes("username")) return "اسم المستخدم مستخدم من قبل، جرّب اسماً آخر";
-    return "هذه البيانات مستخدمة مسبقاً";
-  }
-  if (msg.includes("validation failed") || msg.includes("is required")) return "تأكد من تعبئة جميع الحقول المطلوبة";
-  if (msg.includes("Cast to ObjectId") || msg.includes("ObjectId")) return "معرّف غير صالح";
-  if (msg.includes("LIMIT_FILE_SIZE")) return "حجم الملف كبير جداً (الحد الأقصى 20 ميغابايت)";
-  if (msg.includes("No file") || msg.includes("No files")) return "لم يتم اختيار أي ملف";
-  if (msg.includes("ENOENT") || msg.includes("EACCES")) return "حدث خطأ في نظام الملفات";
-  if (msg.includes("connect") || msg.includes("network") || msg.includes("ECONNREFUSED")) return "تعذّر الاتصال بقاعدة البيانات، حاول مجدداً";
-  return "حدث خطأ غير متوقع، حاول مجدداً";
-}
 
 const upload = multer({
   storage: multer.diskStorage({
