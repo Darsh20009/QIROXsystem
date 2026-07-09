@@ -1,0 +1,362 @@
+# TASK — Upgrade the QIROX V4 Enterprise Architecture Proposal
+
+The previous architecture proposal is approved in principle.
+
+However, before any implementation begins, we are raising the engineering standards to enterprise level.
+
+This is an architecture refinement task only.
+
+You must NOT modify production code.
+
+You must NOT create implementation files.
+
+You must ONLY update the architecture proposal.
+
+---
+
+## General Principles
+
+The future QIROX platform must be:
+
+* Enterprise-grade
+* API-first
+* Domain-driven
+* Event-ready
+* Multi-tenant ready
+* Cloud-ready
+* Testable
+* Secure by default
+* Observable
+* Modular
+* Scalable
+* Maintainable
+
+The architecture must support future expansion without major rewrites.
+
+---
+
+# 1. Replace "Modules" with "Domains"
+
+The project must be organized around business domains.
+
+The architecture must clearly separate:
+
+* Core
+* Infrastructure
+* Shared
+* Domains
+* Configuration
+* Platform Services
+
+Each Domain owns its business logic.
+
+---
+
+# 2. Introduce a Domain Layer
+
+The target execution flow becomes:
+
+Request
+
+↓
+
+Routes
+
+↓
+
+Controller
+
+↓
+
+Application Service
+
+↓
+
+Domain
+
+↓
+
+Repository
+
+↓
+
+Database
+
+Business rules belong in the Domain layer.
+
+Application Services orchestrate business operations.
+
+Repositories only access data.
+
+Controllers never contain business logic.
+
+---
+
+# 3. Create a Core Platform
+
+The Core layer must define:
+
+* Error system
+* Logger interfaces
+* Base types
+* Shared constants
+* Event contracts
+* Configuration contracts
+* Feature flags
+* Result pattern
+* Base exceptions
+
+Core must never depend on Infrastructure.
+
+---
+
+# 4. Infrastructure Layer
+
+Every external dependency belongs here.
+
+Examples:
+
+* MongoDB
+* SMTP
+* Apple APIs
+* Google APIs
+* Firebase
+* Storage providers
+* Search providers
+* AI providers
+* Payment gateways
+* Notification providers
+* Analytics providers
+
+Infrastructure must be replaceable without changing business logic.
+
+---
+
+# 5. Event-Driven Architecture
+
+Design an internal event system.
+
+Examples:
+
+UserCreated
+
+EmployeeInvited
+
+OrderCreated
+
+InvoicePaid
+
+MeetingStarted
+
+TicketClosed
+
+PasswordResetRequested
+
+NotificationCreated
+
+Do NOT implement.
+
+Design only.
+
+---
+
+# 6. Logging Platform
+
+Logging is NOT a utility.
+
+Design a complete logging platform.
+
+Include:
+
+* Audit Logs
+* Application Logs
+* Security Logs
+* Performance Logs
+* API Logs
+* Background Job Logs
+
+Include log retention strategy.
+
+Include correlation IDs.
+
+---
+
+# 7. Centralized Configuration
+
+Design a configuration platform.
+
+Separate:
+
+* Application
+* Database
+* Storage
+* Mail
+* Payments
+* Security
+* Apple
+* Google
+* SEO
+* AI
+* Feature Flags
+* Monitoring
+
+No configuration should be scattered across the codebase.
+
+---
+
+# 8. SEO Platform
+
+SEO must become a reusable platform.
+
+Design support for:
+
+* Metadata engine
+* Schema generation
+* OpenGraph
+* Twitter Cards
+* Breadcrumbs
+* Canonical URLs
+* Dynamic Sitemap
+* Robots
+* Arabic SEO
+* English SEO
+* Future multilingual support
+
+The platform must be reusable by all future products.
+
+Do not make ranking guarantees.
+
+---
+
+# 9. AI Platform
+
+AI must become a platform.
+
+Prepare the architecture for:
+
+* Chat
+* Vision
+* OCR
+* Voice
+* Automation
+* Knowledge Base
+* RAG
+* Prompt Library
+* AI Agents
+* Tool Calling
+
+Design only.
+
+---
+
+# 10. Migration Strategy
+
+Replace "Waves" with Migration Plans.
+
+Each migration must contain:
+
+* Purpose
+* Scope
+* Dependencies
+* Risk
+* Rollback Strategy
+* Estimated Time
+* Verification Checklist
+* Success Criteria
+
+---
+
+# 11. Multi-Tenant Readiness
+
+Design the architecture so that QIROX can support multiple organizations in the future.
+
+Document:
+
+* Tenant isolation
+* Shared resources
+* Organization context
+* Data ownership
+
+Design only.
+
+---
+
+# 12. API Governance
+
+Design API standards including:
+
+* Versioning strategy
+* Error contract
+* Pagination
+* Filtering
+* Sorting
+* Validation
+* Authentication
+* Authorization
+* Rate limiting
+* Idempotency where appropriate
+
+---
+
+# 13. Background Processing
+
+Design a background job architecture.
+
+Include:
+
+* Queues
+* Scheduled jobs
+* Retry policy
+* Dead-letter handling
+* Monitoring
+
+Design only.
+
+---
+
+# 14. Observability
+
+Design a complete observability strategy.
+
+Include:
+
+* Metrics
+* Health checks
+* Readiness checks
+* Performance monitoring
+* Distributed tracing (future-ready)
+* Alerting strategy
+
+---
+
+# 15. Testing Strategy
+
+Design testing layers:
+
+* Unit tests
+* Integration tests
+* API tests
+* End-to-end tests
+* Performance tests
+
+No implementation.
+
+Architecture only.
+
+---
+
+## IMPORTANT
+
+Do NOT modify production code.
+
+Do NOT create implementation files.
+
+Do NOT move files.
+
+Do NOT refactor.
+
+Do NOT generate code.
+
+Update the architecture proposal only.
+
+When finished, stop and wait for approval.
