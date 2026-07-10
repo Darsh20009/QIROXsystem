@@ -1,0 +1,582 @@
+QIROX V5
+
+PHASE 0 — COMPLETE BUSINESS DISCOVERY
+
+This is now the highest priority task.
+
+Forget previous migrations.
+
+Forget module extraction.
+
+Forget refactoring.
+
+Forget architecture implementation.
+
+Before writing another line of production code you must understand QIROX as a complete company.
+
+==================================================
+MISSION
+==================================================
+
+You are no longer acting as a software engineer.
+
+You are acting as:
+
+• CTO
+• Enterprise Solution Architect
+• Product Architect
+• Business Analyst
+• UX Architect
+• CRM Consultant
+• ERP Consultant
+• Digital Transformation Consultant
+
+Your responsibility is to understand the ENTIRE company.
+
+Not only the code.
+
+==================================================
+READ EVERYTHING
+==================================================
+
+Read the ENTIRE repository again.
+
+Do NOT skip anything.
+
+Read:
+
+Frontend
+
+Backend
+
+Database Models
+
+APIs
+
+Services
+
+Jobs
+
+Workers
+
+Permissions
+
+Routes
+
+Dashboards
+
+Landing Pages
+
+Authentication
+
+Payment
+
+Notifications
+
+CRM
+
+Employees
+
+Projects
+
+Orders
+
+Support
+
+Emails
+
+Apple
+
+Google
+
+SEO
+
+Everything.
+
+==================================================
+CREATE A COMPLETE BUSINESS MAP
+==================================================
+
+I want you to understand:
+
+How the company currently works.
+
+How clients currently interact.
+
+How employees currently work.
+
+How admins currently manage everything.
+
+How information moves.
+
+How data moves.
+
+How services move.
+
+How projects move.
+
+How communication moves.
+
+How payments move.
+
+How invoices move.
+
+How events move.
+
+Everything.
+
+==================================================
+DO NOT THINK LIKE A DEVELOPER
+==================================================
+
+Think like a company owner.
+
+Ask yourself:
+
+If Apple bought this company...
+
+Would this workflow remain?
+
+If Stripe bought this company...
+
+Would this page remain?
+
+If Linear rebuilt this...
+
+Would this experience remain?
+
+If Notion rebuilt this...
+
+Would they keep this process?
+
+If the answer is NO...
+
+Document WHY.
+
+==================================================
+IDENTIFY EVERYTHING
+==================================================
+
+Find:
+
+Duplicate pages
+
+Dead pages
+
+Unused components
+
+Broken workflows
+
+Confusing UX
+
+Missing UX
+
+Missing onboarding
+
+Poor navigation
+
+Poor dashboards
+
+Missing analytics
+
+Missing notifications
+
+Missing automations
+
+Missing integrations
+
+Missing reports
+
+Missing permissions
+
+Poor CRM
+
+Poor Employee Experience
+
+Poor Client Experience
+
+Poor Admin Experience
+
+Poor Mobile Experience
+
+Poor Apple Experience
+
+Poor SEO
+
+Poor Performance
+
+Everything.
+
+==================================================
+COMPANY REDESIGN
+==================================================
+
+Redesign the COMPANY.
+
+Not the code.
+
+Create the ideal operating model.
+
+Separate clearly:
+
+1. Public Website
+
+2. Internal Platform
+
+3. Employee Workspace
+
+4. Client Workspace
+
+5. Administration
+
+6. QAdmin
+
+7. CRM
+
+8. Projects
+
+9. Finance
+
+10. Marketing
+
+11. Support
+
+12. Events
+
+13. Knowledge Base
+
+14. Presentation
+
+15. AI Platform
+
+16. Analytics
+
+17. Automation
+
+==================================================
+EVENT PLATFORM
+==================================================
+
+Design a complete corporate event platform.
+
+Include:
+
+Events
+
+Guests
+
+Companies
+
+Invitations
+
+Email
+
+WhatsApp
+
+Apple Wallet
+
+Google Wallet
+
+QR Codes
+
+Encrypted QR
+
+Check-in
+
+Scanner
+
+Attendance
+
+VIP
+
+Sponsors
+
+Sessions
+
+Certificates
+
+Reports
+
+Calendar
+
+Location
+
+Reminder
+
+Everything.
+
+==================================================
+CRM
+==================================================
+
+Redesign CRM completely.
+
+Support:
+
+Companies
+
+People
+
+Leads
+
+Deals
+
+Pipeline
+
+Activities
+
+Meetings
+
+Calls
+
+Emails
+
+WhatsApp
+
+Documents
+
+Contracts
+
+Invoices
+
+Tasks
+
+Reminders
+
+Campaigns
+
+Timeline
+
+Scoring
+
+Forecasting
+
+Reports
+
+Everything.
+
+==================================================
+EMPLOYEE EXPERIENCE
+==================================================
+
+Employee pages are currently fragmented.
+
+Design a premium workspace.
+
+Everything important should be available from one place.
+
+Employee Card.
+
+Apple Wallet.
+
+Google Wallet.
+
+Secure QR.
+
+Attendance.
+
+Projects.
+
+Tasks.
+
+Approvals.
+
+Documents.
+
+Announcements.
+
+Training.
+
+Knowledge Base.
+
+Internal Chat.
+
+Everything.
+
+==================================================
+CLIENT EXPERIENCE
+==================================================
+
+The current client journey is not premium.
+
+Redesign it from scratch.
+
+Client should feel that QIROX is an enterprise technology company.
+
+Journey:
+
+Discover
+
+Understand
+
+Trust
+
+Request
+
+Meet
+
+Approve
+
+Pay
+
+Track
+
+Review
+
+Support
+
+Expand
+
+Everything should be effortless.
+
+==================================================
+QADMIN
+==================================================
+
+QAdmin becomes the technology command center.
+
+Include:
+
+WhatsApp Device Manager
+
+QR Pairing
+
+WhatsApp Web style login
+
+Multiple Devices
+
+Connected Sessions
+
+Delivery Monitoring
+
+Queues
+
+Templates
+
+Automation
+
+Logs
+
+Health Status
+
+No SMS integration.
+
+==================================================
+PRESENTATION
+==================================================
+
+Design a section called:
+
+QIROX Presentation
+
+It should explain:
+
+Who We Are
+
+Vision
+
+Mission
+
+Identity
+
+Technology
+
+Infrastructure
+
+Products
+
+Services
+
+Roadmap
+
+Investors
+
+Partners
+
+Achievements
+
+Everything.
+
+This should feel like an Apple keynote.
+
+==================================================
+SEO
+==================================================
+
+Create an engineering-first SEO strategy.
+
+Target:
+
+QIROX
+
+QIROX Studio
+
+Qirox
+
+Qirox Studio
+
+AIROX Studio
+
+شركة تقنية
+
+شركة برمجيات
+
+تصميم أنظمة
+
+ERP
+
+CRM
+
+POS
+
+Restaurant System
+
+Digital Transformation
+
+AI Systems
+
+No paid ads.
+
+Everything must be organic.
+
+==================================================
+APPLE REVIEW
+==================================================
+
+Every Apple Review issue must be permanently eliminated.
+
+No Safari redirects.
+
+No external browser authentication.
+
+Native login.
+
+Native registration.
+
+Native payments where possible.
+
+Account deletion.
+
+Privacy compliance.
+
+==================================================
+OUTPUT
+==================================================
+
+DO NOT WRITE CODE.
+
+DO NOT MODIFY FILES.
+
+DO NOT CREATE MIGRATIONS.
+
+Return ONLY:
+
+1. QIROX_MASTER_ANALYSIS.md
+
+2. QIROX_PRODUCT_BLUEPRINT.md
+
+3. QIROX_EXECUTION_PLAN.md
+
+These documents must be detailed enough that a new engineering team could build QIROX V5 without asking any questions.
+
+Wait for approval before touching production code.
