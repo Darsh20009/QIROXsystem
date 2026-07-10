@@ -1,0 +1,156 @@
+# MIGRATION 007 — CRM Domain Migration
+
+Migration 006 is approved.
+
+The Foundation phase is now complete.
+
+From this point forward we begin migrating real business domains.
+
+The first domain will be CRM.
+
+---
+
+## Objective
+
+Migrate the CRM module to the new enterprise architecture.
+
+This migration must preserve 100% of current behavior.
+
+No functional changes are allowed.
+
+---
+
+## Architecture
+
+Create the complete CRM domain:
+
+server/domains/crm/
+
+including:
+
+* routes.ts
+* controller.ts
+* service.ts
+* domain.ts
+* repository.ts
+* validation.ts
+* mapper.ts
+* types.ts
+* index.ts
+
+---
+
+## Responsibilities
+
+Routes
+
+* Express routing only
+
+Controller
+
+* Request/Response only
+
+Service
+
+* Orchestration only
+
+Domain
+
+* ALL business rules
+
+Repository
+
+* ALL database queries
+
+Mapper
+
+* DTO ↔ Entity conversion
+
+Validation
+
+* Placeholder only
+* No runtime validation yet
+
+Types
+
+* Domain contracts
+
+---
+
+## Forbidden
+
+Do NOT:
+
+* Change any endpoint.
+* Change any response.
+* Change any request.
+* Change any database schema.
+* Change any collection.
+* Change any model.
+* Change business behavior.
+* Introduce new features.
+
+---
+
+## Migration Strategy
+
+Keep the legacy CRM implementation.
+
+Route traffic through the new CRM module.
+
+The old implementation must remain available until verification is complete.
+
+Rollback must require only restoring the previous import.
+
+---
+
+## Verification
+
+Compare old and new behavior.
+
+Responses must be identical.
+
+No regression is acceptable.
+
+---
+
+## Documentation
+
+Include:
+
+* Migration report.
+* Domain dependency diagram.
+* Business rule inventory.
+* Repository inventory.
+* Controller inventory.
+
+Store the report under:
+
+docs/progress/migration-007.md
+
+---
+
+## Completion Report
+
+Provide:
+
+* Files created.
+* Files modified.
+* Endpoints migrated.
+* Business rules extracted.
+* Database queries extracted.
+* Compatibility strategy.
+* Rollback strategy.
+* Verification results.
+
+Confirm:
+
+* Application starts successfully.
+* CRM behaves exactly as before.
+* No regressions detected.
+
+When Migration 007 is complete:
+
+STOP.
+
+Wait for approval before Migration 008.

@@ -13,7 +13,7 @@ import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
 import { registerDeploymentCloudRoutes, registerSubdomainMiddleware } from "./deployment-cloud";
-import { registerCrmRoutes } from "./crm";
+import { registerCrmRoutes } from "./domains/crm";
 import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterestedCollection } from "./email-marketing";
 import mongoose from "mongoose";
 import { cache } from "./cache";
