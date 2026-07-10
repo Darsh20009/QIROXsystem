@@ -15,7 +15,7 @@ import fs from "fs";
 import express from "express";
 import crypto from "crypto";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
-import { registerMailRoutes } from "./routes-mail";
+import { registerMailRoutes } from "./domains/mail";
 import { registerPwaRoutes } from "./routes-pwa";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { cache, CACHE_TTL } from "./cache";
