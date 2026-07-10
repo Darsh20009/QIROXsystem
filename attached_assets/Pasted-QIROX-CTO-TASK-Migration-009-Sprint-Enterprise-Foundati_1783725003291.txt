@@ -1,0 +1,157 @@
+QIROX CTO TASK — Migration 009
+
+Sprint: Enterprise Foundation
+
+Follow all governing rules in replit.md.
+
+ZERO DOWNTIME is mandatory.
+
+DO NOT stop production.
+
+DO NOT break APIs.
+
+DO NOT modify database schemas in a breaking way.
+
+DO NOT redesign UI.
+
+DO NOT create new features.
+
+========================================================
+
+GOAL
+
+Continue the enterprise architecture migration.
+
+The objective of this migration is to reduce technical debt while keeping the production system fully operational.
+
+========================================================
+
+PHASE
+
+Migration 009
+
+Target:
+
+Extract the EMAIL PLATFORM into the new architecture.
+
+This means transactional email only.
+
+Examples:
+
+- Welcome emails
+- Password reset
+- Verification
+- Notifications
+- Marketing template engine (foundation only)
+
+Do NOT touch:
+
+- CRM
+- Mail Accounts
+- IMAP
+- SMTP infrastructure
+- Existing APIs
+
+========================================================
+
+Required architecture
+
+server/domains/email/
+
+repository.ts
+
+service.ts
+
+domain.ts
+
+controller.ts
+
+routes.ts
+
+mapper.ts
+
+types.ts
+
+validation.ts
+
+index.ts
+
+========================================================
+
+Rules
+
+Business Rules
+
+↓
+
+Domain
+
+External providers
+
+↓
+
+Infrastructure
+
+HTTP
+
+↓
+
+Controller
+
+Database
+
+↓
+
+Repository
+
+========================================================
+
+Requirements
+
+No duplicated logic.
+
+No inline business rules.
+
+No direct database calls from services.
+
+No request/response inside services.
+
+No request validation changes yet.
+
+No API response changes.
+
+No UI changes.
+
+========================================================
+
+Compatibility
+
+The current implementation must remain fully operational.
+
+Legacy code stays untouched until verification.
+
+Only switch imports after successful validation.
+
+Rollback must be possible by restoring one import.
+
+========================================================
+
+Verification
+
+After completion provide ONLY:
+
+1. Files created
+
+2. Files modified
+
+3. APIs verified
+
+4. Rollback strategy
+
+5. Risks
+
+6. Technical debt remaining
+
+Do not continue to another migration.
+
+Stop and wait.
