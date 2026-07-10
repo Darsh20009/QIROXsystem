@@ -28,8 +28,9 @@
 
 import nodemailer from "nodemailer";
 import { cleanName } from "../../utils";
-import * as domain     from "./domain";
-import * as repository from "./repository";
+import * as domain          from "./domain";
+import * as repository      from "./repository";
+import * as LegacyEmailAdapter from "./infrastructure/legacy-email-adapter";
 import type {
   SendResult,
   EmailAttachment,
@@ -342,29 +343,31 @@ export async function sendIncomingCallEmail(to: string, name: string, callerName
 // follow the baseTemplate shell (QMeet, Wallet, Data Request, etc.).
 // They are correct architecture: service orchestrates, domain provides config.
 
+// ── Legacy-delegated functions (via Infrastructure Adapter) ───────────────────
+// TECH-001: Templates not yet migrated into domain.ts builders.
+// All calls go through LegacyEmailAdapter — NO dynamic imports in this file.
+// See: server/domains/email/infrastructure/legacy-email-adapter.ts
+// See: ADR-003, TECH-001
+
 export async function sendQMeetInviteEmail(to: string, name: string, data: {
   title: string; scheduledAt: Date; meetingLink: string; joinCode?: string;
   hostName: string; durationMinutes?: number;
 }): Promise<boolean> {
-  // Import from legacy email.ts — still the source of truth until switch is approved.
-  const legacy = await import("../../email");
-  return legacy.sendQMeetInviteEmail(to, name, data);
+  return LegacyEmailAdapter.sendQMeetInviteEmail(to, name, data);
 }
 
 export async function sendQMeetReminderEmail(to: string, name: string, data: {
   title: string; scheduledAt: Date; meetingLink: string; joinCode?: string;
   hostName: string; durationMinutes?: number;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendQMeetReminderEmail(to, name, data);
+  return LegacyEmailAdapter.sendQMeetReminderEmail(to, name, data);
 }
 
 export async function sendWeeklyReportEmail(to: string, name: string, data: {
   weekLabel: string; newClients: number; newOrders: number; completedOrders: number;
   weekRevenue: number; activeProjects: number; newMeetings: number; openTickets: number; currency?: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendWeeklyReportEmail(to, name, data);
+  return LegacyEmailAdapter.sendWeeklyReportEmail(to, name, data);
 }
 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
@@ -373,16 +376,14 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
   orderId?: string; createdAt?: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendInvoiceEmail(to, clientName, invoice);
+  return LegacyEmailAdapter.sendInvoiceEmail(to, clientName, invoice);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
   receiptNumber: string; amount: number; amountInWords?: string;
   paymentMethod: string; description?: string; createdAt?: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendReceiptEmail(to, clientName, receipt);
+  return LegacyEmailAdapter.sendReceiptEmail(to, clientName, receipt);
 }
 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
@@ -390,58 +391,49 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
   notes?: string; link?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendQuotationEmail(to, clientName, quotation);
+  return LegacyEmailAdapter.sendQuotationEmail(to, clientName, quotation);
 }
 
 export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {
   bookingId: string; date: string; startTime: string; endTime: string;
   employeeName: string; consultationType: string; topic: string; meetingLink?: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendConsultationConfirmationEmail(to, clientName, data);
+  return LegacyEmailAdapter.sendConsultationConfirmationEmail(to, clientName, data);
 }
 
 export async function sendConsultationNotificationEmail(to: string, staffName: string, data: {
   bookingId: string; clientName: string; clientEmail: string; clientPhone?: string;
   date: string; startTime: string; endTime: string; consultationType: string; topic: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendConsultationNotificationEmail(to, staffName, data);
+  return LegacyEmailAdapter.sendConsultationNotificationEmail(to, staffName, data);
 }
 
 export async function sendShipmentUpdateEmail(to: string, clientName: string, data: {
   orderId: string; productName: string; status: string; trackingNumber?: string;
   courierName?: string; courierUrl?: string; estimatedDelivery?: string; note?: string;
 }): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendShipmentUpdateEmail(to, clientName, data);
+  return LegacyEmailAdapter.sendShipmentUpdateEmail(to, clientName, data);
 }
 
 export async function sendWalletPayOtpEmail(to: string, name: string, otp: string, amount: number, description: string): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendWalletPayOtpEmail(to, name, otp, amount, description);
+  return LegacyEmailAdapter.sendWalletPayOtpEmail(to, name, otp, amount, description);
 }
 
 export async function sendWalletTopupStatusEmail(to: string, name: string, amount: number, status: "approved" | "rejected", reason?: string): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendWalletTopupStatusEmail(to, name, amount, status, reason);
+  return LegacyEmailAdapter.sendWalletTopupStatusEmail(to, name, amount, status, reason);
 }
 
 export async function sendFeaturesEmail(
   to: string, toName: string, projectName: string,
   features: { title: string; description: string; category: string; priority: string; status: string }[],
 ): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendFeaturesEmail(to, toName, projectName, features);
+  return LegacyEmailAdapter.sendFeaturesEmail(to, toName, projectName, features);
 }
 
 export async function sendDataRequestEmail(to: string, name: string, title: string, description: string, priority: string): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendDataRequestEmail(to, name, title, description, priority);
+  return LegacyEmailAdapter.sendDataRequestEmail(to, name, title, description, priority);
 }
 
 export async function sendCallRatingEmail(to: string, name: string, companyName: string, agentName: string, ratingUrl: string): Promise<boolean> {
-  const legacy = await import("../../email");
-  return legacy.sendCallRatingEmail(to, name, companyName, agentName, ratingUrl);
+  return LegacyEmailAdapter.sendCallRatingEmail(to, name, companyName, agentName, ratingUrl);
 }

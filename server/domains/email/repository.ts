@@ -18,6 +18,7 @@
 //   Will implement an IEmailRepository interface for dependency injection
 //   once the DI container is wired (Migration 010+).
 
+import { MailAccountModel } from "../../models";
 import type { MailAccountRecord } from "./types";
 
 // ── Read queries ───────────────────────────────────────────────────────────────
@@ -34,9 +35,6 @@ import type { MailAccountRecord } from "./types";
 export async function findMailAccountByEmail(
   emailAddress: string,
 ): Promise<MailAccountRecord | null> {
-  // Lazy import keeps the module decoupled from the model at load time,
-  // matching the pattern used in the legacy server/email.ts sendEmailAs().
-  const { MailAccountModel } = await import("../../models");
   const doc = await MailAccountModel.findOne({ emailAddress }).lean() as MailAccountRecord | null;
   return doc ?? null;
 }
