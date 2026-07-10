@@ -1,5 +1,52 @@
 # Qirox Platform
 
+## ⚠️ CTO Directive — Zero Downtime Policy (Non-Negotiable)
+
+**Production MUST NEVER stop. The system is live and in use.**
+
+### Rules — all work must follow these without exception
+
+1. **Never delete existing code.**
+2. **Never rename existing APIs.** New behavior goes behind V2 endpoints or Feature Flags.
+3. **Never remove existing pages.**
+4. **Never modify MongoDB collections in a breaking way.** Only additive fields. No renames, no removals, no destructive migrations.
+5. **Never break existing frontend behavior.**
+6. **Never stop the production website.**
+7. **Every migration must be additive.**
+
+### Feature Flag naming convention
+Every major new feature ships behind a flag until QA-approved for production:
+`CRM_V2`, `EMPLOYEE_DASHBOARD_V2`, `CLIENT_DASHBOARD_V2`, `EVENTS_V2`, `APPLE_WALLET_V2`, `AI_PLATFORM_V2`, `SEO_PLATFORM_V2`
+
+The old implementation stays active until the new one reaches production quality and is approved.
+
+### API policy
+- Never alter an existing endpoint's contract.
+- New behavior → new `/v2/` endpoint **or** Feature Flag gate.
+
+### Database policy
+- No destructive migrations.
+- No collection renames.
+- No field removals.
+- Additive fields only.
+- Backward-compatible schemas only.
+
+### Frontend policy
+- Existing UI remains fully operational at all times.
+- New dashboards (Client Dashboard V2, Employee Dashboard V2, CRM V2, Events V2, Apple Wallet V2, Presentation Center) are developed independently and coexist with the current system.
+- Switch to new implementation only after QA approval.
+
+### Every migration must document
+| Field | Required value |
+|---|---|
+| Purpose | What and why |
+| Risk | What could go wrong |
+| Rollback Strategy | How to revert safely |
+| Verification Checklist | How to confirm success |
+| Expected Downtime | **ZERO** |
+
+---
+
 Qirox is a SaaS "Systems Factory" platform that showcases industry-specific website templates and provides admin management for templates and pricing, targeting Arabic-speaking markets.
 
 ## Run & Operate

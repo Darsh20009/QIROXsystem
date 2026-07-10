@@ -1,3 +1,4 @@
+- [Zero Downtime Policy](zero-downtime-policy.md) — CTO directive: additive-only changes, no breaking DB/API/UI modifications, Feature Flags for all major features, expected downtime always ZERO.
 - [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
 - [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
 - [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.
