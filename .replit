@@ -63,6 +63,10 @@ SMTP_USER = "info@qirox.online"
 CPANEL_SMTP_HOST = "server222.web-hosting.com"
 CPANEL_SMTP_PORT = "465"
 CPANEL_SMTP_USER = "info@qirox.online"
+APPLE_CLIENT_ID = "auth.qiroxstudio.online"
+APPLE_KEY_ID = "X2KTZG88K9"
+APPLE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY----- MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgO+B47wTjrHFpd4pk HAOcjIFhIU7HfIoSSz+7DRqpgRugCgYIKoZIzj0DAQehRANCAASwxl0MhUIvf86k yTYGwyjZPePdcSf+fJYoLBAEf0yX181Ucc20wVVwHZl9ehpfheCKIPZa1Jye+HUU 5ash0jAQ -----END PRIVATE KEY-----"
+APPLE_TEAM_ID = "V4K6RM59LS"
 
 [agent]
 expertMode = true

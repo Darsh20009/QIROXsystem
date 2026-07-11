@@ -34,3 +34,5 @@ attached_assets/*.csr
 attached_assets/*.key
 attached_assets/*.p8
 attached_assets/AuthKey_*
+attached_assets/._*
+._*
