@@ -2894,6 +2894,90 @@ export async function registerRoutes(
     res.json({ transactions: txs, balance, totalDebit, totalCredit, outstanding, total, page, totalPages: Math.ceil(total / limit) });
   });
 
+  // ── Sprint 007 — Customer Dashboard V2 aggregated endpoint ────────────────
+  // Additive only. New endpoint. No existing endpoint touched.
+  // Gate: FEATURE_DASHBOARD_V2
+  app.get("/api/v2/client/dashboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const uid = String(user.id);
+    try {
+      const {
+        OrderModel, ProjectModel, InvoiceModel, QuotationModel,
+        WalletTransactionModel, NotificationModel, MeetingRequestModel,
+        ProjectIssueModel, ProjectFileModel,
+      } = await import("./models");
+
+      const [orders, projects, invoices, quotations, notifications, walletTxs] = await Promise.all([
+        OrderModel.find({ userId: uid }).sort({ createdAt: -1 }).limit(10).lean(),
+        ProjectModel.find({ clientId: uid }).sort({ createdAt: -1 }).lean(),
+        InvoiceModel.find({ userId: uid }).sort({ createdAt: -1 }).limit(10).lean(),
+        QuotationModel.find({ userId: uid, status: { $ne: "draft" } }).sort({ createdAt: -1 }).limit(10).lean(),
+        NotificationModel.find({ userId: uid }).sort({ createdAt: -1 }).limit(20).lean(),
+        WalletTransactionModel.find({ userId: uid }).sort({ createdAt: -1 }).limit(10).lean(),
+      ]);
+
+      const walletBalance = await getWalletBalance(uid);
+      const unreadCount = notifications.filter((n: any) => !n.read).length;
+
+      // Gather meetings and issues from all projects
+      const projectIds = projects.map((p: any) => String(p._id));
+      const [meetings, issues, files] = await Promise.all([
+        projectIds.length > 0
+          ? MeetingRequestModel.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 }).limit(10).lean()
+          : [],
+        projectIds.length > 0
+          ? ProjectIssueModel.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 }).limit(10).lean()
+          : [],
+        projectIds.length > 0
+          ? ProjectFileModel.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 }).limit(10).lean()
+          : [],
+      ]);
+
+      const activeProjects = projects.filter((p: any) => p.status !== "completed" && p.status !== "cancelled");
+      const completedProjects = projects.filter((p: any) => p.status === "completed");
+      const paidInvoices = invoices.filter((i: any) => i.status === "paid");
+      const pendingOrders = orders.filter((o: any) => ["pending", "approved", "in_progress"].includes(o.status));
+
+      // Account health score (0-100)
+      let healthScore = 40;
+      if (activeProjects.length > 0) healthScore += 20;
+      if (paidInvoices.length > 0) healthScore += 15;
+      if (unreadCount < 5) healthScore += 10;
+      if (orders.length > 0) healthScore += 10;
+      if (completedProjects.length > 0) healthScore += 5;
+      healthScore = Math.min(100, healthScore);
+
+      res.json({
+        kpis: {
+          totalOrders: orders.length,
+          pendingOrders: pendingOrders.length,
+          activeProjects: activeProjects.length,
+          completedProjects: completedProjects.length,
+          totalProjects: projects.length,
+          totalInvoices: invoices.length,
+          paidInvoices: paidInvoices.length,
+          totalQuotations: quotations.length,
+          walletBalance,
+          unreadNotifications: unreadCount,
+          healthScore,
+        },
+        orders: orders.map((o: any) => ({ ...o, id: String(o._id) })),
+        projects: projects.map((p: any) => ({ ...p, id: String(p._id) })),
+        invoices: invoices.map((i: any) => ({ ...i, id: String(i._id) })),
+        quotations: quotations.map((q: any) => ({ ...q, id: String(q._id) })),
+        notifications: notifications.map((n: any) => ({ ...n, id: String(n._id) })),
+        walletTransactions: walletTxs.map((t: any) => ({ ...t, id: String(t._id) })),
+        meetings: meetings.map((m: any) => ({ ...m, id: String(m._id) })),
+        issues: issues.map((i: any) => ({ ...i, id: String(i._id) })),
+        files: files.map((f: any) => ({ ...f, id: String(f._id) })),
+      });
+    } catch (err: any) {
+      console.error("[DashboardV2] aggregation error:", err?.message);
+      res.status(500).json({ error: "Failed to load dashboard data" });
+    }
+  });
+
   app.get("/api/admin/wallet/clients", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { UserModel } = await import("./models");
