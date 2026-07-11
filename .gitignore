@@ -19,14 +19,18 @@ attached_assets/*.zip
 # Treat any leaked file as compromised and revoke/regenerate immediately.
 *.pem
 *.p12
+*.p8
 *.key
 *.csr
 *.cer
 *.crt
 *.jks
 *.keystore
+*.mobileprovision
 distribution*
 QIROX_Distribution*
 attached_assets/*.cer
 attached_assets/*.csr
 attached_assets/*.key
+attached_assets/*.p8
+attached_assets/AuthKey_*

@@ -95,9 +95,21 @@ export async function startProcess(
   };
 
   if (opts.installCmd) {
-    broadcastLog(ownerId, projectId, "stdout", `⏳ تثبيت التبعيات: ${opts.installCmd}\n`);
+    // SEC-CRIT-002: installCmd is user-settable via the project settings API
+    // (PATCH /api/sandbox/projects/:id) and previously reached spawn(..., {shell:true})
+    // unsanitized. Route it through the same allowlist/metacharacter check as
+    // startCmd/buildCmd before it ever touches a shell.
+    let sanitizedInstallCmd: string;
     try {
-      await runCommand(opts.installCmd, cwd, envVars, ownerId, projectId);
+      sanitizedInstallCmd = sanitizeCommand(opts.installCmd);
+    } catch (err: any) {
+      broadcastLog(ownerId, projectId, "stderr", `❌ أمر التثبيت غير آمن: ${err.message}\n`);
+      releasePort(port);
+      throw err;
+    }
+    broadcastLog(ownerId, projectId, "stdout", `⏳ تثبيت التبعيات: ${sanitizedInstallCmd}\n`);
+    try {
+      await runCommand(sanitizedInstallCmd, cwd, envVars, ownerId, projectId);
       broadcastLog(ownerId, projectId, "stdout", "✅ تم التثبيت بنجاح\n");
     } catch (err: any) {
       broadcastLog(ownerId, projectId, "stderr", `❌ فشل التثبيت: ${err.message}\n`);
