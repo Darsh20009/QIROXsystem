@@ -40,6 +40,9 @@ export const FeatureFlag = {
   // ── Sprint 003 — Customer Journey V2 flags ────────────────────────────────
   CUSTOMER_JOURNEY_V2:      "FEATURE_CUSTOMER_JOURNEY_V2",
   DASHBOARD_V2:             "FEATURE_DASHBOARD_V2",
+
+  // ── Sprint 008 — CRM V2 Foundation ────────────────────────────────────────
+  CRM_V2:                   "FEATURE_CRM_V2",
 } as const;
 
 export type FeatureFlagName = typeof FeatureFlag[keyof typeof FeatureFlag];
@@ -82,6 +85,9 @@ export class FeatureFlagEngine {
     // Sprint 003 — Customer Journey V2 flags (off by default)
     [FeatureFlag.CUSTOMER_JOURNEY_V2,  false],
     [FeatureFlag.DASHBOARD_V2,         false],
+
+    // Sprint 008 — CRM V2 (off by default)
+    [FeatureFlag.CRM_V2,               false],
 
     // All V4 product flags off by default — activated via env or override
     [FeatureFlag.HOME_V4,              false],

@@ -14,6 +14,7 @@ import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
 import { registerDeploymentCloudRoutes, registerSubdomainMiddleware } from "./deployment-cloud";
 import { registerCrmRoutes } from "./domains/crm";
+import { registerCrmV2Routes } from "./domains/crm-v2";
 import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterestedCollection } from "./email-marketing";
 import mongoose from "mongoose";
 import { cache } from "./cache";
@@ -979,6 +980,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   registerSandboxRoutes(app, httpServer);
   registerDeploymentCloudRoutes(app);
   registerCrmRoutes(app);
+  registerCrmV2Routes(app);
   registerEmailMarketingRoutes(app);
 
   // ── Email Marketing Cron Jobs ────────────────────────────────────────────────

@@ -96,6 +96,7 @@ const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
 const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
 const DevChecklist = lazy(() => import("@/pages/DevChecklist"));
 const EmployeeCRM = lazy(() => import("@/pages/EmployeeCRM"));
+const CrmV2Page = lazy(() => import("@/features/crm-v2/CrmV2Page"));
 const EmployeeWhatsappCRM = lazy(() => import("@/pages/EmployeeWhatsappCRM"));
 const EmployeeLeadsData = lazy(() => import("@/pages/EmployeeLeadsData"));
 const LeadCallRating = lazy(() => import("@/pages/LeadCallRating"));
@@ -387,6 +388,7 @@ function AdminRouter() {
         <Route path="/employee/studio" component={QiroxStudio} />
         <Route path="/admin/studio" component={QiroxStudio} />
         <Route path="/employee/crm" component={EmployeeCRM} />
+        <Route path="/employee/crm-v2" component={CrmV2Page} />
         <Route path="/employee/whatsapp-crm" component={EmployeeWhatsappCRM} />
         <Route path="/employee/leads-data" component={EmployeeLeadsData} />
         <Route path="/employee/my-finance" component={EmployeeMyFinance} />
