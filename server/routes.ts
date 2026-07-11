@@ -16,6 +16,7 @@ import express from "express";
 import crypto from "crypto";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
 import { registerMailRoutes } from "./domains/mail";
+import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { cache, CACHE_TTL } from "./cache";
@@ -175,6 +176,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  // ── Sprint B — Customer Journey V2 production APIs ─────────────────────────
+  // Additive only. New namespace, new router. No existing route touched.
+  // Gate: FEATURE_CUSTOMER_JOURNEY_V2 (see server/routes/customer-v2.ts).
+  registerCustomerV2Routes(app);
 
   // ─── Google OAuth ───────────────────────────────────────────────────────────
   {
