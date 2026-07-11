@@ -1,0 +1,187 @@
+# SPRINT 004 — ORDER JOURNEY V2 (ARCHITECTURE ONLY)
+
+Before writing any code, fully audit the current customer ordering flow from the first click until project delivery.
+
+This sprint is NOT about adding features.
+
+It is about redesigning the complete customer journey.
+
+--------------------------------------------------
+
+OBJECTIVE
+
+Design the ideal QIROX client journey.
+
+Current production must remain untouched.
+
+No production code may change.
+
+No APIs may change.
+
+No database changes.
+
+No routing changes.
+
+Documentation and architecture only.
+
+--------------------------------------------------
+
+AUDIT THE ENTIRE FLOW
+
+Map every step the customer currently follows:
+
+Visitor
+
+↓
+
+Service Selection
+
+↓
+
+Project Configuration
+
+↓
+
+Quotation
+
+↓
+
+Payment
+
+↓
+
+Project Creation
+
+↓
+
+Dashboard
+
+↓
+
+Communication
+
+↓
+
+Delivery
+
+↓
+
+Invoice
+
+↓
+
+Support
+
+↓
+
+Review
+
+Identify every friction point.
+
+Explain WHY it is a problem.
+
+Propose the replacement.
+
+--------------------------------------------------
+
+DESIGN THE NEW JOURNEY
+
+The new journey must feel premium.
+
+The client should never feel lost.
+
+The client should always know:
+
+• where they are
+
+• what is happening
+
+• what happens next
+
+Every page must have a single primary action.
+
+--------------------------------------------------
+
+NEW REQUIREMENTS
+
+Include complete architecture for:
+
+• Interactive Service Wizard
+
+• Smart Project Builder
+
+• Live Price Estimation
+
+• Timeline Preview
+
+• Proposal Review Experience
+
+• Digital Agreement
+
+• Payment Experience
+
+• Kickoff Experience
+
+• Client Progress Center
+
+• Delivery Experience
+
+• Review Experience
+
+• Referral Experience
+
+--------------------------------------------------
+
+QIROX REQUIREMENTS
+
+Remember:
+
+QIROX is NOT SaaS.
+
+This system is the internal operating system of QIROX Studio.
+
+Customers only use the client portal.
+
+Employees use the employee portal.
+
+Administrators use QAdmin.
+
+Everything must follow this architecture.
+
+--------------------------------------------------
+
+OUTPUT
+
+Create:
+
+docs/sprint-004-order-journey-v2.md
+
+Include:
+
+1. Current Journey
+
+2. Problems
+
+3. Root Causes
+
+4. New Journey
+
+5. UX Rules
+
+6. Required Components
+
+7. Required APIs (future only)
+
+8. Risks
+
+9. Migration Strategy
+
+10. Verification Checklist
+
+Do NOT implement anything.
+
+Do NOT modify production.
+
+Stop after the document is complete.
+
+Expected downtime: ZERO.
