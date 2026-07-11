@@ -20,6 +20,8 @@ import { cache } from "./cache";
 import { connManager } from "./connection-manager";
 import { mkdirSync, existsSync } from "fs";
 import path from "path";
+// ── Sprint 002: Infrastructure layer (additive — zero downtime) ───────────────
+import { initInfrastructure } from "./infrastructure";
 
 // Global error handlers to prevent server crashes
 process.on("unhandledRejection", (reason: any, promise) => {
@@ -928,6 +930,16 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     console.error("[Startup]    → Atlas → Network Access → Add IP → 0.0.0.0/0 (Allow All)");
     // Don't crash — let the server stay up so health check keeps responding
     // Render will restart the service, giving MongoDB time to become accessible
+  }
+
+  // 2b. Sprint 002: Initialise infrastructure layer (additive — no existing code affected)
+  //     Mounts /health/live, /health/ready, /health/detailed
+  //     Registers Logger, Config, FeatureFlags, EventBus in DI container
+  try {
+    await initInfrastructure(app);
+  } catch (err: any) {
+    console.error("[Bootstrap] ❌ Infrastructure init failed:", err.message);
+    // Non-fatal — existing server continues operating normally
   }
 
   // 3. Register ALL API routes BEFORE setting up Vite
