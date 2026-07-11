@@ -25,9 +25,13 @@ import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import PixelTracking from "@/components/PixelTracking";
 import RoleGuard from "@/components/RoleGuard";
+// Sprint 003 — feature-flag guard for Dashboard V2
+import { DashboardV2Guard } from "@/features/customer-journey/components/JourneyShell";
 
 const Home = lazy(() => import("@/pages/Home"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Dashboard    = lazy(() => import("@/pages/Dashboard"));
+// Sprint 003 — Customer Journey V2 (FEATURE_DASHBOARD_V2 flag gates activation)
+const DashboardV2  = lazy(() => import("@/features/customer-journey/dashboard/DashboardV2"));
 const ClientOnboarding = lazy(() => import("@/pages/ClientOnboarding"));
 const QiroxAuthenticator = lazy(() => import("@/pages/QiroxAuthenticator"));
 const ProjectDetailsSetup = lazy(() => import("@/pages/ProjectDetailsSetup"));
@@ -215,6 +219,19 @@ function G_AdminRoles(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><Ad
 function G_ModConfig() { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminModConfig /></RoleGuard>; }
 function G_AdminWallet(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminWallet /></RoleGuard>; }
 function G_Dashboard()  { return <RoleGuard allowedRoles={["admin", "manager", "client"]} redirectTo="/employee/role-dashboard"><Dashboard /></RoleGuard>; }
+// Sprint 003 — gated by FEATURE_DASHBOARD_V2; falls back to existing /dashboard when disabled
+function G_DashboardV2() {
+  return (
+    <RoleGuard allowedRoles={["admin", "manager", "client"]} redirectTo="/login">
+      {/* DashboardV2Guard enforces FEATURE_DASHBOARD_V2 at render time.
+          When the flag is off the route exists but renders nothing (null fallback).
+          Enables zero-downtime rollout: flip the flag, no code deploy needed. */}
+      <DashboardV2Guard>
+        <DashboardV2 />
+      </DashboardV2Guard>
+    </RoleGuard>
+  );
+}
 
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community"];
 
@@ -273,6 +290,8 @@ function AdminRouter() {
     <Suspense fallback={null}>
       <Switch>
         <Route path="/dashboard" component={G_Dashboard} />
+        {/* Sprint 003 — Customer Journey V2 — gated behind FEATURE_DASHBOARD_V2 */}
+        <Route path="/dashboard-v2" component={G_DashboardV2} />
         <Route path="/onboarding" component={ClientOnboarding} />
         <Route path="/authenticator" component={QiroxAuthenticator} />
         <Route path="/auth/push-approve" component={PushApproval} />

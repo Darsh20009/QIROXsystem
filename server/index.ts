@@ -903,6 +903,31 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString(), service: "QIROX Studio" });
 });
 
+// ── Sprint 003: Public feature-flags endpoint ────────────────────────────────
+// Exposes the state of FEATURE_* env vars so the React frontend can gate UI.
+// Read-only, no auth required.
+// Uses the DI container when available; falls back to raw env-var parsing.
+app.get("/api/public/feature-flags", async (_req, res) => {
+  try {
+    const { container, TOKENS } = await import("./infrastructure");
+    const flags = container.tryResolve<{ snapshot(): Record<string, unknown> }>(TOKENS.FeatureFlags);
+    if (flags?.snapshot) {
+      return res.json({ ok: true, flags: flags.snapshot() });
+    }
+  } catch {
+    // container not yet initialised — fall through to env-var fallback
+  }
+  // Fallback: read FEATURE_* vars directly from process.env
+  const TRUTHY = new Set(["true", "1", "yes", "on"]);
+  const flags: Record<string, boolean> = {};
+  for (const [key, val] of Object.entries(process.env)) {
+    if (key.startsWith("FEATURE_") && val !== undefined) {
+      flags[key] = TRUTHY.has(val.toLowerCase().trim());
+    }
+  }
+  res.json({ ok: true, flags });
+});
+
 // ── Start HTTP server immediately (Render needs it responding fast) ──────────
 const port = parseInt(process.env.PORT || "5000", 10);
 httpServer.listen({ port, host: "0.0.0.0" }, () => {
