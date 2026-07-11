@@ -1,0 +1,136 @@
+# SPRINT 006 — MASTER IMPLEMENTATION PLAN (FINAL PLANNING)
+
+IMPORTANT
+
+This is the FINAL planning sprint.
+
+After this sprint, implementation becomes the primary focus.
+
+No production code.
+
+No API changes.
+
+No database changes.
+
+No routing changes.
+
+No feature activation.
+
+Expected downtime: ZERO.
+
+--------------------------------------------------
+
+OBJECTIVE
+
+Using every document created so far, produce ONE unified implementation plan for QIROX.
+
+This document becomes the single source of truth for the remainder of the project.
+
+--------------------------------------------------
+
+INPUT DOCUMENTS
+
+Review and merge:
+
+- ENTERPRISE-OS-VISION
+- SPRINT-005-ENTERPRISE-BLUEPRINT
+- PRODUCT-GAP-ANALYSIS
+- CLIENT-JOURNEY-BLUEPRINT
+- ORDER-JOURNEY-V2
+- Architecture documents
+- ADRs
+- Migration reports
+- Governance documents
+- Technical Debt Register
+- Stability Index
+- Module Ownership
+
+--------------------------------------------------
+
+OUTPUT
+
+Create:
+
+docs/MASTER-IMPLEMENTATION-PLAN.md
+
+--------------------------------------------------
+
+The document must contain:
+
+1. Current Progress (%)
+
+2. Remaining Work
+
+3. Remaining Technical Debt
+
+4. Remaining Migrations
+
+5. Remaining Sprints
+
+6. Module Dependency Graph
+
+7. Critical Path
+
+8. Parallel Work Opportunities
+
+9. High Risk Areas
+
+10. Rollback Strategy
+
+11. Release Strategy
+
+12. Production Readiness Checklist
+
+13. Security Checklist
+
+14. Performance Checklist
+
+15. QA Checklist
+
+16. Documentation Checklist
+
+17. Go-Live Checklist
+
+18. Phase-by-phase implementation order
+
+19. Estimated timeline
+
+20. Definition of "QIROX 100% Complete"
+
+--------------------------------------------------
+
+Then produce a table:
+
+| Module | Progress | Remaining | Priority | Risk |
+
+for every department and every domain.
+
+--------------------------------------------------
+
+Finally produce:
+
+TOP 100 remaining implementation tasks
+
+ordered by dependency.
+
+Every task must contain:
+
+- ID
+- Title
+- Description
+- Depends On
+- Estimated Complexity
+- Estimated Time
+- Risk
+- Feature Flag
+- Verification Method
+
+--------------------------------------------------
+
+DO NOT IMPLEMENT ANYTHING.
+
+DO NOT MODIFY PRODUCTION.
+
+STOP AFTER THE DOCUMENT IS COMPLETE.
+
+Expected downtime: ZERO.
