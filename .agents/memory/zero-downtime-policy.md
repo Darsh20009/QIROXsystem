@@ -19,8 +19,12 @@ Production must never stop. The system is live. Every change must be additive an
 
 ## Feature Flag Convention
 Major new features ship behind flags until QA-approved:
-- `CRM_V2`, `EMPLOYEE_DASHBOARD_V2`, `CLIENT_DASHBOARD_V2`, `EVENTS_V2`, `APPLE_WALLET_V2`, `AI_PLATFORM_V2`, `SEO_PLATFORM_V2`
+- `CRM_V2`, `EMPLOYEE_DASHBOARD_V2`, `CLIENT_DASHBOARD_V2`, `EVENTS_V2`, `APPLE_WALLET_V2`, `AI_PLATFORM_V2`, `SEO_PLATFORM_V2`, `CUSTOMER_JOURNEY_V2` (server/routes/customer-v2.ts)
 - Old implementation stays active until new one is approved for production.
+
+## Verifying flag-gated work end-to-end
+To confirm a flag-gated sprint is truly additive: (1) hit new routes authenticated with flag OFF → expect 404; (2) temporarily set the flag true via `setEnvVars` + workflow restart, log in with a real session cookie, curl the routes → confirm real DB-backed 200 responses (not mocks); (3) `deleteEnvVars` to remove the override, restart again, re-confirm 404 with the same session.
+**Why:** proves the flag actually gates the code path both ways and that responses use real data, without leaving the flag accidentally enabled in the shared env after verification.
 
 ## Migration Documentation Requirement
 Every migration must include: Purpose, Risk, Rollback Strategy, Verification Checklist, Expected Downtime (always ZERO).
