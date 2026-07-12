@@ -20,6 +20,10 @@ import {
   buildCustomerJourneyState,
   buildCustomerSummary,
   buildCustomerTimeline,
+  buildJourneyEvents,
+  buildNextRecommendedAction,
+  buildCustomerHealthScore,
+  buildDashboardKpis,
 } from "../services/customer-journey-service";
 
 // Roles other than "client" that may look up another customer's journey
@@ -112,6 +116,92 @@ export function registerCustomerV2Routes(app: Express): void {
       const timeline = await buildCustomerTimeline(uid);
       if (!timeline) return res.status(404).json({ error: "Customer not found" });
       res.json({ ok: true, timeline });
+    })(req, res, next);
+  });
+
+  // ── Sprint C additions — additive only, same auth/flag conventions above ──
+
+  // GET /api/v2/customer/events
+  // Unified narrative feed: real lifecycle records + derived journey-step
+  // completion events, merged and sorted. Superset of /timeline.
+  app.get("/api/v2/customer/events", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    return requireFlag(async (req, res) => {
+      const uid = resolveTargetUserId(req, res);
+      if (!uid) return;
+      const events = await buildJourneyEvents(uid);
+      if (!events) return res.status(404).json({ error: "Customer not found" });
+      res.json({ ok: true, events });
+    })(req, res, next);
+  });
+
+  // GET /api/v2/customer/next-action
+  // Single highest-priority recommended next step, derived from real journey state.
+  app.get("/api/v2/customer/next-action", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    return requireFlag(async (req, res) => {
+      const uid = resolveTargetUserId(req, res);
+      if (!uid) return;
+      const action = await buildNextRecommendedAction(uid);
+      res.json({ ok: true, action }); // action is null when the journey is complete
+    })(req, res, next);
+  });
+
+  // GET /api/v2/customer/health
+  // Composite 0-100 customer health score. Staff-only — not customer-facing
+  // (a low score is an internal signal, not something to surface to the
+  // customer themselves).
+  app.get("/api/v2/customer/health", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    return requireFlag(async (req, res) => {
+      const user = req.user as any;
+      if (!STAFF_ROLES.has(user.role)) {
+        return res.status(403).json({ error: "Staff access only" });
+      }
+      const uid = resolveTargetUserId(req, res);
+      if (!uid) return;
+      const health = await buildCustomerHealthScore(uid);
+      if (!health) return res.status(404).json({ error: "Customer not found" });
+      res.json({ ok: true, health });
+    })(req, res, next);
+  });
+
+  // GET /api/v2/customer/dashboard-kpis
+  // Portfolio-wide KPIs (real MongoDB aggregation, not per-customer looping).
+  // Staff-only.
+  app.get("/api/v2/customer/dashboard-kpis", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    return requireFlag(async (req, res) => {
+      const user = req.user as any;
+      if (!STAFF_ROLES.has(user.role)) {
+        return res.status(403).json({ error: "Staff access only" });
+      }
+      const kpis = await buildDashboardKpis();
+      res.json({ ok: true, kpis });
+    })(req, res, next);
+  });
+
+  // POST /api/v2/customer/notify-next-action
+  // Sends the customer's current next-recommended-action to them through the
+  // existing notification hub (server/notify.ts — DB + WebSocket + Web Push).
+  // A customer may trigger this for themselves (e.g. "remind me" button);
+  // staff may trigger it on behalf of any customer via ?userId=.
+  // No-op (200, notified:false) when there is nothing left to recommend.
+  app.post("/api/v2/customer/notify-next-action", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    return requireFlag(async (req, res) => {
+      const uid = resolveTargetUserId(req, res);
+      if (!uid) return;
+      const action = await buildNextRecommendedAction(uid);
+      if (!action) return res.json({ ok: true, notified: false });
+
+      const { fireNotify } = await import("../notify");
+      await fireNotify(uid, action.titleAr, action.descriptionAr, {
+        type: "info",
+        link: action.href,
+      });
+
+      res.json({ ok: true, notified: true, action });
     })(req, res, next);
   });
 }
