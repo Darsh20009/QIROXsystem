@@ -8,3 +8,4 @@
 - [react-icons v5 breaking change](react-icons-v5.md) — SiLinkedin removed in v5; replace with lucide-react Linkedin. Also add react-icons to optimizeDeps.exclude in vite.config.ts to avoid pre-bundle named-export failures.
 - [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.
 - [Vite SIGBUS crash](vite-sigbus-crash.md) — serve pre-built dist/public instead of launching Vite (SIGBUS crash in this env).
+- [QIROX environment setup](qirox-env-setup.md) — fresh import needs npm install (root + mockup-sandbox) + MONGODB_URI; client changes need a vite build + restart since dev serves prebuilt dist; full tsc OOMs regardless of your changes.

@@ -19,7 +19,8 @@ Production must never stop. The system is live. Every change must be additive an
 
 ## Feature Flag Convention
 Major new features ship behind flags until QA-approved:
-- `CRM_V2`, `EMPLOYEE_DASHBOARD_V2`, `CLIENT_DASHBOARD_V2`, `EVENTS_V2`, `APPLE_WALLET_V2`, `AI_PLATFORM_V2`, `SEO_PLATFORM_V2`, `CUSTOMER_JOURNEY_V2` (server/routes/customer-v2.ts)
+- `CRM_V2`, `EMPLOYEE_DASHBOARD_V2`, `CLIENT_DASHBOARD_V2`, `EVENTS_V2`, `APPLE_WALLET_V2`, `AI_PLATFORM_V2`, `SEO_PLATFORM_V2`, `CUSTOMER_JOURNEY_V2` (server/routes/customer-v2.ts), `PROPOSAL_V2` (server/domains/proposal-v2, additive proposal builder alongside the untouched Quotation system)
+- Route-level gate convention: wrap each handler in a `requireFlag()` middleware that returns HTTP 404 (not 403) when the flag is off, so the endpoint looks like it doesn't exist. See `server/routes/customer-v2.ts` and `server/domains/proposal-v2/routes.ts` for the copy-pasteable pattern.
 - Old implementation stays active until new one is approved for production.
 
 ## Verifying flag-gated work end-to-end

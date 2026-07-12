@@ -9,6 +9,19 @@ import { sendDirectEmail } from "./email";
 import axios from "axios";
 import * as fs from "fs";
 import * as path from "path";
+import rateLimit from "express-rate-limit";
+
+// ── Beta readiness: AI-specific rate limiter ─────────────────────────────────
+// AI endpoints call paid third-party providers (OpenAI/Moonshot); the global
+// /api limiter (500 req / 15 min) is too generous for cost-sensitive routes.
+// Additive-only: does not change any AI logic, only throttles abusive callers.
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,             // 20 AI calls per IP per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "تجاوزت الحد المسموح لطلبات الذكاء الاصطناعي، حاول بعد دقيقة" },
+});
 
 /* ─── AI Provider — smart selection: OpenAI GPT-4o > Moonshot (Kimi) ─── */
 const MOONSHOT_BASE_URL = "https://api.moonshot.ai/v1";
@@ -3431,31 +3444,31 @@ async function handleStreamChat(req: any, res: any) {
 
 /* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
-  app.post("/api/ai/message", handleChat);
-  app.post("/api/ai/chat", handleChat); // legacy alias
-  app.post("/api/ai/stream", handleStreamChat);
-  app.post("/api/ai/analyze", handleAnalyze);
-  app.post("/api/ai/generate", handleGenerate);
-  app.post("/api/ai/custom-order", handleCustomOrder);
-  app.post("/api/ai/package-finder", handlePackageFinder);
-  app.post("/api/ai/estimate-project", handleEstimateProject);
-  app.post("/api/ai/generate-proposal", handleGenerateProposal);
-  app.post("/api/ai/analyze-website", handleAnalyzeWebsite);
-  app.post("/api/ai/analyze-sentiment", handleAnalyzeSentiment);
-  app.post("/api/ai/suggest-assignment", handleSuggestAssignment);
-  app.post("/api/ai/predict-delay", handlePredictDelay);
-  app.post("/api/ai/generate-social", handleGenerateSocial);
-  app.post("/api/ai/meeting-summary", handleMeetingSummary);
-  app.post("/api/ai/translate", handleTranslate);
-  app.post("/api/ai/batch-translate", handleBatchTranslate);
-  app.post("/api/ai/describe-project", handleDescribeProject);
-  app.post("/api/ai/project-checklist", handleProjectChecklist);
-  app.post("/api/ai/consultation-email", handleConsultationEmail);
-  app.post("/api/ai/enhance-idea", handleEnhanceIdea);
-  app.post("/api/studio/chat", handleStudioChat);
+  app.post("/api/ai/message", aiLimiter, handleChat);
+  app.post("/api/ai/chat", aiLimiter, handleChat); // legacy alias
+  app.post("/api/ai/stream", aiLimiter, handleStreamChat);
+  app.post("/api/ai/analyze", aiLimiter, handleAnalyze);
+  app.post("/api/ai/generate", aiLimiter, handleGenerate);
+  app.post("/api/ai/custom-order", aiLimiter, handleCustomOrder);
+  app.post("/api/ai/package-finder", aiLimiter, handlePackageFinder);
+  app.post("/api/ai/estimate-project", aiLimiter, handleEstimateProject);
+  app.post("/api/ai/generate-proposal", aiLimiter, handleGenerateProposal);
+  app.post("/api/ai/analyze-website", aiLimiter, handleAnalyzeWebsite);
+  app.post("/api/ai/analyze-sentiment", aiLimiter, handleAnalyzeSentiment);
+  app.post("/api/ai/suggest-assignment", aiLimiter, handleSuggestAssignment);
+  app.post("/api/ai/predict-delay", aiLimiter, handlePredictDelay);
+  app.post("/api/ai/generate-social", aiLimiter, handleGenerateSocial);
+  app.post("/api/ai/meeting-summary", aiLimiter, handleMeetingSummary);
+  app.post("/api/ai/translate", aiLimiter, handleTranslate);
+  app.post("/api/ai/batch-translate", aiLimiter, handleBatchTranslate);
+  app.post("/api/ai/describe-project", aiLimiter, handleDescribeProject);
+  app.post("/api/ai/project-checklist", aiLimiter, handleProjectChecklist);
+  app.post("/api/ai/consultation-email", aiLimiter, handleConsultationEmail);
+  app.post("/api/ai/enhance-idea", aiLimiter, handleEnhanceIdea);
+  app.post("/api/studio/chat", aiLimiter, handleStudioChat);
 
   // ── Community fake replies — generates realistic Arabic community messages ──
-  app.post("/api/community/reply", async (req: any, res: any) => {
+  app.post("/api/community/reply", aiLimiter, async (req: any, res: any) => {
     try {
       const { userMessage, posterTitle } = req.body as { userMessage?: string; posterTitle?: string };
       const prompt = `أنت تلعب دور أعضاء مجتمع نشط في مجموعة واتساب أو تيليقرام لشركة تقنية سعودية اسمها "كيروكس استوديو".
@@ -3488,7 +3501,7 @@ ${posterTitle ? `السياق: البوستر عن "${posterTitle}"` : ""}
   });
 
   // ── Image proxy — fetches Pollinations server-side so browser never has CORS/CSP issues ──
-  app.get("/api/ai/image-proxy", async (req: any, res: any) => {
+  app.get("/api/ai/image-proxy", aiLimiter, async (req: any, res: any) => {
     try {
       const { prompt, width = "1024", height = "1024", seed, model = "flux" } = req.query;
       if (!prompt) return res.status(400).json({ error: "prompt required" });
@@ -3505,7 +3518,7 @@ ${posterTitle ? `السياق: البوستر عن "${posterTitle}"` : ""}
   });
 
   // ── Video proxy — fetches Pollinations video server-side ──
-  app.get("/api/ai/video-proxy", async (req: any, res: any) => {
+  app.get("/api/ai/video-proxy", aiLimiter, async (req: any, res: any) => {
     try {
       const { prompt, width = "512", height = "512", duration = "5", seed } = req.query;
       if (!prompt) return res.status(400).json({ error: "prompt required" });
@@ -3523,7 +3536,7 @@ ${posterTitle ? `السياق: البوستر عن "${posterTitle}"` : ""}
     }
   });
 
-  app.post("/api/ai/generate-image", async (req: any, res: any) => {
+  app.post("/api/ai/generate-image", aiLimiter, async (req: any, res: any) => {
     try {
       const { prompt, style } = req.body;
       if (!prompt) return res.status(400).json({ error: "Prompt required" });

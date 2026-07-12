@@ -15,6 +15,8 @@ import { registerSandboxRoutes } from "./sandbox-routes";
 import { registerDeploymentCloudRoutes, registerSubdomainMiddleware } from "./deployment-cloud";
 import { registerCrmRoutes } from "./domains/crm";
 import { registerCrmV2Routes } from "./domains/crm-v2";
+import { registerProposalV2Routes } from "./domains/proposal-v2";
+import { registerApiDocsRoutes } from "./docs";
 import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterestedCollection } from "./email-marketing";
 import mongoose from "mongoose";
 import { cache } from "./cache";
@@ -24,12 +26,37 @@ import path from "path";
 // ── Sprint 002: Infrastructure layer (additive — zero downtime) ───────────────
 import { initInfrastructure } from "./infrastructure";
 
-// Global error handlers to prevent server crashes
+// ── Beta Readiness: structured error capture ─────────────────────────────────
+// Routes every unhandled error through the existing ConsoleLogger (registered
+// in the DI container by initInfrastructure) when available, so production
+// gets a single structured JSON error stream instead of ad-hoc console.error
+// calls. Falls back to console.error before the container is ready (e.g.
+// errors during the earliest boot steps) — behaviour is unchanged in that
+// case, so this is purely additive.
+//
+// Optional Sentry-style capture: if SENTRY_DSN is set, the payload shape below
+// (message/error/context) is exactly what @sentry/node's captureException
+// expects, so wiring a real Sentry transport later is a one-line addition in
+// this function — no call sites need to change. Not wired today (no Sentry
+// package/DSN configured), left as a documented, additive-only next step in
+// the Beta Readiness report.
+// Populated once initInfrastructure() resolves (see below); undefined before
+// that point or if bootstrap failed — logErrorEvent falls back to console.error.
+let _structuredLogger: { error: (msg: string, opts?: any) => void } | undefined;
+
+function logErrorEvent(message: string, err: any, context?: Record<string, unknown>): void {
+  if (_structuredLogger) {
+    _structuredLogger.error(message, { error: err, data: context });
+    return;
+  }
+  console.error(`[${message}]`, err?.message || err, context ?? "");
+}
+
 process.on("unhandledRejection", (reason: any, promise) => {
-  console.error("[UnhandledRejection] Unhandled promise rejection:", reason?.message || reason, "at:", promise);
+  logErrorEvent("UnhandledRejection", reason, { promise: String(promise) });
 });
 process.on("uncaughtException", (err: Error) => {
-  console.error("[UncaughtException] Uncaught exception:", err.message, err.stack);
+  logErrorEvent("UncaughtException", err);
 });
 
 // Ensure required directories exist on startup
@@ -908,6 +935,10 @@ app.get("/api/health", (_req, res) => {
 // Exposes the state of FEATURE_* env vars so the React frontend can gate UI.
 // Read-only, no auth required.
 // Uses the DI container when available; falls back to raw env-var parsing.
+// ── Beta Readiness: OpenAPI / Swagger docs ───────────────────────────────────
+// Read-only reference UI at /api-docs. Additive — no existing route touched.
+registerApiDocsRoutes(app);
+
 app.get("/api/public/feature-flags", async (_req, res) => {
   try {
     const { container, TOKENS } = await import("./infrastructure");
@@ -962,7 +993,9 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   //     Mounts /health/live, /health/ready, /health/detailed
   //     Registers Logger, Config, FeatureFlags, EventBus in DI container
   try {
-    await initInfrastructure(app);
+    const infraContainer = await initInfrastructure(app);
+    const { TOKENS } = await import("./infrastructure");
+    _structuredLogger = infraContainer.tryResolve(TOKENS.Logger);
   } catch (err: any) {
     console.error("[Bootstrap] ❌ Infrastructure init failed:", err.message);
     // Non-fatal — existing server continues operating normally
@@ -981,6 +1014,11 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   registerDeploymentCloudRoutes(app);
   registerCrmRoutes(app);
   registerCrmV2Routes(app);
+
+  // ── Sprint D — Proposal Builder V2 ──────────────────────────────────────────
+  // Additive only. New /api/v2/proposals/* namespace. No existing endpoint
+  // touched. Gate: FEATURE_PROPOSAL_V2 (see server/domains/proposal-v2/routes.ts).
+  registerProposalV2Routes(app);
   registerEmailMarketingRoutes(app);
 
   // ── Email Marketing Cron Jobs ────────────────────────────────────────────────
@@ -1010,10 +1048,15 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     console.log("[EmailMarketing] Cron jobs scheduled (daily 9AM + weekly Sunday 10AM, Riyadh time)");
   }).catch(() => {});
 
-  app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-    console.error("Internal Server Error:", err);
+
+    // Beta readiness: route through the structured logger (falls back to
+    // console.error if the DI container isn't ready yet) and give ops a
+    // captured, greppable error event with path/method/status context.
+    logErrorEvent("Unhandled request error", err, { path: req.path, method: req.method, status });
+
     if (res.headersSent) return next(err);
     return res.status(status).json({ message });
   });

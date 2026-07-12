@@ -16,3 +16,4 @@ export * from "./models/sandbox";
 export * from "./models/deployment";
 export * from "./models/system";
 export * from "./models/client-tools";
+export * from "./models/proposal-v2";
