@@ -1,27 +1,15 @@
 // ── DashboardV2 ───────────────────────────────────────────────────────────────
-// Sprint 007 — Customer Dashboard V2. Fully implemented.
+// Customer Dashboard V2. Fully implemented with live server-backed data.
 // Gated behind FEATURE_DASHBOARD_V2. The existing /dashboard is untouched.
-// Route: /dashboard-v2 (registered in App.tsx, guards applied there)
+// Route: /dashboard-v2 (registered in App.tsx)
 //
-// Sections:
-//   1. Welcome Center          — greeting + live KPI pills
-//   2. Quick Actions           — 8-tile action grid
-//   3. Recommended Next Action — CTA Engine
-//   4. Customer KPIs           — 4 metric cards
-//   5. Account Health          — health score bar
-//   6. Journey Progress        — 11-step timeline
-//   7. Active Projects         — live projects with progress bars
-//   8. Timeline                — project phase timeline
-//   9. Tasks                   — project issues/tasks
-//  10. Files                   — project deliverable files
-//  11. Quotations              — price quotes from team
-//  12. Invoices                — billing invoices
-//  13. Payments                — wallet balance + transactions
-//  14. Meetings                — scheduled QMeet sessions
-//  15. Recent Activity         — notification activity feed
-//  16. Notifications           — full notification list
-//  17. Support                 — support channels panel
+// Architecture:
+//   JourneyV2Provider fetches /api/v2/customer/journey on mount, adapts the
+//   server-computed CustomerJourneyState to the client JourneyState shape, and
+//   passes it as `initialState` to JourneyProvider so every section in the
+//   tree reads real database-backed journey progress instead of sessionStorage.
 
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n";
 import { JourneyProvider }           from "../context/journey-context";
 import { WelcomeSection }            from "./sections/WelcomeSection";
@@ -41,13 +29,67 @@ import { CustomerKPIsSection }       from "./sections/CustomerKPIsSection";
 import { AccountHealthSection }      from "./sections/AccountHealthSection";
 import { RecentActivitySection }     from "./sections/RecentActivitySection";
 import { QuickActionsSection }       from "./sections/QuickActionsSection";
+import type { JourneyState }         from "../types";
+
+// ── Server → Client state adapter ─────────────────────────────────────────────
+// The server's CustomerJourneyState is a superset of the client JourneyState.
+// We strip server-only fields (userId, source, step.order) to avoid type drift.
+
+function adaptServerJourney(raw: any): JourneyState {
+  const steps: JourneyState["steps"] = {};
+  for (const [id, s] of Object.entries(raw.steps ?? {})) {
+    const step = s as any;
+    steps[id as keyof typeof steps] = {
+      id:          step.id,
+      status:      step.status,
+      startedAt:   step.startedAt   ? new Date(step.startedAt)   : undefined,
+      completedAt: step.completedAt ? new Date(step.completedAt) : undefined,
+      meta:        step.meta ?? {},
+    };
+  }
+  return {
+    version:         1,
+    activeStepId:    raw.activeStepId,
+    steps,
+    progressPercent: raw.progressPercent,
+    isComplete:      raw.isComplete,
+    updatedAt:       new Date(raw.updatedAt),
+  };
+}
+
+// ── Journey V2 Provider — hydrates context from real API ──────────────────────
+
+function JourneyV2Provider({ children }: { children: React.ReactNode }) {
+  const { data, isLoading } = useQuery<JourneyState | null>({
+    queryKey: ["/api/v2/customer/journey"],
+    queryFn: async () => {
+      const r = await fetch("/api/v2/customer/journey");
+      if (!r.ok) return null; // flag off or not a client → fall back to local state
+      const body = await r.json();
+      return body.ok && body.journey ? adaptServerJourney(body.journey) : null;
+    },
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  // While loading, render with no initial state (JourneyProvider creates fresh state)
+  // Once loaded, pass server state as initialState so the context is hydrated once.
+  // Key on the data ref so the provider re-mounts when server data arrives.
+  return (
+    <JourneyProvider key={isLoading ? "loading" : "ready"} initialState={data ?? undefined}>
+      {children}
+    </JourneyProvider>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function DashboardV2() {
   const { lang } = useI18n();
   const l = (lang as string) === "en" ? "en" : "ar";
 
   return (
-    <JourneyProvider>
+    <JourneyV2Provider>
       <div
         className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24"
         dir={l === "ar" ? "rtl" : "ltr"}
@@ -59,7 +101,7 @@ export default function DashboardV2() {
               {l === "ar" ? "لوحتي" : "My Dashboard"}
             </h1>
             <span className="text-[10px] font-mono bg-black/[0.04] dark:bg-white/[0.06] text-gray-400 px-2 py-0.5 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
-              V2 · BETA
+              V2
             </span>
           </div>
         </div>
@@ -73,7 +115,7 @@ export default function DashboardV2() {
           {/* 2. Quick Actions grid */}
           <QuickActionsSection lang={l} />
 
-          {/* 3. Recommended Next Action (CTA Engine) */}
+          {/* 3. Recommended Next Action — wired to /api/v2/customer/next-action */}
           <NextActionSection lang={l} />
 
           {/* 4. Customer KPIs */}
@@ -82,7 +124,7 @@ export default function DashboardV2() {
           {/* 5. Account Health */}
           <AccountHealthSection lang={l} />
 
-          {/* 6. Journey Progress */}
+          {/* 6. Journey Progress — reads from JourneyV2Provider (server-backed) */}
           <section>
             <h3 className="text-sm font-semibold text-black dark:text-white mb-3">
               {l === "ar" ? "رحلتك مع QIROX" : "Your QIROX Journey"}
@@ -127,6 +169,6 @@ export default function DashboardV2() {
 
         </div>
       </div>
-    </JourneyProvider>
+    </JourneyV2Provider>
   );
 }

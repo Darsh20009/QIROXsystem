@@ -11125,6 +11125,38 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── Feature Flag Runtime Override (admin only) ──────────────────────────────
+  // Additive: allows toggling FEATURE_* flags in-process without a server
+  // restart. Uses the existing FeatureFlagEngine.override() method.
+  // Zero-downtime — no existing route or model is touched.
+  app.post("/api/admin/feature-flags/override", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { flag, enabled } = req.body;
+    if (typeof flag !== "string" || typeof enabled !== "boolean") {
+      return res.status(400).json({ error: "flag (string) and enabled (boolean) are required" });
+    }
+    try {
+      const { getFlags } = await import("./infrastructure");
+      const engine = getFlags();
+      engine.override(flag, enabled);
+      console.log(`[FeatureFlags] Runtime override: ${flag} = ${enabled}`);
+      res.json({ ok: true, flag, enabled });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message ?? err) });
+    }
+  });
+
+  app.get("/api/admin/feature-flags/snapshot", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const { getFlags } = await import("./infrastructure");
+      const engine = getFlags();
+      res.json({ ok: true, flags: engine.snapshot() });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message ?? err) });
+    }
+  });
+
   app.get("/api/extra-addons", async (req, res) => {
     try {
       const { segment, plan } = req.query as { segment?: string; plan?: string };
