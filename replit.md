@@ -28,6 +28,40 @@
 
 If the answer to any of these is "no", redesign it before considering the task complete.
 
+## 🏢 Permanent Product Rule — QIROX Is a Premium Digital Company Experience, Not a Management System
+
+**QIROX is NOT a management system. QIROX is a premium digital company experience.**
+
+Every feature must answer "How does this make the customer feel?" — not only "What does this feature do?"
+
+### Design priorities (in order)
+1. Emotion before information.
+2. Clarity before complexity.
+3. Story before statistics.
+4. Human before technology.
+5. Experience before functionality.
+6. Beauty without sacrificing usability.
+
+### Structural rules
+- Every screen must have a clear purpose.
+- Every page must have one primary action.
+- Every action must reduce customer effort.
+- Never overwhelm the user with too much information — use progressive disclosure throughout the platform.
+- The interface must always guide the customer naturally.
+- No dead pages. No empty pages. No generic placeholders. No generic icons. No random illustrations. Everything reinforces the QIROX brand.
+
+### State & feedback rules
+- Animations communicate state, not decoration.
+- Every loading state reassures the user that work is happening.
+- Every success state celebrates appropriately.
+- Every error explains the solution.
+
+### Customer-facing language rule
+Never expose internal technical terminology to customers. Customers must never see words like: MongoDB, API, Queue, Task ID, Sprint, Issue, Bug, Internal Status. Translate everything into customer language. The customer should always feel that QIROX is actively working on their project.
+
+### Final check
+If any future UI looks similar to a generic admin template or an AI-generated dashboard, redesign it before considering the task complete. **This is a permanent product rule.**
+
 ## ⚠️ CTO Directive — Zero Downtime Policy (Non-Negotiable)
 
 **Production MUST NEVER stop. The system is live and in use.**
