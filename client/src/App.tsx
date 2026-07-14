@@ -27,8 +27,12 @@ import PixelTracking from "@/components/PixelTracking";
 import RoleGuard from "@/components/RoleGuard";
 // Sprint 003 — feature-flag guard for Dashboard V2
 import { DashboardV2Guard } from "@/features/customer-journey/components/JourneyShell";
+// Sprint 009 — feature-flag guard for Landing Experience V2
+import { LandingV2Guard } from "@/features/landing-v2/LandingV2Guard";
 
 const Home = lazy(() => import("@/pages/Home"));
+// Sprint 009 — Landing Experience V2 (FEATURE_LANDING_V2 flag gates activation; falls back to Home)
+const LandingV2Page = lazy(() => import("@/features/landing-v2/LandingV2Page"));
 const Dashboard    = lazy(() => import("@/pages/Dashboard"));
 // Sprint 003 — Customer Journey V2 (FEATURE_DASHBOARD_V2 flag gates activation)
 const DashboardV2  = lazy(() => import("@/features/customer-journey/dashboard/DashboardV2"));
@@ -235,6 +239,15 @@ function G_DashboardV2() {
   );
 }
 
+// Sprint 009 — gated by FEATURE_LANDING_V2; falls back to existing Home when disabled
+function HomeGate() {
+  return (
+    <LandingV2Guard fallback={<Home />}>
+      <LandingV2Page />
+    </LandingV2Guard>
+  );
+}
+
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community"];
 
 
@@ -242,7 +255,7 @@ function PublicRouter() {
   return (
     <Suspense fallback={null}>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={HomeGate} />
         <Route path="/about" component={About} />
         <Route path="/service/:id" component={ServiceDetail} />
         <Route path="/prices" component={Prices} />

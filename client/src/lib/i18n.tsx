@@ -332,6 +332,110 @@ const translations = {
   "common.success":     { ar: "تم بنجاح",       en: "Success" },
   "common.error":       { ar: "حدث خطأ",        en: "An error occurred" },
   "common.noData":      { ar: "لا توجد بيانات", en: "No data available" },
+
+  // Landing V2
+  "v2.hero.badge": { ar: "مصنع الأنظمة الرقمية", en: "DIGITAL SYSTEMS FACTORY" },
+  "v2.hero.title1": { ar: "نبني", en: "We Build" },
+  "v2.hero.title2": { ar: "المستقبل الرقمي", en: "The Digital Future" },
+  "v2.hero.subtitle": { ar: "لا نصنع مجرد مواقع، بل نبني بنية تحتية تقنية متكاملة تنطلق بأعمالك نحو آفاق جديدة خلال أيام.", en: "We don't just build websites, we build complete technical infrastructure that launches your business to new horizons in days." },
+  "v2.hero.cta": { ar: "ابدأ رحلتك", en: "Start Your Journey" },
+  "v2.hero.secondaryCta": { ar: "استكشف الأنظمة", en: "Explore Systems" },
+
+  "v2.story.badge": { ar: "رؤيتنا", en: "OUR VISION" },
+  "v2.story.title": { ar: "نحن هنا لتمكينك", en: "We are here to empower you" },
+  "v2.story.p1": { ar: "نعلم أن الانتقال للعالم الرقمي قد يكون معقداً، لذلك صممنا كيروكس ليكون شريكك التقني الذي يزيل عنك العبء، لتركز أنت على نمو أعمالك وتحقيق طموحاتك.", en: "We know transitioning to digital can be complex. That's why we designed QIROX to be your tech partner, removing the burden so you can focus on growing your business and achieving your ambitions." },
+  
+  "v2.services.badge": { ar: "خدماتنا", en: "OUR SERVICES" },
+  "v2.services.title": { ar: "أنظمة متكاملة", en: "Complete Systems" },
+  "v2.services.subtitle": { ar: "حلول تقنية مصممة لتلائم مختلف القطاعات بكفاءة وأمان.", en: "Tech solutions designed to fit various sectors efficiently and securely." },
+  "v2.services.ecommerce": { ar: "المتاجر الإلكترونية", en: "E-Commerce" },
+  "v2.services.ecommerce.desc": { ar: "نظام متكامل لإدارة المبيعات والمخزون بسلاسة.", en: "Complete system for seamless sales and inventory management." },
+  "v2.services.restaurant": { ar: "المطاعم والمقاهي", en: "Restaurants & Cafes" },
+  "v2.services.restaurant.desc": { ar: "نظام نقاط البيع والطلبات الذكية عبر رمز الاستجابة السريعة.", en: "POS system and smart QR orders." },
+  "v2.services.corporate": { ar: "الشركات والمؤسسات", en: "Corporate" },
+  "v2.services.corporate.desc": { ar: "بوابة رقمية تعكس احترافية أعمالك وتسهل تواصلك مع العملاء.", en: "Digital portal reflecting your professionalism and facilitating client communication." },
+
+  "v2.portfolio.badge": { ar: "أعمالنا", en: "OUR WORK" },
+  "v2.portfolio.title": { ar: "بصمتنا الرقمية", en: "Our Digital Footprint" },
+  "v2.portfolio.subtitle": { ar: "استعرض مجموعة من الأنظمة التي بنيناها بشغف واحترافية.", en: "Browse a selection of systems we built with passion and professionalism." },
+  "v2.portfolio.viewAll": { ar: "جميع الأنظمة", en: "View All Systems" },
+
+  "v2.journey.badge": { ar: "رحلتك معنا", en: "YOUR JOURNEY" },
+  "v2.journey.title": { ar: "من الفكرة إلى الإطلاق", en: "From Idea to Launch" },
+  "v2.journey.subtitle": { ar: "خطوات واضحة ومدروسة لضمان نجاح مشروعك بأعلى معايير الجودة.", en: "Clear and considered steps to ensure the success of your project with the highest quality standards." },
+  "v2.journey.step1": { ar: "اكتشاف الاحتياجات", en: "Discover Needs" },
+  "v2.journey.step1.desc": { ar: "نجلس معك لفهم رؤيتك وأهدافك بدقة.", en: "We sit with you to understand your vision and goals precisely." },
+  "v2.journey.step2": { ar: "التصميم والبناء", en: "Design & Build" },
+  "v2.journey.step2.desc": { ar: "نحول الفكرة إلى واقع باستخدام أحدث التقنيات.", en: "We turn the idea into reality using the latest technologies." },
+  "v2.journey.step3": { ar: "الإطلاق والنمو", en: "Launch & Grow" },
+  "v2.journey.step3.desc": { ar: "نرافقك في الانطلاق ونقدم دعماً مستمراً لضمان نجاحك.", en: "We accompany you at launch and provide continuous support to ensure success." },
+
+  "v2.stats.delivered": { ar: "نظام أُطلق بنجاح", en: "Systems Launched" },
+  "v2.stats.clients": { ar: "عميل يثق بنا", en: "Trusting Clients" },
+  "v2.stats.sectors": { ar: "قطاعات نخدمها", en: "Sectors Served" },
+  "v2.stats.uptime": { ar: "استقرار وثبات", en: "Uptime Stability" },
+
+  "v2.timeline.badge": { ar: "مسار العمل", en: "WORKFLOW" },
+  "v2.timeline.title": { ar: "نعمل بشفافية وسرعة", en: "We Work Transparently & Fast" },
+  "v2.timeline.subtitle": { ar: "نلتزم بجداول زمنية دقيقة لتقديم مشاريع ذات قيمة حقيقية وفي وقت قياسي.", en: "We adhere to precise timelines to deliver projects of real value in record time." },
+
+  "v2.testimonials.badge": { ar: "آراء العملاء", en: "TESTIMONIALS" },
+  "v2.testimonials.title": { ar: "شركاء النجاح", en: "Partners in Success" },
+  "v2.testimonials.subtitle": { ar: "أصوات من وثقوا بنا لنكون جزءاً من قصتهم.", en: "Voices of those who trusted us to be part of their story." },
+
+  "v2.pricing.badge": { ar: "الاستثمار", en: "INVESTMENT" },
+  "v2.pricing.title": { ar: "قيمة حقيقية لأعمالك", en: "Real Value for Your Business" },
+  "v2.pricing.subtitle": { ar: "اختر الباقة التي تتناسب مع طموحاتك وميزانيتك بأسعار واضحة وبدون رسوم خفية.", en: "Choose the package that fits your ambitions and budget with clear prices and no hidden fees." },
+  "v2.pricing.viewAll": { ar: "عرض كل الباقات", en: "View All Packages" },
+
+  "v2.cta.title": { ar: "هل أنت مستعد لتغيير قواعد اللعبة؟", en: "Ready to Change the Game?" },
+  "v2.cta.subtitle": { ar: "لا تدع المنافسين يسبقونك. ابدأ في بناء نظامك الرقمي اليوم ودعنا نكون شركاء نجاحك.", en: "Don't let competitors outpace you. Start building your digital system today and let us be your partners in success." },
+  "v2.cta.primary": { ar: "ابدأ مشروعك الآن", en: "Start Your Project Now" },
+  "v2.cta.contact": { ar: "تواصل مع المبيعات", en: "Contact Sales" },
+
+  // Portfolio items
+  "v2.portfolio.sys1.name": { ar: "فود فلو كاشير", en: "FoodFlow POS" },
+  "v2.portfolio.sys1.tag": { ar: "مطاعم", en: "Restaurant" },
+  "v2.portfolio.sys2.name": { ar: "ستور ماكس", en: "StoreMax E-Com" },
+  "v2.portfolio.sys2.tag": { ar: "تجزئة", en: "Retail" },
+  "v2.portfolio.sys3.name": { ar: "بوابة كورب داش", en: "CorpDash Portal" },
+  "v2.portfolio.sys3.tag": { ar: "شركات", en: "Corporate" },
+
+  // Timeline items
+  "v2.timeline.m1.year": { ar: "اليوم الأول", en: "Day 1" },
+  "v2.timeline.m1.title": { ar: "الاستكشاف والتحليل", en: "Kickoff & Discovery" },
+  "v2.timeline.m1.desc": { ar: "نرسم معمارية النظام ونحدد المتطلبات.", en: "We map out the architecture and define requirements." },
+  "v2.timeline.m2.year": { ar: "اليوم الثالث", en: "Day 3" },
+  "v2.timeline.m2.title": { ar: "اعتماد التصميم", en: "Design Sign-off" },
+  "v2.timeline.m2.desc": { ar: "اعتماد الواجهات البصرية وتجربة المستخدم.", en: "Visuals and UX approved." },
+  "v2.timeline.m3.year": { ar: "اليوم العاشر", en: "Day 10" },
+  "v2.timeline.m3.title": { ar: "اكتمال التطوير", en: "Development Complete" },
+  "v2.timeline.m3.desc": { ar: "بناء واختبار المحرك الأساسي للنظام.", en: "Core engine built and tested." },
+  "v2.timeline.m4.year": { ar: "اليوم الرابع عشر", en: "Day 14" },
+  "v2.timeline.m4.title": { ar: "الإطلاق", en: "Launch" },
+  "v2.timeline.m4.desc": { ar: "أنظمتك تعمل وتستقبل العملاء.", en: "Systems live and operational." },
+
+  // Testimonials
+  "v2.test.1.name": { ar: "أحمد الفهد", en: "Ahmed Al-Fahad" },
+  "v2.test.1.role": { ar: "المدير التنفيذي، فود فلو", en: "CEO, FoodFlow Arabia" },
+  "v2.test.1.content": { ar: "لم يبنِ لنا QIROX نظاماً وحسب؛ بل غيّروا طريقة عملنا بالكامل. السرعة والجودة فاقتا توقعاتنا.", en: "QIROX didn't just build us a system; they transformed our operations. The speed and quality were beyond our expectations." },
+  "v2.test.2.name": { ar: "سارة منصور", en: "Sarah Mansour" },
+  "v2.test.2.role": { ar: "مؤسسة، لوكس بيوتي", en: "Founder, Luxe Beauty" },
+  "v2.test.2.content": { ar: "تجربة مميزة من اليوم الأول. الفريق يفهم احتياجات الأعمال بعمق، وليس فقط البرمجة.", en: "A truly premium experience from day one. The team understands business needs deeply, not just code." },
+  "v2.test.3.name": { ar: "عمر يوسف", en: "Omar Youssef" },
+  "v2.test.3.role": { ar: "مدير، بيلد كورب", en: "Director, BuildCorp" },
+  "v2.test.3.content": { ar: "أطلقنا بوابتنا المؤسسية خلال 10 أيام. قابلية التوسع والمعمارية القوية تمنحنا راحة البال.", en: "We launched our corporate portal in 10 days. The scalability and robust architecture give us peace of mind." },
+
+  // Pricing Experience
+  "v2.pricing.card.badge": { ar: "الأكثر طلباً", en: "POPULAR" },
+  "v2.pricing.card.title": { ar: "نظام برو", en: "Pro System" },
+  "v2.pricing.card.desc": { ar: "بنية تحتية رقمية متكاملة", en: "Complete digital infrastructure" },
+  "v2.pricing.card.price": { ar: "٤,٩٩٩ ر.س", en: "SAR 4,999" },
+  "v2.pricing.card.period": { ar: " / مرة واحدة", en: " / one-time" },
+  "v2.pricing.card.f1": { ar: "تطبيق ويب مخصص", en: "Custom Web App" },
+  "v2.pricing.card.f2": { ar: "لوحة تحكم للمديرين", en: "Admin Dashboard" },
+  "v2.pricing.card.f3": { ar: "ربط برمجي (API)", en: "API Integration" },
+  "v2.pricing.card.f4": { ar: "أولوية في الدعم الفني", en: "Priority Support" },
 } as const;
 
 type TranslationKey = keyof typeof translations;

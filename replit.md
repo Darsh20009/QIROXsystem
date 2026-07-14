@@ -1,5 +1,41 @@
 # Qirox Platform
 
+## 🛑 MASTER DIRECTIVE — No Assumptions, Execute Only (Non-Negotiable, Supersedes Conflicts Below)
+
+Issued 2026-07-14. This is the strictest, highest-priority rule set for QIROX. It governs every future content/asset decision on the platform.
+
+1. **Never invent real-world content.** No fake people, fake companies, fake statistics, fake offices, fake testimonials, fake projects, fake awards, fake numbers, fake timelines, fake partners, fake case studies, fake company history/milestones.
+2. **Never use stock photos, AI-generated humans, placeholder images, Unsplash/Pexels/Pixabay, or fake offices/developers/meetings.** If an image or video is required and doesn't already exist as real data in this project, STOP and ask the user for the exact asset (describe requirements: purpose, dimensions, style, format) — then wait for it before continuing that piece of work.
+3. **Brand colors (target, not yet applied):** Primary = White, Off-white, Black, Dark Navy, Blue, professional Grays. Accent = Dark Green (sparingly). Purple is allowed **only** as a very small accent — it must never dominate the UI. The current UI (`--brand` token, tailwind.config.ts / index.css) is purple-heavy and has **not** been migrated yet — treat any purple-dominant page as non-compliant and flag it, but do not mass-repaint the whole app without explicit user go-ahead (large visual change).
+4. **Design language reference only:** Apple, Stripe, Linear, Arc, Raycast, Notion, Vercel are quality bars, never to be copied/imitated — QIROX must keep its own unique identity.
+5. **No repeated layouts/cards/sections/hero designs/icon grids across pages** — every page needs its own identity while staying visually consistent (same radius/shadow/spacing system platform-wide).
+6. **Do not touch backend/business logic/APIs/auth/routes/DB schema/existing features** as a side effect of design work, unless explicitly approved for that specific change.
+7. **Before building any section that needs real-world content** (About, CEO/CTO profiles, Team, Office, Projects/case studies, Testimonials, employee digital ID cards, etc.), produce an explicit asset checklist and get the user to supply or explicitly skip each item — never guess or fill gaps with generated content.
+8. **Entity/Person SEO intent:** the eventual goal is for CEO/CTO/employee/project pages to become the authoritative Google result for their names — only real, user-provided bios/history, never invented.
+9. **Events system is a core, working feature — fix bugs, never remove or redesign around it.**
+
+**Why:** the user issued this as a strict "execute only, no creative invention on real-world facts" directive after prior work (e.g. Landing V2) shipped with illustrative placeholder stats and a purple-dominant palette — both of which violate rules 1–3 above and are pending a user decision on remediation.
+
+### Status as of 2026-07-14 — HOLD, no implementation until further instruction
+
+The user explicitly confirmed: **do not implement, redesign, recolor, or code anything yet.** Only save these standards and wait for explicit next instructions. Treat everything below as approved *specification*, not a go-ahead to build.
+
+**Approved target color system (spec only, not yet applied anywhere):**
+- Primary: White, Off-White, Black, Dark Navy, Professional Blue, full Gray scale.
+- Accent: Dark Green (only when meaningful). Purple is no longer a primary brand color — subtle accent only, never dominant.
+- When this is eventually built: create one unified Design System (tokens, shadows, borders, cards, buttons, inputs, nav, type scale, icons, backgrounds, gradients, hover/focus states, animations, glass effects, elevation, spacing) shared by Landing, Dashboards, Employee Portal, Customer Portal, Admin Portal, POS — build the foundation first, then migrate pages one by one. Never just swap purple for blue 1:1.
+
+**Real assets received so far (use only these, never invent more):**
+- CEO — محمد الدباني (Mohammed Aldabani), Chief Executive Officer, Executive Management. Photo saved at `client/public/team/ceo-mohammed-aldabani.png`.
+- CTO — يوسف درويش (Yousef Darwish), Chief Technology Officer, Technology. Photo saved at `client/public/team/cto-yousef-darwish.png`.
+- No other CEO/CTO fields provided yet (bio, vision, timeline, awards, LinkedIn/GitHub, quote, signature, video) — must be requested individually when that page is actually built.
+
+**Confirmed real-world constraints (do not contradict these later):**
+- **Office:** QIROX has no physical office currently. Never build an office gallery/reception/meeting-room section. Remove any such placeholder content if found.
+- **Team:** Only one real group photo exists (not yet uploaded). Workflow when it arrives: ask the user to identify every person left-to-right, place interactive hotspots only after identification, never crop/guess/auto-identify faces, never invent employees. Each identified person gets a profile (name, position, department, bio, skills, social links, projects).
+- **Partners/Projects:** the strongest section — each partner needs a dedicated showcase (logo, brand colors, website, story, services delivered, tech used, results, screenshots incl. mobile, gallery, testimonial, live preview). Prefer a real iframe embed of the partner site; if blocked by X-Frame-Options/CSP, use a premium browser-mockup frame around real screenshots instead — never leave an empty iframe.
+- **Missing-asset protocol:** whenever any image/logo/screenshot/video is needed and doesn't already exist as real data, stop and describe exactly what's needed, then wait — never substitute stock photos, generated people, or invented stats.
+
 ## 🎨 Mandatory Design Philosophy — Definition of Done for Every UI Task (Non-Negotiable)
 
 **This applies to the entire QIROX platform, not any single page.** It overrides generic UI/dashboard patterns and is mandatory, not optional inspiration. Every future page, component, dashboard, workflow, feature, illustration, animation, and customer interaction must follow it.

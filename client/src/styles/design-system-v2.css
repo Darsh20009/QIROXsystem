@@ -1,0 +1,315 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   QIROX DESIGN SYSTEM V2 — TOKEN FOUNDATION ONLY
+   ══════════════════════════════════════════════════════════════════════════
+   Status: FOUNDATION ONLY. Not consumed by any existing page or component.
+   Nothing in this file changes how the current app looks — every selector
+   here is new and unused elsewhere, so it is 100% additive and zero-risk.
+
+   Purpose: premium global-technology-company palette (White / Off-White /
+   Black / Navy / Blue / Gray + a limited Dark Green accent). Purple is
+   excluded from this system by policy — see docs/design-system-v2.md.
+
+   Naming: every token is prefixed `--ds-` (Design System v2) so it can
+   never collide with or silently override the current `--brand` / shadcn
+   tokens in index.css while both systems coexist during migration.
+
+   Do not import component-level styles from here into production pages
+   until the next phase is explicitly approved.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Color primitives — Navy scale (primary) ─────────────────────────── */
+  --ds-navy-50:  210 45% 97%;
+  --ds-navy-100: 212 40% 93%;
+  --ds-navy-200: 214 38% 85%;
+  --ds-navy-300: 215 35% 72%;
+  --ds-navy-400: 216 33% 55%;
+  --ds-navy-500: 217 40% 38%;
+  --ds-navy-600: 218 48% 28%;
+  --ds-navy-700: 219 52% 21%;
+  --ds-navy-800: 220 55% 15%;
+  --ds-navy-900: 222 55% 10%;
+  --ds-navy-950: 224 55% 6%;
+
+  /* ── Color primitives — Blue scale (primary) ──────────────────────────── */
+  --ds-blue-50:  210 100% 97%;
+  --ds-blue-100: 210 96% 92%;
+  --ds-blue-200: 210 92% 84%;
+  --ds-blue-300: 210 88% 72%;
+  --ds-blue-400: 212 84% 60%;
+  --ds-blue-500: 214 84% 51%;
+  --ds-blue-600: 216 82% 44%;
+  --ds-blue-700: 218 78% 37%;
+  --ds-blue-800: 219 70% 30%;
+  --ds-blue-900: 220 62% 22%;
+  --ds-blue-950: 222 58% 14%;
+
+  /* ── Color primitives — Gray scale (secondary) ────────────────────────── */
+  --ds-gray-50:  210 20% 98%;
+  --ds-gray-100: 210 16% 95%;
+  --ds-gray-200: 210 14% 90%;
+  --ds-gray-300: 210 12% 80%;
+  --ds-gray-400: 210 10% 64%;
+  --ds-gray-500: 210 9%  50%;
+  --ds-gray-600: 210 10% 38%;
+  --ds-gray-700: 212 12% 27%;
+  --ds-gray-800: 214 15% 18%;
+  --ds-gray-900: 216 18% 11%;
+  --ds-gray-950: 220 22% 6%;
+
+  /* ── Color primitives — White / Off-White / Black ─────────────────────── */
+  --ds-white:     0 0% 100%;
+  --ds-off-white: 210 25% 98.5%;
+  --ds-black:     220 25% 4%;
+
+  /* ── Color primitives — Dark Green accent (limited use only) ─────────── */
+  --ds-green-500: 152 45% 28%;
+  --ds-green-600: 153 48% 22%;
+  --ds-green-foreground: 0 0% 100%;
+
+  /* ── Color primitives — Purple (restricted — rare-use accent only) ───── */
+  --ds-purple-restricted: 262 45% 45%;
+
+  /* ── Semantic tokens — Light theme ────────────────────────────────────── */
+  --ds-background:        var(--ds-off-white);
+  --ds-foreground:        var(--ds-navy-950);
+  --ds-surface-0:         var(--ds-white);
+  --ds-surface-1:         var(--ds-off-white);
+  --ds-surface-2:         var(--ds-gray-50);
+  --ds-surface-inverse:   var(--ds-navy-950);
+  --ds-surface-inverse-foreground: var(--ds-white);
+
+  --ds-primary:            var(--ds-navy-900);
+  --ds-primary-foreground: var(--ds-white);
+  --ds-secondary:          var(--ds-blue-600);
+  --ds-secondary-foreground: var(--ds-white);
+  --ds-muted:              var(--ds-gray-100);
+  --ds-muted-foreground:   var(--ds-gray-600);
+  --ds-accent:             var(--ds-green-500);
+  --ds-accent-foreground:  var(--ds-green-foreground);
+
+  --ds-border-hairline:    var(--ds-gray-200);
+  --ds-border-emphasis:    var(--ds-gray-400);
+  --ds-focus-ring:         var(--ds-blue-500);
+
+  /* ── Typography scale (fluid-ready, rem based) ────────────────────────── */
+  --ds-text-xs:   0.75rem;
+  --ds-text-sm:   0.875rem;
+  --ds-text-base: 1rem;
+  --ds-text-lg:   1.125rem;
+  --ds-text-xl:   1.25rem;
+  --ds-text-2xl:  1.5rem;
+  --ds-text-3xl:  1.875rem;
+  --ds-text-4xl:  2.25rem;
+  --ds-text-5xl:  3rem;
+  --ds-text-6xl:  3.75rem;
+  --ds-tracking-tight:  -0.02em;
+  --ds-tracking-normal: 0em;
+  --ds-tracking-wide:   0.02em;
+  --ds-leading-tight:   1.15;
+  --ds-leading-normal:  1.5;
+  --ds-leading-relaxed: 1.7;
+
+  /* ── Spacing scale — section rhythm (in addition to Tailwind's default) ─ */
+  --ds-space-section-sm: 3rem;
+  --ds-space-section-md: 5rem;
+  --ds-space-section-lg: 7rem;
+  --ds-space-section-xl: 10rem;
+
+  /* ── Radius scale ──────────────────────────────────────────────────────── */
+  --ds-radius-xs:  0.25rem;
+  --ds-radius-sm:  0.5rem;
+  --ds-radius-md:  0.75rem;
+  --ds-radius-lg:  1rem;
+  --ds-radius-xl:  1.5rem;
+  --ds-radius-2xl: 2rem;
+  --ds-radius-full: 9999px;
+
+  /* ── Shadow / elevation system — soft, navy-tinted (never flat black) ──── */
+  --ds-shadow-color: 222 40% 20%;
+  --ds-shadow-xs:  0 1px 2px hsl(var(--ds-shadow-color) / 0.06);
+  --ds-shadow-sm:  0 2px 6px hsl(var(--ds-shadow-color) / 0.07), 0 1px 2px hsl(var(--ds-shadow-color) / 0.05);
+  --ds-shadow-md:  0 8px 20px hsl(var(--ds-shadow-color) / 0.09), 0 2px 6px hsl(var(--ds-shadow-color) / 0.06);
+  --ds-shadow-lg:  0 20px 40px hsl(var(--ds-shadow-color) / 0.12), 0 6px 12px hsl(var(--ds-shadow-color) / 0.07);
+  --ds-shadow-xl:  0 32px 64px hsl(var(--ds-shadow-color) / 0.16), 0 12px 24px hsl(var(--ds-shadow-color) / 0.08);
+  --ds-shadow-glass: 0 8px 32px hsl(var(--ds-shadow-color) / 0.10), inset 0 1px 0 hsl(0 0% 100% / 0.4);
+
+  /* ── Elevation (z-index) scale ──────────────────────────────────────────── */
+  --ds-z-base:     0;
+  --ds-z-dropdown: 20;
+  --ds-z-sticky:   30;
+  --ds-z-overlay:  40;
+  --ds-z-modal:    50;
+  --ds-z-toast:    60;
+  --ds-z-max:      9999;
+
+  /* ── Grid / container system ─────────────────────────────────────────── */
+  --ds-container-sm: 40rem;
+  --ds-container-md: 56rem;
+  --ds-container-lg: 72rem;
+  --ds-container-xl: 88rem;
+  --ds-grid-gutter:  1.5rem;
+
+  /* ── Motion tokens ──────────────────────────────────────────────────────── */
+  --ds-duration-fast:   150ms;
+  --ds-duration-base:   280ms;
+  --ds-duration-slow:   480ms;
+  --ds-duration-slower: 800ms;
+  --ds-ease-standard:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ds-ease-decel:     cubic-bezier(0, 0, 0.2, 1);
+  --ds-ease-accel:     cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Glass surface tokens ─────────────────────────────────────────────── */
+  --ds-glass-bg-light:    hsl(0 0% 100% / 0.6);
+  --ds-glass-bg-dark:     hsl(222 40% 10% / 0.55);
+  --ds-glass-border-light: hsl(0 0% 100% / 0.5);
+  --ds-glass-border-dark:  hsl(0 0% 100% / 0.08);
+  --ds-glass-blur: 20px;
+
+  /* ── Icon rules (documented as tokens for consistency) ────────────────── */
+  --ds-icon-stroke-width: 1.75;
+  --ds-icon-size-sm: 1rem;
+  --ds-icon-size-md: 1.25rem;
+  --ds-icon-size-lg: 1.5rem;
+  --ds-icon-size-xl: 2rem;
+}
+
+/* ── Semantic tokens — Dark theme override ──────────────────────────────── */
+.dark {
+  --ds-background:        var(--ds-navy-950);
+  --ds-foreground:        var(--ds-off-white);
+  --ds-surface-0:         var(--ds-navy-900);
+  --ds-surface-1:         var(--ds-navy-800);
+  --ds-surface-2:         var(--ds-gray-800);
+  --ds-surface-inverse:   var(--ds-white);
+  --ds-surface-inverse-foreground: var(--ds-navy-950);
+
+  --ds-primary:            var(--ds-white);
+  --ds-primary-foreground: var(--ds-navy-950);
+  --ds-secondary:          var(--ds-blue-400);
+  --ds-secondary-foreground: var(--ds-navy-950);
+  --ds-muted:              var(--ds-navy-800);
+  --ds-muted-foreground:   var(--ds-gray-400);
+  --ds-accent:             var(--ds-green-500);
+  --ds-accent-foreground:  var(--ds-green-foreground);
+
+  --ds-border-hairline:    var(--ds-navy-700);
+  --ds-border-emphasis:    var(--ds-gray-500);
+  --ds-focus-ring:         var(--ds-blue-400);
+
+  --ds-shadow-color: 220 60% 2%;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPONENT-LEVEL TOKEN RECIPES — reference implementations only.
+   These `.ds-*` classes are NOT applied anywhere in the current app.
+   They exist so the next phase (page migration) has ready, documented,
+   reusable building blocks instead of re-deriving them per page.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.ds-surface-glass {
+  background: var(--ds-glass-bg-light);
+  border: 1px solid var(--ds-glass-border-light);
+  backdrop-filter: blur(var(--ds-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ds-glass-blur));
+  box-shadow: var(--ds-shadow-glass);
+}
+.dark .ds-surface-glass {
+  background: var(--ds-glass-bg-dark);
+  border-color: var(--ds-glass-border-dark);
+}
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--ds-radius-md);
+  font-weight: 600;
+  transition: background-color var(--ds-duration-fast) var(--ds-ease-standard),
+              box-shadow var(--ds-duration-fast) var(--ds-ease-standard),
+              transform var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.ds-btn:active { transform: scale(0.98); }
+.ds-btn-primary {
+  background: hsl(var(--ds-primary));
+  color: hsl(var(--ds-primary-foreground));
+  box-shadow: var(--ds-shadow-sm);
+}
+.ds-btn-primary:hover { box-shadow: var(--ds-shadow-md); }
+.ds-btn-secondary {
+  background: hsl(var(--ds-secondary));
+  color: hsl(var(--ds-secondary-foreground));
+}
+.ds-btn-outline {
+  background: transparent;
+  border: 1px solid hsl(var(--ds-border-emphasis));
+  color: hsl(var(--ds-foreground));
+}
+.ds-btn-ghost {
+  background: transparent;
+  color: hsl(var(--ds-foreground));
+}
+.ds-btn-ghost:hover { background: hsl(var(--ds-muted)); }
+
+.ds-input {
+  background: hsl(var(--ds-surface-0));
+  border: 1px solid hsl(var(--ds-border-hairline));
+  border-radius: var(--ds-radius-sm);
+  color: hsl(var(--ds-foreground));
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard),
+              box-shadow var(--ds-duration-fast) var(--ds-ease-standard);
+}
+.ds-input:focus {
+  outline: none;
+  border-color: hsl(var(--ds-focus-ring));
+  box-shadow: 0 0 0 3px hsl(var(--ds-focus-ring) / 0.18);
+}
+.ds-input-error {
+  border-color: hsl(0 72% 51%);
+}
+.ds-input-error:focus {
+  box-shadow: 0 0 0 3px hsl(0 72% 51% / 0.18);
+}
+
+.ds-card {
+  background: hsl(var(--ds-surface-1));
+  border: 1px solid hsl(var(--ds-border-hairline));
+  border-radius: var(--ds-radius-lg);
+}
+.ds-card-flat { box-shadow: none; }
+.ds-card-elevated { box-shadow: var(--ds-shadow-md); border-color: transparent; }
+.ds-card-glass {
+  background: var(--ds-glass-bg-light);
+  border: 1px solid var(--ds-glass-border-light);
+  backdrop-filter: blur(var(--ds-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ds-glass-blur));
+  box-shadow: var(--ds-shadow-glass);
+  border-radius: var(--ds-radius-lg);
+}
+.dark .ds-card-glass {
+  background: var(--ds-glass-bg-dark);
+  border-color: var(--ds-glass-border-dark);
+}
+
+/* ── Motion recipes ────────────────────────────────────────────────────── */
+@keyframes ds-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ds-rise-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ds-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes ds-glass-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.ds-anim-fade-in  { animation: ds-fade-in var(--ds-duration-base) var(--ds-ease-standard) both; }
+.ds-anim-rise-in  { animation: ds-rise-in var(--ds-duration-slow) var(--ds-ease-emphasized) both; }
+.ds-anim-scale-in { animation: ds-scale-in var(--ds-duration-base) var(--ds-ease-emphasized) both; }

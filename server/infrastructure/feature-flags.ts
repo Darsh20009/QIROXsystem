@@ -46,6 +46,9 @@ export const FeatureFlag = {
 
   // ── Sprint D — Proposal Builder V2 ─────────────────────────────────────────
   PROPOSAL_V2:              "FEATURE_PROPOSAL_V2",
+
+  // ── Sprint 009 — Landing Experience V2 ──────────────────────────────────────
+  LANDING_V2:               "FEATURE_LANDING_V2",
 } as const;
 
 export type FeatureFlagName = typeof FeatureFlag[keyof typeof FeatureFlag];
@@ -94,6 +97,9 @@ export class FeatureFlagEngine {
 
     // Sprint D — Proposal Builder V2 (off by default — do not activate)
     [FeatureFlag.PROPOSAL_V2,          false],
+
+    // Sprint 009 — Landing Experience V2 (off by default)
+    [FeatureFlag.LANDING_V2,           false],
 
     // All V4 product flags off by default — activated via env or override
     [FeatureFlag.HOME_V4,              false],
