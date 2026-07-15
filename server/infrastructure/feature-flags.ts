@@ -49,6 +49,15 @@ export const FeatureFlag = {
 
   // ── Sprint 009 — Landing Experience V2 ──────────────────────────────────────
   LANDING_V2:               "FEATURE_LANDING_V2",
+
+  // ── Design System V2 migration pilot — Landing Page only ────────────────────
+  LANDING_DS_V2:            "FEATURE_LANDING_DS_V2",
+
+  // ── Design System V2 — global Navigation/Footer unification (Phase 1) ───────
+  DS_V2_NAV_FOOTER:         "FEATURE_DS_V2_NAV_FOOTER",
+
+  // ── Design System V2 — Phase 2 (Contact / Systems / Service Detail) ─────────
+  DS_V2_PHASE2_PAGES:       "FEATURE_DS_V2_PHASE2_PAGES",
 } as const;
 
 export type FeatureFlagName = typeof FeatureFlag[keyof typeof FeatureFlag];
@@ -100,6 +109,12 @@ export class FeatureFlagEngine {
 
     // Sprint 009 — Landing Experience V2 (off by default)
     [FeatureFlag.LANDING_V2,           false],
+
+    // Design System V2 — global Navigation/Footer unification (off by default)
+    [FeatureFlag.DS_V2_NAV_FOOTER,     false],
+
+    // Design System V2 — Phase 2 pages: Contact/Systems/Service Detail (off by default)
+    [FeatureFlag.DS_V2_PHASE2_PAGES,   false],
 
     // All V4 product flags off by default — activated via env or override
     [FeatureFlag.HOME_V4,              false],

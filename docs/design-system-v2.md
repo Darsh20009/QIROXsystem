@@ -1,6 +1,16 @@
 # QIROX Design System V2 — Token Foundation
 
-**Status: FOUNDATION ONLY.** Nothing in this document has been applied to any existing page, component, or dashboard yet. No page redesign happens until explicitly approved as a separate, later phase.
+**Status: PERMANENT DESIGN LANGUAGE — rollout in progress.** Approved as the permanent design language for the entire platform (Brand Experience redesign, not a visual reskin). Rollout follows a phased order; see `Migration phases` below for current progress.
+
+## Migration phases
+
+- **Phase 1 — Global Component Library / Navigation / Footer / Motion:** ✅ `Navigation` and `Footer` now render their ds-* restyled versions (`NavigationDSV2.tsx`, `FooterDSV2.tsx`) everywhere, gated by `FEATURE_DS_V2_NAV_FOOTER` (on by default). Legacy versions preserved untouched as `NavigationLegacy.tsx`/`FooterLegacy.tsx` for instant rollback. All existing functionality (cart, auth, country/currency, mobile menu, country switcher, app downloads, WhatsApp banner, socials) preserved exactly — visual tokens only.
+- **Phase 2 — Landing / Services / Systems / Contact:** Landing page pilot (`FEATURE_LANDING_DS_V2`) is live. Services/Systems/Contact not yet migrated.
+- **Phase 3 — Portfolio / Projects / Partners:** not started. Partners/Projects require real assets/screenshots per the asset policy — will need an explicit asset request before implementation.
+- **Phase 4 — About / Team / Company Story:** blocked on real assets (CEO/CTO portraits, team photos, company story content). Do not build with placeholders.
+- **Phase 5 — Customer Dashboard / Customer Journey:** not started.
+- **Phase 6 — Employee Experience / CRM / HR / Finance / Projects:** not started.
+- **Phase 7 — QAdmin:** not started.
 
 Files:
 - `client/src/styles/design-system-v2.css` — all CSS variables + reference `.ds-*` component recipes (unused elsewhere today).

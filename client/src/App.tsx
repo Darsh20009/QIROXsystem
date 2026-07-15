@@ -29,10 +29,14 @@ import RoleGuard from "@/components/RoleGuard";
 import { DashboardV2Guard } from "@/features/customer-journey/components/JourneyShell";
 // Sprint 009 — feature-flag guard for Landing Experience V2
 import { LandingV2Guard } from "@/features/landing-v2/LandingV2Guard";
+// Design System V2 migration pilot — feature-flag guard for the Landing Page
+import { LandingDSV2Guard } from "@/features/landing-ds-v2/LandingDSV2Guard";
 
 const Home = lazy(() => import("@/pages/Home"));
 // Sprint 009 — Landing Experience V2 (FEATURE_LANDING_V2 flag gates activation; falls back to Home)
 const LandingV2Page = lazy(() => import("@/features/landing-v2/LandingV2Page"));
+// Design System V2 migration pilot (FEATURE_LANDING_DS_V2 flag gates activation; falls back to LandingV2Page/Home)
+const LandingDSV2Page = lazy(() => import("@/features/landing-ds-v2/LandingDSV2Page"));
 const Dashboard    = lazy(() => import("@/pages/Dashboard"));
 // Sprint 003 — Customer Journey V2 (FEATURE_DASHBOARD_V2 flag gates activation)
 const DashboardV2  = lazy(() => import("@/features/customer-journey/dashboard/DashboardV2"));
@@ -240,11 +244,19 @@ function G_DashboardV2() {
 }
 
 // Sprint 009 — gated by FEATURE_LANDING_V2; falls back to existing Home when disabled
+// Design System V2 pilot takes priority when FEATURE_LANDING_DS_V2 is on; otherwise
+// falls back to the existing V2 landing page / legacy Home, unchanged.
 function HomeGate() {
   return (
-    <LandingV2Guard fallback={<Home />}>
-      <LandingV2Page />
-    </LandingV2Guard>
+    <LandingDSV2Guard
+      fallback={
+        <LandingV2Guard fallback={<Home />}>
+          <LandingV2Page />
+        </LandingV2Guard>
+      }
+    >
+      <LandingDSV2Page />
+    </LandingDSV2Guard>
   );
 }
 

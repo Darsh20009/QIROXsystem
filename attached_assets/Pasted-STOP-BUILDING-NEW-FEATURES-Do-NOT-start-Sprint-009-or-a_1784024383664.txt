@@ -1,0 +1,420 @@
+STOP BUILDING NEW FEATURES
+
+Do NOT start Sprint 009 or any new department.
+
+The current implementation does NOT match the QIROX vision.
+
+From this point forward the priority is QUALITY, BRAND, REALISM, and PREMIUM EXPERIENCE, not adding more pages.
+
+New Priority Order
+Audit the ENTIRE UI.
+Replace every generic design.
+Unify the entire website.
+Make QIROX look like a world-class premium company.
+
+NOT an admin dashboard.
+NOT an AI generated template.
+NOT another SaaS clone.
+
+It must feel like Apple, Stripe, Linear, Framer and Notion combined.
+
+BEFORE WRITING ANY CODE
+
+Audit every page including:
+
+Landing
+
+Services
+
+Portfolio
+
+About
+
+Team
+
+Partners
+
+Careers
+
+Contact
+
+Customer Dashboard
+
+Employee Dashboard
+
+CRM
+
+HR
+
+Finance
+
+Projects
+
+QAdmin
+
+Events
+
+Knowledge Base
+
+Everything.
+
+Generate a report showing:
+
+Current quality (0-100)
+
+Problems
+
+Missing sections
+
+Duplicate components
+
+Different button styles
+
+Different cards
+
+Different spacing
+
+Different typography
+
+Different animations
+
+Different shadows
+
+Different navigation
+
+Anything inconsistent.
+
+Do NOT fix anything before the audit.
+
+AFTER THE AUDIT
+
+Create ONE global design language.
+
+Everything must use the same:
+
+Spacing
+
+Typography
+
+Border Radius
+
+Buttons
+
+Inputs
+
+Cards
+
+Shadows
+
+Glass
+
+Icons
+
+Illustrations
+
+3D Elements
+
+Animation timing
+
+Hover behavior
+
+Loading states
+
+Transitions
+
+Everything.
+
+No page is allowed to look different.
+
+ABOUT PAGE
+
+The About page must become one of the strongest pages on the website.
+
+It must include:
+
+CEO story
+
+CTO story
+
+Our Mission
+
+Our Vision
+
+Our Values
+
+Timeline
+
+Our Culture
+
+How we work
+
+Behind the scenes
+
+Company philosophy
+
+Engineering philosophy
+
+Message from the CEO
+
+Message from the CTO
+
+Meet the Team
+
+Office Gallery
+
+Awards
+
+Certificates
+
+Media Kit
+
+Press
+
+Everything must support real assets only.
+
+If an image is required:
+
+STOP.
+
+Ask me for it.
+
+Describe exactly what image you need.
+
+Do NOT generate placeholders.
+
+Do NOT use AI people.
+
+Do NOT use stock photos.
+
+TEAM
+
+We currently only have ONE GROUP PHOTO.
+
+Use it creatively.
+
+Do NOT fake individual photos.
+
+Create an elegant presentation using the group image.
+
+When I later upload individual portraits,
+automatically upgrade the layout.
+
+PARTNERS
+
+Partners must NOT be a boring logo slider.
+
+Each partner becomes an interactive premium card.
+
+Show:
+
+Logo
+
+Industry
+
+Project
+
+Technologies used
+
+Visit Website
+
+Open Live Demo
+
+Case Study
+
+Everything animated.
+
+PROJECTS
+
+Every project becomes a premium case study.
+
+Desktop preview
+
+Mobile preview
+
+Business problem
+
+Solution
+
+Technology
+
+Performance
+
+Gallery
+
+Client Journey
+
+Results
+
+Live Demo
+
+Never use fake statistics.
+
+SEO
+
+SEO must become Enterprise level.
+
+Every page must contain:
+
+Schema.org
+
+OpenGraph
+
+Twitter Cards
+
+FAQ
+
+Breadcrumb
+
+Organization
+
+Person
+
+Article
+
+SoftwareApplication
+
+Service
+
+LocalBusiness (where applicable)
+
+Image metadata
+
+Automatic sitemap updates
+
+Image structured data
+
+Person structured data
+
+When someone searches:
+
+"محمد الدباني"
+
+Google should understand:
+
+CEO of QIROX Studio.
+
+When someone searches:
+
+"يوسف درويش"
+
+Google should understand:
+
+Chief Technology Officer of QIROX Studio.
+
+Do NOT fabricate biographies.
+
+If information is missing:
+
+Ask me.
+
+HUMAN FEEL
+
+The website must never look AI-generated.
+
+Remove every sign that this was built by AI.
+
+No repeated layouts.
+
+No repeated icons.
+
+No repeated gradients.
+
+No template sections.
+
+Every section must have a purpose.
+
+Every animation must tell a story.
+
+Every illustration must support the message.
+
+Everything must feel handcrafted.
+
+CUSTOMER EXPERIENCE
+
+Customer Journey is NOT only the order process.
+
+It begins from:
+
+First Google Search
+
+Landing
+
+Reading content
+
+Watching animations
+
+Trust
+
+Portfolio
+
+About
+
+Meeting the team
+
+Pricing
+
+Quotation
+
+Payment
+
+Project
+
+Delivery
+
+Support
+
+Renewal
+
+Referral
+
+Loyalty
+
+Everything must be connected.
+
+ABSOLUTE RULE
+
+If you need:
+
+Photo
+
+Video
+
+Logo
+
+Certificate
+
+Case Study
+
+Biography
+
+Office image
+
+Employee image
+
+Partner logo
+
+Client approval
+
+ANY asset...
+
+STOP.
+
+Ask me exactly what you need.
+
+Do NOT invent anything.
+
+Do NOT create placeholders.
+
+Do NOT use AI-generated content.
+
+DELIVERABLE
+
+Do NOT start implementing immediately.
+
+First deliver a complete UI/UX Audit document.
+
+Then deliver the migration plan.
+
+Wait for my approval.
+
+Only after approval begin implementation.
