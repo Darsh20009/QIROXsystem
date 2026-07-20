@@ -8,6 +8,7 @@ import TechStackSection from "./sections/TechStackSection";
 import CtaSection from "./sections/CtaSection";
 import PilotFooter from "./sections/PilotFooter";
 import TrustedSection from "./sections/TrustedSection";
+import EcosystemSection from "./sections/EcosystemSection";
 
 export default function LandingDSV2Page() {
   const { t, lang } = useI18n();
@@ -144,7 +145,9 @@ export default function LandingDSV2Page() {
       <PilotNav />
       <main>
         <HeroSection />
+        <TrustedSection />
         <ServicesSection />
+        <EcosystemSection />
         <PortfolioSection />
         <TechStackSection />
         <CtaSection />

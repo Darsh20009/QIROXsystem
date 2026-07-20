@@ -91,24 +91,33 @@ export default function HeroSection() {
       className="relative min-h-[100dvh] flex flex-col overflow-hidden bg-white"
       aria-label={ar ? "القسم الرئيسي" : "Hero section"}
     >
-      {/* Soft radial glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-0 left-0 w-[70%] h-full bg-gradient-to-r from-white via-white/90 to-transparent z-10"
-      />
-
-      {/* Hero background image — right side */}
+      {/* Hero background image.
+          The source photo has a built-in white fade on its LEFT edge.
+          - LTR: text left, image right → object-right, natural fade aligns.
+          - RTL: text right, image left → scaleX(-1) mirrors the image so the
+            white fade moves to the RIGHT edge (behind the text). */}
       <div className="absolute inset-0 z-0">
         <img
           src="/hero-bg.jpg"
           alt=""
           aria-hidden
           className="absolute inset-0 w-full h-full object-cover object-right"
+          style={ar ? { transform: "scaleX(-1)" } : undefined}
           loading="eager"
           fetchPriority="high"
           decoding="async"
         />
       </div>
+
+      {/* Extra white fade on the text side for readability */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute top-0 w-[48%] h-full z-10 ${
+          ar
+            ? "right-0 bg-gradient-to-l from-white/80 to-transparent"
+            : "left-0 bg-gradient-to-r from-white/80 to-transparent"
+        }`}
+      />
 
       {/* Content */}
       <div className="relative z-20 flex-1 flex items-center">
