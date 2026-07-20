@@ -1,0 +1,507 @@
+انسخ هذا البرومبت كما هو إلى Replit. هذا البرومبت لا يترك أي قرار للتخمين، ويحدد كل شيء بالتفصيل حتى تكون النتيجة مطابقة لرؤية QIROX Studio.
+
+---
+
+# HERO SECTION IMPLEMENTATION (QIROX STUDIO)
+
+**IMPORTANT**
+
+Do NOT redesign the hero.
+
+Do NOT change the layout.
+
+Do NOT replace the supplied hero background image.
+
+The provided image is the final approved artwork.
+
+Your job is ONLY to integrate it professionally into the website.
+
+---
+
+# General Rules
+
+Use the supplied hero image exactly as it is.
+
+No cropping that removes important parts.
+
+No stretching.
+
+No AI edits.
+
+No filters.
+
+No replacing.
+
+Desktop and Mobile must display the same visual identity.
+
+The section must feel premium like Apple, Stripe, Linear and Framer.
+
+Everything must be responsive.
+
+RTL and LTR must work perfectly.
+
+Arabic and English must both look native.
+
+---
+
+# Header
+
+Transparent while on top.
+
+After scrolling:
+
+background white
+
+blur
+
+shadow
+
+smooth transition
+
+Height:
+
+Desktop 88px
+
+Tablet 80px
+
+Mobile 72px
+
+---
+
+# Logo
+
+Left side in English.
+
+Right side in Arabic when RTL.
+
+Use official QIROX logo.
+
+Never replace it.
+
+---
+
+# Navigation
+
+Exactly these pages only.
+
+Arabic
+
+الرئيسية
+
+من نحن
+
+الباقات
+
+الأجهزة
+
+الاستشارات
+
+تواصل معنا
+
+English
+
+Home
+
+About
+
+Plans
+
+Devices
+
+Consulting
+
+Contact
+
+Nothing else.
+
+Do NOT invent pages.
+
+---
+
+# Language Switcher
+
+Arabic
+
+English
+
+Smooth instant switching.
+
+Remember selected language.
+
+No page reload if possible.
+
+---
+
+# Authentication
+
+Desktop
+
+Login
+
+Start Your Project
+
+Mobile
+
+Inside mobile menu
+
+---
+
+# CTA Button
+
+Primary
+
+ابدأ مشروعك
+
+Start Your Project
+
+Dark navy
+
+Rounded
+
+Hover animation
+
+---
+
+# Mobile Menu
+
+Fullscreen drawer.
+
+Glass effect.
+
+Blur background.
+
+Smooth animation.
+
+Contains
+
+Pages
+
+Language
+
+Login
+
+CTA
+
+Social links
+
+---
+
+# Hero Image
+
+Display the provided artwork exactly.
+
+No overlay that hides it.
+
+Keep maximum quality.
+
+Responsive.
+
+---
+
+# Floating Cards
+
+Use subtle floating animations.
+
+Very slow.
+
+Professional.
+
+Do NOT exaggerate.
+
+---
+
+# Hero Text
+
+Arabic
+
+Small Label
+
+QIROX STUDIO
+
+Main Heading
+
+نبني البنية الرقمية التي تقود مستقبل أعمالك
+
+Blue Accent
+
+بذكاء. بسرعة. واستدامة.
+
+Description
+
+نساعد الشركات ورواد الأعمال على بناء أنظمة رقمية متكاملة، ومنتجات تقنية، وحلول ذكاء اصطناعي، تجعل أعمالهم أكثر كفاءة وقابلية للنمو.
+
+Buttons
+
+ابدأ مشروعك
+
+شاهد أعمالنا
+
+---
+
+English
+
+QIROX STUDIO
+
+Building The Digital Infrastructure Of Modern Businesses
+
+Blue Accent
+
+Powered by AI.
+
+Built for Growth.
+
+Description
+
+We help businesses build scalable software, AI solutions, digital products and operational systems that accelerate growth and innovation.
+
+Buttons
+
+Start Your Project
+
+View Portfolio
+
+---
+
+# Company Badges
+
+Below text
+
+Show
+
+AI
+
+Automation
+
+Cloud
+
+Business Systems
+
+Web
+
+Mobile
+
+Cyber Security
+
+Each badge with icon.
+
+Minimal.
+
+---
+
+# Company Statistics
+
+Animated Counter
+
+500+
+
+Projects
+
+98%
+
+Client Satisfaction
+
+4+
+
+Years
+
+10+
+
+Countries
+
+---
+
+# Trusted Companies Section
+
+Below Hero
+
+Title Arabic
+
+يثق بنا رواد الأعمال والشركات
+
+Title English
+
+Trusted by ambitious businesses
+
+Automatically rotate logos every 4 seconds.
+
+Smooth fade.
+
+Never jump.
+
+---
+
+# Logos
+
+Load dynamically from
+
+/public/partners
+
+If folder empty
+
+Show grayscale placeholders.
+
+When logos are added later
+
+Display automatically.
+
+Infinite loop.
+
+Pause on hover.
+
+---
+
+# Hero Animation
+
+Fade Up
+
+Image
+
+Text
+
+Buttons
+
+Cards
+
+Statistics
+
+Staggered animation.
+
+Never too fast.
+
+---
+
+# Scroll Indicator
+
+Bottom center
+
+Minimal mouse icon
+
+Smooth animation
+
+---
+
+# Background
+
+Pure white.
+
+Very soft radial light.
+
+No heavy gradients.
+
+No visual noise.
+
+---
+
+# Performance
+
+Image lazy loaded correctly.
+
+No CLS.
+
+Maintain perfect Lighthouse score.
+
+Target
+
+Performance 95+
+
+Accessibility 100
+
+SEO 100
+
+Best Practices 100
+
+---
+
+# Accessibility
+
+ARIA labels.
+
+Keyboard navigation.
+
+Visible focus.
+
+Proper semantic HTML.
+
+---
+
+# SEO
+
+Use
+
+H1
+
+H2
+
+Meta Description
+
+Open Graph
+
+Twitter Card
+
+Schema.org Organization
+
+---
+
+# Fonts
+
+Arabic
+
+IBM Plex Sans Arabic
+
+English
+
+Inter
+
+Perfect typography.
+
+---
+
+# Colors
+
+Primary
+
+#0F172A
+
+Accent
+
+#3B82F6
+
+Background
+
+#FFFFFF
+
+Text
+
+#111827
+
+Gray
+
+#6B7280
+
+---
+
+# Motion
+
+Professional only.
+
+No bouncing.
+
+No exaggerated effects.
+
+Everything should feel calm, premium and expensive.
+
+---
+
+# Final Goal
+
+The first impression must immediately communicate:
+
+* Premium technology company.
+* Trusted enterprise partner.
+* AI and Digital Infrastructure leader.
+* International quality.
+* Clean.
+* Elegant.
+* Memorable.
+
+The visitor should feel that this company is more advanced than typical software agencies, and that it builds the digital infrastructure behind modern businesses.

@@ -7,6 +7,7 @@ import PortfolioSection from "./sections/PortfolioSection";
 import TechStackSection from "./sections/TechStackSection";
 import CtaSection from "./sections/CtaSection";
 import PilotFooter from "./sections/PilotFooter";
+import TrustedSection from "./sections/TrustedSection";
 
 export default function LandingDSV2Page() {
   const { t, lang } = useI18n();
