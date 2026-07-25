@@ -802,102 +802,93 @@ export default function Home() {
 
       <main className="flex-1">
         {/* ─── HERO ─── */}
-        <section className="relative pt-28 pb-24 md:pt-36 md:pb-32 overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-              maskImage: "radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 80%)",
-              WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 80%)",
-            }}
-          />
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
-            <motion.div {...fade(0)} className="flex flex-col items-center text-center">
-              <div className="inline-block mb-5">
-                <img src="/qirox-icon.png" alt="مصنع الأنظمة الرقمية" className="h-12 md:h-14 w-auto object-contain dark:invert" />
-              </div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/15 dark:border-white/15 text-[11px] font-bold tracking-wide uppercase mb-7">
-                <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
-                {ar ? "مصنع الأنظمة الرقمية · شريكك التقني" : "Digital Systems Factory · Your tech partner"}
-              </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
-                {ar ? "نحوّل فكرتك" : "We turn your idea"}
-                <br />
-                <span className="text-black/40 dark:text-white/40">{ar ? " إلى موقع أو نظام مخصص " : "into a real working system"}</span>
-              </h1>
-              <p className="text-base md:text-lg text-black/60 dark:text-white/60 max-w-2xl mb-9 leading-relaxed">
-                {ar
-                  ? "ما تحتاج تكون تقني — احكِ لنا اللي تبيه بكلام عادي، وفريقنا والمساعد الذكي يبنونه لك. مهما كانت ميزانيتك، عندنا الحل المناسب."
-                  : "No tech skills required — describe what you need in plain words, and our team plus AI build it. Whatever your budget, we have the right solution."}
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="/start">
-                  <Button size="lg" className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-start">
-                    <Sparkles className="w-4 h-4" />
-                    {ar ? "ابدأ فكرتك الخاصة" : "Start Your Own Idea"}
-                    <Arrow className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
-                  <Button size="lg" variant="outline" className="border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-hero-whatsapp">
-                    <SiWhatsapp className="w-4 h-4" />
-                    {ar ? "تواصل واتساب" : "WhatsApp us"}
-                  </Button>
-                </a>
-              </div>
+        <section className="relative bg-[#f0f0ee] dark:bg-[#0d0d0d] overflow-hidden">
+          <div className="container mx-auto px-6 md:px-10 max-w-7xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-6 pt-28 pb-10 lg:pt-32 lg:pb-16">
 
-              {/* ── OAuth quick-login strip — shown only to guests ── */}
-              {!user && (googleEnabled || appleEnabled) && (
-                <motion.div {...fade(0.6)} className="mt-6 flex flex-col items-center gap-3">
-                  <div className="flex items-center gap-3 w-full max-w-xs">
-                    <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-                    <span className="text-[11px] font-bold text-black/35 dark:text-white/35 whitespace-nowrap">
-                      {ar ? "أو سجّل الدخول بـ" : "or sign in with"}
-                    </span>
-                    <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-                  </div>
-                  <div className="flex gap-2">
-                    {googleEnabled && (
-                      <button
-                        onClick={() => { window.location.href = "/api/auth/google"; }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/12 dark:border-white/12 bg-white dark:bg-white/[0.04] hover:bg-black/[0.03] dark:hover:bg-white/[0.08] transition-colors text-sm font-bold text-black dark:text-white shadow-sm shadow-black/5"
-                        data-testid="btn-hero-google-login"
-                      >
-                        <SiGoogle className="w-4 h-4 text-[#4285F4]" />
-                        Google
-                      </button>
-                    )}
-                    {appleEnabled && (
-                      <button
-                        onClick={() => { window.location.href = "/api/auth/apple"; }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/12 dark:border-white/12 bg-white dark:bg-black hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors text-sm font-bold text-black dark:text-white shadow-sm shadow-black/5"
-                        data-testid="btn-hero-apple-login"
-                      >
-                        <SiApple className="w-4 h-4" />
-                        Apple
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+              {/* ── Text column ── */}
+              <motion.div {...fade(0)} className="flex flex-col justify-center order-1">
+                <p className="text-[10px] md:text-[11px] font-bold tracking-[0.22em] uppercase text-black/40 dark:text-white/35 mb-7">
+                  {ar ? "نبني أنظمة رقمية تتوسّع معك" : "We Build Digital Systems That Scale"}
+                </p>
+                <h1 className="text-5xl sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] font-black leading-[1.0] tracking-tight text-black dark:text-white mb-6">
+                  {ar ? (<>من الفكرة<br />إلى الأثر.</>) : (<>From Vision<br />to Impact.</>)}
+                </h1>
+                <p className="text-base md:text-[17px] text-black/55 dark:text-white/45 max-w-[340px] mb-10 leading-relaxed">
+                  {ar
+                    ? "كيروكس يشارك الشركات الطموحة في تصميم وبناء وتطوير منتجات رقمية تحقق نتائج حقيقية."
+                    : "Qirox Studio partners with ambitious businesses to design, build and scale digital products that drive real results."}
+                </p>
+                <div className="flex flex-wrap items-center gap-5 mb-8">
+                  <Link href="/start">
+                    <Button size="lg" className="bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-full h-12 px-8 font-bold gap-2 text-sm" data-testid="button-hero-start">
+                      {ar ? "ابدأ مشروعك" : "Start Your Project"}
+                      <Arrow className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/about" className="flex items-center gap-1.5 text-sm font-semibold text-black/55 dark:text-white/45 hover:text-black dark:hover:text-white transition-colors border-b border-black/20 dark:border-white/20 pb-px">
+                    {ar ? "شاهد أعمالنا" : "See Our Work"}
+                    <Arrow className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+                {!user && (googleEnabled || appleEnabled) && (
+                  <motion.div {...fade(0.5)} className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 w-full max-w-[260px]">
+                      <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                      <span className="text-[10px] font-bold text-black/30 dark:text-white/25 whitespace-nowrap">
+                        {ar ? "أو سجّل الدخول بـ" : "or sign in with"}
+                      </span>
+                      <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                    </div>
+                    <div className="flex gap-2">
+                      {googleEnabled && (
+                        <button onClick={() => { window.location.href = "/api/auth/google"; }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/[0.08] transition-colors text-sm font-bold text-black dark:text-white shadow-sm" data-testid="btn-hero-google-login">
+                          <SiGoogle className="w-4 h-4 text-[#4285F4]" />Google
+                        </button>
+                      )}
+                      {appleEnabled && (
+                        <button onClick={() => { window.location.href = "/api/auth/apple"; }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-black hover:bg-white dark:hover:bg-white/[0.06] transition-colors text-sm font-bold text-black dark:text-white shadow-sm" data-testid="btn-hero-apple-login">
+                          <SiApple className="w-4 h-4" />Apple
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
 
-              <Link href="/prices" className="mt-4 text-xs text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white transition" data-testid="link-hero-manual">
-                {ar ? "أو تصفح الباقات بنفسك" : "or browse plans on your own"}
-              </Link>
-            </motion.div>
+              {/* ── Cube column — labels inline beside the image ── */}
+              <motion.div {...fade(0)} className="flex items-center justify-center order-2">
+                {/* Group A labels (right of cube in RTL = inner side) */}
+                <div className="hidden md:flex flex-col gap-8 shrink-0 me-3">
+                  {(ar ? ["الاستراتيجية", "التصميم", "التطوير"] : ["Strategy", "Design", "Development"]).map((label, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/30 whitespace-nowrap tracking-wide">{label}</span>
+                      <div className="h-px w-8 bg-black/18 dark:bg-white/15 shrink-0" />
+                    </div>
+                  ))}
+                </div>
 
-            {/* Pillars row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mt-20 md:mt-24 max-w-5xl mx-auto">
-              {PILLARS.map((p, i) => (
-                <motion.div key={i} {...fade(i)} className="text-center md:text-start">
-                  <div className="w-11 h-11 rounded-2xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center mb-4 mx-auto md:mx-0">
-                    <p.icon className="w-5 h-5" />
-                  </div>
-                  <div className="font-bold text-base mb-1">{ar ? p.ar.t : p.en.t}</div>
-                  <div className="text-xs md:text-sm text-black/55 dark:text-white/55 leading-relaxed">{ar ? p.ar.d : p.en.d}</div>
-                </motion.div>
-              ))}
+                {/* Cube image */}
+                <img
+                  src="/qirox-hero-cube.png"
+                  alt="QIROX"
+                  className="w-[320px] md:w-[420px] lg:w-[500px] xl:w-[560px] select-none pointer-events-none shrink-0"
+                  draggable={false}
+                  loading="eager"
+                  fetchPriority="high"
+                />
+
+                {/* Group B labels (left of cube in RTL = outer side) */}
+                <div className="hidden md:flex flex-col gap-8 shrink-0 ms-3">
+                  {(ar ? ["ذكاء اصطناعي", "التكامل", "النمو"] : ["AI & Automation", "Integration", "Growth"]).map((label, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="h-px w-8 bg-black/18 dark:bg-white/15 shrink-0" />
+                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/30 whitespace-nowrap tracking-wide">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
             </div>
           </div>
         </section>
