@@ -857,7 +857,7 @@ export default function Home() {
               </motion.div>
 
               {/* ── Cube column — labels inline beside the image ── */}
-              <motion.div {...fade(0)} className="flex items-center justify-center order-2">
+              <motion.div {...fade(0)} className="flex items-center justify-center order-2 -mx-4 sm:-mx-6 lg:-mx-2 overflow-visible">
                 {/* Group A labels (right of cube in RTL = inner side) */}
                 <div className="hidden md:flex flex-col gap-8 shrink-0 me-3">
                   {(ar ? ["الاستراتيجية", "التصميم", "التطوير"] : ["Strategy", "Design", "Development"]).map((label, i) => (
@@ -869,14 +869,20 @@ export default function Home() {
                 </div>
 
                 {/* Cube image */}
-                <img
-                  src="/qirox-hero-cube.png"
-                  alt="QIROX"
-                  className="w-[320px] md:w-[420px] lg:w-[500px] xl:w-[560px] select-none pointer-events-none shrink-0"
-                  draggable={false}
-                  loading="eager"
-                  fetchPriority="high"
-                />
+                <picture className="contents">
+                  <source srcSet="/qirox-hero-cube.webp" type="image/webp" />
+                  <img
+                    src="/qirox-hero-cube.png"
+                    alt="QIROX"
+                    width="1536"
+                    height="1024"
+                    className="w-[min(165vw,720px)] max-w-none md:w-[520px] lg:w-[620px] xl:w-[700px] select-none pointer-events-none shrink-0"
+                    draggable={false}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </picture>
 
                 {/* Group B labels (left of cube in RTL = outer side) */}
                 <div className="hidden md:flex flex-col gap-8 shrink-0 ms-3">
