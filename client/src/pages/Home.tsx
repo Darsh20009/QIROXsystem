@@ -802,13 +802,13 @@ export default function Home() {
 
       <main className="flex-1">
         {/* ─── HERO ─── */}
-        <section className="relative bg-[#f0f0ee] dark:bg-[#0d0d0d] overflow-hidden">
+        <section className="relative bg-[#f0f0ee] dark:bg-[#0d0d0d] overflow-x-hidden">
           <div className="container mx-auto px-6 md:px-10 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10 lg:gap-6 pt-28 pb-10 lg:pt-32 lg:pb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-end gap-0 lg:gap-6 pt-28 lg:pt-32">
 
               {/* ── Text column ── */}
               <motion.div {...fade(0)} className="flex flex-col justify-center order-1">
-                <p className="text-[10px] md:text-[11px] font-bold tracking-[0.22em] uppercase text-black/40 dark:text-white/35 mb-7">
+                <p className={`text-[10px] md:text-[11px] font-bold uppercase text-black/40 dark:text-white/35 mb-7 ${ar ? "tracking-normal" : "tracking-[0.22em]"}`}>
                   {ar ? "نبني أنظمة رقمية تتوسّع معك" : "We Build Digital Systems That Scale"}
                 </p>
                 <h1 className="text-5xl sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] font-black leading-[1.0] tracking-tight text-black dark:text-white mb-6">
@@ -856,74 +856,23 @@ export default function Home() {
                 )}
               </motion.div>
 
-              {/* ── Cube column — labels inline beside the image ── */}
-              <motion.div {...fade(0)} className="flex items-center justify-center order-2 -mx-4 sm:-mx-6 lg:-mx-2 overflow-visible">
-                {/* Group A labels (right of cube in RTL = inner side) */}
-                <div className="hidden md:flex flex-col gap-8 shrink-0 me-3">
-                  {(ar ? ["الاستراتيجية", "التصميم", "التطوير"] : ["Strategy", "Design", "Development"]).map((label, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/30 whitespace-nowrap tracking-wide">{label}</span>
-                      <div className="h-px w-8 bg-black/18 dark:bg-white/15 shrink-0" />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Cube image */}
-                <picture className="contents">
-                  <source srcSet="/qirox-hero-cube.webp" type="image/webp" />
-                  <img
-                    src="/qirox-hero-cube.png"
-                    alt="QIROX"
-                    width="1536"
-                    height="1024"
-                    className="w-[min(165vw,720px)] max-w-none md:w-[520px] lg:w-[620px] xl:w-[700px] select-none pointer-events-none shrink-0"
-                    draggable={false}
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                  />
-                </picture>
-
-                {/* Group B labels (left of cube in RTL = outer side) */}
-                <div className="hidden md:flex flex-col gap-8 shrink-0 ms-3">
-                  {(ar ? ["ذكاء اصطناعي", "التكامل", "النمو"] : ["AI & Automation", "Integration", "Growth"]).map((label, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="h-px w-8 bg-black/18 dark:bg-white/15 shrink-0" />
-                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/30 whitespace-nowrap tracking-wide">{label}</span>
-                    </div>
-                  ))}
-                </div>
+              {/* ── Hero image column ── */}
+              <motion.div {...fade(0)} className="flex items-end justify-center order-2 -mx-4 sm:-mx-6 lg:mx-0 overflow-visible">
+                <img
+                  src="/qirox-hero-new.png"
+                  alt="QIROX"
+                  className="w-full max-w-[520px] sm:max-w-[640px] lg:max-w-none lg:w-full select-none pointer-events-none block"
+                  draggable={false}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
               </motion.div>
 
             </div>
           </div>
         </section>
 
-        {/* ── Video Showcase Banner ── */}
-        <section className="relative overflow-hidden bg-black">
-          <div className="relative w-full" style={{ aspectRatio: "16/7" }}>
-            <video
-              src="/demo-video.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover opacity-80"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
-            <div className="absolute inset-0 flex items-end justify-center pb-8">
-              <div className="text-center px-4">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold tracking-wide mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  {ar ? "نظام كيروكس في العمل" : "QIROX in action"}
-                </div>
-                <h2 className="text-white text-xl md:text-3xl font-black max-w-xl mx-auto leading-tight drop-shadow-lg">
-                  {ar ? " شاهد كيف نبني أنظمتك الرقمية" : "See how we build your digital systems"}
-                </h2>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* ── Graphic Divider after Hero ── */}
         <GraphicDivider variant={1} dark />
