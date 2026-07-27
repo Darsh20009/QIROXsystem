@@ -6,12 +6,12 @@ export const modules: ModuleMap = {
   "./components/mockups/ecosystem/PlatformGrid.tsx": () => import("../components/mockups/ecosystem/PlatformGrid.tsx"),
   "./components/mockups/ecosystem/QiroxBento.tsx": () => import("../components/mockups/ecosystem/QiroxBento.tsx"),
   "./components/mockups/ecosystem/SectorCards.tsx": () => import("../components/mockups/ecosystem/SectorCards.tsx"),
-  "./components/mockups/hero-visual/Current.tsx": () => import("../components/mockups/hero-visual/Current.tsx"),
-  "./components/mockups/hero-visual/Larger.tsx": () => import("../components/mockups/hero-visual/Larger.tsx"),
   "./components/mockups/install-flow/IOSInstallGuide.tsx": () => import("../components/mockups/install-flow/IOSInstallGuide.tsx"),
   "./components/mockups/install-flow/IPhoneApp.tsx": () => import("../components/mockups/install-flow/IPhoneApp.tsx"),
   "./components/mockups/install-flow/PWAInstallPopup.tsx": () => import("../components/mockups/install-flow/PWAInstallPopup.tsx"),
   "./components/mockups/sales-dashboard/EmployeeCard.tsx": () => import("../components/mockups/sales-dashboard/EmployeeCard.tsx"),
   "./components/mockups/sales-dashboard/LeadCard.tsx": () => import("../components/mockups/sales-dashboard/LeadCard.tsx"),
-  "./components/mockups/sales-dashboard/SalesDashboard.tsx": () => import("../components/mockups/sales-dashboard/SalesDashboard.tsx")
+  "./components/mockups/sales-dashboard/SalesDashboard.tsx": () => import("../components/mockups/sales-dashboard/SalesDashboard.tsx"),
+  "./components/mockups/hero-visual/Current.tsx": () => import("../components/mockups/hero-visual/Current.tsx"),
+  "./components/mockups/hero-visual/Larger.tsx": () => import("../components/mockups/hero-visual/Larger.tsx")
 };
