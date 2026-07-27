@@ -32,6 +32,64 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- ─── قطاعات كيروكس / Qirox Sectors ─── -->
+
+  <!-- المتاجر الإلكترونية / E-Commerce -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/ecommerce</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/ecommerce"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/ecommerce"/>
+  </url>
+
+  <!-- المطاعم والمقاهي / Restaurants & Cafés -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/restaurant</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/restaurant"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/restaurant"/>
+  </url>
+
+  <!-- الشركات والمؤسسات / Companies & Institutions -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/corporate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/corporate"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/corporate"/>
+  </url>
+
+  <!-- الصحة والعيادات / Healthcare & Clinics -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/healthcare</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/healthcare"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/healthcare"/>
+  </url>
+
+  <!-- العقارات / Real Estate -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/realestate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/realestate"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/realestate"/>
+  </url>
+
+  <!-- صالونات التجميل / Beauty Salons -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/beauty</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/beauty"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/beauty"/>
+  </url>
+
+  <!-- ─── باقي الصفحات ─── -->
+
   <!-- تواصل معنا / Contact -->
   <url>
     <loc>https://qiroxstudio.online/contact</loc>

@@ -222,16 +222,12 @@ const SECTOR_ACCENT: Record<string, { glow: string; ring: string }> = {
 };
 
 const SECTORS = [
-  { icon: ShoppingBag,   img: "/sector-01.png", arName: "متاجر إلكترونية",    enName: "E-Commerce",          segment: "ecommerce" },
-  { icon: Coffee,        img: "/sector-02.png", arName: "مطاعم ومقاهي",       enName: "Restaurants",         segment: "restaurant" },
-  { icon: GraduationCap, img: "/sector-03.png", arName: "منصات تعليمية",      enName: "Education",           segment: "education" },
-  { icon: Building2,     img: "/sector-04.png", arName: "شركات ومؤسسات",      enName: "Corporate",           segment: "corporate" },
-  { icon: Heart,         img: "/sector-05.png", arName: "صحة وعيادات",        enName: "Healthcare",          segment: "healthcare" },
-  { icon: HomeIcon,      img: "/sector-06.png", arName: "عقارات",              enName: "Real Estate",         segment: "realestate" },
-  { icon: Scissors,      img: "/sector-07.png", arName: "صالونات تجميل",      enName: "Beauty Salons",       segment: "beauty" },
-  { icon: TrendingUp,    img: "/sector-08.png", arName: "وكالات التسويق",      enName: "Marketing Agencies",  segment: "marketing" },
-  { icon: Bot,           img: "/sector-09.png", arName: "ذكاء اصطناعي",       enName: "AI Solutions",        segment: "ai" },
-  { icon: Lightbulb,     arName: "ابدأ فكرتك الخاصة",  enName: "Start your own idea", custom: true },
+  { icon: ShoppingBag, img: "/sector-01.png", arName: "المتاجر الإلكترونية", enName: "E-Commerce",           arDesc: "منصة متكاملة للمنتجات والمبيعات والشحن",        enDesc: "Full platform for products, sales & shipping",     slug: "ecommerce",  segment: "ecommerce" },
+  { icon: Coffee,      img: "/sector-02.png", arName: "المطاعم والمقاهي",    enName: "Restaurants & Cafés",  arDesc: "نقاط بيع، شاشة مطبخ، وإدارة الطلبات",           enDesc: "POS, kitchen display & order management",         slug: "restaurant", segment: "restaurant" },
+  { icon: Building2,   img: "/sector-04.png", arName: "الشركات والمؤسسات",   enName: "Companies",            arDesc: "حلول ERP وCRM ومالية لتسيير أعمالك",             enDesc: "ERP, CRM & financial solutions",                   slug: "corporate",  segment: "corporate" },
+  { icon: Heart,       img: "/sector-05.png", arName: "الصحة والعيادات",     enName: "Healthcare",           arDesc: "إدارة المرضى والمواعيد والملفات الطبية",         enDesc: "Patient, appointment & medical file management",   slug: "healthcare", segment: "healthcare" },
+  { icon: HomeIcon,    img: "/sector-06.png", arName: "العقارات",             enName: "Real Estate",          arDesc: "إدارة العقارات والعملاء والعقود والتسويق",       enDesc: "Property, client & contract management",           slug: "realestate", segment: "realestate" },
+  { icon: Scissors,    img: "/sector-07.png", arName: "صالونات التجميل",     enName: "Beauty Salons",        arDesc: "حجوزات ذكية وإدارة الفنيين وتتبع الأداء",       enDesc: "Smart booking, stylist & performance tracking",    slug: "beauty",     segment: "beauty" },
 ];
 
 const PILLARS = [
@@ -904,119 +900,114 @@ export default function Home() {
         </div>
 
         {/* ─── SYSTEMS ─── */}
-        <section id="tab-systems" className="pt-16 pb-24 md:pt-20 md:pb-28">
+        <section id="tab-systems" className="pt-16 pb-0 md:pt-20 bg-[#f0f0ee] dark:bg-[#0d0d0d]">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-12 text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{ar ? "أنظمة جاهزة لكل نشاط" : "Ready systems for every business"}</h2>
+            <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
+                {ar ? "أنظمة جاهزة لكل نشاط" : "Ready systems for every business"}
+              </h2>
               <p className="text-black/55 dark:text-white/55 text-base leading-relaxed">
-                {ar ? "اختر القالب المناسب لمجالك، نخصّصه لك خلال أيام." : "Pick a template for your field, we customize it within days."}
+                {ar ? "اختر قطاعك، نخصّص لك نظاماً كاملاً خلال أيام." : "Pick your sector, we customize a full system within days."}
               </p>
             </motion.div>
+          </div>
 
-            {/* Sector illustrated cards grid — premium brand-aligned design */}
-            <motion.div {...fade(1)} className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-14">
-              {SECTORS.map((s: any, i) => {
-                const IllustrationComponent = SECTOR_ILLUSTRATIONS[s.arName];
-                const sectorHref = s.custom ? "/start" : `/prices?segment=${s.segment}`;
+          {/* Horizontal scroll track — no overflow clipping on sides */}
+          <motion.div {...fade(1)} className="relative">
+            <div
+              className="flex gap-4 overflow-x-auto pb-10 px-5 md:px-8 snap-x snap-mandatory scroll-smooth"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {SECTORS.map((s: any, i: number) => {
                 const Icon = s.icon;
-                const accent = SECTOR_ACCENT[s.arName];
-                const num = String(i + 1).padStart(2, "0");
                 return (
-                  <Link key={i} href={sectorHref}>
+                  <Link key={i} href={`/sector/${s.slug}`}>
                     <div
-                      className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.98] ring-1 ring-inset ${
-                        s.custom
-                          ? "bg-gradient-to-br from-neutral-900 via-black to-neutral-900 dark:from-white dark:via-neutral-100 dark:to-white ring-white/10 dark:ring-black/10 hover:ring-white/30 dark:hover:ring-black/30"
-                          : `bg-gradient-to-br from-white to-neutral-100 dark:from-neutral-900 dark:to-black ring-black/5 dark:ring-white/5 hover:ring-2 ${accent?.ring || "hover:ring-black/20 dark:hover:ring-white/20"}`
-                      }`}
+                      className="group relative flex-shrink-0 w-[260px] sm:w-[290px] h-[420px] rounded-3xl overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]"
                       data-testid={`card-sector-${i}`}
                     >
-                      {/* Signature glow blob (sector accent) — soft, premium */}
-                      {!s.custom && accent && (
-                        <div
-                          className={`absolute -top-8 -right-8 w-28 h-28 rounded-full blur-2xl ${accent.glow} transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 opacity-60`}
-                          aria-hidden="true"
-                        />
-                      )}
-
-                      {/* Subtle grid texture overlay for depth (brand pattern) */}
-                      <div
-                        className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06] pointer-events-none"
-                        style={{
-                          backgroundImage:
-                            s.custom
-                              ? "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)"
-                              : "radial-gradient(circle, currentColor 1px, transparent 1px)",
-                          backgroundSize: "14px 14px",
-                        }}
-                        aria-hidden="true"
+                      {/* Background photo */}
+                      <img
+                        src={s.img}
+                        alt={ar ? s.arName : s.enName}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
                       />
 
-                      {/* Top-corner sector number — typographic accent, brand-feel */}
-                      <div className={`absolute top-2.5 right-3 text-[10px] font-mono font-bold tracking-wider ${
-                        s.custom ? "text-white/30 dark:text-black/30" : "text-black/25 dark:text-white/25"
-                      }`}>
-                        {num}
-                      </div>
+                      {/* Dark gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
-                      {/* Illustration zone — top 65% — bigger, bolder, lifted on hover */}
-                      <div className={`absolute inset-0 bottom-[35%] overflow-hidden transition-transform duration-500 group-hover:scale-110 ${
-                        s.custom ? "text-white dark:text-black" : "text-black dark:text-white"
-                      }`}>
-                        {s.img ? (
-                          <img src={s.img} alt={s.arName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center p-3">
-                            {IllustrationComponent ? <IllustrationComponent /> : <Icon className="w-10 h-10" />}
-                          </div>
-                        )}
-                      </div>
+                      {/* Content at bottom */}
+                      <div className="absolute inset-x-0 bottom-0 p-6">
+                        {/* Icon badge */}
+                        <div className="w-12 h-12 rounded-2xl bg-black/60 backdrop-blur-sm border border-white/15 flex items-center justify-center mb-4">
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
 
-                      {/* Bottom title strip — premium solid black/white with crisp typography */}
-                      <div className={`absolute bottom-0 inset-x-0 h-[35%] flex flex-col items-center justify-center gap-1 px-2 ${
-                        s.custom
-                          ? "bg-black/40 dark:bg-white/40 backdrop-blur-sm"
-                          : "bg-black dark:bg-white"
-                      }`}>
-                        <div className={`text-[11px] md:text-xs font-black text-center leading-tight tracking-tight ${
-                          s.custom ? "text-white dark:text-black" : "text-white dark:text-black"
-                        }`}>
+                        {/* Title */}
+                        <h3 className="text-xl font-black text-white leading-tight mb-2 tracking-tight">
                           {ar ? s.arName : s.enName}
-                        </div>
-                        {s.custom ? (
-                          <div className="text-[9px] text-white/70 dark:text-black/70 font-medium flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            {ar ? "ابدأ فكرتك" : "Start your idea"}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-[9px] text-white/60 dark:text-black/60 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            {ar ? "اعرف المزيد" : "Learn more"}
-                            <ChevronRight className="w-2.5 h-2.5 rtl:rotate-180" />
-                          </div>
-                        )}
-                      </div>
+                        </h3>
 
-                      {/* Custom card sparkle badge */}
-                      {s.custom && (
-                        <div className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20 dark:ring-black/20">
-                          <Lightbulb className="w-3.5 h-3.5 text-white dark:text-black" />
+                        {/* Desc */}
+                        <p className="text-sm text-white/65 leading-relaxed mb-5">
+                          {ar ? s.arDesc : s.enDesc}
+                        </p>
+
+                        {/* Arrow button */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white/50 group-hover:text-white/80 transition-colors">
+                            {ar ? "اكتشف النظام" : "Explore system"}
+                          </span>
+                          <div className="w-9 h-9 rounded-full border border-white/25 group-hover:border-white/60 group-hover:bg-white/10 flex items-center justify-center transition-all duration-300">
+                            <ChevronRight className="w-4 h-4 text-white rtl:rotate-180" />
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </Link>
                 );
               })}
-            </motion.div>
 
-            <div className="text-center mt-12">
-              <Link href="/systems">
-                <Button variant="outline" className="border-black/15 dark:border-white/15 rounded-xl h-11 px-6 font-bold gap-2" data-testid="button-view-all-systems">
-                  {ar ? "عرض كل الأنظمة" : "View all systems"}
-                  <Arrow className="w-4 h-4" />
-                </Button>
+              {/* "لم تجد قطاعك؟" card */}
+              <Link href="/start">
+                <div className="group relative flex-shrink-0 w-[260px] sm:w-[290px] h-[420px] rounded-3xl overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 bg-black dark:bg-white">
+                  {/* Dot pattern */}
+                  <div
+                    className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "18px 18px" }}
+                  />
+                  {/* Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
+
+                  <div className="absolute inset-x-0 bottom-0 p-6">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 dark:bg-black/10 dark:border-black/20 flex items-center justify-center mb-4">
+                      <Lightbulb className="w-6 h-6 text-white dark:text-black" />
+                    </div>
+                    <h3 className="text-xl font-black text-white dark:text-black leading-tight mb-2 tracking-tight">
+                      {ar ? "لم تجد قطاعك؟" : "Don't see your sector?"}
+                    </h3>
+                    <p className="text-sm text-white/60 dark:text-black/60 leading-relaxed mb-5">
+                      {ar
+                        ? "نبني نظامك من الصفر تحت إشراف مبرمجين متخصصين."
+                        : "We build your system from scratch under specialized developer supervision."}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white/50 dark:text-black/50 group-hover:text-white/80 dark:group-hover:text-black/80 transition-colors">
+                        {ar ? "ابدأ فكرتك" : "Start your idea"}
+                      </span>
+                      <div className="w-9 h-9 rounded-full border border-white/25 dark:border-black/25 group-hover:border-white/60 dark:group-hover:border-black/60 flex items-center justify-center transition-all">
+                        <Sparkles className="w-4 h-4 text-white dark:text-black" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </Link>
             </div>
-          </div>
+
+            {/* Hide scrollbar CSS */}
+            <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
+          </motion.div>
         </section>
 
         {/* ── Stats + Graphic after Systems ── */}

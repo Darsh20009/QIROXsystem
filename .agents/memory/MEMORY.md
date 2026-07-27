@@ -12,3 +12,4 @@
 - [Customer Journey V2](customer-journey-v2.md) — V2 feature flags, API endpoints, and frontend wiring are all live. Flags persist via env vars; admin override endpoint exists at /api/admin/feature-flags/override.
 - [Live data shape drift](live-data-shape-drift.md) — /api/services runtime shape doesn't match its shared/schema.ts TS type; always curl live endpoints before trusting a schema.ts type for Mongo-backed routes.
 - [Design System V2 pilot](design-system-v2-pilot.md) — Landing Page rebuilt behind FEATURE_LANDING_DS_V2 in client/src/features/landing-ds-v2/; real content only, Team/Partners sections intentionally omitted pending real assets.
+- [Sector Pages](sector-pages.md) — 6 sector pages at /sector/:slug; home Systems section is horizontal scroll portrait cards linking there; sitemap + SEO included.

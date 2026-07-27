@@ -33,6 +33,7 @@ import { LandingV2Guard } from "@/features/landing-v2/LandingV2Guard";
 import { LandingDSV2Guard } from "@/features/landing-ds-v2/LandingDSV2Guard";
 
 const Home = lazy(() => import("@/pages/Home"));
+const SectorPage = lazy(() => import("@/pages/SectorPage"));
 // Sprint 009 — Landing Experience V2 (FEATURE_LANDING_V2 flag gates activation; falls back to Home)
 const LandingV2Page = lazy(() => import("@/features/landing-v2/LandingV2Page"));
 // Design System V2 migration pilot (FEATURE_LANDING_DS_V2 flag gates activation; falls back to LandingV2Page/Home)
@@ -260,7 +261,7 @@ function HomeGate() {
   );
 }
 
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty"];
 
 
 function PublicRouter() {
@@ -295,6 +296,7 @@ function PublicRouter() {
         <Route path="/alliances" component={Alliances} />
         <Route path="/consultation" component={Consultation} />
         <Route path="/systems" component={Systems} />
+        <Route path="/sector/:slug" component={SectorPage} />
         <Route path="/clients-group" component={ClientsGroup} />
         <Route path="/barcode-studio" component={BarcodeStudio} />
         <Route path="/our-tools" component={OurTools} />
