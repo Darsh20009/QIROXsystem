@@ -935,7 +935,7 @@ export default function Home() {
             {/* ── RIGHT: Horizontal scroll cards ── */}
             <motion.div {...fade(1)} className="flex-1 min-w-0">
               <div
-                className="flex gap-3 md:gap-4 overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
+                className="flex gap-4 md:gap-5 overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
               >
                 {SECTORS.map((s: any, i: number) => {
