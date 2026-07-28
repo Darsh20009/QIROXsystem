@@ -40,7 +40,7 @@ const SECTOR_DATA: Record<string, {
 }> = {
   ecommerce: {
     slug: "ecommerce",
-    img: "/sector-01.png",
+    img: "/sectors/ecommerce.jpg",
     icon: ShoppingBag,
     arName: "المتاجر الإلكترونية",
     enName: "E-Commerce",
@@ -75,7 +75,7 @@ const SECTOR_DATA: Record<string, {
 
   restaurant: {
     slug: "restaurant",
-    img: "/sector-02.png",
+    img: "/sectors/restaurant.jpg",
     icon: Coffee,
     arName: "المطاعم والمقاهي",
     enName: "Restaurants & Cafés",
@@ -110,7 +110,7 @@ const SECTOR_DATA: Record<string, {
 
   corporate: {
     slug: "corporate",
-    img: "/sector-04.png",
+    img: "/sectors/corporate.jpg",
     icon: Building2,
     arName: "الشركات والمؤسسات",
     enName: "Companies & Institutions",
@@ -145,7 +145,7 @@ const SECTOR_DATA: Record<string, {
 
   healthcare: {
     slug: "healthcare",
-    img: "/sector-05.png",
+    img: "/sectors/healthcare.jpg",
     icon: Heart,
     arName: "الصحة والعيادات",
     enName: "Healthcare & Clinics",
@@ -180,7 +180,7 @@ const SECTOR_DATA: Record<string, {
 
   realestate: {
     slug: "realestate",
-    img: "/sector-06.png",
+    img: "/sectors/realestate.jpg",
     icon: HomeIcon,
     arName: "العقارات",
     enName: "Real Estate",
@@ -215,7 +215,7 @@ const SECTOR_DATA: Record<string, {
 
   beauty: {
     slug: "beauty",
-    img: "/sector-07.png",
+    img: "/sectors/beauty.jpg",
     icon: Scissors,
     arName: "صالونات التجميل",
     enName: "Beauty Salons",
@@ -316,12 +316,31 @@ export default function SectorPage() {
   const { data: partners = [] } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const { data: segmentPricing = [] } = useQuery<any[]>({ queryKey: ["/api/segment-pricing"] });
 
+  // Map Arabic relatedService values stored in DB → our sector slugs
+  const RELATEDSERVICE_SLUG: Record<string, string> = {
+    "نظام إدارة الكافيهات":      "restaurant",
+    "نظام إدارة المطاعم":        "restaurant",
+    "نظام التجارة الإلكترونية":  "ecommerce",
+    "نظام إدارة المستشفيات":     "healthcare",
+    "نظام إدارة العقارات":       "realestate",
+    "نظام إدارة صالونات":        "beauty",
+    "نظام صالون تجميل":          "beauty",
+    "نظام الشركات":              "corporate",
+    "لوحة تحكم الإدارة":        "corporate",
+  };
+
   const sectorPartners = (partners as Partner[]).filter(
-    (p) => p.relatedService === slug || p.relatedService === sector?.segment
+    (p) => RELATEDSERVICE_SLUG[p.relatedService as string] === slug
   );
 
+  // DB segmentKeys: "restaurants" → restaurant slug, everything else → "others"
+  const SEGMENT_KEY_MAP: Record<string, string> = {
+    restaurant: "restaurants",
+  };
+  const segmentKeyForSector = SEGMENT_KEY_MAP[slug] ?? "others";
+
   const sectorPricing = (segmentPricing as any[]).filter(
-    (sp) => sp.segmentKey === slug || sp.segmentKey === sector?.segment
+    (sp) => sp.segmentKey === segmentKeyForSector
   );
 
   useSEO(sector ? {

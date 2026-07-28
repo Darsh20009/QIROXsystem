@@ -899,7 +899,18 @@ export default function Home() {
         </div>
 
         {/* ─── SYSTEMS ─── */}
-        <section id="tab-systems" className="pt-14 pb-0 md:pt-20 bg-white dark:bg-[#0a0a0a] overflow-hidden">
+        <section id="tab-systems" className="pt-14 pb-0 md:pt-20 bg-white dark:bg-[#0a0a0a]" style={{ overflowX: "clip" }}>
+
+          {/* ── Mobile header (above the flex row) ── */}
+          <div className="md:hidden px-5 mb-6">
+            <p className={`text-[10px] font-bold ${ar ? "" : "tracking-[0.22em]"} uppercase text-black/35 dark:text-white/30 mb-3`}>
+              {ar ? "أنظمتنا" : "OUR SYSTEMS"}
+            </p>
+            <h2 className="text-3xl font-black leading-tight text-black dark:text-white mb-2 tracking-tight">
+              {ar ? "أنظمة جاهزة لكل قطاع" : "Ready for every sector"}
+            </h2>
+          </div>
+
           <div className="flex items-start" dir={dir}>
 
             {/* ── LEFT: Text column (desktop only) ── */}
@@ -920,16 +931,6 @@ export default function Home() {
                 </button>
               </Link>
             </motion.div>
-
-            {/* ── Mobile header ── */}
-            <div className="md:hidden w-full px-5 mb-6">
-              <p className={`text-[10px] font-bold ${ar ? "" : "tracking-[0.22em]"} uppercase text-black/35 dark:text-white/30 mb-3`}>
-                {ar ? "أنظمتنا" : "OUR SYSTEMS"}
-              </p>
-              <h2 className="text-3xl font-black leading-tight text-black dark:text-white mb-2 tracking-tight">
-                {ar ? "أنظمة جاهزة لكل قطاع" : "Ready for every sector"}
-              </h2>
-            </div>
 
             {/* ── RIGHT: Horizontal scroll cards ── */}
             <motion.div {...fade(1)} className="flex-1 min-w-0">
