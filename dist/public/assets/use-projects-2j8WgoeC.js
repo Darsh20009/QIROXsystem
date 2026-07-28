@@ -1,0 +1,1 @@
+import{u as t}from"./vendor-query-BuKYG900.js";import{i as e}from"./index-CAb5drTH.js";function i(){return t({queryKey:[e.projects.list.path],queryFn:async()=>{const r=await fetch(e.projects.list.path,{credentials:"include"});if(!r.ok)throw new Error("Failed to fetch projects");return r.json()}})}export{i as u};

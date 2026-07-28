@@ -943,8 +943,8 @@ export default function Home() {
                   return (
                     <Link key={i} href={`/sector/${s.slug}`}>
                       <div
-                        className="group flex-shrink-0 w-[calc(100vw-3rem)] sm:w-[300px] md:w-[270px] lg:w-[300px] rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                        style={{ height: 460 }}
+                        className="group flex-shrink-0 rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
+                        style={{ width: "min(82vw, 290px)", height: 460 }}
                         data-testid={`card-sector-${i}`}
                       >
                         {/* ── Photo top ── */}
@@ -986,8 +986,8 @@ export default function Home() {
                 {/* ── "لم تجد قطاعك؟" card ── */}
                 <Link href="/start">
                   <div
-                    className="group flex-shrink-0 w-[calc(100vw-3rem)] sm:w-[300px] md:w-[270px] lg:w-[300px] rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                    style={{ height: 460 }}
+                    className="group flex-shrink-0 rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
+                    style={{ width: "min(82vw, 290px)", height: 460 }}
                   >
                     {/* Dotted top */}
                     <div className="relative overflow-hidden bg-[#0f0f0f]" style={{ height: 252, flexShrink: 0 }}>
