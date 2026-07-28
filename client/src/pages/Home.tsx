@@ -222,12 +222,12 @@ const SECTOR_ACCENT: Record<string, { glow: string; ring: string }> = {
 };
 
 const SECTORS = [
-  { icon: ShoppingBag, img: "/sectors/ecommerce.jpg",  arName: "المتاجر الإلكترونية", enName: "E-Commerce",          arDesc: "منصة متكاملة لإدارة المتاجر والمنتجات والمبيعات.",       enDesc: "Full platform for products, sales & shipping.",     slug: "ecommerce",  segment: "ecommerce" },
-  { icon: Coffee,      img: "/sectors/restaurant.jpg", arName: "المطاعم والمقاهي",    enName: "Restaurants & Cafés", arDesc: "نقاط بيع، شاشة مطبخ، وإدارة المليات والمخزون.",         enDesc: "POS, kitchen display & order management.",          slug: "restaurant", segment: "restaurant" },
-  { icon: Building2,   img: "/sectors/corporate.jpg",  arName: "الشركات والمؤسسات",   enName: "Companies",           arDesc: "حلول ERP وCRM ومالية لتسيير أعمالك بكفاءة.",            enDesc: "ERP, CRM & financial solutions.",                    slug: "corporate",  segment: "corporate" },
-  { icon: Heart,       img: "/sectors/healthcare.jpg", arName: "الصحة والعيادات",     enName: "Healthcare",          arDesc: "إدارة العيادات والمراكز الطبية والملفات والحجوزات.",    enDesc: "Patient, appointment & medical file management.",   slug: "healthcare", segment: "healthcare" },
-  { icon: HomeIcon,    img: "/sectors/realestate.jpg", arName: "العقارات",             enName: "Real Estate",         arDesc: "إدارة العقارات والعملاء والعقود والتسويق بذكاء.",       enDesc: "Property, client & contract management.",           slug: "realestate", segment: "realestate" },
-  { icon: Scissors,    img: "/sectors/beauty.jpg",     arName: "صالونات التجميل",     enName: "Beauty Salons",       arDesc: "حجوزات ذكية وإدارة الفنيين وتتبع الأداء.",             enDesc: "Smart booking, stylist & performance tracking.",    slug: "beauty",     segment: "beauty" },
+  { icon: Coffee,         img: "/sectors/restaurant.jpg", arName: "المطاعم والمقاهي",     enName: "Restaurants & Cafés", arDesc: "نظام نقاط بيع ومطبخ وإدارة الملبات والمخزون.",          enDesc: "POS, kitchen display & order management.",               slug: "restaurant", segment: "restaurant" },
+  { icon: Heart,          img: "/sectors/healthcare.jpg", arName: "الصحة والعيادات",      enName: "Healthcare",          arDesc: "إدارة العيادات والمراكز الطبية والملفات والحجوزات.",     enDesc: "Patient, appointment & medical file management.",        slug: "healthcare", segment: "healthcare" },
+  { icon: ShoppingBag,    img: "/sectors/ecommerce.jpg",  arName: "المتاجر الإلكترونية",  enName: "E-Commerce",          arDesc: "منصة متكاملة لإدارة المتاجر والمنتجات والمبيعات.",      enDesc: "Full platform for products, sales & shipping.",          slug: "ecommerce",  segment: "ecommerce" },
+  { icon: Building2,      img: "/sectors/corporate.jpg",  arName: "الشركات والمؤسسات",    enName: "Companies",           arDesc: "حلول ERP وCRM ومالية لتسيير أعمالك بكفاءة.",            enDesc: "ERP, CRM & financial solutions.",                        slug: "corporate",  segment: "corporate" },
+  { icon: GraduationCap,  img: "/sectors/education.jpg",  arName: "المنصات التعليمية",    enName: "Education Platforms", arDesc: "منصات تعليمية متكاملة للدورات والطلاب والاختبارات.",    enDesc: "Full LMS for courses, students & exams.",                slug: "education",  segment: "education" },
+  { icon: Bot,            img: "/sectors/ai.jpg",         arName: "الذكاء الاصطناعي",     enName: "AI Solutions",        arDesc: "أدوات ذكية لتحسين العمليات واتخاذ قرارات أفضل.",        enDesc: "Smart tools to improve operations & decision-making.",   slug: "ai",         segment: "ai" },
 ];
 
 const PILLARS = [
@@ -935,7 +935,7 @@ export default function Home() {
             {/* ── RIGHT: Horizontal scroll cards ── */}
             <motion.div {...fade(1)} className="flex-1 min-w-0">
               <div
-                className="flex gap-4 md:gap-5 overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
+                className="flex gap-5 md:gap-6 overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
               >
                 {SECTORS.map((s: any, i: number) => {
@@ -943,8 +943,8 @@ export default function Home() {
                   return (
                     <Link key={i} href={`/sector/${s.slug}`}>
                       <div
-                        className="group flex-shrink-0 w-[215px] sm:w-[240px] md:w-[225px] lg:w-[245px] rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                        style={{ height: 440 }}
+                        className="group flex-shrink-0 w-[calc(100vw-3rem)] sm:w-[300px] md:w-[270px] lg:w-[300px] rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
+                        style={{ height: 460 }}
                         data-testid={`card-sector-${i}`}
                       >
                         {/* ── Photo top ── */}
@@ -986,8 +986,8 @@ export default function Home() {
                 {/* ── "لم تجد قطاعك؟" card ── */}
                 <Link href="/start">
                   <div
-                    className="group flex-shrink-0 w-[215px] sm:w-[240px] md:w-[225px] lg:w-[245px] rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                    style={{ height: 440 }}
+                    className="group flex-shrink-0 w-[calc(100vw-3rem)] sm:w-[300px] md:w-[270px] lg:w-[300px] rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
+                    style={{ height: 460 }}
                   >
                     {/* Dotted top */}
                     <div className="relative overflow-hidden bg-[#0f0f0f]" style={{ height: 252, flexShrink: 0 }}>
