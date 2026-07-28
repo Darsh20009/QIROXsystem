@@ -78,6 +78,8 @@ FEATURE_DASHBOARD_V2 = "false"
 FEATURE_LANDING_V2 = "false"
 FEATURE_LANDING_DS_V2 = "false"
 FEATURE_DS_V2_NAV_FOOTER = "false"
+APPLE_CALLBACK_URL = "https://088dd397-a53d-48e2-ba47-87f85a238438-00-3cx4b6r429p1c.sisko.replit.dev/api/auth/apple/callback"
+GOOGLE_CALLBACK_URL = "https://088dd397-a53d-48e2-ba47-87f85a238438-00-3cx4b6r429p1c.sisko.replit.dev/api/auth/google/callback"
 
 [agent]
 expertMode = true
