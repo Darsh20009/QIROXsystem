@@ -933,18 +933,25 @@ export default function Home() {
             </motion.div>
 
             {/* ── RIGHT: Horizontal scroll cards ── */}
-            <motion.div {...fade(1)} className="flex-1 min-w-0">
+            <motion.div {...fade(1)} className="flex-1 min-w-0 overflow-hidden">
               <div
-                className="flex gap-5 md:gap-6 overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
+                className="overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
+                style={{
+                  display: "grid",
+                  gridAutoFlow: "column",
+                  gridAutoColumns: "min(80vw, 280px)",
+                  gap: "20px",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                } as React.CSSProperties}
               >
                 {SECTORS.map((s: any, i: number) => {
                   const Icon = s.icon;
                   return (
                     <Link key={i} href={`/sector/${s.slug}`}>
                       <div
-                        className="group flex-shrink-0 rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                        style={{ width: "min(82vw, 290px)", height: 460 }}
+                        className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col w-full"
+                        style={{ height: 460 }}
                         data-testid={`card-sector-${i}`}
                       >
                         {/* ── Photo top ── */}
@@ -986,8 +993,8 @@ export default function Home() {
                 {/* ── "لم تجد قطاعك؟" card ── */}
                 <Link href="/start">
                   <div
-                    className="group flex-shrink-0 rounded-[20px] overflow-hidden cursor-pointer snap-center transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col"
-                    style={{ width: "min(82vw, 290px)", height: 460 }}
+                    className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col w-full"
+                    style={{ height: 460 }}
                   >
                     {/* Dotted top */}
                     <div className="relative overflow-hidden bg-[#0f0f0f]" style={{ height: 252, flexShrink: 0 }}>
