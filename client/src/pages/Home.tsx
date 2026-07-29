@@ -690,6 +690,39 @@ export default function Home() {
   const ar = lang === "ar";
   const [tab, setTab] = useState<string>("systems");
 
+  // ── Auto-scroll sector cards ──────────────────────────────────────────────
+  const sectorScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sectorScrollRef.current;
+    if (!el) return;
+    let paused = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const doScroll = () => {
+      if (paused) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 10) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: 300, behavior: "smooth" });
+      }
+      timer = setTimeout(doScroll, 2800);
+    };
+    timer = setTimeout(doScroll, 3500);
+    const pause = () => { paused = true; clearTimeout(timer); };
+    const resume = () => { paused = false; timer = setTimeout(doScroll, 2000); };
+    el.addEventListener("mouseenter", pause);
+    el.addEventListener("mouseleave", resume);
+    el.addEventListener("touchstart", pause, { passive: true });
+    el.addEventListener("touchend", resume, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener("mouseenter", pause);
+      el.removeEventListener("mouseleave", resume);
+      el.removeEventListener("touchstart", pause);
+      el.removeEventListener("touchend", resume);
+    };
+  }, []);
+
   useSEO({
     title: ar
       ? "كيروكس استوديو — بناء مواقع وتطبيقات وأنظمة رقمية في الرياض"
@@ -935,6 +968,7 @@ export default function Home() {
             {/* ── RIGHT: Horizontal scroll cards ── */}
             <motion.div {...fade(1)} className="flex-1 min-w-0 overflow-hidden">
               <div
+                ref={sectorScrollRef}
                 className="overflow-x-auto pb-10 pr-5 md:pr-8 pl-4 snap-x snap-mandatory scroll-smooth"
                 style={{
                   display: "grid",
@@ -955,7 +989,7 @@ export default function Home() {
                         data-testid={`card-sector-${i}`}
                       >
                         {/* ── Photo top ── */}
-                        <div className="relative overflow-hidden" style={{ height: 252, flexShrink: 0 }}>
+                        <div className="relative overflow-hidden" style={{ height: 258, flexShrink: 0, borderRadius: "0 0 28px 28px" }}>
                           <img
                             src={s.img}
                             alt={ar ? s.arName : s.enName}
@@ -990,35 +1024,43 @@ export default function Home() {
                   );
                 })}
 
-                {/* ── "لم تجد قطاعك؟" card ── */}
+                {/* ── "لم تجد قطاعك؟" card — QIROX branded ── */}
                 <Link href="/start">
                   <div
-                    className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col w-full"
+                    className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_60px_-12px_rgba(255,255,255,0.15)] flex flex-col w-full"
                     style={{ height: 460 }}
                   >
-                    {/* Dotted top */}
-                    <div className="relative overflow-hidden bg-[#0f0f0f]" style={{ height: 252, flexShrink: 0 }}>
-                      <div
-                        className="absolute inset-0 opacity-[0.06]"
-                        style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "20px 20px" }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-transparent" />
+                    {/* Top — QIROX icon with glow */}
+                    <div className="relative overflow-hidden bg-[#0a0a0a] flex items-center justify-center" style={{ height: 258, flexShrink: 0, borderRadius: "0 0 28px 28px" }}>
+                      {/* Radial glow behind icon */}
+                      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 70%)" }} />
+                      {/* Animated concentric rings */}
+                      <div className="absolute w-32 h-32 rounded-full border border-white/[0.06] animate-ping" style={{ animationDuration: "3s" }} />
+                      <div className="absolute w-48 h-48 rounded-full border border-white/[0.04]" style={{ animation: "ping 4s cubic-bezier(0,0,0.2,1) infinite" }} />
+                      {/* Dot grid */}
+                      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "22px 22px" }} />
+                      {/* QIROX icon */}
+                      <div className="relative z-10 flex flex-col items-center gap-3">
+                        <div className="w-20 h-20 rounded-[22px] bg-white/[0.06] border border-white/[0.12] flex items-center justify-center group-hover:bg-white/[0.10] transition-all duration-500 group-hover:scale-110">
+                          <img src={qiroxLogo} alt="QIROX" className="w-12 h-12 object-contain opacity-90" />
+                        </div>
+                      </div>
                     </div>
                     {/* Dark info panel */}
-                    <div className="flex-1 bg-[#0f0f0f] border-t border-white/[0.06] p-5 flex flex-col justify-between">
+                    <div className="flex-1 bg-[#0a0a0a] p-5 flex flex-col justify-between">
                       <div>
-                        <div className="w-[50px] h-[50px] rounded-[14px] bg-[#1c1c1c] border border-white/[0.08] flex items-center justify-center mb-3.5">
-                          <Lightbulb className="w-5 h-5 text-white" />
+                        <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3.5">
+                          <Sparkles className="w-5 h-5 text-white/70" />
                         </div>
                         <h3 className="text-[1.15rem] font-black text-white leading-snug mb-2 tracking-tight">
                           {ar ? "لم تجد قطاعك؟" : "Don't see your sector?"}
                         </h3>
-                        <p className="text-[12.5px] text-white/55 leading-relaxed">
-                          {ar ? "نبني نظامك من الصفر تحت إشراف مبرمجين متخصصين." : "We build your system from scratch."}
+                        <p className="text-[12.5px] text-white/50 leading-relaxed">
+                          {ar ? "نبني نظامك من الصفر بهوية خاصة تحت إشراف مبرمجين متخصصين." : "We build your system from scratch with a unique identity."}
                         </p>
                       </div>
-                      <div className="w-9 h-9 rounded-full border border-white/20 group-hover:border-white/55 flex items-center justify-center transition-all duration-300 mt-3 self-start">
-                        <Sparkles className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 rounded-full border border-white/20 group-hover:border-white/60 group-hover:bg-white/[0.08] flex items-center justify-center transition-all duration-300 mt-3 self-start">
+                        <ChevronRight className="w-4 h-4 text-white rtl:rotate-180" />
                       </div>
                     </div>
                   </div>

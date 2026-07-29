@@ -16,6 +16,7 @@ import {
   Monitor, Truck, ChefHat, Calendar, FileText, Stethoscope,
   Key, MapPin, Camera, Bell, Lock, Smartphone, Settings, Wifi,
   TrendingUp, Clock, Award, Target, MessageSquare,
+  GraduationCap, Bot,
 } from "lucide-react";
 
 // ─── Sector master data ───────────────────────────────────────────────────────
@@ -213,6 +214,76 @@ const SECTOR_DATA: Record<string, {
     ],
   },
 
+  education: {
+    slug: "education",
+    img: "/sectors/education.jpg",
+    icon: GraduationCap,
+    arName: "المنصات التعليمية",
+    enName: "Education Platforms",
+    arShortDesc: "منصات تعليمية متكاملة للدورات والطلاب والاختبارات",
+    enShortDesc: "Full LMS for courses, students and exams",
+    arHeroTitle: "منصتك التعليمية\nبمعايير عالمية",
+    enHeroTitle: "Your Education Platform\nAt World Standards",
+    arHeroSub: "نبني لك منصة تعليمية احترافية — إدارة دورات، طلاب، اختبارات، وشهادات إتمام تلقائية.",
+    enHeroSub: "We build your professional learning platform — course management, students, exams, and auto-generated certificates.",
+    segment: "education",
+    seoKeywords: "منصة تعليمية, نظام LMS سعودي, إدارة دورات تدريبية, برنامج تعليمي, كيروكس تعليم, LMS saudi arabia",
+    features: [
+      { icon: Monitor, arTitle: "إدارة الدورات والمحتوى", enTitle: "Course & Content Management", arDesc: "أضف دوراتك بالفيديو والـPDF والاختبارات — منظمة في وحدات ودروس تفاعلية.", enDesc: "Add your courses with video, PDF and quizzes — organized in interactive modules and lessons." },
+      { icon: Users, arTitle: "إدارة الطلاب والتسجيل", enTitle: "Student & Enrollment Management", arDesc: "سجّل الطلاب يدوياً أو تلقائياً، تابع تقدمهم، وأرسل تنبيهات التذكير.", enDesc: "Enroll students manually or automatically, track their progress, and send reminder alerts." },
+      { icon: FileText, arTitle: "اختبارات وتقييمات تلقائية", enTitle: "Automatic Tests & Assessments", arDesc: "أنشئ اختبارات بأنواع مختلفة (اختيار متعدد، صح/خطأ) مع تصحيح وتقييم فوري.", enDesc: "Create quizzes with multiple types (MCQ, true/false) with instant auto-grading." },
+      { icon: Award, arTitle: "شهادات إتمام احترافية", enTitle: "Professional Completion Certificates", arDesc: "شهادات مُصمَّمة بهويتك تُصدَر تلقائياً عند إكمال الدورة — قابلة للتحقق برمز QR.", enDesc: "Branded certificates auto-issued upon course completion — verifiable via QR code." },
+      { icon: BarChart3, arTitle: "تقارير أداء الطلاب", enTitle: "Student Performance Reports", arDesc: "تتبع معدل الإنجاز، نتائج الاختبارات، ووقت الدراسة لكل طالب بتفصيل كامل.", enDesc: "Track completion rate, exam scores, and study time per student in full detail." },
+      { icon: CreditCard, arTitle: "بوابة دفع للاشتراكات", enTitle: "Subscription Payment Gateway", arDesc: "بيع دوراتك بمدفوعة واحدة أو اشتراك شهري — مع كوبونات خصم ذكية.", enDesc: "Sell your courses with one-time payment or monthly subscription — with smart discount coupons." },
+    ],
+    whyQirox: [
+      { arTitle: "تصميم بهويتك الكاملة", enTitle: "Fully Branded Design", arDesc: "منصتك بلوجوك وألوانك وتجربة المستخدم التي تعكس مؤسستك — لا قوالب مكررة.", enDesc: "Your platform with your logo, colors and UX that reflects your institution — no repeated templates." },
+      { arTitle: "دروس مباشرة مدمجة في المنصة", enTitle: "Live Sessions Built Into the Platform", arDesc: "لايف مدمج داخل المنصة — الطلاب يشاركون دون الخروج لـ Zoom أو Meet.", enDesc: "Live sessions embedded in the platform — students participate without leaving to Zoom or Meet." },
+      { arTitle: "تطبيق موبايل للطلاب", enTitle: "Student Mobile App", arDesc: "تطبيق iOS وAndroid بعلامتك التجارية — الطلاب يدرسون أينما كانوا.", enDesc: "iOS and Android app branded for you — students study anywhere they are." },
+    ],
+    guarantee: [
+      { icon: Shield, arLabel: "ضمان جودة 90 يوم", enLabel: "90-Day Quality Guarantee", arDesc: "أي خطأ بعد التسليم، نصلحه مجاناً خلال 24 ساعة.", enDesc: "Any bug after delivery, we fix it free within 24 hours." },
+      { icon: Headphones, arLabel: "دعم 24/7 بالعربي", enLabel: "24/7 Arabic Support", arDesc: "واتساب + تذاكر دعم. نرد في أقل من ساعة في أوقات العمل.", enDesc: "WhatsApp + support tickets. We reply in under an hour during working hours." },
+      { icon: Zap, arLabel: "تسليم خلال 21 يوم", enLabel: "Delivery in 21 Days", arDesc: "منصتك التعليمية الكاملة جاهزة في 21 يوم — مضمون في العقد.", enDesc: "Your full education platform ready in 21 days — guaranteed in the contract." },
+      { icon: Award, arLabel: "تدريب فريق المحتوى مجاناً", enLabel: "Free Content Team Training", arDesc: "نُدرّب فريقك على رفع المحتوى وإدارة الطلاب والتقارير بالكامل.", enDesc: "We train your team on content upload, student management and reports fully." },
+    ],
+  },
+
+  ai: {
+    slug: "ai",
+    img: "/sectors/ai.jpg",
+    icon: Bot,
+    arName: "الذكاء الاصطناعي",
+    enName: "AI Solutions",
+    arShortDesc: "أدوات ذكية لتحسين العمليات واتخاذ قرارات أفضل",
+    enShortDesc: "Smart tools to improve operations and make better decisions",
+    arHeroTitle: "ذكاء اصطناعي\nيبني معك",
+    enHeroTitle: "AI That\nBuilds With You",
+    arHeroSub: "ندمج الذكاء الاصطناعي في نظامك — تحليل البيانات، الأتمتة، والمساعد الذكي الخاص بك.",
+    enHeroSub: "We integrate AI into your system — data analytics, automation, and your own smart assistant.",
+    segment: "ai",
+    seoKeywords: "ذكاء اصطناعي سعودي, نظام AI, أتمتة ذكية, تحليل بيانات, كيروكس ذكاء اصطناعي, AI solutions saudi",
+    features: [
+      { icon: BarChart3, arTitle: "تحليل البيانات الذكي", enTitle: "Smart Data Analytics", arDesc: "لوحة تحكم تفاعلية تحلل بياناتك وتستخرج رؤى قابلة للتنفيذ — بدون خلفية تقنية.", enDesc: "Interactive dashboard that analyzes your data and extracts actionable insights — no tech background needed." },
+      { icon: MessageSquare, arTitle: "مساعد ذكي خاص بك", enTitle: "Your Own AI Assistant", arDesc: "مساعد يفهم عمليات شركتك ويجيب فريقك على أسئلتهم فوراً — بالعربي الكامل.", enDesc: "An assistant that understands your business and answers your team instantly — fully in Arabic." },
+      { icon: Settings, arTitle: "أتمتة العمليات المتكررة", enTitle: "Repetitive Process Automation", arDesc: "أتمت مهام التقارير، الإشعارات، والتصنيفات — وفّر ساعات عمل يومياً.", enDesc: "Automate reporting tasks, notifications, and classifications — save work hours daily." },
+      { icon: TrendingUp, arTitle: "التوقعات والنمذجة الذكية", enTitle: "AI Predictions & Modelling", arDesc: "توقعات المبيعات والطلب والسلوك — تتخذ قراراتك قبل المنافسين.", enDesc: "Sales, demand, and behavior predictions — make decisions before your competitors." },
+      { icon: Target, arTitle: "تخصيص تجربة العملاء", enTitle: "Customer Experience Personalization", arDesc: "توصيات ذكية ومحتوى مخصص لكل عميل — يرفع الرضا والمبيعات تلقائياً.", enDesc: "Smart recommendations and personalized content per customer — automatically raises satisfaction and sales." },
+      { icon: Lock, arTitle: "أمان وسيادة البيانات", enTitle: "Data Security & Sovereignty", arDesc: "نماذج الذكاء الاصطناعي تعمل على بنيتك التحتية فقط — لا تسريب، لا استخدام خارجي.", enDesc: "AI models run on your infrastructure only — no leaks, no external use." },
+    ],
+    whyQirox: [
+      { arTitle: "ذكاء اصطناعي بالعربي أولاً", enTitle: "Arabic-First AI", arDesc: "نماذجنا تفهم اللهجة السعودية والمصطلحات المحلية — لا ترجمة، لا سوء فهم.", enDesc: "Our models understand Saudi dialect and local terminology — no translation, no misunderstanding." },
+      { arTitle: "تكامل مع أنظمتك الحالية", enTitle: "Integration With Your Existing Systems", arDesc: "ندمج الذكاء الاصطناعي في نظامك الحالي — لا تحتاج تغيير كل شيء من الصفر.", enDesc: "We integrate AI into your existing system — no need to replace everything from scratch." },
+      { arTitle: "ملكيتك الكاملة للنماذج والبيانات", enTitle: "Full Ownership of Models & Data", arDesc: "النماذج المُدرَّبة على بياناتك ملك لك — لا اشتراكات، لا رسوم دورية.", enDesc: "Models trained on your data are yours — no subscriptions, no recurring fees." },
+    ],
+    guarantee: [
+      { icon: Shield, arLabel: "ضمان جودة 90 يوم", enLabel: "90-Day Quality Guarantee", arDesc: "أي خطأ بعد التسليم، نصلحه مجاناً خلال 24 ساعة.", enDesc: "Any bug after delivery, we fix it free within 24 hours." },
+      { icon: Headphones, arLabel: "دعم 24/7 بالعربي", enLabel: "24/7 Arabic Support", arDesc: "واتساب + تذاكر دعم. نرد في أقل من ساعة في أوقات العمل.", enDesc: "WhatsApp + support tickets. We reply in under an hour during working hours." },
+      { icon: Zap, arLabel: "نماذج أولية خلال 14 يوم", enLabel: "Initial Models in 14 Days", arDesc: "نماذجك الأولية جاهزة للاختبار خلال أسبوعين من انطلاق المشروع.", enDesc: "Your initial models ready for testing within two weeks of project kickoff." },
+      { icon: Lock, arLabel: "بياناتك لا تغادر سيرفرك", enLabel: "Your Data Never Leaves Your Server", arDesc: "كل معالجة AI تتم على بنيتك التحتية — صفر تسريب مضمون.", enDesc: "All AI processing on your infrastructure — zero leakage guaranteed." },
+    ],
+  },
+
   beauty: {
     slug: "beauty",
     img: "/sectors/beauty.jpg",
@@ -406,15 +477,18 @@ export default function SectorPage() {
       <main className="flex-1">
         {/* ─── HERO ─── */}
         <section className="relative min-h-[92vh] flex items-end overflow-hidden">
-          {/* Background photo */}
-          <div className="absolute inset-0">
+          {/* Background photo — blurred glass effect */}
+          <div className="absolute inset-0 overflow-hidden">
             <img
               src={sector.img}
               alt={ar ? sector.arName : sector.enName}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover scale-110"
+              style={{ filter: "blur(6px) brightness(0.6)" }}
               loading="eager"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20" />
+            {/* Frosted glass sheen */}
+            <div className="absolute inset-0 backdrop-blur-[2px] bg-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/5" />
           </div>
 
           {/* Content */}
@@ -538,58 +612,94 @@ export default function SectorPage() {
               </p>
             </motion.div>
 
-            {sectorPricing.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {sectorPricing.map((plan: any, i: number) => (
-                  <motion.div key={i} {...fade(i * 0.5)} className={`relative p-7 rounded-2xl border-2 ${i === 1 ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08]"}`}>
-                    {i === 1 && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-black dark:bg-white text-white dark:text-black text-[11px] font-black uppercase tracking-wider">
-                        {ar ? "الأكثر طلباً" : "Most Popular"}
+            {(() => {
+              const FALLBACK = [
+                {
+                  nameAr: "لايت", nameEn: "Lite",
+                  tagAr: "للبدايات", tagEn: "Starter",
+                  featuresAr: ["موقع احترافي مخصص لقطاعك", "لوحة تحكم أساسية", "دعم فني 6 أشهر", "3 مستخدمين"],
+                  featuresEn: ["Custom site for your sector", "Basic control panel", "6-month support", "3 users"],
+                },
+                {
+                  nameAr: "برو", nameEn: "Pro",
+                  tagAr: "الأكثر طلباً ⭐", tagEn: "Most Popular ⭐",
+                  popular: true,
+                  featuresAr: ["كل ميزات لايت", "نظام متكامل لقطاعك", "تطبيق جوال iOS وAndroid", "تقارير متقدمة وذكاء اصطناعي"],
+                  featuresEn: ["All Lite features", "Full sector system", "iOS & Android app", "Advanced reports & AI"],
+                },
+                {
+                  nameAr: "إنفينيت", nameEn: "Infinite",
+                  tagAr: "بلا حدود", tagEn: "No Limits",
+                  featuresAr: ["كل شيء في برو", "تطوير مخصص كامل", "أولوية دعم 24/7", "خادم سحابي مخصص"],
+                  featuresEn: ["Everything in Pro", "Full custom dev", "24/7 priority support", "Dedicated cloud server"],
+                },
+              ];
+              const plans = sectorPricing.length > 0
+                ? sectorPricing.map((p: any, i: number) => ({
+                    nameAr: p.planNameAr || p.planName || `باقة ${i + 1}`,
+                    nameEn: p.planName || `Plan ${i + 1}`,
+                    tagAr: i === 1 ? "الأكثر طلباً ⭐" : "",
+                    tagEn: i === 1 ? "Most Popular ⭐" : "",
+                    popular: i === 1,
+                    price: p.monthlyPrice || p.price || null,
+                    featuresAr: p.features || [],
+                    featuresEn: p.features || [],
+                    planId: p._id || p.id || i,
+                  }))
+                : FALLBACK;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {plans.map((plan: any, i: number) => (
+                    <motion.div key={i} {...fade(i * 0.5)} className={`relative p-7 rounded-2xl border-2 flex flex-col ${plan.popular ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08]"}`}>
+                      {plan.popular && (
+                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-black dark:bg-white text-white dark:text-black text-[11px] font-black uppercase tracking-wider whitespace-nowrap">
+                          {ar ? "الأكثر طلباً" : "Most Popular"}
+                        </div>
+                      )}
+                      <div className="mb-1">
+                        <span className={`text-[11px] font-bold uppercase tracking-widest ${plan.popular ? "text-white/50 dark:text-black/50" : "text-black/35 dark:text-white/35"}`}>
+                          {ar ? plan.tagAr : plan.tagEn}
+                        </span>
                       </div>
-                    )}
-                    <h3 className="text-xl font-black mb-2">{plan.planNameAr || plan.planName || (ar ? "باقة" : "Plan")}</h3>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-4xl font-black">{(plan.monthlyPrice || plan.price || 0).toLocaleString()}</span>
-                      <span className={`text-sm ${i === 1 ? "text-white/60 dark:text-black/60" : "text-black/40 dark:text-white/40"}`}>{ar ? "ر.س / شهر" : "SAR / mo"}</span>
-                    </div>
-                    {plan.features && (
-                      <ul className="space-y-2 mb-6">
-                        {(plan.features || []).slice(0, 5).map((ft: string, fi: number) => (
-                          <li key={fi} className="flex items-center gap-2 text-sm">
-                            <Check className={`w-4 h-4 shrink-0 ${i === 1 ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`} strokeWidth={3} />
+                      <h3 className="text-2xl font-black mb-3">{ar ? plan.nameAr : plan.nameEn}</h3>
+                      {plan.price != null ? (
+                        <div className="flex items-baseline gap-1 mb-5">
+                          <span className="text-4xl font-black">{Number(plan.price).toLocaleString()}</span>
+                          <span className={`text-sm ${plan.popular ? "text-white/55 dark:text-black/55" : "text-black/40 dark:text-white/40"}`}>{ar ? "ر.س / شهر" : "SAR / mo"}</span>
+                        </div>
+                      ) : (
+                        <div className="mb-5">
+                          <span className={`text-sm font-bold ${plan.popular ? "text-white/60 dark:text-black/60" : "text-black/40 dark:text-white/40"}`}>
+                            {ar ? "السعر حسب المتطلبات" : "Price by requirements"}
+                          </span>
+                        </div>
+                      )}
+                      <ul className="space-y-2.5 mb-7 flex-1">
+                        {(ar ? plan.featuresAr : plan.featuresEn).slice(0, 5).map((ft: string, fi: number) => (
+                          <li key={fi} className="flex items-start gap-2.5 text-sm">
+                            <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.popular ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`} strokeWidth={3} />
                             {ft}
                           </li>
                         ))}
                       </ul>
-                    )}
-                    <Link href={`/order?segment=${sector.segment}&plan=${plan._id || plan.id || i}`}>
-                      <Button className={`w-full rounded-xl h-11 font-bold ${i === 1 ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90" : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"}`}>
-                        {ar ? "ابدأ الآن" : "Get Started"}
-                      </Button>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <motion.div {...fade(1)} className="text-center py-10 border-2 border-dashed border-black/10 dark:border-white/10 rounded-3xl">
-                <p className="text-black/50 dark:text-white/50 mb-6 text-base">
-                  {ar ? "للاطلاع على الأسعار المخصصة لهذا القطاع، تواصل معنا أو اطلع على صفحة الباقات." : "For pricing tailored to this sector, contact us or view the pricing page."}
-                </p>
-                <div className="flex justify-center gap-4 flex-wrap">
-                  <Link href={`/prices?segment=${sector.segment}`}>
-                    <Button className="rounded-xl h-11 px-7 font-bold bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90">
-                      {ar ? "عرض الباقات" : "View Packages"}
-                      <Arrow className="w-4 h-4 ms-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/contact">
-                    <Button variant="outline" className="rounded-xl h-11 px-7 font-bold border-black/15 dark:border-white/15">
-                      {ar ? "تواصل معنا" : "Contact Us"}
-                    </Button>
-                  </Link>
+                      <Link href={plan.planId != null ? `/order?segment=${sector.segment}&plan=${plan.planId}` : `/start?sector=${sector.slug}`}>
+                        <Button className={`w-full rounded-xl h-11 font-bold ${plan.popular ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90" : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"}`}>
+                          {ar ? "ابدأ الآن" : "Get Started"}
+                          <Arrow className="w-4 h-4 ms-2" />
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  ))}
                 </div>
-              </motion.div>
-            )}
+              );
+            })()}
+
+            <motion.div {...fade(3)} className="text-center mt-8">
+              <p className="text-sm text-black/40 dark:text-white/40">
+                {ar ? "السعر يختلف حسب القطاع والمتطلبات — تكلّم مساعدنا للحصول على سعر مخصص." : "Price varies by sector and requirements — talk to our advisor for a custom quote."}
+              </p>
+            </motion.div>
           </div>
         </section>
 
