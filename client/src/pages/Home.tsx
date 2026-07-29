@@ -981,44 +981,50 @@ export default function Home() {
               >
                 {SECTORS.map((s: any, i: number) => {
                   const Icon = s.icon;
+                  const name = ar ? s.arName : s.enName;
                   return (
                     <Link key={i} href={`/sector/${s.slug}`}>
                       <div
-                        className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.22)] flex flex-col w-full"
-                        style={{ height: 460 }}
+                        className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_32px_56px_-12px_rgba(0,0,0,0.5)] relative w-full"
+                        style={{ height: 420 }}
                         data-testid={`card-sector-${i}`}
                       >
-                        {/* ── Photo top ── */}
-                        <div className="relative overflow-hidden" style={{ height: 258, flexShrink: 0 }}>
-                          <img
-                            src={s.img}
-                            alt={ar ? s.arName : s.enName}
-                            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
-                            loading="lazy"
-                          />
-                          {/* Fade image into dark panel below — no seam */}
-                          <div className="absolute inset-x-0 bottom-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent 0%, #0f0f0f 100%)" }} />
+                        {/* ── Full-bleed photo ── */}
+                        <img
+                          src={s.img}
+                          alt={name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
+                        />
+
+                        {/* ── Gradient overlay: transparent top → deep black bottom ── */}
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ background: "linear-gradient(to bottom, transparent 25%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.93) 100%)" }}
+                        />
+
+                        {/* ── Icon badge — top corner ── */}
+                        <div className={`absolute top-4 ${ar ? "left-4" : "right-4"} w-10 h-10 rounded-[12px] bg-black/40 backdrop-blur-sm border border-white/15 flex items-center justify-center`}>
+                          <Icon className="w-[18px] h-[18px] text-white" />
                         </div>
 
-                        {/* ── Dark info panel ── */}
-                        <div className="flex-1 bg-[#0f0f0f] p-5 flex flex-col justify-between">
-                          <div>
-                            {/* App icon */}
-                            <div className="w-[50px] h-[50px] rounded-[14px] bg-[#1c1c1c] border border-white/[0.08] flex items-center justify-center mb-3.5">
-                              <Icon className="w-5 h-5 text-white" />
-                            </div>
-                            {/* Title */}
-                            <h3 className="text-[1.15rem] font-black text-white leading-snug mb-2 tracking-tight">
-                              {ar ? s.arName : s.enName}
-                            </h3>
-                            {/* Desc */}
-                            <p className="text-[12.5px] text-white/55 leading-relaxed">
-                              {ar ? s.arDesc : s.enDesc}
-                            </p>
-                          </div>
-                          {/* Arrow button */}
-                          <div className="w-9 h-9 rounded-full border border-white/20 group-hover:border-white/55 group-hover:bg-white/[0.07] flex items-center justify-center transition-all duration-300 mt-3 self-start">
-                            <ChevronRight className="w-4 h-4 text-white rtl:rotate-180" />
+                        {/* ── Text — bottom overlay ── */}
+                        <div className="absolute inset-x-0 bottom-0 p-5">
+                          {/* Sector name — typewriter reveal */}
+                          <h3
+                            className="text-[1.2rem] font-black text-white leading-snug mb-1.5 tracking-tight"
+                            style={{
+                              animation: `sector-type ${Math.max(0.5, name.length * 0.055)}s steps(${name.length}, end) ${i * 0.18}s both`,
+                            }}
+                          >
+                            {name}
+                          </h3>
+                          <p className="text-[12px] text-white/60 leading-relaxed line-clamp-2">
+                            {ar ? s.arDesc : s.enDesc}
+                          </p>
+                          {/* Arrow */}
+                          <div className="mt-3.5 w-8 h-8 rounded-full border border-white/25 group-hover:border-white/65 group-hover:bg-white/10 flex items-center justify-center transition-all duration-300">
+                            <ChevronRight className="w-3.5 h-3.5 text-white rtl:rotate-180" />
                           </div>
                         </div>
                       </div>
@@ -1069,7 +1075,13 @@ export default function Home() {
                 </Link>
               </div>
 
-              <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
+              <style>{`
+                .snap-x::-webkit-scrollbar { display: none; }
+                @keyframes sector-type {
+                  from { clip-path: inset(0 0 0 100%); }
+                  to   { clip-path: inset(0 0 0 0); }
+                }
+              `}</style>
             </motion.div>
           </div>
         </section>
