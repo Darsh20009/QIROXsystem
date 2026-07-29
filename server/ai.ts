@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * QIROX AI — Agentic Intelligence
- * Powered by Moonshot AI (Kimi)
+ * Powered by OpenAI GPT-4o
  */
 import type { Express } from "express";
 import OpenAI from "openai";
@@ -12,7 +12,7 @@ import * as path from "path";
 import rateLimit from "express-rate-limit";
 
 // ── Beta readiness: AI-specific rate limiter ─────────────────────────────────
-// AI endpoints call paid third-party providers (OpenAI/Moonshot); the global
+// AI endpoints call paid third-party providers (OpenAI GPT-4o); the global
 // /api limiter (500 req / 15 min) is too generous for cost-sensitive routes.
 // Additive-only: does not change any AI logic, only throttles abusive callers.
 const aiLimiter = rateLimit({
@@ -23,35 +23,22 @@ const aiLimiter = rateLimit({
   message: { error: "تجاوزت الحد المسموح لطلبات الذكاء الاصطناعي، حاول بعد دقيقة" },
 });
 
-/* ─── AI Provider — smart selection: OpenAI GPT-4o > Moonshot (Kimi) ─── */
-const MOONSHOT_BASE_URL = "https://api.moonshot.ai/v1";
+/* ─── AI Provider — OpenAI GPT-4o ─── */
 
 let _openaiClient: OpenAI | null = null;
-let AI_MODEL = "moonshot-v1-32k";
-let AI_MODEL_LABEL = "QIROX AI";
-let _supportsVision = false;
+let AI_MODEL = "gpt-4o";
+let AI_MODEL_LABEL = "QIROX AI (GPT-4o)";
+let _supportsVision = true;
 
 function getOpenAIClient(): OpenAI {
   if (!_openaiClient) {
     const openaiKey = process.env.OPENAI_API_KEY;
-    const moonshotKey = process.env.MOONSHOT_API_KEY;
-
     if (openaiKey) {
-      // Prefer OpenAI GPT-4o — vision support, no Chinese, best quality
-      AI_MODEL = "gpt-4o";
-      AI_MODEL_LABEL = "QIROX AI (GPT-4o)";
-      _supportsVision = true;
       _openaiClient = new OpenAI({ apiKey: openaiKey });
       console.log("[AI] Provider: OpenAI GPT-4o — vision enabled");
-    } else if (moonshotKey) {
-      AI_MODEL = "moonshot-v1-32k";
-      AI_MODEL_LABEL = "QIROX AI";
-      _supportsVision = false;
-      _openaiClient = new OpenAI({ apiKey: moonshotKey, baseURL: MOONSHOT_BASE_URL });
-      console.log("[AI] Provider: Moonshot AI (Kimi) — vision disabled");
     } else {
-      _openaiClient = new OpenAI({ apiKey: "placeholder", baseURL: MOONSHOT_BASE_URL });
-      console.log("[AI] No API key found — AI features disabled");
+      _openaiClient = new OpenAI({ apiKey: "placeholder" });
+      console.log("[AI] No OPENAI_API_KEY found — AI features disabled");
     }
   }
   return _openaiClient;

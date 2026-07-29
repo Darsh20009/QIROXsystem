@@ -8069,7 +8069,7 @@ export async function registerRoutes(
 
   // POST /api/ai/enhance-idea — public AI route for QuickStart wizard
   app.post("/api/ai/enhance-idea", async (req, res) => {
-    const apiKey = process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return res.status(503).json({ error: "خدمة الذكاء الاصطناعي غير متاحة حالياً" });
     const { idea, sector, features } = req.body || {};
     if (!idea || String(idea).trim().length < 5) return res.status(400).json({ error: "الفكرة قصيرة جداً" });
@@ -8081,9 +8081,9 @@ export async function registerRoutes(
     const userMessage = `القطاع: ${sectorStr}\nالمميزات المطلوبة: ${featuresStr}\nالفكرة الأصلية: ${idea}`;
     try {
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey, baseURL: "https://api.moonshot.ai/v1" });
+      const openai = new OpenAI({ apiKey });
       const completion = await openai.chat.completions.create({
-        model: "moonshot-v1-8k",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -8096,17 +8096,17 @@ export async function registerRoutes(
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  // POST /api/ai/kimi — Moonshot AI (Kimi) route
+  // POST /api/ai/kimi — legacy route, now powered by OpenAI GPT-4o
   app.post("/api/ai/kimi", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const apiKey = process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(503).json({ error: "MOONSHOT_API_KEY غير مُعدَّ" });
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: "OPENAI_API_KEY غير مُعدَّ" });
     const { messages, systemPrompt } = req.body;
     try {
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey, baseURL: "https://api.moonshot.ai/v1" });
+      const openai = new OpenAI({ apiKey });
       const completion = await openai.chat.completions.create({
-        model: "moonshot-v1-32k",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt || "أنت QIROX AI، مساعد ذكاء اصطناعي متخصص لمنصة Qirox. تساعد الموظفين والمديرين والعملاء. تتحدث بالعربية افتراضياً وتقدم إجابات دقيقة ومفيدة وعملية." },
           ...(messages || []),
@@ -9869,7 +9869,7 @@ export async function registerRoutes(
     if (!message) return res.status(400).json({ error: "message required" });
     try {
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "", baseURL: "https://api.moonshot.ai/v1" });
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
       const systemPrompt = `أنت مساعد ذكي تابع لشركة كيروكس (QIROX Studio) لتطوير الأنظمة والتطبيقات.
 مهمتك مساعدة العميل على صياغة احتياجاته التقنية بشكل واضح ودقيق حتى يتمكن الفريق من تقديم عرض سعر مناسب.
 قواعد صارمة:
@@ -9883,7 +9883,7 @@ export async function registerRoutes(
         ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
         { role: "user" as const, content: message },
       ];
-      const completion = await openai.chat.completions.create({ model: "moonshot-v1-8k", messages: msgs, max_tokens: 400, temperature: 0.7 });
+      const completion = await openai.chat.completions.create({ model: "gpt-4o", messages: msgs, max_tokens: 400, temperature: 0.7 });
       res.json({ reply: completion.choices[0]?.message?.content || "..." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -15237,8 +15237,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "", baseURL: "https://api.moonshot.ai/v1" });
-      const contractModel = "moonshot-v1-32k";
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+      const contractModel = "gpt-4o";
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
 
@@ -15285,8 +15285,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (mode === "improve" && !String(text || "").trim()) return res.status(400).json({ error: "النص مطلوب للتعديل" });
 
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY || "", baseURL: "https://api.moonshot.ai/v1" });
-      const model = "moonshot-v1-32k";
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+      const model = "gpt-4o";
       const safeText = String(text || "").slice(0, 12000);
       const safeInstructions = String(instructions || "").slice(0, 3000);
       const docLabel = documentType === "contract" ? "عقد" : "فاتورة";

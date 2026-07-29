@@ -214,9 +214,8 @@ async function getOpenAIClient() {
   return {
     client: new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || "",
-      baseURL: "https://api.moonshot.ai/v1",
     }),
-    model: "moonshot-v1-32k",
+    model: "gpt-4o",
   };
 }
 

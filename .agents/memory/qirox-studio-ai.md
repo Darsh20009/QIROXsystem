@@ -8,8 +8,8 @@ description: Replaced Kimi/Moonshot AI and QI Agent with new OpenAI GPT-4o power
 - **Added**: `QiroxStudio.tsx` page, `/api/studio/chat` backend route
 
 ## AI Provider
-- Provider: OpenAI standard via `OPENAI_API_KEY`
-- Model: `gpt-4o` (vision capable)
+- Provider: OpenAI GPT-4o exclusively via `OPENAI_API_KEY` (Moonshot/Kimi fully removed)
+- Model: `gpt-4o` everywhere — vision capable, no custom baseURL
 - Image generation: Pollinations AI (free, no key needed)
 
 ## Routes

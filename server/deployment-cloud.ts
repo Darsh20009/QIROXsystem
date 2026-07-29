@@ -17,17 +17,8 @@ const VERCEL_TOKEN = process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN ||
 
 function getAIClient(): { client: OpenAI; model: string } {
   const openaiKey = process.env.OPENAI_API_KEY || "";
-  const moonshotKey = process.env.MOONSHOT_API_KEY || "";
-  if (openaiKey) {
-    return { client: new OpenAI({ apiKey: openaiKey }), model: "gpt-4o" };
-  }
-  if (moonshotKey) {
-    return {
-      client: new OpenAI({ apiKey: moonshotKey, baseURL: "https://api.moonshot.ai/v1" }),
-      model: "moonshot-v1-8k",
-    };
-  }
-  throw new Error("لا يوجد مفتاح AI مُعدَّ (OPENAI_API_KEY أو MOONSHOT_API_KEY)");
+  if (!openaiKey) throw new Error("لا يوجد مفتاح AI مُعدَّ (OPENAI_API_KEY)");
+  return { client: new OpenAI({ apiKey: openaiKey }), model: "gpt-4o" };
 }
 
 function slugify(name: string): string {

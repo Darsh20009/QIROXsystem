@@ -1097,9 +1097,8 @@ export function registerQMeetRoutes(app: Express) {
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY || "",
-        baseURL: "https://api.moonshot.ai/v1",
       });
-      const aiModel = "moonshot-v1-32k";
+      const aiModel = "gpt-4o";
       const m = meeting as any;
       const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
 
@@ -1147,9 +1146,8 @@ export function registerQMeetRoutes(app: Express) {
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY || "",
-        baseURL: "https://api.moonshot.ai/v1",
       });
-      const aiModel2 = "moonshot-v1-32k";
+      const aiModel2 = "gpt-4o";
 
       const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");
       const captionText = captions.map((c: any) => `${c.name}: ${c.text}`).join("\n");

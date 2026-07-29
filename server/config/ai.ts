@@ -1,18 +1,13 @@
 // ── AI Configuration ──────────────────────────────────────────────────────────
-// OpenAI and Moonshot (Kimi) provider settings.
+// OpenAI GPT-4o provider settings.
 //
 // Purpose:
 //   Centralizes AI provider credentials and model selection.
-//   Implements the smart-provider strategy: OpenAI when OPENAI_API_KEY is set,
-//   Moonshot (Kimi) when MOONSHOT_API_KEY is set, disabled otherwise.
+//   Provider: OpenAI when OPENAI_API_KEY is set, disabled otherwise.
 //
 // Usage:
 //   import { buildAiConfig } from "./config/ai";
 //   const config = buildAiConfig(process.env);
-//
-// Future migration role:
-//   Feeds the AI service factory so provider selection is no longer
-//   scattered across server/ai.ts conditional branches.
 
 import {
   type EnvBag,
@@ -25,7 +20,7 @@ import {
 
 // ── Interface ─────────────────────────────────────────────────────────────────
 
-export type AiProvider = "openai" | "moonshot" | "disabled";
+export type AiProvider = "openai" | "disabled";
 
 export interface OpenAiConfig {
   /** OpenAI API key. Maps to: OPENAI_API_KEY */
@@ -50,31 +45,15 @@ export interface OpenAiConfig {
   temperature: number;
 }
 
-export interface MoonshotConfig {
-  /** Moonshot (Kimi) API key. Maps to: MOONSHOT_API_KEY */
-  apiKey: string;
-
-  /**
-   * Moonshot model ID. Maps to: MOONSHOT_MODEL. Default: "moonshot-v1-8k"
-   * Note: Moonshot does not support vision — image inputs are rejected.
-   */
-  model: string;
-
-  /** Max completion tokens. Maps to: MOONSHOT_MAX_TOKENS. Default: 4096 */
-  maxTokens: number;
-}
-
 export interface AiConfig {
   /**
    * Active provider.
    * "openai" when OPENAI_API_KEY is set.
-   * "moonshot" when only MOONSHOT_API_KEY is set.
-   * "disabled" when neither is set.
+   * "disabled" when not set.
    */
   provider: AiProvider;
 
-  openai:   OpenAiConfig;
-  moonshot: MoonshotConfig;
+  openai: OpenAiConfig;
 
   /**
    * Whether AI features are functionally enabled.
@@ -99,11 +78,6 @@ export const AI_DEFAULTS: Readonly<Partial<AiConfig>> = {
     maxTokens:   4096,
     temperature: 0.7,
   },
-  moonshot: {
-    apiKey:    "",
-    model:     "moonshot-v1-8k",
-    maxTokens: 4096,
-  },
   provider: "disabled",
   enabled:  false,
 };
@@ -111,13 +85,8 @@ export const AI_DEFAULTS: Readonly<Partial<AiConfig>> = {
 // ── Builder ───────────────────────────────────────────────────────────────────
 
 export function buildAiConfig(env: EnvBag = process.env): AiConfig {
-  const openaiKey   = env.OPENAI_API_KEY ?? "";
-  const moonshotKey = env.MOONSHOT_API_KEY ?? "";
-
-  const provider: AiProvider =
-    openaiKey   ? "openai"   :
-    moonshotKey ? "moonshot" :
-                  "disabled";
+  const openaiKey = env.OPENAI_API_KEY ?? "";
+  const provider: AiProvider = openaiKey ? "openai" : "disabled";
 
   return {
     provider,
@@ -129,12 +98,6 @@ export function buildAiConfig(env: EnvBag = process.env): AiConfig {
       visionModel: env.OPENAI_VISION_MODEL ?? env.OPENAI_MODEL ?? "gpt-4o",
       maxTokens:   envInt(env.OPENAI_MAX_TOKENS, 4096),
       temperature: parseFloat(env.OPENAI_TEMPERATURE ?? "0.7"),
-    },
-
-    moonshot: {
-      apiKey:    moonshotKey,
-      model:     env.MOONSHOT_MODEL ?? "moonshot-v1-8k",
-      maxTokens: envInt(env.MOONSHOT_MAX_TOKENS, 4096),
     },
 
     ...(env.AI_VIDEO_PROXY_URL ? { videoProxyUrl: env.AI_VIDEO_PROXY_URL } : {}),
