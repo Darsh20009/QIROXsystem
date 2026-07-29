@@ -1033,7 +1033,7 @@ export default function Home() {
                     style={{ height: 460 }}
                   >
                     {/* Top — QIROX icon with glow */}
-                    <div className="relative overflow-hidden bg-[#0a0a0a] flex items-center justify-center" style={{ height: 258, flexShrink: 0, borderRadius: "0 0 28px 28px" }}>
+                    <div className="relative overflow-hidden bg-[#0a0a0a] flex items-center justify-center" style={{ height: 258, flexShrink: 0 }}>
                       {/* Radial glow behind icon */}
                       <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 70%)" }} />
                       {/* Animated concentric rings */}
