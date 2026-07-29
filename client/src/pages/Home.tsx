@@ -989,13 +989,15 @@ export default function Home() {
                         data-testid={`card-sector-${i}`}
                       >
                         {/* ── Photo top ── */}
-                        <div className="relative overflow-hidden" style={{ height: 258, flexShrink: 0, borderRadius: "0 0 28px 28px" }}>
+                        <div className="relative overflow-hidden" style={{ height: 258, flexShrink: 0 }}>
                           <img
                             src={s.img}
                             alt={ar ? s.arName : s.enName}
-                            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
                             loading="lazy"
                           />
+                          {/* Fade image into dark panel below — no seam */}
+                          <div className="absolute inset-x-0 bottom-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent 0%, #0f0f0f 100%)" }} />
                         </div>
 
                         {/* ── Dark info panel ── */}
