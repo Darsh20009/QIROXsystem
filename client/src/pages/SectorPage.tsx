@@ -316,7 +316,7 @@ export default function SectorPage() {
   const sector = SECTOR_DATA[slug];
 
   const { data: partners = [] } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
-  const { data: segmentPricing = [] } = useQuery<any[]>({ queryKey: ["/api/segment-pricing"] });
+  const { data: segmentPricing = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
 
   // Map Arabic relatedService values stored in DB → our sector slugs
   const RELATEDSERVICE_SLUG: Record<string, string> = {
@@ -335,15 +335,9 @@ export default function SectorPage() {
     (p) => RELATEDSERVICE_SLUG[p.relatedService as string] === slug
   );
 
-  // DB segmentKeys: "restaurants" → restaurant slug, everything else → "others"
-  const SEGMENT_KEY_MAP: Record<string, string> = {
-    restaurant: "restaurants",
-  };
-  const segmentKeyForSector = SEGMENT_KEY_MAP[slug] ?? "others";
-
-  const sectorPricing = (segmentPricing as any[]).filter(
-    (sp) => sp.segmentKey === segmentKeyForSector
-  );
+  const sectorPricing = (segmentPricing as any[])
+    .filter((p: any) => p.segment === slug && (p.status === "active" || p.status == null))
+    .sort((a: any, b: any) => (a.sortOrder ?? 99) - (b.sortOrder ?? 99));
 
   useSEO(sector ? {
     title: ar
@@ -361,8 +355,8 @@ export default function SectorPage() {
       "description": ar ? sector.arHeroSub : sector.enHeroSub,
       "offers": sectorPricing.length > 0 ? sectorPricing.map((sp: any) => ({
         "@type": "Offer",
-        "name": sp.planNameAr || sp.planName || "",
-        "price": sp.monthlyPrice || sp.price || 0,
+        "name": sp.nameAr || sp.name || "",
+        "price": sp.sixMonthPrice || sp.monthlyPrice || sp.price || 0,
         "priceCurrency": "SAR",
       })) : undefined,
       "provider": {
@@ -567,14 +561,15 @@ export default function SectorPage() {
               ];
               const plans = sectorPricing.length > 0
                 ? sectorPricing.map((p: any, i: number) => ({
-                    nameAr: p.planNameAr || p.planName || `باقة ${i + 1}`,
-                    nameEn: p.planName || `Plan ${i + 1}`,
-                    tagAr: i === 1 ? "الأكثر طلباً ⭐" : "",
-                    tagEn: i === 1 ? "Most Popular ⭐" : "",
-                    popular: i === 1,
-                    price: p.monthlyPrice || p.price || null,
-                    featuresAr: p.features || [],
-                    featuresEn: p.features || [],
+                    nameAr: p.nameAr || p.name || `باقة ${i + 1}`,
+                    nameEn: p.name || `Plan ${i + 1}`,
+                    tagAr: p.isPopular ? "الأكثر طلباً ⭐" : (i === 1 && sectorPricing.length === 3 ? "الأكثر طلباً ⭐" : ""),
+                    tagEn: p.isPopular ? "Most Popular ⭐" : (i === 1 && sectorPricing.length === 3 ? "Most Popular ⭐" : ""),
+                    popular: p.isPopular || (i === 1 && sectorPricing.length === 3),
+                    price: p.sixMonthPrice || p.monthlyPrice || null,
+                    priceLabel: p.sixMonthPrice ? (ar ? "ر.س / 6 أشهر" : "SAR / 6 mo") : (ar ? "ر.س / شهر" : "SAR / mo"),
+                    featuresAr: p.featuresAr || p.features || [],
+                    featuresEn: p.features || p.featuresAr || [],
                     planId: p._id || p.id || i,
                   }))
                 : FALLBACK;
@@ -597,7 +592,7 @@ export default function SectorPage() {
                       {plan.price != null ? (
                         <div className="flex items-baseline gap-1 mb-5">
                           <span className="text-4xl font-black">{Number(plan.price).toLocaleString()}</span>
-                          <span className={`text-sm ${plan.popular ? "text-white/55 dark:text-black/55" : "text-black/40 dark:text-white/40"}`}>{ar ? "ر.س / شهر" : "SAR / mo"}</span>
+                          <span className={`text-sm ${plan.popular ? "text-white/55 dark:text-black/55" : "text-black/40 dark:text-white/40"}`}>{plan.priceLabel || (ar ? "ر.س / 6 أشهر" : "SAR / 6 mo")}</span>
                         </div>
                       ) : (
                         <div className="mb-5">
