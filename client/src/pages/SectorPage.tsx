@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
-import { useRoute, Link } from "wouter";
-import { motion } from "framer-motion";
+import { useRoute, Link, useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
@@ -8,6 +8,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import type { Partner } from "@shared/schema";
+import { useCurrency } from "@/hooks/use-currency";
 import {
   ShoppingBag, Coffee, Building2, Heart, Home as HomeIcon,
   Scissors, ArrowLeft, ArrowRight, Check, Shield, Headphones,
@@ -16,7 +17,8 @@ import {
   Monitor, Truck, ChefHat, Calendar, FileText, Stethoscope,
   Key, MapPin, Camera, Bell, Lock, Smartphone, Settings, Wifi,
   TrendingUp, Clock, Award, Target, MessageSquare,
-  GraduationCap, Bot,
+  GraduationCap, Bot, CalendarRange, CalendarDays, Minus, Plus,
+  Infinity as InfinityIcon, Crown, Rocket,
 } from "lucide-react";
 
 // ─── Sector master data ───────────────────────────────────────────────────────
@@ -305,12 +307,70 @@ function PartnerIframe({ url, name }: { url: string; name: string }) {
   );
 }
 
+// ─── Pricing data (mirrors Prices page) ──────────────────────────────────────
+const SECTOR_PRICES = {
+  restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
+  ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  education:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
+  healthcare: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
+  ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
+} as const;
+type SPSector = keyof typeof SECTOR_PRICES;
+type SPPeriod = "sixmonth" | "annual" | "multiyear" | "lifetime";
+type SPTier   = "lite" | "pro" | "infinity";
+function spMYPrice(annual: number, yrs: number) {
+  let t = 0;
+  for (let i = 0; i < yrs; i++) t += annual * Math.max(1 - i * 0.05, 0.6);
+  return Math.round(t);
+}
+function spMYDiscount(yrs: number) { return Math.min((yrs - 1) * 5, 40); }
+
+const SP_TIER_FEATURES: Record<string, Record<SPTier, string[]>> = {
+  restaurant: {
+    lite:     ["موقع مطعم احترافي", "قائمة طعام رقمية", "نموذج حجز طاولة", "ربط خرائط Google", "ربط سوشيال ميديا"],
+    pro:      ["كل مزايا لايت ✦", "طلب عبر QR Code", "إدارة الطلبات", "نظام الطلبات والمطبخ", "تقارير المبيعات"],
+    infinity: ["كل مزايا برو ✦✦", "نظام مخزون متقدم", "بوابة دفع إلكتروني", "نظام ولاء ونقاط", "تكامل POS"],
+  },
+  ecommerce: {
+    lite:     ["موقع متجر احترافي", "إدارة المنتجات والمخزون", "سلة تسوق متكاملة", "فواتير تلقائية", "تتبع الطلبات"],
+    pro:      ["كل مزايا لايت ✦", "بوابات دفع سعودية", "ربط شركات الشحن", "نظام الولاء والكوبونات", "تقارير متقدمة"],
+    infinity: ["كل مزايا برو ✦✦", "تطوير مخصص", "ERP متكامل", "مدير حساب مخصص", "دعم أولوية 24/7"],
+  },
+  healthcare: {
+    lite:     ["موقع عيادة احترافي", "نظام حجز المواعيد", "ملفات المرضى", "إدارة الأطباء", "فواتير العيادة"],
+    pro:      ["كل مزايا لايت ✦", "تطبيق جوال للمرضى", "إشعارات المواعيد", "تقارير طبية", "نظام وصفات رقمية"],
+    infinity: ["كل مزايا برو ✦✦", "تكامل مع نظام صحة", "تشفير بيانات طبية", "خادم مخصص", "دعم أولوية 24/7"],
+  },
+  education: {
+    lite:     ["موقع أكاديمية احترافي", "إدارة الطلاب والمجموعات", "نظام الحضور والغياب", "جداول الحصص", "بوابة أولياء الأمور"],
+    pro:      ["كل مزايا لايت ✦", "منصة تعليمية إلكترونية", "شهادات رقمية تلقائية", "اختبارات وواجبات", "تقارير أداء الطلاب"],
+    infinity: ["كل مزايا برو ✦✦", "تطوير مخصص كامل", "بث مباشر مدمج", "تكامل مع Zoom/Teams", "دعم أولوية 24/7"],
+  },
+  corporate: {
+    lite:     ["موقع شركة احترافي", "صفحات الخدمات والفريق", "نظام العملاء المحتملين", "بريد إلكتروني رسمي", "تقارير الأداء"],
+    pro:      ["كل مزايا لايت ✦", "CRM متكامل", "نظام إدارة العقود", "بوابة الموظفين", "تحليلات متقدمة"],
+    infinity: ["كل مزايا برو ✦✦", "ERP كامل", "خادم مخصص مستقل", "تكاملات مؤسسية", "مدير حساب مخصص"],
+  },
+  ai: {
+    lite:     ["موقع شركة ذكاء اصطناعي", "عرض خدمات الـ AI", "بوابة عملاء بسيطة", "تقارير الاستخدام", "دعم فني أساسي"],
+    pro:      ["كل مزايا لايت ✦", "API للذكاء الاصطناعي", "لوحة تحكم ذكية", "تحليل البيانات", "نماذج مخصصة"],
+    infinity: ["كل مزايا برو ✦✦", "تطوير نماذج AI مخصصة", "بنية تحتية مستقلة", "تكامل مع OpenAI/Claude", "دعم أولوية 24/7"],
+  },
+};
+
 // ─── SectorPage component ─────────────────────────────────────────────────────
 export default function SectorPage() {
   const [, params] = useRoute<{ slug: string }>("/sector/:slug");
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
   const Arrow = ar ? ArrowLeft : ArrowRight;
+  const [, setLocation] = useLocation();
+  const currency = useCurrency();
+
+  // Pricing state
+  const [spPeriod, setSpPeriod] = useState<SPPeriod>("annual");
+  const [spYears, setSpYears]   = useState(2);
 
   const slug = params?.slug ?? "";
   const sector = SECTOR_DATA[slug];
@@ -525,7 +585,7 @@ export default function SectorPage() {
         {/* ─── PRICING ─── */}
         <section className="py-24 bg-white dark:bg-gray-950">
           <div className="container mx-auto px-6 md:px-10 max-w-5xl">
-            <motion.div {...fade(0)} className="text-center max-w-2xl mx-auto mb-16">
+            <motion.div {...fade(0)} className="text-center max-w-2xl mx-auto mb-10">
               <span className="inline-block text-[11px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-4">
                 {ar ? "الأسعار" : "PRICING"}
               </span>
@@ -537,94 +597,175 @@ export default function SectorPage() {
               </p>
             </motion.div>
 
+            {/* ── Period Switcher ── */}
+            <motion.div {...fade(1)} className="flex flex-col items-center mb-8 gap-3">
+              <div className="flex gap-1 p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl">
+                {([
+                  { key: "sixmonth"  as SPPeriod, label: "6 أشهر",      Icon: CalendarRange },
+                  { key: "annual"    as SPPeriod, label: "سنة",          Icon: CalendarDays  },
+                  { key: "multiyear" as SPPeriod, label: "سنوات+",       Icon: CalendarDays  },
+                  { key: "lifetime"  as SPPeriod, label: "مدى الحياة",   Icon: InfinityIcon  },
+                ] as const).map(({ key, label, Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSpPeriod(key)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                      spPeriod === key
+                        ? "bg-white dark:bg-[#1a1a2e] text-black dark:text-white shadow-sm"
+                        : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <AnimatePresence>
+                {spPeriod === "multiyear" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/20"
+                  >
+                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">عدد السنوات:</span>
+                    <button onClick={() => setSpYears(y => Math.max(2, y - 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Minus className="w-3 h-3"/></button>
+                    <span className="text-lg font-black text-blue-700 dark:text-blue-300 w-6 text-center">{spYears}</span>
+                    <button onClick={() => setSpYears(y => Math.min(10, y + 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Plus className="w-3 h-3"/></button>
+                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400">خصم {spMYDiscount(spYears)}%</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* ── Plan Cards ── */}
             {(() => {
-              const FALLBACK = [
-                {
-                  nameAr: "لايت", nameEn: "Lite",
-                  tagAr: "للبدايات", tagEn: "Starter",
-                  featuresAr: ["موقع احترافي مخصص لقطاعك", "لوحة تحكم أساسية", "دعم فني 6 أشهر", "3 مستخدمين"],
-                  featuresEn: ["Custom site for your sector", "Basic control panel", "6-month support", "3 users"],
-                },
-                {
-                  nameAr: "برو", nameEn: "Pro",
-                  tagAr: "الأكثر طلباً ⭐", tagEn: "Most Popular ⭐",
-                  popular: true,
-                  featuresAr: ["كل ميزات لايت", "نظام متكامل لقطاعك", "تطبيق جوال iOS وAndroid", "تقارير متقدمة وذكاء اصطناعي"],
-                  featuresEn: ["All Lite features", "Full sector system", "iOS & Android app", "Advanced reports & AI"],
-                },
-                {
-                  nameAr: "إنفينيت", nameEn: "Infinite",
-                  tagAr: "بلا حدود", tagEn: "No Limits",
-                  featuresAr: ["كل شيء في برو", "تطوير مخصص كامل", "أولوية دعم 24/7", "خادم سحابي مخصص"],
-                  featuresEn: ["Everything in Pro", "Full custom dev", "24/7 priority support", "Dedicated cloud server"],
-                },
-              ];
-              const plans = sectorPricing.length > 0
-                ? sectorPricing.map((p: any, i: number) => ({
-                    nameAr: p.nameAr || p.name || `باقة ${i + 1}`,
-                    nameEn: p.name || `Plan ${i + 1}`,
-                    tagAr: p.isPopular ? "الأكثر طلباً ⭐" : (i === 1 && sectorPricing.length === 3 ? "الأكثر طلباً ⭐" : ""),
-                    tagEn: p.isPopular ? "Most Popular ⭐" : (i === 1 && sectorPricing.length === 3 ? "Most Popular ⭐" : ""),
-                    popular: p.isPopular || (i === 1 && sectorPricing.length === 3),
-                    price: p.sixMonthPrice || p.monthlyPrice || null,
-                    priceLabel: p.sixMonthPrice ? (ar ? "ر.س / 6 أشهر" : "SAR / 6 mo") : (ar ? "ر.س / شهر" : "SAR / mo"),
-                    featuresAr: p.featuresAr || p.features || [],
-                    featuresEn: p.features || p.featuresAr || [],
-                    planId: p._id || p.id || i,
-                  }))
-                : FALLBACK;
+              const sectorKey = (slug in SECTOR_PRICES ? slug : null) as SPSector | null;
+              if (!sectorKey) {
+                return (
+                  <div className="text-center py-12">
+                    <p className="text-black/40 dark:text-white/40 mb-4">يختلف السعر حسب متطلبات مشروعك</p>
+                    <Link href={`/prices?segment=${sector.segment}`}>
+                      <Button className="bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black rounded-xl h-11 px-8 font-bold">
+                        اطلع على الأسعار <Arrow className="w-4 h-4 ms-2" />
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              }
+              const pricesForSector = SECTOR_PRICES[sectorKey];
+              const featuresForSector = SP_TIER_FEATURES[sectorKey] ?? SP_TIER_FEATURES["restaurant"];
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {plans.map((plan: any, i: number) => (
-                    <motion.div key={i} {...fade(i * 0.5)} className={`relative p-7 rounded-2xl border-2 flex flex-col ${plan.popular ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08]"}`}>
-                      {plan.popular && (
-                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-black dark:bg-white text-white dark:text-black text-[11px] font-black uppercase tracking-wider whitespace-nowrap">
-                          {ar ? "الأكثر طلباً" : "Most Popular"}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+                  {(["lite", "pro", "infinity"] as SPTier[]).map((tier, i) => {
+                    const p = pricesForSector[tier];
+                    let price = 0, periodLabel = "";
+                    if (spPeriod === "sixmonth")  { price = p.sm;                         periodLabel = "كل 6 أشهر"; }
+                    else if (spPeriod === "annual")    { price = p.yr;                         periodLabel = "سنوياً"; }
+                    else if (spPeriod === "multiyear") { price = spMYPrice(p.yr, spYears);     periodLabel = `${spYears} سنوات`; }
+                    else                              { price = p.life;                       periodLabel = "مدى الحياة"; }
+
+                    const isPro = tier === "pro";
+                    const isInf = tier === "infinity";
+                    const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
+                    const TIcon = tier === "lite" ? Zap : tier === "pro" ? Star : InfinityIcon;
+                    const orderPeriodParam = spPeriod === "multiyear" ? `${spYears}y` : spPeriod;
+
+                    return (
+                      <motion.div
+                        key={tier} {...fade(i * 0.5)}
+                        className={`flex flex-col relative rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                          isInf  ? "bg-[#09090f] border-amber-500/15 shadow-[0_0_60px_rgba(245,158,11,0.10)] ring-1 ring-amber-500/10" :
+                          isPro  ? "bg-[#1a3a6e] border-blue-400/20 shadow-[0_0_60px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/25" :
+                                   "bg-white dark:bg-[#0f172a] border-gray-200 dark:border-slate-700/50"
+                        }`}
+                      >
+                        {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
+                        {isInf && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"/>}
+
+                        {isPro && (
+                          <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+                            <span className="flex items-center gap-1 text-[10px] font-black px-3 py-1 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30">
+                              <Crown className="w-3 h-3"/> الأكثر طلباً
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Header */}
+                        <div className={`px-6 pt-6 pb-4 ${isPro || isInf ? "" : "bg-gray-50 dark:bg-[#111827]"}`}>
+                          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center mb-3 ${isInf ? "bg-white/[0.07]" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
+                            <TIcon className={`w-[18px] h-[18px] ${isInf ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`}/>
+                          </div>
+                          <h3 className={`text-2xl font-black ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{tierNames[tier]}</h3>
                         </div>
-                      )}
-                      <div className="mb-1">
-                        <span className={`text-[11px] font-bold uppercase tracking-widest ${plan.popular ? "text-white/50 dark:text-black/50" : "text-black/35 dark:text-white/35"}`}>
-                          {ar ? plan.tagAr : plan.tagEn}
-                        </span>
-                      </div>
-                      <h3 className="text-2xl font-black mb-3">{ar ? plan.nameAr : plan.nameEn}</h3>
-                      {plan.price != null ? (
-                        <div className="flex items-baseline gap-1 mb-5">
-                          <span className="text-4xl font-black">{Number(plan.price).toLocaleString()}</span>
-                          <span className={`text-sm ${plan.popular ? "text-white/55 dark:text-black/55" : "text-black/40 dark:text-white/40"}`}>{plan.priceLabel || (ar ? "ر.س / 6 أشهر" : "SAR / 6 mo")}</span>
+
+                        {/* Price */}
+                        <div className={`px-6 py-4 border-t ${isPro ? "border-white/10 bg-white/[0.04]" : isInf ? "border-white/[0.06] bg-white/[0.02]" : "border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-[#111827]"}`}>
+                          <AnimatePresence mode="wait">
+                            <motion.div key={`${tier}-${spPeriod}-${spYears}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+                              <div className="flex items-baseline gap-2">
+                                <span className={`text-4xl font-black tracking-tight ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{currency.format(price)}</span>
+                                <span className={`text-sm font-bold ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+                              </div>
+                              <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInf ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>{periodLabel}</p>
+                            </motion.div>
+                          </AnimatePresence>
                         </div>
-                      ) : (
-                        <div className="mb-5">
-                          <span className={`text-sm font-bold ${plan.popular ? "text-white/60 dark:text-black/60" : "text-black/40 dark:text-white/40"}`}>
-                            {ar ? "السعر حسب المتطلبات" : "Price by requirements"}
-                          </span>
+
+                        {/* Features */}
+                        <div className={`flex-1 px-6 py-4 ${isInf ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+                          <ul className="space-y-2.5">
+                            {featuresForSector[tier].map((f, fi) => (
+                              <li key={fi} className="flex items-start gap-2.5 text-xs">
+                                <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isInf ? "text-amber-400" : isPro ? "text-blue-300" : "text-emerald-500"}`}/>
+                                <span className={isInf ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}>{f}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      )}
-                      <ul className="space-y-2.5 mb-7 flex-1">
-                        {(ar ? plan.featuresAr : plan.featuresEn).slice(0, 5).map((ft: string, fi: number) => (
-                          <li key={fi} className="flex items-start gap-2.5 text-sm">
-                            <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.popular ? "text-white/70 dark:text-black/70" : "text-black/50 dark:text-white/50"}`} strokeWidth={3} />
-                            {ft}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link href={plan.planId != null ? `/order?segment=${sector.segment}&plan=${plan.planId}` : `/start?sector=${sector.slug}`}>
-                        <Button className={`w-full rounded-xl h-11 font-bold ${plan.popular ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90" : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"}`}>
-                          {ar ? "ابدأ الآن" : "Get Started"}
-                          <Arrow className="w-4 h-4 ms-2" />
-                        </Button>
-                      </Link>
-                    </motion.div>
-                  ))}
+
+                        {/* CTA */}
+                        <div className={`px-6 pb-6 pt-4 ${isInf ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+                          <button
+                            onClick={() => setLocation(`/order?plan=${tier}&segment=${sectorKey}&period=${orderPeriodParam}&price=${price}`)}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black transition-all ${
+                              isInf ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white" :
+                              isPro ? "bg-white hover:bg-blue-50 text-blue-900" :
+                                      "bg-gray-900 hover:bg-black text-white dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900"
+                            }`}
+                          >
+                            <Rocket className="w-4 h-4"/>
+                            أكمل الطلب الآن
+                          </button>
+                          <p className={`text-[10px] text-center mt-2 ${isInf || isPro ? "text-white/30" : "text-gray-400/70"}`}>
+                            تحويل بنكي · تواصل واتساب
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               );
             })()}
 
-            <motion.div {...fade(3)} className="text-center mt-8">
-              <p className="text-sm text-black/40 dark:text-white/40">
-                {ar ? "السعر يختلف حسب القطاع والمتطلبات — تكلّم مساعدنا للحصول على سعر مخصص." : "Price varies by sector and requirements — talk to our advisor for a custom quote."}
+            {spPeriod === "multiyear" && (
+              <p className="mt-5 text-center text-xs text-black/30 dark:text-white/30">
+                السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
               </p>
+            )}
+            {spPeriod === "lifetime" && (
+              <p className="mt-5 text-center text-xs text-black/30 dark:text-white/30">
+                دفعة واحدة للأبد · استضافة مجانية على خوادم كيروكس · دعم 3 سنوات مشمول
+              </p>
+            )}
+
+            <motion.div {...fade(3)} className="text-center mt-6">
+              <Link href={`/prices?segment=${sector.segment}`}>
+                <button className="inline-flex items-center gap-2 text-sm font-bold text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors border-b border-black/15 dark:border-white/15 pb-px">
+                  {ar ? "عرض تفاصيل كاملة للأسعار" : "View full pricing details"}
+                  <Arrow className="w-3.5 h-3.5" />
+                </button>
+              </Link>
             </motion.div>
           </div>
         </section>
