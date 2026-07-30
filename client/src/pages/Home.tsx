@@ -1139,7 +1139,7 @@ export default function Home() {
           <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
             style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-          <div className="relative flex flex-col lg:flex-row" dir="ltr">
+          <div className="relative flex flex-col lg:flex-row">
 
             {/* Left: headline column */}
             <motion.div {...fade(0)}
