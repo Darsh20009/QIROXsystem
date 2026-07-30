@@ -249,10 +249,11 @@ const TABS = [
 ];
 
 const PROCESS_STEPS = [
-  { ar: { t: "احكِ لنا فكرتك", d: "تواصل معنا أو احكِ للمساعد الذكي بكلام بسيط — يفهم احتياجك خلال دقائق" }, en: { t: "Tell us your idea", d: "Reach out or chat with our AI — it gets your need in minutes" } },
-  { ar: { t: "اختر ما يناسبك", d: "أسعار واضحة بالكامل، اختر اللي يناسب ميزانيتك بدون ضغط" }, en: { t: "Pick what fits you", d: "Crystal-clear prices — pick what fits your budget, no pressure" } },
-  { ar: { t: "نبني ونسلّم", d: "فريقنا يبني نظامك بسرعة عالية وجودة احترافية" }, en: { t: "We build & ship", d: "Our team delivers fast with pro quality" } },
-  { ar: { t: "ندعمك دائماً", d: "صيانة، تحديثات، ودعم متاح وقت ما تحتاج" }, en: { t: "We support you", d: "Maintenance, updates, support whenever you need" } },
+  { icon: Lightbulb,   ar: { t: "استشارة",         d: "تواصل معنا وشارك فكرتك — نفهم احتياجك ونحدد الحل المناسب" },         en: { t: "Consultation",      d: "Reach out and share your idea — we understand your need and define the right solution" } },
+  { icon: TrendingUp,  ar: { t: "تحليل وتخطيط",    d: "ندرس احتياجاتك ونضع خطة تنفيذ واضحة مع جدول زمني محدد" },           en: { t: "Analysis & Planning",d: "We study your needs and set a clear execution plan with a defined timeline" } },
+  { icon: Cpu,         ar: { t: "تصميم وتطوير",    d: "فريقنا يبني نظامك بتصميم احترافي وأداء عالي بأحدث التقنيات" },       en: { t: "Design & Development",d: "Our team builds your system with pro design and high performance using latest tech" } },
+  { icon: Rocket,      ar: { t: "اختبار وإطلاق",   d: "نختبر بدقة ونطلق نظامك بثقة تامة بعد مراجعة شاملة" },               en: { t: "Testing & Launch",   d: "We test thoroughly and launch your system with full confidence after comprehensive review" } },
+  { icon: Zap,         ar: { t: "دعم وتحسين",      d: "صيانة مستمرة وتحديثات دورية ودعم فني متاح وقت ما تحتاج" },          en: { t: "Support & Growth",   d: "Ongoing maintenance, regular updates and tech support whenever you need it" } },
 ];
 
 const FALLBACK_PLANS = [
@@ -1132,9 +1133,118 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Stats + Graphic after Systems ── */}
-        <StatsBar ar={ar} />
-        <GraphicBanner ar={ar} />
+        {/* ─── WHY QIROX ─── */}
+        <section className="bg-[#0a0a0a] py-16 md:py-24 overflow-hidden relative">
+          {/* Dot grid texture */}
+          <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+          <div className="container mx-auto px-5 md:px-10 max-w-7xl relative">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-16 items-start">
+
+              {/* Left: headline */}
+              <motion.div {...fade(0)} className="flex flex-col">
+                <p className="text-[10px] font-black tracking-[0.25em] uppercase text-white/25 mb-6">WHY QIROX</p>
+                <h2 className="text-3xl md:text-4xl lg:text-[2.6rem] font-black leading-[1.1] text-white mb-8 tracking-tight">
+                  {ar ? (<>بنينا مختلفين.<br />عشان تتوسّع<br />بشكل مختلف.</>)
+                       : (<>Built different.<br />So you can scale<br />differently.</>)}
+                </h2>
+                <Link href="/about">
+                  <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white/45 hover:text-white transition-colors border-b border-white/15 pb-px cursor-pointer">
+                    {ar ? "تعرّف علينا أكثر" : "Learn more about us"}
+                    <Arrow className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              </motion.div>
+
+              {/* Right: 6 feature boxes */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                {[
+                  { icon: Lightbulb,   en: "Custom Solution",        ar: "حل مخصص",             enDesc: "Built around your business, not a generic template", arDesc: "مبني حول عملك، مو قالب جاهز" },
+                  { icon: Layers,      en: "Scalable Architecture",   ar: "بنية قابلة للتوسّع",  enDesc: "Systems that grow with your business",               arDesc: "أنظمة تنمو مع نمو مشروعك" },
+                  { icon: Bot,         en: "AI & Automation",         ar: "ذكاء اصطناعي وأتمتة", enDesc: "Leverage AI to boost and increase output",           arDesc: "وظّف الذكاء الاصطناعي لتسريع الإنتاج" },
+                  { icon: Shield,      en: "Secure & Reliable",       ar: "آمن وموثوق",           enDesc: "Enterprise-grade security and 99.9% uptime",        arDesc: "أمان مستوى المؤسسات و99.9% وقت تشغيل" },
+                  { icon: Star,        en: "Dedicated Support",       ar: "دعم مخصص",             enDesc: "A team with you at every stage of your journey",    arDesc: "فريق بجانبك في كل مرحلة من رحلتك" },
+                  { icon: TrendingUp,  en: "Proven Results",          ar: "نتائج مثبتة",          enDesc: "30+ projects, 5+ industries",                       arDesc: "30+ مشروع، 5+ قطاعات", stat: "37+ projects · 9+ sectors" },
+                ].map((f, i) => {
+                  const FIcon = f.icon;
+                  return (
+                    <motion.div key={i} {...fade(i * 0.07)}
+                      className="rounded-2xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 p-5 flex flex-col gap-3 group">
+                      <div className="w-9 h-9 rounded-xl bg-white/[0.07] group-hover:bg-white/[0.11] transition-colors flex items-center justify-center">
+                        <FIcon className="w-4 h-4 text-white/65" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-white leading-tight mb-1">{ar ? f.ar : f.en}</p>
+                        <p className="text-[11px] text-white/38 leading-relaxed">{ar ? f.arDesc : f.enDesc}</p>
+                      </div>
+                      {f.stat && (
+                        <div className="mt-auto pt-2 border-t border-white/[0.06]">
+                          <span className="text-[9.5px] font-black text-white/25 uppercase tracking-wide">{f.stat}</span>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── LIVE DEMO ─── */}
+        <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] overflow-hidden">
+          <div className="container mx-auto px-5 md:px-10 max-w-7xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+              {/* Left: text */}
+              <motion.div {...fade(0)}>
+                <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-5">LIVE DEMO</p>
+                <h2 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tight mb-5 text-black dark:text-white">
+                  {ar ? (<>شاهد الأنظمة<br />تعمل على أرض الواقع</>) : (<>See our systems<br />in real action</>)}
+                </h2>
+                <p className="text-base text-black/52 dark:text-white/45 leading-relaxed mb-8 max-w-sm">
+                  {ar ? "اكتشف كيف تبدو أنظمتنا في العمل الفعلي قبل أن تقرر — تجربة حقيقية قبل الالتزام."
+                       : "Discover how our systems look in real action before you decide — a real trial before any commitment."}
+                </p>
+                <Link href="/systems">
+                  <button className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black rounded-full h-12 px-7 text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10">
+                    {ar ? "استكشف الديمو الآن" : "Explore the demo now"}
+                    <Arrow className="w-4 h-4" />
+                  </button>
+                </Link>
+              </motion.div>
+
+              {/* Right: browser + floating phone mockup */}
+              <motion.div {...fade(1)} className="relative pb-8">
+                {/* Main browser frame */}
+                <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-[0_32px_80px_-20px_rgba(0,0,0,0.18)] dark:shadow-[0_32px_80px_-20px_rgba(255,255,255,0.07)]">
+                  {/* Chrome bar */}
+                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
+                    </div>
+                    <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-[10px] font-mono text-black/35 dark:text-white/35 flex items-center gap-1.5 max-w-[200px]">
+                      <Globe className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">qiroxstudio.online/demo</span>
+                    </div>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white shrink-0">LIVE</span>
+                  </div>
+                  <img src={demoEcommerceImg} alt="QIROX Demo System" className="w-full block" loading="lazy" />
+                </div>
+                {/* Floating phone card */}
+                <div className="absolute -bottom-4 rtl:-right-4 ltr:-left-4 md:rtl:-right-8 md:ltr:-left-8 w-28 md:w-36 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-2xl shadow-black/15">
+                  <div className="px-2 pt-2 pb-1 bg-gray-50 dark:bg-gray-800 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-400/60" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400/60" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400/60" />
+                  </div>
+                  <img src={demoRestaurantImg} alt="QIROX Mobile" className="w-full block" loading="lazy" />
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
 
         {/* ─── PRICING ─── */}
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-black/[0.02] dark:bg-white/[0.02]">
@@ -1363,29 +1473,33 @@ export default function Home() {
         <GraphicDivider variant={2} />
 
         {/* ─── PROCESS ─── */}
-        <section id="tab-process" className="pt-16 pb-24 md:pt-20 md:pb-28">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
+        <section id="tab-process" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-white dark:bg-[#0a0a0a]">
+          <div className="container mx-auto px-5 md:px-8 max-w-7xl">
             <motion.div {...fade(0)} className="mb-14 text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">{ar ? "كيف نعمل" : "How we work"}</h2>
-              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed">
-                {ar ? "أربع خطوات بسيطة من الفكرة للإطلاق." : "Four simple steps from idea to launch."}
-              </p>
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-4">HOW WE WORK</p>
+              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
+                {ar ? (<>من الفكرة<br /><span className="text-black/30 dark:text-white/30">إلى الإطلاق</span></>) : (<>From Idea<br /><span className="text-black/30 dark:text-white/30">to Launch</span></>)}
+              </h2>
             </motion.div>
 
-            <div className="relative max-w-5xl mx-auto">
+            <div className="relative max-w-6xl mx-auto">
               {/* Connecting line */}
-              <div className="hidden lg:block absolute top-8 left-0 right-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6">
-                {PROCESS_STEPS.map((s, i) => (
-                  <motion.div key={i} {...fade(i)} className="relative">
-                    {/* Step circle */}
-                    <div className="w-16 h-16 rounded-2xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center mb-5 text-xl font-black relative z-10">
-                      {String(i + 1).padStart(2, "0")}
-                    </div>
-                    <div className="font-bold text-base md:text-lg mb-2">{ar ? s.ar.t : s.en.t}</div>
-                    <div className="text-sm text-black/55 dark:text-white/55 leading-relaxed">{ar ? s.ar.d : s.en.d}</div>
-                  </motion.div>
-                ))}
+              <div className="hidden lg:block absolute top-[2.2rem] left-0 right-0 h-px bg-black/[0.07] dark:bg-white/[0.07] z-0" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-5">
+                {PROCESS_STEPS.map((s, i) => {
+                  const StepIcon = s.icon;
+                  return (
+                    <motion.div key={i} {...fade(i * 0.08)} className="relative flex flex-col items-center text-center lg:items-start lg:text-start">
+                      {/* Step number + icon */}
+                      <div className="relative z-10 w-[4.5rem] h-[4.5rem] rounded-2xl bg-black dark:bg-white flex flex-col items-center justify-center mb-5 shadow-lg">
+                        <span className="text-[9px] font-black text-white/40 dark:text-black/40 tracking-widest mb-0.5">{String(i + 1).padStart(2, "0")}</span>
+                        <StepIcon className="w-5 h-5 text-white dark:text-black" />
+                      </div>
+                      <div className="font-black text-base mb-2 text-black dark:text-white">{ar ? s.ar.t : s.en.t}</div>
+                      <div className="text-[12.5px] text-black/50 dark:text-white/48 leading-relaxed">{ar ? s.ar.d : s.en.d}</div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1395,7 +1509,7 @@ export default function Home() {
         <GraphicDivider variant={3} dark />
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
-        <section className="py-16 md:py-24 overflow-hidden relative">
+        <section className="py-16 md:py-24 overflow-hidden relative bg-white dark:bg-[#0a0a0a]">
           {/* Subtle bg pattern */}
           <div className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04] pointer-events-none"
             style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
@@ -1403,21 +1517,15 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
             {/* Header */}
             <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] text-black/55 dark:text-white/55 text-[11px] font-black uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-black/40 dark:bg-white/40" />
-                {ar ? "آراء العملاء" : "Client Reviews"}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-black mb-3 tracking-tight">
-                {ar ? "ماذا يقول عملاؤنا؟" : "What our clients say"}
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-5">CLIENTS SAY</p>
+              <h2 className="text-3xl md:text-5xl font-black mb-3 tracking-tight text-black dark:text-white">
+                {ar ? (<>ثقة عملائنا.<br /><span className="text-black/30 dark:text-white/30">نجاحها.</span></>) : (<>Our clients trust.<br /><span className="text-black/30 dark:text-white/30">Their success.</span></>)}
               </h2>
-              <p className="text-sm text-black/45 dark:text-white/45 max-w-lg mx-auto">
-                {ar ? "أكثر من 37 تقييم حقيقي من أصحاب مشاريع عملنا معهم — كلٌّ بحسب تجربته الخاصة." : "Over 37 real reviews from project owners we worked with."}
-              </p>
               {/* Aggregate stats */}
-              <div className="flex items-center justify-center gap-6 mt-5">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-center gap-6 mt-6">
+                <div className="flex items-center gap-1">
                   {[1,2,3,4,5].map(s => (
-                    <div key={s} className="w-3.5 h-3.5 rounded-full bg-black/20 dark:bg-white/30" />
+                    <div key={s} className="w-3 h-3 rounded-full bg-amber-400" />
                   ))}
                   <span className="text-sm font-black text-gray-900 dark:text-white ms-2">4.97</span>
                 </div>
@@ -1457,46 +1565,44 @@ export default function Home() {
         <GraphicDivider variant={4} />
 
         {/* ─── PARTNERS ─── */}
-        <section id="tab-partners" className="pt-16 pb-24 md:pt-20 md:pb-28">
+        <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a]">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-12 text-center max-w-xl mx-auto">
-              <h2 className="text-2xl md:text-4xl font-black mb-3 tracking-tight">{ar ? "شركاء يثقون بنا" : "Partners who trust us"}</h2>
-              <p className="text-sm text-black/55 dark:text-white/55">
-                {ar ? "علامات بنينا معها قصص نجاح حقيقية." : "Brands we've built real success stories with."}
-              </p>
+            <motion.div {...fade(0)} className="mb-10 text-center">
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-2">TRUSTED PARTNERS</p>
             </motion.div>
 
             {partnersLoading ? (
               <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-8 py-6">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-28 h-10 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] animate-pulse" />
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className="w-24 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] animate-pulse" />
                 ))}
               </motion.div>
-            ) : apiPartners.length === 0 ? (
-              <motion.div {...fade(1)} className="text-center py-8">
-                <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 mb-6">
-                  {["شركة الأنظمة", "مجموعة التقنية", "مؤسسة الابتكار", "شركة الحلول", "مجموعة الرقمية"].map((name, i) => (
-                    <div key={i} className="h-10 px-5 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.06] flex items-center">
-                      <span className="text-sm font-bold text-black/30 dark:text-white/25">{name}</span>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/partners">
-                  <span className="text-sm text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/60 transition-colors cursor-pointer border-b border-dashed border-black/20 dark:border-white/20">
-                    {ar ? "تصفح صفحة شركائنا ←" : "View our partners page →"}
-                  </span>
-                </Link>
-              </motion.div>
-            ) : (
-              <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+            ) : apiPartners.length > 0 ? (
+              <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-10 md:gap-14 py-4">
                 {apiPartners.map((p: any) => (
-                  <div key={p.id || p._id} className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300" data-testid={`logo-partner-${p.id || p._id}`}>
+                  <div key={p.id || p._id} className="grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300" data-testid={`logo-partner-${p.id || p._id}`}>
                     <Link href="/partners">
-                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)} className="h-12 md:h-14 w-auto object-contain max-w-[140px] cursor-pointer" />
+                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)} className="h-10 md:h-12 w-auto object-contain max-w-[130px] cursor-pointer" />
                     </Link>
                   </div>
                 ))}
-              </div>
+              </motion.div>
+            ) : (
+              <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-8 md:gap-12 py-4">
+                {[
+                  { name: "tabby",     style: "font-black text-[1.2rem] tracking-tight"  },
+                  { name: "tamara",    style: "font-black text-[1.1rem] tracking-tight"  },
+                  { name: "ZATCA",     style: "font-black text-[1.0rem] tracking-[0.08em]" },
+                  { name: "aws",       style: "font-black text-[1.3rem] tracking-tight"  },
+                  { name: "odoo",      style: "font-black text-[1.1rem] tracking-tight"  },
+                  { name: "Adobe",     style: "font-black text-[1.1rem] tracking-tight"  },
+                  { name: "Microsoft", style: "font-semibold text-[1.0rem] tracking-tight" },
+                ].map((p, i) => (
+                  <div key={i} className="opacity-30 hover:opacity-60 transition-opacity duration-300">
+                    <span className={`${p.style} text-black dark:text-white`}>{p.name}</span>
+                  </div>
+                ))}
+              </motion.div>
             )}
           </div>
         </section>
@@ -1651,148 +1757,65 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── SOCIAL MEDIA POSTS ─── */}
-        <section className="py-16 md:py-20 bg-gray-50/80 dark:bg-gray-950/80">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            {/* Section header */}
-            <div className="flex items-center justify-between gap-4 mb-8" dir="rtl">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center">
-                  <img src="/qirox-icon-nobg.png" alt="Q" className="w-8 h-8 object-contain dark:invert" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
-                    {ar ? "من حساباتنا" : "From Our Socials"}
-                  </h2>
-                  <p className="text-xs text-black/40 dark:text-white/35 font-medium mt-0.5">@qirox.sa · @qiroxStudiosa</p>
-                </div>
-              </div>
-              <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer"
-                className="text-xs font-bold text-black/50 dark:text-white/40 hover:text-black dark:hover:text-white transition border border-black/10 dark:border-white/10 rounded-full px-4 py-1.5 hover:border-black/30 dark:hover:border-white/30 flex-shrink-0">
-                {ar ? "تابعنا ↗" : "Follow ↗"}
-              </a>
-            </div>
-
-            {/* Posts grid — images fully visible, not cropped */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4" dir="rtl">
-              {[
-                { src: "/post-1.png",  text: "مصنع الأنظمة الرقمية — نبني أنظمة احترافية لكل قطاع" },
-                { src: "/post-2.png",  text: "شريكك الموثوق في رحلة التحول الرقمي" },
-                { src: "/post-3.png",  text: "من فكرة بسيطة إلى نظام متكامل — مع كيروكس" },
-                { src: "/post-4.png",  text: "تصاميم عصرية وأداء سريع لكل مشروع" },
-                { src: "/post-5.png",  text: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال" },
-                { src: "/post-6.png",  text: "خدمة متكاملة من التصميم حتى الإطلاق" },
-                { src: "/post-7.png",  text: "أكثر من 50 مشروع منجز في قطاعات متعددة" },
-                { src: "/post-8.png",  text: "الإدارة الذكية تبدأ من نظام ذكي مبني لك" },
-                { src: "/post-9.png",  text: "التحول الرقمي صار ضرورة لا خيار — ابدأ الآن" },
-                { src: "/post-10.png", text: "دعم فني متواصل وفريق احترافي بجانبك دائماً" },
-                { src: "/post-11.png", text: "باقات مرنة تناسب كل ميزانية وكل مشروع" },
-                { src: "/post-12.png", text: "لما تكون بياناتك مرتبة قراراتك تصير أسرع" },
-              ].map((p, i) => (
-                <motion.div key={i}
-                  initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: (i % 4) * 0.07 }}
-                  className="group bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] overflow-hidden hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 transition-all duration-300 cursor-pointer"
-                >
-                  {/* Image — object-contain so nothing is cut */}
-                  <div className="bg-gray-50 dark:bg-gray-800 flex items-center justify-center p-2" style={{ height: 150 }}>
-                    <img
-                      src={p.src} alt={p.text}
-                      className="max-w-full max-h-full object-contain rounded-xl group-hover:scale-[1.02] transition-transform duration-300"
-                      style={{ maxHeight: 134 }}
-                    />
-                  </div>
-                  {/* Text below */}
-                  <div className="px-3 pt-2.5 pb-3">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-white/85 leading-snug line-clamp-2">{p.text}</p>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <img src="/qirox-icon-nobg.png" alt="" className="w-3 h-3 object-contain opacity-40 dark:invert" />
-                      <span className="text-[10px] text-black/30 dark:text-white/25 font-medium">@qirox.sa</span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ─── CTA ─── */}
-        <div className="h-24 bg-gradient-to-b from-transparent to-black dark:to-white" aria-hidden />
-        <section className="bg-black text-white dark:bg-white dark:text-black pt-8 pb-24 md:pb-28">
-          <div className="container mx-auto px-5 md:px-8 max-w-3xl text-center">
-            <motion.div {...fade(0)}>
-              <div className="inline-block mb-6">
-                <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-14 md:h-16 w-auto object-contain invert dark:invert-0" />
-              </div>
-              <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight tracking-tight">
-                {ar ? "جاهز تبدأ؟" : "Ready to start?"}
-              </h2>
-              <p className="text-white/60 dark:text-black/60 mb-10 max-w-xl mx-auto leading-relaxed">
-                {ar
-                  ? "احكِ لنا فكرتك بكلام بسيط — المساعد الذكي يفهمك ويرتب لك كل شيء، مهما كانت ميزانيتك."
-                  : "Describe your idea in plain words — our AI gets you and arranges everything, whatever your budget."}
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="/start">
-                  <Button size="lg" className="bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-start">
-                    <Sparkles className="w-4 h-4" />
-                    {ar ? "ابدأ فكرتك الخاصة" : "Start Your Own Idea"}
-                    <Arrow className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
-                  <Button size="lg" variant="outline" className="bg-transparent border-white/25 text-white hover:bg-white/10 dark:border-black/25 dark:text-black dark:hover:bg-black/10 rounded-xl h-12 px-6 font-bold gap-2" data-testid="button-cta-whatsapp">
-                    <SiWhatsapp className="w-4 h-4" />
-                    {ar ? "تحدث معنا" : "Talk to us"}
-                  </Button>
-                </a>
-              </div>
+        <section className="bg-[#0a0a0a] relative overflow-hidden">
+          {/* Subtle dot grid */}
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
-              <div className="flex items-center justify-center gap-5 mt-12 text-white/50 dark:text-black/50">
-                <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer" aria-label="Instagram" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-instagram"><SiInstagram className="w-5 h-5" /></a>
-                <a href="https://x.com/qiroxsa" target="_blank" rel="noreferrer" aria-label="X" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-x"><SiX className="w-5 h-5" /></a>
-                <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white dark:hover:text-black transition" data-testid="link-social-linkedin"><Linkedin className="w-5 h-5" /></a>
-              </div>
-            </motion.div>
+          <div className="container mx-auto px-5 md:px-10 max-w-7xl relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-end min-h-[460px] md:min-h-[520px]">
+
+              {/* Left: text + buttons */}
+              <motion.div {...fade(0)} className="flex flex-col justify-center py-20 md:py-24 lg:py-28">
+                <p className="text-[10px] font-black tracking-[0.25em] uppercase text-white/25 mb-6">START NOW</p>
+                <h2 className="text-4xl md:text-5xl lg:text-[3.2rem] font-black leading-[1.08] tracking-tight text-white mb-6">
+                  {ar ? (<>جاهز لتحويل<br />فكرتك إلى نظام؟</>) : (<>Ready to turn<br />your idea into<br />a system?</>)}
+                </h2>
+                <p className="text-white/48 text-base leading-relaxed mb-8 max-w-sm">
+                  {ar
+                    ? "احكِ لنا فكرتك بكلام بسيط — فريقنا يفهمك ويرتب لك كل شيء مهما كانت ميزانيتك."
+                    : "Describe your idea in plain words — our team gets you and arranges everything, whatever your budget."}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/start">
+                    <Button size="lg" className="bg-white text-black hover:bg-white/90 rounded-xl h-12 px-7 font-bold gap-2 text-sm shadow-lg shadow-white/10" data-testid="button-cta-start">
+                      {ar ? "ابدأ مشروعك الآن" : "Start Your Project"}
+                      <Arrow className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
+                    <Button size="lg" variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/[0.08] rounded-xl h-12 px-7 font-bold gap-2 text-sm" data-testid="button-cta-whatsapp">
+                      <SiWhatsapp className="w-4 h-4" />
+                      {ar ? "تحدث معنا" : "Talk to us"}
+                    </Button>
+                  </a>
+                </div>
+                {/* Social links */}
+                <div className="flex items-center gap-4 mt-10 text-white/30">
+                  <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer" aria-label="Instagram" className="hover:text-white/70 transition"><SiInstagram className="w-4 h-4" /></a>
+                  <a href="https://x.com/qiroxsa" target="_blank" rel="noreferrer" aria-label="X" className="hover:text-white/70 transition"><SiX className="w-4 h-4" /></a>
+                  <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white/70 transition"><Linkedin className="w-4 h-4" /></a>
+                </div>
+              </motion.div>
+
+              {/* Right: 3D Q cube */}
+              <motion.div
+                {...fade(1)}
+                className="hidden lg:flex items-end justify-center lg:justify-end relative"
+              >
+                <img
+                  src="/qirox-hero-new.png"
+                  alt="QIROX"
+                  className="w-full max-w-[560px] select-none pointer-events-none block"
+                  draggable={false}
+                  loading="lazy"
+                />
+              </motion.div>
+            </div>
           </div>
         </section>
       </main>
-
-      {/* ── Posters Teaser ── */}
-      <section className="bg-[#0a0a0a] py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-            className="max-w-3xl mx-auto flex items-center gap-4 bg-white/[0.03] border border-white/[0.08] rounded-2xl px-5 py-3.5"
-            dir={ar ? "rtl" : "ltr"}
-          >
-            <div className="flex -space-x-3 rtl:space-x-reverse shrink-0">
-              {["/posters/poster1.png", "/posters/poster3.png", "/posters/poster6.png"].map((src, i) => (
-                <img
-                  key={src}
-                  src={src}
-                  alt=""
-                  loading="lazy"
-                  className="w-9 h-9 rounded-lg object-cover border-2 border-[#0a0a0a] shadow-md"
-                  style={{ zIndex: 3 - i }}
-                />
-              ))}
-            </div>
-            <p className="flex-1 text-white/50 text-sm truncate">
-              {ar ? "🎨 شاهد أحدث بوستراتنا وتصاميمنا" : "🎨 See our latest posters & designs"}
-            </p>
-            <Link href="/posters" data-testid="btn-view-posters" className="shrink-0">
-              <span className="inline-flex items-center gap-1.5 text-white text-sm font-semibold hover:text-white/70 transition-colors">
-                {ar ? "استعرض" : "View"}
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
 
       <Footer />
       <InstallPrompt />
