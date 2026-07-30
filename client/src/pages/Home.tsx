@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect, type ElementType } from "react";
-import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useCurrency } from "@/hooks/use-currency";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -18,6 +19,8 @@ import {
   Layers, ShoppingBag, Building2, GraduationCap,
   Heart, Coffee, Home as HomeIcon, Scissors, Lightbulb,
   Check, Star, Infinity, ChevronRight, TrendingUp, Bot, Globe,
+  CalendarRange, CalendarDays, Minus, Plus, Crown, Rocket,
+  Server, UtensilsCrossed,
 } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiX, SiGoogle, SiApple } from "react-icons/si";
 import { Linkedin } from "lucide-react";
@@ -278,6 +281,41 @@ const FALLBACK_PLANS = [
     featuresEn: ["Everything in Pro", "Custom dev", "Priority support", "Dedicated server"],
     price: null,
   },
+];
+
+/* ─── Pricing Data (matches Prices page) ─────────────────────────────── */
+const HOME_PRICES = {
+  restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
+  ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  education:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
+  healthcare: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
+  ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
+} as const;
+type HomePriceSector = keyof typeof HOME_PRICES;
+type HomePricePeriod = "sixmonth" | "annual" | "multiyear" | "lifetime";
+type HomePriceTier   = "lite" | "pro" | "infinity";
+
+function homeMYPrice(annual: number, years: number) {
+  let t = 0;
+  for (let i = 0; i < years; i++) t += annual * Math.max(1 - i * 0.05, 0.6);
+  return Math.round(t);
+}
+function homeMYDiscount(years: number) { return Math.min((years - 1) * 5, 40); }
+
+const HOME_TIER_FEATURES: Record<HomePriceTier, string[]> = {
+  lite:     ["موقع احترافي متكامل", "لوحة تحكم سهلة", "نطاق + SSL مجاني", "دعم فني مستمر", "تقارير شهرية"],
+  pro:      ["كل ميزات لايت ✦", "تطبيق جوال iOS/Android", "بوابة دفع إلكترونية", "إشعارات فورية", "تقارير ذكاء اصطناعي"],
+  infinity: ["كل ميزات برو ✦✦", "تطوير مخصص بلا قيود", "خادم مستقل مخصص", "مساعد ذكاء اصطناعي", "دعم أولوية 24/7"],
+};
+
+const HOME_SECTORS_PRICING = [
+  { key: "restaurant" as HomePriceSector, icon: UtensilsCrossed, ar: "مطاعم",   color: "from-orange-500 to-amber-500" },
+  { key: "ecommerce"  as HomePriceSector, icon: ShoppingBag,     ar: "متاجر",   color: "from-blue-500 to-cyan-500" },
+  { key: "corporate"  as HomePriceSector, icon: Building2,       ar: "شركات",   color: "from-slate-600 to-zinc-700" },
+  { key: "healthcare" as HomePriceSector, icon: Heart,           ar: "صحة",     color: "from-rose-500 to-pink-600" },
+  { key: "ai"         as HomePriceSector, icon: Bot,             ar: "ذكاء اصطناعي", color: "from-violet-600 to-purple-700" },
+  { key: "education"  as HomePriceSector, icon: GraduationCap,   ar: "تعليم",   color: "from-indigo-500 to-blue-600" },
 ];
 
 const fade = (i = 0) => ({
@@ -689,6 +727,13 @@ export default function Home() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
   const [tab, setTab] = useState<string>("systems");
+  const [, setLocation] = useLocation();
+  const currency = useCurrency();
+
+  // ── Pricing section state ──────────────────────────────────────────────────
+  const [pricingSector, setPricingSector] = useState<HomePriceSector>("restaurant");
+  const [pricingPeriod, setPricingPeriod] = useState<HomePricePeriod>("annual");
+  const [pricingYears, setPricingYears] = useState(2);
 
   // ── Auto-scroll sector cards ──────────────────────────────────────────────
   const sectorScrollRef = useRef<HTMLDivElement>(null);
@@ -973,8 +1018,8 @@ export default function Home() {
                 style={{
                   display: "grid",
                   gridAutoFlow: "column",
-                  gridAutoColumns: "min(80vw, 280px)",
-                  gap: "20px",
+                  gridAutoColumns: "min(72vw, 200px)",
+                  gap: "14px",
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
                 } as React.CSSProperties}
@@ -997,34 +1042,35 @@ export default function Home() {
                           loading="lazy"
                         />
 
-                        {/* ── Gradient overlay: transparent top → deep black bottom ── */}
+                        {/* ── Gradient overlay: subtle top → deep black bottom ── */}
                         <div
                           className="absolute inset-0 pointer-events-none"
-                          style={{ background: "linear-gradient(to bottom, transparent 25%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.93) 100%)" }}
+                          style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0.97) 100%)" }}
                         />
 
-                        {/* ── Icon badge — top corner ── */}
-                        <div className={`absolute top-4 ${ar ? "left-4" : "right-4"} w-10 h-10 rounded-[12px] bg-black/40 backdrop-blur-sm border border-white/15 flex items-center justify-center`}>
-                          <Icon className="w-[18px] h-[18px] text-white" />
-                        </div>
-
-                        {/* ── Text — bottom overlay ── */}
-                        <div className="absolute inset-x-0 bottom-0 p-5">
-                          {/* Sector name — typewriter reveal */}
+                        {/* ── Text + icon — bottom overlay ── */}
+                        <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col">
+                          {/* Icon badge */}
+                          <div className="w-9 h-9 rounded-[10px] bg-black/45 backdrop-blur-sm border border-white/15 flex items-center justify-center mb-3">
+                            <Icon className="w-4 h-4 text-white" />
+                          </div>
+                          {/* Sector name */}
                           <h3
-                            className="text-[1.2rem] font-black text-white leading-snug mb-1.5 tracking-tight"
+                            className="text-[1.4rem] font-black text-white leading-tight mb-1.5 tracking-tight"
                             style={{
                               animation: `sector-type ${Math.max(0.5, name.length * 0.055)}s steps(${name.length}, end) ${i * 0.18}s both`,
                             }}
                           >
                             {name}
                           </h3>
-                          <p className="text-[12px] text-white/60 leading-relaxed line-clamp-2">
+                          <p className="text-[11px] text-white/58 leading-relaxed line-clamp-2 mb-3">
                             {ar ? s.arDesc : s.enDesc}
                           </p>
-                          {/* Arrow */}
-                          <div className="mt-3.5 w-8 h-8 rounded-full border border-white/25 group-hover:border-white/65 group-hover:bg-white/10 flex items-center justify-center transition-all duration-300">
-                            <ChevronRight className="w-3.5 h-3.5 text-white rtl:rotate-180" />
+                          {/* Arrow — bottom right */}
+                          <div className="flex justify-end">
+                            <div className="w-8 h-8 rounded-full border border-white/30 group-hover:border-white/70 group-hover:bg-white/12 flex items-center justify-center transition-all duration-300">
+                              <ChevronRight className="w-3.5 h-3.5 text-white rtl:rotate-180" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1094,132 +1140,194 @@ export default function Home() {
         <section id="tab-pricing" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-black/[0.02] dark:bg-white/[0.02]">
           <div className="container mx-auto px-5 md:px-8 max-w-6xl">
 
-            <motion.div {...fade(0)} className="mb-14 text-center max-w-2xl mx-auto">
+            <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
                 {ar ? "باقات مرنة" : "Flexible plans"}
                 <br />
-                <span className="text-black/30 dark:text-white/30">{ar ? "تناسب كل مشروع وميزانية" : "for every project & budget"}</span>
+                <span className="text-black/30 dark:text-white/30">{ar ? "تناسب كل قطاع وميزانية" : "for every sector & budget"}</span>
               </h2>
               <p className="text-black/50 dark:text-white/50 text-sm leading-relaxed max-w-lg mx-auto">
-                {ar
-                  ? "ثلاثة مستويات واضحة — الأسعار تختلف حسب القطاع والمتطلبات. تكلّم مساعدنا وخذ سعراً مخصصاً لمشروعك."
-                  : "Three clear tiers — pricing varies by sector and needs. Talk to our advisor for a quote tailored to your project."}
+                {ar ? "أسعار شفافة بدون رسوم مخفية — اختر قطاعك وطريقة الدفع واطلب الآن." : "Transparent pricing with no hidden fees — pick your sector and billing cycle."}
               </p>
             </motion.div>
 
-            {/* Tier Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto items-start">
-              {([
-                {
-                  tier: "lite",
-                  nameAr: "لايت", nameEn: "Lite",
-                  tagAr: "للبداية والمشاريع الصغيرة",
-                  tagEn: "For startups & small projects",
-                  keyAr: "الأساسيات الكاملة للانطلاق",
-                  keyEn: "Everything you need to launch",
-                  featuresAr: ["موقع احترافي متكامل", "لوحة تحكم سهلة الاستخدام", "دعم فني أساسي مستمر", "نطاق + SSL مجاني", "تقارير الأداء الشهرية"],
-                  featuresEn: ["Full professional website", "Easy-to-use dashboard", "Continuous basic support", "Free domain + SSL", "Monthly reports"],
-                  popular: false,
-                },
-                {
-                  tier: "pro",
-                  nameAr: "برو", nameEn: "Pro",
-                  tagAr: "الأكثر طلباً — للمشاريع الجادة",
-                  tagEn: "Most popular — for serious projects",
-                  keyAr: "نظام متكامل مع تطبيق جوال",
-                  keyEn: "Full system + mobile app",
-                  featuresAr: ["كل ميزات لايت", "تطبيق جوال iOS وAndroid", "نظام متكامل للقطاع", "إشعارات فورية للعملاء", "تقارير متقدمة وذكاء اصطناعي"],
-                  featuresEn: ["All Lite features", "iOS & Android mobile app", "Sector-specific full system", "Push notifications", "Advanced AI-powered reports"],
-                  popular: true,
-                },
-                {
-                  tier: "infinite",
-                  nameAr: "إنفينيت", nameEn: "Infinite",
-                  tagAr: "للمؤسسات والمشاريع الكبيرة",
-                  tagEn: "For enterprises & large-scale",
-                  keyAr: "بدون حدود — كل شيء مخصص",
-                  keyEn: "Unlimited — everything custom",
-                  featuresAr: ["كل ميزات برو", "تطوير مخصص بلا قيود", "خادم مستقل مخصص", "مساعد ذكاء اصطناعي مدمج", "أولوية دعم على مدار الساعة"],
-                  featuresEn: ["All Pro features", "Unlimited custom development", "Dedicated private server", "Built-in AI assistant", "Priority round-the-clock support"],
-                  popular: false,
-                },
-              ] as const).map((tier, i) => (
-                <motion.div key={tier.tier} {...fade(i)} className={tier.popular ? "md:-mt-5" : ""}>
-                  <div className={`relative rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 ${
-                    tier.popular
-                      ? "bg-black dark:bg-white shadow-2xl shadow-black/20 dark:shadow-white/10"
-                      : "bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] hover:shadow-md"
-                  }`} data-testid={`card-plan-${tier.tier}`}>
+            {/* ── Sector Tabs ── */}
+            <motion.div {...fade(1)} className="mb-6">
+              <p className="text-center text-[10px] font-black tracking-widest uppercase text-black/25 dark:text-white/25 mb-3">اختر قطاعك</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {HOME_SECTORS_PRICING.map((s) => {
+                  const Icon = s.icon;
+                  const active = pricingSector === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => setPricingSector(s.key)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-200 border ${
+                        active
+                          ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-black shadow-lg scale-105"
+                          : "bg-black/[0.03] dark:bg-white/[0.03] border-black/[0.07] dark:border-white/[0.07] text-black/55 dark:text-white/55 hover:bg-black/[0.07] dark:hover:bg-white/[0.07]"
+                      }`}
+                      data-testid={`button-pricing-sector-${s.key}`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {s.ar}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
 
-                    {/* Popular label above card */}
-                    {tier.popular && (
-                      <div className="absolute -top-px inset-x-0 flex justify-center">
-                        <div className="bg-black dark:bg-white text-white dark:text-black text-[10px] font-black px-4 py-1 rounded-b-xl flex items-center gap-1.5 shadow">
-                          <Star className="w-2.5 h-2.5" />
-                          {ar ? "الأكثر طلباً" : "Most Popular"}
-                        </div>
+            {/* ── Period Switcher ── */}
+            <motion.div {...fade(2)} className="flex flex-col items-center mb-8 gap-3">
+              <div className="flex gap-1 p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl">
+                {([ 
+                  { key: "sixmonth" as HomePricePeriod, ar: "6 أشهر",      icon: CalendarRange },
+                  { key: "annual"   as HomePricePeriod, ar: "سنة",          icon: CalendarDays  },
+                  { key: "multiyear"as HomePricePeriod, ar: "سنوات+",       icon: CalendarDays  },
+                  { key: "lifetime" as HomePricePeriod, ar: "مدى الحياة",   icon: Infinity      },
+                ] as const).map(({ key, ar: label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setPricingPeriod(key)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                      pricingPeriod === key
+                        ? "bg-white dark:bg-[#1a1a2e] text-black dark:text-white shadow-sm"
+                        : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                    }`}
+                    data-testid={`button-pricing-period-${key}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Multi-year picker */}
+              <AnimatePresence>
+                {pricingPeriod === "multiyear" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/20"
+                  >
+                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">عدد السنوات:</span>
+                    <button onClick={() => setPricingYears(y => Math.max(2, y - 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Minus className="w-3 h-3"/></button>
+                    <span className="text-lg font-black text-blue-700 dark:text-blue-300 w-6 text-center">{pricingYears}</span>
+                    <button onClick={() => setPricingYears(y => Math.min(10, y + 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Plus className="w-3 h-3"/></button>
+                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400">خصم {homeMYDiscount(pricingYears)}%</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* ── Plan Cards ── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto items-stretch">
+              {(["lite", "pro", "infinity"] as HomePriceTier[]).map((tier, i) => {
+                const prices = HOME_PRICES[pricingSector][tier];
+                let price = 0, periodLabel = "";
+                if (pricingPeriod === "sixmonth")  { price = prices.sm;                               periodLabel = "كل 6 أشهر"; }
+                else if (pricingPeriod === "annual")    { price = prices.yr;                               periodLabel = "سنوياً"; }
+                else if (pricingPeriod === "multiyear") { price = homeMYPrice(prices.yr, pricingYears);   periodLabel = `${pricingYears} سنوات`; }
+                else                                    { price = prices.life;                            periodLabel = "مدى الحياة"; }
+
+                const isPro = tier === "pro";
+                const isInf = tier === "infinity";
+                const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
+                const tierDescs = { lite: "الباقة الأساسية — مثالية للانطلاق", pro: "الباقة الذكية — الأكثر توازناً", infinity: "الباقة الشاملة — بلا قيود" };
+                const TIcon = tier === "lite" ? Zap : tier === "pro" ? Star : Infinity;
+
+                const orderPeriodParam = pricingPeriod === "multiyear" ? `${pricingYears}y` : pricingPeriod;
+
+                return (
+                  <motion.div key={tier} {...fade(i)} className={`flex flex-col relative rounded-2xl overflow-hidden border transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                    isInf  ? "bg-[#09090f] border-amber-500/15 shadow-[0_0_60px_rgba(245,158,11,0.10)] ring-1 ring-amber-500/10" :
+                    isPro  ? "bg-[#1a3a6e] border-blue-400/20 shadow-[0_0_60px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/25" :
+                             "bg-white dark:bg-[#0f172a] border-gray-200 dark:border-slate-700/50"
+                  }`} data-testid={`card-plan-${tier}`}>
+
+                    {/* Top accent line */}
+                    {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
+                    {isInf && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"/>}
+
+                    {/* Most popular badge */}
+                    {isPro && (
+                      <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+                        <span className="flex items-center gap-1 text-[10px] font-black px-3 py-1 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30">
+                          <Crown className="w-3 h-3"/> الأكثر طلباً
+                        </span>
                       </div>
                     )}
 
-                    <div className={`p-6 flex flex-col gap-4 ${tier.popular ? "pt-8" : ""}`}>
-
-                      {/* Header */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className={`text-2xl font-black tracking-tight ${tier.popular ? "text-white dark:text-black" : "text-black dark:text-white"}`}>
-                            {ar ? tier.nameAr : tier.nameEn}
-                            {tier.tier === "infinite" && <Infinity className="w-5 h-5 inline-block mr-2 mb-1 opacity-50" />}
-                          </div>
-                          <div className={`text-[11px] mt-0.5 ${tier.popular ? "text-white/55 dark:text-black/55" : "text-black/45 dark:text-white/45"}`}>
-                            {ar ? tier.tagAr : tier.tagEn}
-                          </div>
-                        </div>
+                    {/* Header */}
+                    <div className={`px-6 pt-6 pb-4 ${isPro || isInf ? "" : "bg-gray-50 dark:bg-[#111827]"} relative`}>
+                      <div className={`w-9 h-9 rounded-2xl flex items-center justify-center mb-3 ${isInf ? "bg-white/[0.07]" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
+                        <TIcon className={`w-4.5 h-4.5 ${isInf ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`} style={{ width: 18, height: 18 }}/>
                       </div>
+                      <h3 className={`text-2xl font-black ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{tierNames[tier]}</h3>
+                      <p className={`text-xs mt-0.5 ${isInf ? "text-amber-400/50" : isPro ? "text-blue-300/60" : "text-gray-400 dark:text-slate-500"}`}>{tierDescs[tier]}</p>
+                    </div>
 
-                      {/* Key value prop */}
-                      <div className={`text-sm font-bold px-3 py-2.5 rounded-lg ${
-                        tier.popular ? "bg-white/12 dark:bg-black/12 text-white dark:text-black" : "bg-black/[0.04] dark:bg-white/[0.05] text-black dark:text-white"
-                      }`}>
-                        {ar ? tier.keyAr : tier.keyEn}
-                      </div>
+                    {/* Price */}
+                    <div className={`px-6 py-4 border-t ${isPro ? "border-white/10 bg-white/[0.04]" : isInf ? "border-white/[0.06] bg-white/[0.02]" : "border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-[#111827]"}`}>
+                      <AnimatePresence mode="wait">
+                        <motion.div key={`${tier}-${pricingSector}-${pricingPeriod}-${pricingYears}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-4xl font-black tracking-tight ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{currency.format(price)}</span>
+                            <span className={`text-sm font-bold ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+                          </div>
+                          <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInf ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>{periodLabel}</p>
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
 
-                      {/* Features */}
-                      <ul className="space-y-2 flex-1">
-                        {(ar ? tier.featuresAr : tier.featuresEn).map((f, fi) => (
-                          <li key={fi} className="flex items-start gap-2 text-xs">
-                            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${tier.popular ? "text-white/60 dark:text-black/60" : "text-black/35 dark:text-white/35"}`} />
-                            <span className={tier.popular ? "text-white/80 dark:text-black/80" : "text-black/60 dark:text-white/60"}>{f}</span>
+                    {/* Features */}
+                    <div className={`flex-1 px-6 py-4 ${isInf ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+                      <ul className="space-y-2.5">
+                        {HOME_TIER_FEATURES[tier].map((f, fi) => (
+                          <li key={fi} className="flex items-start gap-2.5 text-xs">
+                            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isInf ? "text-amber-400" : isPro ? "text-blue-300" : "text-emerald-500"}`}/>
+                            <span className={isInf ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}>{f}</span>
                           </li>
                         ))}
                       </ul>
-
-                      {/* Divider */}
-                      <div className={`h-px ${tier.popular ? "bg-white/10 dark:bg-black/10" : "bg-black/[0.05] dark:bg-white/[0.05]"}`} />
-
-                      {/* Price note + CTA */}
-                      <div>
-                        <div className={`text-[10px] mb-3 text-center ${tier.popular ? "text-white/45 dark:text-black/45" : "text-black/35 dark:text-white/35"}`}>
-                          {ar ? "السعر يختلف حسب القطاع والمتطلبات" : "Price varies by sector & requirements"}
-                        </div>
-                        <Link href="/prices">
-                          <Button className={`w-full rounded-xl h-10 font-bold text-sm gap-1.5 ${
-                            tier.popular
-                              ? "bg-white text-black hover:bg-white/90 dark:bg-black dark:text-white dark:hover:bg-black/90"
-                              : "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90"
-                          }`} data-testid={`button-plan-${tier.tier}`}>
-                            {ar ? "اعرف السعر" : "See pricing"}
-                            <Arrow className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
-                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    {/* CTA */}
+                    <div className={`px-6 pb-6 pt-4 ${isInf ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+                      <button
+                        onClick={() => setLocation(`/order?plan=${tier}&segment=${pricingSector}&period=${orderPeriodParam}&price=${price}`)}
+                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black transition-all ${
+                          isInf ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white" :
+                          isPro ? "bg-white hover:bg-blue-50 text-blue-900" :
+                                  "bg-gray-900 hover:bg-black text-white dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900"
+                        }`}
+                        data-testid={`button-order-${tier}`}
+                      >
+                        <Rocket className="w-4 h-4"/>
+                        أكمل الطلب الآن
+                      </button>
+                      <p className={`text-[10px] text-center mt-2 ${isInf || isPro ? "text-white/30" : "text-gray-400/70"}`}>
+                        تحويل بنكي · تواصل واتساب
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
+            {/* Multiyear / lifetime note */}
+            {pricingPeriod === "multiyear" && (
+              <p className="mt-5 text-center text-xs text-black/30 dark:text-white/30">
+                السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+              </p>
+            )}
+            {pricingPeriod === "lifetime" && (
+              <p className="mt-5 text-center text-xs text-black/30 dark:text-white/30">
+                دفعة واحدة للأبد · استضافة مجانية على خوادم كيروكس · دعم 3 سنوات مشمول
+              </p>
+            )}
+
             {/* Bottom CTA */}
-            <motion.div {...fade(4)} className="mt-10 max-w-5xl mx-auto">
+            <motion.div {...fade(4)} className="mt-8 max-w-5xl mx-auto">
               <div className="rounded-2xl bg-black dark:bg-white p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
                 <div className="relative flex items-center gap-3 text-center md:text-start">
