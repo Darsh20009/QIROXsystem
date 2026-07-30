@@ -10,7 +10,7 @@ import { useUser } from "@/hooks/use-auth";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles,
   UtensilsCrossed, ShoppingBag, GraduationCap, Building2,
-  Heart, Scissors, Home, MoreHorizontal, Globe, Smartphone,
+  Heart, MoreHorizontal, Globe, Smartphone, Bot,
   LayoutDashboard, CalendarCheck, CreditCard, BarChart3,
   MessageSquare, Truck, Lock, Zap, Phone, Video, Check,
 } from "lucide-react";
@@ -19,25 +19,23 @@ const qiroxLogo = "/qirox-icon-nobg.png";
 
 /* ─── Data ─── */
 const SECTORS_AR = [
-  { key: "restaurant",  icon: UtensilsCrossed, label: "مطاعم ومقاهي",    color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
-  { key: "ecommerce",   icon: ShoppingBag,     label: "متاجر إلكترونية", color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
-  { key: "education",   icon: GraduationCap,   label: "منصات تعليمية",   color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
-  { key: "corporate",   icon: Building2,       label: "شركات ومؤسسات",   color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
-  { key: "healthcare",  icon: Heart,           label: "صحة وعيادات",     color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
-  { key: "beauty",      icon: Scissors,        label: "تجميل وصالونات",  color: "text-pink-500",    bg: "bg-pink-50 dark:bg-pink-500/10" },
-  { key: "realestate",  icon: Home,            label: "عقارات",           color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
-  { key: "other",       icon: MoreHorizontal,  label: "قطاع آخر",         color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
+  { key: "restaurant",  icon: UtensilsCrossed, label: "مطاعم والمقاهي",    color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
+  { key: "ecommerce",   icon: ShoppingBag,     label: "المتاجر",            color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
+  { key: "corporate",   icon: Building2,       label: "الشركات والوكلات",  color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
+  { key: "healthcare",  icon: Heart,           label: "الصحة والتجميل",    color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
+  { key: "ai",          icon: Bot,             label: "الذكاء الاصطناعي",  color: "text-violet-500",  bg: "bg-violet-50 dark:bg-violet-500/10" },
+  { key: "education",   icon: GraduationCap,   label: "التعليم والمنصات",  color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
+  { key: "other",       icon: MoreHorizontal,  label: "ابدأ فكرتك",         color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
 ];
 
 const SECTORS_EN = [
-  { key: "restaurant",  icon: UtensilsCrossed, label: "Restaurants & Cafes", color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
-  { key: "ecommerce",   icon: ShoppingBag,     label: "Online Stores",        color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
-  { key: "education",   icon: GraduationCap,   label: "Education Platforms",  color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
-  { key: "corporate",   icon: Building2,       label: "Corporate & Business", color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
-  { key: "healthcare",  icon: Heart,           label: "Health & Clinics",     color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
-  { key: "beauty",      icon: Scissors,        label: "Beauty & Salons",      color: "text-pink-500",    bg: "bg-pink-50 dark:bg-pink-500/10" },
-  { key: "realestate",  icon: Home,            label: "Real Estate",          color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
-  { key: "other",       icon: MoreHorizontal,  label: "Other Sector",         color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
+  { key: "restaurant",  icon: UtensilsCrossed, label: "Restaurants & Cafés",  color: "text-orange-500",  bg: "bg-orange-50 dark:bg-orange-500/10" },
+  { key: "ecommerce",   icon: ShoppingBag,     label: "Online Stores",         color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-500/10" },
+  { key: "corporate",   icon: Building2,       label: "Companies & Agencies",  color: "text-slate-500",   bg: "bg-slate-50 dark:bg-slate-500/10" },
+  { key: "healthcare",  icon: Heart,           label: "Health & Beauty",       color: "text-red-500",     bg: "bg-red-50 dark:bg-red-500/10" },
+  { key: "ai",          icon: Bot,             label: "AI Solutions",          color: "text-violet-500",  bg: "bg-violet-50 dark:bg-violet-500/10" },
+  { key: "education",   icon: GraduationCap,   label: "Education Platforms",   color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-500/10" },
+  { key: "other",       icon: MoreHorizontal,  label: "Start Your Idea",       color: "text-gray-400",    bg: "bg-gray-50 dark:bg-gray-500/10" },
 ];
 
 const FEATURES_AR = [

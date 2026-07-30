@@ -61,7 +61,7 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/corporate"/>
   </url>
 
-  <!-- الصحة والعيادات / Healthcare & Clinics -->
+  <!-- الصحة والتجميل / Health & Beauty -->
   <url>
     <loc>https://qiroxstudio.online/sector/healthcare</loc>
     <changefreq>weekly</changefreq>
@@ -70,22 +70,22 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/healthcare"/>
   </url>
 
-  <!-- العقارات / Real Estate -->
+  <!-- الذكاء الاصطناعي / AI Solutions -->
   <url>
-    <loc>https://qiroxstudio.online/sector/realestate</loc>
+    <loc>https://qiroxstudio.online/sector/ai</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/realestate"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/realestate"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/ai"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/ai"/>
   </url>
 
-  <!-- صالونات التجميل / Beauty Salons -->
+  <!-- التعليم والمنصات / Education Platforms -->
   <url>
-    <loc>https://qiroxstudio.online/sector/beauty</loc>
+    <loc>https://qiroxstudio.online/sector/education</loc>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/beauty"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/beauty"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://qiroxstudio.online/sector/education"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://qiroxstudio.online/sector/education"/>
   </url>
 
   <!-- ─── باقي الصفحات ─── -->

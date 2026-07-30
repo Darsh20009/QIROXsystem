@@ -1254,18 +1254,13 @@ export default function Prices() {
   }
 
   const SECTORS_DATA = [
-    { key: "restaurant" as Sector, icon: UtensilsCrossed, ar: "مطاعم ومقاهي",    en: "Restaurants", color: "from-orange-500 to-amber-500" },
-    { key: "ecommerce"  as Sector, icon: ShoppingBag,     ar: "متاجر إلكترونية", en: "E-Commerce",  color: "from-blue-500 to-cyan-500" },
-    { key: "education"  as Sector, icon: GraduationCap,   ar: "تعليم وأكاديميات",  en: "Education",   color: "from-indigo-500 to-blue-600" },
-    { key: "healthcare" as Sector, icon: Heart,           ar: "صحة وعيادات",      en: "Healthcare",  color: "from-rose-500 to-pink-600" },
-    { key: "realestate" as Sector, icon: Home,            ar: "عقارات",          en: "Real Estate", color: "from-emerald-500 to-teal-600" },
-    { key: "corporate"  as Sector, icon: Building2,       ar: "شركات ومؤسسات",   en: "Corporate",   color: "from-slate-600 to-zinc-700" },
-    { key: "fitness"    as Sector, icon: Dumbbell,        ar: "لياقة وجيم",       en: "Fitness",     color: "from-lime-500 to-green-600" },
-    { key: "beauty"     as Sector, icon: Sparkles,        ar: "تجميل وصالونات",   en: "Beauty",      color: "from-pink-500 to-fuchsia-600" },
-    { key: "events"     as Sector, icon: Calendar,        ar: "فعاليات ومناسبات", en: "Events",      color: "from-amber-500 to-orange-600" },
-    { key: "marketing"  as Sector, icon: TrendingUp,      ar: "وكالات التسويق",   en: "Marketing",   color: "from-cyan-500 to-blue-500" },
-    { key: "ai"         as Sector, icon: Bot,             ar: "ذكاء اصطناعي",     en: "AI",          color: "from-violet-600 to-purple-700" },
-    { key: "other"      as Sector, icon: Globe,           ar: "قطاع آخر",         en: "Other",       color: "from-purple-500 to-fuchsia-600" },
+    { key: "restaurant" as Sector, icon: UtensilsCrossed, ar: "مطاعم والمقاهي",   en: "Restaurants & Cafés", color: "from-orange-500 to-amber-500" },
+    { key: "ecommerce"  as Sector, icon: ShoppingBag,     ar: "المتاجر",           en: "E-Commerce",          color: "from-blue-500 to-cyan-500" },
+    { key: "corporate"  as Sector, icon: Building2,       ar: "الشركات والوكلات", en: "Companies & Agencies",color: "from-slate-600 to-zinc-700" },
+    { key: "healthcare" as Sector, icon: Heart,           ar: "الصحة والتجميل",   en: "Health & Beauty",     color: "from-rose-500 to-pink-600" },
+    { key: "ai"         as Sector, icon: Bot,             ar: "الذكاء الاصطناعي", en: "AI Solutions",        color: "from-violet-600 to-purple-700" },
+    { key: "education"  as Sector, icon: GraduationCap,   ar: "التعليم والمنصات", en: "Education Platforms", color: "from-indigo-500 to-blue-600" },
+    { key: "other"      as Sector, icon: Globe,           ar: "ابدأ فكرتك",        en: "Start Your Idea",     color: "from-purple-500 to-fuchsia-600" },
   ];
 
   function openCustom(sec: string, label: string, dur?: string) {

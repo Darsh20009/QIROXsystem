@@ -19,16 +19,13 @@ import { QiroxIcon } from "@/components/qirox-brand";
 import type { Cart, CartItem } from "@shared/schema";
 
 const SECTORS = [
-  { value: "restaurant", label: "🍽️ مطعم وكافيه" },
-  { value: "ecommerce",  label: "🛒 متجر إلكتروني" },
-  { value: "education",  label: "📚 تعليم وتدريب" },
-  { value: "healthcare", label: "🏥 صحة وعيادات" },
-  { value: "realestate", label: "🏠 عقارات" },
-  { value: "beauty",     label: "💅 تجميل وعناية" },
-  { value: "fitness",    label: "💪 رياضة ولياقة" },
-  { value: "technology", label: "💻 تقنية وبرمجة" },
-  { value: "corporate",  label: "🏢 شركات وخدمات" },
-  { value: "fashion",    label: "👗 أزياء وموضة" },
+  { value: "restaurant", label: "🍽️ مطاعم والمقاهي" },
+  { value: "ecommerce",  label: "🛒 المتاجر" },
+  { value: "corporate",  label: "🏢 الشركات والوكلات" },
+  { value: "healthcare", label: "❤️ الصحة والتجميل" },
+  { value: "ai",         label: "🤖 الذكاء الاصطناعي" },
+  { value: "education",  label: "📚 التعليم والمنصات" },
+  { value: "other",      label: "💡 ابدأ فكرتك" },
 ];
 
 interface WizardData {
