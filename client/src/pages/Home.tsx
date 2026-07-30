@@ -1134,58 +1134,61 @@ export default function Home() {
         </section>
 
         {/* ─── WHY QIROX ─── */}
-        <section className="bg-[#0a0a0a] py-16 md:py-24 overflow-hidden relative">
-          {/* Dot grid texture */}
-          <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
-          <div className="container mx-auto px-5 md:px-10 max-w-7xl relative">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-16 items-start">
+        <section className="bg-[#0d0d0d] relative overflow-hidden border-y border-white/[0.06]">
+          {/* Subtle dot grid */}
+          <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-              {/* Left: headline */}
-              <motion.div {...fade(0)} className="flex flex-col">
-                <p className="text-[10px] font-black tracking-[0.25em] uppercase text-white/25 mb-6">WHY QIROX</p>
-                <h2 className="text-3xl md:text-4xl lg:text-[2.6rem] font-black leading-[1.1] text-white mb-8 tracking-tight">
-                  {ar ? (<>بنينا مختلفين.<br />عشان تتوسّع<br />بشكل مختلف.</>)
-                       : (<>Built different.<br />So you can scale<br />differently.</>)}
-                </h2>
-                <Link href="/about">
-                  <span className="inline-flex items-center gap-1.5 text-sm font-bold text-white/45 hover:text-white transition-colors border-b border-white/15 pb-px cursor-pointer">
-                    {ar ? "تعرّف علينا أكثر" : "Learn more about us"}
-                    <Arrow className="w-3.5 h-3.5" />
-                  </span>
-                </Link>
-              </motion.div>
+          <div className="relative flex flex-col lg:flex-row" dir="ltr">
 
-              {/* Right: 6 feature boxes */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                {[
-                  { icon: Lightbulb,   en: "Custom Solution",        ar: "حل مخصص",             enDesc: "Built around your business, not a generic template", arDesc: "مبني حول عملك، مو قالب جاهز" },
-                  { icon: Layers,      en: "Scalable Architecture",   ar: "بنية قابلة للتوسّع",  enDesc: "Systems that grow with your business",               arDesc: "أنظمة تنمو مع نمو مشروعك" },
-                  { icon: Bot,         en: "AI & Automation",         ar: "ذكاء اصطناعي وأتمتة", enDesc: "Leverage AI to boost and increase output",           arDesc: "وظّف الذكاء الاصطناعي لتسريع الإنتاج" },
-                  { icon: Shield,      en: "Secure & Reliable",       ar: "آمن وموثوق",           enDesc: "Enterprise-grade security and 99.9% uptime",        arDesc: "أمان مستوى المؤسسات و99.9% وقت تشغيل" },
-                  { icon: Star,        en: "Dedicated Support",       ar: "دعم مخصص",             enDesc: "A team with you at every stage of your journey",    arDesc: "فريق بجانبك في كل مرحلة من رحلتك" },
-                  { icon: TrendingUp,  en: "Proven Results",          ar: "نتائج مثبتة",          enDesc: "30+ projects, 5+ industries",                       arDesc: "30+ مشروع، 5+ قطاعات", stat: "37+ projects · 9+ sectors" },
-                ].map((f, i) => {
-                  const FIcon = f.icon;
-                  return (
-                    <motion.div key={i} {...fade(i * 0.07)}
-                      className="rounded-2xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 p-5 flex flex-col gap-3 group">
-                      <div className="w-9 h-9 rounded-xl bg-white/[0.07] group-hover:bg-white/[0.11] transition-colors flex items-center justify-center">
-                        <FIcon className="w-4 h-4 text-white/65" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-white leading-tight mb-1">{ar ? f.ar : f.en}</p>
-                        <p className="text-[11px] text-white/38 leading-relaxed">{ar ? f.arDesc : f.enDesc}</p>
-                      </div>
-                      {f.stat && (
-                        <div className="mt-auto pt-2 border-t border-white/[0.06]">
-                          <span className="text-[9.5px] font-black text-white/25 uppercase tracking-wide">{f.stat}</span>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
+            {/* Left: headline column */}
+            <motion.div {...fade(0)}
+              className="shrink-0 flex flex-col justify-center px-8 md:px-10 py-10 md:py-12 lg:border-e border-white/[0.06] lg:w-[280px] xl:w-[310px]">
+              <p className="text-[9px] font-black tracking-[0.28em] uppercase text-white/28 mb-4">WHY QIROX</p>
+              <h2 className="text-[1.6rem] md:text-[1.85rem] font-black leading-[1.12] text-white mb-5 tracking-tight" dir={dir}>
+                {ar ? (<>بنينا مختلفين.<br />عشان تتوسّع<br />بشكل مختلف.</>)
+                     : (<>Built different.<br />So you can scale<br />differently.</>)}
+              </h2>
+              <Link href="/about">
+                <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/40 hover:text-white/80 transition-colors cursor-pointer" dir={dir}>
+                  {ar ? "تعرّف علينا أكثر" : "Learn more about us"}
+                  <Arrow className="w-3 h-3" />
+                </span>
+              </Link>
+            </motion.div>
+
+            {/* Right: 6 items in single row with dividers */}
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-white/[0.06] rtl:divide-x-reverse border-t border-white/[0.06] lg:border-t-0">
+              {[
+                { icon: Lightbulb,  en: "Custom\nSolution",        ar: "حل\nمخصص",              enDesc: "Built around your business.",               arDesc: "مبني حول عملك." },
+                { icon: Layers,     en: "Scalable\nArchitecture",   ar: "بنية قابلة\nللتوسّع",   enDesc: "Systems that grow with you.",               arDesc: "أنظمة تنمو مع مشروعك." },
+                { icon: Bot,        en: "AI &\nAutomation",         ar: "ذكاء اصطناعي\nوأتمتة",  enDesc: "Intelligent tools to save time and increase impact.", arDesc: "أدوات تسرّع إنتاجك وتوسّع أثرك." },
+                { icon: Shield,     en: "Secure\n& Reliable",       ar: "آمن\nوموثوق",            enDesc: "Enterprise-grade security and 99.9% uptime.", arDesc: "أمان مستوى المؤسسات وتشغيل 99.9%." },
+                { icon: Star,       en: "Dedicated\nSupport",       ar: "دعم\nمخصص",              enDesc: "A team with you at every step.",             arDesc: "فريق بجانبك في كل خطوة." },
+                { icon: TrendingUp, en: "Proven\nResults",          ar: "نتائج\nمثبتة",           enDesc: "37+ successful projects across industries.", arDesc: "37+ مشروع ناجح في قطاعات متعددة.", stat: "37+ projects · 9+ sectors" },
+              ].map((f, i) => {
+                const FIcon = f.icon;
+                const titleLines = ar ? f.ar.split("\n") : f.en.split("\n");
+                return (
+                  <motion.div key={i} {...fade(i * 0.06)}
+                    className="flex flex-col gap-3 px-5 py-8 md:px-6 hover:bg-white/[0.03] transition-colors duration-200">
+                    <div className="w-7 h-7 flex items-center justify-center">
+                      <FIcon className="w-[18px] h-[18px] text-white/55" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-bold text-white leading-snug mb-1.5">
+                        {titleLines[0]}<br />{titleLines[1]}
+                      </p>
+                      <p className="text-[11px] text-white/36 leading-[1.6]">
+                        {ar ? f.arDesc : f.enDesc}
+                      </p>
+                    </div>
+                    {f.stat && (
+                      <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.15em] mt-auto">{f.stat}</p>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
