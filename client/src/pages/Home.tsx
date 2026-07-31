@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, type ElementType } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrency } from "@/hooks/use-currency";
@@ -800,6 +800,20 @@ export default function Home() {
   const { data: user } = useUser();
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [appleEnabled, setAppleEnabled] = useState(false);
+  const processRef = useRef<HTMLElement>(null);
+  const processInView = useInView(processRef, { once: true, margin: "-15% 0px" });
+  const [processProgress, setProcessProgress] = useState(0);
+  useEffect(() => {
+    if (!processInView) return;
+    const start = Date.now();
+    const dur = 2600;
+    const tick = () => {
+      const p = Math.min((Date.now() - start) / dur, 1);
+      setProcessProgress(p);
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [processInView]);
 
   useEffect(() => {
     fetch("/api/auth/google/status").then(r => r.json()).then(d => setGoogleEnabled(!!d.enabled)).catch(() => {});
@@ -1464,35 +1478,63 @@ export default function Home() {
         <GraphicDivider variant={2} />
 
         {/* ─── PROCESS ─── */}
-        <section id="tab-process" className="pt-16 pb-24 md:pt-20 md:pb-28 bg-white dark:bg-[#0a0a0a]">
+        <section id="tab-process" ref={processRef} className="pt-20 pb-28 md:pt-24 md:pb-32 bg-white dark:bg-[#0a0a0a] overflow-hidden">
           <div className="container mx-auto px-5 md:px-8 max-w-7xl">
-            <motion.div {...fade(0)} className="mb-14 text-center max-w-2xl mx-auto">
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-4">HOW WE WORK</p>
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
-                {ar ? (<>من الفكرة<br /><span className="text-black/30 dark:text-white/30">إلى الإطلاق</span></>) : (<>From Idea<br /><span className="text-black/30 dark:text-white/30">to Launch</span></>)}
+
+            {/* Large centered heading */}
+            <motion.div {...fade(0)} className="mb-16 md:mb-20 text-center">
+              <p className="text-[10px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-6">HOW WE WORK</p>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.05]" dir={dir}>
+                {ar ? (
+                  <>{ar ? "من الفكرة" : "From Idea"}<br />
+                    <span className="text-black/22 dark:text-white/22">{ar ? "إلى الإطلاق" : "to Launch"}</span>
+                  </>
+                ) : (
+                  <>From Idea<br /><span className="text-black/22 dark:text-white/22">to Launch</span></>
+                )}
               </h2>
             </motion.div>
 
+            {/* Steps row */}
             <div className="relative max-w-6xl mx-auto">
-              {/* Connecting line */}
-              <div className="hidden lg:block absolute top-[2.2rem] left-0 right-0 h-px bg-black/[0.07] dark:bg-white/[0.07] z-0" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-5">
+
+              {/* Track line (faint) */}
+              <div className="hidden lg:block absolute top-[2.75rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07] z-0" />
+
+              {/* Animated fill line */}
+              <div
+                className="hidden lg:block absolute top-[2.75rem] h-px bg-black dark:bg-white z-0 transition-none"
+                style={{
+                  width: `${processProgress * 100}%`,
+                  ...(ar ? { right: 0 } : { left: 0 }),
+                }}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 md:gap-6">
                 {PROCESS_STEPS.map((s, i) => {
                   const StepIcon = s.icon;
+                  const lit = processProgress > i / PROCESS_STEPS.length + 0.02;
                   return (
-                    <motion.div key={i} {...fade(i * 0.08)} className="relative flex flex-col items-center text-center lg:items-start lg:text-start">
-                      {/* Step number + icon */}
-                      <div className="relative z-10 w-[4.5rem] h-[4.5rem] rounded-2xl bg-black dark:bg-white flex flex-col items-center justify-center mb-5 shadow-lg">
-                        <span className="text-[9px] font-black text-white/40 dark:text-black/40 tracking-widest mb-0.5">{String(i + 1).padStart(2, "0")}</span>
-                        <StepIcon className="w-5 h-5 text-white dark:text-black" />
+                    <div
+                      key={i}
+                      className="flex flex-col items-center lg:items-start text-center lg:text-start transition-all duration-500"
+                      style={{ opacity: lit ? 1 : 0.22, filter: lit ? "none" : "blur(0.5px)" }}
+                    >
+                      {/* Black icon box */}
+                      <div className="relative z-10 w-[5.5rem] h-[5.5rem] rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-5 shadow-xl shadow-black/10 dark:shadow-white/5">
+                        <span className="absolute top-2 end-2.5 text-[9px] font-black text-white/35 dark:text-black/35 tracking-widest leading-none">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <StepIcon className="w-6 h-6 text-white dark:text-black" strokeWidth={1.5} />
                       </div>
-                      <div className="font-black text-base mb-2 text-black dark:text-white">{ar ? s.ar.t : s.en.t}</div>
-                      <div className="text-[12.5px] text-black/50 dark:text-white/48 leading-relaxed">{ar ? s.ar.d : s.en.d}</div>
-                    </motion.div>
+                      <p className="font-black text-[15px] mb-2 text-black dark:text-white">{ar ? s.ar.t : s.en.t}</p>
+                      <p className="text-[12px] text-black/50 dark:text-white/48 leading-[1.65]">{ar ? s.ar.d : s.en.d}</p>
+                    </div>
                   );
                 })}
               </div>
             </div>
+
           </div>
         </section>
 
