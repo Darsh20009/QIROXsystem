@@ -604,13 +604,13 @@ function GraphicBanner({ ar }: { ar: boolean }) {
       <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "28px 28px" }} />
       <div className="container mx-auto px-5 md:px-8 max-w-6xl py-12 relative">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="flex flex-row items-center justify-between gap-8">
           {/* Left: headline */}
-          <div className="text-center md:text-start flex-shrink-0 max-w-xs">
+          <div className="text-start flex-shrink-0 max-w-xs">
             <div className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/25 mb-3">
               {ar ? "نغطي كل القطاعات" : "Every industry covered"}
             </div>
-            <div className="text-2xl md:text-3xl font-black leading-tight text-gray-900 dark:text-white">
+            <div className="text-3xl font-black leading-tight text-gray-900 dark:text-white">
               {ar ? "نظام لكل قطاع\nبهوية خاصة به" : "A system for every\nsector & brand"}
             </div>
           </div>
@@ -994,21 +994,21 @@ export default function Home() {
   const displayedPlans = (pricingPlans as any[]).length > 0 ? (pricingPlans as any[]).slice(0, 3) : FALLBACK_PLANS;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-black dark:bg-gray-950 dark:text-white" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-white text-black dark:bg-gray-950 dark:text-white min-w-[1280px]" dir={dir}>
       <Navigation />
 
       <main className="flex-1">
         {/* ─── HERO ─── */}
         <section className="relative bg-[#f0f0ee] dark:bg-[#0d0d0d] overflow-x-hidden">
           <div className="container mx-auto px-6 md:px-10 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-2 items-end gap-0 lg:gap-6 pt-28 lg:pt-32">
+            <div className="grid grid-cols-2 items-end gap-6 pt-32">
 
               {/* ── Text column ── */}
               <motion.div {...fade(0)} className="flex flex-col justify-center order-1">
                 <p className={`text-[10px] md:text-[11px] font-bold uppercase text-black/40 dark:text-white/35 mb-7 ${ar ? "tracking-normal" : "tracking-[0.22em]"}`}>
                   {ar ? "نبني أنظمة رقمية تتوسّع معك" : "We Build Digital Systems That Scale"}
                 </p>
-                <h1 className="text-5xl sm:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] font-black leading-[1.0] tracking-tight text-black dark:text-white mb-6">
+                <h1 className="text-[4.25rem] xl:text-[4.75rem] font-black leading-[1.0] tracking-tight text-black dark:text-white mb-6">
                   {ar ? (<>من الفكرة<br />إلى الأثر.</>) : (<>From Vision<br />to Impact.</>)}
                 </h1>
                 <p className="text-base md:text-[17px] text-black/55 dark:text-white/45 max-w-[340px] mb-10 leading-relaxed">
@@ -1054,7 +1054,7 @@ export default function Home() {
               </motion.div>
 
               {/* ── Hero image column ── */}
-              <motion.div {...fade(0)} className="flex items-end justify-center order-2 -mx-4 sm:-mx-6 lg:mx-0 overflow-visible">
+              <motion.div {...fade(0)} className="flex items-end justify-center order-2 mx-0 overflow-visible">
                 <img
                   src="/qirox-hero-new.png"
                   alt="QIROX"
@@ -1103,7 +1103,7 @@ export default function Home() {
         <section id="tab-systems" className="pt-14 pb-0 md:pt-20 bg-white dark:bg-[#0a0a0a]" style={{ overflowX: "clip" }}>
 
           {/* ── Mobile header (above the flex row) ── */}
-          <div className="md:hidden px-5 mb-6">
+          <div className="hidden px-5 mb-6">
             <p className={`text-[10px] font-bold ${ar ? "" : "tracking-[0.22em]"} uppercase text-black/35 dark:text-white/30 mb-3`}>
               {ar ? "أنظمتنا" : "OUR SYSTEMS"}
             </p>
@@ -1115,7 +1115,7 @@ export default function Home() {
           <div className="flex items-start" dir={dir}>
 
             {/* ── LEFT: Text column (desktop only) ── */}
-            <motion.div {...fade(0)} className="hidden md:flex flex-shrink-0 flex-col justify-center w-[220px] lg:w-[260px] px-8 lg:px-12 pt-4">
+            <motion.div {...fade(0)} className="flex flex-shrink-0 flex-col justify-center w-[260px] px-12 pt-4">
               <p className={`text-[10px] font-bold ${ar ? "" : "tracking-[0.22em]"} uppercase text-black/35 dark:text-white/30 mb-5`}>
                 {ar ? "أنظمتنا" : "OUR SYSTEMS"}
               </p>
@@ -1261,7 +1261,7 @@ export default function Home() {
           <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
             style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-          <div className="relative flex flex-col lg:flex-row">
+          <div className="relative flex flex-row">
 
             {/* Left: headline column */}
             <motion.div {...fade(0)}
@@ -1319,12 +1319,12 @@ export default function Home() {
         {/* ─── LIVE DEMO ─── */}
         <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] overflow-hidden">
           <div className="container mx-auto px-5 md:px-10 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="grid grid-cols-2 gap-16 items-center">
 
               {/* Left: text */}
               <motion.div {...fade(0)}>
                 <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-5">LIVE DEMO</p>
-                <h2 className="text-3xl md:text-5xl font-black leading-[1.05] tracking-tight mb-5 text-black dark:text-white">
+                <h2 className="text-5xl font-black leading-[1.05] tracking-tight mb-5 text-black dark:text-white">
                   {ar ? (<>شاهد الأنظمة<br />تعمل على أرض الواقع</>) : (<>See our systems<br />in real action</>)}
                 </h2>
                 <p className="text-base text-black/52 dark:text-white/45 leading-relaxed mb-8 max-w-sm">
@@ -1443,7 +1443,7 @@ export default function Home() {
             </motion.div>
 
             {/* ── Plan Cards ── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto items-stretch">
+            <div className="grid grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
               {(["lite", "pro", "infinity"] as HomePriceTier[]).map((tier, i) => {
                 const prices = HOME_PRICES[pricingSector][tier];
                 let price = 0, periodLabel = "";
@@ -1551,7 +1551,7 @@ export default function Home() {
 
             {/* Bottom CTA */}
             <motion.div {...fade(4)} className="mt-8 max-w-5xl mx-auto">
-              <div className="rounded-2xl bg-black dark:bg-white p-5 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+              <div className="rounded-2xl bg-black dark:bg-white p-6 flex flex-row items-center justify-between gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
                 <div className="relative flex items-center gap-3 text-center md:text-start">
                   <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-black/10 flex items-center justify-center shrink-0">
@@ -1587,7 +1587,7 @@ export default function Home() {
           <div className="container mx-auto px-5 md:px-8 max-w-7xl">
 
             {/* Side-by-side: heading column + steps column */}
-            <div className="flex flex-col lg:flex-row gap-10 lg:gap-0 items-start">
+            <div className="flex flex-row gap-0 items-start">
 
               {/* Heading column */}
               <motion.div {...fade(0)} className="shrink-0 lg:w-[230px] xl:w-[260px] lg:pe-10 xl:pe-14 flex flex-col justify-center">
@@ -1601,11 +1601,11 @@ export default function Home() {
               <div className="flex-1 relative overflow-x-auto">
 
                 {/* Track line */}
-                <div className="hidden lg:block absolute top-[2.6rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
+                <div className="block absolute top-[2.6rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
 
                 {/* Animated fill line */}
                 <div
-                  className="hidden lg:block absolute top-[2.6rem] h-px bg-black dark:bg-white"
+                  className="block absolute top-[2.6rem] h-px bg-black dark:bg-white"
                   style={{ width: `${processProgress * 100}%`, ...(ar ? { right: 0 } : { left: 0 }) }}
                 />
 
@@ -1717,7 +1717,7 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -16 }}
                       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
+                      className="grid grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
                       style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.05)" }}
                     >
                       {/* Logo frame — uniform white bg, object-contain keeps any logo size consistent */}
@@ -1820,11 +1820,11 @@ export default function Home() {
           </svg>
 
           <div className="container mx-auto px-6 md:px-10 max-w-6xl relative">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center min-h-[200px] md:min-h-[220px] py-10 md:py-12">
+            <div className="grid grid-cols-2 gap-0 items-center min-h-[220px] py-12">
 
               {/* Text side */}
               <motion.div {...fade(0)} className={`flex flex-col justify-center gap-4 ${ar ? "text-right" : "text-left"}`} dir={ar ? "rtl" : "ltr"}>
-                <h2 className="text-3xl md:text-4xl lg:text-[2.6rem] font-black leading-[1.1] tracking-tight text-black dark:text-white">
+                <h2 className="text-[2.6rem] font-black leading-[1.1] tracking-tight text-black dark:text-white">
                   {ar
                     ? (<>جاهز لتحويل فكرتك<br />إلى نظام؟</>)
                     : (<>Ready to turn your idea<br />into a system?</>)}
@@ -1848,7 +1848,7 @@ export default function Home() {
               {/* Q-cube image */}
               <motion.div
                 {...fade(1)}
-                className="hidden lg:flex items-center justify-end relative"
+                className="flex items-center justify-end relative"
               >
                 <img
                   src="/qirox-hero-cube.png"

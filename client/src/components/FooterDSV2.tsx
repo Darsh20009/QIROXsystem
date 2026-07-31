@@ -190,7 +190,7 @@ export default function FooterDSV2() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-[var(--ds-z-base)]">
 
         {/* ── Top grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
+        <div className="grid grid-cols-12 gap-12 mb-20">
           <div className="md:col-span-5">
             <div className="mb-6">
               <Link href="/" className="hover:opacity-80 transition-opacity inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus-ring rounded-ds-sm">
@@ -297,7 +297,7 @@ export default function FooterDSV2() {
         {STORES.length > 0 && (
           <>
             <div className="h-px bg-ds-border-hairline mb-8" />
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex flex-row items-center justify-between gap-4 mb-8">
               <p className="text-[11px] tracking-[2px] uppercase text-ds-muted-foreground font-medium flex-shrink-0">
                 {L ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
               </p>
@@ -335,7 +335,7 @@ export default function FooterDSV2() {
         <div className="h-px bg-ds-border-hairline mb-8" />
         <div className="mb-8">
           <a href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i" target="_blank" rel="noopener noreferrer" data-testid="footer-whatsapp-channel"
-            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-ds-2xl px-6 py-5 transition-all duration-ds-base shadow-ds-sm hover:shadow-ds-md hover:shadow-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]">
+            className="group flex flex-row items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-ds-2xl px-6 py-5 transition-all duration-ds-base shadow-ds-sm hover:shadow-ds-md hover:shadow-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]">
             <div className="flex items-center gap-4">
               <div className="w-11 h-11 rounded-ds-xl bg-[#25D366] flex items-center justify-center shadow-ds-sm shadow-[#25D366]/30 shrink-0">
                 <SiWhatsapp className="w-5 h-5 text-white" />
@@ -359,7 +359,7 @@ export default function FooterDSV2() {
         {SOCIAL_LINKS.length > 0 && (
           <>
             <div className="h-px bg-ds-border-hairline mb-8" />
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex flex-row items-center justify-between gap-4 mb-8">
               <p className="text-[11px] tracking-[2px] uppercase text-ds-muted-foreground font-medium flex-shrink-0">
                 {L ? "تابعنا" : "Follow Us"}
               </p>
@@ -377,7 +377,7 @@ export default function FooterDSV2() {
 
         {/* ── Copyright ── */}
         <div className="h-px bg-ds-border-hairline mb-8" />
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex flex-row justify-between items-center gap-4">
           <p className="text-ds-muted-foreground text-ds-xs font-medium">
             © {new Date().getFullYear()} QIROX Systems Factory. {t("footer.rights")}.
           </p>
