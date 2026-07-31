@@ -13,6 +13,17 @@ import { useSEO } from "@/hooks/use-seo";
 import type { Partner } from "@shared/schema";
 const qiroxLogo = "/qirox-icon-nobg.png";
 
+// ─── Real partner logos ───────────────────────────────────────────────────────
+import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
+import genMZLogo    from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
+import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
+import tuwaiqLogo   from "@assets/Screenshot_2026-02-20_030415_1771717262310.png";
+import blackRoseLogo from "@assets/Screenshot_2026-01-28_010045_1771717287296.png";
+import qodratakLogo from "@assets/Screenshot_2026-01-28_125929_1771717287296.png";
+import subwayLogo   from "@assets/Screenshot_2026-01-28_130014_1771717301779.png";
+import maestroLogo  from "@assets/Screenshot_2026-01-28_130058_1771717301779.png";
+import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
+
 import {
   ArrowRight, ArrowLeft, ArrowUpRight, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
@@ -829,14 +840,16 @@ export default function Home() {
   const [activePartnerIdx, setActivePartnerIdx] = useState(0);
   const [partnerPaused, setPartnerPaused] = useState(false);
   const SPOTLIGHT_PARTNERS = [
-    { name: "tabby",     nameAr: "تابي",         color: "#1B4332", bg: "#D1FAE5", tagline: "اشترِ الآن وادفع لاحقًا", features: ["دفع مرن بالأقساط", "بدون فوائد خفية"] },
-    { name: "tamara",    nameAr: "تمارا",         color: "#C2410C", bg: "#FEF3C7", tagline: "أقساط ميسّرة بدون فوائد", features: ["تمويل فوري", "شريحة عملاء واسعة"] },
-    { name: "ZATCA",     nameAr: "زاتكا",         color: "#065F46", bg: "#ECFDF5", tagline: "هيئة الزكاة والضريبة والجمارك", features: ["إصدار الفواتير الإلكترونية", "التكامل الضريبي الكامل"] },
-    { name: "aws",       nameAr: "أمازون ويب",    color: "#92400E", bg: "#FFFBEB", tagline: "البنية التحتية السحابية العالمية", features: ["خوادم عالية الأداء", "أمان وموثوقية عالمية"] },
-    { name: "odoo",      nameAr: "أودو",          color: "#4C1D95", bg: "#F5F3FF", tagline: "نظام ERP متكامل للأعمال", features: ["إدارة المبيعات والمحاسبة", "أتمتة العمليات الداخلية"] },
-    { name: "Adobe",     nameAr: "أدوبي",         color: "#991B1B", bg: "#FEF2F2", tagline: "أدوات الإبداع والتصميم الاحترافي", features: ["Creative Cloud", "تصميم وتحرير متقدم"] },
-    { name: "Microsoft", nameAr: "مايكروسوفت",   color: "#1D4ED8", bg: "#EFF6FF", tagline: "حلول تقنية وإنتاجية متكاملة", features: ["Azure & Office 365", "بيئة عمل سحابية آمنة"] },
-  ] as const;
+    { name: "QahwaCup",        nameAr: "قهوة كوب",       logo: qahwaCupLogo,  sector: "مطاعم ومقاهي",    sectorEn: "Food & Beverage",   color: "#6B4226" },
+    { name: "Gen M&Z",         nameAr: "Gen M&Z",         logo: genMZLogo,     sector: "تسويق رقمي",      sectorEn: "Digital Marketing", color: "#1A1A2E" },
+    { name: "Be Fluent",       nameAr: "Be Fluent",       logo: beFluentLogo,  sector: "التعليم",          sectorEn: "Education",         color: "#0066CC" },
+    { name: "جمعية طويق",    nameAr: "جمعية طويق",     logo: tuwaiqLogo,    sector: "غير ربحي",         sectorEn: "Non-Profit",        color: "#006C35" },
+    { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه", logo: blackRoseLogo, sector: "مطاعم ومقاهي",    sectorEn: "Food & Beverage",   color: "#1C0A00" },
+    { name: "Qodratak",        nameAr: "قدراتك",          logo: qodratakLogo,  sector: "تقنية تعليمية",   sectorEn: "EdTech",            color: "#4A1A8A" },
+    { name: "Subway",          nameAr: "صبواي",           logo: subwayLogo,    sector: "سلاسل المطاعم",   sectorEn: "F&B Chain",         color: "#009247" },
+    { name: "Maestro",         nameAr: "مايسترو",         logo: maestroLogo,   sector: "تقنية",            sectorEn: "Technology",        color: "#C41E3A" },
+    { name: "InstaPay",        nameAr: "إنستاباي",        logo: instapayLogo,  sector: "مدفوعات رقمية",   sectorEn: "Fintech",           color: "#E6194B" },
+  ];
   useEffect(() => {
     if (partnerPaused) return;
     const t = setTimeout(() => setActivePartnerIdx(i => (i + 1) % SPOTLIGHT_PARTNERS.length), 3800);
@@ -1650,11 +1663,12 @@ export default function Home() {
         <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a] overflow-hidden">
           <div className="container mx-auto px-5 md:px-8 max-w-5xl">
 
-            {/* Header — Arabic label right, count left */}
-            <motion.div {...fade(0)} className="flex items-start justify-between mb-10 md:mb-14">
-              <div className="text-left" dir="ltr">
+            {/* Header — always LTR container so "شركاؤنا" stays visually on the right */}
+            <motion.div {...fade(0)} className="flex items-start justify-between mb-10 md:mb-14" dir="ltr">
+              {/* Left slot: progress dots + count */}
+              <div className="text-left">
                 <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/25 dark:text-white/25">
-                  {SPOTLIGHT_PARTNERS.length} Strategic Partners
+                  {SPOTLIGHT_PARTNERS.length} {ar ? "شريك موثوق" : "Trusted Partners"}
                 </p>
                 <div className="mt-1.5 flex gap-1.5">
                   {SPOTLIGHT_PARTNERS.map((_, i) => (
@@ -1666,184 +1680,185 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <div className="text-right" dir="rtl">
-                <p className="text-[10px] font-black tracking-[0.2em] text-black/25 dark:text-white/25 uppercase mb-0.5">شركاؤنا</p>
-                <h2 className="text-xl md:text-2xl font-black text-black dark:text-white leading-tight">الموثوقون</h2>
+              {/* Right slot: Arabic/English heading — always on visual right */}
+              <div className="text-right" dir={ar ? "rtl" : "ltr"}>
+                <p className="text-[10px] font-black tracking-[0.2em] text-black/25 dark:text-white/25 uppercase mb-0.5">
+                  {ar ? "شركاؤنا" : "Our Partners"}
+                </p>
+                <h2 className="text-xl md:text-2xl font-black text-black dark:text-white leading-tight">
+                  {ar ? "الموثوقون" : "Trusted"}
+                </h2>
               </div>
             </motion.div>
 
-            {/* Spotlight Card */}
-            {apiPartners.length > 0 ? (
-              /* Live API partners — uniform framed grid */
-              <motion.div {...fade(1)} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 py-4">
-                {apiPartners.map((p: any) => (
-                  <Link key={p.id || p._id} href="/partners">
-                    <div className="group aspect-square rounded-xl border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center p-3 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-pointer overflow-hidden bg-black/[0.015] dark:bg-white/[0.015]">
-                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : p.name} className="w-full h-full object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
-                    </div>
-                  </Link>
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div {...fade(1)} key={activePartnerIdx}
-                className="relative"
-                onMouseEnter={() => setPartnerPaused(true)}
-                onMouseLeave={() => setPartnerPaused(false)}
-              >
-                <AnimatePresence mode="wait">
-                  {(() => {
-                    const p = SPOTLIGHT_PARTNERS[activePartnerIdx];
-                    const LOGO_STYLES: Record<string, string> = {
-                      tabby:     "font-black text-[2rem] tracking-tight",
-                      tamara:    "font-black text-[1.9rem] tracking-tight",
-                      ZATCA:     "font-black text-[1.5rem] tracking-[0.12em]",
-                      aws:       "font-black text-[2.2rem] tracking-tight",
-                      odoo:      "font-black text-[2rem] tracking-tight",
-                      Adobe:     "font-black text-[1.9rem] tracking-tight",
-                      Microsoft: "font-semibold text-[1.4rem] tracking-tight",
-                    };
-                    return (
-                      <motion.div
-                        key={activePartnerIdx}
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -18 }}
-                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                        className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden bg-black/[0.01] dark:bg-white/[0.01]"
-                        style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.04)" }}
-                      >
-                        {/* Logo frame — uniform size, no size bleed */}
+            {/* Spotlight Card — always uses SPOTLIGHT_PARTNERS (real logos); merges DB partners on top when available */}
+            {(() => {
+              const partners = apiPartners.length > 0
+                ? apiPartners.map((p: any) => ({
+                    name: p.name || "",
+                    nameAr: p.nameAr || p.name || "",
+                    logo: p.logoUrl || "",
+                    sector: p.sector || "",
+                    sectorEn: p.sectorEn || p.sector || "",
+                    color: "#111111",
+                  }))
+                : SPOTLIGHT_PARTNERS;
+              const activeP = partners[activePartnerIdx % partners.length];
+              return (
+                <motion.div {...fade(1)}
+                  className="relative"
+                  onMouseEnter={() => setPartnerPaused(true)}
+                  onMouseLeave={() => setPartnerPaused(false)}
+                >
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activePartnerIdx}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -16 }}
+                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
+                      style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.05)" }}
+                    >
+                      {/* Logo frame — uniform white bg, object-contain keeps any logo size consistent */}
+                      <div className="flex items-center justify-center bg-white dark:bg-white/[0.04] p-10 md:p-14 min-h-[220px] relative overflow-hidden">
+                        {/* Soft radial accent in partner's color */}
                         <div
-                          className="flex items-center justify-center p-12 md:p-16 min-h-[200px] relative"
-                          style={{ backgroundColor: p.bg }}
-                        >
-                          {/* Decorative ring */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
-                            <div className="w-64 h-64 rounded-full border-[40px]" style={{ borderColor: p.color }} />
-                          </div>
-                          <div
-                            className={`${LOGO_STYLES[p.name] ?? "font-black text-[2rem]"} relative z-10 select-none`}
-                            style={{ color: p.color }}
+                          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+                          style={{ background: `radial-gradient(circle at 60% 50%, ${activeP.color}, transparent 70%)` }}
+                        />
+                        <img
+                          src={activeP.logo}
+                          alt={ar ? activeP.nameAr : activeP.name}
+                          className="relative z-10 max-h-28 max-w-[220px] w-auto h-auto object-contain drop-shadow-sm"
+                        />
+                      </div>
+
+                      {/* Info panel */}
+                      <div className="flex flex-col justify-center p-8 md:p-10 gap-4 bg-black/[0.01] dark:bg-white/[0.01]" dir={ar ? "rtl" : "ltr"}>
+                        <div>
+                          <p
+                            className="text-[10px] font-black tracking-[0.22em] uppercase mb-2.5"
+                            style={{ color: activeP.color + "99" }}
                           >
-                            {p.name}
-                          </div>
+                            {ar ? "شريك موثوق" : "Trusted Partner"}
+                          </p>
+                          <h3 className="text-2xl md:text-3xl font-black text-black dark:text-white leading-tight mb-1.5">
+                            {ar ? activeP.nameAr : activeP.name}
+                          </h3>
+                          <span
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                            style={{ color: activeP.color, borderColor: activeP.color + "30", backgroundColor: activeP.color + "0D" }}
+                          >
+                            {ar ? activeP.sector : activeP.sectorEn}
+                          </span>
                         </div>
 
-                        {/* Info panel */}
-                        <div className="flex flex-col justify-center p-8 md:p-10 gap-5" dir="rtl">
-                          <div>
-                            <p className="text-[10px] font-black tracking-[0.2em] uppercase mb-2" style={{ color: p.color + "99" }}>شريك موثوق</p>
-                            <h3 className="text-2xl md:text-3xl font-black text-black dark:text-white leading-tight mb-1">{p.nameAr}</h3>
-                            <p className="text-sm text-black/50 dark:text-white/50 font-medium">{p.tagline}</p>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            {p.features.map((f, fi) => (
-                              <div key={fi} className="flex items-center gap-2.5" dir="rtl">
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                                <span className="text-sm font-medium text-black/70 dark:text-white/70">{f}</span>
-                              </div>
-                            ))}
-                          </div>
-                          {/* Progress bar */}
-                          <div className="h-[2px] rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden mt-2">
-                            {!partnerPaused && (
-                              <motion.div
-                                key={activePartnerIdx}
-                                className="h-full rounded-full"
-                                style={{ backgroundColor: p.color }}
-                                initial={{ width: "0%" }}
-                                animate={{ width: "100%" }}
-                                transition={{ duration: 3.8, ease: "linear" }}
-                              />
-                            )}
-                          </div>
+                        {/* Progress bar */}
+                        <div className="h-[2px] rounded-full bg-black/[0.06] dark:bg-white/[0.08] overflow-hidden mt-2">
+                          {!partnerPaused && (
+                            <motion.div
+                              key={activePartnerIdx}
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: activeP.color }}
+                              initial={{ width: "0%" }}
+                              animate={{ width: "100%" }}
+                              transition={{ duration: 3.8, ease: "linear" }}
+                            />
+                          )}
                         </div>
-                      </motion.div>
-                    );
-                  })()}
-                </AnimatePresence>
 
-                {/* Thumbnail strip */}
-                <div className="flex justify-center gap-2 mt-5 flex-wrap">
-                  {SPOTLIGHT_PARTNERS.map((sp, i) => {
-                    const MINI_STYLES: Record<string, string> = {
-                      tabby: "font-black", tamara: "font-black", ZATCA: "font-black tracking-wide",
-                      aws: "font-black", odoo: "font-black", Adobe: "font-black", Microsoft: "font-semibold",
-                    };
-                    return (
+                        <Link href="/partners">
+                          <span className="text-[11px] font-bold text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer">
+                            {ar ? "← عرض جميع شركائنا" : "View all partners →"}
+                          </span>
+                        </Link>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {/* Thumbnail strip — logo images, grows automatically with each new partner */}
+                  <div className="flex justify-center gap-2 mt-5 flex-wrap">
+                    {partners.map((sp, i) => (
                       <button
                         key={i}
                         onClick={() => { setActivePartnerIdx(i); setPartnerPaused(true); }}
-                        className={`px-3.5 py-2 rounded-lg text-[11px] transition-all duration-300 border ${MINI_STYLES[sp.name] ?? "font-medium"} ${i === activePartnerIdx
-                          ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.04] text-black dark:text-white scale-105"
-                          : "border-transparent text-black/30 dark:text-white/30 hover:text-black/50 dark:hover:text-white/50"}`}
+                        className={`h-11 px-3 rounded-xl border transition-all duration-300 flex items-center justify-center overflow-hidden ${
+                          i === (activePartnerIdx % partners.length)
+                            ? "border-black/15 dark:border-white/15 bg-white dark:bg-white/[0.05] shadow-sm scale-105"
+                            : "border-transparent bg-black/[0.02] dark:bg-white/[0.02] opacity-50 hover:opacity-80"
+                        }`}
+                        title={ar ? sp.nameAr : sp.name}
                       >
-                        {sp.name}
+                        <img
+                          src={sp.logo}
+                          alt={ar ? sp.nameAr : sp.name}
+                          className="h-6 w-auto max-w-[80px] object-contain grayscale"
+                        />
                       </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })()}
           </div>
         </section>
 
 
         {/* ─── CTA ─── */}
-        <section className="bg-[#0a0a0a] relative overflow-hidden">
-          {/* Subtle dot grid */}
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <section className="relative overflow-hidden bg-white dark:bg-[#0f0f0f] border-t border-black/[0.06] dark:border-white/[0.06]">
+          {/* Flowing curve decoration */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-[0.07] dark:opacity-[0.04]"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox="0 0 1200 240"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M-100 180 C200 60 500 220 800 80 C1000 0 1150 120 1350 60" stroke="black" strokeWidth="80" strokeLinecap="round" />
+            <path d="M-100 220 C300 100 600 260 900 120 C1050 60 1200 160 1400 100" stroke="black" strokeWidth="50" strokeLinecap="round" />
+          </svg>
 
-          <div className="container mx-auto px-5 md:px-10 max-w-7xl relative">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-end min-h-[460px] md:min-h-[520px]">
+          <div className="container mx-auto px-6 md:px-10 max-w-6xl relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center min-h-[200px] md:min-h-[220px] py-10 md:py-12">
 
-              {/* Left: text + buttons */}
-              <motion.div {...fade(0)} className="flex flex-col justify-center py-20 md:py-24 lg:py-28">
-                <p className="text-[10px] font-black tracking-[0.25em] uppercase text-white/25 mb-6">START NOW</p>
-                <h2 className="text-4xl md:text-5xl lg:text-[3.2rem] font-black leading-[1.08] tracking-tight text-white mb-6">
-                  {ar ? (<>جاهز لتحويل<br />فكرتك إلى نظام؟</>) : (<>Ready to turn<br />your idea into<br />a system?</>)}
-                </h2>
-                <p className="text-white/48 text-base leading-relaxed mb-8 max-w-sm">
+              {/* Text side */}
+              <motion.div {...fade(0)} className={`flex flex-col justify-center gap-4 ${ar ? "text-right" : "text-left"}`} dir={ar ? "rtl" : "ltr"}>
+                <h2 className="text-3xl md:text-4xl lg:text-[2.6rem] font-black leading-[1.1] tracking-tight text-black dark:text-white">
                   {ar
-                    ? "احكِ لنا فكرتك بكلام بسيط — فريقنا يفهمك ويرتب لك كل شيء مهما كانت ميزانيتك."
-                    : "Describe your idea in plain words — our team gets you and arranges everything, whatever your budget."}
+                    ? (<>جاهز لتحويل فكرتك<br />إلى نظام؟</>)
+                    : (<>Ready to turn your idea<br />into a system?</>)}
+                </h2>
+                <p className="text-sm text-black/45 dark:text-white/45 font-medium">
+                  {ar ? "دعنا نساعدك في بناء المستقبل" : "Let us help you build the future"}
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="mt-1">
                   <Link href="/start">
-                    <Button size="lg" className="bg-white text-black hover:bg-white/90 rounded-xl h-12 px-7 font-bold gap-2 text-sm shadow-lg shadow-white/10" data-testid="button-cta-start">
+                    <button
+                      className="inline-flex items-center gap-2.5 bg-black dark:bg-white text-white dark:text-black rounded-full h-12 px-7 text-sm font-bold hover:opacity-85 transition-opacity shadow-lg shadow-black/10"
+                      data-testid="button-cta-start"
+                    >
                       {ar ? "ابدأ مشروعك الآن" : "Start Your Project"}
                       <Arrow className="w-4 h-4" />
-                    </Button>
+                    </button>
                   </Link>
-                  <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer">
-                    <Button size="lg" variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/[0.08] rounded-xl h-12 px-7 font-bold gap-2 text-sm" data-testid="button-cta-whatsapp">
-                      <SiWhatsapp className="w-4 h-4" />
-                      {ar ? "تحدث معنا" : "Talk to us"}
-                    </Button>
-                  </a>
-                </div>
-                {/* Social links */}
-                <div className="flex items-center gap-4 mt-10 text-white/30">
-                  <a href="https://instagram.com/qirox.sa" target="_blank" rel="noreferrer" aria-label="Instagram" className="hover:text-white/70 transition"><SiInstagram className="w-4 h-4" /></a>
-                  <a href="https://x.com/qiroxsa" target="_blank" rel="noreferrer" aria-label="X" className="hover:text-white/70 transition"><SiX className="w-4 h-4" /></a>
-                  <a href="https://www.linkedin.com/company/qirox" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="hover:text-white/70 transition"><Linkedin className="w-4 h-4" /></a>
                 </div>
               </motion.div>
 
-              {/* Right: 3D Q cube */}
+              {/* Q-cube image */}
               <motion.div
                 {...fade(1)}
-                className="hidden lg:flex items-end justify-center lg:justify-end relative"
+                className="hidden lg:flex items-center justify-end relative"
               >
                 <img
-                  src="/qirox-hero-new.png"
+                  src="/qirox-hero-cube.png"
                   alt="QIROX"
-                  className="w-full max-w-[560px] select-none pointer-events-none block"
+                  className="w-auto max-h-[200px] md:max-h-[220px] select-none pointer-events-none drop-shadow-2xl"
                   draggable={false}
                   loading="lazy"
                 />
               </motion.div>
+
             </div>
           </div>
         </section>
