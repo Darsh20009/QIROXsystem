@@ -18,7 +18,9 @@ const ALWAYS_EXTERNAL = [
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
-  const viteBin = existsSync("node_modules/.bin/vite") ? "./node_modules/.bin/vite" : "vite";
+  const viteBin = existsSync("node_modules/.bin/vite")
+    ? "./node_modules/.bin/vite"
+    : "npx --no-install vite";
 
   console.log("building client...");
   execSync(`${viteBin} build`, { stdio: "inherit" });
