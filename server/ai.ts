@@ -33,9 +33,10 @@ let _supportsVision = true;
 function getOpenAIClient(): OpenAI {
   if (!_openaiClient) {
     const openaiKey = process.env.OPENAI_API_KEY;
+    const baseURL   = process.env.OPENAI_BASE_URL || undefined;
     if (openaiKey) {
-      _openaiClient = new OpenAI({ apiKey: openaiKey });
-      console.log("[AI] Provider: OpenAI GPT-4o — vision enabled");
+      _openaiClient = new OpenAI({ apiKey: openaiKey, ...(baseURL ? { baseURL } : {}) });
+      console.log(`[AI] Provider: ${baseURL || "openai.com"} — vision enabled`);
     } else {
       _openaiClient = new OpenAI({ apiKey: "placeholder" });
       console.log("[AI] No OPENAI_API_KEY found — AI features disabled");

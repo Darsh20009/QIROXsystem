@@ -392,8 +392,19 @@ export default function MeetingRoom() {
   };
 
   const createPc = useCallback(async (peerId: string, isInitiator: boolean): Promise<RTCPeerConnection> => {
-    // Close any existing connection
-    pcsRef.current.get(peerId)?.close();
+    // ── Safely discard the old connection ──────────────────────────────────────
+    // Null out ALL event handlers BEFORE close() so that the old PC's events
+    // never fire after it has been replaced (the "zombie PC" race condition).
+    const old = pcsRef.current.get(peerId);
+    if (old) {
+      old.ontrack = null;
+      old.onicecandidate = null;
+      old.onconnectionstatechange = null;
+      old.onsignalingstatechange = null;
+      old.onicegatheringstatechange = null;
+      try { old.close(); } catch {}
+    }
+
     const pc = new RTCPeerConnection({
       iceServers: iceServersRef.current,
       iceCandidatePoolSize: 10,
@@ -402,16 +413,22 @@ export default function MeetingRoom() {
     });
     pcsRef.current.set(peerId, pc);
 
+    // Guard: if this PC has been superseded by the time an async handler fires,
+    // ignore the event entirely to prevent stale state updates.
+    const isCurrent = () => pcsRef.current.get(peerId) === pc;
+
     // Add local tracks
     if (localStreamRef.current) addStreamToPc(pc, localStreamRef.current);
 
     // ICE candidates
     pc.onicecandidate = ({ candidate }) => {
+      if (!isCurrent()) return;
       if (candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: candidate.toJSON() });
     };
 
     // Remote stream — handle tracks arriving one-by-one or in a bundle
     pc.ontrack = (evt) => {
+      if (!isCurrent()) return;
       setPeers(prev => {
         const m = new Map(prev);
         const existing = m.get(peerId);
@@ -450,6 +467,7 @@ export default function MeetingRoom() {
     // Connection state — update UI + try ICE restart before giving up
     let iceRestartAttempts = 0;
     pc.onconnectionstatechange = () => {
+      if (!isCurrent()) return;
       const state = pc.connectionState;
 
       // Update peer connection state in UI
@@ -467,24 +485,31 @@ export default function MeetingRoom() {
           iceRestartAttempts++;
           pc.createOffer({ iceRestart: true })
             .then(o => pc.setLocalDescription(o))
-            .then(() => sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription }))
+            .then(() => { if (isCurrent()) sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription }); })
             .catch(() => {
-              pcsRef.current.delete(peerId);
-              setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+              if (isCurrent()) {
+                pcsRef.current.delete(peerId);
+                setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+              }
             });
         } else {
-          pcsRef.current.delete(peerId);
-          setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+          if (isCurrent()) {
+            pcsRef.current.delete(peerId);
+            setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+          }
         }
       }
       if (state === "closed") {
-        pcsRef.current.delete(peerId);
-        setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+        if (isCurrent()) {
+          pcsRef.current.delete(peerId);
+          setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+        }
       }
     };
 
     // Flush pending ICE
     pc.onsignalingstatechange = () => {
+      if (!isCurrent()) return;
       if (pc.signalingState === "stable") {
         const candidates = pendingIce.current.get(peerId) || [];
         pendingIce.current.delete(peerId);
@@ -495,7 +520,7 @@ export default function MeetingRoom() {
     if (isInitiator) {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+      if (isCurrent()) sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
     }
 
     return pc;

@@ -14,11 +14,39 @@ import { UserAvatar } from "@/components/UserAvatar";
 import {
   Plus, Send, Users, Settings, Trash2, Crown, UserPlus, UserMinus,
   ArrowRight, MessageSquare, Search, Check, Loader2, MoreVertical,
-  LogOut, Edit2
+  LogOut, Edit2, Paperclip, Mic, MicOff, Play, Pause, FileText, Download, X as XIcon,
 } from "lucide-react";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
+
+function GroupVoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [prog, setProg] = useState(0);
+  const [dur, setDur] = useState(0);
+  const btnCls = isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 hover:bg-black/20 text-black dark:text-white dark:bg-white/10 dark:hover:bg-white/20";
+  const trackCls = isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10";
+  const fillCls = isMe ? "bg-white/70" : "bg-black/50 dark:bg-white/50";
+  const textCls = isMe ? "text-white/50" : "text-black/40 dark:text-white/40";
+  useEffect(() => () => { if (ref.current) { ref.current.pause(); ref.current.src = ""; } }, []);
+  return (
+    <div className="flex items-center gap-2 min-w-[150px]">
+      <audio ref={ref} src={url}
+        onTimeUpdate={() => { if (ref.current) setProg((ref.current.currentTime / ref.current.duration) * 100 || 0); }}
+        onLoadedMetadata={() => { if (ref.current) setDur(ref.current.duration); }}
+        onEnded={() => { setPlaying(false); setProg(0); }} />
+      <button onClick={() => { if (!ref.current) return; if (playing) { ref.current.pause(); setPlaying(false); } else { ref.current.play(); setPlaying(true); } }}
+        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls}`}>
+        {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+      </button>
+      <div className="flex-1">
+        <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}><div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${prog}%` }} /></div>
+        <span className={`text-[9px] mt-0.5 block ${textCls}`}>{dur > 0 ? `${Math.floor(dur)}s` : "🎙️"}</span>
+      </div>
+    </div>
+  );
+}
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "مدير", manager: "مدير عام", developer: "مطور", designer: "مصمم",
@@ -65,6 +93,17 @@ export default function GroupChat() {
   const [memberSearch, setMemberSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Attachment state
+  const [uploading, setUploading] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: string; name: string; size: number } | null>(null);
+
+  // Voice recording state
+  const [recording, setRecording] = useState(false);
+  const [recTime, setRecTime] = useState(0);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recTimerRef = useRef<any>(null);
 
   const uid = String((user as any)?._id || user?.id || "");
   const isAdmin = (user as any)?.role === "admin" || (user as any)?.role === "manager";
@@ -124,14 +163,79 @@ export default function GroupChat() {
   });
 
   const sendMsg = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/groups/${activeGroupId}/messages`, { body: msg.trim() }),
+    mutationFn: () => {
+      const payload: any = { body: msg.trim() };
+      if (pendingAttachment) {
+        payload.attachmentUrl = pendingAttachment.url;
+        payload.attachmentType = pendingAttachment.type;
+        payload.attachmentName = pendingAttachment.name;
+        payload.attachmentSize = pendingAttachment.size;
+      }
+      return apiRequest("POST", `/api/groups/${activeGroupId}/messages`, payload);
+    },
     onSuccess: () => {
       setMsg("");
+      setPendingAttachment(null);
       qc.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "messages"] });
       qc.invalidateQueries({ queryKey: ["/api/groups"] });
     },
     onError: (e: any) => toast({ title: L ? "خطأ في الإرسال" : "Send error", description: e.message, variant: "destructive" }),
   });
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/upload", { method: "POST", credentials: "include", body: fd });
+      if (!r.ok) throw new Error("Upload failed");
+      const { url } = await r.json();
+      const isImg = file.type.startsWith("image/");
+      setPendingAttachment({ url, type: isImg ? "image" : "file", name: file.name, size: file.size });
+    } catch (e: any) {
+      toast({ title: L ? "فشل الرفع" : "Upload failed", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const startVoiceRec = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks: Blob[] = [];
+      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/ogg" });
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: mr.mimeType });
+        const ext = mr.mimeType.includes("webm") ? "webm" : "ogg";
+        const file = new File([blob], `voice_${Date.now()}.${ext}`, { type: mr.mimeType });
+        setUploading(true);
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          const r = await fetch("/api/upload", { method: "POST", credentials: "include", body: fd });
+          if (!r.ok) throw new Error("Upload failed");
+          const { url } = await r.json();
+          setPendingAttachment({ url, type: "voice", name: file.name, size: file.size });
+        } catch { toast({ title: L ? "فشل رفع الصوت" : "Voice upload failed", variant: "destructive" }); }
+        finally { setUploading(false); }
+      };
+      mr.start();
+      recorderRef.current = mr;
+      setRecording(true);
+      setRecTime(0);
+      recTimerRef.current = setInterval(() => setRecTime(t => t + 1), 1000);
+    } catch { toast({ title: L ? "تعذّر الوصول للميكروفون" : "Mic access denied", variant: "destructive" }); }
+  };
+
+  const stopVoiceRec = () => {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    clearInterval(recTimerRef.current);
+    setRecording(false);
+    setRecTime(0);
+  };
 
   const deleteMsg = useMutation({
     mutationFn: (msgId: string) => apiRequest("DELETE", `/api/groups/${activeGroupId}/messages/${msgId}`),
@@ -306,15 +410,36 @@ export default function GroupChat() {
                             {sender?.role && <span className={`mr-1 px-1 rounded text-[9px] ${ROLE_COLORS[sender.role] || "bg-gray-100 text-gray-600"}`}>{ROLE_LABELS[sender.role] || sender.role}</span>}
                           </span>
                         )}
-                        <div className={`relative px-3 py-2 rounded-2xl text-sm leading-relaxed ${isMe ? "bg-black dark:bg-white text-white dark:text-black rounded-tl-sm" : "bg-black/[0.05] dark:bg-white/[0.05] text-black dark:text-white rounded-tr-sm"}`}>
-                          {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
-                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                        <div className={`relative rounded-2xl text-sm leading-relaxed overflow-hidden ${isMe ? "bg-black dark:bg-white text-white dark:text-black rounded-tl-sm" : "bg-black/[0.05] dark:bg-white/[0.05] text-black dark:text-white rounded-tr-sm"}`}>
+                          {m.attachmentType === "image" && m.attachmentUrl && (
+                            <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={m.attachmentUrl} alt={m.attachmentName || "image"} className="max-w-[240px] max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
+                            </a>
+                          )}
+                          {m.attachmentType === "voice" && m.attachmentUrl && (
+                            <div className="px-3 py-2.5"><GroupVoicePlayer url={m.attachmentUrl} isMe={isMe} /></div>
+                          )}
+                          {m.attachmentType === "file" && m.attachmentUrl && (
+                            <a href={m.attachmentUrl} download={m.attachmentName} target="_blank" rel="noopener noreferrer"
+                              className={`flex items-center gap-2 px-3 py-2.5 hover:opacity-80 transition-opacity ${isMe ? "text-white" : "text-black dark:text-white"}`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.06] dark:bg-white/[0.1]"}`}>
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold truncate max-w-[150px]">{m.attachmentName || "ملف"}</p>
+                                {m.attachmentSize && <p className="text-[9px] opacity-50">{Math.round(m.attachmentSize / 1024)} KB</p>}
+                              </div>
+                              <Download className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />
+                            </a>
+                          )}
+                          {m.body && <p className="px-3 py-2 whitespace-pre-wrap break-words">{m.body}</p>}
+                          <div className="flex items-center justify-end gap-1 px-3 pb-2">
                             <span className={`text-[10px] ${isMe ? "text-white/50 dark:text-black/50" : "text-black/30 dark:text-white/30"}`}>{formatTime(m.createdAt, L)}</span>
                           </div>
                           {isMe && (
                             <button
                               onClick={() => deleteMsg.mutate(msgId)}
-                              className="absolute -top-2 -left-2 w-5 h-5 bg-black dark:bg-white text-white rounded-full items-center justify-center hidden group-hover:flex text-[10px]"
+                              className="absolute top-1 left-1 w-5 h-5 bg-black dark:bg-white text-white dark:text-black rounded-full items-center justify-center hidden group-hover:flex"
                             >
                               <Trash2 className="w-2.5 h-2.5" />
                             </button>
@@ -331,7 +456,36 @@ export default function GroupChat() {
 
           {/* Input */}
           <div className="px-4 py-3 border-t border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950">
+            {/* Pending attachment preview */}
+            {pendingAttachment && (
+              <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-black/[0.04] dark:bg-white/[0.04] rounded-lg">
+                {pendingAttachment.type === "image"
+                  ? <img src={pendingAttachment.url} className="w-10 h-10 rounded object-cover" alt="" />
+                  : pendingAttachment.type === "voice"
+                    ? <div className="flex items-center gap-2 text-sm"><Mic className="w-4 h-4" /><span>{L ? "رسالة صوتية" : "Voice message"}</span></div>
+                    : <div className="flex items-center gap-2 text-sm"><FileText className="w-4 h-4" /><span className="truncate max-w-[150px]">{pendingAttachment.name}</span></div>
+                }
+                <button onClick={() => setPendingAttachment(null)} className="mr-auto text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white">
+                  <XIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            {recording && (
+              <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium">{L ? "جارٍ التسجيل" : "Recording"} {recTime}s</span>
+                <button onClick={stopVoiceRec} className="mr-auto text-xs text-red-600 dark:text-red-400 hover:underline">{L ? "إيقاف" : "Stop"}</button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
+              {/* File upload */}
+              <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }} />
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white"
+                onClick={() => fileInputRef.current?.click()} disabled={uploading || recording}
+                data-testid="button-attach-file">
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+              </Button>
               <Input
                 ref={inputRef}
                 value={msg}
@@ -340,10 +494,17 @@ export default function GroupChat() {
                 placeholder={L ? "اكتب رسالتك..." : "Write a message..."}
                 className="flex-1 h-10 text-sm"
                 data-testid="input-group-message"
+                disabled={recording}
               />
+              {/* Voice recording button */}
+              <Button variant="ghost" size="icon" className={`h-10 w-10 ${recording ? "text-red-500" : "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white"}`}
+                onClick={recording ? stopVoiceRec : startVoiceRec} disabled={uploading}
+                data-testid="button-voice-record-group">
+                {recording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
               <Button
                 onClick={() => sendMsg.mutate()}
-                disabled={!msg.trim() || sendMsg.isPending}
+                disabled={(!msg.trim() && !pendingAttachment) || sendMsg.isPending || recording}
                 className="h-10 w-10 p-0"
                 data-testid="button-send-group-message"
               >

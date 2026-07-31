@@ -308,8 +308,8 @@ export default function AdminPartners() {
               <div className="p-5">
                 <div className="flex items-start gap-4">
                   {/* Logo */}
-                  <div className="w-16 h-16 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
+                  <div className="w-16 h-16 rounded-xl bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
+                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" style={{ mixBlendMode: "multiply" }} />
                   </div>
 
                   <div className="flex-1 min-w-0 pt-1">

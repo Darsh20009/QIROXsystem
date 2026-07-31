@@ -2,8 +2,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Wrench, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Loader2, Wrench, Clock, CheckCircle, XCircle, Eye, Plus } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type ModificationRequest } from "@shared/schema";
@@ -34,6 +35,11 @@ export default function AdminModRequests() {
   const [adminNotes, setAdminNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  // Log revision for client
+  const [logRevOpen, setLogRevOpen] = useState(false);
+  const [logOrderId, setLogOrderId] = useState("");
+  const [logTitle, setLogTitle] = useState("");
+  const [logDesc, setLogDesc] = useState("");
 
   const { data: requests, isLoading } = useQuery<ModificationRequest[]>({
     queryKey: ["/api/modification-requests"],
@@ -61,6 +67,21 @@ export default function AdminModRequests() {
       toast({ title: L ? "تم حذف الطلب" : "Request deleted" });
     },
     onError: () => toast({ title: L ? "خطأ في حذف الطلب" : "Failed to delete request", variant: "destructive" }),
+  });
+
+  const logRevisionMutation = useMutation({
+    mutationFn: async () => {
+      if (!logOrderId.trim()) throw new Error(L ? "أدخل معرّف الطلب" : "Enter order ID");
+      const r = await apiRequest("POST", `/api/employee/orders/${logOrderId.trim()}/log-revision`, { title: logTitle, description: logDesc });
+      if (!r.ok) { const err = await r.json(); throw new Error(err.error || "فشل تسجيل التعديل"); }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/modification-requests"] });
+      setLogRevOpen(false); setLogOrderId(""); setLogTitle(""); setLogDesc("");
+      toast({ title: L ? "✅ تم تسجيل التعديل وخصمه من حصة العميل" : "✅ Revision logged and deducted from client quota" });
+    },
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل تسجيل التعديل" : "Failed to log revision"), variant: "destructive" }),
   });
 
   const openDetail = (req: ModificationRequest) => {
@@ -99,6 +120,16 @@ export default function AdminModRequests() {
           <Wrench className="w-7 h-7 text-black/40" />
           {L ? "طلبات التعديل" : "Modification Requests"}
         </h1>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setLogRevOpen(true)}
+            className="gap-2 bg-black text-white hover:bg-black/80 text-sm"
+            size="sm"
+            data-testid="button-log-revision-open"
+          >
+            <Plus className="w-4 h-4" />
+            {L ? "سجّل تعديل للعميل" : "Log Client Revision"}
+          </Button>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-44" data-testid="select-mod-filter">
             <SelectValue placeholder={L ? "تصفية حسب الحالة" : "Filter by status"} />
@@ -110,7 +141,51 @@ export default function AdminModRequests() {
             ))}
           </SelectContent>
         </Select>
+        </div>
       </div>
+
+      {/* Log Revision for Client Dialog */}
+      <Dialog open={logRevOpen} onOpenChange={setLogRevOpen}>
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-black flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-black/40" />
+              {L ? "تسجيل تعديل للعميل" : "Log Revision for Client"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <p className="text-xs text-black/40">{L ? "سيُخصم هذا التعديل تلقائياً من حصة تعديلات العميل" : "This revision will be deducted from the client's revision quota automatically."}</p>
+            <div>
+              <label className="text-xs font-medium text-black/50 mb-1 block">{L ? "معرّف الطلب (Order ID)" : "Order ID"}</label>
+              <Input
+                value={logOrderId}
+                onChange={e => setLogOrderId(e.target.value)}
+                placeholder="67a4f..."
+                dir="ltr"
+                className="border-black/10 font-mono text-sm"
+              />
+              <p className="text-[10px] text-black/30 mt-0.5">{L ? "تجد معرّف الطلب في صفحة الطلبات — Admin / Orders" : "Find the Order ID in Admin / Orders page"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-black/50 mb-1 block">{L ? "عنوان التعديل" : "Revision Title"}</label>
+              <Input value={logTitle} onChange={e => setLogTitle(e.target.value)} placeholder={L ? "مثال: تعديل الألوان في الصفحة الرئيسية" : "e.g. Updated homepage colors"} className="border-black/10" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-black/50 mb-1 block">{L ? "تفاصيل التعديل" : "Revision Details"}</label>
+              <Textarea value={logDesc} onChange={e => setLogDesc(e.target.value)} placeholder={L ? "اشرح التعديل الذي تم تنفيذه..." : "Describe the revision that was performed..."} rows={3} className="border-black/10 text-sm" />
+            </div>
+            <Button
+              onClick={() => logRevisionMutation.mutate()}
+              disabled={logRevisionMutation.isPending || !logOrderId.trim() || !logTitle.trim() || !logDesc.trim()}
+              className="w-full gap-2 bg-black text-white hover:bg-black/80"
+              data-testid="button-log-revision-submit"
+            >
+              {logRevisionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              {L ? "تسجيل التعديل وخصمه من الحصة" : "Log & Deduct from Quota"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {Object.entries(statusMap).map(([key, val]) => (

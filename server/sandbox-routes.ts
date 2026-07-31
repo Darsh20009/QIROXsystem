@@ -210,13 +210,8 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
 };
 
 async function getOpenAIClient() {
-  const OpenAI = (await import("openai")).default;
-  return {
-    client: new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || "",
-    }),
-    model: "gpt-4o",
-  };
+  const { getOpenAIClient: _oaiSB } = await import("./lib/openai-client");
+  return { client: _oaiSB(), model: "gpt-4o" };
 }
 
 const proxyCache = new Map<string, ReturnType<typeof createProxyMiddleware>>();

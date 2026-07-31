@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download, Instagram, Twitter, Linkedin, Youtube, Music2, Globe, RotateCw, IdCard } from "lucide-react";
+import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download, Instagram, Twitter, Linkedin, Youtube, Music2, Globe, RotateCw, IdCard, Lock, Eye, EyeOff, Wallet, Link } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 const qiroxLogoPath = "/qirox-icon-nobg.png";
 const qiroxLogoNoBgPath = "/qirox-icon-nobg.png";
@@ -136,6 +136,17 @@ export default function EmployeeProfile() {
   const [newItem, setNewItem] = useState({ title: "", type: "template" as PortfolioItem["type"], url: "", description: "" });
   const [addingItem, setAddingItem] = useState(false);
   const [cardFlipped, setCardFlipped] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  // Password change
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [showPwCurrent, setShowPwCurrent] = useState(false);
+  const [showPwNew, setShowPwNew] = useState(false);
+
+  useEffect(() => {
+    setIsIOS(/iPhone|iPad|iPod/i.test(navigator.userAgent));
+  }, []);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["/api/employee/profile"],
@@ -228,6 +239,19 @@ export default function EmployeeProfile() {
       toast({ title: L ? "✅ تم إنشاء باركود تسجيل الدخول" : "✅ QR login code generated" });
     },
     onError: () => toast({ title: L ? "فشل إنشاء الباركود" : "Failed to generate QR", variant: "destructive" }),
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/employee/change-password", { currentPassword: pwCurrent, newPassword: pwNew });
+      if (!r.ok) { const err = await r.json(); throw new Error(err.error || "فشل تغيير الباسورد"); }
+      return r.json();
+    },
+    onSuccess: () => {
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      toast({ title: L ? "✅ تم تغيير كلمة المرور بنجاح" : "✅ Password changed successfully" });
+    },
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل تغيير الباسورد" : "Failed to change password"), variant: "destructive" }),
   });
 
   const qrLoginUrl = qrData?.token
@@ -901,6 +925,39 @@ export default function EmployeeProfile() {
                   {L ? "تجديد الباركود" : "Regenerate QR"}
                 </Button>
               </div>
+
+              {/* Apple Wallet — iOS only */}
+              {isIOS && (
+                <a
+                  href={`/api/employee/apple-wallet-pass?token=${qrData?.token || ""}`}
+                  download="qirox-employee.pkpass"
+                  className="w-full flex items-center justify-center"
+                  data-testid="button-apple-wallet"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    try {
+                      const r = await fetch(`/api/employee/apple-wallet-pass`, { credentials: "include" });
+                      if (r.status === 501) {
+                        toast({ title: L ? "⚠️ Apple Wallet غير مفعّل بعد من قِبل المشرف" : "⚠️ Apple Wallet not yet configured by admin", variant: "destructive" });
+                        return;
+                      }
+                      if (!r.ok) { toast({ title: L ? "فشل جلب بطاقة Wallet" : "Failed to download Wallet pass", variant: "destructive" }); return; }
+                      const blob = await r.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url; a.download = "qirox-employee.pkpass"; a.click();
+                      URL.revokeObjectURL(url);
+                    } catch { toast({ title: L ? "خطأ في التحميل" : "Download error", variant: "destructive" }); }
+                  }}
+                >
+                  <div className="mt-1 w-full rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-black flex items-center justify-center gap-2.5 py-2.5 px-4 active:opacity-80 transition-opacity">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.78 22.05 6.8 20.68 5.96 19.47C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+                    </svg>
+                    <span className="text-white text-sm font-semibold tracking-wide">{L ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}</span>
+                  </div>
+                </a>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
@@ -921,6 +978,79 @@ export default function EmployeeProfile() {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Password Change */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+            <Lock className="w-4 h-4" /> {L ? "تغيير كلمة المرور" : "Change Password"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="relative">
+            <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "كلمة المرور الحالية" : "Current Password"}</label>
+            <Input
+              type={showPwCurrent ? "text" : "password"}
+              value={pwCurrent}
+              onChange={e => setPwCurrent(e.target.value)}
+              placeholder="••••••••"
+              dir="ltr"
+              className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white pr-9"
+            />
+            <button type="button" onClick={() => setShowPwCurrent(p => !p)}
+              className="absolute top-7 left-2.5 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+              {showPwCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <div className="relative">
+            <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "كلمة المرور الجديدة" : "New Password"}</label>
+            <Input
+              type={showPwNew ? "text" : "password"}
+              value={pwNew}
+              onChange={e => setPwNew(e.target.value)}
+              placeholder="••••••••"
+              dir="ltr"
+              className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white pr-9"
+            />
+            <button type="button" onClick={() => setShowPwNew(p => !p)}
+              className="absolute top-7 left-2.5 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+              {showPwNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <div>
+            <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "تأكيد كلمة المرور الجديدة" : "Confirm New Password"}</label>
+            <Input
+              type="password"
+              value={pwConfirm}
+              onChange={e => setPwConfirm(e.target.value)}
+              placeholder="••••••••"
+              dir="ltr"
+              className={`border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white ${pwConfirm && pwNew !== pwConfirm ? "border-red-400" : ""}`}
+            />
+            {pwConfirm && pwNew !== pwConfirm && (
+              <p className="text-[10px] text-red-500 mt-1">{L ? "كلمتا المرور غير متطابقتين" : "Passwords do not match"}</p>
+            )}
+          </div>
+          <Button
+            onClick={() => changePasswordMutation.mutate()}
+            disabled={changePasswordMutation.isPending || !pwCurrent || !pwNew || pwNew !== pwConfirm || pwNew.length < 6}
+            className="w-full gap-2 bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80"
+            size="sm"
+          >
+            {changePasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
+            {L ? "تغيير الباسورد" : "Update Password"}
+          </Button>
+          <p className="text-[10px] text-black/30 dark:text-white/30 text-center">
+            {L ? "إذا سجّلت دخولك بـ Google أو Apple لن يعمل هذا الخيار" : "Not available if you signed in via Google or Apple"}
+          </p>
+          <div className="pt-1 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center justify-between">
+            <span className="text-[11px] text-black/40 dark:text-white/40">{L ? "إعداد التحقق الثنائي (2FA)" : "Two-Factor Authentication (2FA)"}</span>
+            <a href="/security/2fa" className="text-[11px] font-bold text-black dark:text-white underline underline-offset-2 flex items-center gap-1">
+              <Link className="w-3 h-3" />{L ? "الإعدادات" : "Settings"}
+            </a>
+          </div>
         </CardContent>
       </Card>
 

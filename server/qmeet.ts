@@ -1094,10 +1094,8 @@ export function registerQMeetRoutes(app: Express) {
     try {
       const meeting = await QMeetingModel.findById(req.params.id);
       if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "",
-      });
+      const { getOpenAIClient: _oaiQM1 } = await import("./lib/openai-client");
+      const openai = _oaiQM1();
       const aiModel = "gpt-4o";
       const m = meeting as any;
       const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
@@ -1143,10 +1141,8 @@ export function registerQMeetRoutes(app: Express) {
   app.post("/api/qmeet/room/:roomId/ai-summary", async (req: any, res) => {
     try {
       const { chat = [], captions = [], title = "اجتماع" } = req.body;
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "",
-      });
+      const { getOpenAIClient: _oaiQM2 } = await import("./lib/openai-client");
+      const openai = _oaiQM2();
       const aiModel2 = "gpt-4o";
 
       const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");

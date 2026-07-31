@@ -45,7 +45,7 @@ const CURRENCY_MAP: Record<string, CurrencyDef> = {
   EG: { code: "EGP", symbol: "جنيه",        symbolShort: "ج.م",  locale: "ar-EG", rate: 7.0 },
   JO: { code: "JOD", symbol: "دينار",       symbolShort: "د.أ",  locale: "ar-JO", rate: 0.19 },
   IQ: { code: "IQD", symbol: "دينار",       symbolShort: "د.ع",  locale: "ar-IQ", rate: 350 },
-  IL: { code: "ILS", symbol: "شيكل",        symbolShort: "₪",    locale: "he-IL", rate: 0.98 },
+  IL: { code: "ILS", symbol: "شيكل",        symbolShort: "₪",    locale: "ar-SA", rate: 0.98 },
   LB: { code: "LBP", symbol: "ليرة",        symbolShort: "ل.ل",  locale: "ar-LB", rate: 24000 },
   SY: { code: "USD", symbol: "دولار",       symbolShort: "$",    locale: "ar-SY", rate: 0.267 },
   PS: { code: "USD", symbol: "دولار",       symbolShort: "$",    locale: "ar-PS", rate: 0.267 },

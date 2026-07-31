@@ -400,10 +400,8 @@ export default function Login() {
     window.history.replaceState({}, "", window.location.pathname);
     // Clear any OTP/verification state — Google users are already verified
     setVerifyStep(null);
-    // Refresh user data then navigate
-    queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
-      setLocation(nextPath);
-    });
+    // Full page reload so the new session cookie is active before rendering
+    window.location.href = nextPath;
   }, []);
 
   const handleGoogleLogin = () => {
@@ -437,9 +435,7 @@ export default function Login() {
     saveDeviceToken(githubToken);
     window.history.replaceState({}, "", window.location.pathname);
     setVerifyStep(null);
-    queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
-      setLocation(nextPath);
-    });
+    window.location.href = nextPath;
   }, []);
 
   const handleGithubLogin = () => {
@@ -473,9 +469,7 @@ export default function Login() {
     saveDeviceToken(appleToken);
     window.history.replaceState({}, "", window.location.pathname);
     setVerifyStep(null);
-    queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
-      setLocation(nextPath);
-    });
+    window.location.href = nextPath;
   }, []);
 
   const handleAppleLogin = () => {

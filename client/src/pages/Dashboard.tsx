@@ -3758,6 +3758,17 @@ export default function Dashboard() {
                 <p className="text-[11px] font-bold text-black/60 dark:text-white/60">{L ? "لقد استنفدت حصتك لهذه الفترة" : "You have exhausted your quota for this period"}</p>
               </div>
             )}
+            {/* Subscription expiry */}
+            {modQuota?.hasOrders && bestQuota?.subscriptionEndsAt && !isLifetimePlan && (
+              <div className="relative mt-2 rounded-xl bg-white/[0.07] px-3 py-2 flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5 text-white/50 shrink-0" />
+                <p className="text-[11px] text-white/50">
+                  {L
+                    ? `الاشتراك ينتهي: ${new Date(bestQuota.subscriptionEndsAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}`
+                    : `Subscription ends: ${new Date(bestQuota.subscriptionEndsAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Form body */}
@@ -3841,16 +3852,42 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Unlimited addon upsell */}
+            {/* Revision addon upsell — 3 options */}
             {bestQuota?.canPurchaseAddon && !bestQuota?.hasUnlimitedAddon && !isLifetimePlan && (
-              <div className="rounded-xl border border-black/10 dark:border-white/10 dark:border-black dark:border-white bg-gradient-to-l from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white p-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "تعديلات غير محدودة لهذا الشهر" : "Unlimited modifications this month"}</p>
-                  <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 mt-0.5">{L ? "1,000 ريال — للباقات النصف سنوية والسنوية" : "1,000 SAR — semi-annual & annual plans"}</p>
-                </div>
-                <Button size="sm" variant="outline" className="h-7 text-[11px] border-black/15 dark:border-white/15 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] shrink-0 gap-1 rounded-lg" onClick={() => setModDialogOpen(false)} data-testid="button-buy-unlimited-addon">
-                  <Sparkles className="w-3 h-3" /> {L ? "اشتراك" : "Subscribe"}
-                </Button>
+              <div className="rounded-xl border border-black/10 dark:border-white/10 p-3 space-y-2">
+                <p className="text-[10px] font-bold text-black/50 dark:text-white/50 uppercase tracking-wider">{L ? "إضافة تعديلات" : "Add Revisions"}</p>
+                {[
+                  { type: '10_revisions',    labelAr: '10 تعديلات',              labelEn: '10 Revisions',         price: 150,  priceLabel: '150 ريال' },
+                  { type: '25_revisions',    labelAr: '25 تعديلاً',               labelEn: '25 Revisions',         price: 300,  priceLabel: '300 ريال' },
+                  { type: 'unlimited_month', labelAr: 'غير محدود — شهر كامل',    labelEn: 'Unlimited — 1 Month',  price: 500,  priceLabel: '500 ريال' },
+                ].map(opt => (
+                  <div key={opt.type} className="flex items-center justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.04] rounded-lg px-3 py-2">
+                    <div>
+                      <p className="text-xs font-bold text-black dark:text-white">{L ? opt.labelAr : opt.labelEn}</p>
+                      <p className="text-[10px] text-black/40 dark:text-white/40">{opt.priceLabel}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px] border-black/15 dark:border-white/15 shrink-0 gap-1 rounded-lg"
+                      onClick={() => {
+                        const projectId = modProjectId && modProjectId !== "none" ? modProjectId : bestQuota?.orderId;
+                        if (!projectId) { toast({ title: L ? "اختر مشروعاً أولاً" : "Select a project first", variant: "destructive" }); return; }
+                        apiRequest("POST", "/api/mod-quota/addon", { orderId: projectId, addonType: opt.type })
+                          .then(r => r.json())
+                          .then(d => {
+                            if (d.error) throw new Error(d.error);
+                            toast({ title: L ? "تم إرسال طلب الإضافة بنجاح" : "Add-on request submitted" });
+                            queryClient.invalidateQueries({ queryKey: ['/api/mod-quota'] });
+                          })
+                          .catch(e => toast({ title: e.message || "خطأ", variant: "destructive" }));
+                      }}
+                      data-testid={`button-buy-addon-${opt.type}`}
+                    >
+                      <Sparkles className="w-3 h-3" /> {L ? "طلب" : "Buy"}
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
 

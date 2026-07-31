@@ -21,7 +21,6 @@ export default function QuotationPrint() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [pdfLoading, setPdfLoading] = useState(false);
   const [showBankInfo, setShowBankInfo] = useState(true);
   const printCardRef = useRef<HTMLDivElement>(null);
 
@@ -74,27 +73,14 @@ export default function QuotationPrint() {
     onError: (err: any) => toast({ title: err?.message || "فشل التحويل", variant: "destructive" }),
   });
 
-  const handleDownloadPDF = async () => {
-    if (!params.id) return;
-    setPdfLoading(true);
-    try {
-      const res = await fetch(`/api/quotations/${params.id}/pdf`, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `quotation-${quotation?.quotationNumber || params.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("[PDF]", err);
-      toast({ title: "فشل تحميل PDF", description: "تحقق من الاتصال أو حاول مجدداً", variant: "destructive" });
-    } finally {
-      setPdfLoading(false);
-    }
+  const handleDownloadPDF = () => {
+    // Use browser print-to-PDF — Arabic RTL renders correctly in browser
+    const noprint = document.querySelectorAll(".no-print");
+    noprint.forEach(el => (el as HTMLElement).style.display = "none");
+    window.print();
+    setTimeout(() => {
+      noprint.forEach(el => (el as HTMLElement).style.display = "");
+    }, 1000);
   };
 
   const handlePrint = () => {
@@ -127,16 +113,21 @@ export default function QuotationPrint() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
         @page { margin: 12mm; size: A4; }
         @media print {
-          body { background: white !important; }
+          body { background: white !important; margin: 0 !important; padding: 0 !important; }
           .no-print { display: none !important; }
+          .no-print-bg { background: white !important; padding: 0 !important; }
           .print-card {
             box-shadow: none !important;
             border-radius: 0 !important;
             max-width: 100% !important;
             margin: 0 !important;
+            width: 100% !important;
           }
+          table { page-break-inside: avoid; }
+          h1, h2, h3 { page-break-after: avoid; }
         }
       `}</style>
 
@@ -204,12 +195,11 @@ export default function QuotationPrint() {
           </Button>
           <Button
             onClick={handleDownloadPDF}
-            disabled={pdfLoading}
             size="sm"
             className="bg-black text-white h-8 gap-1.5 text-xs"
             data-testid="button-download-pdf"
           >
-            {pdfLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+            <Download className="w-3 h-3" />
             تحميل PDF
           </Button>
         </div>

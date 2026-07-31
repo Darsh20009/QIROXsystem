@@ -17,8 +17,9 @@ const VERCEL_TOKEN = process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN ||
 
 function getAIClient(): { client: OpenAI; model: string } {
   const openaiKey = process.env.OPENAI_API_KEY || "";
+  const baseURL   = process.env.OPENAI_BASE_URL || undefined;
   if (!openaiKey) throw new Error("لا يوجد مفتاح AI مُعدَّ (OPENAI_API_KEY)");
-  return { client: new OpenAI({ apiKey: openaiKey }), model: "gpt-4o" };
+  return { client: new OpenAI({ apiKey: openaiKey, ...(baseURL ? { baseURL } : {}) }), model: "gpt-4o" };
 }
 
 function slugify(name: string): string {

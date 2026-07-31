@@ -141,13 +141,13 @@ export default function Partners() {
                     <div className="p-6">
                       <div className="flex items-start gap-4 mb-4">
                         {/* Logo */}
-                        <div className="w-16 h-16 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-16 h-16 rounded-xl bg-white dark:bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
                           {partner.websiteUrl ? (
                             <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain mix-blend-multiply" loading="lazy" style={{ mixBlendMode: "multiply" }} />
                             </a>
                           ) : (
-                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain mix-blend-multiply" loading="lazy" style={{ mixBlendMode: "multiply" }} />
                           )}
                         </div>
 
@@ -231,13 +231,13 @@ export default function Partners() {
           {staticPartners.map((partner, idx) => (
             <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
               <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
-                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden">
+                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-white p-1.5">
                   {partner.url ? (
                     <a href={partner.url} target="_blank" rel="noopener noreferrer">
-                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" style={{ mixBlendMode: "multiply" }} />
                     </a>
                   ) : (
-                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" style={{ mixBlendMode: "multiply" }} />
                   )}
                 </div>
                 {partner.url ? (

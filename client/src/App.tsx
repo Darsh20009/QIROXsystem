@@ -73,6 +73,8 @@ const AdminJobs = lazy(() => import("@/pages/AdminJobs"));
 const AdminBankSettings = lazy(() => import("@/pages/AdminBankSettings"));
 const AdminSubscriptionPlans = lazy(() => import("@/pages/AdminSubscriptionPlans"));
 const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
+const AdminWhatsApp = lazy(() => import("@/pages/AdminWhatsApp"));
+const AdminQiroxAI  = lazy(() => import("@/pages/AdminQiroxAI"));
 const AdminPhoneVerifications = lazy(() => import("@/pages/AdminPhoneVerifications"));
 const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
@@ -115,6 +117,7 @@ const PaymentHistory = lazy(() => import("@/pages/PaymentHistory"));
 const AdminAbandonedCarts = lazy(() => import("@/pages/AdminAbandonedCarts"));
 const AdminInvoices = lazy(() => import("@/pages/AdminInvoices"));
 const InvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
+const ContractPrint = lazy(() => import("@/pages/ContractPrint"));
 const AdminReceipts = lazy(() => import("@/pages/AdminReceipts"));
 const ReceiptPrint = lazy(() => import("@/pages/ReceiptPrint"));
 const SalesMarketing = lazy(() => import("@/pages/SalesMarketing"));
@@ -342,6 +345,8 @@ function AdminRouter() {
         <Route path="/admin/bank-settings" component={G_BankSettings} />
         <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
         <Route path="/admin/mod-requests" component={AdminModRequests} />
+        <Route path="/admin/whatsapp" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminWhatsApp /></RoleGuard>} />
+        <Route path="/admin/qirox-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminQiroxAI /></RoleGuard>} />
         <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />
         <Route path="/admin/customers" component={AdminCustomers} />
         <Route path="/admin/products" component={AdminProducts} />
@@ -362,6 +367,7 @@ function AdminRouter() {
         <Route path="/admin/receipt-print/:id" component={ReceiptPrint} />
         <Route path="/admin/quotations" component={AdminQuotations} />
         <Route path="/admin/quotation-print/:id" component={QuotationPrint} />
+        <Route path="/admin/contract-print/:id" component={ContractPrint} />
         <Route path="/admin/consultations" component={AdminConsultation} />
         <Route path="/admin/qmeet" component={AdminQMeet} />
         <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
@@ -490,6 +496,8 @@ const ALL_PAGES = [
   { title: "عربات التسوق المتروكة", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
+  { title: "QIROX AI Hub", titleEn: "QIROX AI Hub", url: "/admin/qirox-ai", group: "employee" },
+  { title: "واتساب CRM", titleEn: "WhatsApp CRM", url: "/admin/whatsapp", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
   { title: "المالية والحسابات", titleEn: "Finance", url: "/admin/finance", group: "employee" },
   { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },

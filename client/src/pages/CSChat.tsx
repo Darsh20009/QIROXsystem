@@ -106,12 +106,15 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   }
   const sender = msg.fromUserId;
   const nm = sender?.fullName || sender?.username || "؟";
+  const photoUrl = sender?.profilePhotoUrl;
   return (
     <div className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""}`}>
       {!isMe && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-          {nm[0]?.toUpperCase()}
-        </div>
+        photoUrl
+          ? <img src={photoUrl} alt={nm} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-black/[0.08] dark:border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          : <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+              {nm[0]?.toUpperCase()}
+            </div>
       )}
       <div className={`max-w-[70%] rounded-2xl overflow-hidden ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-black/[0.07] text-black rounded-tl-sm dark:bg-gray-800 dark:text-white dark:border-white/[0.08]"}`}>
         {!isMe && <p className="px-3 pt-2 text-[10px] font-bold opacity-70">{nm}</p>}

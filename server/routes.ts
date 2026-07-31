@@ -4895,19 +4895,42 @@ export async function registerRoutes(
     const count = await ModPlanConfigModel.countDocuments();
     if (count > 0) return;
     const defaults = [
-      { planTier: 'lite',     planPeriod: 'monthly',   modificationsPerPeriod: 5,  quotaMonths: 1 },
-      { planTier: 'lite',     planPeriod: 'sixmonth',  modificationsPerPeriod: 5,  quotaMonths: 3 },
-      { planTier: 'lite',     planPeriod: 'annual',    modificationsPerPeriod: 5,  quotaMonths: 6 },
-      { planTier: 'pro',      planPeriod: 'monthly',   modificationsPerPeriod: 10, quotaMonths: 1 },
-      { planTier: 'pro',      planPeriod: 'sixmonth',  modificationsPerPeriod: 10, quotaMonths: 3 },
-      { planTier: 'pro',      planPeriod: 'annual',    modificationsPerPeriod: 10, quotaMonths: 6 },
-      { planTier: 'infinite', planPeriod: 'monthly',   modificationsPerPeriod: 20, quotaMonths: 1 },
-      { planTier: 'infinite', planPeriod: 'sixmonth',  modificationsPerPeriod: 20, quotaMonths: 3 },
-      { planTier: 'infinite', planPeriod: 'annual',    modificationsPerPeriod: 20, quotaMonths: 6 },
+      { planTier: 'lite',     planPeriod: 'monthly',   modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'lite',     planPeriod: 'sixmonth',  modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'lite',     planPeriod: 'annual',    modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'monthly',   modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'sixmonth',  modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'annual',    modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'monthly',   modificationsPerPeriod: 20, quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'sixmonth',  modificationsPerPeriod: 20, quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'annual',    modificationsPerPeriod: 20, quotaMonths: 999 },
     ];
     await ModPlanConfigModel.insertMany(defaults);
   }
   seedModPlanConfigs().catch(console.error);
+
+  // Migrate existing ModPlanConfig records to new quota values (runs on every startup, idempotent)
+  async function migrateModPlanConfigs() {
+    const { ModPlanConfigModel } = await import("./models");
+    const updates = [
+      { planTier: 'lite',     planPeriod: 'monthly',   modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'lite',     planPeriod: 'sixmonth',  modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'lite',     planPeriod: 'annual',    modificationsPerPeriod: 0,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'monthly',   modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'sixmonth',  modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'pro',      planPeriod: 'annual',    modificationsPerPeriod: 5,  quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'monthly',   modificationsPerPeriod: 20, quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'sixmonth',  modificationsPerPeriod: 20, quotaMonths: 999 },
+      { planTier: 'infinite', planPeriod: 'annual',    modificationsPerPeriod: 20, quotaMonths: 999 },
+    ];
+    for (const u of updates) {
+      await ModPlanConfigModel.updateOne(
+        { planTier: u.planTier, planPeriod: u.planPeriod },
+        { $set: { modificationsPerPeriod: u.modificationsPerPeriod, quotaMonths: u.quotaMonths } }
+      );
+    }
+  }
+  migrateModPlanConfigs().catch(console.error);
 
   async function getQuotaForOrder(order: any) {
     const planTier = order.planTier?.toLowerCase();
@@ -4927,7 +4950,7 @@ export async function registerRoutes(
       return {
         isLifetime: false,
         hasUnlimitedAddon: false,
-        canPurchaseAddon: false,
+        canPurchaseAddon: true,
         planTier: null,
         planPeriod: null,
         isDefaultQuota: true,
@@ -4970,42 +4993,59 @@ export async function registerRoutes(
     const periodStart = orderCreated > quotaStart ? orderCreated : quotaStart;
     const periodEnd = new Date(periodStart);
     periodEnd.setMonth(periodEnd.getMonth() + config.quotaMonths);
-    const activeAddon = await ModQuotaAddonModel.findOne({
+    // Subscription expiry based on plan period
+    const PLAN_PERIOD_MONTHS: Record<string, number> = { monthly: 1, sixmonth: 6, annual: 12 };
+    const subEnd = new Date(orderCreated);
+    subEnd.setMonth(subEnd.getMonth() + (PLAN_PERIOD_MONTHS[planPeriod] ?? 1));
+    const subscriptionEndsAt = subEnd.toISOString();
+    // Check for unlimited active addon (unlimited_month type)
+    const activeUnlimitedAddon = await ModQuotaAddonModel.findOne({
       orderId: String(order.id || order._id),
+      addonType: 'unlimited_month',
       status: 'active',
       validFrom: { $lte: now },
       validUntil: { $gte: now },
     });
-    if (activeAddon) {
+    if (activeUnlimitedAddon) {
       return {
         isLifetime: false,
         hasUnlimitedAddon: true,
-        canPurchaseAddon: ['sixmonth', 'annual'].includes(planPeriod),
+        canPurchaseAddon: true,
         planTier, planPeriod,
         modificationsPerPeriod: config.modificationsPerPeriod,
         quotaMonths: config.quotaMonths,
         periodStart: periodStart.toISOString(),
-        periodEnd: periodEnd.toISOString(),
+        periodEnd: (activeUnlimitedAddon as any).validUntil?.toISOString() || periodEnd.toISOString(),
         usedThisPeriod: 0,
         remainingThisPeriod: 999,
+        subscriptionEndsAt,
       };
     }
+    // Sum approved extra-revision addons (10 or 25 revision packs)
+    const extraRevisionAddons = await ModQuotaAddonModel.find({
+      orderId: String(order.id || order._id),
+      addonType: { $in: ['10_revisions', '25_revisions'] },
+      status: 'active',
+    });
+    const extraRevisions = extraRevisionAddons.reduce((sum: number, a: any) => sum + (a.extraRevisions || 0), 0);
     const used = await ModificationRequestModel.countDocuments({
       orderId: String(order.id || order._id),
       status: { $nin: ['cancelled', 'rejected'] },
       createdAt: { $gte: periodStart, $lte: periodEnd },
     });
+    const totalAllowed = config.modificationsPerPeriod + extraRevisions;
     return {
       isLifetime: false,
       hasUnlimitedAddon: false,
-      canPurchaseAddon: ['sixmonth', 'annual'].includes(planPeriod),
+      canPurchaseAddon: true,
       planTier, planPeriod,
-      modificationsPerPeriod: config.modificationsPerPeriod,
+      modificationsPerPeriod: totalAllowed,
       quotaMonths: config.quotaMonths,
       periodStart: periodStart.toISOString(),
       periodEnd: periodEnd.toISOString(),
       usedThisPeriod: used,
-      remainingThisPeriod: Math.max(0, config.modificationsPerPeriod - used),
+      remainingThisPeriod: Math.max(0, totalAllowed - used),
+      subscriptionEndsAt,
     };
   }
 
@@ -5030,19 +5070,25 @@ export async function registerRoutes(
   app.post("/api/mod-quota/addon", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const { orderId, paymentProofUrl } = req.body;
+    const { orderId, paymentProofUrl, addonType } = req.body;
     if (!orderId) return res.status(400).json({ error: "معرّف الطلب مطلوب" });
+    // Validate addon type
+    const ADDON_OPTIONS: Record<string, { price: number; extraRevisions: number }> = {
+      '10_revisions':  { price: 150,  extraRevisions: 10  },
+      '25_revisions':  { price: 300,  extraRevisions: 25  },
+      'unlimited_month': { price: 500, extraRevisions: 0  },
+    };
+    const resolvedType = ADDON_OPTIONS[addonType] ? addonType : 'unlimited_month';
+    const { price, extraRevisions } = ADDON_OPTIONS[resolvedType];
     try {
       const { OrderModel, ModQuotaAddonModel } = await import("./models");
       const order = await OrderModel.findById(orderId);
       if (!order || String(order.userId) !== String(user.id)) return res.sendStatus(404);
-      if (!['sixmonth', 'annual'].includes(order.planPeriod?.toLowerCase())) {
-        return res.status(400).json({ error: "خاصية الإضافة غير متاحة إلا للباقات النصف سنوية والسنوية" });
-      }
       const existing = await ModQuotaAddonModel.findOne({ orderId, clientId: String(user.id), status: 'pending' });
       if (existing) return res.status(400).json({ error: "يوجد طلب إضافة قيد المراجعة بالفعل" });
       const addon = await ModQuotaAddonModel.create({
-        clientId: String(user.id), orderId, paymentProofUrl: paymentProofUrl || "", price: 1000,
+        clientId: String(user.id), orderId, addonType: resolvedType,
+        extraRevisions, paymentProofUrl: paymentProofUrl || "", price,
       });
       res.status(201).json(addon);
     } catch (err: any) {
@@ -8080,8 +8126,8 @@ export async function registerRoutes(
 اجعل الفكرة أكثر وضوحاً ودقة من الناحية التقنية وتجارية. لا تضف قائمة أو نقاط — فقرة واحدة متماسكة.`;
     const userMessage = `القطاع: ${sectorStr}\nالمميزات المطلوبة: ${featuresStr}\nالفكرة الأصلية: ${idea}`;
     try {
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey });
+      const { getOpenAIClient: _oaiEnhance } = await import("./lib/openai-client");
+      const openai = _oaiEnhance();
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -8103,8 +8149,8 @@ export async function registerRoutes(
     if (!apiKey) return res.status(503).json({ error: "OPENAI_API_KEY غير مُعدَّ" });
     const { messages, systemPrompt } = req.body;
     try {
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey });
+      const { getOpenAIClient: _oaiKimi } = await import("./lib/openai-client");
+      const openai = _oaiKimi();
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -8849,6 +8895,123 @@ export async function registerRoutes(
     } catch (err) {
       console.error("[QR Login] error:", err);
       res.redirect("/login?qr=error");
+    }
+  });
+
+  // Employee: Apple Wallet pass (.pkpass)
+  app.get("/api/employee/apple-wallet-pass", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    // Requires Apple certificates configured as env vars
+    const passCert = process.env.APPLE_PASS_CERT;
+    const passKey  = process.env.APPLE_PASS_KEY;
+    const wwdr     = process.env.APPLE_WWDR_CERT;
+    const passTypeId = process.env.APPLE_PASS_TYPE_ID || "pass.online.qiroxstudio.employee";
+    const teamId     = process.env.APPLE_TEAM_ID || "";
+    if (!passCert || !passKey || !wwdr) {
+      // Certs not configured — inform client to contact admin
+      return res.status(501).json({ error: "Apple Wallet certificates not configured. Ask your admin to add APPLE_PASS_CERT, APPLE_PASS_KEY, APPLE_WWDR_CERT, APPLE_TEAM_ID environment variables." });
+    }
+    try {
+      const { UserModel, EmployeeProfileModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const [userDoc, empProfile] = await Promise.all([
+        (UserModel as any).findById(uid).lean(),
+        (EmployeeProfileModel as any).findOne({ userId: uid }).lean(),
+      ]);
+      const name      = (userDoc as any)?.fullName || (userDoc as any)?.username || "Employee";
+      const jobTitle  = (empProfile as any)?.jobTitle || "Team Member";
+      const qrToken   = (userDoc as any)?.qrLoginToken || "";
+      const qrValue   = qrToken ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}` : "https://qiroxstudio.online";
+
+      // Build pass.json structure (Apple Wallet Generic pass)
+      const passJson = {
+        formatVersion: 1,
+        passTypeIdentifier: passTypeId,
+        serialNumber: uid.toString(),
+        teamIdentifier: teamId,
+        organizationName: "QIROX",
+        description: `${name} — Employee ID`,
+        logoText: "QIROX",
+        backgroundColor: "rgb(0,0,0)",
+        foregroundColor: "rgb(255,255,255)",
+        labelColor: "rgb(160,160,160)",
+        generic: {
+          primaryFields: [{ key: "name", label: "الاسم", value: name }],
+          secondaryFields: [{ key: "title", label: "المسمى الوظيفي", value: jobTitle }],
+          auxiliaryFields: [{ key: "org", label: "الشركة", value: "QIROX Studio" }],
+          backFields: [
+            { key: "website", label: "الموقع", value: "qiroxstudio.online" },
+            { key: "dashboard", label: "لوحة التحكم", value: `${process.env.APP_URL || "https://qiroxstudio.online"}/employee` },
+          ],
+        },
+        barcode: { message: qrValue, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1", altText: "QIROX QR" },
+      };
+      // Dynamic passkit-generator usage (optional dep)
+      let pkpassBuffer: Buffer | null = null;
+      try {
+        const { PKPass } = await import("passkit-generator" as any);
+        const pass = await PKPass.from({ model: { "pass.json": Buffer.from(JSON.stringify(passJson)), "icon.png": Buffer.alloc(0), "icon@2x.png": Buffer.alloc(0) }, certificates: { wwdr, signerCert: passCert, signerKey: passKey, signerKeyPassphrase: process.env.APPLE_PASS_KEY_PASSPHRASE || "" } }, {});
+        pkpassBuffer = pass.getAsBuffer();
+      } catch (pkErr: any) {
+        console.error("[AppleWallet] passkit-generator error:", pkErr.message);
+        return res.status(500).json({ error: "فشل إنشاء بطاقة Wallet — تأكد من صحة الشهادات", detail: pkErr.message });
+      }
+      res.setHeader("Content-Type", "application/vnd.apple.pkpass");
+      res.setHeader("Content-Disposition", `attachment; filename="qirox-employee.pkpass"`);
+      res.send(pkpassBuffer);
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // Employee: change own password
+  app.post("/api/employee/change-password", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: "البيانات مطلوبة" });
+    if (String(newPassword).length < 6) return res.status(400).json({ error: "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" });
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const userDoc = await (UserModel as any).findById(uid).select("password").lean();
+      if (!userDoc?.password) return res.status(400).json({ error: "لا يمكن تغيير الباسورد — تسجيل الدخول عبر جهة خارجية" });
+      const bcrypt = await import("bcryptjs");
+      const match = await bcrypt.default.compare(String(currentPassword), userDoc.password);
+      if (!match) return res.status(400).json({ error: "كلمة المرور الحالية غير صحيحة" });
+      const hashed = await bcrypt.default.hash(String(newPassword), 12);
+      await (UserModel as any).findByIdAndUpdate(uid, { password: hashed });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // Employee: log a revision for a client order (deducts from their quota)
+  app.post("/api/employee/orders/:orderId/log-revision", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const empRole = (req.user as any).role;
+    const allowedRoles = ["admin", "manager", "developer", "designer", "support", "sales", "accountant", "hr"];
+    if (!allowedRoles.includes(empRole)) return res.sendStatus(403);
+    const { title, description } = req.body || {};
+    if (!title || !description) return res.status(400).json({ error: "العنوان والوصف مطلوبان" });
+    try {
+      const { OrderModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.orderId).lean();
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const request = await storage.createModificationRequest({
+        userId: String((order as any).userId),
+        orderId: req.params.orderId,
+        title: String(title),
+        description: String(description),
+        priority: "medium",
+        status: "approved",
+      } as any);
+      // Notify client about the logged revision
+      const clientId = String((order as any).userId);
+      fireNotify(clientId, `✏️ تم تسجيل تعديل جديد`, `"${title}" — سجّله فريق QIROX على مشروعك`, { type: 'modification', link: '/dashboard', icon: '✏️' });
+      res.status(201).json(request);
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -9868,8 +10031,8 @@ export async function registerRoutes(
     const { message, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: "message required" });
     try {
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+      const { getOpenAIClient: _oaiPR } = await import("./lib/openai-client");
+      const openai = _oaiPR();
       const systemPrompt = `أنت مساعد ذكي تابع لشركة كيروكس (QIROX Studio) لتطوير الأنظمة والتطبيقات.
 مهمتك مساعدة العميل على صياغة احتياجاته التقنية بشكل واضح ودقيق حتى يتمكن الفريق من تقديم عرض سعر مناسب.
 قواعد صارمة:
@@ -15236,8 +15399,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
     try {
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+      const { getOpenAIClient: _oaiContract } = await import("./lib/openai-client");
+      const openai = _oaiContract();
       const contractModel = "gpt-4o";
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
@@ -15284,8 +15447,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (!["create", "improve"].includes(mode)) return res.status(400).json({ error: "وضع المعالجة غير صحيح" });
       if (mode === "improve" && !String(text || "").trim()) return res.status(400).json({ error: "النص مطلوب للتعديل" });
 
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+      const { getOpenAIClient: _oaiDoc } = await import("./lib/openai-client");
+      const openai = _oaiDoc();
       const model = "gpt-4o";
       const safeText = String(text || "").slice(0, 12000);
       const safeInstructions = String(instructions || "").slice(0, 3000);
@@ -16426,6 +16589,216 @@ export async function registerInstallmentRoutes(app: Express) {
     const result = await runInstallmentLateCheck();
     res.json(result);
   });
+
+  // ─── QIROX AI Hub ─────────────────────────────────────────────────────────
+  {
+    const ai = await import("./qirox-ai-engine");
+    const { KnowledgeDocModel, QiroxAIKeyModel, QiroxAISettingsModel } = await import("./models/qirox-ai");
+
+    // ── Public OpenAI-compatible endpoint (requires API key in Bearer header) ──
+    app.post("/api/qirox-ai/chat", async (req, res) => {
+      const raw = req.headers.authorization?.replace("Bearer ", "").trim() || "";
+      let keyDoc: any = null;
+      if (raw) keyDoc = await ai.validateApiKey(raw);
+      // Allow internal (admin-only) calls without key when authenticated
+      if (!raw && (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role))) {
+        return res.status(401).json({ error: "مطلوب مفتاح API" });
+      }
+      if (raw && !keyDoc) return res.status(401).json({ error: "مفتاح API غير صالح أو تجاوز الحد اليومي" });
+
+      const { messages = [] } = req.body;
+      if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
+
+      try {
+        const result = await ai.qiroxChat(messages, {
+          keyId: keyDoc?._id?.toString() || "internal",
+          source: keyDoc ? "api" : "admin",
+        });
+        res.json({ role: "assistant", content: result.reply, ragDocs: result.ragDocs, tokens: result.tokens });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    // ── Admin chat (internal) ────────────────────────────────────────────────
+    app.post("/api/admin/qirox-ai/chat", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { messages = [] } = req.body;
+      try {
+        const result = await ai.qiroxChat(messages, { source: "admin" });
+        res.json(result);
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    // ── Knowledge base CRUD ───────────────────────────────────────────────────
+    app.get("/api/admin/qirox-ai/knowledge", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const docs = await KnowledgeDocModel.find().sort({ createdAt: -1 }).lean();
+      res.json(docs);
+    });
+
+    app.post("/api/admin/qirox-ai/knowledge", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { title, content, category = "custom", tags = [], active = true } = req.body;
+      if (!title || !content) return res.status(400).json({ error: "title + content required" });
+      const doc = await KnowledgeDocModel.create({ title, content, category, tags, active, source: "manual" });
+      await ai.indexDocument(String(doc._id));
+      res.json(await KnowledgeDocModel.findById(doc._id).lean());
+    });
+
+    app.patch("/api/admin/qirox-ai/knowledge/:id", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const allowed = ["title","content","category","tags","active"];
+      const update: any = {};
+      allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+      const doc = await KnowledgeDocModel.findByIdAndUpdate(req.params.id, update, { new: true });
+      if (!doc) return res.status(404).json({ error: "Not found" });
+      await ai.indexDocument(String(doc._id));
+      res.json(doc);
+    });
+
+    app.delete("/api/admin/qirox-ai/knowledge/:id", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      await KnowledgeDocModel.findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    });
+
+    app.post("/api/admin/qirox-ai/reindex", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      await ai.reindexAll();
+      res.json({ ok: true });
+    });
+
+    // ── API Keys ──────────────────────────────────────────────────────────────
+    app.get("/api/admin/qirox-ai/keys", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      res.json(await QiroxAIKeyModel.find().sort({ createdAt: -1 }).lean());
+    });
+
+    app.post("/api/admin/qirox-ai/keys", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { name, rateLimitPerDay = 1000, permissions = ["chat"] } = req.body;
+      if (!name) return res.status(400).json({ error: "name required" });
+      const key = ai.generateApiKey();
+      const doc = await QiroxAIKeyModel.create({
+        name, key, permissions, rateLimitPerDay,
+        createdBy: String((req.user as any)._id),
+      });
+      res.json(doc);
+    });
+
+    app.delete("/api/admin/qirox-ai/keys/:id", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      await QiroxAIKeyModel.findByIdAndUpdate(req.params.id, { active: false });
+      res.json({ ok: true });
+    });
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+    app.get("/api/admin/qirox-ai/settings", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const s = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
+      res.json(s);
+    });
+
+    app.patch("/api/admin/qirox-ai/settings", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const allowed = ["model","temperature","maxTokens","topK","systemPrompt","ragEnabled"];
+      const update: any = {};
+      allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+      const doc = await QiroxAISettingsModel.findOneAndUpdate(
+        { singleton: "main" }, { $set: update }, { upsert: true, new: true }
+      );
+      res.json(doc);
+    });
+
+    // ── Stats ──────────────────────────────────────────────────────────────────
+    app.get("/api/admin/qirox-ai/stats", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const days = Number(req.query.days) || 7;
+      res.json(await ai.getUsageStats(days));
+    });
+  }
+
+  // ─── WhatsApp Integration ─────────────────────────────────────────────────
+  {
+    const { waModule } = await import("./whatsapp-module");
+
+    // SSE stream for all WA events (status + messages + chat_update)
+    app.get("/api/admin/whatsapp/events", (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+      // Heartbeat every 25s to keep connection alive
+      const hb = setInterval(() => { try { res.write(": ping\n\n"); } catch {} }, 25_000);
+      waModule.addSSEClient(res);
+      req.on("close", () => { clearInterval(hb); waModule.removeSSEClient(res); });
+    });
+
+    app.get("/api/admin/whatsapp/status", (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      res.json(waModule.getStatus());
+    });
+
+    app.post("/api/admin/whatsapp/connect", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      waModule.connect().catch(console.error);
+      res.json({ ok: true });
+    });
+
+    app.post("/api/admin/whatsapp/disconnect", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      await waModule.shutdown(true);
+      res.json({ ok: true });
+    });
+
+    app.get("/api/admin/whatsapp/chats", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      try { res.json(await waModule.getChats()); } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.get("/api/admin/whatsapp/chats/:chatId/messages", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const chatId = decodeURIComponent(req.params.chatId);
+      try { res.json(await waModule.getMessages(chatId)); } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.post("/api/admin/whatsapp/chats/:chatId/send", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const chatId = decodeURIComponent(req.params.chatId);
+      const { text } = req.body;
+      if (!text?.trim()) return res.status(400).json({ error: "نص الرسالة مطلوب" });
+      try {
+        await waModule.sendText(chatId, text.trim(), false);
+        // Human override: pause AI for 30 min after manual reply
+        await waModule.setHumanOverride(chatId, 30);
+        res.json({ ok: true });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.post("/api/admin/whatsapp/chats/:chatId/ai-toggle", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const chatId = decodeURIComponent(req.params.chatId);
+      const { enabled } = req.body;
+      const { WAChatModel } = await import("./models/whatsapp");
+      await WAChatModel.findOneAndUpdate({ chatId }, { $set: { aiEnabled: !!enabled, humanOverrideUntil: enabled ? undefined : null } }, { upsert: true });
+      if (enabled) await waModule.clearHumanOverride(chatId);
+      else await waModule.setHumanOverride(chatId, 999 * 60); // pause AI indefinitely
+      res.json({ ok: true });
+    });
+
+    app.get("/api/admin/whatsapp/settings", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      try { res.json(await waModule.getSettings()); } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.patch("/api/admin/whatsapp/settings", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const allowed = ["adminNumbers","aiEnabled","aiDelaySeconds","systemPromptExtra"];
+      const update: any = {};
+      allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+      try { res.json(await waModule.saveSettings(update)); } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+  }
 
   // ─── PWA + Lead Data routes (see server/routes-pwa.ts) ────────────────────
   await registerPwaRoutes(app);

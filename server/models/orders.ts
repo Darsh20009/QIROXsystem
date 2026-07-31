@@ -176,9 +176,11 @@ export const ModTypePriceModel = mongoose.models.ModTypePrice || mongoose.model(
 const modQuotaAddonSchema = new mongoose.Schema({
   clientId: { type: String, required: true },
   orderId: { type: String, required: true },
+  addonType: { type: String, enum: ['unlimited_month', '10_revisions', '25_revisions'], default: 'unlimited_month' },
+  extraRevisions: { type: Number, default: 0 },
   validFrom: Date,
   validUntil: Date,
-  price: { type: Number, default: 1000 },
+  price: { type: Number, default: 500 },
   status: { type: String, enum: ['pending', 'active', 'expired', 'rejected'], default: 'pending' },
   paymentProofUrl: { type: String, default: "" },
   adminNotes: { type: String, default: "" },

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useI18n } from "@/lib/i18n";
 
-const DISMISSED_KEY = "qirox_push_banner_dismissed_v2";
+// Use localStorage so dismissal persists across sessions but expires after 7 days
+const DISMISSED_KEY = "qirox_push_banner_dismissed_v3";
+const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface Props {
   show: boolean;
@@ -24,8 +26,15 @@ export function PushPermissionBanner({ show }: Props) {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
     if (Notification.permission !== "default") return;
 
-    const dismissed = sessionStorage.getItem(DISMISSED_KEY);
-    if (dismissed) return;
+    // Check localStorage dismissal with 7-day TTL
+    try {
+      const raw = localStorage.getItem(DISMISSED_KEY);
+      if (raw) {
+        const ts = parseInt(raw, 10);
+        if (Date.now() - ts < DISMISS_TTL_MS) return;
+        localStorage.removeItem(DISMISSED_KEY); // expired — show again
+      }
+    } catch {}
 
     const timer = setTimeout(() => setVisible(true), 3500);
     return () => clearTimeout(timer);
@@ -47,7 +56,7 @@ export function PushPermissionBanner({ show }: Props) {
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
+    try { localStorage.setItem(DISMISSED_KEY, String(Date.now())); } catch {}
     setVisible(false);
   };
 

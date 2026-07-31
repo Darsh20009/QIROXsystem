@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   FileText, Plus, Search, CheckCircle, XCircle, Clock,
-  Trash2, Eye, Bell, ShieldCheck, MapPin, Monitor, Hash, Wand2, Loader2, Copy
+  Trash2, Eye, Bell, ShieldCheck, MapPin, Monitor, Hash, Wand2, Loader2, Copy, Printer
 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -196,6 +196,9 @@ export default function AdminContracts() {
                       <Badge className={`${st.color} border text-xs flex-shrink-0`}>{st.label}</Badge>
                     </div>
                     <div className="flex gap-1.5">
+                      <Button size="sm" variant="outline" className="border-black/20 h-8 w-8 p-0" onClick={() => window.open(`/admin/contract-print/${contract.id}`, "_blank")} title={L ? "طباعة / تحميل PDF" : "Print / Download PDF"} data-testid={`button-print-contract-${contract.id}`}>
+                        <Printer className="w-3.5 h-3.5" />
+                      </Button>
                       <Button size="sm" variant="outline" className="border-black/20 h-8 w-8 p-0" onClick={() => setViewDialog(contract)} data-testid={`button-view-contract-${contract.id}`}>
                         <Eye className="w-3.5 h-3.5" />
                       </Button>
@@ -293,7 +296,16 @@ export default function AdminContracts() {
       {/* View Contract Dialog */}
       <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
         <DialogContent className="sm:max-w-2xl font-sans max-h-[90vh] overflow-y-auto" dir={dir}>
-          <DialogHeader><DialogTitle>{L ? "تفاصيل العقد" : "Contract Details"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{L ? "تفاصيل العقد" : "Contract Details"}</DialogTitle>
+              {viewDialog && (
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs border-black/20 h-8" onClick={() => window.open(`/admin/contract-print/${viewDialog.id}`, "_blank")} data-testid="button-print-contract-dialog">
+                  <Printer className="w-3.5 h-3.5" /> {L ? "طباعة / PDF" : "Print / PDF"}
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
           {viewDialog && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 flex-wrap">

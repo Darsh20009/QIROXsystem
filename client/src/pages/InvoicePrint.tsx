@@ -17,30 +17,16 @@ export default function InvoicePrint() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [showBankInfo, setShowBankInfo] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
   const isClientView = location.startsWith("/client/");
 
-  const handleDownloadPDF = async () => {
-    if (!params.id) return;
-    setPdfLoading(true);
-    try {
-      const res = await fetch(`/api/invoices/${params.id}/pdf`, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `invoice-${invoice?.invoiceNumber || params.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("[PDF]", err);
-      toast({ title: "فشل تحميل PDF", description: "تحقق من الاتصال أو حاول مجدداً", variant: "destructive" });
-    } finally {
-      setPdfLoading(false);
-    }
+  const handleDownloadPDF = () => {
+    // Use browser print-to-PDF — Arabic RTL renders correctly in browser
+    const noprint = document.querySelectorAll(".no-print");
+    noprint.forEach(el => (el as HTMLElement).style.display = "none");
+    window.print();
+    setTimeout(() => {
+      noprint.forEach(el => (el as HTMLElement).style.display = "");
+    }, 1000);
   };
 
   const { data: invoice, isLoading } = useQuery({
@@ -140,12 +126,11 @@ export default function InvoicePrint() {
           </Button>
           <Button
             onClick={handleDownloadPDF}
-            disabled={pdfLoading}
             size="sm"
             className="bg-black text-white h-8 text-xs gap-1.5"
             data-testid="button-download-pdf-invoice"
           >
-            {pdfLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+            <Download className="w-3 h-3" />
             تحميل PDF
           </Button>
         </div>
