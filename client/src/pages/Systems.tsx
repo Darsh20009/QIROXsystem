@@ -501,36 +501,32 @@ export default function Systems() {
       <Navigation />
 
       {/* Hero */}
-      <section className="pt-36 pb-10 relative overflow-hidden">
-        <PageGraphics variant="hero-light" />
-        <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="absolute top-20 left-1/4 w-80 h-80 bg-black dark:bg-white/[0.04] rounded-full hidden md:block blur-3xl" />
-        <div className="absolute top-32 right-1/4 w-60 h-60 bg-black dark:bg-white/[0.04] rounded-full hidden md:block blur-3xl" />
-
-        <div className="container mx-auto px-4 relative z-10 text-center">
+      <section className="relative overflow-hidden bg-black">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 pt-24 pb-20 text-center">
           <motion.div initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.07] dark:border-white/[0.1] bg-black/[0.02] dark:bg-white/[0.03] mb-6">
-              <Code2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider">
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] mb-6">
+              <Code2 className="w-3.5 h-3.5 text-white/40" />
+              <span className="text-white/40 text-xs tracking-wider">
                 {lang === "ar" ? "ننفذ أي نظام رقمي لأي قطاع" : "We build any digital system for any sector"}
               </span>
             </motion.div>
-
-            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-5xl font-black font-heading text-black dark:text-white mb-4 tracking-tight">
+            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-5xl font-black font-heading text-white mb-4 tracking-tight">
               {lang === "ar"
-                ? <>الأنظمة التي <span className="text-black/20 dark:text-white/20">نبنيها</span></>
-                : <>Systems We <span className="text-black/20 dark:text-white/20">Build</span></>}
+                ? <>الأنظمة التي <span className="text-white/30">نبنيها</span></>
+                : <>Systems We <span className="text-white/30">Build</span></>}
             </motion.h1>
-            <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-base max-w-lg mx-auto mb-3 leading-relaxed">
+            <motion.p variants={fadeUp} custom={2} className="text-white/40 text-base max-w-lg mx-auto mb-3 leading-relaxed">
               {lang === "ar"
                 ? "اختر قطاعك واكتشف الأنظمة والمواقع التي نتخصص في تنفيذها — مع امكانية تنفيذ أي فكرة خارج القائمة"
                 : "Choose your sector and discover the systems and websites we specialize in — with the ability to build any idea beyond the list"}
             </motion.p>
-
             {/* Trust badges */}
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap justify-center gap-2.5 mb-10">
               {trustBadges.map(({ icon: Ic, label }) => (
-                <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] rounded-full text-xs text-black/45 dark:text-white/45">
+                <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.05] border border-white/[0.1] rounded-full text-xs text-white/45">
                   <Ic className="w-3 h-3" /> {label}
                 </div>
               ))}

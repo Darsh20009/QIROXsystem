@@ -1,85 +1,54 @@
-import { readFile, access } from "fs/promises";
+import { rm } from "fs/promises";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
+import { build } from "esbuild";
 
-// dist/public (client) is pre-built in Replit and committed to the repo.
-// Render only needs to bundle the server with esbuild.
-
-const allowlist = [
-  "@google/generative-ai", "axios", "connect-pg-simple", "cors", "date-fns",
-  "drizzle-orm", "drizzle-zod", "express", "express-rate-limit", "express-session",
-  "jsonwebtoken", "memorystore", "multer", "nanoid", "nodemailer", "openai",
-  "passport", "passport-local", "pg", "stripe", "uuid", "ws", "xlsx", "zod",
-  "zod-validation-error", "mongoose", "connect-mongo", "passport-google-oauth20",
-  "web-push", "node-cron", "input-otp", "jsbarcode", "jspdf", "pdf-lib",
-  "exceljs", "mammoth", "file-saver", "fabric", "qrcode.react", "recharts",
-  "digest-fetch", "@paypal/paypal-server-sdk", "bcrypt",
+// Only truly un-bundleable packages stay external:
+// - bufferutil / utf-8-validate: optional native bindings for ws (safe to skip)
+// - fsevents: macOS-only native module
+// Everything else (mongoose, express, openai, etc.) gets bundled INTO dist/index.cjs
+// so Render needs ZERO npm install at runtime.
+const ALWAYS_EXTERNAL = [
+  "bufferutil",
+  "utf-8-validate",
+  "fsevents",
+  "@aws-sdk/client-s3",
 ];
 
-function run(cmd, opts = {}) {
-  console.log(`[build] $ ${cmd}`);
-  execSync(cmd, { stdio: "inherit", ...opts });
-}
-
-async function ensureEsbuild() {
-  if (existsSync("node_modules/.bin/esbuild")) {
-    console.log("[build] esbuild found in cache ✓");
-    return "./node_modules/.bin/esbuild";
-  }
-
-  // esbuild is a single self-contained binary — install into /tmp to avoid
-  // touching the read-only cached node_modules (ENOTEMPTY errors).
-  const TOOLS = "/tmp/qirox-build-tools";
-  if (existsSync(`${TOOLS}/node_modules/.bin/esbuild`)) {
-    console.log("[build] esbuild found in /tmp ✓");
-    return `${TOOLS}/node_modules/.bin/esbuild`;
-  }
-
-  console.log("[build] Installing esbuild into /tmp...");
-  run(`npm install esbuild --prefix ${TOOLS} --no-save --ignore-scripts`, {
-    env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=400" },
-  });
-  return `${TOOLS}/node_modules/.bin/esbuild`;
-}
-
-async function ensureNodeModules() {
-  // If side-channel (a transitive dep of qs→express) is missing, the cached
-  // node_modules is incomplete. Run npm ci to get a clean, complete install.
-  if (!existsSync("node_modules/side-channel")) {
-    console.log("[build] node_modules incomplete (side-channel missing) — running npm ci...");
-    run("npm ci --ignore-scripts", {
-      env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=400" },
-    });
-    console.log("[build] npm ci complete ✓");
-  } else {
-    console.log("[build] node_modules complete ✓");
-  }
-}
-
 async function buildAll() {
-  // Ensure all runtime dependencies are installed
-  await ensureNodeModules();
+  await rm("dist", { recursive: true, force: true });
 
-  // Client is pre-built — just verify dist/public exists
-  if (existsSync("dist/public/index.html")) {
-    console.log("[build] dist/public already built (pre-built in repo) ✓");
-  } else {
-    console.error("[build] ERROR: dist/public/index.html not found!");
-    console.error("[build] Run 'npm run build' locally and commit dist/public.");
-    process.exit(1);
-  }
+  const viteBin = existsSync("node_modules/.bin/vite") ? "./node_modules/.bin/vite" : "vite";
 
-  const esbuildBin = await ensureEsbuild();
+  console.log("building client...");
+  execSync(`${viteBin} build`, { stdio: "inherit" });
 
-  console.log("[build] Bundling server...");
-  // --packages=external: bundle only project source code, leave ALL npm packages
-  // as runtime requires from node_modules. This avoids transitive dep resolution
-  // issues (e.g. qs → side-channel not found in Render's cached node_modules).
-  run(
-    `${esbuildBin} server/index.ts --platform=node --bundle --format=cjs --outfile=dist/index.cjs --define:process.env.NODE_ENV=\\"production\\" --minify --packages=external`
-  );
+  console.log("building server (fully bundled — no external deps)...");
 
-  console.log("[build] ✅ Done! (client was pre-built, server bundled)");
+  // import.meta shim: esbuild replaces import.meta with {} in CJS output, making
+  // import.meta.url / import.meta.dirname undefined. This banner injects a proper
+  // shim so any code (ours or bundled deps) that uses import.meta.url gets a real value.
+  const importMetaBanner = `var __importMeta={url:require('url').pathToFileURL(__filename).href,dirname:__dirname,filename:__filename};`;
+
+  await build({
+    entryPoints: ["server/index.ts"],
+    platform: "node",
+    bundle: true,
+    format: "cjs",
+    outfile: "dist/index.cjs",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+      "import.meta": "__importMeta",
+    },
+    banner: {
+      js: importMetaBanner,
+    },
+    minify: true,
+    external: ALWAYS_EXTERNAL,
+    logLevel: "info",
+  });
+
+  console.log("✅ Build complete — dist/index.cjs is fully self-contained.");
 }
 
 buildAll().catch((err) => {

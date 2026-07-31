@@ -89,19 +89,20 @@ export default function Partners() {
       <Navigation />
 
       {/* Hero */}
-      <section className="pt-36 pb-16 relative overflow-hidden" data-testid="section-partners-hero">
-        <PageGraphics variant="rings-sides" />
-        <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, black 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-        <div className="container mx-auto px-4 relative z-10 text-center">
+      <section className="relative overflow-hidden bg-black" data-testid="section-partners-hero">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 pt-24 pb-20 text-center">
           <motion.div initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.04] dark:bg-white/[0.04] mb-6">
-              <Handshake className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("partners.badge")}</span>
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] mb-6">
+              <Handshake className="w-3.5 h-3.5 text-white/40" />
+              <span className="text-white/40 text-xs tracking-wider uppercase">{t("partners.badge")}</span>
             </motion.div>
-            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-black dark:text-white mb-6 tracking-tight">
-              {T.title1} <span className="text-gray-400">{T.title2}</span>
+            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-white mb-6 tracking-tight">
+              {T.title1} <span className="text-white/30">{T.title2}</span>
             </motion.h1>
-            <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-lg max-w-2xl mx-auto">
+            <motion.p variants={fadeUp} custom={2} className="text-white/40 text-lg max-w-2xl mx-auto">
               {T.subtitle}
             </motion.p>
           </motion.div>

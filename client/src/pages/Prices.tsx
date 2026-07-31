@@ -1281,48 +1281,37 @@ export default function Prices() {
       <Navigation/>
 
       {/* ── Hero ── */}
-      <section className="pt-28 pb-10 px-4 text-center relative overflow-hidden">
-        {/* Background blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-violet-500/[0.04] dark:bg-violet-500/[0.07] rounded-full blur-3xl -translate-y-1/2"/>
-          <div className="absolute top-0 right-1/4 w-[400px] h-[300px] bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-3xl -translate-y-1/3"/>
+      <section className="relative overflow-hidden bg-black">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-[#05050c] to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 pt-24 pb-20 text-center">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05]">
+              <span className="w-1.5 h-1.5 rounded-full bg-white/50 animate-pulse"/>
+              <span className="text-[11px] font-black tracking-widest uppercase text-white/45">الباقات والأسعار</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 leading-[1.12] tracking-tight">
+              نظام احترافي يناسب<br/>
+              <span className="text-white/30">قطاعك وميزانيتك</span>
+            </h1>
+            <p className="text-white/45 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-6">
+              أسعار شفافة بدون رسوم مخفية — من مطاعم وعيادات إلى شركات وذكاء اصطناعي
+            </p>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              {[
+                { icon: Shield,       text: "SSL + حماية كاملة" },
+                { icon: CheckCircle2, text: "تسليم 7-21 يوم" },
+                { icon: Rocket,       text: "دعم تقني مستمر" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-xs text-white/40 font-semibold">
+                  <Icon className="w-3.5 h-3.5 text-white/40"/>
+                  {text}
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
-
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.07] dark:border-white/[0.08]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>
-            <span className="text-[11px] font-black tracking-widest uppercase text-black/40 dark:text-white/40">الباقات والأسعار</span>
-          </div>
-
-          <h1 className="text-4xl md:text-6xl font-black text-black dark:text-white mb-4 leading-[1.12] tracking-tight">
-            نظام احترافي يناسب<br/>
-            <span className="relative inline-block">
-              <span className="bg-gradient-to-l from-violet-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">قطاعك وميزانيتك</span>
-              <svg className="absolute -bottom-1 inset-x-0 w-full" height="6" viewBox="0 0 200 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 3 Q50 0 100 3 Q150 6 200 3" stroke="url(#u)" strokeWidth="2.5" fill="none"/>
-                <defs><linearGradient id="u" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse"><stop stopColor="#7c3aed"/><stop offset="0.5" stopColor="#2563eb"/><stop offset="1" stopColor="#06b6d4"/></linearGradient></defs>
-              </svg>
-            </span>
-          </h1>
-          <p className="text-gray-500 dark:text-slate-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-6">
-            أسعار شفافة بدون رسوم مخفية — من مطاعم وعيادات إلى شركات وذكاء اصطناعي
-          </p>
-
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            {[
-              { icon: Shield,       text: "SSL + حماية كاملة" },
-              { icon: CheckCircle2, text: "تسليم 7-21 يوم" },
-              { icon: Rocket,       text: "دعم تقني مستمر" },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40 font-semibold">
-                <Icon className="w-3.5 h-3.5 text-emerald-500"/>
-                {text}
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </section>
 
       {/* ── Sector Tabs ── */}

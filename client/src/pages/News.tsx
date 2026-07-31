@@ -168,16 +168,24 @@ export default function News() {
     <div className="min-h-screen bg-white dark:bg-black" dir={dir}>
       <Navigation />
 
-      <main className="relative overflow-hidden container mx-auto px-4 pt-28 pb-20">
-        <PageGraphics variant="line-top" />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 bg-black/[0.05] dark:bg-white/[0.05] rounded-full px-4 py-2 mb-6">
-            <Newspaper className="w-4 h-4 text-black/50 dark:text-white/50" />
-            <span className="text-sm font-medium text-black/50 dark:text-white/50">{labels.badge}</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white mb-4">{labels.title}</h1>
-          <p className="text-black/50 dark:text-white/50 text-lg max-w-xl mx-auto">{labels.subtitle}</p>
-        </motion.div>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-black">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 pt-24 pb-20 text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] mb-6">
+              <Newspaper className="w-3.5 h-3.5 text-white/40" />
+              <span className="text-xs font-medium text-white/45">{labels.badge}</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-4">{labels.title}</h1>
+            <p className="text-white/45 text-lg max-w-xl mx-auto">{labels.subtitle}</p>
+          </motion.div>
+        </div>
+      </section>
+
+      <main className="relative overflow-hidden container mx-auto px-4 pt-16 pb-20">
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">

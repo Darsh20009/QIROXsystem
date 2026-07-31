@@ -241,24 +241,37 @@ export default function Contact() {
                 <Mail className="w-5 h-5 text-black/40 dark:text-white/40" />
               </div>
               <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.emailLabel}</h3>
-              <p className="text-sm text-black/40 dark:text-white/40">info@qiroxstudio.online</p>
+              <p className="text-sm text-black/40 dark:text-white/40">info@qirox.online</p>
             </div>
-            {publicSettings?.whatsapp && publicSettings.whatsapp.replace(/\D/g, "").length > 0 && (
-              <a
-                href={`https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm hover:border-[#25D366]/30 transition-colors group"
-                data-testid="link-whatsapp-contact"
-              >
-                <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center mb-5">
-                  <SiWhatsapp className="w-5 h-5 text-[#25D366]" />
-                </div>
-                <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.whatsappLabel}</h3>
-                <p className="text-sm text-black/40 dark:text-white/40 mb-1" dir="ltr">{publicSettings.whatsapp}</p>
-                <p className="text-sm text-[#25D366] group-hover:underline">{T.whatsappChat}</p>
-              </a>
-            )}
+            {publicSettings?.whatsapp && publicSettings.whatsapp.replace(/\D/g, "").length > 0 && (() => {
+              // Extract phone number whether value is a raw number or a wa.me/whatsapp URL
+              const raw = publicSettings.whatsapp;
+              let phone = raw;
+              try {
+                const url = new URL(raw);
+                phone = url.searchParams.get("phone") || url.pathname.replace(/\D/g, "");
+              } catch {
+                phone = raw.replace(/\D/g, "");
+              }
+              phone = phone.replace(/\D/g, "");
+              const display = phone ? `+${phone}` : raw;
+              return (
+                <a
+                  href={`https://wa.me/${phone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm hover:border-[#25D366]/30 transition-colors group"
+                  data-testid="link-whatsapp-contact"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center mb-5">
+                    <SiWhatsapp className="w-5 h-5 text-[#25D366]" />
+                  </div>
+                  <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.whatsappLabel}</h3>
+                  <p className="text-sm text-black/40 dark:text-white/40 mb-1" dir="ltr">{display}</p>
+                  <p className="text-sm text-[#25D366] group-hover:underline">{T.whatsappChat}</p>
+                </a>
+              );
+            })()}
             <a
               href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i"
               target="_blank"

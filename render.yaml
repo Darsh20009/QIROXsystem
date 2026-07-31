@@ -3,7 +3,7 @@ services:
     name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
-    buildCommand: echo "Using pre-built dist from repository"
+    buildCommand: npm install --include=dev && node script/build.mjs
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
