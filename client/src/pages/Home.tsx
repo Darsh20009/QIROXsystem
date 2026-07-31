@@ -724,6 +724,97 @@ function ReviewTrack({ reviews }: { reviews: any[] }) {
   );
 }
 
+function ReviewCarouselSection({ reviews, idx, onPrev, onNext, onDot, ar, dir }: {
+  reviews: any[]; idx: number; onPrev: () => void; onNext: () => void;
+  onDot: (i: number) => void; ar: boolean; dir: string;
+}) {
+  const total = reviews.length;
+  const next2 = [reviews[idx % total], reviews[(idx + 1) % total]];
+  const Arrow = ar ? ArrowLeft : ArrowRight;
+  const ArrowBack = ar ? ArrowRight : ArrowLeft;
+
+  useEffect(() => {
+    const t = setInterval(onNext, 4500);
+    return () => clearInterval(t);
+  }, [onNext]);
+
+  const ReviewBigCard = ({ r, dim }: { r: any; dim?: boolean }) => {
+    const initials = r.clientName?.replace("م. ", "").replace("أ. ", "").slice(0, 2) || "Q";
+    return (
+      <div className={`bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl p-6 md:p-7 flex flex-col gap-4 transition-all duration-500 ${dim ? "opacity-40 scale-[0.97]" : "opacity-100"}`}>
+        <span className="text-4xl font-serif leading-none text-black/18 dark:text-white/18 select-none">"</span>
+        <p className="text-[13.5px] md:text-sm leading-[1.75] text-black/72 dark:text-white/72 flex-1" dir={dir}>{r.comment}</p>
+        <div className="flex items-center gap-3 pt-2 border-t border-black/[0.06] dark:border-white/[0.06]" dir={dir}>
+          <div className="w-9 h-9 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0">
+            <span className="text-[11px] font-black text-white dark:text-black">{initials}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-[13px] text-black dark:text-white truncate">{r.clientName}</p>
+            <p className="text-[11px] text-black/45 dark:text-white/45 truncate">{r.serviceTitle}</p>
+          </div>
+          <div className="flex gap-0.5 shrink-0">
+            {[1,2,3,4,5].map(s => (
+              <svg key={s} viewBox="0 0 12 12" className={`w-3 h-3 ${s <= (r.rating||5) ? "fill-amber-400" : "fill-black/10 dark:fill-white/10"}`}>
+                <path d="M6 0l1.5 3.5L11 4l-2.5 2.4.6 3.6L6 8.5 2.9 10l.6-3.6L1 4l3.5-.5Z"/>
+              </svg>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <section className="py-16 md:py-24 bg-white dark:bg-[#0a0a0a] border-t border-black/[0.05] dark:border-white/[0.05]">
+      <div className="container mx-auto px-5 md:px-8 max-w-7xl">
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
+
+          {/* Heading column */}
+          <div className="shrink-0 lg:w-[220px] xl:w-[250px]">
+            <p className="text-[9px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-4">CLIENTS SAY</p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-[1.08] mb-6" dir={dir}>
+              {ar ? (<>ثقة عملائنا.<br /><span className="text-black/25 dark:text-white/25">نجاحها.</span></>) : (<>Clients trust.<br /><span className="text-black/25 dark:text-white/25">Their success.</ span></>)}
+            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              {[1,2,3,4,5].map(s => (
+                <svg key={s} viewBox="0 0 12 12" className="w-3.5 h-3.5 fill-amber-400"><path d="M6 0l1.5 3.5L11 4l-2.5 2.4.6 3.6L6 8.5 2.9 10l.6-3.6L1 4l3.5-.5Z"/></svg>
+              ))}
+              <span className="text-sm font-black ms-1">4.97</span>
+            </div>
+            <p className="text-[12px] text-black/40 dark:text-white/40">{ar ? "37+ تقييم موثّق" : "37+ verified reviews"}</p>
+          </div>
+
+          {/* Cards + nav column */}
+          <div className="flex-1">
+            {/* Cards row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <ReviewBigCard r={next2[0]} />
+              <ReviewBigCard r={next2[1]} dim />
+            </div>
+
+            {/* Arrows + dots */}
+            <div className="flex items-center gap-3" dir="ltr">
+              <button onClick={onPrev} className="w-9 h-9 rounded-full border border-black/12 dark:border-white/12 flex items-center justify-center hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors">
+                <ArrowBack className="w-4 h-4 text-black/50 dark:text-white/50" />
+              </button>
+              <button onClick={onNext} className="w-9 h-9 rounded-full border border-black/12 dark:border-white/12 flex items-center justify-center hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors">
+                <Arrow className="w-4 h-4 text-black/50 dark:text-white/50" />
+              </button>
+              <div className="flex gap-1.5 ms-2">
+                {Array.from({ length: total }).map((_, i) => (
+                  <button key={i} onClick={() => onDot(i)}
+                    className={`rounded-full transition-all duration-300 ${i === idx ? "w-5 h-1.5 bg-black dark:bg-white" : "w-1.5 h-1.5 bg-black/20 dark:bg-white/20"}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
@@ -800,6 +891,7 @@ export default function Home() {
   const { data: user } = useUser();
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [appleEnabled, setAppleEnabled] = useState(false);
+  const [reviewCardIdx, setReviewCardIdx] = useState(0);
   const processRef = useRef<HTMLElement>(null);
   const processInView = useInView(processRef, { once: true, margin: "-15% 0px" });
   const [processProgress, setProcessProgress] = useState(0);
@@ -1532,60 +1624,24 @@ export default function Home() {
         </section>
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
-        <section className="py-16 md:py-24 overflow-hidden relative bg-white dark:bg-[#0a0a0a]">
-          {/* Subtle bg pattern */}
-          <div className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
-            {/* Header */}
-            <motion.div {...fade(0)} className="mb-10 text-center max-w-2xl mx-auto">
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-5">CLIENTS SAY</p>
-              <h2 className="text-3xl md:text-5xl font-black mb-3 tracking-tight text-black dark:text-white">
-                {ar ? (<>ثقة عملائنا.<br /><span className="text-black/30 dark:text-white/30">نجاحها.</span></>) : (<>Our clients trust.<br /><span className="text-black/30 dark:text-white/30">Their success.</span></>)}
-              </h2>
-              {/* Aggregate stats */}
-              <div className="flex items-center justify-center gap-6 mt-6">
-                <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map(s => (
-                    <div key={s} className="w-3 h-3 rounded-full bg-amber-400" />
-                  ))}
-                  <span className="text-sm font-black text-gray-900 dark:text-white ms-2">4.97</span>
-                </div>
-                <div className="w-px h-4 bg-black/12 dark:bg-white/12" />
-                <span className="text-sm text-black/40 dark:text-white/40 font-medium">{ar ? "37+ تقييم موثّق" : "37+ verified reviews"}</span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* ── Tag filter pills ── */}
-          <div className="flex justify-center gap-2 flex-wrap px-4 mb-8">
-            {["الكل","سرعة استجابة","إبداع وتصميم","حل سريع","جودة عالية","سرعة تسليم","تواصل ممتاز"].map((t, i) => (
-              <span key={i} className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${i === 0 ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 bg-transparent"}`}>
-                {t}
-              </span>
-            ))}
-          </div>
-
-          {/* ── Single seamless review track ── */}
-          <div className="relative select-none" dir="ltr">
-            <ReviewTrack reviews={displayReviews} />
-          </div>
-
-          {/* CTA */}
-          <div className="text-center mt-10">
-            <a href="https://wa.me/966554656670" target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10 dark:shadow-white/5"
-              data-testid="btn-reviews-cta"
-            >
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              {ar ? "ابدأ مشروعك وانضم لعملائنا" : "Start your project and join our clients"}
-            </a>
-          </div>
-        </section>
-
-        {/* ── Graphic Divider between Reviews and Partners ── */}
-        <GraphicDivider variant={4} />
+        {(() => {
+          const FEATURED = displayReviews.slice(0, 8) as any[];
+          const total = FEATURED.length;
+          const prev = () => setReviewCardIdx(i => (i - 1 + total) % total);
+          const next = () => setReviewCardIdx(i => (i + 1) % total);
+          // auto-advance handled via useEffect — attach via a wrapper
+          return (
+            <ReviewCarouselSection
+              reviews={FEATURED}
+              idx={reviewCardIdx}
+              onPrev={prev}
+              onNext={next}
+              onDot={setReviewCardIdx}
+              ar={ar}
+              dir={dir}
+            />
+          );
+        })()}
 
         {/* ─── PARTNERS ─── */}
         <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a]">
