@@ -1474,72 +1474,62 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Graphic Divider between Pricing and Process ── */}
-        <GraphicDivider variant={2} />
-
-        {/* ─── PROCESS ─── */}
-        <section id="tab-process" ref={processRef} className="pt-20 pb-28 md:pt-24 md:pb-32 bg-white dark:bg-[#0a0a0a] overflow-hidden">
+        {/* ─── PROCESS ─── seamlessly after pricing, no dividers ─── */}
+        <section id="tab-process" ref={processRef} className="py-16 md:py-20 bg-white dark:bg-[#0a0a0a] border-t border-black/[0.05] dark:border-white/[0.05]">
           <div className="container mx-auto px-5 md:px-8 max-w-7xl">
 
-            {/* Large centered heading */}
-            <motion.div {...fade(0)} className="mb-16 md:mb-20 text-center">
-              <p className="text-[10px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-6">HOW WE WORK</p>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.05]" dir={dir}>
-                {ar ? (
-                  <>{ar ? "من الفكرة" : "From Idea"}<br />
-                    <span className="text-black/22 dark:text-white/22">{ar ? "إلى الإطلاق" : "to Launch"}</span>
-                  </>
-                ) : (
-                  <>From Idea<br /><span className="text-black/22 dark:text-white/22">to Launch</span></>
-                )}
-              </h2>
-            </motion.div>
+            {/* Side-by-side: heading column + steps column */}
+            <div className="flex flex-col lg:flex-row gap-10 lg:gap-0 items-start">
 
-            {/* Steps row */}
-            <div className="relative max-w-6xl mx-auto">
+              {/* Heading column */}
+              <motion.div {...fade(0)} className="shrink-0 lg:w-[230px] xl:w-[260px] lg:pe-10 xl:pe-14 flex flex-col justify-center">
+                <p className="text-[9px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-4">HOW WE WORK</p>
+                <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-[1.08]" dir={dir}>
+                  {ar ? (<>من الفكرة<br /><span className="text-black/25 dark:text-white/25">إلى الإطلاق</span></>) : (<>From Idea<br /><span className="text-black/25 dark:text-white/25">to Launch</span></>)}
+                </h2>
+              </motion.div>
 
-              {/* Track line (faint) */}
-              <div className="hidden lg:block absolute top-[2.75rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07] z-0" />
+              {/* Steps column — always 5 across, scrollable on small screens */}
+              <div className="flex-1 relative overflow-x-auto">
 
-              {/* Animated fill line */}
-              <div
-                className="hidden lg:block absolute top-[2.75rem] h-px bg-black dark:bg-white z-0 transition-none"
-                style={{
-                  width: `${processProgress * 100}%`,
-                  ...(ar ? { right: 0 } : { left: 0 }),
-                }}
-              />
+                {/* Track line */}
+                <div className="hidden lg:block absolute top-[2.6rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 md:gap-6">
-                {PROCESS_STEPS.map((s, i) => {
-                  const StepIcon = s.icon;
-                  const lit = processProgress > i / PROCESS_STEPS.length + 0.02;
-                  return (
-                    <div
-                      key={i}
-                      className="flex flex-col items-center lg:items-start text-center lg:text-start transition-all duration-500"
-                      style={{ opacity: lit ? 1 : 0.22, filter: lit ? "none" : "blur(0.5px)" }}
-                    >
-                      {/* Black icon box */}
-                      <div className="relative z-10 w-[5.5rem] h-[5.5rem] rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-5 shadow-xl shadow-black/10 dark:shadow-white/5">
-                        <span className="absolute top-2 end-2.5 text-[9px] font-black text-white/35 dark:text-black/35 tracking-widest leading-none">
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <StepIcon className="w-6 h-6 text-white dark:text-black" strokeWidth={1.5} />
+                {/* Animated fill line */}
+                <div
+                  className="hidden lg:block absolute top-[2.6rem] h-px bg-black dark:bg-white"
+                  style={{ width: `${processProgress * 100}%`, ...(ar ? { right: 0 } : { left: 0 }) }}
+                />
+
+                {/* Always 5 columns, scrollable on mobile */}
+                <div className="grid grid-cols-5 min-w-[560px] lg:min-w-0 gap-2 lg:gap-0">
+                  {PROCESS_STEPS.map((s, i) => {
+                    const StepIcon = s.icon;
+                    const lit = processProgress > (i / PROCESS_STEPS.length) + 0.02;
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-col items-center text-center px-2 transition-all duration-500"
+                        style={{ opacity: lit ? 1 : 0.2, filter: lit ? "none" : "blur(0.4px)" }}
+                      >
+                        {/* Black icon box */}
+                        <div className="relative z-10 w-[5rem] h-[5rem] rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4 shadow-lg">
+                          <span className="absolute top-1.5 end-2 text-[8px] font-black text-white/35 dark:text-black/35 tracking-widest">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <StepIcon className="w-5 h-5 text-white dark:text-black" strokeWidth={1.5} />
+                        </div>
+                        <p className="font-black text-[13px] mb-1.5 text-black dark:text-white leading-snug">{ar ? s.ar.t : s.en.t}</p>
+                        <p className="text-[11px] text-black/48 dark:text-white/45 leading-[1.6]">{ar ? s.ar.d : s.en.d}</p>
                       </div>
-                      <p className="font-black text-[15px] mb-2 text-black dark:text-white">{ar ? s.ar.t : s.en.t}</p>
-                      <p className="text-[12px] text-black/50 dark:text-white/48 leading-[1.65]">{ar ? s.ar.d : s.en.d}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
+            </div>
           </div>
         </section>
-
-        {/* ── Graphic Divider between Process and Reviews ── */}
-        <GraphicDivider variant={3} dark />
 
         {/* ─── CLIENT REVIEWS / TESTIMONIALS ─── */}
         <section className="py-16 md:py-24 overflow-hidden relative bg-white dark:bg-[#0a0a0a]">
