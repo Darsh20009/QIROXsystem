@@ -1218,11 +1218,18 @@ export default function Home() {
               </motion.div>
 
               {/* Right: devices mockup image */}
-              <motion.div {...fade(1)} className="flex items-center justify-center">
+              <motion.div {...fade(1)} className="relative flex items-center justify-center">
+                {/* ambient glow behind the devices */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-radial from-black/[0.04] via-transparent to-transparent dark:from-white/[0.04]" />
                 <img
                   src="/demo-devices.png"
                   alt="QIROX Demo"
-                  className="w-full max-w-lg object-contain drop-shadow-2xl"
+                  className="w-full max-w-xl object-contain relative"
+                  style={{
+                    filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.18)) drop-shadow(0 8px 20px rgba(0,0,0,0.10))",
+                    maskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
+                    WebkitMaskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
+                  }}
                   loading="lazy"
                 />
               </motion.div>
