@@ -9,11 +9,10 @@ import InstallPrompt from "@/components/InstallPrompt";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
-import { useTemplates } from "@/hooks/use-templates";
+
 import type { Partner } from "@shared/schema";
 const qiroxLogo = "/qirox-icon-nobg.png";
-import demoEcommerceImg from "@assets/Screenshot_2026-04-27_at_6.23.57_PM_1777303494183.png";
-import demoRestaurantImg from "@assets/Screenshot_2026-04-27_at_1.59.42_PM_1777302518837.png";
+
 import {
   ArrowRight, ArrowLeft, ArrowUpRight, Sparkles, Zap, Shield, Cpu,
   Layers, ShoppingBag, Building2, GraduationCap,
@@ -242,7 +241,6 @@ const PILLARS = [
 
 const TABS = [
   { id: "systems",   ar: "الأنظمة",  en: "Systems" },
-  { id: "templates", ar: "النماذج",  en: "Templates" },
   { id: "pricing",   ar: "الباقات",  en: "Plans" },
   { id: "process",   ar: "كيف نعمل", en: "How We Work" },
   { id: "partners",  ar: "شركاؤنا",  en: "Partners" },
@@ -827,6 +825,24 @@ export default function Home() {
   const [pricingPeriod, setPricingPeriod] = useState<HomePricePeriod>("annual");
   const [pricingYears, setPricingYears] = useState(2);
 
+  // ── Partners spotlight carousel ───────────────────────────────────────────
+  const [activePartnerIdx, setActivePartnerIdx] = useState(0);
+  const [partnerPaused, setPartnerPaused] = useState(false);
+  const SPOTLIGHT_PARTNERS = [
+    { name: "tabby",     nameAr: "تابي",         color: "#1B4332", bg: "#D1FAE5", tagline: "اشترِ الآن وادفع لاحقًا", features: ["دفع مرن بالأقساط", "بدون فوائد خفية"] },
+    { name: "tamara",    nameAr: "تمارا",         color: "#C2410C", bg: "#FEF3C7", tagline: "أقساط ميسّرة بدون فوائد", features: ["تمويل فوري", "شريحة عملاء واسعة"] },
+    { name: "ZATCA",     nameAr: "زاتكا",         color: "#065F46", bg: "#ECFDF5", tagline: "هيئة الزكاة والضريبة والجمارك", features: ["إصدار الفواتير الإلكترونية", "التكامل الضريبي الكامل"] },
+    { name: "aws",       nameAr: "أمازون ويب",    color: "#92400E", bg: "#FFFBEB", tagline: "البنية التحتية السحابية العالمية", features: ["خوادم عالية الأداء", "أمان وموثوقية عالمية"] },
+    { name: "odoo",      nameAr: "أودو",          color: "#4C1D95", bg: "#F5F3FF", tagline: "نظام ERP متكامل للأعمال", features: ["إدارة المبيعات والمحاسبة", "أتمتة العمليات الداخلية"] },
+    { name: "Adobe",     nameAr: "أدوبي",         color: "#991B1B", bg: "#FEF2F2", tagline: "أدوات الإبداع والتصميم الاحترافي", features: ["Creative Cloud", "تصميم وتحرير متقدم"] },
+    { name: "Microsoft", nameAr: "مايكروسوفت",   color: "#1D4ED8", bg: "#EFF6FF", tagline: "حلول تقنية وإنتاجية متكاملة", features: ["Azure & Office 365", "بيئة عمل سحابية آمنة"] },
+  ] as const;
+  useEffect(() => {
+    if (partnerPaused) return;
+    const t = setTimeout(() => setActivePartnerIdx(i => (i + 1) % SPOTLIGHT_PARTNERS.length), 3800);
+    return () => clearTimeout(t);
+  }, [activePartnerIdx, partnerPaused]);
+
   // ── Auto-scroll sector cards ──────────────────────────────────────────────
   const sectorScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -912,7 +928,7 @@ export default function Home() {
     fetch("/api/auth/apple/status").then(r => r.json()).then(d => setAppleEnabled(!!d.enabled)).catch(() => {});
   }, []);
 
-  const { data: templates = [] } = useTemplates();
+
   const { data: apiPartners = [], isLoading: partnersLoading } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
   const { data: publicReviews = [] } = useQuery<any[]>({ queryKey: ["/api/reviews/public"] });
@@ -961,19 +977,6 @@ export default function Home() {
 
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
-  const CURRENT_CATEGORIES = ["restaurant", "ecommerce", "food", "مطاعم", "متاجر", "Restaurants", "E-Commerce"];
-  const visibleTemplates = useMemo(
-    () =>
-      (templates as any[])
-        .filter((t) => {
-          if (t?.status === "draft") return false;
-          const cat = (t?.category || t?.sector || "").toLowerCase();
-          return CURRENT_CATEGORIES.some((c) => cat.includes(c.toLowerCase()));
-        })
-        .slice(0, 4),
-    [templates]
-  );
-  const CURRENT_SECTORS = SECTORS.filter((s) => s.arName === "متاجر إلكترونية" || s.arName === "مطاعم ومقاهي");
 
   const displayedPlans = (pricingPlans as any[]).length > 0 ? (pricingPlans as any[]).slice(0, 3) : FALLBACK_PLANS;
 
@@ -1315,12 +1318,12 @@ export default function Home() {
                   {ar ? "اكتشف كيف تبدو أنظمتنا في العمل الفعلي قبل أن تقرر — تجربة حقيقية قبل الالتزام."
                        : "Discover how our systems look in real action before you decide — a real trial before any commitment."}
                 </p>
-                <a href="#tab-templates" onClick={(e) => { e.preventDefault(); document.getElementById("tab-templates")?.scrollIntoView({ behavior: "smooth" }); }}>
+                <Link href="/systems">
                   <button className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black rounded-full h-12 px-7 text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10">
-                    {ar ? "استكشف الديمو الآن" : "Explore the demo now"}
+                    {ar ? "استكشف الأنظمة الآن" : "Explore systems now"}
                     <Arrow className="w-4 h-4" />
                   </button>
-                </a>
+                </Link>
               </motion.div>
 
               {/* Right: devices mockup image */}
@@ -1644,197 +1647,147 @@ export default function Home() {
         })()}
 
         {/* ─── PARTNERS ─── */}
-        <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a]">
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl">
-            <motion.div {...fade(0)} className="mb-10 text-center">
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase text-black/30 dark:text-white/30 mb-2">TRUSTED PARTNERS</p>
+        <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a] overflow-hidden">
+          <div className="container mx-auto px-5 md:px-8 max-w-5xl">
+
+            {/* Header — Arabic label right, count left */}
+            <motion.div {...fade(0)} className="flex items-start justify-between mb-10 md:mb-14">
+              <div className="text-left" dir="ltr">
+                <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/25 dark:text-white/25">
+                  {SPOTLIGHT_PARTNERS.length} Strategic Partners
+                </p>
+                <div className="mt-1.5 flex gap-1.5">
+                  {SPOTLIGHT_PARTNERS.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setActivePartnerIdx(i); setPartnerPaused(true); }}
+                      className={`h-1 rounded-full transition-all duration-500 ${i === activePartnerIdx ? "w-6 bg-black dark:bg-white" : "w-1.5 bg-black/20 dark:bg-white/20"}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="text-right" dir="rtl">
+                <p className="text-[10px] font-black tracking-[0.2em] text-black/25 dark:text-white/25 uppercase mb-0.5">شركاؤنا</p>
+                <h2 className="text-xl md:text-2xl font-black text-black dark:text-white leading-tight">الموثوقون</h2>
+              </div>
             </motion.div>
 
-            {partnersLoading ? (
-              <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-8 py-6">
-                {[...Array(7)].map((_, i) => (
-                  <div key={i} className="w-24 h-8 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] animate-pulse" />
-                ))}
-              </motion.div>
-            ) : apiPartners.length > 0 ? (
-              <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-10 md:gap-14 py-4">
+            {/* Spotlight Card */}
+            {apiPartners.length > 0 ? (
+              /* Live API partners — uniform framed grid */
+              <motion.div {...fade(1)} className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 py-4">
                 {apiPartners.map((p: any) => (
-                  <div key={p.id || p._id} className="grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300" data-testid={`logo-partner-${p.id || p._id}`}>
-                    <Link href="/partners">
-                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : (p.name || p.nameAr)} className="h-10 md:h-12 w-auto object-contain max-w-[130px] cursor-pointer" />
-                    </Link>
-                  </div>
+                  <Link key={p.id || p._id} href="/partners">
+                    <div className="group aspect-square rounded-xl border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center p-3 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-pointer overflow-hidden bg-black/[0.015] dark:bg-white/[0.015]">
+                      <img src={p.logoUrl} alt={ar ? (p.nameAr || p.name) : p.name} className="w-full h-full object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+                    </div>
+                  </Link>
                 ))}
               </motion.div>
             ) : (
-              <motion.div {...fade(1)} className="flex flex-wrap justify-center items-center gap-8 md:gap-12 py-4">
-                {[
-                  { name: "tabby",     style: "font-black text-[1.2rem] tracking-tight"  },
-                  { name: "tamara",    style: "font-black text-[1.1rem] tracking-tight"  },
-                  { name: "ZATCA",     style: "font-black text-[1.0rem] tracking-[0.08em]" },
-                  { name: "aws",       style: "font-black text-[1.3rem] tracking-tight"  },
-                  { name: "odoo",      style: "font-black text-[1.1rem] tracking-tight"  },
-                  { name: "Adobe",     style: "font-black text-[1.1rem] tracking-tight"  },
-                  { name: "Microsoft", style: "font-semibold text-[1.0rem] tracking-tight" },
-                ].map((p, i) => (
-                  <div key={i} className="opacity-30 hover:opacity-60 transition-opacity duration-300">
-                    <span className={`${p.style} text-black dark:text-white`}>{p.name}</span>
-                  </div>
-                ))}
+              <motion.div {...fade(1)} key={activePartnerIdx}
+                className="relative"
+                onMouseEnter={() => setPartnerPaused(true)}
+                onMouseLeave={() => setPartnerPaused(false)}
+              >
+                <AnimatePresence mode="wait">
+                  {(() => {
+                    const p = SPOTLIGHT_PARTNERS[activePartnerIdx];
+                    const LOGO_STYLES: Record<string, string> = {
+                      tabby:     "font-black text-[2rem] tracking-tight",
+                      tamara:    "font-black text-[1.9rem] tracking-tight",
+                      ZATCA:     "font-black text-[1.5rem] tracking-[0.12em]",
+                      aws:       "font-black text-[2.2rem] tracking-tight",
+                      odoo:      "font-black text-[2rem] tracking-tight",
+                      Adobe:     "font-black text-[1.9rem] tracking-tight",
+                      Microsoft: "font-semibold text-[1.4rem] tracking-tight",
+                    };
+                    return (
+                      <motion.div
+                        key={activePartnerIdx}
+                        initial={{ opacity: 0, y: 18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -18 }}
+                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                        className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden bg-black/[0.01] dark:bg-white/[0.01]"
+                        style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.04)" }}
+                      >
+                        {/* Logo frame — uniform size, no size bleed */}
+                        <div
+                          className="flex items-center justify-center p-12 md:p-16 min-h-[200px] relative"
+                          style={{ backgroundColor: p.bg }}
+                        >
+                          {/* Decorative ring */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
+                            <div className="w-64 h-64 rounded-full border-[40px]" style={{ borderColor: p.color }} />
+                          </div>
+                          <div
+                            className={`${LOGO_STYLES[p.name] ?? "font-black text-[2rem]"} relative z-10 select-none`}
+                            style={{ color: p.color }}
+                          >
+                            {p.name}
+                          </div>
+                        </div>
+
+                        {/* Info panel */}
+                        <div className="flex flex-col justify-center p-8 md:p-10 gap-5" dir="rtl">
+                          <div>
+                            <p className="text-[10px] font-black tracking-[0.2em] uppercase mb-2" style={{ color: p.color + "99" }}>شريك موثوق</p>
+                            <h3 className="text-2xl md:text-3xl font-black text-black dark:text-white leading-tight mb-1">{p.nameAr}</h3>
+                            <p className="text-sm text-black/50 dark:text-white/50 font-medium">{p.tagline}</p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {p.features.map((f, fi) => (
+                              <div key={fi} className="flex items-center gap-2.5" dir="rtl">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                                <span className="text-sm font-medium text-black/70 dark:text-white/70">{f}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Progress bar */}
+                          <div className="h-[2px] rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden mt-2">
+                            {!partnerPaused && (
+                              <motion.div
+                                key={activePartnerIdx}
+                                className="h-full rounded-full"
+                                style={{ backgroundColor: p.color }}
+                                initial={{ width: "0%" }}
+                                animate={{ width: "100%" }}
+                                transition={{ duration: 3.8, ease: "linear" }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
+                </AnimatePresence>
+
+                {/* Thumbnail strip */}
+                <div className="flex justify-center gap-2 mt-5 flex-wrap">
+                  {SPOTLIGHT_PARTNERS.map((sp, i) => {
+                    const MINI_STYLES: Record<string, string> = {
+                      tabby: "font-black", tamara: "font-black", ZATCA: "font-black tracking-wide",
+                      aws: "font-black", odoo: "font-black", Adobe: "font-black", Microsoft: "font-semibold",
+                    };
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => { setActivePartnerIdx(i); setPartnerPaused(true); }}
+                        className={`px-3.5 py-2 rounded-lg text-[11px] transition-all duration-300 border ${MINI_STYLES[sp.name] ?? "font-medium"} ${i === activePartnerIdx
+                          ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.04] text-black dark:text-white scale-105"
+                          : "border-transparent text-black/30 dark:text-white/30 hover:text-black/50 dark:hover:text-white/50"}`}
+                      >
+                        {sp.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
           </div>
         </section>
 
-        {/* ── Graphic Divider between Partners and Templates ── */}
-        <GraphicDivider variant={5} dark />
-
-        {/* ─── DEMO TEMPLATES — creative frame at end of homepage ─── */}
-        <section id="tab-templates" className="pt-16 pb-24 md:pt-20 md:pb-28 relative overflow-hidden">
-          {/* Decorative grid background */}
-          <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.05] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-
-          <div className="container mx-auto px-5 md:px-8 max-w-6xl relative">
-            <motion.div {...fade(0)} className="mb-12 text-center max-w-2xl mx-auto">
-              <span className="inline-flex items-center gap-2 mb-4 px-3.5 py-1.5 rounded-full border border-violet-300/40 dark:border-violet-700/40 bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-300 text-[11px] font-black uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" />
-                {ar ? "عرض حي · DEMO" : "Live Preview · DEMO"}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">
-                {ar ? "جرّب نماذج جاهزة" : "Try ready-made templates"}
-                <br />
-                <span className="text-black/35 dark:text-white/35">{ar ? "قبل ما تطلب" : "before you order"}</span>
-              </h2>
-              <p className="text-black/55 dark:text-white/55 text-base leading-relaxed">
-                {ar
-                  ? "هذه نماذج تجريبية لمشاريع حقيقية بنيناها — اضغط واستكشف قبل اختيار باقتك."
-                  : "Live demo templates from real projects — click and explore before picking a plan."}
-              </p>
-            </motion.div>
-
-            {/* Browser-style frame around templates */}
-            <motion.div {...fade(1)} className="relative max-w-5xl mx-auto rounded-3xl bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] via-transparent to-violet-500/[0.04] border border-black/[0.08] dark:border-white/[0.08] p-4 md:p-6 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_60px_-20px_rgba(255,255,255,0.06)]">
-              {/* Window chrome */}
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06] text-[10px] font-mono text-black/50 dark:text-white/50">
-                  <Globe className="w-3 h-3" />
-                  qiroxstudio.online/demo
-                </div>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-600 text-white tracking-wider">
-                  DEMO
-                </span>
-              </div>
-
-              {/* Templates grid inside frame */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {visibleTemplates.length === 0
-                  ? CURRENT_SECTORS.map((s: any, i) => {
-                      const heroImg = s.segment === "ecommerce" ? demoEcommerceImg : demoRestaurantImg;
-                      return (
-                        <motion.div key={i} {...fade(i)}>
-                          <Link href={`/prices?segment=${s.segment}`}>
-                            <div className="group relative aspect-[16/10] rounded-2xl bg-black border border-white/[0.08] overflow-hidden cursor-pointer hover:scale-[1.015] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-all duration-300" data-testid={`card-template-placeholder-${i}`}>
-                              {/* Hero image with side shadow */}
-                              <img
-                                src={heroImg}
-                                alt={s.arName}
-                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
-                                loading="lazy"
-                              />
-                              {/* Side shadow gradients (left + right + bottom) for depth */}
-                              <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-black/70 via-black/25 to-transparent pointer-events-none" />
-                              <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-black/55 via-black/15 to-transparent pointer-events-none" />
-                              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
-
-                              {/* DEMO ribbon */}
-                              <div className="absolute top-3 left-3 z-10">
-                                <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-violet-600 text-white tracking-wider shadow-lg shadow-violet-500/30">DEMO</span>
-                              </div>
-
-                              {/* Bottom info */}
-                              <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-10 text-right" dir="rtl">
-                                <div className="font-black text-lg md:text-2xl text-white drop-shadow-lg">{ar ? s.arName : s.enName}</div>
-                                <div className="text-xs md:text-sm text-white/75 mt-1.5 flex items-center justify-end gap-1.5">
-                                  {ar ? "افتح المعاينة الحية" : "Open live preview"}
-                                  <ChevronRight className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform rotate-180" />
-                                </div>
-                              </div>
-                            </div>
-                          </Link>
-                        </motion.div>
-                      );
-                    })
-                  : (() => {
-                      // Show only restaurant + ecommerce hero demos on the homepage
-                      const restTpl = visibleTemplates.find((t: any) => /food|cafe|restaurant|dining/i.test(t.category || t.sector || t.slug || ""));
-                      const ecomTpl = visibleTemplates.find((t: any) => /ecom|shop|store/i.test(t.category || t.sector || t.slug || ""));
-                      const heroes = [
-                        { tpl: restTpl, segment: "restaurant", arName: "مطاعم ومقاهي",   enName: "Restaurants & Cafes", img: demoRestaurantImg },
-                        { tpl: ecomTpl, segment: "ecommerce",  arName: "متاجر إلكترونية", enName: "E-Commerce Stores",   img: demoEcommerceImg  },
-                      ];
-                      return heroes.map((h, i) => (
-                        <motion.div key={i} {...fade(i)}>
-                          <Link href={h.tpl ? `/templates/${h.tpl.slug || h.tpl._id}` : `/prices?segment=${h.segment}`}>
-                            <div className="group relative aspect-[16/10] rounded-2xl bg-black border border-white/[0.08] overflow-hidden cursor-pointer hover:scale-[1.015] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-all duration-300" data-testid={`card-template-${h.tpl?._id || i}`}>
-                              {/* Hero image with side shadow */}
-                              <img
-                                src={h.img}
-                                alt={h.arName}
-                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
-                                loading="lazy"
-                              />
-                              {/* Side shadow gradients (left + right + bottom) for depth */}
-                              <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-black/70 via-black/25 to-transparent pointer-events-none" />
-                              <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-black/55 via-black/15 to-transparent pointer-events-none" />
-                              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
-
-                              {/* DEMO ribbon */}
-                              <div className="absolute top-3 left-3 z-10">
-                                <span className="text-[10px] font-black px-2.5 py-1 rounded-md bg-violet-600 text-white tracking-wider shadow-lg shadow-violet-500/30">DEMO</span>
-                              </div>
-
-                              {/* Bottom info */}
-                              <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 z-10 text-right" dir="rtl">
-                                <div className="font-black text-lg md:text-2xl text-white drop-shadow-lg">{ar ? (h.tpl?.nameAr || h.arName) : (h.tpl?.name || h.enName)}</div>
-                                <div className="text-xs md:text-sm text-white/75 mt-1.5 flex items-center justify-end gap-1.5">
-                                  {ar ? "افتح المعاينة الحية" : "Open live preview"}
-                                  <ChevronRight className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform rotate-180" />
-                                </div>
-                              </div>
-                            </div>
-                          </Link>
-                        </motion.div>
-                      ));
-                    })()}
-              </div>
-
-              {/* Caption inside frame */}
-              <div className="mt-5 flex items-center justify-center gap-3 text-[11px] text-black/45 dark:text-white/45">
-                <div className="h-px flex-1 bg-black/[0.08] dark:bg-white/[0.08] max-w-[80px]" />
-                <span className="font-medium">
-                  {ar ? "كل النماذج للاستعراض فقط · ستُخصّص بالكامل لمشروعك" : "All templates are previews · fully customized for your project"}
-                </span>
-                <div className="h-px flex-1 bg-black/[0.08] dark:bg-white/[0.08] max-w-[80px]" />
-              </div>
-            </motion.div>
-
-            <div className="text-center mt-10">
-              <Link href="/systems">
-                <Button className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-xl h-12 px-7 font-bold gap-2" data-testid="button-explore-all-demos">
-                  <Layers className="w-4 h-4" />
-                  {ar ? "استكشف كل النماذج" : "Explore all templates"}
-                  <Arrow className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
 
         {/* ─── CTA ─── */}
         <section className="bg-[#0a0a0a] relative overflow-hidden">
