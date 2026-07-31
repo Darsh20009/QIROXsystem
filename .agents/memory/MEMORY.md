@@ -18,6 +18,8 @@
 - [QIROX AI Hub](qirox-ai-hub.md) — BM25 RAG (pure math, no deps); KnowledgeDoc+QiroxAIKey+QiroxAILog+QiroxAISettings models; /admin/qirox-ai page; public /api/qirox-ai/chat endpoint (Bearer token).
 - [OpenAI base URL](openai-base-url.md) — All AI calls route through server/lib/openai-client.ts singleton; set OPENAI_BASE_URL env to redirect to BazaarLink or any OpenAI-compatible provider.
 - [PDF Print Fix](pdf-print-fix.md) — PDF download uses browser window.print() (not server pdf-lib) — fixes reversed Arabic text; ContractPrint.tsx at /admin/contract-print/:id.
+- [Apple Wallet certs](apple-wallet-certs.md) — Certs stored in server/certs/ (apple-pass-cert.pem, apple-pass-key.pem, apple-wwdr.pem); route reads files as fallback when env vars absent. passTypeId=pass.com.qirox.employee teamId=V4K6RM59LS.
+- [iOS OAuth in-app browser](ios-oauth-browser.md) — On Capacitor native, Google/Apple/GitHub OAuth uses Browser.open() (SFSafariViewController) not window.location. appUrlOpen listener handles callback; browserFinished is the fallback.
 - [QMeet zombie PC fix](qmeet-zombie-pc.md) — null ALL handlers (ontrack/onicecandidate/etc.) BEFORE close(), then guard every async handler with isCurrent() check to prevent stale state updates.
 - [Group Chat attachments](group-chat-attachments.md) — GroupChat supports image/voice/file attachments; server route already accepts them; GroupVoicePlayer component inline in GroupChat.tsx.
 - [Push banner persistence](push-banner-persistence.md) — PushPermissionBanner uses localStorage (not sessionStorage) with 7-day TTL so it re-shows after a week if user dismissed without subscribing.

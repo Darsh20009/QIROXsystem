@@ -8901,12 +8901,23 @@ export async function registerRoutes(
   // Employee: Apple Wallet pass (.pkpass)
   app.get("/api/employee/apple-wallet-pass", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    // Requires Apple certificates configured as env vars
-    const passCert = process.env.APPLE_PASS_CERT;
-    const passKey  = process.env.APPLE_PASS_KEY;
-    const wwdr     = process.env.APPLE_WWDR_CERT;
-    const passTypeId = process.env.APPLE_PASS_TYPE_ID || "pass.online.qiroxstudio.employee";
-    const teamId     = process.env.APPLE_TEAM_ID || "";
+    // Load certificates: prefer env vars, fall back to bundled cert files in server/certs/
+    const fsSync = await import("fs");
+    const pathLib = await import("path");
+    const certsDir = pathLib.default.join(process.cwd(), "server", "certs");
+    const readCert = (envKey: string, fileName: string): string => {
+      const envVal = process.env[envKey];
+      if (envVal) return envVal;
+      try {
+        const filePath = pathLib.default.join(certsDir, fileName);
+        return fsSync.default.readFileSync(filePath, "utf8");
+      } catch { return ""; }
+    };
+    const passCert = readCert("APPLE_PASS_CERT", "apple-pass-cert.pem");
+    const passKey  = readCert("APPLE_PASS_KEY",  "apple-pass-key.pem");
+    const wwdr     = readCert("APPLE_WWDR_CERT", "apple-wwdr.pem");
+    const passTypeId = process.env.APPLE_PASS_TYPE_ID || "pass.com.qirox.employee";
+    const teamId     = process.env.APPLE_TEAM_ID || "V4K6RM59LS";
     if (!passCert || !passKey || !wwdr) {
       // Certs not configured — inform client to contact admin
       return res.status(501).json({ error: "Apple Wallet certificates not configured. Ask your admin to add APPLE_PASS_CERT, APPLE_PASS_KEY, APPLE_WWDR_CERT, APPLE_TEAM_ID environment variables." });

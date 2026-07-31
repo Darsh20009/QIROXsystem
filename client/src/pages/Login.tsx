@@ -13,7 +13,7 @@ import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
@@ -23,6 +23,7 @@ import { CountrySelect } from "@/components/CountrySelect";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
+import { isCapacitorNative, getServerUrl } from "@/lib/server-url";
 
 // ─── Formal QIROX System Panel ───────────────────────────────────────────────
 
@@ -404,9 +405,58 @@ export default function Login() {
     window.location.href = nextPath;
   }, []);
 
+  // ── Native OAuth: open SFSafariViewController / Chrome Custom Tabs ──────────
+  // On iOS/Android (Capacitor), we must NOT redirect to the system browser.
+  // Instead we use @capacitor/browser which wraps SFSafariViewController (iOS)
+  // and Chrome Custom Tabs (Android) — both are in-app and pass App Store review.
+  const openOAuthNative = useCallback(async (path: string) => {
+    const { Browser } = await import("@capacitor/browser");
+    const { App } = await import("@capacitor/app");
+    const serverUrl = getServerUrl(); // e.g. https://qiroxstudio.online
+    const url = `${serverUrl}${path}`;
+    // Listen for the deep-link / universal-link callback coming back into the app
+    const handle = await App.addListener("appUrlOpen", async (data: { url: string }) => {
+      await handle.remove();
+      try { await Browser.close(); } catch {}
+      // Parse token from the callback URL
+      const cbUrl = new URL(data.url);
+      const googleToken = cbUrl.searchParams.get("googleToken");
+      const appleToken = cbUrl.searchParams.get("appleToken");
+      const githubToken = cbUrl.searchParams.get("githubToken");
+      const nextPath = cbUrl.searchParams.get("next") || "/dashboard";
+      const token = googleToken || appleToken || githubToken;
+      if (token) {
+        saveDeviceToken(token);
+        setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+        window.location.href = nextPath;
+      } else {
+        setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+        toast({ title: "فشل تسجيل الدخول", description: "تعذّر إتمام المصادقة، حاول مرة أخرى", variant: "destructive" });
+      }
+    });
+    // Fallback: if browserFinished fires without appUrlOpen (no universal link), check session
+    const finishHandle = await Browser.addListener("browserFinished", async () => {
+      await finishHandle.remove();
+      await handle.remove();
+      // Check whether we're now logged in
+      const r = await fetch(`${serverUrl}/api/user`, { credentials: "include" });
+      if (r.ok) {
+        setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+        window.location.href = "/dashboard";
+      } else {
+        setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+      }
+    });
+    await Browser.open({ url, toolbarColor: "#000000", windowName: "_self" });
+  }, [toast]);
+
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = "/api/auth/google";
+    if (isCapacitorNative()) {
+      openOAuthNative("/api/auth/google");
+    } else {
+      window.location.href = "/api/auth/google";
+    }
   };
 
   // Check if GitHub OAuth is enabled on the server
@@ -440,7 +490,11 @@ export default function Login() {
 
   const handleGithubLogin = () => {
     setGithubLoading(true);
-    window.location.href = "/api/auth/github";
+    if (isCapacitorNative()) {
+      openOAuthNative("/api/auth/github");
+    } else {
+      window.location.href = "/api/auth/github";
+    }
   };
 
   // Check if Apple Sign In is enabled on the server
@@ -474,7 +528,11 @@ export default function Login() {
 
   const handleAppleLogin = () => {
     setAppleLoading(true);
-    window.location.href = "/api/auth/apple";
+    if (isCapacitorNative()) {
+      openOAuthNative("/api/auth/apple");
+    } else {
+      window.location.href = "/api/auth/apple";
+    }
   };
 
   const identifierHints = ["user123", "name@email.com", "+966XXXXXXXXX"];
