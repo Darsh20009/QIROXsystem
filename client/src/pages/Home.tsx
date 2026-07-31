@@ -1209,12 +1209,12 @@ export default function Home() {
                   {ar ? "اكتشف كيف تبدو أنظمتنا في العمل الفعلي قبل أن تقرر — تجربة حقيقية قبل الالتزام."
                        : "Discover how our systems look in real action before you decide — a real trial before any commitment."}
                 </p>
-                <Link href="/systems">
+                <a href="#tab-templates" onClick={(e) => { e.preventDefault(); document.getElementById("tab-templates")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <button className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black rounded-full h-12 px-7 text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10">
                     {ar ? "استكشف الديمو الآن" : "Explore the demo now"}
                     <Arrow className="w-4 h-4" />
                   </button>
-                </Link>
+                </a>
               </motion.div>
 
               {/* Right: devices mockup image */}
