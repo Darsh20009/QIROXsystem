@@ -311,12 +311,12 @@ const HOME_TIER_FEATURES: Record<HomePriceTier, string[]> = {
 };
 
 const HOME_SECTORS_PRICING = [
-  { key: "restaurant" as HomePriceSector, icon: UtensilsCrossed, ar: "مطاعم",   color: "from-orange-500 to-amber-500" },
-  { key: "ecommerce"  as HomePriceSector, icon: ShoppingBag,     ar: "متاجر",   color: "from-blue-500 to-cyan-500" },
-  { key: "corporate"  as HomePriceSector, icon: Building2,       ar: "شركات",   color: "from-slate-600 to-zinc-700" },
-  { key: "healthcare" as HomePriceSector, icon: Heart,           ar: "صحة",     color: "from-rose-500 to-pink-600" },
-  { key: "ai"         as HomePriceSector, icon: Bot,             ar: "ذكاء اصطناعي", color: "from-violet-600 to-purple-700" },
-  { key: "education"  as HomePriceSector, icon: GraduationCap,   ar: "تعليم",   color: "from-indigo-500 to-blue-600" },
+  { key: "restaurant" as HomePriceSector, icon: UtensilsCrossed, ar: "مطاعم و مقاهي",       color: "from-orange-500 to-amber-500" },
+  { key: "ecommerce"  as HomePriceSector, icon: ShoppingBag,     ar: "متاجر",               color: "from-blue-500 to-cyan-500" },
+  { key: "corporate"  as HomePriceSector, icon: Building2,       ar: "شركات و الوكالات",    color: "from-slate-600 to-zinc-700" },
+  { key: "healthcare" as HomePriceSector, icon: Heart,           ar: "الصحة و التجميل",     color: "from-rose-500 to-pink-600" },
+  { key: "ai"         as HomePriceSector, icon: Bot,             ar: "ذكاء الاصطناعي",      color: "from-violet-600 to-purple-700" },
+  { key: "education"  as HomePriceSector, icon: GraduationCap,   ar: "التعليم و المنصات",   color: "from-indigo-500 to-blue-600" },
 ];
 
 const fade = (i = 0) => ({
