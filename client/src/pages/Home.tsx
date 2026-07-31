@@ -1158,7 +1158,8 @@ export default function Home() {
             </motion.div>
 
             {/* Right: 6 items in single row with dividers */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-white/[0.06] rtl:divide-x-reverse border-t border-white/[0.06] lg:border-t-0">
+            {/* always a single scrollable row — no wrapping on any screen size */}
+            <div className="flex-1 flex overflow-x-auto scrollbar-none border-t border-white/[0.06] lg:border-t-0 divide-x divide-white/[0.06] rtl:divide-x-reverse">
               {[
                 { icon: Lightbulb,  en: "Custom\nSolution",        ar: "حل\nمخصص",              enDesc: "Built around your business.",               arDesc: "مبني حول عملك." },
                 { icon: Layers,     en: "Scalable\nArchitecture",   ar: "بنية قابلة\nللتوسّع",   enDesc: "Systems that grow with you.",               arDesc: "أنظمة تنمو مع مشروعك." },
@@ -1171,20 +1172,20 @@ export default function Home() {
                 const titleLines = ar ? f.ar.split("\n") : f.en.split("\n");
                 return (
                   <motion.div key={i} {...fade(i * 0.06)}
-                    className="flex flex-col gap-3 px-5 py-8 md:px-6 hover:bg-white/[0.03] transition-colors duration-200">
+                    className="flex flex-col gap-3 px-5 py-8 md:px-6 hover:bg-white/[0.03] transition-colors duration-200 min-w-[130px] flex-1 shrink-0">
                     <div className="w-7 h-7 flex items-center justify-center">
                       <FIcon className="w-[18px] h-[18px] text-white/55" strokeWidth={1.5} />
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-white leading-snug mb-1.5">
-                        {titleLines[0]}<br />{titleLines[1]}
+                        {titleLines[0]}{titleLines[1] ? <><br />{titleLines[1]}</> : null}
                       </p>
-                      <p className="text-[11px] text-white/36 leading-[1.6]">
+                      <p className="text-[11px] text-white/55 leading-[1.6]">
                         {ar ? f.arDesc : f.enDesc}
                       </p>
                     </div>
                     {f.stat && (
-                      <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.15em] mt-auto">{f.stat}</p>
+                      <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.15em] mt-auto">{f.stat}</p>
                     )}
                   </motion.div>
                 );
@@ -1216,34 +1217,14 @@ export default function Home() {
                 </Link>
               </motion.div>
 
-              {/* Right: browser + floating phone mockup */}
-              <motion.div {...fade(1)} className="relative pb-8">
-                {/* Main browser frame */}
-                <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-[0_32px_80px_-20px_rgba(0,0,0,0.18)] dark:shadow-[0_32px_80px_-20px_rgba(255,255,255,0.07)]">
-                  {/* Chrome bar */}
-                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
-                    </div>
-                    <div className="flex-1 mx-3 px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-[10px] font-mono text-black/35 dark:text-white/35 flex items-center gap-1.5 max-w-[200px]">
-                      <Globe className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">qiroxstudio.online/demo</span>
-                    </div>
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white shrink-0">LIVE</span>
-                  </div>
-                  <img src={demoEcommerceImg} alt="QIROX Demo System" className="w-full block" loading="lazy" />
-                </div>
-                {/* Floating phone card */}
-                <div className="absolute -bottom-4 rtl:-right-4 ltr:-left-4 md:rtl:-right-8 md:ltr:-left-8 w-28 md:w-36 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden shadow-2xl shadow-black/15">
-                  <div className="px-2 pt-2 pb-1 bg-gray-50 dark:bg-gray-800 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-400/60" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400/60" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-400/60" />
-                  </div>
-                  <img src={demoRestaurantImg} alt="QIROX Mobile" className="w-full block" loading="lazy" />
-                </div>
+              {/* Right: devices mockup image */}
+              <motion.div {...fade(1)} className="flex items-center justify-center">
+                <img
+                  src="/demo-devices.png"
+                  alt="QIROX Demo"
+                  className="w-full max-w-lg object-contain drop-shadow-2xl"
+                  loading="lazy"
+                />
               </motion.div>
             </div>
           </div>
