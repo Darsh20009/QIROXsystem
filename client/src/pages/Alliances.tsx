@@ -250,7 +250,7 @@ function AllianceSectionBlock({ alliance, lang }: { alliance: Alliance; lang: st
             </span>
           </motion.div>
 
-          {/* Logos row — the star of the show */}
+          {/* Logos row the star of the show */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={contentVisible ? { opacity: 1, y: 0 } : {}}
@@ -344,7 +344,7 @@ function AllianceSectionBlock({ alliance, lang }: { alliance: Alliance; lang: st
             </div>
           </motion.div>
 
-          {/* Alliance name — BIG */}
+          {/* Alliance name BIG */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={contentVisible ? { opacity: 1, y: 0 } : {}}
@@ -439,8 +439,8 @@ function buildAlliances(): Alliance[] {
       typeAr: "شراكة استراتيجية • سوشيل ميديا",
       typeEn: "Strategic Alliance • Social Media",
       tagBg: "#6366f110",
-      descAr: "شدج هي شريكنا الإبداعي الحصري في عالم السوشيل بوسترز. نحن نبني الأنظمة وهم يصنعون الإبداع البصري — معاً نقدم للعميل تجربة رقمية متكاملة من الكود حتى التصميم.",
-      descEn: "Shadj is our exclusive creative partner in social poster design. We build the systems, they craft the visual creativity — together we deliver a complete digital experience from code to design.",
+      descAr: "شدج هي شريكنا الإبداعي الحصري في عالم السوشيل بوسترز. نحن نبني الأنظمة وهم يصنعون الإبداع البصري معاً نقدم للعميل تجربة رقمية متكاملة من الكود حتى التصميم.",
+      descEn: "Shadj is our exclusive creative partner in social poster design. We build the systems, they craft the visual creativity together we deliver a complete digital experience from code to design.",
       thankAr: "شكراً لفريق شدج على الإبداع اللا محدود، وشكراً لكيروكس على الثقة والبنية التقنية المتينة.",
       thankEn: "Thank you Shadj for limitless creativity, and thank you QIROX for the trust and solid tech backbone.",
       url: "https://shadj-graphics.space",
@@ -464,8 +464,8 @@ function buildAlliances(): Alliance[] {
       typeAr: "شريك دفع إقليمي • العالم العربي",
       typeEn: "Regional Payment Partner • Arab World",
       tagBg: "#3b82f610",
-      descAr: "تكامل PayMob يمنح عملاء كيروكس بوابة دفع محلية احترافية تدعم البطاقات البنكية، المحافظ الرقمية، والدفع عند الاستلام — محلياً وإقليمياً بثقة وأمان.",
-      descEn: "PayMob integration gives QIROX clients a professional local payment gateway supporting bank cards, digital wallets, and COD — locally and regionally with trust and security.",
+      descAr: "تكامل PayMob يمنح عملاء كيروكس بوابة دفع محلية احترافية تدعم البطاقات البنكية، المحافظ الرقمية، والدفع عند الاستلام محلياً وإقليمياً بثقة وأمان.",
+      descEn: "PayMob integration gives QIROX clients a professional local payment gateway supporting bank cards, digital wallets, and COD locally and regionally with trust and security.",
       thankAr: "شكراً لـ PayMob على البنية التحتية المالية الموثوقة، وشكراً لكيروكس على دمجها في منتجاتنا.",
       thankEn: "Thank you PayMob for reliable financial infrastructure, and QIROX for seamlessly integrating it into our products.",
       url: "https://paymob.com",
@@ -539,8 +539,8 @@ function buildAlliances(): Alliance[] {
       typeAr: "منصة التطوير الرسمية",
       typeEn: "Official Development Platform",
       tagBg: "#e6edf310",
-      descAr: "جميع مشاريع كيروكس ومنتجاتها تعيش على GitHub. نظام التحكم بالإصدار، CI/CD، وإدارة فريق التطوير — كل ذلك مدعوم بأقوى منصة تطوير في العالم.",
-      descEn: "All QIROX projects and products live on GitHub. Version control, CI/CD, and dev team management — all powered by the world's strongest development platform.",
+      descAr: "جميع مشاريع كيروكس ومنتجاتها تعيش على GitHub. نظام التحكم بالإصدار، CI/CD، وإدارة فريق التطوير كل ذلك مدعوم بأقوى منصة تطوير في العالم.",
+      descEn: "All QIROX projects and products live on GitHub. Version control, CI/CD, and dev team management all powered by the world's strongest development platform.",
       thankAr: "شكراً لـ GitHub على المنصة التي مكّنت آلاف المطورين، وشكراً لكيروكس على كل commit يبني مستقبل عملائنا.",
       thankEn: "Thank you GitHub for the platform that empowered thousands of developers, and QIROX for every commit that builds our clients' future.",
       url: "https://github.com",
@@ -564,8 +564,8 @@ function buildAlliances(): Alliance[] {
       typeAr: "شريك الذكاء الاصطناعي المتقدم",
       typeEn: "Advanced AI Partner",
       tagBg: "#a855f710",
-      descAr: "Moonshot AI (Kimi) تشغّل المحرك الذكي داخل منصة كيروكس. معالجة النصوص، الأسئلة الطويلة، ومساعد QIROX AI — كل ذلك مدعوم بأحد أقوى النماذج اللغوية في العالم.",
-      descEn: "Moonshot AI (Kimi) powers the intelligence engine inside the QIROX platform. Text processing, long context understanding, and the QIROX AI assistant — all powered by one of the world's most advanced language models.",
+      descAr: "Moonshot AI (Kimi) تشغّل المحرك الذكي داخل منصة كيروكس. معالجة النصوص، الأسئلة الطويلة، ومساعد QIROX AI كل ذلك مدعوم بأحد أقوى النماذج اللغوية في العالم.",
+      descEn: "Moonshot AI (Kimi) powers the intelligence engine inside the QIROX platform. Text processing, long context understanding, and the QIROX AI assistant all powered by one of the world's most advanced language models.",
       thankAr: "شكراً لـ Moonshot AI على الذكاء الذي يجعل مساعدنا يفهم ويجيب، وشكراً لكيروكس على دمج هذا الذكاء في خدمة عملائها.",
       thankEn: "Thank you Moonshot AI for the intelligence that makes our assistant understand and respond, and QIROX for embedding this AI in service of our clients.",
       url: "https://www.moonshot.cn",
@@ -656,8 +656,8 @@ export default function Alliances() {
 
   useSEO({
     title: lang === "ar"
-      ? "تحالفات كيروكس — شركاؤنا الاستراتيجيون في التقنية والابتكار"
-      : "QIROX Alliances — Our Strategic Technology & Innovation Partners",
+      ? "تحالفات كيروكس شركاؤنا الاستراتيجيون في التقنية والابتكار"
+      : "QIROX Alliances Our Strategic Technology & Innovation Partners",
     description: lang === "ar"
       ? "تعرّف على تحالفات كيروكس الاستراتيجية: شدج، PayMob، Storage Station، PayPal، GitHub، وMoonshot AI."
       : "Meet QIROX strategic alliances: Shadj, PayMob, Storage Station, PayPal, GitHub, and Moonshot AI.",

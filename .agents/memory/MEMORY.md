@@ -25,3 +25,6 @@
 - [Push banner persistence](push-banner-persistence.md) — PushPermissionBanner uses localStorage (not sessionStorage) with 7-day TTL so it re-shows after a week if user dismissed without subscribing.
 - [Finance Adjustments & Payroll Fix](finance-adjustments.md) — Payroll was missing from profit calc; FinanceAdjustmentModel added for manual bank-style control.
 - [Nav Items Coverage](nav-items-coverage.md) — ALL_NAV in EmployeeLayout.tsx now has ~70 entries; both ALL_NAV + ROLE_ITEMS must be updated when adding new pages.
+- [Client Stores admin](client-stores.md) — AdminClientStores.tsx at /admin/client-stores; 8 templates; ClientStoreModel in ecommerce.ts; server routes at /api/admin/client-stores (CRUD + publish + suspend).
+- [Apple Wallet certs deployed](apple-wallet-certs.md) — PEM files copied to server/certs/ AND set as env vars APPLE_PASS_CERT/APPLE_PASS_KEY/APPLE_WWDR_CERT; .gitignore has *.pem rule.
+- [QIROX Stores routing](stores-routing.md) — /s/:slug is public route (added to isPublicRoute check with startsWith); /my-store is auth-required; publicRoutes array uses exact match + startsWith for /templates/ /s/ /sector/.

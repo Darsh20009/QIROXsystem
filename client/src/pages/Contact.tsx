@@ -30,7 +30,7 @@ export default function Contact() {
   const { data: user } = useUser();
 
   useSEO({
-    title: lang === "ar" ? "تواصل معنا — كيروكس استوديو | الرياض" : "Contact Us — Qirox Studio | Riyadh",
+    title: lang === "ar" ? "تواصل معنا كيروكس استوديو | الرياض" : "Contact Us Qirox Studio | Riyadh",
     description: lang === "ar"
       ? "تواصل مع فريق كيروكس استوديو للحصول على عرض سعر لمشروعك. نرد خلال دقائق. الرياض، المملكة العربية السعودية."
       : "Contact Qirox Studio team for a project quote. We respond within minutes. Riyadh, Saudi Arabia.",

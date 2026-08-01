@@ -1779,6 +1779,21 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  // PATCH /api/admin/orders/:id/margin — set profit margin % for a project
+  app.patch("/api/admin/orders/:id/margin", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { OrderModel } = await import("./models");
+    const { marginPct } = req.body;
+    const pct = Math.min(100, Math.max(0, Number(marginPct) || 0));
+    const order = await (OrderModel as any).findByIdAndUpdate(
+      req.params.id,
+      { $set: { marginPct: pct } },
+      { new: true }
+    );
+    if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+    res.json({ ok: true, marginPct: order.marginPct });
+  });
+
   app.get("/api/admin/profit-report", async (req, res) => {
     const _role = (req.user as any)?.role;
     if (!req.isAuthenticated() || !["admin","manager","accountant"].includes(_role)) return res.sendStatus(403);
@@ -1788,12 +1803,33 @@ export async function registerRoutes(
       totalAmount: { $gt: 0 },
     }).populate("userId", "fullName username businessName").sort({ createdAt: -1 });
 
+    const { ReceiptVoucherModel } = await import("./models");
+
     const result = await Promise.all(completedOrders.map(async (order: any) => {
-      const expenses = await (OrderExpenseModel as any).find({ orderId: order._id });
-      const totalExpenses = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      const revenue = order.totalAmount || 0;
-      const netProfit = revenue - totalExpenses;
-      const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+      const [expenses, receipts] = await Promise.all([
+        (OrderExpenseModel as any).find({ orderId: order._id }),
+        (ReceiptVoucherModel as any).find({ orderId: order._id, status: "issued" }),
+      ]);
+
+      const opsExpenses   = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const projectValue  = order.totalAmount || 0;                         // قيمة المشروع الكاملة
+      const walletPaid    = order.walletAmountUsed || 0;
+      const receiptsPaid  = receipts.reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      const totalCollected = receiptsPaid + walletPaid;                     // ما تم تحصيله فعلاً
+      const remainingToCollect = Math.max(0, projectValue - totalCollected); // الباقي للتحصيل
+
+      // Use collected amount as the working revenue (can't spend what you haven't received)
+      const revenue       = totalCollected > 0 ? totalCollected : projectValue;
+      const marginPct     = order.marginPct || 0;
+
+      // ── 3-Level P&L ──────────────────────────────────────────────────────────
+      const foundingCost  = marginPct > 0 ? Math.round(projectValue * (1 - marginPct / 100)) : 0;
+      const grossProfit   = projectValue - foundingCost;
+      const netBalance    = grossProfit - opsExpenses;
+      const totalExpenses = foundingCost + opsExpenses;
+      const netProfit     = projectValue - totalExpenses;
+      const margin        = projectValue > 0 ? (netProfit / projectValue) * 100 : (marginPct || 0);
+
       return {
         orderId: order.id,
         orderCreatedAt: order.createdAt,
@@ -1801,7 +1837,16 @@ export async function registerRoutes(
         client: order.userId,
         businessName: order.businessName || order.userId?.fullName,
         serviceType: order.serviceType,
+        projectValue,          // قيمة المشروع الكاملة
+        totalCollected,        // ما دفعه العميل فعلاً
+        remainingToCollect,    // الباقي للتحصيل
+        receiptsCount: receipts.length,
         revenue,
+        marginPct,
+        foundingCost,
+        grossProfit,
+        opsExpenses,
+        netBalance,
         totalExpenses,
         netProfit,
         margin: Math.round(margin * 10) / 10,
@@ -1811,10 +1856,16 @@ export async function registerRoutes(
     }));
 
     const totals = result.reduce((acc, r) => ({
-      revenue: acc.revenue + r.revenue,
-      expenses: acc.expenses + r.totalExpenses,
-      netProfit: acc.netProfit + r.netProfit,
-    }), { revenue: 0, expenses: 0, netProfit: 0 });
+      revenue:             acc.revenue             + r.projectValue,
+      totalCollected:      acc.totalCollected      + r.totalCollected,
+      remainingToCollect:  acc.remainingToCollect  + r.remainingToCollect,
+      foundingCost:        acc.foundingCost        + r.foundingCost,
+      grossProfit:         acc.grossProfit         + r.grossProfit,
+      opsExpenses:         acc.opsExpenses         + r.opsExpenses,
+      netBalance:          acc.netBalance          + r.netBalance,
+      expenses:            acc.expenses            + r.totalExpenses,
+      netProfit:           acc.netProfit           + r.netProfit,
+    }), { revenue: 0, totalCollected: 0, remainingToCollect: 0, foundingCost: 0, grossProfit: 0, opsExpenses: 0, netBalance: 0, expenses: 0, netProfit: 0 });
 
     // ── Add-on profit breakdown (from active subscriptions × addon cost) ──
     let addonStats = { revenue: 0, cost: 0, profit: 0, count: 0, items: [] as any[] };
@@ -9021,21 +9072,36 @@ export async function registerRoutes(
       const sharpLib = (await import("sharp" as any)).default;
       const sb = (s: string) => Buffer.from(s.trim());
 
-      // icon.png — "Q" mark on dark tile
-      const mkIcon = (size: number) =>
-        sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+      // icon.png — actual Qirox icon (qirox-icon-nobg.png) resized, fallback to "Q" SVG
+      const iconSrcPath = pathLib.default.join(process.cwd(), "dist", "public", "qirox-icon-nobg.png");
+      const iconSrcExists = fsSync.default.existsSync(iconSrcPath);
+      const mkIcon = (size: number) => {
+        if (iconSrcExists) {
+          return sharpLib(iconSrcPath)
+            .resize(size, size, { fit: "contain", background: { r: 10, g: 10, b: 22, alpha: 1 } })
+            .png().toBuffer();
+        }
+        return sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
           <rect width="${size}" height="${size}" rx="${Math.round(size*0.22)}" fill="#0a0a16"/>
           <text x="${size/2}" y="${size*0.72}" font-family="Arial Black,Arial" font-size="${Math.round(size*0.56)}"
             font-weight="900" fill="white" text-anchor="middle">Q</text>
         </svg>`)).png().toBuffer();
+      };
 
-      // logo.png — "QIROX" wordmark on transparent background
-      const mkLogo = (w: number, h: number) =>
-        sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      // logo.png — actual Qirox icon on transparent background (fits Apple Wallet logo strip)
+      const mkLogo = (w: number, h: number) => {
+        if (iconSrcExists) {
+          return sharpLib(iconSrcPath)
+            .resize(h, h, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .extend({ right: w - h, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .png().toBuffer();
+        }
+        return sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
           <text x="${w/2}" y="${Math.round(h*0.78)}" font-family="Arial Black,Arial"
             font-size="${Math.round(h*0.60)}" font-weight="900" fill="white"
             text-anchor="middle" letter-spacing="${Math.round(h*0.14)}">QIROX</text>
         </svg>`)).png().toBuffer();
+      };
 
       // background.png — black→charcoal gradient with subtle ring decorations
       const mkBackground = (w: number, h: number) =>
@@ -9061,18 +9127,27 @@ export async function registerRoutes(
       const mkThumbnail = async (size: number): Promise<Buffer> => {
         if (avatarUrl) {
           try {
-            const resp = await fetch(avatarUrl, { signal: AbortSignal.timeout(4000) });
-            if (resp.ok) {
-              const raw = Buffer.from(await resp.arrayBuffer());
+            // avatarUrl is typically a relative path like /uploads/xxx.png — read from filesystem
+            let rawBuf: Buffer | null = null;
+            if (avatarUrl.startsWith("/uploads/") || avatarUrl.startsWith("uploads/")) {
+              const localPath = pathLib.default.join(process.cwd(), avatarUrl.startsWith("/") ? avatarUrl.slice(1) : avatarUrl);
+              if (fsSync.default.existsSync(localPath)) {
+                rawBuf = fsSync.default.readFileSync(localPath);
+              }
+            } else if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
+              const resp = await fetch(avatarUrl, { signal: AbortSignal.timeout(5000) });
+              if (resp.ok) rawBuf = Buffer.from(await resp.arrayBuffer());
+            }
+            if (rawBuf) {
               const mask = Buffer.from(
                 `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2}" fill="white"/></svg>`
               );
-              return sharpLib(raw)
+              return sharpLib(rawBuf)
                 .resize(size, size, { fit: "cover", position: "centre" })
                 .composite([{ input: mask, blend: "dest-in" }])
                 .png().toBuffer();
             }
-          } catch { /* fall through */ }
+          } catch { /* fall through to initials */ }
         }
         // Fallback — gradient circle with initials
         return sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
@@ -9147,19 +9222,21 @@ export async function registerRoutes(
           ],
           backFields: [
             { key: "website",   label: "الموقع",      value: "qiroxstudio.online" },
+            { key: "profile",   label: "ملف الموظف",  value: `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}` },
             { key: "dashboard", label: "لوحة التحكم", value: `${process.env.APP_URL || "https://qiroxstudio.online"}/employee` },
-            { key: "qr",        label: "رابط QR",     value: qrValue },
+            { key: "qr",        label: "رابط تسجيل الدخول", value: qrValue },
           ],
         },
         // Modern barcodes array + legacy barcode field (iOS 9 compat)
+        // Barcode opens public employee profile — any iPhone camera can scan it
         barcodes: [{
-          message:         qrValue,
+          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",
         }],
         barcode: {
-          message:         qrValue,
+          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",
@@ -12268,6 +12345,151 @@ export async function registerRoutes(
       await cfg.save();
     }
     res.json(cfg);
+  });
+
+  // ── Client Stores (QIROX Stores — per-client deployed instances) ──────────
+
+  // GET /api/admin/client-stores — list all
+  app.get("/api/admin/client-stores", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const stores = await (ClientStoreModel as any).find()
+      .populate("clientId", "fullName username email")
+      .sort({ createdAt: -1 });
+    res.json(stores);
+  });
+
+  // POST /api/admin/client-stores — create
+  app.post("/api/admin/client-stores", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).create(req.body);
+    const populated = await (ClientStoreModel as any).findById(store._id).populate("clientId", "fullName username email");
+    res.status(201).json(populated);
+  });
+
+  // PUT /api/admin/client-stores/:id — update
+  app.put("/api/admin/client-stores/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findByIdAndUpdate(req.params.id, req.body, { new: true })
+      .populate("clientId", "fullName username email");
+    if (!store) return res.sendStatus(404);
+    res.json(store);
+  });
+
+  // DELETE /api/admin/client-stores/:id — delete
+  app.delete("/api/admin/client-stores/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    await (ClientStoreModel as any).findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // POST /api/admin/client-stores/:id/publish — publish (activate) a store
+  app.post("/api/admin/client-stores/:id/publish", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findByIdAndUpdate(
+      req.params.id,
+      { status: "active", publishedAt: new Date() },
+      { new: true }
+    ).populate("clientId", "fullName username email");
+    if (!store) return res.sendStatus(404);
+    // Notify the client
+    const clientId = store.clientId?.id || store.clientId;
+    if (clientId) {
+      fireNotify(
+        String(clientId),
+        "🎉 متجرك جاهز!",
+        `تم إطلاق متجرك "${store.storeNameAr || store.storeNameEn || "QIROX Store"}" بنجاح`,
+        { type: "success", link: "/dashboard", icon: "🛍️", tag: `store-published-${store.id}` }
+      ).catch(() => {});
+    }
+    res.json(store);
+  });
+
+  // POST /api/admin/client-stores/:id/suspend — suspend a store
+  app.post("/api/admin/client-stores/:id/suspend", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findByIdAndUpdate(
+      req.params.id,
+      { status: "suspended" },
+      { new: true }
+    ).populate("clientId", "fullName username email");
+    if (!store) return res.sendStatus(404);
+    res.json(store);
+  });
+
+  // GET /api/public/employee-card/:code — public profile shown when Apple Wallet QR is scanned
+  app.get("/api/public/employee-card/:code", async (req, res) => {
+    const { UserModel, EmployeeProfileModel } = await import("./models");
+    const code = req.params.code;
+    // Match by employeeCode OR QR token (the barcode value)
+    const user = await (UserModel as any).findOne({
+      $or: [
+        { employeeCode: code },
+        { qrLoginToken: code },
+        { username: code },
+      ],
+      role: { $ne: "client" },
+    }).lean();
+    if (!user) return res.status(404).json({ error: "بطاقة غير موجودة" });
+    const emp = await (EmployeeProfileModel as any).findOne({ userId: (user as any)._id }).lean();
+    res.json({
+      fullName:     (user as any).fullName || (user as any).username,
+      jobTitle:     (emp as any)?.jobTitle || (user as any).jobTitle || "Team Member",
+      department:   (emp as any)?.department || "",
+      employeeCode: (user as any).employeeCode || "",
+      phone:        (emp as any)?.phone || (user as any).phone || "",
+      email:        (user as any).email || "",
+      avatarUrl:    (user as any).avatarUrl || (user as any).profilePhotoUrl || "",
+      company:      "QIROX Studio",
+      verifiedAt:   new Date().toISOString(),
+    });
+  });
+
+  // GET /api/public/stores/:slug — public endpoint (no auth) → store info by subdomain
+  app.get("/api/public/stores/:slug", async (req, res) => {
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findOne({ subdomain: req.params.slug, status: "active" })
+      .populate("clientId", "fullName username");
+    if (!store) return res.status(404).json({ error: "المتجر غير موجود أو غير نشط" });
+    res.json({
+      id:           store.id,
+      storeNameAr:  store.storeNameAr,
+      storeNameEn:  store.storeNameEn,
+      templateSlug: store.templateSlug,
+      subdomain:    store.subdomain,
+      customDomain: store.customDomain,
+      description:  store.description,
+      logoUrl:      store.logoUrl,
+      primaryColor: store.primaryColor,
+      status:       store.status,
+      planSlug:     store.planSlug,
+    });
+  });
+
+  // GET /api/client/my-store — authenticated client gets their own store
+  app.get("/api/client/my-store", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { ClientStoreModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findOne({ clientId: (req.user as any)._id })
+      .sort({ createdAt: -1 });
+    if (!store) return res.status(404).json({ error: "لا يوجد متجر مرتبط بحسابك" });
+    res.json(store);
+  });
+
+  // GET /api/admin/client-stores/clients — list clients without stores (for picker)
+  app.get("/api/admin/client-stores/clients", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { UserModel, ClientStoreModel } = await import("./models");
+    const existingClientIds = await (ClientStoreModel as any).distinct("clientId");
+    const clients = await (UserModel as any).find({ role: "client" })
+      .select("fullName username email")
+      .sort({ fullName: 1 });
+    res.json(clients);
   });
 
   // /.well-known/assetlinks.json — for Android TWA (Play Store + Huawei)

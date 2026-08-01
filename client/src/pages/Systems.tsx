@@ -58,7 +58,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: QrCode,
       title: "قائمة QR كود",
-      description: "منيو رقمي يُفتح بمسح كيو آر — بدون تطبيق، يعمل على أي هاتف",
+      description: "منيو رقمي يُفتح بمسح كيو آر بدون تطبيق، يعمل على أي هاتف",
       features: ["تحديث فوري للأسعار", "صور عالية الجودة", "متعدد اللغات", "تخصيص كامل للألوان والشعار"],
     },
     {
@@ -264,13 +264,13 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: CalendarCheck,
       title: "نظام حجز المواعيد",
-      description: "حجوزات ذكية بدون اتصال — العميلة تحجز بنفسها وتختار المختصة",
+      description: "حجوزات ذكية بدون اتصال العميلة تحجز بنفسها وتختار المختصة",
       features: ["تقويم لكل مختصة", "تأكيد تلقائي بـ SMS/WhatsApp", "تذكير قبل الموعد بساعة", "إعادة جدولة وإلغاء سهل"],
     },
     {
       icon: Users,
       title: "إدارة العميلات (CRM)",
-      description: "ملف كامل لكل عميلة — تاريخ زياراتها وتفضيلاتها وصورها",
+      description: "ملف كامل لكل عميلة تاريخ زياراتها وتفضيلاتها وصورها",
       features: ["سجل الزيارات والخدمات", "تفضيلات الألوان والمنتجات", "نقاط ولاء وعروض خاصة", "رسائل أعياد الميلاد"],
     },
     {
@@ -297,7 +297,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: Bot,
       title: "مساعد ذكاء اصطناعي مخصص",
-      description: "روبوت محادثة ذكي مدرّب على بيانات مشروعك — يرد على عملائك 24/7 بأسلوبك",
+      description: "روبوت محادثة ذكي مدرّب على بيانات مشروعك يرد على عملائك 24/7 بأسلوبك",
       features: ["تدريب على محتوى موقعك ومنتجاتك", "يتحدث عربي وإنجليزي بطلاقة", "دمج مع WhatsApp والموقع والتطبيق", "تقارير المحادثات والتحليلات"],
       badge: "الأكثر طلباً",
       highlight: true,
@@ -305,7 +305,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: Zap,
       title: "أتمتة العمليات بالذكاء الاصطناعي",
-      description: "أتمتة المهام المتكررة في مشروعك — من الردود إلى التقارير إلى إدارة المحتوى",
+      description: "أتمتة المهام المتكررة في مشروعك من الردود إلى التقارير إلى إدارة المحتوى",
       features: ["أتمتة الردود والمتابعة", "توليد محتوى وتقارير تلقائية", "تنبيهات ذكية حسب السياق", "تكامل مع أنظمتك الحالية"],
     },
     {
@@ -387,7 +387,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: CalendarCheck,
       title: "نظام حجز المواعيد الطبية",
-      description: "احجز بأي وقت من أي مكان — دون الحاجة للاتصال",
+      description: "احجز بأي وقت من أي مكان دون الحاجة للاتصال",
       features: ["جدول الطبيب المتاح", "تذكيرات SMS وWhatsApp", "إلغاء وإعادة جدولة", "قائمة الانتظار الذكية"],
     },
     {
@@ -405,7 +405,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
     {
       icon: MessageSquare,
       title: "نظام الاستشارات الطبية عن بعد",
-      description: "تليميديسين — استشارة طبية فيديو من أي مكان",
+      description: "تليميديسين استشارة طبية فيديو من أي مكان",
       features: ["مكالمة فيديو مشفرة", "كتابة التشخيص خلال الجلسة", "الوصفة الإلكترونية بعد المكالمة", "أرشيف الاستشارات"],
       locked: true,
     },
@@ -442,8 +442,8 @@ export default function Systems() {
 
   useSEO({
     title: lang === "ar"
-      ? "أنظمة كيروكس استوديو — حلول رقمية لكل قطاع | مطاعم، متاجر، تعليم"
-      : "Qirox Studio Systems — Digital Solutions for Every Sector | Restaurants, Stores, Education",
+      ? "أنظمة كيروكس استوديو حلول رقمية لكل قطاع | مطاعم، متاجر، تعليم"
+      : "Qirox Studio Systems Digital Solutions for Every Sector | Restaurants, Stores, Education",
     description: lang === "ar"
       ? "اكتشف أنظمة كيروكس الرقمية المتخصصة لكل قطاع: نظام إدارة مطاعم، متجر إلكتروني، منصة تعليمية، نظام عقارات، نظام مستشفيات، وأكثر. حلول جاهزة وقابلة للتخصيص بالكامل."
       : "Discover Qirox digital systems for every sector: restaurant management, e-commerce, education platforms, real estate, medical systems, and more. Ready-made and fully customizable solutions.",
@@ -490,7 +490,7 @@ export default function Systems() {
   ];
 
   const whyQirox = [
-    { icon: Settings, title: lang === "ar" ? "تخصيص كامل" : "Full Customization", desc: lang === "ar" ? "كل نظام يُبنى خصيصاً لمشروعك — لا قوالب جاهزة" : "Every system is built specifically for your project — no templates" },
+    { icon: Settings, title: lang === "ar" ? "تخصيص كامل" : "Full Customization", desc: lang === "ar" ? "كل نظام يُبنى خصيصاً لمشروعك لا قوالب جاهزة" : "Every system is built specifically for your project no templates" },
     { icon: Shield,   title: lang === "ar" ? "أمان وحماية" : "Security & Safety",  desc: lang === "ar" ? "بنية تحتية محمية مع نسخ احتياطية يومية" : "Protected infrastructure with daily backups" },
     { icon: Zap,      title: lang === "ar" ? "سرعة الأداء" : "High Performance",   desc: lang === "ar" ? "مواقع تُحمّل بأقل من ثانية على أي جهاز" : "Sites that load in under a second on any device" },
     { icon: Headphones, title: lang === "ar" ? "دعم مستمر" : "Ongoing Support",   desc: lang === "ar" ? "فريقنا معك بعد الإطلاق لضمان نجاح مشروعك" : "Our team is with you after launch to ensure project success" },
@@ -520,8 +520,8 @@ export default function Systems() {
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-white/40 text-base max-w-lg mx-auto mb-3 leading-relaxed">
               {lang === "ar"
-                ? "اختر قطاعك واكتشف الأنظمة والمواقع التي نتخصص في تنفيذها — مع امكانية تنفيذ أي فكرة خارج القائمة"
-                : "Choose your sector and discover the systems and websites we specialize in — with the ability to build any idea beyond the list"}
+                ? "اختر قطاعك واكتشف الأنظمة والمواقع التي نتخصص في تنفيذها مع امكانية تنفيذ أي فكرة خارج القائمة"
+                : "Choose your sector and discover the systems and websites we specialize in with the ability to build any idea beyond the list"}
             </motion.p>
             {/* Trust badges */}
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap justify-center gap-2.5 mb-10">
@@ -633,7 +633,7 @@ export default function Systems() {
                       </li>
                     ))}
                   </ul>
-                  {/* Capability tags — info only, no order CTA */}
+                  {/* Capability tags info only, no order CTA */}
                   <div className="pt-1">
                     <div className={`text-[9px] font-bold uppercase tracking-widest mb-2 ${sys.locked ? "text-black/25 dark:text-white/25" : "text-black/35 dark:text-white/35"}`}>
                       {lang === "ar" ? "يشمل" : "Includes"}
@@ -682,8 +682,8 @@ export default function Systems() {
             </h2>
             <p className="text-white/50 dark:text-black/50 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
               {lang === "ar"
-                ? "القائمة فوق مجرد أمثلة — فريق QIROX ينفذ أي فكرة رقمية من الصفر، مهما كانت طبيعة مشروعك"
-                : "The list above is just examples — the QIROX team executes any digital idea from scratch, no matter the nature of your project"}
+                ? "القائمة فوق مجرد أمثلة فريق QIROX ينفذ أي فكرة رقمية من الصفر، مهما كانت طبيعة مشروعك"
+                : "The list above is just examples the QIROX team executes any digital idea from scratch, no matter the nature of your project"}
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-8">
               {CUSTOM_SYSTEMS.map((s, i) => {

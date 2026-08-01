@@ -273,7 +273,7 @@ export default function Consultation() {
           </div>
         </section>
 
-        {/* My Bookings — for logged-in users */}
+        {/* My Bookings for logged-in users */}
         {user && (
           <section className="py-12 px-4 border-t border-black/[0.06] dark:border-white/[0.06]">
             <div className="max-w-5xl mx-auto">

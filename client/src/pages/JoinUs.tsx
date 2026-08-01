@@ -35,7 +35,7 @@ function getPerks(L: boolean) {
     { icon: Rocket, title: L ? "بيئة ابتكارية" : "Innovative Environment", desc: L ? "نُشجع الأفكار الجديدة ونمنح فريقنا الحرية في التجريب والتعلم" : "We encourage new ideas and give our team the freedom to experiment and learn" },
     { icon: Zap, title: L ? "نمو مستمر" : "Continuous Growth", desc: L ? "دعم كامل لمسيرتك المهنية من تدريب وشهادات وفرص ترقٍّ" : "Full support for your career with training, certifications, and promotion opportunities" },
     { icon: Heart, title: L ? "ثقافة محترمة" : "Respectful Culture", desc: L ? "فريق صغير ومتعاون يقدّر كل فرد ويُقدّم بيئة عمل صحية" : "A small, collaborative team that values each individual and promotes a healthy work environment" },
-    { icon: Star, title: L ? "تأثير حقيقي" : "Real Impact", desc: L ? "عملك يُبنى ويُطلق — تأثيرك مباشر على عشرات العملاء" : "Your work gets built and launched — your impact is directly felt by dozens of clients" },
+    { icon: Star, title: L ? "تأثير حقيقي" : "Real Impact", desc: L ? "عملك يُبنى ويُطلق تأثيرك مباشر على عشرات العملاء" : "Your work gets built and launched your impact is directly felt by dozens of clients" },
   ];
 }
 
@@ -123,7 +123,7 @@ function CVUploadZone({ L, form, setForm }: { L: boolean; form: AppForm; setForm
               </div>
               <div>
                 <p className="text-sm font-bold text-black/60 dark:text-white/60">{L ? "اسحب ملفك هنا أو اضغط للاختيار" : "Drag your file here or click to browse"}</p>
-                <p className="text-[11px] text-black/35 dark:text-white/35 mt-1">{L ? "PDF, Word, JPG — حد أقصى 5MB" : "PDF, Word, JPG — max 5MB"}</p>
+                <p className="text-[11px] text-black/35 dark:text-white/35 mt-1">{L ? "PDF, Word, JPG حد أقصى 5MB" : "PDF, Word, JPG max 5MB"}</p>
               </div>
             </div>
           )}
@@ -375,8 +375,8 @@ export default function JoinUs() {
 
   useSEO({
     title: L
-      ? "وظائف كيروكس استوديو — انضم لفريقنا | التوظيف في الرياض"
-      : "Qirox Studio Careers — Join Our Team | Hiring in Riyadh",
+      ? "وظائف كيروكس استوديو انضم لفريقنا | التوظيف في الرياض"
+      : "Qirox Studio Careers Join Our Team | Hiring in Riyadh",
     description: L
       ? `كيروكس استوديو تبحث عن مبدعين ومطورين ومصممين للانضمام لفريقها في الرياض. ${openJobs.length > 0 ? openJobs.length + " وظيفة مفتوحة الآن." : "تقدّم بملفك المفتوح وسنتواصل معك."} بيئة عمل محترمة، فرص نمو حقيقية، تأثير مباشر.`
       : `Qirox Studio is hiring talented developers, designers, and creatives to join our Riyadh team. ${openJobs.length > 0 ? openJobs.length + " open positions." : "Submit an open application."} Respectful culture, real growth, direct impact.`,
@@ -410,7 +410,7 @@ export default function JoinUs() {
     })) : [{
       "@context": "https://schema.org",
       "@type": "JobPosting",
-      "title": "فرصة عمل مفتوحة — Qirox Studio",
+      "title": "فرصة عمل مفتوحة Qirox Studio",
       "description": "نقبل طلبات توظيف مفتوحة في التطوير والتصميم والمبيعات وخدمة العملاء في شركة كيروكس استوديو بالرياض",
       "datePosted": new Date().toISOString().split("T")[0],
       "employmentType": "FULL_TIME",
@@ -468,8 +468,8 @@ export default function JoinUs() {
             <motion.p variants={fadeUp} custom={2}
               className="text-black/40 dark:text-white/40 text-lg max-w-2xl mx-auto leading-relaxed mb-10">
               {L
-                ? "QIROX ليست مجرد شركة — إنها مصنع أنظمة يُغيّر قطاعات. نبحث عن عقول تريد الأثر الحقيقي، لا مجرد عنوان وظيفي."
-                : "QIROX isn't just a company — it's a systems factory reshaping industries. We seek minds that want real impact, not just a job title."}
+                ? "QIROX ليست مجرد شركة إنها مصنع أنظمة يُغيّر قطاعات. نبحث عن عقول تريد الأثر الحقيقي، لا مجرد عنوان وظيفي."
+                : "QIROX isn't just a company it's a systems factory reshaping industries. We seek minds that want real impact, not just a job title."}
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap items-center justify-center gap-4">
@@ -551,7 +551,7 @@ export default function JoinUs() {
             </h2>
             {openJobs.length === 0 && !isLoading && (
               <p className="text-black/40 dark:text-white/40 text-sm mt-2">
-                {L ? "نحن دائماً نبحث عن المواهب — أرسل لنا سيرتك المفتوحة وسنتواصل معك." : "We're always looking for talent — send your open application and we'll reach out."}
+                {L ? "نحن دائماً نبحث عن المواهب أرسل لنا سيرتك المفتوحة وسنتواصل معك." : "We're always looking for talent send your open application and we'll reach out."}
               </p>
             )}
           </motion.div>
@@ -643,8 +643,8 @@ export default function JoinUs() {
             </h2>
             <p className="text-white/35 mb-8 text-base leading-relaxed">
               {L
-                ? "بغض النظر عن الوظائف المعلنة — إذا كنت موهوباً ومتحمساً، نريد أن نعرفك"
-                : "Regardless of posted openings — if you're talented and passionate, we want to meet you"}
+                ? "بغض النظر عن الوظائف المعلنة إذا كنت موهوباً ومتحمساً، نريد أن نعرفك"
+                : "Regardless of posted openings if you're talented and passionate, we want to meet you"}
             </p>
             <button
               onClick={() => openApply(OPEN_APP)}

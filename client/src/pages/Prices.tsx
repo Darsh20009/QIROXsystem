@@ -563,7 +563,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   const TIcon = icons[tier];
 
   const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
-  const descrs = { lite: "الباقة الأساسية — مثالية للانطلاق", pro: "الباقة الذكية — الأكثر توازناً", infinity: "الباقة الشاملة — بلا قيود" };
+  const descrs = { lite: "الباقة الأساسية مثالية للانطلاق", pro: "الباقة الذكية الأكثر توازناً", infinity: "الباقة الشاملة بلا قيود" };
 
   return (
     <motion.div
@@ -574,7 +574,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
       {isPro && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-blue-400 to-transparent"/>}
       {isInfinity && <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent"/>}
 
-      {/* Popular badge — outside the card, above it */}
+      {/* Popular badge outside the card, above it */}
       {isPro && (
         <div className="absolute -top-3.5 inset-x-0 flex justify-center">
           <span className="flex items-center gap-1 text-[10px] font-black px-3 py-1 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30">
@@ -633,7 +633,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
               </p>
             )}
             <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>
-              {period === "sixmonth" ? "كل 6 أشهر" : period === "annual" ? "سنوياً — دفعة واحدة" : period === "multiyear" ? `${years} سنوات (خصم ${multiYearDiscount(years)}%)` : "مرة واحدة — للأبد"}
+              {period === "sixmonth" ? "كل 6 أشهر" : period === "annual" ? "سنوياً دفعة واحدة" : period === "multiyear" ? `${years} سنوات (خصم ${multiYearDiscount(years)}%)` : "مرة واحدة للأبد"}
             </p>
             {monthlyEquiv !== null && (
               <div className={`mt-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${
@@ -660,7 +660,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         {isLifetime && (
           <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl mb-4 ${isPro ? "bg-white/10 border border-white/15" : isInfinity ? "bg-amber-500/10 border border-amber-500/20" : "bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20"}`}>
             <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinity ? "text-amber-400" : isPro ? "text-blue-200" : "text-emerald-600 dark:text-emerald-400"}`}/>
-            <span className={`text-xs font-black ${isInfinity ? "text-amber-300" : isPro ? "text-white" : "text-emerald-700 dark:text-emerald-300"}`}>جميع الميزات مفتوحة — مدى الحياة</span>
+            <span className={`text-xs font-black ${isInfinity ? "text-amber-300" : isPro ? "text-white" : "text-emerald-700 dark:text-emerald-300"}`}>جميع الميزات مفتوحة مدى الحياة</span>
           </div>
         )}
         <div className="space-y-2.5">
@@ -708,7 +708,7 @@ function CustomBanner({ onOpen }: { onOpen: ()=>void }) {
         {/* Text */}
         <div className="flex-1 text-center md:text-start">
           <div className="flex items-center gap-2 justify-center md:justify-start mb-1">
-            <h3 className="text-base font-black text-gray-900 dark:text-white">باقة مخصصة — ما وجدت ما يناسبك؟</h3>
+            <h3 className="text-base font-black text-gray-900 dark:text-white">باقة مخصصة ما وجدت ما يناسبك؟</h3>
             <span className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
               <Bot className="w-2.5 h-2.5"/> AI
             </span>
@@ -850,7 +850,7 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
             <Sparkles className="w-4 h-4 text-white"/>
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-black text-black dark:text-white">باقة مخصصة — {sectorLabel}</h3>
+            <h3 className="text-sm font-black text-black dark:text-white">باقة مخصصة {sectorLabel}</h3>
             <p className="text-[10px] text-black/40 dark:text-white/40">اكتب احتياجاتك واحصل على عرض سعر</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05]">
@@ -976,7 +976,7 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
                 {user && <p>✓ يمكنك متابعة الطلب من حسابك</p>}
               </div>
               <a
-                href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} — ${sectorLabel}`)}`}
+                href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} ${sectorLabel}`)}`}
                 target="_blank" rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] hover:bg-[#20c05c] text-white text-sm font-black transition"
                 data-testid="button-whatsapp-ticket"
@@ -993,14 +993,14 @@ function CustomModal({ onClose, sector, sectorLabel, initialDuration }: {
   );
 }
 
-/* ─── Custom Inline Form (for "قطاع آخر" — no price, direct to staff) ── */
+/* ─── Custom Inline Form (for "قطاع آخر" no price, direct to staff) ── */
 function CustomInlineForm({ sector, sectorLabel, initialDuration }: {
   sector: string; sectorLabel: string; initialDuration?: string;
 }) {
   const { toast } = useToast();
   const { user } = useUser();
   const [chatHistory, setChatHistory] = useState<ChatMsg[]>([
-    { role: "assistant", content: `أهلاً بك 👋 — أخبرني عن مشروعك:\n• ما نوع نشاطك؟\n• ما الميزات الأساسية التي تحتاجها؟\n• هل لديك مرجع أو موقع يعجبك؟\n\nسأساعدك في صياغة المتطلبات ثم نرفعها مباشرة لفريق كيروكس.` },
+    { role: "assistant", content: `أهلاً بك 👋 أخبرني عن مشروعك:\n• ما نوع نشاطك؟\n• ما الميزات الأساسية التي تحتاجها؟\n• هل لديك مرجع أو موقع يعجبك؟\n\nسأساعدك في صياغة المتطلبات ثم نرفعها مباشرة لفريق كيروكس.` },
   ]);
   const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -1088,7 +1088,7 @@ function CustomInlineForm({ sector, sectorLabel, initialDuration }: {
           <p>✓ وصل طلبك مباشرةً للفريق المختص</p>
           <p>✓ سيتواصل معك أحد الموظفين خلال ساعات</p>
         </div>
-        <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} — ${sectorLabel}`)}`}
+        <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`مرحباً، لدي طلب سعر برقم التذكرة ${ticketNumber} ${sectorLabel}`)}`}
           target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#25D366] hover:bg-[#20c05c] text-white text-sm font-black transition"
           data-testid="button-inline-whatsapp">
@@ -1110,12 +1110,12 @@ function CustomInlineForm({ sector, sectorLabel, initialDuration }: {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-black text-black dark:text-white">قطاع آخر — اطلب نظامك المخصص</h3>
+            <h3 className="text-lg font-black text-black dark:text-white">قطاع آخر اطلب نظامك المخصص</h3>
             <span className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
               <Bot className="w-2.5 h-2.5"/> AI
             </span>
           </div>
-          <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">اوصف نظامك بدون التزام بسعر — سيرفع الطلب مباشرةً للفريق المختص</p>
+          <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">اوصف نظامك بدون التزام بسعر سيرفع الطلب مباشرةً للفريق المختص</p>
         </div>
       </div>
 
@@ -1145,7 +1145,7 @@ function CustomInlineForm({ sector, sectorLabel, initialDuration }: {
         <div className="p-5 space-y-4">
           <div>
             <label className="text-[10px] font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">الوصف النهائي لمتطلباتك *</label>
-            <textarea value={requirements} onChange={e=>setRequirements(e.target.value)} rows={5} placeholder="اكتب أو انقل الوصف هنا — كلما كان أوضح، كان عرض السعر أدق..." className="w-full bg-white dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none resize-none placeholder:text-black/25 dark:placeholder:text-white/25 text-black dark:text-white border border-black/[0.06] dark:border-white/[0.05]" data-testid="textarea-inline-requirements"/>
+            <textarea value={requirements} onChange={e=>setRequirements(e.target.value)} rows={5} placeholder="اكتب أو انقل الوصف هنا كلما كان أوضح، كان عرض السعر أدق..." className="w-full bg-white dark:bg-white/[0.04] rounded-xl px-3 py-2 text-sm outline-none resize-none placeholder:text-black/25 dark:placeholder:text-white/25 text-black dark:text-white border border-black/[0.06] dark:border-white/[0.05]" data-testid="textarea-inline-requirements"/>
           </div>
 
           <div>
@@ -1208,7 +1208,7 @@ export default function Prices() {
   const { user } = useUser();
 
   useSEO({
-    title: L ? "خدمات وأسعار كيروكس استوديو — باقات بناء المواقع والأنظمة" : "Qirox Studio Services & Pricing — Website & System Packages",
+    title: L ? "خدمات وأسعار كيروكس استوديو باقات بناء المواقع والأنظمة" : "Qirox Studio Services & Pricing Website & System Packages",
     description: L
       ? "خدمات كيروكس استوديو: بناء مواقع إلكترونية، تطبيقات جوال، وأنظمة إدارة. أسعار تبدأ من 699 ريال. باقة لايت، برو، وإنفينيت. تسليم من 3 أيام. الرياض، المملكة العربية السعودية."
       : "Qirox Studio services: websites, mobile apps, management systems. Prices from 699 SAR. Lite, Pro, Infinite packages. Delivery from 3 days. Riyadh, Saudi Arabia.",
@@ -1296,7 +1296,7 @@ export default function Prices() {
               <span className="text-white/30">قطاعك وميزانيتك</span>
             </h1>
             <p className="text-white/45 text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-6">
-              أسعار شفافة بدون رسوم مخفية — من مطاعم وعيادات إلى شركات وذكاء اصطناعي
+              أسعار شفافة بدون رسوم مخفية من مطاعم وعيادات إلى شركات وذكاء اصطناعي
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               {[
@@ -1393,14 +1393,14 @@ export default function Prices() {
                 )}
               </div>
 
-              {/* Plan cards — 3 col grid, equal heights */}
+              {/* Plan cards 3 col grid, equal heights */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
                 <PlanCard tier="lite"     period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 <PlanCard tier="pro"      period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
                 <PlanCard tier="infinity" period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
               </div>
 
-              {/* Custom banner — below main cards */}
+              {/* Custom banner below main cards */}
               <CustomBanner onOpen={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector, period==="multiyear"?`${years}y`:period)}/>
 
               {/* Lifetime perks */}
@@ -1409,7 +1409,7 @@ export default function Prices() {
               {/* Multi-year note */}
               {period === "multiyear" && (
                 <div className="mt-6 text-center text-xs text-black/30 dark:text-white/30">
-                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة الخصم الأقصى 40%
                 </div>
               )}
 
@@ -1424,7 +1424,7 @@ export default function Prices() {
             </>
           ) : null}
 
-          {/* "قطاع آخر" — inline custom request form (no prices) */}
+          {/* "قطاع آخر" inline custom request form (no prices) */}
           {sector === "other" && (
             <>
               <div className="text-center mb-6">
@@ -1440,7 +1440,7 @@ export default function Prices() {
               {/* Multi-year note */}
               {period === "multiyear" && (
                 <div className="mt-6 text-center text-xs text-black/30 dark:text-white/30">
-                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+                  السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة الخصم الأقصى 40%
                 </div>
               )}
 
@@ -1480,7 +1480,7 @@ export default function Prices() {
 const SECTOR_SYSTEMS: Record<string, { icon: any; title: string; description: string; features: string[]; badge?: string; highlight?: boolean; locked?: boolean }[]> = {
   restaurant: [
     { icon: ChefHat, title: "نظام إدارة المطعم", description: "منصة متكاملة لإدارة القائمة والطلبات والطاولات بلحظة واحدة", features: ["قائمة رقمية تفاعلية", "إدارة الطلبات لحظة بلحظة", "نظام الطاولات والحجوزات", "تقارير المبيعات اليومية"], badge: "الأكثر طلباً", highlight: true },
-    { icon: QrCode, title: "قائمة QR كود", description: "منيو رقمي يُفتح بمسح كيو آر — بدون تطبيق", features: ["تحديث فوري للأسعار", "صور عالية الجودة", "متعدد اللغات", "تخصيص كامل"] },
+    { icon: QrCode, title: "قائمة QR كود", description: "منيو رقمي يُفتح بمسح كيو آر بدون تطبيق", features: ["تحديث فوري للأسعار", "صور عالية الجودة", "متعدد اللغات", "تخصيص كامل"] },
     { icon: ShoppingCart, title: "نظام الطلب الإلكتروني", description: "استقبل الطلبات مباشرة من موقعك دون وسيط", features: ["طلب للتوصيل والاستلام", "تكامل مع WhatsApp", "دفع إلكتروني", "تتبع الطلب"] },
     { icon: BarChart3, title: "لوحة تحكم المبيعات", description: "تقارير وإحصائيات شاملة لفهم أداء مطعمك", features: ["تقارير الأداء اليومي", "أكثر الأطباق مبيعاً", "كشف أوقات الذروة", "مقارنة الفروع"] },
     { icon: Coffee, title: "نظام الاشتراكات والولاء", description: "بناء قاعدة عملاء وفية عبر نقاط المكافآت", features: ["بطاقة الولاء الرقمية", "نقاط المكافآت", "باقات الاشتراك", "إشعارات العروض"] },
@@ -1563,7 +1563,7 @@ function SystemsShowcase({ sector }: { sector: string }) {
             الأنظمة المتضمنة في باقتك
           </h2>
           <p className="text-sm text-black/40 dark:text-white/40 max-w-lg mx-auto">
-            كل باقة تأتي مع منظومة متكاملة من الأنظمة المتخصصة لقطاعك — مُصمَّمة خصيصاً لتلبية احتياجاتك
+            كل باقة تأتي مع منظومة متكاملة من الأنظمة المتخصصة لقطاعك مُصمَّمة خصيصاً لتلبية احتياجاتك
           </p>
         </div>
 
@@ -1632,7 +1632,7 @@ function SystemsShowcase({ sector }: { sector: string }) {
         {/* Bottom CTA */}
         <div className="text-center">
           <p className="text-xs text-black/30 dark:text-white/30 mb-4">
-            جميع الأنظمة تأتي مُعدَّة ومُخصَّصة بهويتك التجارية — التسليم بين 7-21 يوم
+            جميع الأنظمة تأتي مُعدَّة ومُخصَّصة بهويتك التجارية التسليم بين 7-21 يوم
           </p>
           <Button
             variant="outline"

@@ -14,7 +14,7 @@ import {
   Headphones, Check, CreditCard, Wrench,
   RefreshCw, ShoppingBag, Rocket, ClipboardList,
   ArrowRight, CircleDot, Circle, CheckCircle, PlayCircle,
-  Star, ChevronLeft, X
+  Star, ChevronLeft, X, Store, Globe, ExternalLink
 } from "lucide-react";
 
 function getGreeting() {
@@ -592,6 +592,71 @@ interface Props {
   user: any;
 }
 
+// ── Client Store Widget ─────────────────────────────────────────────────────
+function ClientStoreWidget() {
+  const { data: store, isLoading } = useQuery<any>({
+    queryKey: ["/api/client/my-store"],
+    queryFn: async () => {
+      const r = await fetch("/api/client/my-store", { credentials: "include" });
+      if (r.status === 404) return null;
+      if (!r.ok) return null;
+      return r.json();
+    },
+    retry: false,
+    staleTime: 30_000,
+  });
+
+  if (isLoading) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+      <Link href="/my-store">
+        <div className={`mt-3 rounded-2xl border p-4 flex items-center gap-3 cursor-pointer transition-colors hover:bg-black/[0.01] dark:hover:bg-white/[0.01] ${
+          store
+            ? store.status === "active"
+              ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-500/20"
+              : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.07]"
+            : "bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.06] dark:border-white/[0.07] border-dashed"
+        }`}>
+          {/* Icon */}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            store?.status === "active" ? "bg-emerald-500" : "bg-black dark:bg-white"
+          }`}>
+            <Store className={`w-5 h-5 ${store?.status === "active" ? "text-white" : "text-white dark:text-black"}`} />
+          </div>
+
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+              {store
+                ? (store.storeNameAr || store.storeNameEn || "متجري الإلكتروني")
+                : "QIROX Stores"}
+            </p>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+              {store
+                ? store.status === "active"   ? "✅ متجرك نشط — اضغط لعرضه"
+                : store.status === "draft"     ? "⏳ متجرك قيد الإعداد"
+                : store.status === "suspended" ? "⚠️ المتجر موقوف مؤقتاً"
+                : "متجري الإلكتروني"
+                : "أنشئ متجرك الإلكتروني مع QIROX"}
+            </p>
+          </div>
+
+          {/* Arrow / status */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {store?.status === "active" && store.subdomain && (
+              <span className="text-[9px] font-mono text-emerald-600/60 hidden sm:block" dir="ltr">
+                {store.subdomain}.stores.qirox…
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-gray-300 dark:text-white/20" />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function ClientDashboardSimple({ user }: Props) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"projects" | "orders">("projects");
@@ -788,6 +853,9 @@ export default function ClientDashboardSimple({ user }: Props) {
             </>
           );
         })()}
+
+        {/* ── My Store Widget ── */}
+        <ClientStoreWidget />
 
         {/* ── Social Media Posts ── */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>

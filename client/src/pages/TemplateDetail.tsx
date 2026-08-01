@@ -56,9 +56,9 @@ import ec06 from "@assets/Screenshot_2026-03-24_135305_1774349716342.png";
 const ECOMMERCE_SCREENSHOTS = [ec01,ec02,ec03,ec04,ec05,ec06];
 
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
-  lite:     { label: "لايت",    color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
-  pro:      { label: "برو",     color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10", desc: "الباقة الاحترافية — للمشاريع المتوسطة والكبيرة" },
-  infinite: { label: "إنفينيت", color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",  desc: "الباقة الكاملة — بلا حدود لأكبر المشاريع" },
+  lite:     { label: "لايت",    color: "text-black dark:text-white",   bg: "bg-black/[0.04] dark:bg-white/[0.06]",   border: "border-black/10 dark:border-white/10",   desc: "الباقة الأساسية كل ما تحتاجه للبداية" },
+  pro:      { label: "برو",     color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06]", border: "border-black/10 dark:border-white/10", desc: "الباقة الاحترافية للمشاريع المتوسطة والكبيرة" },
+  infinite: { label: "إنفينيت", color: "text-black dark:text-white",  bg: "bg-black/[0.04] dark:bg-white/[0.06]",  border: "border-black/10 dark:border-white/10",  desc: "الباقة الكاملة بلا حدود لأكبر المشاريع" },
   custom:   { label: "مخصص",   color: "text-gray-700",   bg: "bg-gray-50",   border: "border-gray-200",   desc: "باقة مخصصة حسب احتياجك" },
 };
 
@@ -187,7 +187,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   const contentH = compact ? 120 : 320;
 
   if (theme === "dark") {
-    // Display/screen pages — order queue style
+    // Display/screen pages order queue style
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -218,7 +218,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   }
 
   if (theme === "violet") {
-    // Manager dashboard — charts + KPIs
+    // Manager dashboard charts + KPIs
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -252,7 +252,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   }
 
   if (theme === "green") {
-    // Employee portal — order management table
+    // Employee portal order management table
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -288,7 +288,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   }
 
   if (theme === "sky") {
-    // Driver/delivery — map & route style
+    // Driver/delivery map & route style
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -323,7 +323,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   }
 
   if (theme === "red") {
-    // Admin — system settings style
+    // Admin system settings style
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -356,7 +356,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   }
 
   if (theme === "slate") {
-    // Advanced systems — data table style
+    // Advanced systems data table style
     return (
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: "#f8fafc" }}>
         <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -389,7 +389,7 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
     );
   }
 
-  // Default: orange — cafe customer pages
+  // Default: orange cafe customer pages
   return (
     <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
       <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
@@ -505,7 +505,7 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
   const pageIsPublic = isPublicPage((page as any)?.badge);
   useEffect(() => {
     if (compact && !pageIsPublic) {
-      // Auth-required pages show a mock — no loading states needed
+      // Auth-required pages show a mock no loading states needed
       setLoaded(true);
       setBlocked(false);
       return;
@@ -582,7 +582,7 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
         {/* Compact preview */}
         {compact && (
           isPublicPage((page as any)?.badge) ? (
-            /* Live iframe for public pages — scaled to fill container width */
+            /* Live iframe for public pages scaled to fill container width */
             <div ref={containerRef} className="absolute inset-0 overflow-hidden">
               <iframe
                 key={proxyUrl}
@@ -622,7 +622,7 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
           )
         )}
 
-        {/* Non-compact iframe — full size with viewport control */}
+        {/* Non-compact iframe full size with viewport control */}
         {!compact && (
           <div
             className="transition-all duration-500 overflow-hidden"
@@ -834,7 +834,7 @@ export default function TemplateDetail() {
                 <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                   className="inline-flex items-center gap-1.5 bg-black/[0.08] dark:bg-white/[0.1] border border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 text-xs font-bold px-3 py-1 rounded-full mb-5">
                   <span className="w-1.5 h-1.5 rounded-full bg-black/[0.08] dark:bg-white/[0.1] animate-pulse" />
-                  متاح الآن — تجربة حية
+                  متاح الآن تجربة حية
                 </motion.span>
               )}
 
@@ -921,22 +921,22 @@ export default function TemplateDetail() {
             <div className="text-center mb-10">
               <p className="text-xs font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2">ما يقدمه هذا النظام</p>
               <h2 className="text-3xl font-black text-black dark:text-white">نظام متكامل من الطلب حتى التوصيل</h2>
-              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه الكافيه والمطعم في منظومة واحدة — من إدارة القائمة والطلبات حتى المحاسبة والمخزون والموظفين.</p>
+              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه الكافيه والمطعم في منظومة واحدة من إدارة القائمة والطلبات حتى المحاسبة والمخزون والموظفين.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureHighlight icon={UtensilsCrossed} title="إدارة القائمة والطلبات" desc="قائمة رقمية تفاعلية مع تخصيص المنتجات والإضافات وإدارة الطلبات في الوقت الفعلي." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={QrCode} title="نظام الطاولات وQR" desc="يمسح العميل رمز QR على الطاولة فيطلب مباشرة بدون الحاجة لنادل — تحديث فوري للمطبخ." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={CreditCard} title="دفع متعدد القنوات" desc="بطاقة، نقداً، Apple Pay، بطاقة الولاء — مع دعم نظام Geidea وفوترة ZATCA." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={QrCode} title="نظام الطاولات وQR" desc="يمسح العميل رمز QR على الطاولة فيطلب مباشرة بدون الحاجة لنادل تحديث فوري للمطبخ." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={CreditCard} title="دفع متعدد القنوات" desc="بطاقة، نقداً، Apple Pay، بطاقة الولاء مع دعم نظام Geidea وفوترة ZATCA." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={ChefHat} title="شاشة المطبخ KDS" desc="عرض الطلبات للمطبخ بالترتيب مع تنبيه صوتي وتحديث الحالة بضغطة واحدة." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={Heart} title="برنامج الولاء والنقاط" desc="مستويات عضوية (برونزي، فضي، ذهبي، بلاتيني) مع بطاقة رقمية وبرنامج إحالة." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمخزون والحضور وتقارير قابلة للتصدير." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Truck} title="إدارة التوصيل والسائقين" desc="تتبع طلبات التوصيل بالخريطة — تعيين السائقين وتتبع موقعهم في الوقت الفعلي." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Calendar} title="حجز الطاولات المسبق" desc="العميل يحجز الطاولة بالتاريخ والوقت والعدد — بدون اتصال هاتفي." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Users} title="إدارة الموظفين والرواتب" desc="شيفتات، حضور، إجازات، رواتب تلقائية — دارة كاملة للموارد البشرية." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Truck} title="إدارة التوصيل والسائقين" desc="تتبع طلبات التوصيل بالخريطة تعيين السائقين وتتبع موقعهم في الوقت الفعلي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Calendar} title="حجز الطاولات المسبق" desc="العميل يحجز الطاولة بالتاريخ والوقت والعدد بدون اتصال هاتفي." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Users} title="إدارة الموظفين والرواتب" desc="شيفتات، حضور، إجازات، رواتب تلقائية دارة كاملة للموارد البشرية." color="bg-black dark:bg-white" />
             </div>
           </motion.section>
 
-          {/* ── All Pages Showcase — Full List ───────────────────── */}
+          {/* ── All Pages Showcase Full List ───────────────────── */}
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
@@ -944,7 +944,7 @@ export default function TemplateDetail() {
               </div>
               <div>
                 <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات النظام الكامل</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
+                <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
               </div>
             </div>
 
@@ -986,13 +986,13 @@ export default function TemplateDetail() {
                       boxShadow: "0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
                     }}
                   >
-                    {/* Camera dot — top center */}
+                    {/* Camera dot top center */}
                     <div style={{ position: "absolute", top: 7, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#3a3a40", boxShadow: "0 0 0 1px #4a4a52, inset 0 0 2px rgba(0,0,0,0.5)" }} />
-                    {/* Power button — right edge */}
+                    {/* Power button right edge */}
                     <div style={{ position: "absolute", right: -3, top: "38%", width: 4, height: 22, background: "linear-gradient(180deg,#38383e,#28282e)", borderRadius: "0 3px 3px 0", border: "1px solid #444" }} />
-                    {/* Volume up — top edge */}
+                    {/* Volume up top edge */}
                     <div style={{ position: "absolute", top: -3, left: "32%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
-                    {/* Volume down — top edge */}
+                    {/* Volume down top edge */}
                     <div style={{ position: "absolute", top: -3, left: "44%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
                     {/* Screen */}
                     <div style={{ width: "100%", height: "100%", borderRadius: 8, overflow: "hidden", background: "#000", border: "1px solid #111" }}>
@@ -1185,7 +1185,7 @@ export default function TemplateDetail() {
             <div className="text-center mb-10">
               <p className="text-xs font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2">الأجهزة المتوافقة</p>
               <h2 className="text-3xl font-black text-black dark:text-white">6 أجهزة متوافقة 100% مع النظام</h2>
-              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">أجهزة الشائعة في السعودية — متكاملة كلياً مع نظام الكافيه بدون أي إعداد إضافي.</p>
+              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">أجهزة الشائعة في السعودية متكاملة كلياً مع نظام الكافيه بدون أي إعداد إضافي.</p>
             </div>
 
             <div className="relative rounded-3xl overflow-hidden bg-gray-900 dark:bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
@@ -1300,17 +1300,17 @@ export default function TemplateDetail() {
             <div className="text-center mb-10">
               <p className="text-xs font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2">ما يقدمه هذا النظام</p>
               <h2 className="text-3xl font-black text-black dark:text-white">متجر إلكتروني متكامل من البداية للنهاية</h2>
-              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه متجرك في منظومة واحدة — من عرض المنتجات والدفع حتى إدارة المخزون والموظفين والتقارير.</p>
+              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه متجرك في منظومة واحدة من عرض المنتجات والدفع حتى إدارة المخزون والموظفين والتقارير.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FeatureHighlight icon={CreditCard} title="٧ طرق دفع متكاملة" desc="بطاقة بكشف تلقائي + محاكاة 3DS، STC Pay، Apple Pay، تمارة (BNPL)، تابي (BNPL)، محفظة رقمية، تحويل بنكي." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={Monitor} title="نظام كاشير POS احترافي" desc="واجهة كاشير متكاملة مع إدارة الصندوق النقدي وتقارير المبيعات اليومية والتسوية الفورية." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={Gift} title="برنامج الولاء والمحفظة" desc="مستويات عضوية (برونز / فضي / ذهبي) مع نقاط مكافأة ومحفظة رقمية مدمجة وبرنامج إحالة." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={ShoppingBag} title="إدارة المنتجات والمخزون" desc="كتالوج منتجات متعدد الفئات مع تتبع المخزون وتنبيهات النفاد وإدارة البيانات الجماعية." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Smartphone} title="تطبيق PWA جوال" desc="يُضاف تلقائياً لشاشة الجوال ويعمل offline — بدون نشر في App Store، متوافق مع iOS وAndroid." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Globe} title="ثنائية اللغة عربي/إنجليزي" desc="واجهة مستخدم كاملة باللغتين مع دعم RTL/LTR — يتذكر النظام تفضيل المستخدم تلقائياً." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={ShieldCheck} title="RBAC — صلاحيات مخصصة" desc="نظام أدوار متقدم: مدير، كاشير، مستودع — كل دور بصلاحيات دقيقة يمكن تخصيصها." color="bg-black dark:bg-white" />
-              <FeatureHighlight icon={Building2} title="فروع متعددة" desc="إدارة أكثر من فرع من لوحة تحكم واحدة — مخزون مستقل، موظفون، وتقارير لكل فرع." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Smartphone} title="تطبيق PWA جوال" desc="يُضاف تلقائياً لشاشة الجوال ويعمل offline بدون نشر في App Store، متوافق مع iOS وAndroid." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Globe} title="ثنائية اللغة عربي/إنجليزي" desc="واجهة مستخدم كاملة باللغتين مع دعم RTL/LTR يتذكر النظام تفضيل المستخدم تلقائياً." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={ShieldCheck} title="RBAC صلاحيات مخصصة" desc="نظام أدوار متقدم: مدير، كاشير، مستودع كل دور بصلاحيات دقيقة يمكن تخصيصها." color="bg-black dark:bg-white" />
+              <FeatureHighlight icon={Building2} title="فروع متعددة" desc="إدارة أكثر من فرع من لوحة تحكم واحدة مخزون مستقل، موظفون، وتقارير لكل فرع." color="bg-black dark:bg-white" />
               <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمبيعات والمخزون وسلوك العملاء قابلة للتصدير." color="bg-black dark:bg-white" />
             </div>
           </motion.section>
@@ -1323,7 +1323,7 @@ export default function TemplateDetail() {
               </div>
               <div>
                 <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات المتجر الكامل</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">٢٨+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
+                <p className="text-xs text-black/40 dark:text-white/40">٢٨+ صفحة كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
               </div>
             </div>
 
@@ -1687,7 +1687,7 @@ export default function TemplateDetail() {
           </motion.section>
         )}
 
-        {/* Demo Website (generic — not restaurant or ecommerce, both have dedicated sections) */}
+        {/* Demo Website (generic not restaurant or ecommerce, both have dedicated sections) */}
         {!isRestaurant && !isEcommerce && template.demoUrl && (
           <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
             <div className="flex items-center gap-3 mb-5">

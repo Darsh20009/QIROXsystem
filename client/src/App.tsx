@@ -128,6 +128,9 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 
 const Partners = lazy(() => import("@/pages/Partners"));
 const Alliances = lazy(() => import("@/pages/Alliances"));
+const TeamYoussefDarwish = lazy(() => import("@/pages/TeamYoussefDarwish"));
+const TeamMohammedAlDabbani = lazy(() => import("@/pages/TeamMohammedAlDabbani"));
+const EmployeePublicProfile = lazy(() => import("@/pages/EmployeePublicProfile"));
 const Consultation = lazy(() => import("@/pages/Consultation"));
 const AdminConsultation = lazy(() => import("@/pages/AdminConsultation"));
 const AdminDiscountCodes = lazy(() => import("@/pages/AdminDiscountCodes"));
@@ -199,6 +202,9 @@ const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
 const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
+const AdminClientStores = lazy(() => import("@/pages/AdminClientStores"));
+const StoreViewer = lazy(() => import("@/pages/StoreViewer"));
+const ClientMyStore = lazy(() => import("@/pages/ClientMyStore"));
 const AdminQuotations = lazy(() => import("@/pages/AdminQuotations"));
 const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
 const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
@@ -264,7 +270,7 @@ function HomeGate() {
   );
 }
 
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai", "/youssef-darwish", "/team/youssef-darwish", "/mohammed-aldabbani", "/team/mohammed-aldabbani"];
 
 
 function PublicRouter() {
@@ -311,6 +317,14 @@ function PublicRouter() {
         <Route path="/rate-call/:token" component={LeadCallRating} />
         <Route path="/posters" component={Posters} />
         <Route path="/community" component={Community} />
+        <Route path="/s/:slug" component={StoreViewer} />
+        {/* Team / Executive SEO pages */}
+        <Route path="/youssef-darwish" component={TeamYoussefDarwish} />
+        <Route path="/team/youssef-darwish" component={TeamYoussefDarwish} />
+        <Route path="/mohammed-aldabbani" component={TeamMohammedAlDabbani} />
+        <Route path="/team/mohammed-aldabbani" component={TeamMohammedAlDabbani} />
+        {/* Public employee profile — opens when Apple Wallet QR is scanned */}
+        <Route path="/ep/:code" component={EmployeePublicProfile} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -440,6 +454,8 @@ function AdminRouter() {
         <Route path="/admin/suppliers" component={AdminSuppliers} />
         <Route path="/admin/push-notifications" component={AdminPushNotifications} />
         <Route path="/admin/stores" component={EcommerceStore} />
+        <Route path="/admin/client-stores" component={AdminClientStores} />
+        <Route path="/my-store" component={ClientMyStore} />
         <Route path="/client/contracts" component={ClientContracts} />
         <Route path="/client/invoices" component={ClientInvoices} />
         <Route path="/client/quotations" component={ClientQuotations} />
@@ -1213,7 +1229,11 @@ function AppInner() {
   }
 
   const isPublicRoute = publicRoutes.some(r => location === r)
-    || location.startsWith("/templates/");
+    || location.startsWith("/templates/")
+    || location.startsWith("/s/")
+    || location.startsWith("/sector/")
+    || location.startsWith("/ep/")
+    || location.startsWith("/team/");
 
   // Guard: redirect unauthenticated users to /login (must be before any early returns)
   useEffect(() => {

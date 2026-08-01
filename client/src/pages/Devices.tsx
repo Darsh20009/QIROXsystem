@@ -366,7 +366,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           >
             {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
             {hasBundles && totalPrice !== p.price
-              ? <span className="flex items-center gap-1">أضف للسلة — {totalPrice.toLocaleString()} <SARIcon size={10} /></span>
+              ? <span className="flex items-center gap-1">أضف للسلة {totalPrice.toLocaleString()} <SARIcon size={10} /></span>
               : "أضف للسلة"
             }
           </Button>
@@ -477,7 +477,7 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
           <div>
             <p className="text-lg font-black text-black dark:text-white leading-tight">{p.price.toLocaleString()}</p>
             <p className="text-[10px] text-black/35 dark:text-white/35">
-              {p.currency}{p.stock === -1 ? " — متوفر" : p.stock === 0 ? " — نفد المخزون" : ` — ${p.stock} وحدة`}
+              {p.currency}{p.stock === -1 ? " متوفر" : p.stock === 0 ? " نفد المخزون" : ` ${p.stock} وحدة`}
             </p>
           </div>
           {p.stock !== 0 ? (
@@ -648,7 +648,7 @@ export default function Devices() {
                 الأجهزة<br />
                 <span className="bg-gradient-to-r from-black/[0.08] dark:from-white/[0.1] via-black/[0.08] dark:via-white/[0.1] to-black/[0.08] dark:to-white/[0.1] bg-clip-text text-transparent">والإضافات</span>
               </h1>
-              <p className="text-white/45 text-lg max-w-xl">كل ما تحتاجه لإطلاق مشروعك الرقمي — أجهزة، استضافة، دومين، بريد احترافي، وأكثر</p>
+              <p className="text-white/45 text-lg max-w-xl">كل ما تحتاجه لإطلاق مشروعك الرقمي أجهزة، استضافة، دومين، بريد احترافي، وأكثر</p>
             </motion.div>
           </div>
           <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#f5f5f5] dark:from-gray-950 to-transparent" />
@@ -771,7 +771,7 @@ export default function Devices() {
           <div className="p-10 flex flex-col md:flex-row items-center gap-8">
             <div className="flex-1">
               <p className="text-white/40 text-[11px] uppercase tracking-[3px] mb-2">لماذا تشتري من QIROX؟</p>
-              <h3 className="text-2xl font-black text-white mb-4">نوفّر — نُركّب — ندعم</h3>
+              <h3 className="text-2xl font-black text-white mb-4">نوفّر نُركّب ندعم</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { icon: Shield, label: "ضمان عام كامل" },

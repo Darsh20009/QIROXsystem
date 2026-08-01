@@ -72,6 +72,7 @@ const ALL_NAV: Record<string, NavItem> = {
   // ── Logistics ─────────────────────────────────────────────────────────────
   shipping:          { id: "shipping",          labelAr: "إعدادات الشحن",       labelEn: "Shipping Settings",    icon: Truck,           href: "/admin/shipping",             group: "main" },
   shipments:         { id: "shipments",         labelAr: "الشحنات",              labelEn: "Shipments",            icon: Truck,           href: "/admin/shipments",            group: "main" },
+  clientStores:      { id: "clientStores",      labelAr: "متاجر العملاء",        labelEn: "Client Stores",        icon: Store,           href: "/admin/client-stores",        group: "main" },
   suppliers:         { id: "suppliers",         labelAr: "الموردون",             labelEn: "Suppliers",            icon: Store,           href: "/admin/suppliers",            group: "main" },
   // ── Tools ─────────────────────────────────────────────────────────────────
   builder:           { id: "builder",           labelAr: "صانع الأنظمة",        labelEn: "System Builder",       icon: Code2,           href: "/employee/system-builder",    group: "tools" },
@@ -150,8 +151,8 @@ const ROLE_ITEMS: Record<string, string[]> = {
     "marketing_posts", "discount_codes", "promotions", "loyalty", "referrals", "reviews", "push_notif",
     // Content & partners
     "news", "jobs", "partners",
-    // Logistics
-    "shipping", "shipments", "suppliers",
+    // Logistics & Stores
+    "shipping", "shipments", "suppliers", "clientStores",
     // Finance (full access)
     "finance", "invoices", "receipts", "payroll", "wallet", "installments",
     "profit_report", "sales_reports", "reports", "bank_settings", "investors",
@@ -177,8 +178,8 @@ const ROLE_ITEMS: Record<string, string[]> = {
     "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews",
     // Content & partners
     "news", "partners",
-    // Logistics
-    "shipments", "suppliers",
+    // Logistics & Stores
+    "shipments", "suppliers", "clientStores",
     // Finance
     "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "reports",
     // HR

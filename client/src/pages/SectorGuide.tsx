@@ -23,8 +23,8 @@ const SECTORS = [
     id: "restaurant",
     nameAr: "نظام المطاعم",
     nameEn: "Restaurant System",
-    descAr: "نظام متكامل لإدارة المطاعم من الطلب حتى التوصيل — بواجهة مصممة للسرعة والسهولة",
-    descEn: "Full restaurant management from order to delivery — built for speed and simplicity",
+    descAr: "نظام متكامل لإدارة المطاعم من الطلب حتى التوصيل بواجهة مصممة للسرعة والسهولة",
+    descEn: "Full restaurant management from order to delivery built for speed and simplicity",
     icon: Utensils,
     color: "from-orange-500 to-red-500",
     light: "bg-orange-50 dark:bg-orange-950/30",
@@ -52,10 +52,10 @@ const SECTORS = [
       { ar: "تتبع حالة كل طلب لحظياً (يُحضَّر / جاهز / تم التسليم)", en: "Real-time order status tracking per table/delivery" },
       { ar: "إدارة موديفايرز القائمة (بدون بصل، حار، إضافات...)", en: "Full menu modifiers management (no onion, spicy, extras)" },
       { ar: "جلسات كاشير منفصلة مع إغلاق يومي وتسوية", en: "Separate cashier sessions with daily closing & reconciliation" },
-      { ar: "قائمة QR ديناميكية تُحدَّث لحظياً بدون إعادة طباعة", en: "Dynamic QR menu — updates instantly, no reprinting" },
+      { ar: "قائمة QR ديناميكية تُحدَّث لحظياً بدون إعادة طباعة", en: "Dynamic QR menu updates instantly, no reprinting" },
     ],
     techSpecs: [
-      { ar: "نقطة بيع تعمل بدون إنترنت (Offline Mode)", en: "Offline POS mode — works without internet" },
+      { ar: "نقطة بيع تعمل بدون إنترنت (Offline Mode)", en: "Offline POS mode works without internet" },
       { ar: "طابعة إيصالات حرارية + طباعة مباشرة للمطبخ", en: "Thermal receipt printer + direct kitchen printing" },
       { ar: "تكامل مع أجهزة الباركود والوزن", en: "Barcode scanner & weight scale integration" },
       { ar: "داشبورد تحليلي يومي/أسبوعي/شهري", en: "Daily/weekly/monthly analytics dashboard" },
@@ -72,8 +72,8 @@ const SECTORS = [
     id: "cafe",
     nameAr: "نظام الكافيهات",
     nameEn: "Café System",
-    descAr: "مصمم خصيصاً لإيقاع الكافيه — طلبيات سريعة، مشروبات مخصصة، وتجربة عملاء مميزة",
-    descEn: "Built for the café pace — quick orders, custom drinks, and premium customer experience",
+    descAr: "مصمم خصيصاً لإيقاع الكافيه طلبيات سريعة، مشروبات مخصصة، وتجربة عملاء مميزة",
+    descEn: "Built for the café pace quick orders, custom drinks, and premium customer experience",
     icon: Coffee,
     color: "from-amber-500 to-yellow-500",
     light: "bg-amber-50 dark:bg-amber-950/30",
@@ -115,8 +115,8 @@ const SECTORS = [
     id: "salon",
     nameAr: "نظام صالونات التجميل",
     nameEn: "Beauty Salon System",
-    descAr: "نظام حجوزات وإدارة شاملة للصالونات — من موعد العميل حتى متابعة الفنيين وتقارير الأداء",
-    descEn: "Full booking and management for salons — from client appointment to stylist performance",
+    descAr: "نظام حجوزات وإدارة شاملة للصالونات من موعد العميل حتى متابعة الفنيين وتقارير الأداء",
+    descEn: "Full booking and management for salons from client appointment to stylist performance",
     icon: Scissors,
     color: "from-pink-500 to-rose-500",
     light: "bg-pink-50 dark:bg-pink-950/30",
@@ -160,8 +160,8 @@ const SECTORS = [
     id: "clinic",
     nameAr: "نظام العيادات والمستشفيات",
     nameEn: "Clinic & Hospital System",
-    descAr: "نظام طبي متكامل للعيادات والمستشفيات — ملف المريض، المواعيد، الوصفات، والفواتير في مكان واحد",
-    descEn: "Complete medical system for clinics & hospitals — patient records, appointments, prescriptions & billing",
+    descAr: "نظام طبي متكامل للعيادات والمستشفيات ملف المريض، المواعيد، الوصفات، والفواتير في مكان واحد",
+    descEn: "Complete medical system for clinics & hospitals patient records, appointments, prescriptions & billing",
     icon: Stethoscope,
     color: "from-cyan-500 to-blue-500",
     light: "bg-cyan-50 dark:bg-cyan-950/30",
@@ -205,8 +205,8 @@ const SECTORS = [
     id: "quran",
     nameAr: "نظام أكاديميات تحفيظ القرآن",
     nameEn: "Quran Academy System",
-    descAr: "نظام متخصص لأكاديميات القرآن الكريم — إدارة الحلقات والطلاب وتتبع التقدم والتواصل مع الأسر",
-    descEn: "Specialized system for Quran academies — manage circles, students, progress tracking & family communication",
+    descAr: "نظام متخصص لأكاديميات القرآن الكريم إدارة الحلقات والطلاب وتتبع التقدم والتواصل مع الأسر",
+    descEn: "Specialized system for Quran academies manage circles, students, progress tracking & family communication",
     icon: BookOpen,
     color: "from-green-500 to-emerald-600",
     light: "bg-green-50 dark:bg-green-950/30",
@@ -231,7 +231,7 @@ const SECTORS = [
       { ar: "تتبع تقدم الحفظ صفحة بصفحة لكل طالب مع ملاحظات المعلم", en: "Page-by-page memorization tracking per student with teacher notes" },
       { ar: "شهادات رقمية تُصدر تلقائياً عند اكتمال الختمة", en: "Auto-generated digital certificates upon Quran completion" },
       { ar: "تقارير للولي يعرض فيها تقدم الطالب وحضوره أسبوعياً", en: "Weekly parent reports showing student progress & attendance" },
-      { ar: "نظام التلاوة الصوتية — يسجل الطالب ويراجع المعلم", en: "Audio recitation system — student records, teacher reviews" },
+      { ar: "نظام التلاوة الصوتية يسجل الطالب ويراجع المعلم", en: "Audio recitation system student records, teacher reviews" },
       { ar: "دعم المجموعات المختلطة والمنفصلة (أونلاين وبالحضور)", en: "Supports online & in-person mixed groups" },
     ],
     techSpecs: [
@@ -249,8 +249,8 @@ const SECTORS = [
     id: "realestate",
     nameAr: "نظام إدارة العقارات",
     nameEn: "Real Estate Management System",
-    descAr: "إدارة كاملة للعقارات والوحدات والعقود والمستأجرين — تحكم كامل في محفظتك العقارية",
-    descEn: "Complete property management — units, contracts, tenants & full real estate portfolio control",
+    descAr: "إدارة كاملة للعقارات والوحدات والعقود والمستأجرين تحكم كامل في محفظتك العقارية",
+    descEn: "Complete property management units, contracts, tenants & full real estate portfolio control",
     icon: Home,
     color: "from-violet-500 to-purple-600",
     light: "bg-violet-50 dark:bg-violet-950/30",
@@ -293,8 +293,8 @@ const SECTORS = [
     id: "fitness",
     nameAr: "نظام اللياقة البدنية",
     nameEn: "Gym & Fitness System",
-    descAr: "نظام متكامل لإدارة الجيم والنوادي الرياضية — عضويات، حصص، مدربون، وتتبع أداء الأعضاء",
-    descEn: "Complete gym & fitness club management — memberships, classes, trainers & member performance tracking",
+    descAr: "نظام متكامل لإدارة الجيم والنوادي الرياضية عضويات، حصص، مدربون، وتتبع أداء الأعضاء",
+    descEn: "Complete gym & fitness club management memberships, classes, trainers & member performance tracking",
     icon: Dumbbell,
     color: "from-rose-500 to-red-600",
     light: "bg-rose-50 dark:bg-rose-950/30",
@@ -316,7 +316,7 @@ const SECTORS = [
       { icon: Star, nameAr: "نظام الولاء ومكافآت الأداء", nameEn: "Loyalty & Achievement Rewards" },
     ],
     uniqueFeatures: [
-      { ar: "دخول ذكي بـ QR أو بصمة — بدون كاشير", en: "Smart QR or fingerprint entry — no cashier needed" },
+      { ar: "دخول ذكي بـ QR أو بصمة بدون كاشير", en: "Smart QR or fingerprint entry no cashier needed" },
       { ar: "تتبع قياسات الجسم (وزن، دهون، كتلة عضلية) شهرياً", en: "Monthly body measurement tracking (weight, fat, muscle mass)" },
       { ar: "حجز الحصص الجماعية من التطبيق مع قائمة الانتظار", en: "Group class booking from app with automatic waitlist" },
       { ar: "تنبيه تلقائي عند قرب انتهاء العضوية (قبل 7 أيام)", en: "Auto membership expiry alert 7 days before end" },
@@ -337,8 +337,8 @@ const SECTORS = [
     id: "school",
     nameAr: "نظام إدارة المدارس",
     nameEn: "School Management System",
-    descAr: "نظام أكاديمي متكامل للمدارس — طلاب، فصول، جداول، تقارير، وتواصل مع أولياء الأمور",
-    descEn: "Full academic system for schools — students, classes, schedules, reports & parent communication",
+    descAr: "نظام أكاديمي متكامل للمدارس طلاب، فصول، جداول، تقارير، وتواصل مع أولياء الأمور",
+    descEn: "Full academic system for schools students, classes, schedules, reports & parent communication",
     icon: GraduationCap,
     color: "from-indigo-500 to-blue-600",
     light: "bg-indigo-50 dark:bg-indigo-950/30",
@@ -381,8 +381,8 @@ const SECTORS = [
     id: "ecommerce",
     nameAr: "نظام التجارة الإلكترونية",
     nameEn: "E-Commerce System",
-    descAr: "متجر إلكتروني احترافي متكامل — منتجات، طلبات، شحن، بوابات دفع، وتحليلات متقدمة",
-    descEn: "Professional full-stack e-commerce — products, orders, shipping, payment gateways & advanced analytics",
+    descAr: "متجر إلكتروني احترافي متكامل منتجات، طلبات، شحن، بوابات دفع، وتحليلات متقدمة",
+    descEn: "Professional full-stack e-commerce products, orders, shipping, payment gateways & advanced analytics",
     icon: ShoppingBag,
     color: "from-teal-500 to-cyan-600",
     light: "bg-teal-50 dark:bg-teal-950/30",
@@ -426,8 +426,8 @@ const SECTORS = [
     id: "pos",
     nameAr: "نظام نقاط البيع (POS)",
     nameEn: "Point of Sale (POS) System",
-    descAr: "حل POS احترافي لأي نوع تجارة — سريع، موثوق، يعمل أونلاين وأوفلاين مع تحكم كامل",
-    descEn: "Professional POS for any retail — fast, reliable, online & offline with full control",
+    descAr: "حل POS احترافي لأي نوع تجارة سريع، موثوق، يعمل أونلاين وأوفلاين مع تحكم كامل",
+    descEn: "Professional POS for any retail fast, reliable, online & offline with full control",
     icon: Monitor,
     color: "from-slate-600 to-gray-700",
     light: "bg-slate-50 dark:bg-slate-950/30",
@@ -879,7 +879,7 @@ function BudgetPlanner({ ar }: { ar: boolean }) {
             </h3>
             <p className="text-xs text-black/40 dark:text-white/40">
               {ar
-                ? `اختر حجم استثمارك وشوف إيش تحصل عليه${currency.isEgypt ? " — بالجنيه المصري" : ""}`
+                ? `اختر حجم استثمارك وشوف إيش تحصل عليه${currency.isEgypt ? " بالجنيه المصري" : ""}`
                 : "Pick your investment range and see exactly what you get"}
             </p>
           </div>
@@ -986,9 +986,9 @@ function BudgetPlanner({ ar }: { ar: boolean }) {
         <p className="text-center text-[11px] text-black/30 dark:text-white/30 mt-4 font-medium">
           {ar
             ? currency.isEgypt
-              ? "💡 الأسعار المعروضة بالجنيه المصري — تواصل معنا للحصول على عرض خاص لمصر"
-              : "💡 الأسعار التقريبية — تواصل معنا للحصول على عرض سعر مخصص"
-            : "💡 Approximate pricing — contact us for a custom quote"}
+              ? "💡 الأسعار المعروضة بالجنيه المصري تواصل معنا للحصول على عرض خاص لمصر"
+              : "💡 الأسعار التقريبية تواصل معنا للحصول على عرض سعر مخصص"
+            : "💡 Approximate pricing contact us for a custom quote"}
         </p>
       </div>
     </motion.div>
@@ -1032,7 +1032,7 @@ export default function SectorGuide() {
               </div>
               <div>
                 <h1 className="text-2xl font-black text-black dark:text-white">{ar ? "دليل القطاعات التقني" : "Sector Technical Guide"}</h1>
-                <p className="text-sm text-black/40 dark:text-white/40">{ar ? `${SECTORS.length} قطاع مدعوم — مميزات تقنية حصرية لكل قطاع` : `${SECTORS.length} supported sectors — exclusive technical features per sector`}</p>
+                <p className="text-sm text-black/40 dark:text-white/40">{ar ? `${SECTORS.length} قطاع مدعوم مميزات تقنية حصرية لكل قطاع` : `${SECTORS.length} supported sectors exclusive technical features per sector`}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1132,7 +1132,7 @@ export default function SectorGuide() {
       {/* Legend footer */}
       {tab === "sectors" && (
         <p className="text-center text-xs text-black/25 dark:text-white/25 pt-4">
-          {ar ? "هذا الدليل تقني داخلي للموظفين — يُحدَّث مع كل إصدار جديد من النظام" : "Internal technical guide for employees — updated with every system release"}
+          {ar ? "هذا الدليل تقني داخلي للموظفين يُحدَّث مع كل إصدار جديد من النظام" : "Internal technical guide for employees updated with every system release"}
         </p>
       )}
     </div>

@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1280, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>كيروكس | Qirox Studio — شركة برمجة مواقع وأنظمة في الرياض</title>
     <meta name="description" content="كيروكس استوديو — شركة برمجة سعودية في الرياض. نبني مواقع إلكترونية احترافية، تطبيقات جوال، وأنظمة إدارة مخصصة للمطاعم والمتاجر والشركات. أسعار تنافسية وتسليم سريع." />
     <meta name="keywords" content="كيروكس, كيروكس استوديو, Qirox, Qirox Studio, شركة برمجة الرياض, بناء مواقع الكترونية, تطوير مواقع السعودية, مبرمجين سعوديين, تصميم مواقع الرياض, أنظمة رقمية, تطبيقات جوال, برمجة مخصصة, software house Saudi Arabia, نظام إدارة مطاعم, نظام إدارة متاجر, تصميم متجر الكتروني, شركة تقنية الرياض, SaaS عربي, ERP سعودي, PWA, تطبيقات جوال, برمجة السعودية, مطور مواقع الرياض, شركة برمجة سعودية, حلول تقنية, نظام ادارة, software company Riyadh, web development Saudi Arabia, mobile app development KSA, digital transformation Saudi" />
@@ -175,11 +175,11 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": ["Organization", "Corporation"],
+      "@type": ["Organization", "Corporation", "TechnologyCompany"],
       "@id": "https://qiroxstudio.online/#organization",
       "name": "Qirox Studio",
       "legalName": "Qirox Studio | كيروكس استوديو",
-      "alternateName": ["كيروكس", "كيروكس استوديو", "مصنع الأنظمة الرقمية", "Qirox", "كيروكس الرياض"],
+      "alternateName": ["كيروكس", "كيروكس استوديو", "كيروكس ستوديو", "مصنع الأنظمة الرقمية", "Qirox", "QIROX", "كيروكس الرياض", "Qirox Saudi", "شركة كيروكس"],
       "url": "https://qiroxstudio.online",
       "logo": {
         "@type": "ImageObject",
@@ -192,7 +192,7 @@
         "https://qiroxstudio.online/qirox-icon.png",
         "https://qiroxstudio.online/qirox-logo-full.png"
       ],
-      "description": "كيروكس استوديو — شركة برمجة سعودية متخصصة في بناء المواقع الإلكترونية، التطبيقات، وأنظمة إدارة الأعمال. مقرنا الرياض، ونخدم جميع مناطق المملكة العربية السعودية. نتميز بأسعار تنافسية وجودة عالية وتسليم سريع.",
+      "description": "كيروكس استوديو (Qirox Studio) — شركة تقنية معلومات سعودية (Software House & Technology Company) مقرها الرياض. متخصصة في تطوير المواقع الإلكترونية، تطبيقات الجوال، وأنظمة إدارة الأعمال. شركة تقنية رقمية ليس لها علاقة بأي منتج زراعي. نخدم جميع مناطق المملكة العربية السعودية.",
       "slogan": "مصنع الأنظمة الرقمية — نحوّل فكرتك إلى واقع",
       "foundingDate": "2024",
       "numberOfEmployees": {"@type": "QuantitativeValue", "minValue": 10, "maxValue": 50},
@@ -416,22 +416,86 @@
     }
     </script>
 
-    <!-- 4. SiteNavigationElement -->
+    <!-- 4. SiteNavigationElement — exactly 6 sitelinks for Google -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SiteNavigationElement",
-      "name": ["الرئيسية", "الباقات والأسعار", "من نحن", "معرض الأعمال", "تواصل معنا", "الاستشارات", "الأنظمة", "تتبع الطلب", "ابدأ مشروعك"],
+      "name": ["الباقات والأسعار", "الأنظمة ومعرض الأعمال", "من نحن", "تواصل معنا", "ابدأ مشروعك", "استشارة مجانية"],
       "url": [
-        "https://qiroxstudio.online/",
         "https://qiroxstudio.online/prices",
-        "https://qiroxstudio.online/about",
-        "https://qiroxstudio.online/portfolio",
-        "https://qiroxstudio.online/contact",
-        "https://qiroxstudio.online/consultation",
         "https://qiroxstudio.online/systems",
-        "https://qiroxstudio.online/track",
-        "https://qiroxstudio.online/start"
+        "https://qiroxstudio.online/about",
+        "https://qiroxstudio.online/contact",
+        "https://qiroxstudio.online/join",
+        "https://qiroxstudio.online/consultation"
+      ]
+    }
+    </script>
+
+    <!-- 4b. Sector pages ItemList — for Google to surface sector links -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "قطاعات كيروكس استوديو — Qirox Studio Sectors",
+      "description": "الأنظمة الرقمية المتخصصة لكل قطاع — كيروكس استوديو",
+      "numberOfItems": 6,
+      "itemListElement": [
+        {
+          "@type": "ListItem", "position": 1,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/ecommerce",
+            "name": "نظام المتاجر الإلكترونية | كيروكس",
+            "description": "نظام إدارة متجر إلكتروني احترافي مع بوابات دفع سعودية من كيروكس استوديو"
+          }
+        },
+        {
+          "@type": "ListItem", "position": 2,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/restaurant",
+            "name": "نظام إدارة المطاعم | كيروكس",
+            "description": "نظام POS وإدارة مطاعم وكافيهات متكامل من كيروكس استوديو"
+          }
+        },
+        {
+          "@type": "ListItem", "position": 3,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/corporate",
+            "name": "نظام إدارة الشركات ERP | كيروكس",
+            "description": "نظام ERP وإدارة شركات ومؤسسات مخصص من كيروكس استوديو"
+          }
+        },
+        {
+          "@type": "ListItem", "position": 4,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/healthcare",
+            "name": "نظام إدارة العيادات | كيروكس",
+            "description": "نظام إدارة عيادات ومراكز صحية من كيروكس استوديو"
+          }
+        },
+        {
+          "@type": "ListItem", "position": 5,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/ai",
+            "name": "نظام الذكاء الاصطناعي للأعمال | كيروكس",
+            "description": "حلول الذكاء الاصطناعي وأتمتة الأعمال من كيروكس استوديو"
+          }
+        },
+        {
+          "@type": "ListItem", "position": 6,
+          "item": {
+            "@type": "WebPage",
+            "url": "https://qiroxstudio.online/sector/education",
+            "name": "نظام إدارة المدارس | كيروكس",
+            "description": "نظام إدارة مدارس ومراكز تعليمية من كيروكس استوديو"
+          }
+        }
       ]
     }
     </script>
@@ -543,6 +607,22 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "نعم، كيروكس استوديو تطور تطبيقات جوال احترافية لـ iOS وAndroid. نستخدم أحدث التقنيات لبناء تطبيقات PWA وReact Native. تطبيقات الجوال متاحة ضمن باقة برو وما فوق."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "هل كيروكس شركة تقنية أم منتج زراعي؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "كيروكس (Qirox Studio) هي شركة تقنية معلومات سعودية (Software House) مقرها الرياض — ليس لها أي علاقة بأي منتج زراعي أو مبيد حشري. Qirox Studio شركة برمجة وتطوير رقمي تأسست عام 2024 في الرياض، المملكة العربية السعودية. نختص ببناء المواقع الإلكترونية، تطبيقات الجوال، وأنظمة إدارة الأعمال."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ما هو كيروكس ستوديو؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "كيروكس ستوديو (QIROX Studio) هي شركة تقنية رقمية سعودية مقرها الرياض، تأسست عام 2024. تتخصص في بناء الحلول الرقمية الذكية للشركات والمؤسسات: مواقع إلكترونية، تطبيقات جوال، أنظمة ERP، متاجر إلكترونية، وأنظمة إدارة مطاعم وعيادات ومدارس. الموقع الرسمي: qiroxstudio.online"
           }
         },
         {
@@ -717,11 +797,11 @@
     }
     </script>
 
-    <script type="module" crossorigin src="/assets/index-vM80bpWW.js"></script>
+    <script type="module" crossorigin src="/assets/index-XVAhWF5K.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-DXvDjYCw.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-query-BbNzjaha.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-B69toZZP.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-esA1XoCL.css">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-BxxVqNIa.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CNFYFbnF.css">
   </head>
   <body>
     <!-- Speakable content for AI voice assistants -->

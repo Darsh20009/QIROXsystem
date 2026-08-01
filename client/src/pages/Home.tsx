@@ -155,7 +155,7 @@ function IdeaIllustration() {
       <div className="idea-rotate absolute"
         style={{width:'62%',height:'62%',border:'1.5px dashed rgba(201,168,76,0.22)',borderRadius:'50%'}} />
 
-      {/* rays — 8 directions */}
+      {/* rays 8 directions */}
       {[0,45,90,135,180,225,270,315].map((deg,i) => (
         <div key={deg} className="absolute"
           style={{
@@ -186,7 +186,7 @@ function IdeaIllustration() {
           }} />
       ))}
 
-      {/* bulb SVG — floating + flickering */}
+      {/* bulb SVG floating + flickering */}
       <div className="idea-float idea-flicker relative z-10" style={{width:'52%',height:'52%'}}>
         <svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',height:'100%',filter:'drop-shadow(0 0 10px rgba(201,168,76,0.9)) drop-shadow(0 0 22px rgba(201,168,76,0.55))'}}>
           {/* inner glow fill */}
@@ -219,7 +219,7 @@ const SECTOR_ILLUSTRATIONS: Record<string, React.FC> = {
   "ابدأ فكرتك الخاصة": IdeaIllustration,
 };
 
-// Premium brand-aligned signature accents — monochrome cards stay true to QIROX
+// Premium brand-aligned signature accents monochrome cards stay true to QIROX
 // black/white identity; each sector earns a single jewel-tone "glow blob"
 // + matching hover ring. Subtle on light mode, luminous on dark mode.
 const SECTOR_ACCENT: Record<string, { glow: string; ring: string }> = {
@@ -258,7 +258,7 @@ const TABS = [
 ];
 
 const PROCESS_STEPS = [
-  { icon: Lightbulb,   ar: { t: "استشارة",         d: "تواصل معنا وشارك فكرتك — نفهم احتياجك ونحدد الحل المناسب" },         en: { t: "Consultation",      d: "Reach out and share your idea — we understand your need and define the right solution" } },
+  { icon: Lightbulb,   ar: { t: "استشارة",         d: "تواصل معنا وشارك فكرتك نفهم احتياجك ونحدد الحل المناسب" },         en: { t: "Consultation",      d: "Reach out and share your idea we understand your need and define the right solution" } },
   { icon: TrendingUp,  ar: { t: "تحليل وتخطيط",    d: "ندرس احتياجاتك ونضع خطة تنفيذ واضحة مع جدول زمني محدد" },           en: { t: "Analysis & Planning",d: "We study your needs and set a clear execution plan with a defined timeline" } },
   { icon: Cpu,         ar: { t: "تصميم وتطوير",    d: "فريقنا يبني نظامك بتصميم احترافي وأداء عالي بأحدث التقنيات" },       en: { t: "Design & Development",d: "Our team builds your system with pro design and high performance using latest tech" } },
   { icon: Rocket,      ar: { t: "اختبار وإطلاق",   d: "نختبر بدقة ونطلق نظامك بثقة تامة بعد مراجعة شاملة" },               en: { t: "Testing & Launch",   d: "We test thoroughly and launch your system with full confidence after comprehensive review" } },
@@ -335,7 +335,7 @@ const fade = (i = 0) => ({
   transition: { duration: 0.55, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as any },
 });
 
-// ─── Graphic Divider — transparent, scroll-triggered, continuously animated ──
+// ─── Graphic Divider transparent, scroll-triggered, continuously animated ──
 function GraphicDivider({ variant = 1 }: { variant?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
@@ -360,7 +360,7 @@ function GraphicDivider({ variant = 1 }: { variant?: number }) {
     transition: { duration: dur, ease, delay },
   });
 
-  // Colour tokens — adapts to dark/light mode via CSS var trick
+  // Colour tokens adapts to dark/light mode via CSS var trick
   const s1  = "rgba(128,128,128,0.18)";
   const s2  = "rgba(128,128,128,0.07)";
   const acc = "rgba(128,128,128,0.38)";
@@ -452,7 +452,7 @@ function GraphicDivider({ variant = 1 }: { variant?: number }) {
               {...draw(i * 0.07 + 0.06, 1.2)}
             />
           ))}
-          {/* Bullseye rings — appear then breathe */}
+          {/* Bullseye rings appear then breathe */}
           {[5, 13, 24, 38].map((r, i) => (
             <motion.circle key={i} cx={720} cy={48} r={r}
               stroke={i === 0 ? acc : i === 1 ? s1 : s2}
@@ -658,7 +658,7 @@ function ReviewCard({ r }: { r: any }) {
           style={{ color: "transparent", WebkitTextStroke: "1.5px rgba(0,0,0,0.12)" }}
           aria-hidden
         >"</div>
-        {/* Qirox badge — no background */}
+        {/* Qirox badge no background */}
         <div className="flex items-center gap-1">
           <img src="/qirox-icon.png" alt="Qirox" className="w-3.5 h-3.5 object-contain opacity-40" />
           <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-wide">QIROX</span>
@@ -891,30 +891,62 @@ export default function Home() {
 
   useSEO({
     title: ar
-      ? "كيروكس استوديو — بناء مواقع وتطبيقات وأنظمة رقمية في الرياض"
-      : "Qirox Studio — Websites, Apps & Digital Systems in Riyadh",
+      ? "كيروكس استوديو بناء مواقع وتطبيقات وأنظمة رقمية في الرياض"
+      : "Qirox Studio Websites, Apps & Digital Systems in Riyadh",
     description: ar
       ? "كيروكس استوديو: شركة برمجة سعودية في الرياض. نبني مواقع إلكترونية، تطبيقات جوال، وأنظمة إدارة ذكية لأكثر من 10 قطاعات. تسليم سريع وجودة عالية."
       : "Qirox Studio: Saudi software company in Riyadh. We build websites, mobile apps, and smart management systems for 10+ sectors. Fast delivery, high quality.",
     keywords: "كيروكس استوديو, خدمات كيروكس استوديو, قيروكس استوديو, كيروكس, Qirox Studio, شركة برمجة مواقع السعودية, تطوير تطبيقات الرياض, بناء مواقع, نظام إدارة ذكي, برمجة مواقع الرياض, أفضل شركة برمجة سعودية, تصميم مواقع الرياض, شركة برمجة الرياض, تطوير مواقع سعودية, أنظمة إدارة الأعمال",
     canonical: "/",
-    jsonLd: [{
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Qirox Studio",
-      "url": "https://qiroxstudio.online",
-      "logo": "https://qiroxstudio.online/qirox-icon.png",
-      "description": ar
-        ? "شركة برمجة سعودية متخصصة في بناء المواقع والتطبيقات والأنظمة الرقمية"
-        : "Saudi software company specialized in websites, apps, and digital systems",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "الرياض",
-        "addressRegion": "منطقة الرياض",
-        "addressCountry": "SA"
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": ["Organization", "TechnologyCompany"],
+        "@id": "https://qiroxstudio.online/#organization",
+        "name": "Qirox Studio",
+        "alternateName": ["كيروكس استوديو", "كيروكس", "كيروكس ستوديو", "Qirox", "QIROX"],
+        "url": "https://qiroxstudio.online",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://qiroxstudio.online/qirox-icon.png",
+          "width": 512,
+          "height": 512,
+        },
+        "description": ar
+          ? "كيروكس استوديو (Qirox Studio) — شركة تقنية سعودية Software House في الرياض، متخصصة في بناء المواقع والتطبيقات وأنظمة الأعمال. ليست لها علاقة بأي منتج زراعي أو مبيد."
+          : "Qirox Studio — Saudi technology company (Software House) in Riyadh, specialized in websites, apps, and business management systems.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "الرياض",
+          "addressRegion": "منطقة الرياض",
+          "addressCountry": "SA",
+        },
+        "sameAs": [
+          "https://www.instagram.com/qirox.sa",
+          "https://x.com/qiroxsa",
+          "https://www.linkedin.com/company/qirox",
+          "https://www.tiktok.com/@qirox.sa",
+        ],
+        "knowsAbout": [
+          "Software Development", "Web Development", "Mobile App Development",
+          "Business Management Systems", "ERP", "SaaS", "تطوير مواقع", "برمجة تطبيقات",
+          "أنظمة إدارة المطاعم", "متاجر إلكترونية", "تقنية المعلومات",
+        ],
       },
-      "sameAs": ["https://qiroxstudio.online"],
-    }],
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://qiroxstudio.online/#website",
+        "url": "https://qiroxstudio.online",
+        "name": "Qirox Studio | كيروكس استوديو",
+        "publisher": { "@id": "https://qiroxstudio.online/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": { "@type": "EntryPoint", "urlTemplate": "https://qiroxstudio.online/systems?q={search_term_string}" },
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
   });
 
   const { data: user } = useUser();
@@ -1171,7 +1203,7 @@ export default function Home() {
                           style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0.97) 100%)" }}
                         />
 
-                        {/* ── Text + icon — bottom overlay ── */}
+                        {/* ── Text + icon bottom overlay ── */}
                         <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col">
                           {/* Icon badge */}
                           <div className="w-9 h-9 rounded-[10px] bg-black/45 backdrop-blur-sm border border-white/15 flex items-center justify-center mb-3">
@@ -1189,7 +1221,7 @@ export default function Home() {
                           <p className="text-[11px] text-white/58 leading-relaxed line-clamp-2 mb-3">
                             {ar ? s.arDesc : s.enDesc}
                           </p>
-                          {/* Arrow — bottom right */}
+                          {/* Arrow bottom right */}
                           <div className="flex justify-end">
                             <div className="w-8 h-8 rounded-full border border-white/30 group-hover:border-white/70 group-hover:bg-white/12 flex items-center justify-center transition-all duration-300">
                               <ChevronRight className="w-3.5 h-3.5 text-white rtl:rotate-180" />
@@ -1201,13 +1233,13 @@ export default function Home() {
                   );
                 })}
 
-                {/* ── "لم تجد قطاعك؟" card — QIROX branded ── */}
+                {/* ── "لم تجد قطاعك؟" card QIROX branded ── */}
                 <Link href="/start">
                   <div
                     className="group rounded-[20px] overflow-hidden cursor-pointer snap-start transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_24px_60px_-12px_rgba(255,255,255,0.15)] flex flex-col w-full"
                     style={{ height: 460 }}
                   >
-                    {/* Top — QIROX icon with glow */}
+                    {/* Top QIROX icon with glow */}
                     <div className="relative overflow-hidden bg-[#0a0a0a] flex items-center justify-center" style={{ height: 258, flexShrink: 0 }}>
                       {/* Radial glow behind icon */}
                       <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 70%)" }} />
@@ -1280,7 +1312,7 @@ export default function Home() {
             </motion.div>
 
             {/* Right: 6 items in single row with dividers */}
-            {/* always a single scrollable row — no wrapping on any screen size */}
+            {/* always a single scrollable row no wrapping on any screen size */}
             <div className="flex-1 flex overflow-x-auto scrollbar-none border-t border-white/[0.06] lg:border-t-0 divide-x divide-white/[0.06] rtl:divide-x-reverse">
               {[
                 { icon: Lightbulb,  en: "Custom\nSolution",        ar: "حل\nمخصص",              enDesc: "Built around your business.",               arDesc: "مبني حول عملك." },
@@ -1328,8 +1360,8 @@ export default function Home() {
                   {ar ? (<>شاهد الأنظمة<br />تعمل على أرض الواقع</>) : (<>See our systems<br />in real action</>)}
                 </h2>
                 <p className="text-base text-black/52 dark:text-white/45 leading-relaxed mb-8 max-w-sm">
-                  {ar ? "اكتشف كيف تبدو أنظمتنا في العمل الفعلي قبل أن تقرر — تجربة حقيقية قبل الالتزام."
-                       : "Discover how our systems look in real action before you decide — a real trial before any commitment."}
+                  {ar ? "اكتشف كيف تبدو أنظمتنا في العمل الفعلي قبل أن تقرر تجربة حقيقية قبل الالتزام."
+                       : "Discover how our systems look in real action before you decide a real trial before any commitment."}
                 </p>
                 <Link href="/systems">
                   <button className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black rounded-full h-12 px-7 text-sm font-bold hover:opacity-80 transition-opacity shadow-lg shadow-black/10">
@@ -1370,7 +1402,7 @@ export default function Home() {
                 <span className="text-black/30 dark:text-white/30">{ar ? "تناسب كل قطاع وميزانية" : "for every sector & budget"}</span>
               </h2>
               <p className="text-black/50 dark:text-white/50 text-sm leading-relaxed max-w-lg mx-auto">
-                {ar ? "أسعار شفافة بدون رسوم مخفية — اختر قطاعك وطريقة الدفع واطلب الآن." : "Transparent pricing with no hidden fees — pick your sector and billing cycle."}
+                {ar ? "أسعار شفافة بدون رسوم مخفية اختر قطاعك وطريقة الدفع واطلب الآن." : "Transparent pricing with no hidden fees pick your sector and billing cycle."}
               </p>
             </motion.div>
 
@@ -1455,7 +1487,7 @@ export default function Home() {
                 const isPro = tier === "pro";
                 const isInf = tier === "infinity";
                 const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
-                const tierDescs = { lite: "الباقة الأساسية — مثالية للانطلاق", pro: "الباقة الذكية — الأكثر توازناً", infinity: "الباقة الشاملة — بلا قيود" };
+                const tierDescs = { lite: "الباقة الأساسية مثالية للانطلاق", pro: "الباقة الذكية الأكثر توازناً", infinity: "الباقة الشاملة بلا قيود" };
                 const TIcon = tier === "lite" ? Zap : tier === "pro" ? Star : Infinity;
 
                 const orderPeriodParam = pricingPeriod === "multiyear" ? `${pricingYears}y` : pricingPeriod;
@@ -1540,7 +1572,7 @@ export default function Home() {
             {/* Multiyear / lifetime note */}
             {pricingPeriod === "multiyear" && (
               <p className="mt-5 text-center text-xs text-black/30 dark:text-white/30">
-                السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة — الخصم الأقصى 40%
+                السنة الثانية وما بعدها تأخذ خصم 5% إضافي لكل سنة الخصم الأقصى 40%
               </p>
             )}
             {pricingPeriod === "lifetime" && (
@@ -1582,60 +1614,95 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── PROCESS ─── seamlessly after pricing, no dividers ─── */}
+        {/* ─── PROCESS ─── */}
         <section id="tab-process" ref={processRef} className="py-16 md:py-20 bg-white dark:bg-[#0a0a0a] border-t border-black/[0.05] dark:border-white/[0.05]">
           <div className="container mx-auto px-5 md:px-8 max-w-7xl">
 
-            {/* Side-by-side: heading column + steps column */}
-            <div className="flex flex-col lg:flex-row gap-0 items-start">
+            {/* ── Header ── */}
+            <motion.div {...fade(0)} className="mb-10 md:mb-14">
+              <p className="text-[9px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-3">HOW WE WORK</p>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-[1.08]" dir={dir}>
+                {ar
+                  ? (<>من الفكرة<span className="text-black/25 dark:text-white/25"> إلى الإطلاق</span></>)
+                  : (<>From Idea<span className="text-black/25 dark:text-white/25"> to Launch</span></>)}
+              </h2>
+            </motion.div>
 
-              {/* Heading column */}
-              <motion.div {...fade(0)} className="shrink-0 w-full lg:w-[230px] xl:w-[260px] lg:pe-10 xl:pe-14 flex flex-col justify-center mb-8 lg:mb-0">
-                <p className="text-[9px] font-black tracking-[0.28em] uppercase text-black/28 dark:text-white/28 mb-4">HOW WE WORK</p>
-                <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-[1.08]" dir={dir}>
-                  {ar ? (<>من الفكرة<br /><span className="text-black/25 dark:text-white/25">إلى الإطلاق</span></>) : (<>From Idea<br /><span className="text-black/25 dark:text-white/25">to Launch</span></>)}
-                </h2>
-              </motion.div>
-
-              {/* Steps column — always 5 across, scrollable on small screens */}
-              <div className="flex-1 relative overflow-x-auto">
-
-                {/* Track line */}
-                <div className="block absolute top-[2.6rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
-
-                {/* Animated fill line */}
-                <div
-                  className="block absolute top-[2.6rem] h-px bg-black dark:bg-white"
-                  style={{ width: `${processProgress * 100}%`, ...(ar ? { right: 0 } : { left: 0 }) }}
-                />
-
-                {/* Always 5 columns, scrollable on mobile */}
-                <div className="grid grid-cols-5 min-w-[560px] lg:min-w-0 gap-2 lg:gap-0">
-                  {PROCESS_STEPS.map((s, i) => {
-                    const StepIcon = s.icon;
-                    const lit = processProgress > (i / PROCESS_STEPS.length) + 0.02;
-                    return (
-                      <div
-                        key={i}
-                        className="flex flex-col items-center text-center px-2 transition-all duration-500"
-                        style={{ opacity: lit ? 1 : 0.2, filter: lit ? "none" : "blur(0.4px)" }}
-                      >
-                        {/* Black icon box */}
-                        <div className="relative z-10 w-[5rem] h-[5rem] rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4 shadow-lg">
-                          <span className="absolute top-1.5 end-2 text-[8px] font-black text-white/35 dark:text-black/35 tracking-widest">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <StepIcon className="w-5 h-5 text-white dark:text-black" strokeWidth={1.5} />
-                        </div>
-                        <p className="font-black text-[13px] mb-1.5 text-black dark:text-white leading-snug">{ar ? s.ar.t : s.en.t}</p>
-                        <p className="text-[11px] text-black/48 dark:text-white/45 leading-[1.6]">{ar ? s.ar.d : s.en.d}</p>
+            {/* ── Mobile: vertical timeline ── Hidden on md+ ── */}
+            <div className="flex flex-col gap-0 md:hidden">
+              {PROCESS_STEPS.map((s, i) => {
+                const StepIcon = s.icon;
+                const lit = processProgress > (i / PROCESS_STEPS.length) + 0.02;
+                const isLast = i === PROCESS_STEPS.length - 1;
+                return (
+                  <motion.div
+                    key={i}
+                    {...fade(i * 0.08)}
+                    className="flex gap-4 transition-all duration-500"
+                    style={{ opacity: lit ? 1 : 0.35 }}
+                  >
+                    {/* Left: icon + vertical connector */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative w-12 h-12 rounded-xl bg-black dark:bg-white flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span className="absolute top-1 end-1.5 text-[7px] font-black text-white/35 dark:text-black/35 tracking-widest">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <StepIcon className="w-4 h-4 text-white dark:text-black" strokeWidth={1.5} />
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-
+                      {!isLast && (
+                        <div className="w-px flex-1 mt-2 mb-0 min-h-[2rem]"
+                          style={{
+                            background: lit
+                              ? "linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.06))"
+                              : "rgba(0,0,0,0.07)",
+                          }}
+                        />
+                      )}
+                    </div>
+                    {/* Right: text */}
+                    <div className={`pt-1.5 ${isLast ? "pb-0" : "pb-7"}`}>
+                      <p className="font-black text-sm text-black dark:text-white leading-snug mb-1">{ar ? s.ar.t : s.en.t}</p>
+                      <p className="text-[12px] text-black/45 dark:text-white/40 leading-[1.65]">{ar ? s.ar.d : s.en.d}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
+
+            {/* ── md+: horizontal 5-column ── Hidden on mobile ── */}
+            <div className="hidden md:block relative">
+              {/* Track line */}
+              <div className="absolute top-[2.6rem] inset-x-0 h-px bg-black/[0.07] dark:bg-white/[0.07]" />
+              {/* Animated fill line */}
+              <div
+                className="absolute top-[2.6rem] h-px bg-black dark:bg-white transition-all duration-700"
+                style={{ width: `${processProgress * 100}%`, ...(ar ? { right: 0 } : { left: 0 }) }}
+              />
+              <div className="grid grid-cols-5 gap-2 lg:gap-0">
+                {PROCESS_STEPS.map((s, i) => {
+                  const StepIcon = s.icon;
+                  const lit = processProgress > (i / PROCESS_STEPS.length) + 0.02;
+                  return (
+                    <motion.div
+                      key={i}
+                      {...fade(i * 0.08)}
+                      className="flex flex-col items-center text-center px-2 transition-all duration-500"
+                      style={{ opacity: lit ? 1 : 0.2, filter: lit ? "none" : "blur(0.4px)" }}
+                    >
+                      <div className="relative z-10 w-[5rem] h-[5rem] rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4 shadow-lg">
+                        <span className="absolute top-1.5 end-2 text-[8px] font-black text-white/35 dark:text-black/35 tracking-widest">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <StepIcon className="w-5 h-5 text-white dark:text-black" strokeWidth={1.5} />
+                      </div>
+                      <p className="font-black text-[13px] mb-1.5 text-black dark:text-white leading-snug">{ar ? s.ar.t : s.en.t}</p>
+                      <p className="text-[11px] text-black/48 dark:text-white/45 leading-[1.6]">{ar ? s.ar.d : s.en.d}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -1645,7 +1712,7 @@ export default function Home() {
           const total = FEATURED.length;
           const prev = () => setReviewCardIdx(i => (i - 1 + total) % total);
           const next = () => setReviewCardIdx(i => (i + 1) % total);
-          // auto-advance handled via useEffect — attach via a wrapper
+          // auto-advance handled via useEffect attach via a wrapper
           return (
             <ReviewCarouselSection
               reviews={FEATURED}
@@ -1663,7 +1730,7 @@ export default function Home() {
         <section id="tab-partners" className="pt-14 pb-20 md:pt-16 md:pb-24 bg-white dark:bg-[#0a0a0a] overflow-hidden">
           <div className="container mx-auto px-5 md:px-8 max-w-5xl">
 
-            {/* Header — always LTR container so "شركاؤنا" stays visually on the right */}
+            {/* Header always LTR container so "شركاؤنا" stays visually on the right */}
             <motion.div {...fade(0)} className="flex items-start justify-between mb-10 md:mb-14" dir="ltr">
               {/* Left slot: progress dots + count */}
               <div className="text-left">
@@ -1680,7 +1747,7 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              {/* Right slot: Arabic/English heading — always on visual right */}
+              {/* Right slot: Arabic/English heading always on visual right */}
               <div className="text-right" dir={ar ? "rtl" : "ltr"}>
                 <p className="text-[10px] font-black tracking-[0.2em] text-black/25 dark:text-white/25 uppercase mb-0.5">
                   {ar ? "شركاؤنا" : "Our Partners"}
@@ -1691,7 +1758,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Spotlight Card — always uses SPOTLIGHT_PARTNERS (real logos); merges DB partners on top when available */}
+            {/* Spotlight Card always uses SPOTLIGHT_PARTNERS (real logos); merges DB partners on top when available */}
             {(() => {
               const partners = apiPartners.length > 0
                 ? apiPartners.map((p: any) => ({
@@ -1720,7 +1787,7 @@ export default function Home() {
                       className="grid grid-cols-1 sm:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
                       style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.05)" }}
                     >
-                      {/* Logo frame — uniform white bg, object-contain keeps any logo size consistent */}
+                      {/* Logo frame uniform white bg, object-contain keeps any logo size consistent */}
                       <div className="flex items-center justify-center bg-white dark:bg-white/[0.04] p-10 md:p-14 min-h-[220px] relative overflow-hidden">
                         {/* Soft radial accent in partner's color */}
                         <div
@@ -1777,7 +1844,7 @@ export default function Home() {
                     </motion.div>
                   </AnimatePresence>
 
-                  {/* Thumbnail strip — logo images, grows automatically with each new partner */}
+                  {/* Thumbnail strip logo images, grows automatically with each new partner */}
                   <div className="flex justify-center gap-2 mt-5 flex-wrap">
                     {partners.map((sp, i) => (
                       <button

@@ -123,6 +123,31 @@ shippingCompanySchema.set('toJSON', { transform });
 shippingCompanySchema.set('toObject', { transform });
 export const ShippingCompanyModel = mongoose.models.ShippingCompany || mongoose.model("ShippingCompany", shippingCompanySchema);
 
+// ── Client Store (per-client deployed store instance) ──────────────────────
+const clientStoreSchema = new mongoose.Schema({
+  clientId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  templateSlug: { type: String, required: true, default: 'ecommerce' },
+  status:       { type: String, enum: ['draft', 'active', 'suspended', 'cancelled'], default: 'draft', index: true },
+  subdomain:    { type: String, default: '', index: true },  // e.g. "myshop" → myshop.stores.qiroxstudio.online
+  customDomain: { type: String, default: '' },              // e.g. "shop.mybrand.com"
+  storeNameAr:  { type: String, default: '' },
+  storeNameEn:  { type: String, default: '' },
+  description:  { type: String, default: '' },
+  logoUrl:      { type: String, default: '' },
+  primaryColor: { type: String, default: '#000000' },
+  planSlug:     { type: String, enum: ['lite', 'pro', 'infinite'], default: 'lite' },
+  adminEmail:   { type: String, default: '' },
+  adminPhone:   { type: String, default: '' },
+  publishedAt:  { type: Date, default: null },
+  expiresAt:    { type: Date, default: null },
+  adminNotes:   { type: String, default: '' },
+  storeSettings: { type: mongoose.Schema.Types.Mixed, default: {} },
+}, { timestamps: true });
+clientStoreSchema.index({ clientId: 1, status: 1 });
+clientStoreSchema.set('toJSON', { transform });
+clientStoreSchema.set('toObject', { transform });
+export const ClientStoreModel = mongoose.models.ClientStore || mongoose.model("ClientStore", clientStoreSchema);
+
 const countrySchema = new mongoose.Schema({
   nameAr:       { type: String, required: true },
   nameEn:       { type: String, required: true },

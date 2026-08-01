@@ -48,6 +48,7 @@ const orderSchema = new mongoose.Schema({
   paymentRejectionReason: { type: String, default: "" },
   totalAmount: Number,
   walletAmountUsed: { type: Number, default: 0 },
+  marginPct: { type: Number, default: 0 },   // هامش الربح % (مثال: 30 يعني ربح 30% وتكلفة 70%)
   isDepositPaid: { type: Boolean, default: false },
   requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
   wizardData: { type: mongoose.Schema.Types.Mixed },

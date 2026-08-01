@@ -190,8 +190,8 @@ export default function FooterDSV2() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-[var(--ds-z-base)]">
 
         {/* ── Top grid ── */}
-        <div className="grid grid-cols-12 gap-12 mb-20">
-          <div className="md:col-span-5">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-10 md:gap-x-12 md:gap-y-0 mb-16 md:mb-20">
+          <div className="col-span-1 md:col-span-5">
             <div className="mb-6">
               <Link href="/" className="hover:opacity-80 transition-opacity inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus-ring rounded-ds-sm">
                 <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-9 w-auto object-contain dark:invert" />
@@ -207,22 +207,19 @@ export default function FooterDSV2() {
               </p>
               <div className="flex items-center gap-4">
                 <span className="text-[11px] tracking-[3px] uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1">🏙️ {L ? "الرياض" : "Riyadh"}</span>
-                <span className="w-1 h-1 rounded-ds-full bg-ds-border-emphasis/30" />
+                <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
                 <span className="text-[11px] tracking-[3px] uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1">🏙️ {L ? "القاهرة" : "Cairo"}</span>
               </div>
             </div>
           </div>
 
-          <div className="md:col-span-2 md:col-start-7">
+          <div className="col-span-1 md:col-span-2 md:col-start-7">
             <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("footer.quickLinks")}</h4>
             <ul className="space-y-4">
               {[
-                { href: "/systems",   label: t("nav.portfolio") },
+                { href: "/systems",  label: t("nav.portfolio") },
                 { href: "/prices",   label: t("nav.prices") },
                 { href: "/about",    label: t("nav.about") },
-                { href: "/posters",   label: L ? "🎨 معرض بوستراتنا" : "🎨 Our Posters" },
-                { href: "/community", label: L ? "🌟 مجتمع كيروكس" : "🌟 Qirox Community" },
-                { href: "/alliances", label: L ? "تحالفاتنا" : "Alliances" },
                 { href: "/jobs",     label: L ? "التوظيف" : "Careers" },
                 { href: "/contact",  label: t("nav.contact") },
               ].map(link => (
@@ -236,7 +233,7 @@ export default function FooterDSV2() {
             </ul>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("nav.contact")}</h4>
             <ul className="space-y-4">
               {[
@@ -256,7 +253,7 @@ export default function FooterDSV2() {
             </ul>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("footer.legal")}</h4>
             <ul className="space-y-4">
               {[

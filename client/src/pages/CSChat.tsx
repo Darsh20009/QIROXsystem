@@ -165,6 +165,7 @@ function ChatInput({ onSend, disabled, placeholder, onTyping }: {
 }) {
   const { lang } = useI18n();
   const L = lang === "ar";
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -200,10 +201,18 @@ function ChatInput({ onSend, disabled, placeholder, onTyping }: {
     try {
       const fd = new FormData(); fd.append("file", file);
       const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
-      const { url } = await r.json();
+      const data = await r.json();
+      if (!r.ok) {
+        console.error("[upload]", data);
+        toast({ title: "فشل رفع الملف", description: data?.error || "حدث خطأ أثناء الرفع", variant: "destructive" });
+        return;
+      }
+      const { url } = data;
       const isImg = file.type.startsWith("image/");
       onSend({ body: "", attachmentUrl: url, attachmentType: isImg ? "image" : "file", attachmentName: file.name, attachmentSize: file.size });
-    } catch { } finally { setUploading(false); }
+    } catch (e) {
+      console.error("[upload exception]", e);
+    } finally { setUploading(false); }
   };
 
   const getSupportedMimeType = () => {
@@ -232,7 +241,7 @@ function ChatInput({ onSend, disabled, placeholder, onTyping }: {
           if (!r.ok) { const e = await r.json(); console.error("[voice upload]", e); setRecording(false); setRecTime(0); return; }
           const { url } = await r.json();
           onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: L ? "رسالة صوتية" : "Voice Message" });
-        } catch (e) { console.error("[voice send]", e); }
+        } catch (e) { console.error("[voice send]", e); toast({ title: "فشل إرسال التسجيل الصوتي", variant: "destructive" }); }
         setRecording(false); setRecTime(0);
       };
       mr.start(100); setRecorder(mr); setRecording(true);

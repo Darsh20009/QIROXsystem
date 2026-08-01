@@ -51,8 +51,8 @@ export default function Partners() {
 
   useSEO({
     title: lang === "ar"
-      ? "شركاء كيروكس استوديو — عملاؤنا ومشاريعنا الناجحة"
-      : "Qirox Studio Partners — Our Clients & Successful Projects",
+      ? "شركاء كيروكس استوديو عملاؤنا ومشاريعنا الناجحة"
+      : "Qirox Studio Partners Our Clients & Successful Projects",
     description: lang === "ar"
       ? "تعرّف على شركاء كيروكس استوديو: مطاعم، متاجر، منصات تعليمية، وشركات سعودية تثق بنا لبناء أنظمتها الرقمية. أكثر من 50 مشروع ناجح في المملكة العربية السعودية."
       : "Meet Qirox Studio partners: restaurants, stores, education platforms, and Saudi companies that trust us to build their digital systems. Over 50 successful projects in Saudi Arabia.",
@@ -109,7 +109,7 @@ export default function Partners() {
         </div>
       </section>
 
-      {/* DB Partners (Rich Cards — with features/service) */}
+      {/* DB Partners (Rich Cards with features/service) */}
       {hasDbPartners && (
         <section className="pb-10 container mx-auto px-4" data-testid="section-partners-featured">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">

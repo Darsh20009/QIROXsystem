@@ -302,8 +302,8 @@ export default function QuickStart() {
 
             <p className="text-base text-black/55 dark:text-white/55 mb-10 max-w-md mx-auto leading-relaxed">
               {ar
-                ? "5 أسئلة بسيطة — وفريق QIROX يتواصل معك بعرض مفصّل يناسب نشاطك تماماً."
-                : "5 simple questions — and QIROX team contacts you with a tailored proposal for your business."}
+                ? "5 أسئلة بسيطة وفريق QIROX يتواصل معك بعرض مفصّل يناسب نشاطك تماماً."
+                : "5 simple questions and QIROX team contacts you with a tailored proposal for your business."}
             </p>
 
             {/* Step preview pills */}
@@ -418,8 +418,8 @@ export default function QuickStart() {
                   </h2>
                   <p className="text-black/50 dark:text-white/50 text-sm mb-7">
                     {ar
-                      ? "لا تقلق من التفاصيل — اكتب ما يدور في ذهنك"
-                      : "Don't worry about details — just write what's on your mind"}
+                      ? "لا تقلق من التفاصيل اكتب ما يدور في ذهنك"
+                      : "Don't worry about details just write what's on your mind"}
                   </p>
                   <Textarea
                     value={idea}
@@ -464,7 +464,7 @@ export default function QuickStart() {
                     {ar ? "ما المميزات التي تحتاجها؟" : "What features do you need?"}
                   </h2>
                   <p className="text-black/50 dark:text-white/50 text-sm mb-7">
-                    {ar ? "اختر كل ما ينطبق — يمكنك اختيار أكثر من واحدة" : "Pick all that apply — multiple choices allowed"}
+                    {ar ? "اختر كل ما ينطبق يمكنك اختيار أكثر من واحدة" : "Pick all that apply multiple choices allowed"}
                   </p>
                   <div className="grid grid-cols-2 gap-2.5">
                     {featuresList.map(f => {

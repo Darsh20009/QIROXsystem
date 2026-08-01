@@ -38,10 +38,10 @@ export default function About() {
   const { t, lang, dir } = useI18n();
 
   useSEO({
-    title: lang === "ar" ? "من نحن — كيروكس استوديو | شركة برمجة سعودية في الرياض" : "About Us — Qirox Studio | Saudi Software Company",
+    title: lang === "ar" ? "من نحن كيروكس استوديو | شركة برمجة سعودية في الرياض" : "About Us Qirox Studio | Saudi Software Company",
     description: lang === "ar"
-      ? "كيروكس استوديو — شركة برمجة سعودية تأسست في الرياض. نبني مواقع وتطبيقات وأنظمة رقمية احترافية. فريق من أفضل المطورين السعوديين بخبرة 4+ سنوات."
-      : "Qirox Studio — Saudi software company based in Riyadh. We build professional websites, apps, and digital systems. A team of top Saudi developers with 4+ years experience.",
+      ? "كيروكس استوديو شركة برمجة سعودية تأسست في الرياض. نبني مواقع وتطبيقات وأنظمة رقمية احترافية. فريق من أفضل المطورين السعوديين بخبرة 4+ سنوات."
+      : "Qirox Studio Saudi software company based in Riyadh. We build professional websites, apps, and digital systems. A team of top Saudi developers with 4+ years experience.",
     keywords: "كيروكس استوديو, من نحن, شركة برمجة سعودية, مطورين سعوديين, Qirox Studio about, software company Riyadh, فريق كيروكس",
     canonical: "/about",
   });
@@ -281,7 +281,7 @@ export default function About() {
                   iconBg: "bg-black dark:bg-white",
                   iconColor: "text-white dark:text-black",
                   title: { ar: "أندرويد", en: "Android" },
-                  desc: { ar: "Google Play — جميع أجهزة أندرويد", en: "Google Play — All Android devices" },
+                  desc: { ar: "Google Play جميع أجهزة أندرويد", en: "Google Play All Android devices" },
                   url: appDownloads?.playStore?.enabled ? appDownloads.playStore.url : null,
                   badge: { ar: "متوفر", en: "Available" },
                   badgeStyle: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
@@ -294,7 +294,7 @@ export default function About() {
                   iconBg: "bg-black dark:bg-white",
                   iconColor: "text-white dark:text-black",
                   title: { ar: "آيفون وآيباد", en: "iPhone & iPad" },
-                  desc: { ar: "App Store — iPhone وiPad", en: "App Store — iPhone & iPad" },
+                  desc: { ar: "App Store iPhone وiPad", en: "App Store iPhone & iPad" },
                   url: appDownloads?.appStore?.enabled ? appDownloads.appStore.url : null,
                   badge: appDownloads?.appStore?.enabled ? { ar: "متوفر", en: "Available" } : { ar: "قريباً", en: "Coming Soon" },
                   badgeStyle: appDownloads?.appStore?.enabled ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800",
@@ -307,7 +307,7 @@ export default function About() {
                   iconBg: "bg-black dark:bg-white",
                   iconColor: "text-white dark:text-black",
                   title: { ar: "ماك", en: "macOS" },
-                  desc: { ar: "تطبيق سطح مكتب — DMG + Dark Mode", en: "Desktop App — DMG + Dark Mode" },
+                  desc: { ar: "تطبيق سطح مكتب DMG + Dark Mode", en: "Desktop App DMG + Dark Mode" },
                   url: appDownloads?.macStore?.enabled ? appDownloads.macStore.url : null,
                   badge: { ar: "تحميل مباشر", en: "Direct Download" },
                   badgeStyle: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800",
@@ -321,7 +321,7 @@ export default function About() {
                   iconBg: "bg-black dark:bg-white",
                   iconColor: "text-white dark:text-black",
                   title: { ar: "ويندوز", en: "Windows" },
-                  desc: { ar: "Microsoft Store — EXE Installer", en: "Microsoft Store — EXE Installer" },
+                  desc: { ar: "Microsoft Store EXE Installer", en: "Microsoft Store EXE Installer" },
                   url: appDownloads?.msStore?.enabled ? appDownloads.msStore.url : null,
                   badge: { ar: "متوفر", en: "Available" },
                   badgeStyle: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",

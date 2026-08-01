@@ -217,12 +217,9 @@ export default function FooterLegacy() {
             <h4 className="text-[11px] font-semibold text-black/40 dark:text-white/40 uppercase tracking-[3px] mb-7">{t("footer.quickLinks")}</h4>
             <ul className="space-y-4">
               {[
-                { href: "/systems",   label: t("nav.portfolio") },
+                { href: "/systems",  label: t("nav.portfolio") },
                 { href: "/prices",   label: t("nav.prices") },
                 { href: "/about",    label: t("nav.about") },
-                { href: "/posters",   label: L ? "🎨 معرض بوستراتنا" : "🎨 Our Posters" },
-                { href: "/community", label: L ? "🌟 مجتمع كيروكس" : "🌟 Qirox Community" },
-                { href: "/alliances", label: L ? "تحالفاتنا" : "Alliances" },
                 { href: "/jobs",     label: L ? "التوظيف" : "Careers" },
                 { href: "/contact",  label: t("nav.contact") },
               ].map(link => (

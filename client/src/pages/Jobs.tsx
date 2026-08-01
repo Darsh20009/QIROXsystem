@@ -286,7 +286,7 @@ function CVUploadZone({ lang, form, setForm, gradientColor }: { lang: string; fo
               </div>
               <div>
                 <p className="text-sm font-bold text-white/80">{lang === "ar" ? "اسحب ملفك هنا أو اضغط للاختيار" : "Drag your file here or click to browse"}</p>
-                <p className="text-[11px] text-white/40 mt-1">{lang === "ar" ? "PDF, Word, JPG — حد أقصى 5MB" : "PDF, Word, JPG — max 5MB"}</p>
+                <p className="text-[11px] text-white/40 mt-1">{lang === "ar" ? "PDF, Word, JPG حد أقصى 5MB" : "PDF, Word, JPG max 5MB"}</p>
               </div>
             </div>
           )}
@@ -408,7 +408,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
               </motion.div>
             ) : (
               <AnimatePresence mode="wait">
-                {/* Step 1 — Personal Info */}
+                {/* Step 1 Personal Info */}
                 {step === 1 && (
                   <motion.div key="step1" initial={{ opacity: 0, x: lang === "ar" ? -30 : 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: lang === "ar" ? 30 : -30 }} className="px-8 py-6 space-y-4">
                     <div className="relative">
@@ -441,7 +441,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
                   </motion.div>
                 )}
 
-                {/* Step 2 — CV Upload */}
+                {/* Step 2 CV Upload */}
                 {step === 2 && (
                   <motion.div key="step2" initial={{ opacity: 0, x: lang === "ar" ? -30 : 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: lang === "ar" ? 30 : -30 }} className="px-8 py-6 space-y-4">
                     <p className="text-white/60 text-xs leading-relaxed">
@@ -462,7 +462,7 @@ function ApplyModal({ job, onClose, lang }: { job: Job; onClose: () => void; lan
                   </motion.div>
                 )}
 
-                {/* Step 3 — Cover Letter */}
+                {/* Step 3 Cover Letter */}
                 {step === 3 && (
                   <motion.div key="step3" initial={{ opacity: 0, x: lang === "ar" ? -30 : 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: lang === "ar" ? 30 : -30 }} className="px-8 py-6 space-y-4">
                     <div className="bg-white/10 rounded-2xl p-4">
@@ -591,7 +591,7 @@ export default function Jobs() {
 
   const GENERAL_JOB: Job = {
     id: "general",
-    title: lang === "ar" ? "تقديم مفتوح — Qirox" : "Open Application — Qirox",
+    title: lang === "ar" ? "تقديم مفتوح Qirox" : "Open Application Qirox",
     description: lang === "ar"
       ? "أرسل ملفك حتى لو لم تجد وظيفة مناسبة حالياً. نراجع كل الطلبات ونتواصل عند وجود فرصة."
       : "Send your application even if no specific role fits right now. We review every submission.",
@@ -605,8 +605,8 @@ export default function Jobs() {
 
   useSEO({
     title: lang === "ar"
-      ? "وظائف كيروكس استوديو — انضم لفريقنا في الرياض"
-      : "Qirox Studio Jobs — Join Our Team in Riyadh",
+      ? "وظائف كيروكس استوديو انضم لفريقنا في الرياض"
+      : "Qirox Studio Jobs Join Our Team in Riyadh",
     description: lang === "ar"
       ? `كيروكس استوديو تبحث عن مواهب في التطوير والتصميم والمبيعات وخدمة العملاء. ${openJobs.length > 0 ? openJobs.length + " وظيفة مفتوحة الآن." : "تقدّم بملفك وسنتواصل معك."} الرياض، المملكة العربية السعودية.`
       : `Qirox Studio is hiring in development, design, sales, and support. ${openJobs.length > 0 ? openJobs.length + " open positions now." : "Send your CV and we'll reach out."} Riyadh, Saudi Arabia.`,
@@ -644,7 +644,7 @@ export default function Jobs() {
     })) : [{
       "@context": "https://schema.org",
       "@type": "JobPosting",
-      "title": "فرصة عمل مفتوحة — Qirox Studio",
+      "title": "فرصة عمل مفتوحة Qirox Studio",
       "description": "نقبل طلبات توظيف مفتوحة في التطوير والتصميم والمبيعات وخدمة العملاء",
       "datePosted": new Date().toISOString().split("T")[0],
       "employmentType": "FULL_TIME",
@@ -690,7 +690,7 @@ export default function Jobs() {
             >
               <Sparkles className="w-4 h-4 text-black/70 dark:text-white/70" />
               <span className="text-sm font-medium text-white/70">
-                {lang === "ar" ? "نحن نبني المستقبل — انضم إلينا" : "We're building the future — Join us"}
+                {lang === "ar" ? "نحن نبني المستقبل انضم إلينا" : "We're building the future Join us"}
               </span>
             </motion.div>
 
@@ -720,8 +720,8 @@ export default function Jobs() {
               className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed"
             >
               {lang === "ar"
-                ? "QIROX ليست مجرد شركة — إنها مصنع أنظمة يُغيّر قطاعات. نبحث عن عقول تريد الأثر الحقيقي"
-                : "QIROX isn't just a company — it's a systems factory reshaping industries. We seek minds that want real impact"}
+                ? "QIROX ليست مجرد شركة إنها مصنع أنظمة يُغيّر قطاعات. نبحث عن عقول تريد الأثر الحقيقي"
+                : "QIROX isn't just a company it's a systems factory reshaping industries. We seek minds that want real impact"}
             </motion.p>
 
             <motion.div
@@ -803,7 +803,7 @@ export default function Jobs() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
             <p className="text-[11px] font-bold text-black/30 dark:text-white/30 tracking-[4px] uppercase mb-3">{lang === "ar" ? "ثقافتنا" : "Our Culture"}</p>
             <h2 className="text-3xl md:text-4xl font-black text-black dark:text-white mb-4">{lang === "ar" ? "نؤمن بهذه المبادئ" : "We believe in these principles"}</h2>
-            <p className="text-black/40 dark:text-white/40 max-w-xl mx-auto">{lang === "ar" ? "هذه ليست شعارات — هي الطريقة التي نعمل بها كل يوم" : "These aren't slogans — they're how we work every day"}</p>
+            <p className="text-black/40 dark:text-white/40 max-w-xl mx-auto">{lang === "ar" ? "هذه ليست شعارات هي الطريقة التي نعمل بها كل يوم" : "These aren't slogans they're how we work every day"}</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {values.map((v, i) => (
@@ -859,7 +859,7 @@ export default function Jobs() {
                 <Briefcase className="w-10 h-10 text-black/20 dark:text-white/20" />
               </motion.div>
               <h3 className="text-xl font-black text-black/40 dark:text-white/40 mb-2">{lang === "ar" ? "لا توجد وظائف مفتوحة حالياً" : "No open positions right now"}</h3>
-              <p className="text-sm text-black/25 dark:text-white/25 mb-8">{lang === "ar" ? "نحن دائماً نبحث عن المواهب — أرسل لنا سيرتك الذاتية وسنتواصل معك" : "We're always looking for talent — send your CV and we'll reach out"}</p>
+              <p className="text-sm text-black/25 dark:text-white/25 mb-8">{lang === "ar" ? "نحن دائماً نبحث عن المواهب أرسل لنا سيرتك الذاتية وسنتواصل معك" : "We're always looking for talent send your CV and we'll reach out"}</p>
               <button
                 onClick={() => setApplyJob(GENERAL_JOB)}
                 className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-xl font-bold text-sm hover:opacity-80 transition-opacity">

@@ -441,7 +441,7 @@ export default function OrderFlow() {
         serviceType: formData.sector || "website", planTier: selectedPlan,
         planSegment: segmentFromUrl, planPeriod: periodFromUrl, totalAmount: grandTotal,
         notes: [
-          `باقة ${PLAN_LABELS[selectedPlan]} — ${SEGMENT_LABELS[segmentFromUrl]||segmentFromUrl} — ${PERIOD_LABELS[periodFromUrl]||""}`,
+          `باقة ${PLAN_LABELS[selectedPlan]} ${SEGMENT_LABELS[segmentFromUrl]||segmentFromUrl} ${PERIOD_LABELS[periodFromUrl]||""}`,
           effectiveWalletAmt > 0 ? `دفع بالمحفظة: ${effectiveWalletAmt} ر.س` : "",
           formData.targetAudience   ? `الجمهور المستهدف: ${formData.targetAudience}` : "",
           formData.brandColor       ? `اللون المفضل: ${formData.brandColor}` : "",
@@ -651,7 +651,7 @@ export default function OrderFlow() {
             </div>
           </motion.div>
         ) : (
-        /* Payment card — Egypt gets local/international toggle */
+        /* Payment card Egypt gets local/international toggle */
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.07] dark:border-white/[0.07] p-6 mb-4 shadow-sm">
 
@@ -660,7 +660,7 @@ export default function OrderFlow() {
             <div className="mb-5">
               <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-2">اختر نوع التحويل</p>
               <div className="flex gap-2 p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl">
-                {([["local","📱 محلي — e& money"] , ["international","🏦 دولي — تحويل بنكي"]] as const).map(([val, label]) => (
+                {([["local","📱 محلي e& money"] , ["international","🏦 دولي تحويل بنكي"]] as const).map(([val, label]) => (
                   <button key={val} type="button" onClick={() => setEgyptPayType(val)}
                     className={`flex-1 text-xs font-bold py-2 rounded-lg transition-all ${egyptPayType === val ? "bg-white dark:bg-gray-800 shadow text-black dark:text-white" : "text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60"}`}
                     data-testid={`button-egypt-pay-${val}`}>
@@ -777,7 +777,7 @@ export default function OrderFlow() {
         </motion.div>
         )}
 
-        {/* WhatsApp continuation — auto-built message with order #, package, requirements */}
+        {/* WhatsApp continuation auto-built message with order #, package, requirements */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="mt-6 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 rounded-3xl border border-emerald-200/60 dark:border-emerald-800/30 p-6 shadow-sm">
           <div className="flex items-start gap-3 mb-4">
@@ -903,7 +903,7 @@ export default function OrderFlow() {
                   {segmentFromUrl && (
                     <div className="inline-flex items-center gap-2 text-sm text-black/45 dark:text-white/45 bg-black/[0.04] dark:bg-white/[0.04] px-4 py-1.5 rounded-full">
                       <Globe className="w-3.5 h-3.5" />
-                      {SEG_LABELS_TR[segmentFromUrl]} — {PERIOD_LABELS_TR[periodFromUrl]}
+                      {SEG_LABELS_TR[segmentFromUrl]} {PERIOD_LABELS_TR[periodFromUrl]}
                     </div>
                   )}
                 </div>
@@ -1119,7 +1119,7 @@ export default function OrderFlow() {
                             </div>
                           </div>
 
-                          {/* Bundle picker — shown when product is selected AND has bundles */}
+                          {/* Bundle picker shown when product is selected AND has bundles */}
                           {qty > 0 && hasBundles && (
                             <AnimatePresence>
                               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
@@ -1251,7 +1251,7 @@ export default function OrderFlow() {
                             )}
                             {bundle?.isFree && (
                               <div className="pr-10 mt-1">
-                                <span className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><Check className="w-3 h-3" /> {bundle.planNameAr} — مجانية مع الباقة</span>
+                                <span className="text-[10px] text-black/70 dark:text-white/70 flex items-center gap-1"><Check className="w-3 h-3" /> {bundle.planNameAr} مجانية مع الباقة</span>
                               </div>
                             )}
                           </div>
@@ -1399,7 +1399,7 @@ export default function OrderFlow() {
                 {/* ── Upload Payment Proof ── */}
                 {!fullyPaidByWallet && (
                   <FileUploadField
-                    label={lang === "ar" ? "إيصال الدفع (اختياري — يمكن رفعه لاحقاً)" : "Payment Proof (optional — can upload later)"}
+                    label={lang === "ar" ? "إيصال الدفع (اختياري يمكن رفعه لاحقاً)" : "Payment Proof (optional can upload later)"}
                     field="paymentProof" files={uploadedFiles.paymentProof}
                     onUpload={handleFileUpload} onRemove={handleFileRemove}
                   />
@@ -1461,13 +1461,13 @@ export default function OrderFlow() {
         </div>
       </div>
 
-      {/* Auth Modal — shown when guest tries to submit */}
+      {/* Auth Modal shown when guest tries to submit */}
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
         <DialogContent className="sm:max-w-sm rounded-3xl" dir={dir}>
           <DialogHeader className="text-center">
             <DialogTitle className="text-xl font-black">{lang === "ar" ? "أنت على وشك إرسال طلبك!" : "Almost there!"}</DialogTitle>
             <DialogDescription className="text-sm text-black/50 dark:text-white/50 mt-1">
-              {lang === "ar" ? "سجّل دخولك أو أنشئ حساباً لإتمام الطلب — بياناتك محفوظة" : "Sign in or register to complete your order — your data is saved"}
+              {lang === "ar" ? "سجّل دخولك أو أنشئ حساباً لإتمام الطلب بياناتك محفوظة" : "Sign in or register to complete your order your data is saved"}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-2">
@@ -1502,7 +1502,7 @@ export default function OrderFlow() {
               }}
               className="text-sm text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white transition-colors py-1"
             >
-              {lang === "ar" ? "لدي حساب — تسجيل الدخول" : "I have an account — Sign in"}
+              {lang === "ar" ? "لدي حساب تسجيل الدخول" : "I have an account Sign in"}
             </button>
           </div>
         </DialogContent>

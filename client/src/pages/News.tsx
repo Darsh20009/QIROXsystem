@@ -126,8 +126,8 @@ export default function News() {
 
   useSEO({
     title: lang === "ar"
-      ? "أخبار كيروكس استوديو — آخر المستجدات والتحديثات"
-      : "Qirox Studio News — Latest Updates & Announcements",
+      ? "أخبار كيروكس استوديو آخر المستجدات والتحديثات"
+      : "Qirox Studio News Latest Updates & Announcements",
     description: lang === "ar"
       ? "تابع آخر أخبار كيروكس استوديو: إطلاقات جديدة، تحديثات الأنظمة، مشاريع العملاء، وأحدث المستجدات من مصنع الأنظمة الرقمية في الرياض."
       : "Follow the latest Qirox Studio news: new launches, system updates, client projects, and the latest from the digital systems factory in Riyadh.",
