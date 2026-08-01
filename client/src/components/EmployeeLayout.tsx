@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { UserAvatar } from "@/components/UserAvatar";
 import EmployeeAIAssistant from "@/components/EmployeeAIAssistant";
+import QiroxAIFloat from "@/components/QiroxAIFloat";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, Package, Wrench, Code2, Mail,
@@ -909,6 +910,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── QIROX AI Floating Assistant — visible everywhere ── */}
+      <QiroxAIFloat />
     </div>
   );
 }

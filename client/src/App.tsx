@@ -76,6 +76,7 @@ const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
 const AdminWhatsApp = lazy(() => import("@/pages/AdminWhatsApp"));
 const AdminQiroxAI  = lazy(() => import("@/pages/AdminQiroxAI"));
 const AdminLocalAI  = lazy(() => import("@/pages/AdminLocalAI"));
+const AIApiDocs     = lazy(() => import("@/pages/AIApiDocs"));
 const AdminPhoneVerifications = lazy(() => import("@/pages/AdminPhoneVerifications"));
 const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
@@ -271,7 +272,7 @@ function HomeGate() {
   );
 }
 
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai", "/youssef-darwish", "/team/youssef-darwish", "/mohammed-aldabbani", "/team/mohammed-aldabbani"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai", "/youssef-darwish", "/team/youssef-darwish", "/mohammed-aldabbani", "/team/mohammed-aldabbani", "/ai-docs"];
 
 
 function PublicRouter() {
@@ -287,6 +288,7 @@ function PublicRouter() {
         <Route path="/jobs" component={Jobs} />
         <Route path="/paymob-onboarding" component={PaymobOnboarding} />
         <Route path="/join" component={JoinUs} />
+        <Route path="/ai-docs" component={AIApiDocs} />
         <Route path="/contact" component={Contact} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />

@@ -12,6 +12,7 @@
 - [dist/index.cjs git exclusion](dist-index-cjs-gitignore.md) — dist/index.cjs excluded from git (.gitignore) — bundled server bakes in env secrets which GitHub push protection blocks.
 - [attached_assets git exclusion](attached-assets-gitignore.md) — attached_assets/ excluded from git — Replit stores uploaded files there (screenshots, env var dumps with secrets) which trigger GitHub push protection.
 - [Group chat audio/image fixes](group-chat-media.md) — .webm MIME was video/webm (wrong), fixed to audio/webm; uploads get Cache-Control 7d; notification link → /groups/:id; GroupVoicePlayer has async play() + error handling.
+- [QMeet LiveKit SFU](qmeet-livekit-sfu.md) — P2P mesh → LiveKit SFU for 100+ participants; hybrid: LiveKit for media, WS for chat/reactions/polls; JWT built with Node.js crypto (no SDK); 3 env vars activate it.
 - [QIROX environment setup](qirox-env-setup.md) — fresh import needs npm install (root + mockup-sandbox) + MONGODB_URI; client changes need a vite build + restart since dev serves prebuilt dist; full tsc OOMs regardless of your changes.
 - [Customer Journey V2](customer-journey-v2.md) — V2 feature flags, API endpoints, and frontend wiring are all live. Flags persist via env vars; admin override endpoint exists at /api/admin/feature-flags/override.
 - [Live data shape drift](live-data-shape-drift.md) — /api/services runtime shape doesn't match its shared/schema.ts TS type; always curl live endpoints before trusting a schema.ts type for Mongo-backed routes.

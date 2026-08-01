@@ -17086,16 +17086,19 @@ export async function registerInstallmentRoutes(app: Express) {
     const ai = await import("./qirox-ai-engine");
     const { KnowledgeDocModel, QiroxAIKeyModel, QiroxAISettingsModel } = await import("./models/qirox-ai");
 
-    // ── Public OpenAI-compatible endpoint (requires API key in Bearer header) ──
+    // ── Public OpenAI-compatible endpoint (requires API key OR authenticated session) ──
     app.post("/api/qirox-ai/chat", async (req, res) => {
-      const raw = req.headers.authorization?.replace("Bearer ", "").trim() || "";
+      const raw = (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
       let keyDoc: any = null;
-      if (raw) keyDoc = await ai.validateApiKey(raw);
-      // Allow internal (admin-only) calls without key when authenticated
-      if (!raw && (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role))) {
-        return res.status(401).json({ error: "مطلوب مفتاح API" });
+      if (raw) {
+        keyDoc = await ai.validateApiKey(raw);
+        if (!keyDoc) return res.status(401).json({ error: "مفتاح API غير صالح أو تجاوز الحد اليومي" });
+        // Permission check
+        if (!keyDoc.permissions?.includes("chat"))
+          return res.status(403).json({ error: "هذا المفتاح لا يملك صلاحية chat" });
+      } else if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "مطلوب مفتاح API أو تسجيل دخول" });
       }
-      if (raw && !keyDoc) return res.status(401).json({ error: "مفتاح API غير صالح أو تجاوز الحد اليومي" });
 
       const { messages = [] } = req.body;
       if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
@@ -17156,6 +17159,32 @@ export async function registerInstallmentRoutes(app: Express) {
         const liveCtx = await ai.fetchLiveContext(messages[messages.length-1]?.content || "").catch(() => "");
 
         send({ ragDocs }); // send metadata before content starts
+
+        // ── Local AI path: generate full response, then stream word-by-word ─
+        if (settings.useLocalAI) {
+          try {
+            const { localChat } = await import("./lib/local-ai/index");
+            const lk = await localChat(messages, {
+              source: "admin-stream",
+              topK,
+              liveContext: liveCtx,
+            });
+            const words = lk.reply.split(/(\s+)/);
+            for (const w of words) {
+              if (w) {
+                send({ content: w });
+                await new Promise(r => setTimeout(r, w.trim() ? 20 : 5));
+              }
+            }
+            send({ totalTokens: lk.tokens, local: true });
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+          } catch (localErr: any) {
+            console.warn("[LocalAI] Stream fallback to external:", localErr.message);
+            // Fall through to external OpenAI
+          }
+        }
 
         const { getOpenAIClient } = await import("./lib/openai-client");
         const openai = getOpenAIClient();
@@ -17331,6 +17360,187 @@ export async function registerInstallmentRoutes(app: Express) {
       } catch (e: any) {
         res.status(500).json({ error: e.message });
       }
+    });
+
+    // ─── QIROX AI — Public v1 API ────────────────────────────────────────────
+    // Versioned, production-ready, OpenAI-compatible
+
+    /** Resolve + validate Bearer key; allow admin/manager session without key */
+    async function resolveAIKey(req: any, res: any, permission: string): Promise<any | false> {
+      const raw = (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+      if (!raw) {
+        if (!req.isAuthenticated())
+          return res.status(401).json({ error: "Authentication required. Use: Authorization: Bearer <qai-...>" }), false;
+        return { _id: "internal", name: "session", permissions: ["chat","knowledge","embeddings"] };
+      }
+      const keyDoc = await ai.validateApiKey(raw);
+      if (!keyDoc) return res.status(401).json({ error: "Invalid or expired API key" }), false;
+      if (!keyDoc.permissions?.includes(permission))
+        return res.status(403).json({ error: `Key lacks '${permission}' permission` }), false;
+      return keyDoc;
+    }
+
+    /** GET /api/v1/ai/health — no auth, public */
+    app.get("/api/v1/ai/health", async (_req, res) => {
+      try {
+        const { getModelStatus, getGenerationStatus } = await import("./lib/local-ai/index");
+        const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean() || {};
+        const docCount = await KnowledgeDocModel.countDocuments({ active: true });
+        res.json({
+          status: "ok",
+          version: "1.0.0",
+          models: {
+            chat:       settings.useLocalAI ? "qirox-local-qwen2.5-0.5b" : (settings.model || "gpt-4o"),
+            embedding:  getModelStatus().ready       ? "all-MiniLM-L6-v2 (384d)" : null,
+            generation: getGenerationStatus().ready  ? "Qwen2.5-0.5B-Instruct"   : null,
+            mode:       settings.useLocalAI ? "local" : "external",
+          },
+          rag: { enabled: settings.ragEnabled !== false, documents: docCount, topK: settings.topK || 5 },
+          rateLimit: "varies by key — check your key settings",
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    /** POST /api/v1/ai/chat — full chat with RAG + live context, supports streaming */
+    app.post("/api/v1/ai/chat", async (req, res) => {
+      const keyDoc = await resolveAIKey(req, res, "chat");
+      if (keyDoc === false) return;
+
+      const { messages, stream: doStream = false } = req.body;
+      if (!Array.isArray(messages) || !messages.length)
+        return res.status(400).json({ error: "messages is required (array of {role, content})" });
+
+      try {
+        if (doStream) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          const send = (obj: object) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+
+          const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
+          const topK = settings.topK || 5;
+          const liveCtx = await ai.fetchLiveContext(messages[messages.length-1]?.content || "").catch(() => "");
+          let ragDocs = 0;
+          if (settings.ragEnabled !== false) {
+            const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+            if (lastUser) ragDocs = (await ai.retrieveTopK(lastUser.content, topK)).length;
+          }
+          send({ ragDocs });
+
+          if (settings.useLocalAI) {
+            const { localChat } = await import("./lib/local-ai/index");
+            const lk = await localChat(messages, {
+              keyId: keyDoc._id?.toString(), source: "api-v1-stream", topK, liveContext: liveCtx,
+            });
+            for (const tok of lk.reply.split(/(\s+)/)) {
+              if (tok) { send({ content: tok }); await new Promise(r => setTimeout(r, 20)); }
+            }
+            send({ totalTokens: lk.tokens, local: true });
+          } else {
+            const { getOpenAIClient } = await import("./lib/openai-client");
+            const openai = getOpenAIClient();
+            const lastMsg = messages[messages.length-1]?.content || "";
+            const ragCtx = (await ai.retrieveTopK(lastMsg, topK).catch(() => []))
+              .map((d: any, i: number) => `## ${i+1}. ${d.title}\n${d.content}`).join("\n\n");
+            const stream = await openai.chat.completions.create({
+              model: settings.model || "gpt-4o",
+              temperature: settings.temperature ?? 0.8,
+              max_tokens: settings.maxTokens || 700,
+              messages: [
+                { role: "system", content: ai.buildSystemPromptPublic(settings.systemPrompt || "", ragCtx, liveCtx) },
+                ...messages,
+              ] as any,
+              stream: true,
+            });
+            for await (const chunk of stream) {
+              const c = chunk.choices[0]?.delta?.content;
+              if (c) send({ content: c });
+            }
+          }
+          res.write("data: [DONE]\n\n");
+          res.end();
+        } else {
+          // Non-streaming — OpenAI-compatible response format
+          const result = await ai.qiroxChat(messages, {
+            keyId: keyDoc._id?.toString() || "internal",
+            source: "api-v1",
+          });
+          res.json({
+            id: `qai-${Date.now()}`,
+            object: "chat.completion",
+            model: "qirox-ai",
+            choices: [{ index: 0, message: { role: "assistant", content: result.reply }, finish_reason: "stop" }],
+            usage: { total_tokens: result.tokens },
+            meta: { ragDocs: result.ragDocs },
+          });
+        }
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    /** GET /api/v1/ai/search?q=&k= — semantic + BM25 knowledge search */
+    app.get("/api/v1/ai/search", async (req, res) => {
+      const keyDoc = await resolveAIKey(req, res, "knowledge");
+      if (keyDoc === false) return;
+
+      const q = String(req.query.q || "").trim();
+      const k = Math.min(Number(req.query.k) || 5, 20);
+      if (!q) return res.status(400).json({ error: "q parameter required" });
+
+      try {
+        const { getModelStatus, embed, cosineSim } = await import("./lib/local-ai/index");
+        let results: any[];
+
+        if (getModelStatus().ready) {
+          const qEmb = await embed(q);
+          const docs = await KnowledgeDocModel
+            .find({ active: true, "embedding.0": { $exists: true } })
+            .select("title content category tags embedding").lean();
+          results = docs
+            .map((d: any) => ({
+              title: d.title,
+              content: d.content.length > 400 ? d.content.slice(0, 400) + "…" : d.content,
+              category: d.category, tags: d.tags,
+              score: parseFloat(cosineSim(qEmb, d.embedding || []).toFixed(4)),
+            }))
+            .sort((a: any, b: any) => b.score - a.score)
+            .slice(0, k);
+        } else {
+          const raw = await ai.retrieveTopK(q, k);
+          results = raw.map(d => ({
+            title: d.title,
+            content: d.content.length > 400 ? d.content.slice(0, 400) + "…" : d.content,
+            score: parseFloat(d.score.toFixed(4)),
+          }));
+        }
+        res.json({ query: q, results, count: results.length, engine: getModelStatus().ready ? "hybrid" : "bm25" });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    /** POST /api/v1/ai/embed — get text embeddings (384-dim, OpenAI-compatible format) */
+    app.post("/api/v1/ai/embed", async (req, res) => {
+      const keyDoc = await resolveAIKey(req, res, "embeddings");
+      if (keyDoc === false) return;
+
+      const { input } = req.body;
+      if (!input) return res.status(400).json({ error: "input required (string or string[])" });
+
+      try {
+        const { embed, getModelStatus } = await import("./lib/local-ai/index");
+        if (!getModelStatus().ready)
+          return res.status(503).json({ error: "Embedding model not loaded — load it from admin panel first" });
+
+        const inputs: string[] = (Array.isArray(input) ? input : [input]).slice(0, 100);
+        const embeddings = await Promise.all(inputs.map((t: string) => embed(String(t))));
+        res.json({
+          object: "list",
+          data: embeddings.map((emb, i) => ({ object: "embedding", index: i, embedding: emb })),
+          model: "all-MiniLM-L6-v2",
+          dimensions: 384,
+          usage: { prompt_tokens: inputs.reduce((s, t) => s + Math.ceil(t.length / 4), 0) },
+        });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
   }
 

@@ -255,6 +255,13 @@ export async function qiroxChat(
         { $inc: { localAIRequests: 1, localAISavedCalls: 1 } },
         { upsert: true },
       );
+      // Count key usage (local path was previously not counted)
+      if (opts.keyId && opts.keyId !== "internal" && opts.keyId !== "local") {
+        await QiroxAIKeyModel.findByIdAndUpdate(opts.keyId, {
+          $inc: { usedToday: 1, totalRequests: 1, totalTokens: result.tokens },
+          lastUsedAt: new Date(),
+        });
+      }
       return { reply: result.reply, tokens: result.tokens, ragDocs: result.ragDocs };
     } catch (localErr: any) {
       console.warn("[LocalAI] Falling back to external AI:", localErr.message);
