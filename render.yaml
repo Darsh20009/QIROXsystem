@@ -3,7 +3,7 @@ services:
     name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
-    buildCommand: npm ci --legacy-peer-deps && npm run build
+    buildCommand: npm ci --legacy-peer-deps --ignore-scripts && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
