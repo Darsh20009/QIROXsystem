@@ -6,6 +6,27 @@ import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
 import { sendPushToUser } from "./push";
 
+// ── LiveKit SFU (scales to 100 concurrent participants) ───────────────────────
+const LIVEKIT_URL        = process.env.LIVEKIT_URL        || "";
+const LIVEKIT_API_KEY    = process.env.LIVEKIT_API_KEY    || "";
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || "";
+const LIVEKIT_ENABLED    = !!(LIVEKIT_URL && LIVEKIT_API_KEY && LIVEKIT_API_SECRET);
+
+/** Generate a LiveKit JWT using Node.js built-in crypto — no external SDK needed */
+function makeLiveKitJWT(identity: string, name: string, room: string): string {
+  const { createHmac, randomBytes } = require("crypto") as typeof import("crypto");
+  const now  = Math.floor(Date.now() / 1000);
+  const head = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(JSON.stringify({
+    iss: LIVEKIT_API_KEY, sub: identity,
+    iat: now, exp: now + 14400, nbf: 0,
+    jti: randomBytes(8).toString("hex"), name,
+    video: { roomJoin: true, room, canPublish: true, canSubscribe: true, canPublishData: true },
+  })).toString("base64url");
+  const sig  = createHmac("sha256", LIVEKIT_API_SECRET).update(`${head}.${body}`).digest("base64url");
+  return `${head}.${body}.${sig}`;
+}
+
 function makeModelProxy<T>(factory: () => T): T {
   return new Proxy(function () {} as any, {
     get: (_t, p) => {
@@ -186,6 +207,23 @@ function requireAuth(req: any, res: any, next: any) {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 export function registerQMeetRoutes(app: Express) {
+
+  // GET /api/qmeet/livekit-token/:roomId — SFU JWT (supports 100+ participants)
+  app.get("/api/qmeet/livekit-token/:roomId", (req: any, res) => {
+    if (!LIVEKIT_ENABLED) return res.json({ enabled: false });
+    const userId = req.isAuthenticated()
+      ? String((req.user as any)._id || (req.user as any).id)
+      : `guest-${Date.now()}`;
+    const name = req.isAuthenticated()
+      ? ((req.user as any).fullName || (req.user as any).username || userId)
+      : String(req.query.name || "مشارك");
+    try {
+      const token = makeLiveKitJWT(userId, name, req.params.roomId);
+      res.json({ enabled: true, token, url: LIVEKIT_URL });
+    } catch (e: any) {
+      res.json({ enabled: false, error: e.message });
+    }
+  });
 
   // GET /api/qmeet/meetings — list meetings
   app.get("/api/qmeet/meetings", requireAuth, async (req: any, res) => {

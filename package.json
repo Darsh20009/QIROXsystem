@@ -103,6 +103,7 @@
     "input-otp": "^1.4.2",
     "js-yaml": "^5.2.1",
     "jsbarcode": "^3.12.3",
+    "livekit-client": "^2.21.0",
     "lucide-react": "^0.453.0",
     "mailparser": "^3.9.8",
     "mammoth": "^1.11.0",

@@ -276,6 +276,11 @@ export default function MeetingRoom() {
   const facingModeRef = useRef<"user" | "environment">("user");
   const [flippingCamera, setFlippingCamera] = useState(false);
 
+  // ── LiveKit SFU (scales to 100+ participants) ─────────────────────────────
+  const lkRoomRef       = useRef<any>(null);
+  const livekitModeRef  = useRef(false);
+  const [livekitMode, setLivekitMode] = useState(false);
+
   // Recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -381,6 +386,46 @@ export default function MeetingRoom() {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
     }
+  }, []);
+
+  // ── LiveKit: rebuild peers Map from room participants ─────────────────────
+  const updateLKPeers = useCallback((room: any) => {
+    setPeers(prev => {
+      const next = new Map<string, PeerState>(prev);
+      const seen = new Set<string>();
+
+      for (const participant of (room.remoteParticipants as Map<string, any>).values()) {
+        const id: string = participant.identity;
+        seen.add(id);
+
+        const mediaTracks: MediaStreamTrack[] = [];
+        for (const pub of (participant.getTrackPublications() as any[])) {
+          const mst = pub.track?.mediaStreamTrack;
+          if (!mst) continue;
+          const src: string = pub.source || "";
+          if (src === "camera" || src === "microphone" || src === "screen_share" || src === "screen_share_audio") {
+            mediaTracks.push(mst);
+          }
+        }
+
+        const stream      = mediaTracks.length > 0 ? new MediaStream(mediaTracks) : null;
+        const hasVideo    = mediaTracks.some(t => t.kind === "video");
+        const existing    = next.get(id);
+        next.set(id, {
+          id, stream,
+          name:            participant.name || id,
+          audioOn:         !participant.isMicrophoneMuted,
+          videoOn:         hasVideo,
+          connectionState: "connected",
+          raisedHand:      existing?.raisedHand,
+          photoUrl:        existing?.photoUrl,
+        });
+      }
+
+      // Remove participants who left
+      for (const [id] of next) { if (!seen.has(id)) next.delete(id); }
+      return next;
+    });
   }, []);
 
   const addStreamToPc = (pc: RTCPeerConnection, stream: MediaStream) => {
@@ -554,6 +599,7 @@ export default function MeetingRoom() {
     }
     if (msg.type === "webrtc_meeting_ended") {
       toast({ title: "انتهى الاجتماع", description: "أنهى المضيف الاجتماع للجميع" });
+      lkRoomRef.current?.disconnect().catch(() => {});
       wsRef.current?.close();
       pcsRef.current.forEach(pc => pc.close());
       localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -656,16 +702,24 @@ export default function MeetingRoom() {
         setIsRoomHost(true);
         isRoomHostRef.current = true;
       }
-      for (const peerId of existingIds) {
-        if (peerId === myId) continue;
-        try {
-          await createPc(peerId, true);
-        } catch (err) {
-          // Don't let one failed connection block the rest of the mesh —
-          // otherwise later peers in the loop never get connected at all,
-          // causing partial-mesh audio ("some hear each other, some don't").
-          console.error("[QMeet] Failed to connect to peer", peerId, err);
-          pcsRef.current.delete(peerId);
+      if (livekitModeRef.current) {
+        // SFU mode: LiveKit handles all media — just store names for WS events
+        if (msg.peerInfoList) {
+          msg.peerInfoList.forEach((p: any) => peerNamesRef.current.set(p.userId, p.name));
+        }
+      } else {
+        // P2P mesh: connect to each existing peer
+        for (const peerId of existingIds) {
+          if (peerId === myId) continue;
+          try {
+            await createPc(peerId, true);
+          } catch (err) {
+            // Don't let one failed connection block the rest of the mesh —
+            // otherwise later peers in the loop never get connected at all,
+            // causing partial-mesh audio ("some hear each other, some don't").
+            console.error("[QMeet] Failed to connect to peer", peerId, err);
+            pcsRef.current.delete(peerId);
+          }
         }
       }
       return;
@@ -676,15 +730,19 @@ export default function MeetingRoom() {
       const peerId: string = msg.peerId;
       if (peerId === myId) return;
       peerNamesRef.current.set(peerId, msg.name || peerId);
-      setPeers(prev => {
-        const m = new Map(prev);
-        if (!m.has(peerId)) {
-          m.set(peerId, { id: peerId, name: msg.name || peerId, stream: null, audioOn: true, videoOn: true, photoUrl: msg.photoUrl, facingMode: msg.facingMode || "user" });
-        }
-        return m;
-      });
-      // Create a receiver PC with full handlers (isInitiator=false → no offer sent)
-      createPc(peerId, false).catch(() => {});
+      if (!livekitModeRef.current) {
+        // P2P mesh: set up placeholder and create receiver PC
+        setPeers(prev => {
+          const m = new Map(prev);
+          if (!m.has(peerId)) {
+            m.set(peerId, { id: peerId, name: msg.name || peerId, stream: null, audioOn: true, videoOn: true, photoUrl: msg.photoUrl, facingMode: msg.facingMode || "user" });
+          }
+          return m;
+        });
+        // Create a receiver PC with full handlers (isInitiator=false → no offer sent)
+        createPc(peerId, false).catch(() => {});
+      }
+      // In LiveKit mode: participant appearance is handled by RoomEvent.ParticipantConnected
       return;
     }
 
@@ -702,16 +760,21 @@ export default function MeetingRoom() {
     // ── Peer left ─────────────────────────────────────────────────────────────
     if (msg.type === "webrtc_peer_left") {
       const peerId: string = msg.peerId;
-      pcsRef.current.get(peerId)?.close();
-      pcsRef.current.delete(peerId);
-      pendingIce.current.delete(peerId);
       peerNamesRef.current.delete(peerId);
-      setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+      if (!livekitModeRef.current) {
+        // P2P mesh: close peer connection and remove from state
+        pcsRef.current.get(peerId)?.close();
+        pcsRef.current.delete(peerId);
+        pendingIce.current.delete(peerId);
+        setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+      }
+      // In LiveKit mode: removal handled by RoomEvent.ParticipantDisconnected
       return;
     }
 
     // ── Offer received (we are existing peer, newcomer sent this) ─────────────
     if (msg.type === "webrtc_offer") {
+      if (livekitModeRef.current) return; // SFU mode: no P2P
       const peerId: string = msg.from;
       try {
         let pc = pcsRef.current.get(peerId);
@@ -741,6 +804,7 @@ export default function MeetingRoom() {
 
     // ── Answer received ────────────────────────────────────────────────────────
     if (msg.type === "webrtc_answer") {
+      if (livekitModeRef.current) return; // SFU mode: no P2P
       try {
         const pc = pcsRef.current.get(msg.from);
         if (pc && pc.signalingState === "have-local-offer") {
@@ -763,6 +827,7 @@ export default function MeetingRoom() {
 
     // ── ICE candidate ──────────────────────────────────────────────────────────
     if (msg.type === "webrtc_ice") {
+      if (livekitModeRef.current) return; // SFU mode: no P2P
       const peerId: string = msg.from;
       const pc = pcsRef.current.get(peerId);
       if (!msg.candidate) return;
@@ -907,7 +972,62 @@ export default function MeetingRoom() {
     // Load ICE servers
     iceServersRef.current = await getIce();
 
-    // Connect WebSocket
+    // ── Try LiveKit SFU (100+ participants; falls back to P2P if not configured) ─
+    try {
+      const lkResp = await fetch(
+        `/api/qmeet/livekit-token/${roomId}?name=${encodeURIComponent(userName)}`,
+        { credentials: "include" }
+      );
+      const lkData = await lkResp.json();
+      if (lkData.enabled && lkData.token) {
+        // Dynamic import keeps livekit-client out of the initial bundle
+        const { Room, RoomEvent, ConnectionState } = await import("livekit-client") as any;
+        const room = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+          publishDefaults: { simulcast: true, videoCodec: "vp8" },
+          audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          videoCaptureDefaults: { resolution: { width: 1280, height: 720, frameRate: 30 } },
+        });
+        lkRoomRef.current = room;
+        livekitModeRef.current = true;
+        setLivekitMode(true);
+
+        // Bind participant/track events → update peers state
+        const upd = () => updateLKPeers(room);
+        room.on(RoomEvent.ParticipantConnected,    upd);
+        room.on(RoomEvent.ParticipantDisconnected, upd);
+        room.on(RoomEvent.TrackSubscribed,         upd);
+        room.on(RoomEvent.TrackUnsubscribed,       upd);
+        room.on(RoomEvent.TrackMuted,              upd);
+        room.on(RoomEvent.TrackUnmuted,            upd);
+        room.on(RoomEvent.ConnectionStateChanged,  (state: any) => {
+          if (state === (ConnectionState as any).Reconnecting)
+            toast({ title: "⚠️ جارٍ إعادة الاتصال بخادم الاجتماع..." });
+          else if (state === (ConnectionState as any).Connected)
+            toast({ title: "✅ تم إعادة الاتصال" });
+        });
+
+        await room.connect(lkData.url, lkData.token, { autoSubscribe: true });
+
+        // Publish the local tracks we already acquired (avoids double camera request)
+        if (stream) {
+          const aTrack = stream.getAudioTracks()[0];
+          const vTrack = stream.getVideoTracks()[0];
+          if (audioOnRef.current && aTrack)
+            await room.localParticipant.publishTrack(aTrack).catch(() => {});
+          if (videoOnRef.current && vTrack)
+            await room.localParticipant.publishTrack(vTrack).catch(() => {});
+        }
+        updateLKPeers(room);
+      }
+    } catch (lkErr: any) {
+      console.warn("[QMeet] LiveKit unavailable — falling back to P2P mesh:", lkErr.message);
+      livekitModeRef.current = false;
+      setLivekitMode(false);
+    }
+
+    // Connect WebSocket (needed for chat / reactions / polls / host controls regardless of SFU mode)
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
@@ -970,12 +1090,14 @@ export default function MeetingRoom() {
     }, 25000);
 
     setJoined(true);
-  }, [roomId, userId, userName, user, getMedia, handleMessage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, userId, userName, user, getMedia, handleMessage, updateLKPeers, toast]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       if (keepaliveRef.current) clearInterval(keepaliveRef.current);
+      lkRoomRef.current?.disconnect().catch(() => {});
       wsRef.current?.close();
       pcsRef.current.forEach(pc => pc.close());
       localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -1073,6 +1195,16 @@ export default function MeetingRoom() {
   const toggleAudio = useCallback(async () => {
     const on = !audioOnRef.current;
 
+    // LiveKit SFU mode: control track directly and notify the SFU
+    if (livekitModeRef.current && lkRoomRef.current) {
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = on; });
+      lkRoomRef.current.localParticipant.setMicrophoneEnabled(on).catch(() => {});
+      audioOnRef.current = on;
+      setAudioOn(on);
+      sendWs({ type: "webrtc_media_state", roomId, audio: on, video: videoOnRef.current });
+      return;
+    }
+
     if (on) {
       // Turning ON — check if existing audio tracks are live
       const existingAudio = localStreamRef.current?.getAudioTracks() ?? [];
@@ -1108,6 +1240,16 @@ export default function MeetingRoom() {
   const toggleVideo = useCallback(async () => {
     if (screenSharing) return;
     const on = !videoOnRef.current;
+
+    // LiveKit SFU mode: control camera through the SFU
+    if (livekitModeRef.current && lkRoomRef.current) {
+      localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = on; });
+      lkRoomRef.current.localParticipant.setCameraEnabled(on).catch(() => {});
+      videoOnRef.current = on;
+      setVideoOn(on);
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: on });
+      return;
+    }
 
     if (on) {
       // Turning ON — check if existing video tracks are live
@@ -1190,6 +1332,26 @@ export default function MeetingRoom() {
   }, [roomId, sendWs, userName]);
 
   const toggleScreen = useCallback(async () => {
+    // LiveKit SFU mode: screen share via SFU
+    if (livekitModeRef.current && lkRoomRef.current) {
+      if (screenSharing) {
+        lkRoomRef.current.localParticipant.setScreenShareEnabled(false).catch(() => {});
+        setScreenSharing(false);
+        sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
+      } else {
+        lkRoomRef.current.localParticipant.setScreenShareEnabled(true)
+          .then(() => {
+            setScreenSharing(true);
+            sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
+            toast({ title: "🖥️ بدأت مشاركة الشاشة", description: "المشاركون الآخرون يرون شاشتك الآن" });
+          })
+          .catch((e: any) => {
+            if (e?.name !== "NotAllowedError")
+              toast({ title: "تعذّر مشاركة الشاشة", variant: "destructive" });
+          });
+      }
+      return;
+    }
     if (screenSharing) {
       await revertToCamera();
       return;
@@ -1263,6 +1425,7 @@ export default function MeetingRoom() {
 
   const leave = useCallback(() => {
     sendWs({ type: "webrtc_leave", roomId });
+    lkRoomRef.current?.disconnect().catch(() => {});
     wsRef.current?.close();
     pcsRef.current.forEach(pc => pc.close());
     localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -1784,6 +1947,11 @@ export default function MeetingRoom() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-white font-medium text-sm truncate max-w-[120px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
           <span className="text-[#9aa0a6] text-xs tabular-nums shrink-0">{timer}</span>
+          {livekitMode && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 shrink-0">
+              SFU · 100↑
+            </span>
+          )}
           {meetingLocked && <Lock className="w-3.5 h-3.5 text-black/70 dark:text-white/70 shrink-0" />}
           {recording && <span className="flex items-center gap-1 text-black/70 dark:text-white/70 text-xs animate-pulse shrink-0"><CircleDot className="w-3 h-3" />تسجيل</span>}
         </div>
