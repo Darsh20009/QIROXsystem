@@ -26,6 +26,11 @@ class WhatsAppModule extends EventEmitter {
   private pendingAITimers = new Map<string, ReturnType<typeof setTimeout>>();
   private sseClients = new Set<any>(); // res objects for SSE
 
+  // Reconnect throttle — prevents infinite loops crashing the server
+  private reconnectAttempts = 0;
+  private readonly MAX_RECONNECT = 5;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
   // ── SSE subscription ──────────────────────────────────────────────────────
   addSSEClient(res: any) {
     this.sseClients.add(res);
@@ -58,7 +63,11 @@ class WhatsAppModule extends EventEmitter {
 
   // ── Connection ────────────────────────────────────────────────────────────
   async connect() {
-    if (this.sock) await this.shutdown(false); // restart without clearing auth
+    // Prevent concurrent connect calls
+    if (this.sock) await this.shutdown(false);
+
+    // Clear any pending reconnect timer
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
 
     this.status = "connecting";
     this.qrString = null;
@@ -72,14 +81,34 @@ class WhatsAppModule extends EventEmitter {
       if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true });
 
       const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-      const { version } = await fetchLatestBaileysVersion();
+
+      // Fetch latest WA version with a safe fallback — external HTTP, can fail
+      let version: number[];
+      try {
+        const v = await fetchLatestBaileysVersion();
+        version = v.version;
+      } catch {
+        version = [2, 3000, 1015901307]; // known-good fallback
+        console.warn("[WA] fetchLatestBaileysVersion failed — using fallback version");
+      }
+
+      const silentLogger = {
+        level: "silent",
+        info: () => {}, warn: () => {}, error: () => {},
+        debug: () => {}, trace: () => {}, fatal: () => {},
+        child: () => ({
+          level: "silent",
+          info: () => {}, warn: () => {}, error: () => {},
+          debug: () => {}, trace: () => {}, fatal: () => {}, child: () => ({}),
+        }),
+      };
 
       this.sock = makeWASocket({
         version,
         auth: state,
         browser: Browsers.ubuntu("QIROX CRM"),
         printQRInTerminal: false,
-        logger: { level: "silent", info: ()=>{}, warn: ()=>{}, error: ()=>{}, debug: ()=>{}, trace: ()=>{}, fatal: ()=>{}, child: () => ({ level: "silent", info: ()=>{}, warn: ()=>{}, error: ()=>{}, debug: ()=>{}, trace: ()=>{}, fatal: ()=>{} }) } as any,
+        logger: silentLogger as any,
         syncFullHistory: false,
         getMessage: async () => undefined,
       });
@@ -92,10 +121,12 @@ class WhatsAppModule extends EventEmitter {
         if (qr) {
           this.qrString = qr;
           this.status = "qr";
+          this.reconnectAttempts = 0; // QR appeared = fresh session, reset counter
           this.sendSSE({ type: "status", ...this.getStatus() });
         }
 
         if (connection === "open") {
+          this.reconnectAttempts = 0; // successful connection — reset counter
           this.status = "connected";
           this.qrString = null;
           this.connectedPhone = this.sock?.user?.id?.split(":")?.[0] || null;
@@ -106,22 +137,39 @@ class WhatsAppModule extends EventEmitter {
         if (connection === "close") {
           const code = (lastDisconnect?.error as any)?.output?.statusCode;
           const loggedOut = code === DisconnectReason?.loggedOut || code === 401;
+
+          this.status = "disconnected";
+          this.connectedPhone = null;
+          this.sendSSE({ type: "status", ...this.getStatus() });
+
           if (loggedOut) {
-            this.status = "disconnected";
-            this.connectedPhone = null;
-            this.sendSSE({ type: "status", ...this.getStatus() });
+            // Logged out — clear auth, stop reconnecting
+            this.reconnectAttempts = 0;
+            const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
+            try { if (fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch {}
+          } else if (this.reconnectAttempts < this.MAX_RECONNECT) {
+            // Exponential backoff: 5s, 10s, 20s, 30s, 30s — max 5 attempts
+            this.reconnectAttempts++;
+            const delay = Math.min(5000 * this.reconnectAttempts, 30_000);
+            console.log(`[WA] Auto-reconnect ${this.reconnectAttempts}/${this.MAX_RECONNECT} in ${delay / 1000}s`);
+            this.reconnectTimer = setTimeout(
+              () => this.connect().catch(e => console.error("[WA] Reconnect failed:", e.message)),
+              delay
+            );
           } else {
-            // Auto-reconnect after 5s
-            setTimeout(() => this.connect(), 5000);
+            // Gave up — user must click "اتصال" manually
+            console.warn(`[WA] Max reconnect attempts (${this.MAX_RECONNECT}) reached — manual restart required`);
+            this.reconnectAttempts = 0;
           }
         }
       });
 
-      this.sock.ev.on("messages.upsert", async ({ messages, type }: any) => {
+      // Wrap async message handler — never let it bubble up as UnhandledRejection
+      this.sock.ev.on("messages.upsert", ({ messages, type }: any) => {
         if (type !== "notify") return;
         for (const msg of messages) {
           if (msg.key.fromMe) continue;
-          await this.handleIncoming(msg).catch(console.error);
+          this.handleIncoming(msg).catch(e => console.error("[WA] handleIncoming error:", e.message));
         }
       });
 
@@ -133,12 +181,20 @@ class WhatsAppModule extends EventEmitter {
   }
 
   async shutdown(clearAuth = true) {
+    // Cancel pending reconnect timer — prevents ghost reconnects after manual disconnect
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+    this.reconnectAttempts = 0;
+
     // Cancel pending AI timers
     this.pendingAITimers.forEach(t => clearTimeout(t));
     this.pendingAITimers.clear();
 
     if (this.sock) {
-      try { await this.sock.logout(); } catch {}
+      try {
+        // Use ws.terminate() instead of logout() — logout() throws when already disconnected
+        this.sock.ws?.terminate?.();
+      } catch {}
+      try { this.sock.ev?.removeAllListeners?.(); } catch {}
       this.sock = null;
     }
     this.status = "disconnected";

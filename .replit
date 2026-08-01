@@ -183,6 +183,7 @@ A1iZQT0xWmJArzmoUUOSqwSonMJNsUvSq3xKX+udO7xPiEAGE/+QF4oIRynoYpgp
 pU8RBWk6z/Kf
 -----END CERTIFICATE-----
 """
+OPENAI_BASE_URL = "https://bazaarlink.ai/v1"
 
 [agent]
 expertMode = true
