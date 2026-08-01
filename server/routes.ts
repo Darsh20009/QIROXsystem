@@ -9270,7 +9270,10 @@ export async function registerRoutes(
 
       let pkpassBuffer: Buffer;
       try {
-        const { PKPass } = await import("passkit-generator" as any);
+        // Use Function constructor to prevent esbuild from rewriting import() → require()
+        // passkit-generator is ESM-only; require() silently breaks it in the CJS bundle
+        const _dynImport = new Function("m", "return import(m)");
+        const { PKPass } = await _dynImport("passkit-generator");
         const pass = new PKPass(
           {
             "pass.json":         Buffer.from(JSON.stringify(passJson)),
