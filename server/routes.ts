@@ -15,6 +15,7 @@ import fs from "fs";
 import express from "express";
 import crypto from "crypto";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
+import { deflateRawSync as _zlibDeflateRawSync } from "zlib";
 import { registerMailRoutes } from "./domains/mail";
 import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
@@ -9096,15 +9097,13 @@ export async function registerRoutes(
 
       // ── Pure-JS PNG fallback ───────────────────────────────────────────────
       const mkSolidPng = (w: number, h: number, r = 10, g = 10, b = 22, a = 255): Buffer => {
-        const { createDeflateRaw } = require("zlib");
         // Build raw scanlines: each row = filter byte (0x00) + RGBA pixels
         const row = Buffer.alloc(1 + w * 4);
         row[0] = 0; // filter type None
         for (let x = 0; x < w; x++) { row[1 + x*4] = r; row[2 + x*4] = g; row[3 + x*4] = b; row[4 + x*4] = a; }
         const raw = Buffer.concat(Array.from({ length: h }, () => row));
-        // Deflate the raw image data (sync via syncronous zlib)
-        const { deflateRawSync } = require("zlib");
-        const compressed = deflateRawSync(raw);
+        // Deflate the raw image data using top-level import (avoids esbuild minification conflicts)
+        const compressed = _zlibDeflateRawSync(raw);
         // Adler-32 for zlib wrapper
         let s1 = 1, s2 = 0;
         for (const byte of raw) { s1 = (s1 + byte) % 65521; s2 = (s2 + s1) % 65521; }
