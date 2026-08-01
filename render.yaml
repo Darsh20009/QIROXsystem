@@ -50,6 +50,14 @@ services:
         sync: false
       - key: APPLE_PRIVATE_KEY
         sync: false
+      - key: APPLE_PASS_CERT
+        sync: false
+      - key: APPLE_PASS_KEY
+        sync: false
+      - key: APPLE_WWDR_CERT
+        sync: false
+      - key: APPLE_PASS_TYPE_ID
+        sync: false
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET

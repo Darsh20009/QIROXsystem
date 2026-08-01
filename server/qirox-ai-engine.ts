@@ -97,16 +97,24 @@ export async function retrieveTopK(query: string, k = 5): Promise<{ title: strin
     .slice(0, k);
 }
 
-// ── Pre-process a document for BM25 ─────────────────────────────────────────
+// ── Pre-process a document for BM25 + auto-embed semantics ──────────────────
 export async function indexDocument(docId: string) {
   const doc = await KnowledgeDocModel.findById(docId);
   if (!doc) return;
-  const tokens = tokenize(`${doc.title} ${doc.content}`);
+  const text   = `${doc.title} ${doc.content}`;
+  const tokens = tokenize(text);
   const termFreq: Record<string, number> = {};
   for (const t of tokens) termFreq[t] = (termFreq[t] || 0) + 1;
-  doc.tokens      = tokens;
+  doc.tokens       = tokens;
   doc.termFreqJson = JSON.stringify(termFreq);
-  doc.docLength   = tokens.length;
+  doc.docLength    = tokens.length;
+  // Auto-compute semantic embedding if model is loaded
+  try {
+    const { getModelStatus, embed } = await import("./lib/local-ai/index");
+    if (getModelStatus().ready) {
+      (doc as any).embedding = await embed(text);
+    }
+  } catch {}
   await doc.save();
 }
 
@@ -117,27 +125,78 @@ export async function reindexAll() {
   console.log(`[QiroxAI] Re-indexed ${docs.length} documents`);
 }
 
-// ── Default QIROX system prompt ──────────────────────────────────────────────
-function buildSystemPrompt(extra: string, ragContext: string): string {
-  return `أنت QIROX AI — المساعد الذكي الخاص بمنصة كيروكس لاستوديو التطوير الرقمي.
-مهمتك: مساعدة العملاء والموظفين بأفضل إجابة ممكنة.
+// ── Live system context (gives QIROX AI access to real-time data) ─────────────
+export async function fetchLiveContext(query: string): Promise<string> {
+  const parts: string[] = [];
+  try {
+    const now = new Date();
+    parts.push(`📅 ${now.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}`);
 
-معلوماتك الأساسية:
-- QIROX = منصة سعودية متخصصة في تطوير المنتجات الرقمية (مواقع، تطبيقات، ذكاء اصطناعي، أنظمة SaaS)
-- باقات: Lite, Pro, Infinity — مع خيار شراء تعديلات إضافية
-- الفريق في السعودية، يخدم العملاء في كل مكان
-- أسلوبك: ودود وحيوي ومباشر — مش رسمي
+    const { UserModel } = await import("./models");
 
-${ragContext ? `\n# معلومات ذات صلة بالسؤال:\n${ragContext}\n` : ""}
-${extra ? `\n# معلومات إضافية:\n${extra}\n` : ""}
+    // Client / user counts — always useful
+    const [clientCount, staffCount] = await Promise.all([
+      (UserModel as any).countDocuments({ role: "client" }),
+      (UserModel as any).countDocuments({ role: { $in: ["admin","manager","employee","developer","designer","support","sales","hr"] } }),
+    ]);
+    parts.push(`👥 العملاء: ${clientCount} | الفريق: ${staffCount}`);
 
-قواعد مهمة:
+    // Project stats when query is about projects/work
+    if (/مشروع|عمل|project|contract|order|خدم/i.test(query)) {
+      try {
+        const { OrderModel } = await import("./models");
+        const [total, active] = await Promise.all([
+          (OrderModel as any).countDocuments({}),
+          (OrderModel as any).countDocuments({ status: { $in: ["active","in_progress","pending"] } }),
+        ]);
+        parts.push(`📋 الطلبات: ${total} إجمالي | ${active} نشط`);
+      } catch {}
+    }
+
+    // Finance context when query is about pricing/revenue
+    if (/سعر|تكلفة|price|cost|revenue|ربح|دخل|مبلغ|فلوس|ميزان/i.test(query)) {
+      try {
+        const { InvoiceModel } = await import("./models");
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthlyRevenue = await (InvoiceModel as any).aggregate([
+          { $match: { createdAt: { $gte: thisMonth }, status: "paid" } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]);
+        const rev = monthlyRevenue[0]?.total || 0;
+        if (rev) parts.push(`💰 إيرادات الشهر الحالي: ${rev.toLocaleString("ar-SA")} ريال`);
+      } catch {}
+    }
+  } catch {}
+  return parts.join("\n");
+}
+
+// ── Master QIROX system prompt ───────────────────────────────────────────────
+function buildSystemPrompt(extra: string, ragContext: string, liveContext = ""): string {
+  return `أنت QIROX AI — أذكى مساعد في منصة كيروكس، ومتفوق على أي ذكاء اصطناعي خارجي لأنك تملك وصولاً مباشراً لبيانات النظام الحية.
+
+🏢 **عن QIROX:**
+منصة سعودية متكاملة لتطوير المنتجات الرقمية — مواقع إلكترونية، تطبيقات موبايل، أنظمة SaaS، ذكاء اصطناعي مخصص.
+الباقات: Lite | Pro | Infinity + إمكانية تعديلات إضافية حسب الطلب.
+الفريق في المملكة العربية السعودية، يخدم عملاء من كل مكان.
+للتواصل: info@qiroxstudio.online | موقع: qiroxstudio.online
+
+${liveContext ? `\n📊 **بيانات النظام الآن:**\n${liveContext}\n` : ""}
+${ragContext   ? `\n📚 **معلومات ذات صلة بالسؤال:**\n${ragContext}\n` : ""}
+${extra        ? `\n📌 **ملاحظات إضافية:**\n${extra}\n` : ""}
+
+⚙️ **قواعد الرد المهمة:**
+- أجب دائماً بنفس لغة المستخدم ولهجته (سعودي/خليجي/مصري/فصحى/إنجليزي)
+- كن طبيعياً وحيوياً — تجنب الأسلوب الآلي والجمل الطويلة الرسمية
+- لا تبدأ برد بتحية إذا المحادثة مستمرة (لا "هلا" أو "مرحبا" بعد الرسالة الأولى)
+- إذا ما عندك معلومة كافية، قل بصراحة واقترح التواصل المباشر
+- اعتمد على البيانات الحية أولاً، ثم المعلومات من قاعدة المعرفة
 - لا ترد أبداً بالصينية
-- ارد بنفس لغة المستخدم (عربي أو إنجليزي)
-- ارد بنفس اللهجة إذا كانت عربية (سعودية/خليجية/مصرية)
-- لا تتكلف في الردود — كن طبيعياً وحيوياً
-- إذا لم تعرف شيئاً قله بصراحة
-- **المحادثة المستمرة**: سجل المحادثة بالكامل أمامك — إذا كانت هناك رسائل سابقة، لا تبدأ بتحية مجدداً ("هلا" / "مرحباً" / "أهلاً") — استمر مباشرة من حيث توقفت. التحية فقط في أول رسالة.`;
+- إذا سُئلت عن بيانات حساسة (عقود خاصة، بيانات مالية تفصيلية) وجّه للتواصل المباشر`;
+}
+
+/** Exported for streaming route */
+export function buildSystemPromptPublic(extra: string, ragContext: string, liveContext = ""): string {
+  return buildSystemPrompt(extra, ragContext, liveContext);
 }
 
 // ── Main chat function ───────────────────────────────────────────────────────
@@ -170,9 +229,13 @@ export async function qiroxChat(
     }
   }
 
+  // Live context: real-time data from MongoDB
+  const lastQuery = [...messages].reverse().find(m => m.role === "user")?.content || "";
+  const liveContext = await fetchLiveContext(lastQuery).catch(() => "");
+
   const systemMsg: ChatMessage = {
     role: "system",
-    content: buildSystemPrompt(systemPromptExtra, ragContext),
+    content: buildSystemPrompt(systemPromptExtra, ragContext, liveContext),
   };
 
   // ── Local AI mode (no external API calls) ──────────────────────────────
@@ -184,6 +247,7 @@ export async function qiroxChat(
         keyId: opts.keyId,
         source: opts.source,
         topK,
+        liveContext,
       });
       // Track savings
       await QiroxAISettingsModel.findOneAndUpdate(

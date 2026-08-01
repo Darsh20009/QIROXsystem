@@ -13,6 +13,7 @@ const ALWAYS_EXTERNAL = [
   "utf-8-validate",
   "fsevents",
   "@aws-sdk/client-s3",
+  "onnxruntime-node",
 ];
 
 async function buildAll() {

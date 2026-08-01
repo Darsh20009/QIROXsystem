@@ -9233,7 +9233,7 @@ export async function registerRoutes(
           ],
           backFields: [
             { key: "website",   label: "الموقع",      value: "qiroxstudio.online" },
-            { key: "profile",   label: "ملف الموظف",  value: `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}` },
+            { key: "profile",   label: "ملف الموظف",  value: `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || qrToken || uid.toString()}` },
             { key: "dashboard", label: "لوحة التحكم", value: `${process.env.APP_URL || "https://qiroxstudio.online"}/employee` },
             { key: "qr",        label: "رابط تسجيل الدخول", value: qrValue },
           ],
@@ -9241,13 +9241,13 @@ export async function registerRoutes(
         // Modern barcodes array + legacy barcode field (iOS 9 compat)
         // Barcode opens public employee profile — any iPhone camera can scan it
         barcodes: [{
-          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
+          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || qrToken || uid.toString()}`,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",
         }],
         barcode: {
-          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
+          message:         `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || qrToken || uid.toString()}`,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",
@@ -12436,14 +12436,18 @@ export async function registerRoutes(
   // GET /api/public/employee-card/:code — public profile shown when Apple Wallet QR is scanned
   app.get("/api/public/employee-card/:code", async (req, res) => {
     const { UserModel, EmployeeProfileModel } = await import("./models");
+    const mongoose = await import("mongoose");
     const code = req.params.code;
-    // Match by employeeCode OR QR token (the barcode value)
+    const isValidObjectId = mongoose.default.Types.ObjectId.isValid(code);
+    // Match by employeeCode, QR token, username, or MongoDB _id (fallback when no employeeCode was set)
+    const orClauses: any[] = [
+      { employeeCode: code },
+      { qrLoginToken: code },
+      { username: code },
+    ];
+    if (isValidObjectId) orClauses.push({ _id: code });
     const user = await (UserModel as any).findOne({
-      $or: [
-        { employeeCode: code },
-        { qrLoginToken: code },
-        { username: code },
-      ],
+      $or: orClauses,
       role: { $ne: "client" },
     }).lean();
     if (!user) return res.status(404).json({ error: "بطاقة غير موجودة" });
@@ -17107,6 +17111,67 @@ export async function registerInstallmentRoutes(app: Express) {
       } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
 
+    // ── Admin chat — streaming SSE ────────────────────────────────────────────
+    app.post("/api/admin/qirox-ai/chat/stream", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { messages = [] } = req.body;
+      if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      const send = (obj: object) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+
+      try {
+        const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
+        const model       = settings.model       || "gpt-4o";
+        const temperature = settings.temperature  ?? 0.8;
+        const maxTokens   = settings.maxTokens    || 700;
+        const topK        = settings.topK         || 5;
+        const ragEnabled  = settings.ragEnabled   !== false;
+        const extraPrompt = settings.systemPrompt || "";
+
+        // RAG retrieval
+        let ragContext = ""; let ragDocs = 0;
+        if (ragEnabled) {
+          const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
+          if (lastUser) {
+            const docs = await ai.retrieveTopK(lastUser.content, topK);
+            ragDocs = docs.length;
+            if (docs.length) ragContext = docs.map((d: any, i: number) => `## ${i+1}. ${d.title}\n${d.content}`).join("\n\n");
+          }
+        }
+
+        // Live data context
+        const liveCtx = await ai.fetchLiveContext(messages[messages.length-1]?.content || "").catch(() => "");
+
+        send({ ragDocs }); // send metadata before content starts
+
+        const { getOpenAIClient } = await import("./lib/openai-client");
+        const openai = getOpenAIClient();
+        const systemContent = ai.buildSystemPromptPublic(extraPrompt, ragContext, liveCtx);
+
+        const stream = await openai.chat.completions.create({
+          model, temperature, max_tokens: maxTokens,
+          messages: [{ role: "system", content: systemContent }, ...messages] as any,
+          stream: true,
+        });
+
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) send({ content });
+        }
+
+        res.write("data: [DONE]\n\n");
+        res.end();
+      } catch (e: any) {
+        send({ error: e.message });
+        res.end();
+      }
+    });
+
     // ── Knowledge base CRUD ───────────────────────────────────────────────────
     app.get("/api/admin/qirox-ai/knowledge", async (req, res) => {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
@@ -17179,7 +17244,7 @@ export async function registerInstallmentRoutes(app: Express) {
 
     app.patch("/api/admin/qirox-ai/settings", async (req, res) => {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
-      const allowed = ["model","temperature","maxTokens","topK","systemPrompt","ragEnabled"];
+      const allowed = ["model","temperature","maxTokens","topK","systemPrompt","ragEnabled","useLocalAI"];
       const update: any = {};
       allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
       const doc = await QiroxAISettingsModel.findOneAndUpdate(
@@ -17198,11 +17263,15 @@ export async function registerInstallmentRoutes(app: Express) {
     // ── Local AI management ─────────────────────────────────────────────────
     app.get("/api/admin/local-ai/status", async (req, res) => {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
-      const { getModelStatus } = await import("./lib/local-ai/index");
-      const modelStatus = getModelStatus();
+      const { getModelStatus, getGenerationStatus } = await import("./lib/local-ai/index");
+      const embStatus = getModelStatus();
+      const llmStatus = getGenerationStatus();
       const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean() || {};
       res.json({
-        ...modelStatus,
+        embedding: embStatus,
+        llm: llmStatus,
+        // legacy flat fields for backward compat
+        ...embStatus,
         useLocalAI: settings.useLocalAI || false,
         localAIRequests: settings.localAIRequests || 0,
         localAISavedCalls: settings.localAISavedCalls || 0,
@@ -17213,8 +17282,14 @@ export async function registerInstallmentRoutes(app: Express) {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
       const { loadEmbeddingModel } = await import("./lib/local-ai/index");
       res.json({ started: true });
-      // Load async in background
       loadEmbeddingModel().catch(console.error);
+    });
+
+    app.post("/api/admin/local-ai/load-llm", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { loadGenerationModel } = await import("./lib/local-ai/index");
+      res.json({ started: true });
+      loadGenerationModel().catch(console.error);
     });
 
     app.post("/api/admin/local-ai/toggle", async (req, res) => {

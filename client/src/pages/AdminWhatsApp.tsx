@@ -155,6 +155,18 @@ export default function AdminWhatsApp() {
     onSuccess: () => { setWaStatus({ status: "disconnected", qr: null, phoneNumber: null }); toast({ title: L ? "تم قطع الاتصال" : "Disconnected" }); },
   });
 
+  // Disconnect (clears saved session) then immediately start a fresh connection → new QR
+  const resetAndReconnectMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/whatsapp/disconnect").then(r => r.json());
+      setWaStatus({ status: "disconnected", qr: null, phoneNumber: null });
+      await new Promise(res => setTimeout(res, 700));
+      return apiRequest("POST", "/api/admin/whatsapp/connect").then(r => r.json());
+    },
+    onSuccess: () => toast({ title: L ? "جاري توليد باركود جديد..." : "Generating new QR code..." }),
+    onError: () => toast({ title: L ? "فشل إعادة الربط" : "Reset failed", variant: "destructive" }),
+  });
+
   const sendMutation = useMutation({
     mutationFn: (text: string) => apiRequest("POST", `/api/admin/whatsapp/chats/${encodeURIComponent(selectedChatId!)}/send`, { text }).then(r => r.json()),
     onSuccess: () => {
@@ -216,13 +228,26 @@ export default function AdminWhatsApp() {
           <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setSettingsOpen(true)}>
             <Settings className="w-4 h-4 text-black/40 dark:text-white/40" />
           </Button>
+          {/* Always-visible: disconnect session and generate a fresh QR */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950"
+            onClick={() => resetAndReconnectMutation.mutate()}
+            disabled={resetAndReconnectMutation.isPending}
+            title={L ? "فك الربط وتوليد باركود جديد (لتغيير الحساب أو إعادة الربط)" : "Disconnect & generate a new QR (to switch account or reconnect)"}
+          >
+            {resetAndReconnectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            {L ? "ربط جديد" : "New Link"}
+          </Button>
+          {/* Connect / Disconnect */}
           {waStatus.status === "connected" ? (
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-black/10" onClick={() => disconnectMutation.mutate()} disabled={disconnectMutation.isPending}>
               {disconnectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <WifiOff className="w-3 h-3" />}
               {L ? "قطع" : "Disconnect"}
             </Button>
           ) : (
-            <Button size="sm" className="h-7 text-xs gap-1 bg-[#25D366] hover:bg-[#22c55e] text-white" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending || waStatus.status === "connecting" || waStatus.status === "qr"}>
+            <Button size="sm" className="h-7 text-xs gap-1 bg-[#25D366] hover:bg-[#22c55e] text-white" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending || waStatus.status === "connecting" || waStatus.status === "qr" || resetAndReconnectMutation.isPending}>
               {connectMutation.isPending || waStatus.status === "connecting" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wifi className="w-3 h-3" />}
               {L ? "اتصال" : "Connect"}
             </Button>
@@ -250,6 +275,23 @@ export default function AdminWhatsApp() {
             </div>
           )}
           <p className="text-[11px] text-black/30 dark:text-white/30 text-center">{L ? "الباركود ينتهي بعد دقيقتين — سيتجدد تلقائياً" : "QR expires after 2 minutes and refreshes automatically"}</p>
+
+          {/* Always-visible escape hatch: clear session and regenerate a fresh QR */}
+          <div className="mt-2 flex flex-col items-center gap-2 border border-orange-100 dark:border-orange-900/40 rounded-xl px-5 py-3 bg-orange-50/60 dark:bg-orange-950/20">
+            <p className="text-[11px] text-orange-600/80 dark:text-orange-400/80 text-center">
+              {L ? "تعذّر مسح الباركود أو تريد تغيير حساب الواتساب؟" : "Can't scan or want to switch WhatsApp account?"}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/40"
+              onClick={() => resetAndReconnectMutation.mutate()}
+              disabled={resetAndReconnectMutation.isPending}
+            >
+              {resetAndReconnectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              {L ? "فك الربط وتوليد باركود جديد" : "Disconnect & generate new QR"}
+            </Button>
+          </div>
         </div>
       )}
 

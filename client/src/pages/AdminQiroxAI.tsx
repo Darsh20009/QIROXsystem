@@ -40,9 +40,14 @@ interface AIKey {
 }
 interface AISettings {
   model: string; temperature: number; maxTokens: number; topK: number;
-  systemPrompt: string; ragEnabled: boolean;
+  systemPrompt: string; ragEnabled: boolean; useLocalAI?: boolean;
 }
-interface ChatMsg { role: "user" | "assistant"; content: string; ragDocs?: number; }
+interface ChatMsg { role: "user" | "assistant"; content: string; ragDocs?: number; streaming?: boolean; }
+interface LocalAIStatus {
+  embedding: { ready: boolean; loading: boolean; error: string | null; modelId: string };
+  llm:       { ready: boolean; loading: boolean; error: string | null; modelId: string };
+  useLocalAI: boolean; localAIRequests: number; localAISavedCalls: number;
+}
 interface UsageStats {
   total: number; tokens: number;
   bySource: Record<string, number>;
@@ -87,6 +92,16 @@ export default function AdminQiroxAI() {
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
 
   // ── Queries ────────────────────────────────────────────────────────────────
+  const { data: localAI, refetch: refetchLocalAI } = useQuery<LocalAIStatus>({
+    queryKey: ["/api/admin/local-ai/status"],
+    queryFn: () => fetch("/api/admin/local-ai/status", { credentials: "include" }).then(r => r.json()),
+    refetchInterval: (data) => {
+      const emb = (data as any)?.embedding; const llm = (data as any)?.llm;
+      if (emb?.loading || llm?.loading) return 2000;
+      return 15_000;
+    },
+  });
+
   const { data: docs = [], isLoading: docsLoading } = useQuery<KnowledgeDoc[]>({
     queryKey: ["/api/admin/qirox-ai/knowledge"],
     queryFn: () => fetch("/api/admin/qirox-ai/knowledge", { credentials: "include" }).then(r => r.json()),
@@ -130,6 +145,22 @@ export default function AdminQiroxAI() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/qirox-ai/knowledge"] }); toast({ title: L ? "✅ تم إعادة الفهرسة" : "✅ Re-indexed" }); },
   });
 
+  const reindexEmbMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/local-ai/reindex-embeddings").then(r => r.json()),
+    onSuccess: () => toast({ title: L ? "✅ جاري تحديث التضمينات الدلالية..." : "✅ Semantic reindex started..." }),
+    onError: (e: any) => toast({ title: e.message || "فشل", variant: "destructive" }),
+  });
+
+  const loadLLMMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/local-ai/load-llm").then(r => r.json()),
+    onSuccess: () => { toast({ title: L ? "⏳ جاري تحميل نموذج Qwen2.5..." : "⏳ Loading Qwen2.5 model..." }); setTimeout(() => refetchLocalAI(), 3000); },
+  });
+
+  const loadEmbMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/local-ai/load-model").then(r => r.json()),
+    onSuccess: () => { toast({ title: L ? "⏳ جاري تحميل نموذج التضمين..." : "⏳ Loading embedding model..." }); setTimeout(() => refetchLocalAI(), 3000); },
+  });
+
   const createKeyMutation = useMutation({
     mutationFn: (data: { name: string; rateLimitPerDay: number }) =>
       apiRequest("POST", "/api/admin/qirox-ai/keys", data).then(r => r.json()),
@@ -150,21 +181,78 @@ export default function AdminQiroxAI() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/qirox-ai/settings"] }); toast({ title: L ? "✅ تم حفظ الإعدادات" : "✅ Settings saved" }); },
   });
 
-  // ── Chat ────────────────────────────────────────────────────────────────────
+  // ── Chat ─── streaming-first, fallback to non-streaming ────────────────────
   async function sendChat() {
     if (!chatInput.trim() || chatLoading) return;
     const userMsg: ChatMsg = { role: "user", content: chatInput.trim() };
-    setChatHistory(h => [...h, userMsg]);
-    setChatInput(""); setChatLoading(true);
+    const newHistory = [...chatHistory, userMsg];
+    setChatHistory(newHistory);
+    setChatInput("");
+    setChatLoading(true);
+    const payload = newHistory.map(m => ({ role: m.role, content: m.content }));
+
+    // Try streaming first
+    try {
+      const resp = await fetch("/api/admin/qirox-ai/chat/stream", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: payload }),
+      });
+      if (!resp.ok || !resp.body) throw new Error("no stream");
+
+      // Add a placeholder streaming message
+      setChatHistory(h => [...h, { role: "assistant", content: "", streaming: true, ragDocs: 0 }]);
+
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = ""; let acc = ""; let ragDocs = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (raw === "[DONE]") break;
+          try {
+            const ev = JSON.parse(raw);
+            if (ev.content) {
+              acc += ev.content;
+              setChatHistory(h => {
+                const c = [...h];
+                const last = c[c.length - 1];
+                if (last?.role === "assistant") c[c.length - 1] = { ...last, content: acc };
+                return c;
+              });
+            }
+            if (ev.ragDocs !== undefined) ragDocs = ev.ragDocs;
+          } catch {}
+        }
+      }
+
+      // Finalize
+      setChatHistory(h => {
+        const c = [...h];
+        const last = c[c.length - 1];
+        if (last?.role === "assistant") c[c.length - 1] = { ...last, content: acc || "...", streaming: false, ragDocs };
+        return c;
+      });
+      return;
+    } catch {/* fall through */}
+
+    // Fallback — non-streaming
     try {
       const res = await fetch("/api/admin/qirox-ai/chat", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...chatHistory, userMsg].map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ messages: payload }),
       });
       const data = await res.json();
-      setChatHistory(h => [...h, { role: "assistant", content: data.reply, ragDocs: data.ragDocs }]);
-    } catch { toast({ title: L ? "فشل الإرسال" : "Send failed", variant: "destructive" }); }
+      setChatHistory(h => [...h.filter(m => !m.streaming), { role: "assistant", content: data.reply, ragDocs: data.ragDocs }]);
+    } catch { toast({ title: L ? "فشل الإرسال" : "Send failed", variant: "destructive" }); setChatHistory(h => h.filter(m => !m.streaming)); }
     finally { setChatLoading(false); }
   }
 
@@ -268,8 +356,11 @@ export default function AdminQiroxAI() {
                       {msg.role === "assistant" ? <BrainCircuit className="w-3.5 h-3.5 text-white" /> : <User className="w-3.5 h-3.5 text-white dark:text-black" />}
                     </div>
                     <div className={`rounded-2xl px-3 py-2 ${msg.role === "assistant" ? "bg-white dark:bg-gray-800 shadow-sm border border-black/[0.04] dark:border-white/[0.04] rounded-tl-sm" : "bg-black dark:bg-white rounded-tr-sm"}`}>
-                      <p className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "assistant" ? "text-black dark:text-white" : "text-white dark:text-black"}`}>{msg.content}</p>
-                      {msg.ragDocs != null && msg.ragDocs > 0 && (
+                      <p className={`text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "assistant" ? "text-black dark:text-white" : "text-white dark:text-black"}`}>
+                        {msg.content}
+                        {msg.streaming && <span className="inline-block w-1 h-3.5 bg-purple-500 rounded-sm ml-0.5 animate-pulse align-middle" />}
+                      </p>
+                      {msg.ragDocs != null && msg.ragDocs > 0 && !msg.streaming && (
                         <div className="flex items-center gap-1 mt-1.5">
                           <Database className="w-2.5 h-2.5 text-purple-400" />
                           <span className="text-[9px] text-black/30 dark:text-white/30">{msg.ragDocs} {L ? "مستند من قاعدة المعرفة" : "docs from knowledge base"}</span>
@@ -615,6 +706,59 @@ export default function AdminQiroxAI() {
                 className="text-sm border-black/10 dark:border-white/10 font-mono"
               />
               <p className="text-[10px] text-black/30 dark:text-white/30">{L ? "مثال: عروض الشهر الحالي، سياسة إضافية، معلومات خاصة بالشركة..." : "e.g. Current month offers, extra policy, company-specific info..."}</p>
+            </div>
+
+            {/* ── Local AI engine status ── */}
+            <div className="col-span-2 space-y-3 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-black dark:text-white flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-purple-500" />{L ? "محرك الذكاء الاصطناعي المحلي" : "Local AI Engine"}
+                  <Badge className="text-[9px] h-4 px-1.5 bg-purple-50 text-purple-700 border-purple-100">Qwen2.5 + MiniLM</Badge>
+                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "وضع محلي" : "Local mode"}</p>
+                  <Switch
+                    checked={settings.useLocalAI || false}
+                    onCheckedChange={v => setSettings(s => ({ ...s, useLocalAI: v }))}
+                  />
+                </div>
+              </div>
+
+              {/* Embedding model */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { title: L ? "نموذج التضمين" : "Embedding Model", subtitle: localAI?.embedding?.modelId || "MiniLM-L6-v2", status: localAI?.embedding, onLoad: () => loadEmbMutation.mutate(), loading: loadEmbMutation.isPending },
+                  { title: L ? "نموذج التوليد" : "Generation LLM", subtitle: localAI?.llm?.modelId || "Qwen2.5-0.5B-Instruct", status: localAI?.llm, onLoad: () => loadLLMMutation.mutate(), loading: loadLLMMutation.isPending },
+                ].map(item => (
+                  <div key={item.title} className="p-3 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-xs font-bold text-black dark:text-white">{item.title}</p>
+                        <p className="text-[9px] font-mono text-black/30 dark:text-white/30 truncate max-w-[150px]">{item.subtitle}</p>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${item.status?.ready ? "bg-green-500" : item.status?.loading ? "bg-yellow-400 animate-pulse" : item.status?.error ? "bg-red-400" : "bg-black/10 dark:bg-white/10"}`} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`text-[9px] h-4 px-1.5 ${item.status?.ready ? "bg-green-50 text-green-700 border-green-100" : item.status?.loading ? "bg-yellow-50 text-yellow-700 border-yellow-100" : item.status?.error ? "bg-red-50 text-red-700 border-red-100" : "bg-gray-50 text-gray-500 border-gray-100"}`}>
+                        {item.status?.ready ? (L?"جاهز":"Ready") : item.status?.loading ? (L?"يتحمل":"Loading…") : item.status?.error ? (L?"خطأ":"Error") : (L?"غير محمل":"Not loaded")}
+                      </Badge>
+                      {!item.status?.ready && !item.status?.loading && (
+                        <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-purple-200 text-purple-600 hover:bg-purple-50"
+                          onClick={item.onLoad} disabled={item.loading}>
+                          {item.loading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : L ? "تحميل" : "Load"}
+                        </Button>
+                      )}
+                    </div>
+                    {item.status?.error && <p className="text-[9px] text-red-500 mt-1 truncate">{item.status.error}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[10px] text-black/30 dark:text-white/30">
+                {L
+                  ? "في الوضع المحلي، يعمل QIROX AI بالكامل على الخادم بدون الحاجة لـ API خارجي. الـ Qwen2.5 نموذج ~300MB يُنزَّل تلقائياً."
+                  : "In local mode, QIROX AI runs entirely on the server — no external API needed. Qwen2.5 is a ~300MB model that downloads automatically."}
+              </p>
             </div>
 
             <div className="col-span-2">

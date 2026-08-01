@@ -37,3 +37,4 @@ attached_assets/AuthKey_*
 attached_assets/._*
 ._*
 .whatsapp-auth/
+dist/index.cjs
