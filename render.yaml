@@ -3,7 +3,7 @@ services:
     name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
-    buildCommand: echo "Using pre-built dist — no npm install needed"
+    buildCommand: npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund @whiskeysockets/baileys passkit-generator @huggingface/transformers || true
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
