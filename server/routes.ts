@@ -9088,7 +9088,12 @@ export async function registerRoutes(
       const initials = name.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase() || "").join("") || "QX";
 
       // ── Image generation (SVG → sharp → PNG) ─────────────────────────
-      const sharpLib = (await import("sharp" as any)).default;
+      let sharpLib: any;
+      try {
+        sharpLib = (await import("sharp" as any)).default;
+      } catch {
+        return res.status(503).json({ error: "Image processing library not available on this server" });
+      }
       const sb = (s: string) => Buffer.from(s.trim());
 
       // icon.png — actual Qirox icon (qirox-icon-nobg.png) resized, fallback to "Q" SVG
