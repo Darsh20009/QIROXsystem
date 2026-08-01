@@ -23,3 +23,5 @@
 - [QMeet zombie PC fix](qmeet-zombie-pc.md) — null ALL handlers (ontrack/onicecandidate/etc.) BEFORE close(), then guard every async handler with isCurrent() check to prevent stale state updates.
 - [Group Chat attachments](group-chat-attachments.md) — GroupChat supports image/voice/file attachments; server route already accepts them; GroupVoicePlayer component inline in GroupChat.tsx.
 - [Push banner persistence](push-banner-persistence.md) — PushPermissionBanner uses localStorage (not sessionStorage) with 7-day TTL so it re-shows after a week if user dismissed without subscribing.
+- [Finance Adjustments & Payroll Fix](finance-adjustments.md) — Payroll was missing from profit calc; FinanceAdjustmentModel added for manual bank-style control.
+- [Nav Items Coverage](nav-items-coverage.md) — ALL_NAV in EmployeeLayout.tsx now has ~70 entries; both ALL_NAV + ROLE_ITEMS must be updated when adding new pages.

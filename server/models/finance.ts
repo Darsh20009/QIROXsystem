@@ -237,3 +237,30 @@ const quotationSchema = new mongoose.Schema({
 }, { timestamps: true });
 quotationSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const QuotationModel = mongoose.models.Quotation || mongoose.model("Quotation", quotationSchema);
+
+// ─── Finance Adjustment (تعديلات مالية يدوية — تحكم كامل مثل البنك) ─────────
+const financeAdjustmentSchema = new mongoose.Schema({
+  type:        { type: String, enum: ['revenue', 'expense', 'correction'], required: true },
+  direction:   { type: String, enum: ['credit', 'debit'], required: true }, // credit=يزيد الإيراد, debit=يزيد التكلفة
+  amount:      { type: Number, required: true, min: 0 },
+  // amount stored as signed: positive=credit (add to revenue), negative=debit (add to cost)
+  signedAmount:{ type: Number, default: 0 },
+  category:    { type: String, enum: ['revenue_adjustment','cost_adjustment','bank_reconciliation','opening_balance','other'], default: 'other' },
+  description: { type: String, required: true },
+  reference:   { type: String, default: '' },  // bank reference / invoice number
+  date:        { type: Date, default: Date.now },
+  month:       { type: String, default: '' }, // YYYY-MM for filtering
+  addedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  notes:       { type: String, default: '' },
+  isVoided:    { type: Boolean, default: false },
+}, { timestamps: true });
+financeAdjustmentSchema.pre('save', function(next) {
+  this.signedAmount = this.direction === 'credit' ? this.amount : -this.amount;
+  if (!this.month && this.date) {
+    const d = this.date instanceof Date ? this.date : new Date(this.date);
+    this.month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+  next();
+});
+financeAdjustmentSchema.set('toJSON', { transform });
+export const FinanceAdjustmentModel = mongoose.models.FinanceAdjustment || mongoose.model("FinanceAdjustment", financeAdjustmentSchema);

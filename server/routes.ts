@@ -7700,12 +7700,16 @@ export async function registerRoutes(
   app.get("/api/admin/finance/summary", async (req, res) => {
     const _role = (req.user as any)?.role;
     if (!req.isAuthenticated() || !["admin","manager","accountant"].includes(_role)) return res.sendStatus(403);
-    const { InvoiceModel, OrderModel, UserModel, OrderExpenseModel, OperationalExpenseModel } = await import("./models");
+    const { InvoiceModel, OrderModel, UserModel, OrderExpenseModel, OperationalExpenseModel, PayrollRecordModel, FinanceAdjustmentModel } = await import("./models");
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [totalRevenue, monthRevenue, unpaidTotal, cancelledTotal, totalOrders, activeClients, monthlyRaw, projectCostsAgg, opExpensesAgg] = await Promise.all([
+    const [
+      totalRevenue, monthRevenue, unpaidTotal, cancelledTotal,
+      totalOrders, activeClients, monthlyRaw,
+      projectCostsAgg, opExpensesAgg, payrollAgg, adjustmentsAgg,
+    ] = await Promise.all([
       InvoiceModel.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'paid', paidAt: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'unpaid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
@@ -7717,10 +7721,14 @@ export async function registerRoutes(
         { $group: { _id: { year: { $year: '$paidAt' }, month: { $month: '$paidAt' } }, total: { $sum: '$totalAmount' } } },
         { $sort: { '_id.year': 1, '_id.month': 1 } }
       ]),
-      // Total project-level costs (OrderExpenseModel — per-order expenses like hosting, freelancer, etc.)
+      // Project-level costs (per-order: hosting, freelancer, etc.)
       (OrderExpenseModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
-      // Total operational expenses (all time)
+      // Operational expenses (rent, utilities, subscriptions, etc.)
       (OperationalExpenseModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
+      // Payroll (paid salaries — status=paid)
+      (PayrollRecordModel as any).aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$netSalary' } } }]),
+      // Manual finance adjustments (positive = revenue boost, negative = extra cost)
+      (FinanceAdjustmentModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]).catch(() => []),
     ]);
 
     const arMonths = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -7734,13 +7742,19 @@ export async function registerRoutes(
       return { name: arMonths[d.getMonth()], value: monthlyMap[key] || 0 };
     });
 
-    const rev = totalRevenue[0]?.total || 0;
-    const projCosts = projectCostsAgg[0]?.total || 0;
-    const opCosts = opExpensesAgg[0]?.total || 0;
-    const totalCosts = projCosts + opCosts;
+    const rev          = totalRevenue[0]?.total || 0;
+    const projCosts    = projectCostsAgg[0]?.total || 0;
+    const opCosts      = opExpensesAgg[0]?.total || 0;
+    const payrollCosts = payrollAgg[0]?.total || 0;
+    const adjustments  = adjustmentsAgg[0]?.total || 0; // positive = extra revenue, negative = extra cost
+    const totalCosts   = projCosts + opCosts + payrollCosts;
+    const adjustedRev  = rev + (adjustments > 0 ? adjustments : 0);
+    const adjustedCost = totalCosts + (adjustments < 0 ? Math.abs(adjustments) : 0);
+    const trueNetProfit = adjustedRev - adjustedCost;
 
     res.json({
       totalRevenue: rev,
+      adjustedRevenue: adjustedRev,
       monthRevenue: monthRevenue[0]?.total || 0,
       unpaidTotal: unpaidTotal[0]?.total || 0,
       cancelledTotal: cancelledTotal[0]?.total || 0,
@@ -7749,9 +7763,18 @@ export async function registerRoutes(
       monthlyBreakdown,
       totalProjectCosts: projCosts,
       totalOperationalCosts: opCosts,
-      totalCosts,
-      trueNetProfit: rev - totalCosts,
-      profitMargin: rev > 0 ? Math.round(((rev - totalCosts) / rev) * 100 * 10) / 10 : 0,
+      totalPayrollCosts: payrollCosts,
+      totalAdjustments: adjustments,
+      totalCosts: adjustedCost,
+      trueNetProfit,
+      profitMargin: adjustedRev > 0 ? Math.round((trueNetProfit / adjustedRev) * 100 * 10) / 10 : 0,
+      // breakdown for transparency
+      costBreakdown: {
+        projectExpenses: projCosts,
+        operationalExpenses: opCosts,
+        payroll: payrollCosts,
+        adjustments: adjustments < 0 ? Math.abs(adjustments) : 0,
+      },
     });
   });
 
@@ -8097,6 +8120,61 @@ export async function registerRoutes(
       return res.sendStatus(403);
     const { JournalEntryModel } = await import("./models");
     await JournalEntryModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // ── Finance Adjustments (تعديلات يدوية — تحكم مثل البنك) ─────────────────
+
+  // GET /api/admin/finance/adjustments
+  app.get("/api/admin/finance/adjustments", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","accountant"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { FinanceAdjustmentModel } = await import("./models");
+    const { month } = req.query as any;
+    const filter: any = { isVoided: false };
+    if (month) filter.month = month;
+    const adjustments = await (FinanceAdjustmentModel as any)
+      .find(filter)
+      .populate("addedBy", "fullName username")
+      .sort({ date: -1 })
+      .lean();
+    const totalCredit = adjustments.filter((a: any) => a.direction === 'credit').reduce((s: number, a: any) => s + a.amount, 0);
+    const totalDebit  = adjustments.filter((a: any) => a.direction === 'debit').reduce((s: number, a: any) => s + a.amount, 0);
+    const netImpact = totalCredit - totalDebit;
+    res.json({ adjustments, totalCredit, totalDebit, netImpact });
+  });
+
+  // POST /api/admin/finance/adjustments
+  app.post("/api/admin/finance/adjustments", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { FinanceAdjustmentModel } = await import("./models");
+    const { type, direction, amount, category, description, reference, date, notes } = req.body;
+    if (!description?.trim() || !amount || !direction || !type) return res.status(400).json({ error: "البيانات غير مكتملة" });
+    const adj = await (FinanceAdjustmentModel as any).create({
+      type, direction, amount: Number(amount),
+      category: category || "other",
+      description: description.trim(),
+      reference: reference?.trim() || "",
+      date: date ? new Date(date) : new Date(),
+      notes: notes?.trim() || "",
+      addedBy: (req.user as any)._id,
+    });
+    res.status(201).json(adj);
+  });
+
+  // PATCH /api/admin/finance/adjustments/:id/void
+  app.patch("/api/admin/finance/adjustments/:id/void", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { FinanceAdjustmentModel } = await import("./models");
+    const adj = await (FinanceAdjustmentModel as any).findByIdAndUpdate(req.params.id, { isVoided: true }, { new: true });
+    if (!adj) return res.status(404).json({ error: "السجل غير موجود" });
+    res.json(adj);
+  });
+
+  // DELETE /api/admin/finance/adjustments/:id
+  app.delete("/api/admin/finance/adjustments/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { FinanceAdjustmentModel } = await import("./models");
+    await (FinanceAdjustmentModel as any).findByIdAndDelete(req.params.id);
     res.json({ ok: true });
   });
 
@@ -8898,79 +8976,237 @@ export async function registerRoutes(
     }
   });
 
-  // Employee: Apple Wallet pass (.pkpass)
+  // Employee: Apple Wallet pass (.pkpass) — Premium design with photo + logo + gradient
   app.get("/api/employee/apple-wallet-pass", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    // Load certificates: prefer env vars, fall back to bundled cert files in server/certs/
-    const fsSync = await import("fs");
+
+    // ── Certificates ──────────────────────────────────────────────────────
+    const fsSync  = await import("fs");
     const pathLib = await import("path");
     const certsDir = pathLib.default.join(process.cwd(), "server", "certs");
     const readCert = (envKey: string, fileName: string): string => {
-      const envVal = process.env[envKey];
-      if (envVal) return envVal;
-      try {
-        const filePath = pathLib.default.join(certsDir, fileName);
-        return fsSync.default.readFileSync(filePath, "utf8");
-      } catch { return ""; }
+      const v = process.env[envKey];
+      if (v) return v;
+      try { return fsSync.default.readFileSync(pathLib.default.join(certsDir, fileName), "utf8"); }
+      catch { return ""; }
     };
-    const passCert = readCert("APPLE_PASS_CERT", "apple-pass-cert.pem");
-    const passKey  = readCert("APPLE_PASS_KEY",  "apple-pass-key.pem");
-    const wwdr     = readCert("APPLE_WWDR_CERT", "apple-wwdr.pem");
+    const passCert   = readCert("APPLE_PASS_CERT", "apple-pass-cert.pem");
+    const passKey    = readCert("APPLE_PASS_KEY",  "apple-pass-key.pem");
+    const wwdr       = readCert("APPLE_WWDR_CERT", "apple-wwdr.pem");
     const passTypeId = process.env.APPLE_PASS_TYPE_ID || "pass.com.qirox.employee";
     const teamId     = process.env.APPLE_TEAM_ID || "V4K6RM59LS";
-    if (!passCert || !passKey || !wwdr) {
-      // Certs not configured — inform client to contact admin
-      return res.status(501).json({ error: "Apple Wallet certificates not configured. Ask your admin to add APPLE_PASS_CERT, APPLE_PASS_KEY, APPLE_WWDR_CERT, APPLE_TEAM_ID environment variables." });
-    }
+    if (!passCert || !passKey || !wwdr)
+      return res.status(501).json({ error: "Apple Wallet certificates not configured." });
+
     try {
+      // ── Employee data ─────────────────────────────────────────────────
       const { UserModel, EmployeeProfileModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
       const [userDoc, empProfile] = await Promise.all([
         (UserModel as any).findById(uid).lean(),
         (EmployeeProfileModel as any).findOne({ userId: uid }).lean(),
       ]);
-      const name      = (userDoc as any)?.fullName || (userDoc as any)?.username || "Employee";
-      const jobTitle  = (empProfile as any)?.jobTitle || "Team Member";
-      const qrToken   = (userDoc as any)?.qrLoginToken || "";
-      const qrValue   = qrToken ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}` : "https://qiroxstudio.online";
+      const name         = (userDoc as any)?.fullName || (userDoc as any)?.username || "Employee";
+      const jobTitle     = (empProfile as any)?.jobTitle || (userDoc as any)?.jobTitle || "Team Member";
+      const employeeCode = (userDoc as any)?.employeeCode || "";
+      const avatarUrl    = (userDoc as any)?.avatarUrl || (userDoc as any)?.profilePhotoUrl || "";
+      const qrToken      = (userDoc as any)?.qrLoginToken || "";
+      const qrValue      = qrToken
+        ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}`
+        : "https://qiroxstudio.online";
+      // Initials fallback for avatar
+      const initials = name.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase() || "").join("") || "QX";
 
-      // Build pass.json structure (Apple Wallet Generic pass)
-      const passJson = {
-        formatVersion: 1,
+      // ── Image generation (SVG → sharp → PNG) ─────────────────────────
+      const sharpLib = (await import("sharp" as any)).default;
+      const sb = (s: string) => Buffer.from(s.trim());
+
+      // icon.png — "Q" mark on dark tile
+      const mkIcon = (size: number) =>
+        sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${size}" height="${size}" rx="${Math.round(size*0.22)}" fill="#0a0a16"/>
+          <text x="${size/2}" y="${size*0.72}" font-family="Arial Black,Arial" font-size="${Math.round(size*0.56)}"
+            font-weight="900" fill="white" text-anchor="middle">Q</text>
+        </svg>`)).png().toBuffer();
+
+      // logo.png — "QIROX" wordmark on transparent background
+      const mkLogo = (w: number, h: number) =>
+        sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+          <text x="${w/2}" y="${Math.round(h*0.78)}" font-family="Arial Black,Arial"
+            font-size="${Math.round(h*0.60)}" font-weight="900" fill="white"
+            text-anchor="middle" letter-spacing="${Math.round(h*0.14)}">QIROX</text>
+        </svg>`)).png().toBuffer();
+
+      // background.png — black→charcoal gradient with subtle ring decorations
+      const mkBackground = (w: number, h: number) =>
+        sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bg" x1="0%" y1="0%" x2="85%" y2="100%">
+              <stop offset="0%"   stop-color="#08080f"/>
+              <stop offset="50%"  stop-color="#141424"/>
+              <stop offset="100%" stop-color="#2c2c3e"/>
+            </linearGradient>
+          </defs>
+          <rect width="${w}" height="${h}" fill="url(#bg)"/>
+          <circle cx="${Math.round(w*0.88)}" cy="${Math.round(h*0.14)}" r="${Math.round(w*0.55)}"
+            fill="none" stroke="rgba(255,255,255,0.045)" stroke-width="${Math.round(w*0.18)}"/>
+          <circle cx="${Math.round(w*0.12)}" cy="${Math.round(h*0.86)}" r="${Math.round(w*0.38)}"
+            fill="none" stroke="rgba(255,255,255,0.035)" stroke-width="${Math.round(w*0.13)}"/>
+          <line x1="${Math.round(w*0.07)}" y1="${Math.round(h*0.50)}"
+                x2="${Math.round(w*0.93)}" y2="${Math.round(h*0.50)}"
+            stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+        </svg>`)).png().toBuffer();
+
+      // thumbnail.png — employee photo (circle-cropped) or gradient initials
+      const mkThumbnail = async (size: number): Promise<Buffer> => {
+        if (avatarUrl) {
+          try {
+            const resp = await fetch(avatarUrl, { signal: AbortSignal.timeout(4000) });
+            if (resp.ok) {
+              const raw = Buffer.from(await resp.arrayBuffer());
+              const mask = Buffer.from(
+                `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2}" fill="white"/></svg>`
+              );
+              return sharpLib(raw)
+                .resize(size, size, { fit: "cover", position: "centre" })
+                .composite([{ input: mask, blend: "dest-in" }])
+                .png().toBuffer();
+            }
+          } catch { /* fall through */ }
+        }
+        // Fallback — gradient circle with initials
+        return sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="av" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#1e1e3a"/>
+              <stop offset="100%" stop-color="#4a4a7a"/>
+            </linearGradient>
+            <clipPath id="c"><circle cx="${size/2}" cy="${size/2}" r="${size/2}"/></clipPath>
+          </defs>
+          <rect width="${size}" height="${size}" fill="url(#av)" clip-path="url(#c)"/>
+          <text x="${size/2}" y="${Math.round(size*0.63)}" font-family="Arial" font-size="${Math.round(size*0.34)}"
+            font-weight="bold" fill="white" text-anchor="middle">${initials}</text>
+        </svg>`)).png().toBuffer();
+      };
+
+      // ── Generate all images in parallel ──────────────────────────────
+      const [
+        iconPng, icon2xPng,
+        logoPng, logo2xPng,
+        bgPng,   bg2xPng,
+        thumbPng, thumb2xPng,
+      ] = await Promise.all([
+        mkIcon(29),   mkIcon(58),
+        mkLogo(160, 50), mkLogo(320, 100),
+        mkBackground(180, 220), mkBackground(360, 440),
+        mkThumbnail(90), mkThumbnail(180),
+      ]);
+
+      // ── pass.json — centered, gradient, premium layout ────────────────
+      const passJson: Record<string, any> = {
+        formatVersion:    1,
         passTypeIdentifier: passTypeId,
-        serialNumber: uid.toString(),
-        teamIdentifier: teamId,
+        serialNumber:     uid.toString(),
+        teamIdentifier:   teamId,
         organizationName: "QIROX",
-        description: `${name} — Employee ID`,
-        logoText: "QIROX",
-        backgroundColor: "rgb(0,0,0)",
-        foregroundColor: "rgb(255,255,255)",
-        labelColor: "rgb(160,160,160)",
+        description:      `${name} — بطاقة موظف QIROX`,
+        logoText:         "QIROX Studio",
+        backgroundColor:  "rgb(10, 10, 22)",
+        foregroundColor:  "rgb(255, 255, 255)",
+        labelColor:       "rgb(155, 160, 195)",
         generic: {
-          primaryFields: [{ key: "name", label: "الاسم", value: name }],
-          secondaryFields: [{ key: "title", label: "المسمى الوظيفي", value: jobTitle }],
-          auxiliaryFields: [{ key: "org", label: "الشركة", value: "QIROX Studio" }],
+          primaryFields: [
+            {
+              key:           "name",
+              label:         "EMPLOYEE",
+              value:         name,
+              textAlignment: "PKTextAlignmentCenter",
+            },
+          ],
+          secondaryFields: [
+            {
+              key:           "title",
+              label:         "TITLE",
+              value:         jobTitle,
+              textAlignment: "PKTextAlignmentCenter",
+            },
+            ...(employeeCode ? [{
+              key:           "empId",
+              label:         "ID",
+              value:         employeeCode,
+              textAlignment: "PKTextAlignmentCenter",
+            }] : []),
+          ],
+          auxiliaryFields: [
+            {
+              key:           "org",
+              label:         "ORGANIZATION",
+              value:         "QIROX Studio",
+              textAlignment: "PKTextAlignmentCenter",
+            },
+          ],
           backFields: [
-            { key: "website", label: "الموقع", value: "qiroxstudio.online" },
+            { key: "website",   label: "الموقع",      value: "qiroxstudio.online" },
             { key: "dashboard", label: "لوحة التحكم", value: `${process.env.APP_URL || "https://qiroxstudio.online"}/employee` },
+            { key: "qr",        label: "رابط QR",     value: qrValue },
           ],
         },
-        barcode: { message: qrValue, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1", altText: "QIROX QR" },
+        // Modern barcodes array + legacy barcode field (iOS 9 compat)
+        barcodes: [{
+          message:         qrValue,
+          format:          "PKBarcodeFormatQR",
+          messageEncoding: "iso-8859-1",
+          altText:         employeeCode || "QIROX",
+        }],
+        barcode: {
+          message:         qrValue,
+          format:          "PKBarcodeFormatQR",
+          messageEncoding: "iso-8859-1",
+          altText:         employeeCode || "QIROX",
+        },
       };
-      // Dynamic passkit-generator usage (optional dep)
-      let pkpassBuffer: Buffer | null = null;
+
+      // ── Build .pkpass ─────────────────────────────────────────────────
+      const stripBagAttrs = (pem: string) => {
+        const idx = pem.indexOf("-----BEGIN");
+        return idx >= 0 ? pem.slice(idx) : pem;
+      };
+
+      let pkpassBuffer: Buffer;
       try {
         const { PKPass } = await import("passkit-generator" as any);
-        const pass = await PKPass.from({ model: { "pass.json": Buffer.from(JSON.stringify(passJson)), "icon.png": Buffer.alloc(0), "icon@2x.png": Buffer.alloc(0) }, certificates: { wwdr, signerCert: passCert, signerKey: passKey, signerKeyPassphrase: process.env.APPLE_PASS_KEY_PASSPHRASE || "" } }, {});
-        pkpassBuffer = pass.getAsBuffer();
+        const pass = new PKPass(
+          {
+            "pass.json":         Buffer.from(JSON.stringify(passJson)),
+            "icon.png":          iconPng,
+            "icon@2x.png":       icon2xPng,
+            "logo.png":          logoPng,
+            "logo@2x.png":       logo2xPng,
+            "background.png":    bgPng,
+            "background@2x.png": bg2xPng,
+            "thumbnail.png":     thumbPng,
+            "thumbnail@2x.png":  thumb2xPng,
+          },
+          {
+            wwdr,
+            signerCert: stripBagAttrs(passCert),
+            signerKey:  stripBagAttrs(passKey),
+            ...(process.env.APPLE_PASS_KEY_PASSPHRASE
+              ? { signerKeyPassphrase: process.env.APPLE_PASS_KEY_PASSPHRASE }
+              : {}),
+          }
+        );
+        pkpassBuffer = pass.getAsBuffer(); // synchronous in v3
       } catch (pkErr: any) {
         console.error("[AppleWallet] passkit-generator error:", pkErr.message);
-        return res.status(500).json({ error: "فشل إنشاء بطاقة Wallet — تأكد من صحة الشهادات", detail: pkErr.message });
+        return res.status(500).json({ error: "فشل إنشاء بطاقة Wallet", detail: pkErr.message });
       }
+
       res.setHeader("Content-Type", "application/vnd.apple.pkpass");
-      res.setHeader("Content-Disposition", `attachment; filename="qirox-employee.pkpass"`);
+      res.setHeader("Content-Disposition", `attachment; filename="qirox-${employeeCode || "employee"}.pkpass"`);
       res.send(pkpassBuffer);
     } catch (err: any) {
+      console.error("[AppleWallet] error:", err.message);
       res.status(500).json({ error: translateError(err) });
     }
   });
@@ -16738,11 +16974,32 @@ export async function registerInstallmentRoutes(app: Express) {
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no"); // disable Nginx/proxy buffering
       res.flushHeaders?.();
-      // Heartbeat every 25s to keep connection alive
-      const hb = setInterval(() => { try { res.write(": ping\n\n"); } catch {} }, 25_000);
+      // Heartbeat every 20s to keep connection alive + force-flush
+      const hb = setInterval(() => {
+        try {
+          res.write(": ping\n\n");
+          if (typeof (res as any).flush === "function") (res as any).flush();
+        } catch {}
+      }, 20_000);
       waModule.addSSEClient(res);
       req.on("close", () => { clearInterval(hb); waModule.removeSSEClient(res); });
+    });
+
+    // QR image fallback — returns current QR as base64 PNG (poll every 2s while connecting)
+    app.get("/api/admin/whatsapp/qr-image", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { status, qr } = waModule.getStatus();
+      if (!qr) return res.json({ status, qr: null });
+      try {
+        const QRCode = await import("qrcode" as any);
+        const dataUrl = await QRCode.toDataURL(qr, { width: 280, margin: 2, color: { dark: "#000000", light: "#ffffff" } });
+        res.json({ status, qr: dataUrl });
+      } catch {
+        // fallback: send raw QR string so frontend can render it
+        res.json({ status, qr });
+      }
     });
 
     app.get("/api/admin/whatsapp/status", (req, res) => {

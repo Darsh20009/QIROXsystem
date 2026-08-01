@@ -94,6 +94,28 @@ export default function AdminWhatsApp() {
     connectSSE();
   }, [selectedChatId]);
 
+  // ── QR polling fallback (every 2s while connecting/qr — in case SSE events are buffered) ──
+  useEffect(() => {
+    const needsQR = waStatus.status === "connecting" || waStatus.status === "qr";
+    if (!needsQR) return;
+    // Poll immediately then every 2s
+    const poll = () => {
+      fetch("/api/admin/whatsapp/qr-image", { credentials: "include" })
+        .then(r => r.json())
+        .then((d: { status: string; qr: string | null }) => {
+          if (d.qr && d.qr !== waStatus.qr) {
+            setWaStatus(prev => ({ ...prev, status: d.status as any, qr: d.qr }));
+          } else if (d.status && d.status !== waStatus.status && !d.qr) {
+            setWaStatus(prev => ({ ...prev, status: d.status as any }));
+          }
+        })
+        .catch(() => {});
+    };
+    poll();
+    const interval = setInterval(poll, 2000);
+    return () => clearInterval(interval);
+  }, [waStatus.status]);
+
   // ── Data queries ────────────────────────────────────────────────────────
   const { data: chats = [], isLoading: chatsLoading } = useQuery<WAChat[]>({
     queryKey: ["/api/admin/whatsapp/chats"],

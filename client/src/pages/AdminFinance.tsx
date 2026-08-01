@@ -74,15 +74,55 @@ export default function AdminFinance() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   // Queries
+  // Adjustments state
+  const [adjMonth, setAdjMonth] = useState(currentMonth);
+  const [showAddAdj, setShowAddAdj] = useState(false);
+  const [newAdj, setNewAdj] = useState({
+    type: "correction", direction: "credit", amount: "",
+    category: "other", description: "", reference: "", date: new Date().toISOString().slice(0, 10), notes: "",
+  });
+
   const { data: summary } = useQuery<{
-    totalRevenue: number; monthRevenue: number; unpaidTotal: number;
+    totalRevenue: number; adjustedRevenue: number; monthRevenue: number; unpaidTotal: number;
     cancelledTotal: number; totalOrders: number; activeClients: number;
     monthlyBreakdown?: { name: string; value: number }[];
     totalProjectCosts: number; totalOperationalCosts: number;
+    totalPayrollCosts: number; totalAdjustments: number;
     totalCosts: number; trueNetProfit: number; profitMargin: number;
+    costBreakdown: { projectExpenses: number; operationalExpenses: number; payroll: number; adjustments: number };
   }>({
     queryKey: ["/api/admin/finance/summary"],
     queryFn: async () => { const r = await fetch("/api/admin/finance/summary", { credentials: "include" }); return r.json(); },
+  });
+
+  const { data: adjustmentsData, isLoading: adjLoading } = useQuery<{
+    adjustments: any[]; totalCredit: number; totalDebit: number; netImpact: number;
+  }>({
+    queryKey: ["/api/admin/finance/adjustments", adjMonth],
+    queryFn: async () => { const r = await fetch(`/api/admin/finance/adjustments?month=${adjMonth}`, { credentials: "include" }); return r.json(); },
+    enabled: activeTab === "adjustments",
+  });
+
+  const addAdjMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/admin/finance/adjustments", { ...newAdj, amount: Number(newAdj.amount) });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || "فشل"); }
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/adjustments"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/finance/summary"] });
+      setShowAddAdj(false);
+      setNewAdj({ type: "correction", direction: "credit", amount: "", category: "other", description: "", reference: "", date: new Date().toISOString().slice(0, 10), notes: "" });
+      toast({ title: L ? "تم إضافة التعديل المالي" : "Adjustment added" });
+    },
+    onError: (e: any) => toast({ title: e.message || "فشل", variant: "destructive" }),
+  });
+
+  const voidAdjMutation = useMutation({
+    mutationFn: async (id: string) => { const r = await apiRequest("PATCH", `/api/admin/finance/adjustments/${id}/void`, {}); return r.json(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/finance/adjustments"] }); qc.invalidateQueries({ queryKey: ["/api/admin/finance/summary"] }); },
+    onError: () => toast({ title: "فشل إلغاء التعديل", variant: "destructive" }),
   });
 
   const { data: profitData, isLoading: profitLoading } = useQuery<any>({
@@ -279,14 +319,15 @@ export default function AdminFinance() {
   }, {});
 
   const tabs = [
-    { key: "overview", label: L ? "نظرة عامة" : "Overview",           icon: BarChart3 },
-    { key: "journal",  label: L ? "دفتر القيود" : "Journal",           icon: BookOpen },
-    { key: "ledger",   label: L ? "السجل المالي" : "P&L Ledger",       icon: CreditCard },
-    { key: "projects", label: L ? "دفعات المشاريع" : "Payments",       icon: FileText },
-    { key: "systems",  label: L ? "حسب النظام" : "By System",          icon: Layers },
-    { key: "profits",  label: L ? "أرباح المشاريع" : "Profits",        icon: TrendingUp },
-    { key: "expenses", label: L ? "المصاريف" : "Expenses",             icon: ShoppingBag },
-    { key: "email",    label: L ? "نظام البريد" : "Email System",      icon: Mail },
+    { key: "overview",     label: L ? "نظرة عامة" : "Overview",           icon: BarChart3 },
+    { key: "adjustments",  label: L ? "تعديلات يدوية" : "Adjustments",    icon: ArrowLeftRight },
+    { key: "journal",      label: L ? "دفتر القيود" : "Journal",           icon: BookOpen },
+    { key: "ledger",       label: L ? "السجل المالي" : "P&L Ledger",       icon: CreditCard },
+    { key: "projects",     label: L ? "دفعات المشاريع" : "Payments",       icon: FileText },
+    { key: "systems",      label: L ? "حسب النظام" : "By System",          icon: Layers },
+    { key: "profits",      label: L ? "أرباح المشاريع" : "Profits",        icon: TrendingUp },
+    { key: "expenses",     label: L ? "المصاريف" : "Expenses",             icon: ShoppingBag },
+    { key: "email",        label: L ? "نظام البريد" : "Email System",      icon: Mail },
   ];
 
   // Segment label + icon map (mirrors AdminTemplates.tsx SEGMENT_META)
@@ -355,9 +396,14 @@ export default function AdminFinance() {
             <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-costs">
               {(summary?.totalCosts || 0).toLocaleString()} <SARIcon size={14} className="opacity-60" />
             </div>
-            <p className="text-xs text-black/30 mt-1">
-              {L ? "مشاريع" : "Projects"}: {(summary?.totalProjectCosts || 0).toLocaleString()} · {L ? "تشغيل" : "Ops"}: {(summary?.totalOperationalCosts || 0).toLocaleString()}
-            </p>
+            <div className="flex flex-col gap-0.5 mt-1.5">
+              <p className="text-[10px] text-black/35">{L ? "مشاريع" : "Projects"}: {(summary?.costBreakdown?.projectExpenses || 0).toLocaleString()}</p>
+              <p className="text-[10px] text-black/35">{L ? "تشغيل" : "Ops"}: {(summary?.costBreakdown?.operationalExpenses || 0).toLocaleString()}</p>
+              <p className="text-[10px] text-black/35">{L ? "رواتب" : "Payroll"}: {(summary?.costBreakdown?.payroll || 0).toLocaleString()}</p>
+              {(summary?.costBreakdown?.adjustments || 0) > 0 && (
+                <p className="text-[10px] text-black/35">{L ? "تعديلات" : "Adj"}: {(summary?.costBreakdown?.adjustments || 0).toLocaleString()}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -515,6 +561,145 @@ export default function AdminFinance() {
                   {netProfit.toLocaleString()} <SARIcon size={10} className="opacity-60" />
                 </p>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* === TAB: Adjustments (تعديلات مالية يدوية) === */}
+      {activeTab === "adjustments" && (
+        <div className="space-y-4">
+          {/* Header + add button */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-black text-black">{L ? "التعديلات المالية اليدوية" : "Manual Finance Adjustments"}</h2>
+              <p className="text-xs text-black/40 mt-0.5">{L ? "تحكم كامل — أضف إيرادات أو مصاريف لم تُسجَّل في النظام" : "Full control — add revenues or costs not captured elsewhere"}</p>
+            </div>
+            <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs" onClick={() => setShowAddAdj(true)}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> {L ? "تعديل جديد" : "New Adjustment"}
+            </Button>
+          </div>
+
+          {/* Month filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-black/50">{L ? "الشهر:" : "Month:"}</span>
+            <Input type="month" value={adjMonth} onChange={e => setAdjMonth(e.target.value)} className="h-7 text-xs w-36 border-black/20" />
+          </div>
+
+          {/* Summary cards */}
+          {adjustmentsData && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي دائن (يزيد الإيراد)" : "Total Credit"}</p>
+                <p className="text-base font-black text-black flex items-center justify-center gap-1">
+                  +{(adjustmentsData.totalCredit || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-center">
+                <p className="text-[10px] text-black/40 mb-1">{L ? "إجمالي مدين (يزيد التكلفة)" : "Total Debit"}</p>
+                <p className="text-base font-black text-black flex items-center justify-center gap-1">
+                  -{(adjustmentsData.totalDebit || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" />
+                </p>
+              </div>
+              <div className={`border rounded-xl p-4 text-center ${(adjustmentsData.netImpact || 0) >= 0 ? "bg-black border-black" : "bg-red-50 border-red-200"}`}>
+                <p className={`text-[10px] mb-1 ${(adjustmentsData.netImpact || 0) >= 0 ? "text-white/60" : "text-red-400"}`}>{L ? "الأثر الصافي" : "Net Impact"}</p>
+                <p className={`text-base font-black flex items-center justify-center gap-1 ${(adjustmentsData.netImpact || 0) >= 0 ? "text-white" : "text-red-600"}`}>
+                  {(adjustmentsData.netImpact || 0).toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Add adjustment form */}
+          {showAddAdj && (
+            <div className="border border-black/[0.08] rounded-2xl p-5 bg-black/[0.02] space-y-4">
+              <h3 className="text-xs font-black text-black">{L ? "إضافة تعديل مالي" : "Add Adjustment"}</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "الاتجاه" : "Direction"} *</label>
+                  <Select value={newAdj.direction} onValueChange={v => setNewAdj(p => ({ ...p, direction: v }))}>
+                    <SelectTrigger className="h-8 text-xs border-black/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="credit">{L ? "دائن — يزيد الإيراد (+)" : "Credit — adds to revenue (+)"}</SelectItem>
+                      <SelectItem value="debit">{L ? "مدين — يزيد التكلفة (-)" : "Debit — adds to cost (-)"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "التصنيف" : "Category"}</label>
+                  <Select value={newAdj.category} onValueChange={v => setNewAdj(p => ({ ...p, category: v }))}>
+                    <SelectTrigger className="h-8 text-xs border-black/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="revenue_adjustment">{L ? "تعديل إيراد" : "Revenue Adjustment"}</SelectItem>
+                      <SelectItem value="cost_adjustment">{L ? "تعديل تكلفة" : "Cost Adjustment"}</SelectItem>
+                      <SelectItem value="bank_reconciliation">{L ? "مطابقة بنكية" : "Bank Reconciliation"}</SelectItem>
+                      <SelectItem value="opening_balance">{L ? "رصيد افتتاحي" : "Opening Balance"}</SelectItem>
+                      <SelectItem value="other">{L ? "أخرى" : "Other"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "المبلغ" : "Amount"} *</label>
+                  <Input type="number" min="0" placeholder="0" value={newAdj.amount} onChange={e => setNewAdj(p => ({ ...p, amount: e.target.value }))} className="h-8 text-xs border-black/20" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "التاريخ" : "Date"}</label>
+                  <Input type="date" value={newAdj.date} onChange={e => setNewAdj(p => ({ ...p, date: e.target.value }))} className="h-8 text-xs border-black/20" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "الوصف" : "Description"} *</label>
+                  <Input placeholder={L ? "مثال: مبلغ مستلم نقداً لم يُدخَل كفاتورة..." : "e.g. Cash received not in invoices..."} value={newAdj.description} onChange={e => setNewAdj(p => ({ ...p, description: e.target.value }))} className="h-8 text-xs border-black/20" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "مرجع (رقم تحويل، فاتورة...)" : "Reference"}</label>
+                  <Input placeholder="REF-001" value={newAdj.reference} onChange={e => setNewAdj(p => ({ ...p, reference: e.target.value }))} className="h-8 text-xs border-black/20" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
+                  <Input value={newAdj.notes} onChange={e => setNewAdj(p => ({ ...p, notes: e.target.value }))} className="h-8 text-xs border-black/20" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs" onClick={() => addAdjMutation.mutate()} disabled={addAdjMutation.isPending || !newAdj.description.trim() || !newAdj.amount}>
+                  {addAdjMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
+                  {L ? "إضافة" : "Add"}
+                </Button>
+                <Button size="sm" variant="outline" className="text-xs border-black/20" onClick={() => setShowAddAdj(false)}>{L ? "إلغاء" : "Cancel"}</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Adjustments list */}
+          {adjLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-black/30" /></div>
+          ) : (adjustmentsData?.adjustments || []).length === 0 ? (
+            <div className="text-center py-10 text-black/30 text-sm">{L ? "لا توجد تعديلات لهذا الشهر" : "No adjustments for this month"}</div>
+          ) : (
+            <div className="space-y-2">
+              {(adjustmentsData?.adjustments || []).map((adj: any) => (
+                <div key={adj.id} className="border border-black/[0.07] rounded-xl p-4 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${adj.direction === 'credit' ? 'bg-black/[0.06] text-black' : 'bg-red-50 text-red-600'}`}>
+                      {adj.direction === 'credit' ? '+' : '-'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-black">{adj.description}</p>
+                      <p className="text-[10px] text-black/40 mt-0.5">
+                        {adj.category} · {adj.date ? new Date(adj.date).toLocaleDateString('ar-SA') : ''} {adj.reference ? `· ${adj.reference}` : ''}
+                      </p>
+                      {adj.addedBy?.fullName && <p className="text-[10px] text-black/30 mt-0.5">{L ? "أضافه" : "By"}: {adj.addedBy.fullName}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-sm font-black ${adj.direction === 'credit' ? 'text-black' : 'text-red-600'}`}>
+                      {adj.direction === 'credit' ? '+' : '-'}{(adj.amount || 0).toLocaleString()}
+                    </span>
+                    <button onClick={() => voidAdjMutation.mutate(adj.id)} className="text-black/20 hover:text-black/50 transition-colors" title={L ? "إلغاء" : "Void"}>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -38,7 +38,12 @@ class WhatsAppModule extends EventEmitter {
   private sendSSE(event: WAEvent) {
     const data = `data: ${JSON.stringify(event)}\n\n`;
     this.sseClients.forEach((res) => {
-      try { res.write(data); } catch {}
+      try {
+        res.write(data);
+        // Explicitly flush — needed when compression middleware is active
+        if (typeof res.flush === "function") res.flush();
+        else if (typeof (res as any).flushHeaders === "function") (res as any).flushHeaders();
+      } catch {}
     });
   }
 

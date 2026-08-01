@@ -17,6 +17,13 @@ import {
   CloudUpload, Cpu, TrendingUp, MessageSquare, CheckSquare,
   LayoutGrid, Zap, Bell, ChevronRight, Coffee,
   Eye, Layers, Check, ShieldCheck,
+  // New icons for missing pages
+  Wallet, CreditCard, Truck, Tag, Gift, Shield, Brain, Key,
+  Database, Activity, Smartphone, Cog, Link2, Phone as PhoneIcon,
+  Gamepad2, SlidersHorizontal, ScrollText, Scale, PieChart,
+  Store, Briefcase, FileSignature, Award, Package2, Boxes,
+  MessageCircle, Map, BarChart2, Bell as BellIcon, RefreshCcw,
+  TrendingDown, AlertCircle, Building, Send, Globe2,
 } from "lucide-react";
 
 interface NavItem {
@@ -29,55 +36,170 @@ interface NavItem {
 }
 
 const ALL_NAV: Record<string, NavItem> = {
-  dashboard:       { id: "dashboard",       labelAr: "لوحتي",            labelEn: "My Dashboard",      icon: LayoutDashboard, href: "/employee/role-dashboard",  group: "main" },
-  orders:          { id: "orders",          labelAr: "المشاريع",          labelEn: "Projects",           icon: Package,         href: "/admin/orders",             group: "main" },
-  customers:       { id: "customers",       labelAr: "العملاء",           labelEn: "Clients",            icon: Users,           href: "/admin/customers",          group: "main" },
-  new_order:       { id: "new_order",       labelAr: "عميل وطلب جديد",   labelEn: "New Order",          icon: PlusCircle,      href: "/employee/new-order",       group: "main" },
-  subscriptions:   { id: "subscriptions",   labelAr: "الاشتراكات",        labelEn: "Subscriptions",      icon: Star,            href: "/employee/subscriptions",   group: "main" },
-  abandoned_carts: { id: "abandoned_carts", labelAr: "عربات مهجورة",     labelEn: "Abandoned Carts",    icon: ShoppingCart,    href: "/employee/abandoned-carts", group: "main" },
-  quotations:      { id: "quotations",      labelAr: "عروض الأسعار",      labelEn: "Quotations",         icon: FileCheck,       href: "/admin/quotations",         group: "main" },
-  mod_requests:    { id: "mod_requests",    labelAr: "طلبات التعديل",    labelEn: "Mod Requests",       icon: Wrench,          href: "/admin/mod-requests",       group: "main" },
-  support_tickets: { id: "support_tickets", labelAr: "تذاكر الدعم",      labelEn: "Support Tickets",    icon: Headphones,      href: "/admin/contact-messages",   group: "main" },
-  products:        { id: "products",        labelAr: "المنتجات",          labelEn: "Products",           icon: ShoppingBag,     href: "/admin/products",           group: "main" },
-  news:            { id: "news",            labelAr: "الأخبار والمدونة",  labelEn: "News & Blog",        icon: Newspaper,       href: "/admin/news",               group: "main" },
-  marketing_posts: { id: "marketing_posts", labelAr: "أدوات التسويق",    labelEn: "Marketing Tools",    icon: Megaphone,       href: "/sales/marketing",          group: "main" },
-  leads_data:      { id: "leads_data",      labelAr: "داتا العملاء",      labelEn: "Leads Data",         icon: Building2,       href: "/employee/leads-data",          group: "main" },
-  crm:             { id: "crm",             labelAr: "CRM",               labelEn: "CRM",                icon: TrendingUp,      href: "/employee/crm",                group: "main" },
-  whatsapp_crm:    { id: "whatsapp_crm",    labelAr: "واتساب CRM",        labelEn: "WhatsApp CRM",       icon: MessageSquare,   href: "/employee/whatsapp-crm",       group: "main" },
-  builder:         { id: "builder",         labelAr: "صانع الأنظمة",     labelEn: "System Builder",     icon: Code2,           href: "/employee/system-builder",     group: "tools" },
-  deployment:      { id: "deployment",      labelAr: "نشر المشاريع",     labelEn: "Deployment Cloud",   icon: CloudUpload,     href: "/employee/deployment-cloud",   group: "tools" },
-  sector_guide:    { id: "sector_guide",    labelAr: "دليل القطاعات",    labelEn: "Sector Guide",       icon: Globe,           href: "/employee/sector-guide",       group: "tools" },
-  qi_agent:        { id: "qi_agent",        labelAr: "QIROX Studio AI",   labelEn: "QIROX Studio AI",    icon: Sparkles,        href: "/employee/studio",             group: "tools" },
-  checklist:       { id: "checklist",       labelAr: "قائمة المهام",      labelEn: "My Checklist",       icon: CheckSquare,     href: "/employee/checklist",          group: "tools" },
-  qmeet:           { id: "qmeet",           labelAr: "الاجتماعات",       labelEn: "Meetings",           icon: Video,           href: "/admin/qmeet",              group: "tools" },
-  kanban:          { id: "kanban",          labelAr: "لوحة المهام",       labelEn: "Task Board",         icon: ClipboardList,   href: "/admin/kanban",             group: "tools" },
-  finance:         { id: "finance",         labelAr: "المالية",           labelEn: "Finance",            icon: DollarSign,      href: "/admin/finance",            group: "finance" },
-  invoices:        { id: "invoices",        labelAr: "الفواتير",          labelEn: "Invoices",           icon: FileText,        href: "/admin/invoices",           group: "finance" },
-  receipts:        { id: "receipts",        labelAr: "الوصولات",          labelEn: "Receipts",           icon: Receipt,         href: "/admin/receipts",           group: "finance" },
-  payroll:         { id: "payroll",         labelAr: "الرواتب",           labelEn: "Payroll",            icon: Banknote,        href: "/admin/payroll",            group: "finance" },
-  reports:         { id: "reports",         labelAr: "التقارير",          labelEn: "Reports",            icon: BarChart3,       href: "/admin/analytics",          group: "finance" },
-  employees:       { id: "employees",       labelAr: "الموظفون",          labelEn: "Employees",          icon: Building2,       href: "/admin/employees",          group: "hr" },
-  attendance:      { id: "attendance",      labelAr: "الحضور والانصراف", labelEn: "Attendance",         icon: CalendarDays,    href: "/admin/attendance",         group: "hr" },
-  settings:        { id: "settings",        labelAr: "الإعدادات",         labelEn: "Settings",           icon: Settings,        href: "/admin/settings",           group: "config" },
-  mail:            { id: "mail",            labelAr: "البريد",            labelEn: "Mail",               icon: Mail,            href: "/employee/mail",            group: "personal" },
-  profile:         { id: "profile",         labelAr: "ملفي الشخصي",      labelEn: "My Profile",         icon: User2,           href: "/employee/profile",         group: "personal" },
-  changelog:       { id: "changelog",       labelAr: "التحديثات",         labelEn: "Updates",            icon: BookOpen,        href: "/employee/changelog",       group: "personal" },
-  my_finance:      { id: "my_finance",      labelAr: "حقي المالي",        labelEn: "My Financials",      icon: Banknote,        href: "/employee/my-finance",      group: "personal" },
+  // ── Main Operations ───────────────────────────────────────────────────────
+  dashboard:         { id: "dashboard",         labelAr: "لوحتي",               labelEn: "My Dashboard",        icon: LayoutDashboard, href: "/employee/role-dashboard",    group: "main" },
+  orders:            { id: "orders",            labelAr: "المشاريع",             labelEn: "Projects",             icon: Package,         href: "/admin/orders",               group: "main" },
+  customers:         { id: "customers",         labelAr: "العملاء",              labelEn: "Clients",              icon: Users,           href: "/admin/customers",            group: "main" },
+  new_order:         { id: "new_order",         labelAr: "عميل وطلب جديد",      labelEn: "New Order",            icon: PlusCircle,      href: "/employee/new-order",         group: "main" },
+  subscriptions:     { id: "subscriptions",     labelAr: "الاشتراكات",           labelEn: "Subscriptions",        icon: Star,            href: "/employee/subscriptions",     group: "main" },
+  abandoned_carts:   { id: "abandoned_carts",   labelAr: "عربات مهجورة",        labelEn: "Abandoned Carts",      icon: ShoppingCart,    href: "/employee/abandoned-carts",   group: "main" },
+  quotations:        { id: "quotations",        labelAr: "عروض الأسعار",         labelEn: "Quotations",           icon: FileCheck,       href: "/admin/quotations",           group: "main" },
+  mod_requests:      { id: "mod_requests",      labelAr: "طلبات التعديل",       labelEn: "Mod Requests",         icon: Wrench,          href: "/admin/mod-requests",         group: "main" },
+  support_tickets:   { id: "support_tickets",   labelAr: "تذاكر الدعم",         labelEn: "Support Tickets",      icon: Headphones,      href: "/admin/support-tickets",      group: "main" },
+  contact_msgs:      { id: "contact_msgs",      labelAr: "رسائل التواصل",       labelEn: "Contact Messages",     icon: MessageCircle,   href: "/admin/contact-messages",     group: "main" },
+  contracts:         { id: "contracts",         labelAr: "العقود",               labelEn: "Contracts",            icon: FileSignature,   href: "/admin/contracts",            group: "main" },
+  consultations:     { id: "consultations",     labelAr: "الاستشارات",           labelEn: "Consultations",        icon: Briefcase,       href: "/admin/consultations",        group: "main" },
+  sla:               { id: "sla",               labelAr: "اتفاقيات SLA",         labelEn: "SLA",                  icon: Scale,           href: "/admin/sla",                  group: "main" },
+  products:          { id: "products",          labelAr: "الباقات والمنتجات",    labelEn: "Products & Packages",  icon: ShoppingBag,     href: "/admin/products",             group: "main" },
+  services:          { id: "services",          labelAr: "الخدمات",              labelEn: "Services",             icon: Boxes,           href: "/admin/services",             group: "main" },
+  subscription_plans:{ id: "subscription_plans",labelAr: "خطط الاشتراك",        labelEn: "Subscription Plans",   icon: Package2,        href: "/admin/subscription-plans",   group: "main" },
+  news:              { id: "news",              labelAr: "الأخبار والمدونة",     labelEn: "News & Blog",          icon: Newspaper,       href: "/admin/news",                 group: "main" },
+  jobs:              { id: "jobs",              labelAr: "الوظائف",              labelEn: "Jobs",                 icon: Briefcase,       href: "/admin/jobs",                 group: "main" },
+  partners:          { id: "partners",          labelAr: "الشركاء",              labelEn: "Partners",             icon: Building2,       href: "/admin/partners",             group: "main" },
+  templates:         { id: "templates",         labelAr: "القوالب",              labelEn: "Templates",            icon: LayoutGrid,      href: "/admin/templates",            group: "main" },
+  // ── Marketing ─────────────────────────────────────────────────────────────
+  marketing_posts:   { id: "marketing_posts",   labelAr: "أدوات التسويق",       labelEn: "Marketing Tools",      icon: Megaphone,       href: "/sales/marketing",            group: "main" },
+  discount_codes:    { id: "discount_codes",    labelAr: "أكواد الخصم",         labelEn: "Discount Codes",       icon: Tag,             href: "/admin/discount-codes",       group: "main" },
+  promotions:        { id: "promotions",        labelAr: "العروض والتخفيضات",   labelEn: "Promotions",           icon: Zap,             href: "/admin/promotions",           group: "main" },
+  loyalty:           { id: "loyalty",           labelAr: "برنامج الولاء",        labelEn: "Loyalty Program",      icon: Gift,            href: "/admin/loyalty",              group: "main" },
+  referrals:         { id: "referrals",         labelAr: "برنامج الإحالة",       labelEn: "Referrals",            icon: Send,            href: "/admin/referrals",            group: "main" },
+  reviews:           { id: "reviews",           labelAr: "التقييمات والآراء",    labelEn: "Reviews",              icon: Star,            href: "/admin/reviews",              group: "main" },
+  push_notif:        { id: "push_notif",        labelAr: "إشعارات Push",         labelEn: "Push Notifications",   icon: Bell,            href: "/admin/push-notifications",   group: "main" },
+  // ── CRM & Leads ───────────────────────────────────────────────────────────
+  leads_data:        { id: "leads_data",        labelAr: "داتا العملاء",         labelEn: "Leads Data",           icon: Building2,       href: "/employee/leads-data",        group: "main" },
+  crm:               { id: "crm",               labelAr: "CRM",                  labelEn: "CRM",                  icon: TrendingUp,      href: "/employee/crm",               group: "main" },
+  whatsapp_crm:      { id: "whatsapp_crm",      labelAr: "واتساب CRM",           labelEn: "WhatsApp CRM",         icon: MessageSquare,   href: "/employee/whatsapp-crm",      group: "main" },
+  // ── Logistics ─────────────────────────────────────────────────────────────
+  shipping:          { id: "shipping",          labelAr: "إعدادات الشحن",       labelEn: "Shipping Settings",    icon: Truck,           href: "/admin/shipping",             group: "main" },
+  shipments:         { id: "shipments",         labelAr: "الشحنات",              labelEn: "Shipments",            icon: Truck,           href: "/admin/shipments",            group: "main" },
+  suppliers:         { id: "suppliers",         labelAr: "الموردون",             labelEn: "Suppliers",            icon: Store,           href: "/admin/suppliers",            group: "main" },
+  // ── Tools ─────────────────────────────────────────────────────────────────
+  builder:           { id: "builder",           labelAr: "صانع الأنظمة",        labelEn: "System Builder",       icon: Code2,           href: "/employee/system-builder",    group: "tools" },
+  deployment:        { id: "deployment",        labelAr: "نشر المشاريع",        labelEn: "Deployment Cloud",     icon: CloudUpload,     href: "/employee/deployment-cloud",  group: "tools" },
+  sector_guide:      { id: "sector_guide",      labelAr: "دليل القطاعات",       labelEn: "Sector Guide",         icon: Globe,           href: "/employee/sector-guide",      group: "tools" },
+  qi_agent:          { id: "qi_agent",          labelAr: "QIROX Studio AI",      labelEn: "QIROX Studio AI",      icon: Sparkles,        href: "/employee/studio",            group: "tools" },
+  ai_hub:            { id: "ai_hub",            labelAr: "QIROX AI Hub",         labelEn: "QIROX AI Hub",         icon: Brain,           href: "/admin/qirox-ai",             group: "tools" },
+  admin_whatsapp:    { id: "admin_whatsapp",    labelAr: "واتساب الإداري",      labelEn: "Admin WhatsApp",       icon: MessageSquare,   href: "/admin/whatsapp",             group: "tools" },
+  checklist:         { id: "checklist",         labelAr: "قائمة المهام",         labelEn: "My Checklist",         icon: CheckSquare,     href: "/employee/checklist",         group: "tools" },
+  qmeet:             { id: "qmeet",             labelAr: "الاجتماعات",          labelEn: "Meetings",             icon: Video,           href: "/admin/qmeet",                group: "tools" },
+  kanban:            { id: "kanban",            labelAr: "لوحة المهام",          labelEn: "Task Board",           icon: ClipboardList,   href: "/admin/kanban",               group: "tools" },
+  sys_dashboards:    { id: "sys_dashboards",    labelAr: "لوحات النظام",         labelEn: "System Dashboards",    icon: LayoutGrid,      href: "/admin/system-dashboards",    group: "tools" },
+  gamification:      { id: "gamification",      labelAr: "التلعيب والمكافآت",   labelEn: "Gamification",         icon: Award,           href: "/admin/gamification",         group: "tools" },
+  activity_log:      { id: "activity_log",      labelAr: "سجل الأنشطة",         labelEn: "Activity Log",         icon: Activity,        href: "/admin/activity-log",         group: "tools" },
+  // ── Finance ───────────────────────────────────────────────────────────────
+  finance:           { id: "finance",           labelAr: "المالية والحسابات",   labelEn: "Finance",              icon: DollarSign,      href: "/admin/finance",              group: "finance" },
+  invoices:          { id: "invoices",          labelAr: "الفواتير",             labelEn: "Invoices",             icon: FileText,        href: "/admin/invoices",             group: "finance" },
+  receipts:          { id: "receipts",          labelAr: "الوصولات",             labelEn: "Receipts",             icon: Receipt,         href: "/admin/receipts",             group: "finance" },
+  payroll:           { id: "payroll",           labelAr: "الرواتب",              labelEn: "Payroll",              icon: Banknote,        href: "/admin/payroll",              group: "finance" },
+  wallet:            { id: "wallet",            labelAr: "محافظ العملاء",       labelEn: "Client Wallets",       icon: Wallet,          href: "/admin/wallet",               group: "finance" },
+  installments:      { id: "installments",      labelAr: "التقسيط",              labelEn: "Installments",         icon: CreditCard,      href: "/admin/installments",         group: "finance" },
+  profit_report:     { id: "profit_report",     labelAr: "تقرير الأرباح",        labelEn: "Profit Report",        icon: PieChart,        href: "/admin/profit-report",        group: "finance" },
+  sales_reports:     { id: "sales_reports",     labelAr: "تقارير المبيعات",      labelEn: "Sales Reports",        icon: BarChart2,       href: "/admin/sales-reports",        group: "finance" },
+  reports:           { id: "reports",           labelAr: "التقارير",             labelEn: "Reports",              icon: BarChart3,       href: "/admin/analytics",            group: "finance" },
+  bank_settings:     { id: "bank_settings",     labelAr: "إعدادات الحساب البنكي",labelEn: "Bank Settings",       icon: Building,        href: "/admin/bank-settings",        group: "finance" },
+  investors:         { id: "investors",         labelAr: "المستثمرون",           labelEn: "Investors",            icon: TrendingUp,      href: "/admin/investors",            group: "finance" },
+  // ── HR ────────────────────────────────────────────────────────────────────
+  employees:         { id: "employees",         labelAr: "الموظفون",             labelEn: "Employees",            icon: Building2,       href: "/admin/employees",            group: "hr" },
+  attendance:        { id: "attendance",        labelAr: "الحضور والانصراف",    labelEn: "Attendance",           icon: CalendarDays,    href: "/admin/attendance",           group: "hr" },
+  // ── Config ────────────────────────────────────────────────────────────────
+  settings:          { id: "settings",          labelAr: "الإعدادات",            labelEn: "Settings",             icon: Settings,        href: "/admin/settings",             group: "config" },
+  roles:             { id: "roles",             labelAr: "الأدوار والصلاحيات",  labelEn: "Roles & Permissions",  icon: Shield,          href: "/admin/roles",                group: "config" },
+  sys_features:      { id: "sys_features",      labelAr: "ميزات النظام",         labelEn: "System Features",      icon: Zap,             href: "/admin/system-features",      group: "config" },
+  mod_config:        { id: "mod_config",        labelAr: "إعدادات الوحدات",     labelEn: "Module Config",        icon: Cog,             href: "/admin/mod-config",           group: "config" },
+  conn_settings:     { id: "conn_settings",     labelAr: "إعدادات الاتصال",     labelEn: "Connections",          icon: Link2,           href: "/admin/connection-settings",  group: "config" },
+  app_publish:       { id: "app_publish",       labelAr: "نشر التطبيق",          labelEn: "App Publish",          icon: Smartphone,      href: "/admin/app-publish",          group: "config" },
+  api_keys:          { id: "api_keys",          labelAr: "مفاتيح API",           labelEn: "API Keys",             icon: Key,             href: "/admin/api-keys",             group: "config" },
+  cron_jobs:         { id: "cron_jobs",         labelAr: "المهام المجدولة",      labelEn: "Cron Jobs",            icon: RefreshCcw,      href: "/admin/cron-jobs",            group: "config" },
+  atlas_db:          { id: "atlas_db",          labelAr: "قاعدة البيانات",       labelEn: "MongoDB Atlas",        icon: Database,        href: "/admin/atlas",                group: "config" },
+  qirox_settings:    { id: "qirox_settings",    labelAr: "إعدادات QIROX",        labelEn: "QIROX Settings",       icon: SlidersHorizontal,href: "/admin/qirox-settings",      group: "config" },
+  extra_addons:      { id: "extra_addons",      labelAr: "الإضافات الإضافية",   labelEn: "Extra Add-ons",        icon: Package2,        href: "/admin/extra-addons",         group: "config" },
+  data_requests:     { id: "data_requests",     labelAr: "طلبات البيانات",       labelEn: "Data Requests",        icon: ScrollText,      href: "/admin/data-requests",        group: "config" },
+  countries:         { id: "countries",         labelAr: "الدول والمناطق",       labelEn: "Countries",            icon: Globe2,          href: "/admin/countries",            group: "config" },
+  // ── Personal ──────────────────────────────────────────────────────────────
+  mail:              { id: "mail",              labelAr: "البريد",               labelEn: "Mail",                 icon: Mail,            href: "/employee/mail",              group: "personal" },
+  profile:           { id: "profile",           labelAr: "ملفي الشخصي",         labelEn: "My Profile",           icon: User2,           href: "/employee/profile",           group: "personal" },
+  changelog:         { id: "changelog",         labelAr: "التحديثات",            labelEn: "Updates",              icon: BookOpen,        href: "/employee/changelog",         group: "personal" },
+  my_finance:        { id: "my_finance",        labelAr: "حقي المالي",           labelEn: "My Financials",        icon: Banknote,        href: "/employee/my-finance",        group: "personal" },
 };
 
-const ROLE_ITEMS: Record<string, string[]> = {
+// Mobile drawer shows a compact set — same as the original sidebar before the expansion
+const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
   admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "mail", "profile", "changelog"],
   manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
   developer:     ["dashboard", "mod_requests", "orders", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
   designer:      ["dashboard", "mod_requests", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
-  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "checklist", "mail", "profile", "my_finance"],
+  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
   sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "checklist", "mail", "profile", "my_finance"],
   marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
-  accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "reports", "checklist", "mail", "profile", "my_finance"],
-  support:       ["dashboard", "support_tickets", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
+  accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "wallet", "reports", "checklist", "mail", "profile", "my_finance"],
+  support:       ["dashboard", "support_tickets", "contact_msgs", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
   hr:            ["dashboard", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
-  merchant:      ["dashboard", "checklist", "mail", "profile", "my_finance"],
+  merchant:      ["dashboard", "shipments", "checklist", "mail", "profile", "my_finance"],
   content:       ["dashboard", "products", "news", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
+};
+
+const ROLE_ITEMS: Record<string, string[]> = {
+  admin: [
+    // Core operations
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions",
+    // Client services
+    "quotations", "contracts", "consultations", "mod_requests", "support_tickets", "contact_msgs", "sla",
+    // Products & catalog
+    "products", "services", "subscription_plans", "templates",
+    // Marketing
+    "marketing_posts", "discount_codes", "promotions", "loyalty", "referrals", "reviews", "push_notif",
+    // Content & partners
+    "news", "jobs", "partners",
+    // Logistics
+    "shipping", "shipments", "suppliers",
+    // Finance (full access)
+    "finance", "invoices", "receipts", "payroll", "wallet", "installments",
+    "profit_report", "sales_reports", "reports", "bank_settings", "investors",
+    // HR
+    "employees", "attendance",
+    // Tools
+    "kanban", "qmeet", "builder", "deployment", "sector_guide", "qi_agent",
+    "ai_hub", "admin_whatsapp", "checklist", "sys_dashboards", "gamification", "activity_log",
+    // Config (admin only)
+    "settings", "roles", "sys_features", "mod_config", "conn_settings", "app_publish",
+    "api_keys", "cron_jobs", "atlas_db", "qirox_settings", "extra_addons", "data_requests", "countries",
+    // Personal
+    "mail", "profile", "changelog",
+  ],
+  manager: [
+    // Core operations
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions",
+    // Client services
+    "quotations", "contracts", "consultations", "mod_requests", "support_tickets", "contact_msgs", "sla",
+    // Products & catalog
+    "products", "services", "subscription_plans",
+    // Marketing
+    "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews",
+    // Content & partners
+    "news", "partners",
+    // Logistics
+    "shipments", "suppliers",
+    // Finance
+    "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "reports",
+    // HR
+    "employees", "attendance",
+    // Tools
+    "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "checklist", "sys_dashboards", "activity_log",
+    // Config (limited)
+    "settings",
+    // Personal
+    "mail", "profile", "changelog",
+  ],
+  developer:     ["dashboard", "mod_requests", "orders", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
+  designer:      ["dashboard", "mod_requests", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
+  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
+  sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "contracts", "abandoned_carts", "discount_codes", "reports", "profit_report", "sales_reports", "checklist", "mail", "profile", "my_finance"],
+  marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews", "push_notif", "checklist", "mail", "profile", "my_finance"],
+  accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "sales_reports", "reports", "bank_settings", "checklist", "mail", "profile", "my_finance"],
+  support:       ["dashboard", "support_tickets", "contact_msgs", "customers", "leads_data", "sla", "checklist", "mail", "profile", "my_finance"],
+  hr:            ["dashboard", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
+  merchant:      ["dashboard", "shipments", "checklist", "mail", "profile", "my_finance"],
+  content:       ["dashboard", "products", "news", "marketing_posts", "templates", "checklist", "mail", "profile", "my_finance"],
 };
 const DEFAULT_ITEMS = ["dashboard", "mail", "profile"];
 
@@ -347,11 +469,31 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     return location.startsWith(href);
   }
 
+  // Bottom bar (5 icons)
   const mobileNavItems = navItems
     .filter(item => ["dashboard", "orders", "customers", "mail", "profile"].includes(item.id))
     .slice(0, 5);
 
-  function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
+  // Mobile DRAWER uses the compact original list — not the full desktop list
+  const mobileDrawerItems = useMemo(() => {
+    const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
+    const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
+    const ids = (customPages && customPages.length > 0) ? customPages : (MOBILE_ROLE_ITEMS[role] || ROLE_ITEMS[role] || DEFAULT_ITEMS);
+    return ids.map(id => ALL_NAV[id]).filter(Boolean);
+  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope]);
+
+  const mobileGrouped = useMemo(() => {
+    const g: Record<string, NavItem[]> = {};
+    for (const item of mobileDrawerItems) {
+      if (!g[item.group]) g[item.group] = [];
+      g[item.group].push(item);
+    }
+    return g;
+  }, [mobileDrawerItems]);
+
+  function SidebarContent({ onItemClick, isMobile }: { onItemClick?: () => void; isMobile?: boolean }) {
+    const itemsGrouped = isMobile ? mobileGrouped : grouped;
+    const itemsOrderedGroups = GROUP_ORDER.filter(g => itemsGrouped[g]?.length > 0);
     return (
       <div className="flex flex-col h-full" dir="rtl">
         {/* Brand */}
@@ -405,13 +547,13 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-hide">
-          {orderedGroups.map(group => (
+          {itemsOrderedGroups.map(group => (
             <div key={group}>
               <p className="text-[9px] font-black text-black/25 dark:text-white/22 uppercase tracking-[0.18em] px-2 mb-1.5">
                 {L ? GROUP_LABELS[group]?.[0] : GROUP_LABELS[group]?.[1]}
               </p>
               <div className="space-y-0.5">
-                {grouped[group].map(item => {
+                {itemsGrouped[group].map(item => {
                   const active = isActive(item.href);
                   return (
                     <Link key={item.id} href={item.href}>
@@ -542,7 +684,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
               className="fixed top-0 right-0 bottom-0 w-64 bg-white dark:bg-gray-900 z-50 lg:hidden shadow-2xl"
             >
-              <SidebarContent onItemClick={() => setSidebarOpen(false)} />
+              <SidebarContent onItemClick={() => setSidebarOpen(false)} isMobile />
             </motion.aside>
           </>
         )}

@@ -72,7 +72,9 @@ app.use(compression({
   threshold: 1024,      // only compress responses > 1KB
   filter: (req, res) => {
     // Never compress SSE streams (WebSocket upgrades handled separately)
-    if (req.headers["accept"] === "text/event-stream") return false;
+    const accept = req.headers["accept"] || "";
+    if (accept.includes("text/event-stream")) return false;
+    if (res.getHeader("Content-Type") === "text/event-stream") return false;
     return compression.filter(req, res);
   },
 }));

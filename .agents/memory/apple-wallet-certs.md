@@ -1,22 +1,35 @@
 ---
-name: Apple Wallet certs
-description: Where Apple Wallet pass certificates are stored and how the server loads them.
+name: Apple Wallet Certs & passkit-generator Fix
+description: How to correctly generate .pkpass files using passkit-generator v3 with QIROX Apple certs.
 ---
 
 ## Rule
-Certificates live in `server/certs/` (gitignored-safe, already in the repl):
-- `server/certs/apple-pass-cert.pem` — Pass Type certificate (pass.com.qirox.employee)
-- `server/certs/apple-pass-key.pem` — Private key for signing passes
-- `server/certs/apple-wwdr.pem` — Apple Worldwide Developer Relations root cert
+Use `new PKPass(buffers, certs)` constructor — NOT `PKPass.from({ model, certs })`.
 
-The route `GET /api/employee/apple-wallet-pass` in `server/routes.ts` reads certs via `readCert(envKey, fileName)`:
-- First checks `process.env[envKey]` (env var override)
-- Falls back to reading the file from `server/certs/<fileName>`
+**Why:** `PKPass.from()` requires `model` to be a string path to a directory on disk. Passing a buffers object causes `"model" must be a string` ValidationError.
 
-**Static values (set as env vars):**
-- `APPLE_TEAM_ID` = `V4K6RM59LS`
-- `APPLE_PASS_TYPE_ID` = `pass.com.qirox.employee`
+**How to apply:**
+```typescript
+const { PKPass } = await import("passkit-generator");
+const pass = new PKPass(
+  { "pass.json": Buffer, "icon.png": Buffer, "icon@2x.png": Buffer, "logo.png": Buffer, "logo@2x.png": Buffer },
+  { wwdr, signerCert: cleanCert, signerKey: cleanKey }
+  // Do NOT include signerKeyPassphrase if there's no passphrase — empty string throws ValidationError
+);
+const pkpassBuffer = pass.getAsBuffer(); // synchronous in v3 — no .then()
+```
 
-**Package:** `passkit-generator` is installed and required for `.pkpass` generation.
+## Cert files
+- Location: `server/certs/apple-pass-cert.pem`, `apple-pass-key.pem`, `apple-wwdr.pem`
+- Cert/key files exported from Apple Keychain include a "Bag Attributes" header — strip it before passing to PKPass:
+  ```typescript
+  const stripBagAttrs = (pem: string) => { const i = pem.indexOf("-----BEGIN"); return i >= 0 ? pem.slice(i) : pem; };
+  ```
+- passTypeId = `pass.com.qirox.employee`, teamId = `V4K6RM59LS`
 
-**Why:** The certs are uploaded as files because storing multi-line PEM content as env var values is error-prone. The file fallback means no env config is needed for cert content; only TEAM_ID and PASS_TYPE_ID are env vars.
+## icon.png requirement
+Apple Wallet requires real PNG files — empty `Buffer.alloc(0)` causes signing errors.
+Use a minimal 1×1 transparent PNG:
+```typescript
+const tinyPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+```
