@@ -36,3 +36,4 @@ attached_assets/*.p8
 attached_assets/AuthKey_*
 attached_assets/._*
 ._*
+.whatsapp-auth/
