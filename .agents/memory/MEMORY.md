@@ -8,7 +8,7 @@
 - [react-icons v5 breaking change](react-icons-v5.md) — SiLinkedin removed in v5; replace with lucide-react Linkedin. Also add react-icons to optimizeDeps.exclude in vite.config.ts to avoid pre-bundle named-export failures.
 - [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.
 - [Vite SIGBUS crash](vite-sigbus-crash.md) — serve pre-built dist/public instead of launching Vite (SIGBUS crash in this env).
-- [esbuild ALWAYS_EXTERNAL](esbuild-always-external.md) — ESM-only packages must be in ALWAYS_EXTERNAL in script/build.mjs or they silently fail on Render at runtime.
+- [esbuild ALWAYS_EXTERNAL](esbuild-always-external.md) — ESM-only packages need ALWAYS_EXTERNAL + new Function('m','return import(m)') trick; passkit/baileys/transformers all fixed.
 - [dist/index.cjs git exclusion](dist-index-cjs-gitignore.md) — dist/index.cjs excluded from git (.gitignore) — bundled server bakes in env secrets which GitHub push protection blocks.
 - [attached_assets git exclusion](attached-assets-gitignore.md) — attached_assets/ excluded from git — Replit stores uploaded files there (screenshots, env var dumps with secrets) which trigger GitHub push protection.
 - [Group chat audio/image fixes](group-chat-media.md) — .webm MIME was video/webm (wrong), fixed to audio/webm; uploads get Cache-Control 7d; notification link → /groups/:id; GroupVoicePlayer has async play() + error handling.
