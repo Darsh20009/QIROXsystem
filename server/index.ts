@@ -1147,4 +1147,32 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   });
 
   initCronJobs().catch(err => console.error("Cron init error:", err));
+
+  // ── WhatsApp auto-connect ─────────────────────────────────────────────────
+  // Delay slightly so the DB + SSE clients are ready before the socket fires events
+  setTimeout(async () => {
+    try {
+      const { waModule } = await import("./whatsapp-module");
+      await waModule.autoConnect();
+    } catch (e: any) {
+      console.error("[WA] Auto-connect startup error:", e.message);
+    }
+  }, 4000);
+
+  // ── Local AI — warm up embedding model if already downloaded ─────────────
+  // Non-blocking: runs in background. Does NOT re-download unless model was
+  // previously loaded (no creds.json = skips; model already cached = loads fast)
+  setTimeout(async () => {
+    try {
+      const { QiroxAISettingsModel } = await import("./models/qirox-ai");
+      const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean();
+      if (settings?.useLocalAI) {
+        const { loadEmbeddingModel } = await import("./lib/local-ai/index");
+        await loadEmbeddingModel();
+        console.log("[LocalAI] Embedding model warmed up on startup ✅");
+      }
+    } catch (e: any) {
+      console.warn("[LocalAI] Startup warmup skipped:", e.message);
+    }
+  }, 8000);
 })();

@@ -75,6 +75,7 @@ const AdminSubscriptionPlans = lazy(() => import("@/pages/AdminSubscriptionPlans
 const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
 const AdminWhatsApp = lazy(() => import("@/pages/AdminWhatsApp"));
 const AdminQiroxAI  = lazy(() => import("@/pages/AdminQiroxAI"));
+const AdminLocalAI  = lazy(() => import("@/pages/AdminLocalAI"));
 const AdminPhoneVerifications = lazy(() => import("@/pages/AdminPhoneVerifications"));
 const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
@@ -361,6 +362,7 @@ function AdminRouter() {
         <Route path="/admin/mod-requests" component={AdminModRequests} />
         <Route path="/admin/whatsapp" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminWhatsApp /></RoleGuard>} />
         <Route path="/admin/qirox-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminQiroxAI /></RoleGuard>} />
+        <Route path="/admin/local-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminLocalAI /></RoleGuard>} />
         <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />
         <Route path="/admin/customers" component={AdminCustomers} />
         <Route path="/admin/products" component={AdminProducts} />

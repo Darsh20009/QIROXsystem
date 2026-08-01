@@ -156,6 +156,7 @@ export function AppSidebar() {
     { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "marketing", allowedRoles: STAFF_ROLES },
     { title: ar ? "جلسات الذكاء الاصطناعي" : "AI Sessions", icon: Bot, url: "/admin/ai-sessions", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "QIROX Studio AI" : "QIROX Studio AI", icon: Sparkles, url: "/admin/studio", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
+    { title: ar ? "Local AI Engine" : "Local AI Engine", icon: Cpu, url: "/admin/local-ai", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "لوحات الأنظمة" : "System Dashboards", icon: LayoutGrid, url: "/admin/system-dashboards", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
     // Admin — products & services (core catalog)
     { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },

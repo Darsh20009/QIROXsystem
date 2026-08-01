@@ -27,6 +27,8 @@ const KnowledgeDocSchema = new Schema<IKnowledgeDoc>({
   tokens:      [String],
   termFreqJson:{ type: String, default: "{}" },
   docLength:   { type: Number, default: 0 },
+  /** Semantic embedding vector (all-MiniLM-L6-v2, 384 dims) */
+  embedding:   { type: [Number], default: undefined, select: false },
 }, { timestamps: true });
 
 export const KnowledgeDocModel = mongoose.model<IKnowledgeDoc>("QiroxAIKnowledge", KnowledgeDocSchema);
@@ -79,14 +81,18 @@ export const QiroxAILogModel = mongoose.model("QiroxAILog", QiroxAILogSchema);
 
 /* ── Settings ────────────────────────────────────────────────────────────── */
 const QiroxAISettingsSchema = new Schema({
-  singleton:      { type: String, default: "main", unique: true },
-  model:          { type: String, default: "gpt-4o" },
-  temperature:    { type: Number, default: 0.8 },
-  maxTokens:      { type: Number, default: 700 },
-  topK:           { type: Number, default: 5 },   // top-K docs to retrieve
-  systemPrompt:   { type: String, default: "" },
-  language:       { type: String, default: "ar" },
-  ragEnabled:     { type: Boolean, default: true },
+  singleton:         { type: String, default: "main", unique: true },
+  model:             { type: String, default: "gpt-4o" },
+  temperature:       { type: Number, default: 0.8 },
+  maxTokens:         { type: Number, default: 700 },
+  topK:              { type: Number, default: 5 },
+  systemPrompt:      { type: String, default: "" },
+  language:          { type: String, default: "ar" },
+  ragEnabled:        { type: Boolean, default: true },
+  /** Use local ONNX AI instead of external OpenAI-compatible provider */
+  useLocalAI:        { type: Boolean, default: false },
+  localAIRequests:   { type: Number, default: 0 },
+  localAISavedCalls: { type: Number, default: 0 },
 }, { timestamps: true });
 
 export const QiroxAISettingsModel = mongoose.model("QiroxAISettings", QiroxAISettingsSchema);

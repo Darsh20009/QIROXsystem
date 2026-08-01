@@ -136,7 +136,8 @@ ${extra ? `\n# معلومات إضافية:\n${extra}\n` : ""}
 - ارد بنفس لغة المستخدم (عربي أو إنجليزي)
 - ارد بنفس اللهجة إذا كانت عربية (سعودية/خليجية/مصرية)
 - لا تتكلف في الردود — كن طبيعياً وحيوياً
-- إذا لم تعرف شيئاً قله بصراحة`;
+- إذا لم تعرف شيئاً قله بصراحة
+- **المحادثة المستمرة**: سجل المحادثة بالكامل أمامك — إذا كانت هناك رسائل سابقة، لا تبدأ بتحية مجدداً ("هلا" / "مرحباً" / "أهلاً") — استمر مباشرة من حيث توقفت. التحية فقط في أول رسالة.`;
 }
 
 // ── Main chat function ───────────────────────────────────────────────────────
@@ -174,6 +175,30 @@ export async function qiroxChat(
     content: buildSystemPrompt(systemPromptExtra, ragContext),
   };
 
+  // ── Local AI mode (no external API calls) ──────────────────────────────
+  const useLocalAI = (settings as any).useLocalAI === true;
+  if (useLocalAI) {
+    try {
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat(messages, {
+        keyId: opts.keyId,
+        source: opts.source,
+        topK,
+      });
+      // Track savings
+      await QiroxAISettingsModel.findOneAndUpdate(
+        { singleton: "main" },
+        { $inc: { localAIRequests: 1, localAISavedCalls: 1 } },
+        { upsert: true },
+      );
+      return { reply: result.reply, tokens: result.tokens, ragDocs: result.ragDocs };
+    } catch (localErr: any) {
+      console.warn("[LocalAI] Falling back to external AI:", localErr.message);
+      // Fall through to external API
+    }
+  }
+
+  // ── External AI (OpenAI-compatible provider) ────────────────────────────
   const openai = getOpenAIClient();
   const res = await openai.chat.completions.create({
     model,

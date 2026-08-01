@@ -340,7 +340,11 @@ export default function AdminWhatsApp() {
                     <div>
                       <p className="text-sm font-bold text-black dark:text-white">{selectedChat?.name || selectedChat?.phoneNumber}</p>
                       <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">
-                        <Phone className="w-2.5 h-2.5" /> {selectedChat?.phoneNumber}
+                        <Phone className="w-2.5 h-2.5" />
+                        {/* Show phone only if it looks like a real number, not a LID */}
+                        {selectedChat?.phoneNumber?.startsWith("+") || /^\d{7,}$/.test(selectedChat?.phoneNumber || "")
+                          ? selectedChat?.phoneNumber
+                          : (selectedChat?.name || L ? "واتساب" : "WhatsApp")}
                       </p>
                     </div>
                   </div>
@@ -445,12 +449,16 @@ export default function AdminWhatsApp() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-black/50 dark:text-white/40 mb-1 block">{L ? `وقت الانتظار قبل الرد التلقائي (${settings.aiDelaySeconds} ثانية)` : `Auto-reply delay (${settings.aiDelaySeconds}s)`}</label>
-                <input type="range" min={10} max={300} step={10} value={settings.aiDelaySeconds}
+                <label className="text-xs font-medium text-black/50 dark:text-white/40 mb-1 block">
+                  {settings.aiDelaySeconds === 0
+                    ? (L ? "⚡ رد فوري — بمجرد وصول الرسالة" : "⚡ Instant reply — as soon as message arrives")
+                    : (L ? `وقت الانتظار قبل الرد التلقائي (${settings.aiDelaySeconds} ثانية)` : `Auto-reply delay (${settings.aiDelaySeconds}s)`)}
+                </label>
+                <input type="range" min={0} max={300} step={10} value={settings.aiDelaySeconds}
                   onChange={e => setSettings(s => ({ ...s, aiDelaySeconds: Number(e.target.value) }))}
                   className="w-full accent-[#25D366]" />
                 <div className="flex justify-between text-[9px] text-black/30 dark:text-white/30 mt-0.5">
-                  <span>10s</span><span>{L ? "دقيقة" : "1 min"}</span><span>5 {L ? "دقائق" : "min"}</span>
+                  <span>{L ? "⚡ فوري" : "⚡ Instant"}</span><span>{L ? "دقيقة" : "1 min"}</span><span>5 {L ? "دقائق" : "min"}</span>
                 </div>
               </div>
 

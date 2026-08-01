@@ -24,6 +24,7 @@
     "@capacitor/push-notifications": "^7.0.6",
     "@capacitor/status-bar": "^7.0.6",
     "@hookform/resolvers": "^3.10.0",
+    "@huggingface/transformers": "^4.2.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@monaco-editor/react": "^4.7.0",
     "@paypal/paypal-server-sdk": "^2.2.0",

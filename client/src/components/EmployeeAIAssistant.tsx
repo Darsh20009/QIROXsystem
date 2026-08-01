@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Send, Loader2, Sparkles, RotateCcw, User, Coffee, Zap, Heart, Star,
@@ -183,7 +183,11 @@ export default function EmployeeAIAssistant({ open, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => `emp-${Date.now()}`);
+  // Stable session per user — persists across modal opens so AI remembers the conversation
+  const sessionId = useMemo(() => {
+    const uid = (user as any)?._id;
+    return uid ? `emp-${uid}` : `emp-anon-${Date.now()}`;
+  }, [(user as any)?._id]);
   const [activeTools, setActiveTools] = useState<string[]>([]);
   const [modelLabel, setModelLabel] = useState("Qirox AI");
   const [attachedImages, setAttachedImages] = useState<string[]>([]);

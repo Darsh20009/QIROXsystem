@@ -80,6 +80,7 @@ const ALL_NAV: Record<string, NavItem> = {
   sector_guide:      { id: "sector_guide",      labelAr: "دليل القطاعات",       labelEn: "Sector Guide",         icon: Globe,           href: "/employee/sector-guide",      group: "tools" },
   qi_agent:          { id: "qi_agent",          labelAr: "QIROX Studio AI",      labelEn: "QIROX Studio AI",      icon: Sparkles,        href: "/employee/studio",            group: "tools" },
   ai_hub:            { id: "ai_hub",            labelAr: "QIROX AI Hub",         labelEn: "QIROX AI Hub",         icon: Brain,           href: "/admin/qirox-ai",             group: "tools" },
+  local_ai:          { id: "local_ai",          labelAr: "Local AI Engine",      labelEn: "Local AI Engine",      icon: Cpu,             href: "/admin/local-ai",             group: "tools" },
   admin_whatsapp:    { id: "admin_whatsapp",    labelAr: "واتساب الإداري",      labelEn: "Admin WhatsApp",       icon: MessageSquare,   href: "/admin/whatsapp",             group: "tools" },
   checklist:         { id: "checklist",         labelAr: "قائمة المهام",         labelEn: "My Checklist",         icon: CheckSquare,     href: "/employee/checklist",         group: "tools" },
   qmeet:             { id: "qmeet",             labelAr: "الاجتماعات",          labelEn: "Meetings",             icon: Video,           href: "/admin/qmeet",                group: "tools" },
@@ -160,7 +161,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     "employees", "attendance",
     // Tools
     "kanban", "qmeet", "builder", "deployment", "sector_guide", "qi_agent",
-    "ai_hub", "admin_whatsapp", "checklist", "sys_dashboards", "gamification", "activity_log",
+    "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "gamification", "activity_log",
     // Config (admin only)
     "settings", "roles", "sys_features", "mod_config", "conn_settings", "app_publish",
     "api_keys", "cron_jobs", "atlas_db", "qirox_settings", "extra_addons", "data_requests", "countries",
@@ -185,7 +186,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     // HR
     "employees", "attendance",
     // Tools
-    "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "checklist", "sys_dashboards", "activity_log",
+    "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "local_ai", "checklist", "sys_dashboards", "activity_log",
     // Config (limited)
     "settings",
     // Personal

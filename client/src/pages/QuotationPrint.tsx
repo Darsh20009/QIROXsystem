@@ -117,7 +117,14 @@ export default function QuotationPrint() {
         @page { margin: 12mm; size: A4; }
         @media print {
           body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          /* Hide ALL UI chrome */
+          nav, aside, header, footer,
+          [data-sidebar], [data-sidebar="sidebar"],
+          #qirox-companion, #page-hint-card, #push-banner,
+          [role="dialog"]:not(.print-keep),
           .no-print { display: none !important; }
+          /* Force print content to full width */
+          main, #main-content { padding: 0 !important; margin: 0 !important; }
           .no-print-bg { background: white !important; padding: 0 !important; }
           .print-card {
             box-shadow: none !important;

@@ -75,8 +75,12 @@ export default function InvoicePrint() {
       <style>{`
         @page { margin: 15mm; size: A4; }
         @media print {
+          nav, aside, header, footer,
+          [data-sidebar], [data-sidebar="sidebar"],
+          #qirox-companion, #page-hint-card, #push-banner,
           .no-print { display: none !important; }
           body { background: white !important; }
+          main, #main-content { padding: 0 !important; margin: 0 !important; }
           .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; }
         }
       `}</style>

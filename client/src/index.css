@@ -1302,3 +1302,39 @@
   color: #0a0a0a;
 }
 
+/* ── Global print styles — hide all UI chrome when printing ── */
+@media print {
+  /* Navigation bars */
+  nav,
+  [data-sidebar],
+  [data-sidebar="sidebar"],
+  aside,
+  header:not(.print-keep),
+  /* Specific QIROX chrome elements */
+  #qirox-companion,
+  #page-hint-card,
+  #push-banner,
+  /* Floating elements, toasters, modals */
+  [role="dialog"]:not(.print-keep),
+  [data-radix-popper-content-wrapper],
+  .no-print { display: none !important; }
+
+  /* Force full-width content */
+  main, [id="main-content"] {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Remove background colors to save ink */
+  body {
+    background: white !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure page breaks work correctly */
+  table { page-break-inside: avoid; }
+  h1, h2, h3 { page-break-after: avoid; }
+}
+

@@ -1110,6 +1110,9 @@ export async function registerRoutes(
       await OtpModel.updateMany({ email: user.email, used: false, type: "2fa_email" }, { used: true });
       await OtpModel.create({ email: user.email, code, expiresAt, type: "2fa_email" });
       sendLoginOtpEmail(user.email, user.fullName || user.username, code, req.headers["user-agent"] as string).catch(console.error);
+      // Send OTP via WhatsApp if user has phone
+      const { waModule: _waM } = await import("./whatsapp-module");
+      _waM.sendOTP((user as any).phone || (user as any).whatsappNumber, code, user.fullName || user.username).catch(() => {});
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -1612,6 +1615,12 @@ export async function registerRoutes(
             details: [["الحالة الجديدة", statusAr]],
             waMessage: waMessages[req.body.status],
           }).catch(console.error);
+          // Send WhatsApp message directly via socket if connected
+          const { waModule: _waOrd } = await import("./whatsapp-module");
+          const clientWAPhone = (clientUser as any)?.whatsappNumber || (clientUser as any)?.phone;
+          if (waMessages[req.body.status]) {
+            _waOrd.sendNotification(clientWAPhone, waMessages[req.body.status]).catch(() => {});
+          }
         }
         const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
         await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: notifTitle, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
@@ -3312,9 +3321,11 @@ export async function registerRoutes(
       await sendWalletPayOtpEmail(owner.email, owner.fullName, otp, Number(amount), description || 'دفع خارجي');
     } catch (emailErr: any) {
       console.error("[Wallet OTP] Failed to send OTP email:", emailErr?.message);
-      // OTP was saved; email failed — return error so user knows email wasn't delivered
       return res.status(500).json({ error: "تم إنشاء رمز OTP لكن فشل إرساله بالبريد الإلكتروني. يرجى المحاولة لاحقاً أو التواصل مع الدعم." });
     }
+    // Also send OTP via WhatsApp (best-effort)
+    const { waModule: _waWallet } = await import("./whatsapp-module");
+    _waWallet.sendOTP((owner as any).phone || (owner as any).whatsappNumber, otp, owner.fullName).catch(() => {});
     res.json({ success: true, ownerName: owner.fullName, maskedEmail: owner.email.replace(/(.{2}).+(@.+)/, '$1***$2') });
   });
 
@@ -15070,26 +15081,25 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         callStatus: method === "call" ? "pending" : undefined,
       });
       const clientName = dbUser.fullName || dbUser.username || "مستخدم";
-      const { sendEmail, baseTemplate } = await import("./email");
       if (method === "whatsapp") {
+        // Send OTP directly via WhatsApp socket (primary)
+        const { waModule: _waOtp } = await import("./whatsapp-module");
         const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
-        const waMsg = encodeURIComponent(`رمز دخولك إلى منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
-        const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
-        const otpHtml = baseTemplate(`<div style="text-align:center;margin-bottom:12px;">
-          <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">🔑 رمز الدخول</span>
-        </div>
-        <p style="font-size:15px;text-align:center;margin-bottom:8px;">مرحباً ${clientName}،</p>
-        <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;">رمز تسجيل الدخول إلى منصة QIROX هو:</p>
-        <div style="text-align:center;margin:20px 0;">
-          <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1a1a1a;font-family:monospace;">${otp}</span>
-        </div>
-        <p style="font-size:12px;color:#999;text-align:center;">الرمز صالح لمدة 15 دقيقة فقط.</p>`);
-        sendEmail("youssefd.business@gmail.com", "Youssef",
-          `🔑 طلب دخول بالجوال — ${clientName} (${normPhone})`,
-          baseTemplate(`<p>العميل <strong>${clientName}</strong> يريد الدخول عبر رقم <strong dir="ltr">${normPhone}</strong></p>
-          <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
-          <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
-        ).catch(() => {});
+        const waSent = await _waOtp.sendOTP(waPhone, otp, clientName).then(() => true).catch(() => false);
+
+        if (!waSent) {
+          // WhatsApp not connected — fall back to email alert for the admin to send manually
+          const { sendEmail, baseTemplate } = await import("./email");
+          const waMsg = encodeURIComponent(`رمز دخولك إلى منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
+          const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
+          sendEmail("youssefd.business@gmail.com", "Youssef",
+            `🔑 طلب دخول بالجوال — ${clientName} (${normPhone})`,
+            baseTemplate(`<p>العميل <strong>${clientName}</strong> يريد الدخول عبر رقم <strong dir="ltr">${normPhone}</strong></p>
+            <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
+            <p style="color:#e53e3e;">⚠️ واتساب غير متصل — الرجاء الإرسال يدوياً:</p>
+            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
+          ).catch(() => {});
+        }
       }
       return res.json({ sent: true, expiresAt, phone: normPhone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -17184,6 +17194,61 @@ export async function registerInstallmentRoutes(app: Express) {
       const days = Number(req.query.days) || 7;
       res.json(await ai.getUsageStats(days));
     });
+
+    // ── Local AI management ─────────────────────────────────────────────────
+    app.get("/api/admin/local-ai/status", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { getModelStatus } = await import("./lib/local-ai/index");
+      const modelStatus = getModelStatus();
+      const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean() || {};
+      res.json({
+        ...modelStatus,
+        useLocalAI: settings.useLocalAI || false,
+        localAIRequests: settings.localAIRequests || 0,
+        localAISavedCalls: settings.localAISavedCalls || 0,
+      });
+    });
+
+    app.post("/api/admin/local-ai/load-model", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { loadEmbeddingModel } = await import("./lib/local-ai/index");
+      res.json({ started: true });
+      // Load async in background
+      loadEmbeddingModel().catch(console.error);
+    });
+
+    app.post("/api/admin/local-ai/toggle", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { enabled } = req.body;
+      await QiroxAISettingsModel.findOneAndUpdate(
+        { singleton: "main" },
+        { useLocalAI: !!enabled },
+        { upsert: true },
+      );
+      res.json({ useLocalAI: !!enabled });
+    });
+
+    app.post("/api/admin/local-ai/reindex-embeddings", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { reindexEmbeddings, getModelStatus } = await import("./lib/local-ai/index");
+      const { ready } = getModelStatus();
+      if (!ready) return res.status(400).json({ error: "النموذج لم يُحمَّل بعد — اضغط 'تحميل النموذج' أولاً" });
+      res.json({ started: true });
+      reindexEmbeddings().catch(console.error);
+    });
+
+    app.post("/api/admin/local-ai/test-chat", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { message } = req.body;
+      if (!message) return res.status(400).json({ error: "message required" });
+      try {
+        const { localChat } = await import("./lib/local-ai/index");
+        const result = await localChat([{ role: "user", content: message }], { source: "admin-test" });
+        res.json(result);
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
+    });
   }
 
   // ─── WhatsApp Integration ─────────────────────────────────────────────────
@@ -17262,6 +17327,20 @@ export async function registerInstallmentRoutes(app: Express) {
         // Human override: pause AI for 30 min after manual reply
         await waModule.setHumanOverride(chatId, 30);
         res.json({ ok: true });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    // ── Send to a specific phone number directly ──────────────────────────────
+    app.post("/api/admin/whatsapp/send-to-phone", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const { phone, text } = req.body;
+      if (!phone || !text?.trim()) return res.status(400).json({ error: "phone و text مطلوبان" });
+      try {
+        const normPhone = String(phone).replace(/\D/g, "");
+        if (!normPhone) return res.status(400).json({ error: "رقم هاتف غير صالح" });
+        const chatId = `${normPhone}@s.whatsapp.net`;
+        await waModule.sendText(chatId, text.trim(), false);
+        res.json({ ok: true, chatId });
       } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
 
