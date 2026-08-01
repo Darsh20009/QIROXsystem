@@ -9087,19 +9087,70 @@ export async function registerRoutes(
       // Initials fallback for avatar
       const initials = name.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase() || "").join("") || "QX";
 
-      // ── Image generation (SVG → sharp → PNG) ─────────────────────────
-      let sharpLib: any;
-      try {
-        sharpLib = (await import("sharp" as any)).default;
-      } catch {
-        return res.status(503).json({ error: "Image processing library not available on this server" });
-      }
+      // ── Image generation (SVG → sharp → PNG, or pure-JS solid-color fallback) ──
+      // sharp is a native binary and may not be available on all servers (e.g. Render).
+      // When absent we fall back to mkSolidPng() which produces valid PNG files using
+      // only Node's built-in zlib — the pass will look plain but will open on iOS.
+      let sharpLib: any = null;
+      try { sharpLib = (await import("sharp" as any)).default; } catch { /* no sharp */ }
+
+      // ── Pure-JS PNG fallback ───────────────────────────────────────────────
+      const mkSolidPng = (w: number, h: number, r = 10, g = 10, b = 22, a = 255): Buffer => {
+        const { createDeflateRaw } = require("zlib");
+        // Build raw scanlines: each row = filter byte (0x00) + RGBA pixels
+        const row = Buffer.alloc(1 + w * 4);
+        row[0] = 0; // filter type None
+        for (let x = 0; x < w; x++) { row[1 + x*4] = r; row[2 + x*4] = g; row[3 + x*4] = b; row[4 + x*4] = a; }
+        const raw = Buffer.concat(Array.from({ length: h }, () => row));
+        // Deflate the raw image data (sync via syncronous zlib)
+        const { deflateRawSync } = require("zlib");
+        const compressed = deflateRawSync(raw);
+        // Adler-32 for zlib wrapper
+        let s1 = 1, s2 = 0;
+        for (const byte of raw) { s1 = (s1 + byte) % 65521; s2 = (s2 + s1) % 65521; }
+        const adler = (s2 << 16) | s1;
+        // zlib wrapper: CMF=0x78 FLG=0x9c (deflate, level 6) + data + Adler-32
+        const zlibData = Buffer.alloc(2 + compressed.length + 4);
+        zlibData[0] = 0x78; zlibData[1] = 0x9c;
+        compressed.copy(zlibData, 2);
+        zlibData.writeUInt32BE(adler, 2 + compressed.length);
+        // PNG helper
+        const crc32 = (buf: Buffer): number => {
+          let c = 0xffffffff;
+          const t: number[] = [];
+          for (let n = 0; n < 256; n++) {
+            let x = n;
+            for (let k = 0; k < 8; k++) x = (x & 1) ? (0xedb88320 ^ (x >>> 1)) : (x >>> 1);
+            t[n] = x;
+          }
+          for (const b of buf) c = t[(c ^ b) & 0xff] ^ (c >>> 8);
+          return (c ^ 0xffffffff) >>> 0;
+        };
+        const chunk = (type: string, data: Buffer): Buffer => {
+          const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32BE(data.length, 0);
+          const typeBuf = Buffer.from(type, "ascii");
+          const crcBuf = Buffer.alloc(4);
+          crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
+          return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
+        };
+        const ihdr = Buffer.alloc(13);
+        ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
+        ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0; // bit-depth=8, colour=RGBA
+        return Buffer.concat([
+          Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]), // PNG signature
+          chunk("IHDR", ihdr),
+          chunk("IDAT", zlibData),
+          chunk("IEND", Buffer.alloc(0)),
+        ]);
+      };
+
       const sb = (s: string) => Buffer.from(s.trim());
 
-      // icon.png — actual Qirox icon (qirox-icon-nobg.png) resized, fallback to "Q" SVG
+      // icon.png — actual Qirox icon (qirox-icon-nobg.png) resized, fallback to solid dark PNG
       const iconSrcPath = pathLib.default.join(process.cwd(), "dist", "public", "qirox-icon-nobg.png");
       const iconSrcExists = fsSync.default.existsSync(iconSrcPath);
-      const mkIcon = (size: number) => {
+      const mkIcon = (size: number): Promise<Buffer> | Buffer => {
+        if (!sharpLib) return mkSolidPng(size, size, 10, 10, 22);
         if (iconSrcExists) {
           return sharpLib(iconSrcPath)
             .resize(size, size, { fit: "contain", background: { r: 10, g: 10, b: 22, alpha: 1 } })
@@ -9112,8 +9163,9 @@ export async function registerRoutes(
         </svg>`)).png().toBuffer();
       };
 
-      // logo.png — actual Qirox icon on transparent background (fits Apple Wallet logo strip)
-      const mkLogo = (w: number, h: number) => {
+      // logo.png — Qirox icon on transparent bg (fits Apple Wallet logo strip)
+      const mkLogo = (w: number, h: number): Promise<Buffer> | Buffer => {
+        if (!sharpLib) return mkSolidPng(w, h, 0, 0, 0, 0);
         if (iconSrcExists) {
           return sharpLib(iconSrcPath)
             .resize(h, h, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -9128,8 +9180,9 @@ export async function registerRoutes(
       };
 
       // background.png — black→charcoal gradient with subtle ring decorations
-      const mkBackground = (w: number, h: number) =>
-        sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      const mkBackground = (w: number, h: number): Promise<Buffer> | Buffer => {
+        if (!sharpLib) return mkSolidPng(w, h, 8, 8, 15);
+        return sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="85%" y2="100%">
               <stop offset="0%"   stop-color="#08080f"/>
@@ -9146,18 +9199,16 @@ export async function registerRoutes(
                 x2="${Math.round(w*0.93)}" y2="${Math.round(h*0.50)}"
             stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
         </svg>`)).png().toBuffer();
+      };
 
       // thumbnail.png — employee photo (circle-cropped) or gradient initials
       const mkThumbnail = async (size: number): Promise<Buffer> => {
-        if (avatarUrl) {
+        if (sharpLib && avatarUrl) {
           try {
-            // avatarUrl is typically a relative path like /uploads/xxx.png — read from filesystem
             let rawBuf: Buffer | null = null;
             if (avatarUrl.startsWith("/uploads/") || avatarUrl.startsWith("uploads/")) {
               const localPath = pathLib.default.join(process.cwd(), avatarUrl.startsWith("/") ? avatarUrl.slice(1) : avatarUrl);
-              if (fsSync.default.existsSync(localPath)) {
-                rawBuf = fsSync.default.readFileSync(localPath);
-              }
+              if (fsSync.default.existsSync(localPath)) rawBuf = fsSync.default.readFileSync(localPath);
             } else if (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) {
               const resp = await fetch(avatarUrl, { signal: AbortSignal.timeout(5000) });
               if (resp.ok) rawBuf = Buffer.from(await resp.arrayBuffer());
@@ -9173,7 +9224,8 @@ export async function registerRoutes(
             }
           } catch { /* fall through to initials */ }
         }
-        // Fallback — gradient circle with initials
+        // Fallback — gradient circle with initials (or solid colour when no sharp)
+        if (!sharpLib) return mkSolidPng(size, size, 30, 30, 58);
         return sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="av" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -9310,7 +9362,7 @@ export async function registerRoutes(
       res.setHeader("Content-Disposition", `attachment; filename="qirox-${employeeCode || "employee"}.pkpass"`);
       res.send(pkpassBuffer);
     } catch (err: any) {
-      console.error("[AppleWallet] error:", err.message);
+      console.error("[AppleWallet] error:", err.message, "\n", err.stack);
       res.status(500).json({ error: translateError(err) });
     }
   });
