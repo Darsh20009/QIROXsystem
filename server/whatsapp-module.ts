@@ -79,7 +79,7 @@ class WhatsAppModule extends EventEmitter {
         auth: state,
         browser: Browsers.ubuntu("QIROX CRM"),
         printQRInTerminal: false,
-        logger: { level: "silent", child: () => ({ level: "silent", info: ()=>{}, warn: ()=>{}, error: ()=>{}, debug: ()=>{}, trace: ()=>{}, fatal: ()=>{} }) } as any,
+        logger: { level: "silent", info: ()=>{}, warn: ()=>{}, error: ()=>{}, debug: ()=>{}, trace: ()=>{}, fatal: ()=>{}, child: () => ({ level: "silent", info: ()=>{}, warn: ()=>{}, error: ()=>{}, debug: ()=>{}, trace: ()=>{}, fatal: ()=>{} }) } as any,
         syncFullHistory: false,
         getMessage: async () => undefined,
       });
