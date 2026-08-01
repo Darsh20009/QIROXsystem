@@ -37,5 +37,5 @@ attached_assets/AuthKey_*
 attached_assets/._*
 ._*
 .whatsapp-auth/
-dist/index.cjs
+# dist/index.cjs is committed — pre-built bundle deployed directly to Render
 attached_assets/
