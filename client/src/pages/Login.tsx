@@ -24,6 +24,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 import { isCapacitorNative, getServerUrl } from "@/lib/server-url";
+import { LoginCharacters } from "@/components/LoginCharacters";
 
 // ─── Formal QIROX System Panel ───────────────────────────────────────────────
 
@@ -42,11 +43,13 @@ const METRIC_BARS = [
 ];
 
 function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githubEnabled, appleEnabled,
-  googleLoading, githubLoading, appleLoading, handleGoogleLogin, handleGithubLogin, handleAppleLogin }: {
+  googleLoading, githubLoading, appleLoading, handleGoogleLogin, handleGithubLogin, handleAppleLogin,
+  emailFocused, showPassword, hasError }: {
   isRegister: boolean; isEmployeeRegister: boolean;
   googleEnabled: boolean; githubEnabled: boolean; appleEnabled: boolean;
   googleLoading: boolean; githubLoading: boolean; appleLoading: boolean;
   handleGoogleLogin: () => void; handleGithubLogin: () => void; handleAppleLogin: () => void;
+  emailFocused: boolean; showPassword: boolean; hasError: boolean;
 }) {
   const [activeModule, setActiveModule] = useState(0);
   const [barWidths, setBarWidths] = useState([0, 0, 0]);
@@ -101,8 +104,8 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
         </div>
       </div>
 
-      {/* ── Main content: System UI preview ── */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center px-10 py-6 gap-5">
+      {/* ── Main content: animated characters ── */}
+      <div className="relative z-10 flex-1 flex flex-col justify-center px-6 py-4 gap-4">
 
         {/* Headline */}
         <motion.div
@@ -113,12 +116,37 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
           <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] mb-2 font-mono">
             {isRegister ? "— منضم جديد" : "— بوابة الدخول"}
           </p>
-          <h2 className="text-white font-black leading-[1.1] mb-1" style={{ fontSize: "clamp(1.6rem,3vw,2.2rem)", fontFamily: "var(--font-heading)" }}>
+          <h2 className="text-white font-black leading-[1.1] mb-1" style={{ fontSize: "clamp(1.4rem,2.6vw,2rem)", fontFamily: "var(--font-heading)" }}>
             {isRegister ? <>ابنِ نظامك<br /><span className="text-white/35">الرقمي</span></> : <>منصة إدارة<br /><span className="text-white/35">متكاملة</span></>}
           </h2>
-          <p className="text-white/30 text-xs leading-relaxed">
-            {isRegister ? "مصنع الأنظمة الرقمية — أكثر من 100 عميل بنوا أنظمتهم معنا" : "نظام إدارة الأعمال الرقمي الشامل · مُصمَّم للسوق العربي"}
-          </p>
+        </motion.div>
+
+        {/* Characters stage */}
+        <motion.div
+          className="w-full"
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+        >
+          <LoginCharacters
+            emailFocused={emailFocused}
+            showPassword={showPassword}
+            hasError={hasError}
+          />
+          {/* Reactive caption */}
+          <motion.p
+            className="text-center text-[10px] font-mono mt-1"
+            style={{ color: hasError ? "rgba(255,160,120,0.6)" : showPassword ? "rgba(255,255,255,0.2)" : emailFocused ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)" }}
+            animate={{ opacity: 1 }}
+          >
+            {hasError
+              ? "😟  هذا مش صحيح يا صاحبي"
+              : showPassword
+              ? "🙈  أوه لا ما شفنا شي!"
+              : emailFocused
+              ? "👀  يلا يلا، ندخل!"
+              : "مرحباً بك في QIROX"}
+          </motion.p>
         </motion.div>
 
         {/* ── System UI mockup ── */}
@@ -313,6 +341,7 @@ export default function Login() {
   const queryClient = useQueryClient();
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -916,6 +945,7 @@ export default function Login() {
         googleEnabled={googleEnabled} githubEnabled={githubEnabled} appleEnabled={appleEnabled}
         googleLoading={googleLoading} githubLoading={githubLoading} appleLoading={appleLoading}
         handleGoogleLogin={handleGoogleLogin} handleGithubLogin={handleGithubLogin} handleAppleLogin={handleAppleLogin}
+        emailFocused={emailFocused} showPassword={showPw} hasError={!!error}
       />
 
       {/* Right form area */}
@@ -1879,7 +1909,7 @@ export default function Login() {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                            <Input type="email" placeholder="name@example.com" {...field} className={`${inputBase} pr-10`} dir="ltr" data-testid="input-email" />
+                            <Input type="email" placeholder="name@example.com" {...field} className={`${inputBase} pr-10`} dir="ltr" data-testid="input-email" onFocus={() => setEmailFocused(true)} onBlur={() => setEmailFocused(false)} />
                           </div>
                         </FormControl>
                         <FormMessage className="text-xs" />
