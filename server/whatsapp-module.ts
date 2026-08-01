@@ -135,7 +135,10 @@ class WhatsAppModule extends EventEmitter {
     this.sendSSE({ type: "status", ...this.getStatus() });
 
     try {
-      const baileys = await import("@whiskeysockets/baileys" as any);
+      // new Function prevents esbuild from rewriting import() → require() in CJS bundle
+      // @whiskeysockets/baileys is ESM-only; require() breaks it at runtime on Render
+      const _dyn = new Function("m", "return import(m)");
+      const baileys = await _dyn("@whiskeysockets/baileys");
       const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = baileys;
 
       const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");

@@ -29,7 +29,9 @@ export async function loadEmbeddingModel(): Promise<void> {
   embLoading = (async () => {
     try {
       console.log("[LocalAI] Loading embedding model:", EMBEDDING_MODEL);
-      const { pipeline, env } = await import("@huggingface/transformers" as any);
+      // new Function prevents esbuild CJS bundler from rewriting import() → require()
+      const _dyn = new Function("m", "return import(m)");
+      const { pipeline, env } = await _dyn("@huggingface/transformers");
       env.cacheDir = CACHE_DIR;
       env.allowRemoteModels = true;
       embedder = await pipeline("feature-extraction", EMBEDDING_MODEL, { device: "cpu", dtype: "fp32" });
@@ -81,7 +83,8 @@ export async function loadGenerationModel(): Promise<void> {
   llmLoading = (async () => {
     try {
       console.log("[LocalAI] Loading generation model:", LLM_MODEL, "(first run downloads ~300 MB)");
-      const { pipeline, env } = await import("@huggingface/transformers" as any);
+      const _dyn = new Function("m", "return import(m)");
+      const { pipeline, env } = await _dyn("@huggingface/transformers");
       env.cacheDir = CACHE_DIR;
       env.allowRemoteModels = true;
       generator = await pipeline("text-generation", LLM_MODEL, {
