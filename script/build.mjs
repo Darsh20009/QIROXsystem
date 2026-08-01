@@ -14,7 +14,8 @@ const ALWAYS_EXTERNAL = [
   "fsevents",
   "@aws-sdk/client-s3",
   "onnxruntime-node",
-  "passkit-generator",  // ESM-only package — must stay external in CJS bundle
+  "passkit-generator",          // ESM-only — must stay external in CJS bundle
+  "@whiskeysockets/baileys",    // ESM-only — WhatsApp client
 ];
 
 async function buildAll() {
