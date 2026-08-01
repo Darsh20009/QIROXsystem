@@ -524,10 +524,18 @@ export async function registerRoutes(
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();
-      if (ext === ".weba") res.setHeader("Content-Type", "audio/webm");
-      else if (ext === ".oga") res.setHeader("Content-Type", "audio/ogg");
-      else if (ext === ".m4a") res.setHeader("Content-Type", "audio/mp4");
-      else if (ext === ".opus") res.setHeader("Content-Type", "audio/ogg; codecs=opus");
+      // Audio MIME types — critical: .webm defaults to video/webm in most mime dbs
+      // which causes browsers to refuse <audio> playback
+      if      (ext === ".webm")  res.setHeader("Content-Type", "audio/webm; codecs=opus");
+      else if (ext === ".ogg")   res.setHeader("Content-Type", "audio/ogg; codecs=opus");
+      else if (ext === ".weba")  res.setHeader("Content-Type", "audio/webm");
+      else if (ext === ".oga")   res.setHeader("Content-Type", "audio/ogg");
+      else if (ext === ".m4a")   res.setHeader("Content-Type", "audio/mp4");
+      else if (ext === ".opus")  res.setHeader("Content-Type", "audio/ogg; codecs=opus");
+      else if (ext === ".aac")   res.setHeader("Content-Type", "audio/aac");
+      else if (ext === ".mp3")   res.setHeader("Content-Type", "audio/mpeg");
+      // Cache uploaded user content for 7 days (immutable filenames via hex+ext)
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
     },
   }));
 
@@ -6473,7 +6481,7 @@ export async function registerRoutes(
       recipients,
       `💬 ${groupName}: ${senderName}`,
       msgPreview,
-      { type: "message", link: "/groups", icon: "💬", tag: `group-${req.params.id}` }
+      { type: "message", link: `/groups/${req.params.id}`, icon: "💬", tag: `group-${req.params.id}` }
     ).catch(() => {});
     res.status(201).json(populated);
   });

@@ -38,3 +38,4 @@ attached_assets/._*
 ._*
 .whatsapp-auth/
 dist/index.cjs
+attached_assets/

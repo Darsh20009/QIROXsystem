@@ -23,26 +23,102 @@ import { useI18n } from "@/lib/i18n";
 function GroupVoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [prog, setProg] = useState(0);
+  const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
-  const btnCls = isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 hover:bg-black/20 text-black dark:text-white dark:bg-white/10 dark:hover:bg-white/20";
-  const trackCls = isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10";
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  const btnCls  = isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 hover:bg-black/20 text-black dark:text-white dark:bg-white/10 dark:hover:bg-white/20";
+  const trackCls= isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10";
   const fillCls = isMe ? "bg-white/70" : "bg-black/50 dark:bg-white/50";
-  const textCls = isMe ? "text-white/50" : "text-black/40 dark:text-white/40";
+  const textCls = isMe ? "text-white/60" : "text-black/40 dark:text-white/40";
+
+  // Cleanup on unmount
   useEffect(() => () => { if (ref.current) { ref.current.pause(); ref.current.src = ""; } }, []);
+
+  const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  const toggle = async () => {
+    if (!ref.current || errMsg) return;
+    if (playing) {
+      ref.current.pause();
+      setPlaying(false);
+    } else {
+      setLoading(true);
+      try {
+        await ref.current.play();
+        setPlaying(true);
+      } catch (e: any) {
+        // Safari: webm not supported — suggest downloading
+        setErrMsg("تنسيق الصوت غير مدعوم في هذا المتصفح");
+        setPlaying(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current || dur === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    ref.current.currentTime = ratio * dur;
+  };
+
   return (
-    <div className="flex items-center gap-2 min-w-[150px]">
-      <audio ref={ref} src={url}
-        onTimeUpdate={() => { if (ref.current) setProg((ref.current.currentTime / ref.current.duration) * 100 || 0); }}
+    <div className="flex items-center gap-2.5 min-w-[180px]">
+      <audio
+        ref={ref}
+        src={url}
+        preload="metadata"
+        onCanPlay={() => setLoading(false)}
+        onWaiting={() => setLoading(true)}
+        onTimeUpdate={() => {
+          if (!ref.current) return;
+          setCur(ref.current.currentTime);
+          setProg((ref.current.currentTime / ref.current.duration) * 100 || 0);
+        }}
         onLoadedMetadata={() => { if (ref.current) setDur(ref.current.duration); }}
-        onEnded={() => { setPlaying(false); setProg(0); }} />
-      <button onClick={() => { if (!ref.current) return; if (playing) { ref.current.pause(); setPlaying(false); } else { ref.current.play(); setPlaying(true); } }}
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls}`}>
-        {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+        onEnded={() => { setPlaying(false); setProg(0); setCur(0); }}
+        onError={() => { setErrMsg("تعذّر تحميل الصوت"); setPlaying(false); setLoading(false); }}
+      />
+
+      {/* Play / Pause button */}
+      <button
+        onClick={toggle}
+        disabled={!!errMsg}
+        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls} ${errMsg ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
+        {loading
+          ? <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          : playing
+          ? <Pause className="w-3.5 h-3.5" />
+          : <Play  className="w-3.5 h-3.5 ml-0.5" />}
       </button>
-      <div className="flex-1">
-        <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}><div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${prog}%` }} /></div>
-        <span className={`text-[9px] mt-0.5 block ${textCls}`}>{dur > 0 ? `${Math.floor(dur)}s` : "🎙️"}</span>
+
+      <div className="flex-1 min-w-0">
+        {errMsg ? (
+          <p className={`text-[10px] ${textCls}`}>{errMsg}</p>
+        ) : (
+          <>
+            {/* Seekable progress bar */}
+            <div
+              className={`h-1.5 ${trackCls} rounded-full overflow-hidden cursor-pointer`}
+              onClick={seek}
+            >
+              <div
+                className={`h-full ${fillCls} rounded-full transition-[width] duration-100`}
+                style={{ width: `${prog}%` }}
+              />
+            </div>
+            {/* Time */}
+            <div className={`flex justify-between text-[9px] mt-0.5 ${textCls}`}>
+              <span>{dur > 0 ? fmtSec(cur) : "🎙️"}</span>
+              {dur > 0 && <span>{fmtSec(dur)}</span>}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -413,7 +489,15 @@ export default function GroupChat() {
                         <div className={`relative rounded-2xl text-sm leading-relaxed overflow-hidden ${isMe ? "bg-black dark:bg-white text-white dark:text-black rounded-tl-sm" : "bg-black/[0.05] dark:bg-white/[0.05] text-black dark:text-white rounded-tr-sm"}`}>
                           {m.attachmentType === "image" && m.attachmentUrl && (
                             <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={m.attachmentUrl} alt={m.attachmentName || "image"} className="max-w-[240px] max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
+                              <img
+                                src={m.attachmentUrl}
+                                alt={m.attachmentName || "image"}
+                                loading="lazy"
+                                decoding="async"
+                                className="max-w-[240px] max-h-[200px] object-cover hover:opacity-90 transition-opacity duration-200"
+                                style={{ display: "block" }}
+                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                              />
                             </a>
                           )}
                           {m.attachmentType === "voice" && m.attachmentUrl && (
