@@ -10,15 +10,15 @@ import type { Partner } from "@shared/schema";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
 
-import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
-import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
-import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
-import tuwaiqLogo from "@assets/Screenshot_2026-02-20_030415_1771717262310.png";
-import blackRoseLogo from "@assets/Screenshot_2026-01-28_010045_1771717287296.png";
-import qodratakLogo from "@assets/Screenshot_2026-01-28_125929_1771717287296.png";
-import subwayLogo from "@assets/Screenshot_2026-01-28_130014_1771717301779.png";
-import maestroLogo from "@assets/Screenshot_2026-01-28_130058_1771717301779.png";
-import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
+const qahwaCupLogo = "";
+const genMZLogo = "";
+const beFluentLogo = "";
+const tuwaiqLogo = "";
+const blackRoseLogo = "";
+const qodratakLogo = "";
+const subwayLogo = "";
+const maestroLogo = "";
+const instapayLogo = "";
 
 const staticPartners = [
   { name: "QahwaCup",        nameAr: "قهوة كوب",        logo: qahwaCupLogo,   sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },

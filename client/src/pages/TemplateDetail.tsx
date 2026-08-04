@@ -25,33 +25,33 @@ import { CAFE_SECTIONS } from "./cafe-pages-data";
 import type { CafePageEntry } from "./cafe-pages-data";
 import { ECOMMERCE_SECTIONS, ECOMMERCE_PORTALS } from "./ecommerce-pages-data";
 
-import sc01 from "@assets/Screenshot_2026-03-22_083144_1774164974564.png";
-import sc02 from "@assets/Screenshot_2026-03-22_102704_1774164974568.png";
-import sc03 from "@assets/Screenshot_2026-03-22_102916_1774164974569.png";
-import sc04 from "@assets/Screenshot_2026-03-22_103058_1774164974569.png";
-import sc05 from "@assets/Screenshot_2026-03-22_103114_1774164974570.png";
-import sc06 from "@assets/Screenshot_2026-03-22_103122_1774164974570.png";
-import sc07 from "@assets/Screenshot_2026-03-22_103213_1774164974570.png";
-import sc08 from "@assets/Screenshot_2026-03-22_103228_1774164974571.png";
-import sc09 from "@assets/Screenshot_2026-03-22_103237_1774164974571.png";
-import sc10 from "@assets/Screenshot_2026-03-22_103245_1774164974572.png";
-import sc11 from "@assets/Screenshot_2026-03-22_103254_1774164974572.png";
-import sc12 from "@assets/Screenshot_2026-03-22_103343_1774164974572.png";
-import sc13 from "@assets/Screenshot_2026-03-22_103353_1774164974572.png";
-import sc14 from "@assets/Screenshot_2026-03-22_103406_1774164974573.png";
-import sc15 from "@assets/Screenshot_2026-03-22_103419_1774164988228.png";
-import sc16 from "@assets/Screenshot_2026-03-22_103429_1774164988237.png";
-import sc17 from "@assets/Screenshot_2026-03-22_103443_1774164988237.png";
-import cafeHeroBg from "@assets/Screenshot_2026-03-13_022223_1774351431935.png";
+const sc01 = "";
+const sc02 = "";
+const sc03 = "";
+const sc04 = "";
+const sc05 = "";
+const sc06 = "";
+const sc07 = "";
+const sc08 = "";
+const sc09 = "";
+const sc10 = "";
+const sc11 = "";
+const sc12 = "";
+const sc13 = "";
+const sc14 = "";
+const sc15 = "";
+const sc16 = "";
+const sc17 = "";
+const cafeHeroBg = "";
 
 const CAFE_SCREENSHOTS = [sc01,sc02,sc03,sc04,sc05,sc06,sc07,sc08,sc09,sc10,sc11,sc12,sc13,sc14,sc15,sc16,sc17];
 
-import ec01 from "@assets/Screenshot_2026-03-24_135039_1774349708184.png";
-import ec02 from "@assets/Screenshot_2026-03-24_135057_1774349708189.png";
-import ec03 from "@assets/Screenshot_2026-03-24_135129_1774349716335.png";
-import ec04 from "@assets/Screenshot_2026-03-24_135202_1774349716341.png";
-import ec05 from "@assets/Screenshot_2026-03-24_135234_1774349716341.png";
-import ec06 from "@assets/Screenshot_2026-03-24_135305_1774349716342.png";
+const ec01 = "";
+const ec02 = "";
+const ec03 = "";
+const ec04 = "";
+const ec05 = "";
+const ec06 = "";
 
 const ECOMMERCE_SCREENSHOTS = [ec01,ec02,ec03,ec04,ec05,ec06];
 

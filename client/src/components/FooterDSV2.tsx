@@ -206,15 +206,15 @@ export default function FooterDSV2() {
                 {L ? "شركة سعودية الأصل" : "Saudi-founded company"}
               </p>
               <div className="flex items-center gap-4">
-                <span className="text-[11px] tracking-[3px] uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1">🏙️ {L ? "الرياض" : "Riyadh"}</span>
+                <span className={`text-[11px] ${L ? "tracking-normal" : "tracking-[3px]"} uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1`}>🏙️ {L ? "الرياض" : "Riyadh"}</span>
                 <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
-                <span className="text-[11px] tracking-[3px] uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1">🏙️ {L ? "القاهرة" : "Cairo"}</span>
+                <span className={`text-[11px] ${L ? "tracking-normal" : "tracking-[3px]"} uppercase text-ds-muted-foreground/70 font-medium flex items-center gap-1`}>🏙️ {L ? "القاهرة" : "Cairo"}</span>
               </div>
             </div>
           </div>
 
           <div className="col-span-1 md:col-span-2 md:col-start-7">
-            <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("footer.quickLinks")}</h4>
+            <h4 className={`text-[11px] font-semibold text-ds-foreground uppercase ${L ? "tracking-normal" : "tracking-[3px]"} mb-7`}>{t("footer.quickLinks")}</h4>
             <ul className="space-y-4">
               {[
                 { href: "/systems",  label: t("nav.portfolio") },
@@ -234,7 +234,7 @@ export default function FooterDSV2() {
           </div>
 
           <div className="col-span-1 md:col-span-2">
-            <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("nav.contact")}</h4>
+            <h4 className={`text-[11px] font-semibold text-ds-foreground uppercase ${L ? "tracking-normal" : "tracking-[3px]"} mb-7`}>{t("nav.contact")}</h4>
             <ul className="space-y-4">
               {[
                 { href: "/contact", label: t("nav.contact") },
@@ -254,7 +254,7 @@ export default function FooterDSV2() {
           </div>
 
           <div className="col-span-1 md:col-span-2">
-            <h4 className="text-[11px] font-semibold text-ds-foreground uppercase tracking-[3px] mb-7">{t("footer.legal")}</h4>
+            <h4 className={`text-[11px] font-semibold text-ds-foreground uppercase ${L ? "tracking-normal" : "tracking-[3px]"} mb-7`}>{t("footer.legal")}</h4>
             <ul className="space-y-4">
               {[
                 { href: "/privacy", label: t("footer.privacy") },
@@ -279,7 +279,7 @@ export default function FooterDSV2() {
               <Globe className="w-3.5 h-3.5 text-ds-muted-foreground" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="text-[11px] tracking-[2px] uppercase text-ds-muted-foreground font-bold">
+              <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-ds-muted-foreground font-bold`}>
                 {L ? "الدول المدعومة" : "Supported Countries"}
               </p>
               <p className="text-[10px] text-ds-muted-foreground/60 mt-0.5">
@@ -295,7 +295,7 @@ export default function FooterDSV2() {
           <>
             <div className="h-px bg-ds-border-hairline mb-8" />
             <div className="flex flex-row items-center justify-between gap-4 mb-8">
-              <p className="text-[11px] tracking-[2px] uppercase text-ds-muted-foreground font-medium flex-shrink-0">
+              <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-ds-muted-foreground font-medium flex-shrink-0`}>
                 {L ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -357,7 +357,7 @@ export default function FooterDSV2() {
           <>
             <div className="h-px bg-ds-border-hairline mb-8" />
             <div className="flex flex-row items-center justify-between gap-4 mb-8">
-              <p className="text-[11px] tracking-[2px] uppercase text-ds-muted-foreground font-medium flex-shrink-0">
+              <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-ds-muted-foreground font-medium flex-shrink-0`}>
                 {L ? "تابعنا" : "Follow Us"}
               </p>
               <div className="flex flex-wrap gap-2">

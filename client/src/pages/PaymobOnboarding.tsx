@@ -16,7 +16,7 @@ import {
   AlertCircle, ExternalLink, Info, Percent, Star, ArrowLeft,
   Zap, Check
 } from "lucide-react";
-import paymobLogo from "@assets/download_1774503289938.png";
+const paymobLogo = "";
 const qiroxLogo = "/qirox-icon-nobg.png";
 
 const STEPS = [

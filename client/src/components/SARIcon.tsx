@@ -1,5 +1,3 @@
-import sarImg from "@assets/Screenshot_2026-06-21_at_9.07.09_PM_1782594492809.png";
-
 interface SARIconProps {
   className?: string;
   size?: number;
@@ -7,12 +5,24 @@ interface SARIconProps {
 
 export default function SARIcon({ className = "", size = 14 }: SARIconProps) {
   return (
-    <img
-      src={sarImg}
-      alt="ريال سعودي"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
       aria-label="ريال سعودي"
-      className={`inline-block flex-shrink-0 dark:invert ${className}`}
-      style={{ width: size, height: size, verticalAlign: "middle", objectFit: "contain" }}
-    />
+      className={`inline-block flex-shrink-0 fill-current ${className}`}
+      style={{ width: size, height: size, verticalAlign: "middle" }}
+    >
+      {/* Saudi Riyal symbol — simplified geometric mark */}
+      <text
+        x="12"
+        y="17"
+        textAnchor="middle"
+        fontSize="13"
+        fontFamily="Arial, sans-serif"
+        fontWeight="bold"
+      >
+        ﷼
+      </text>
+    </svg>
   );
 }
