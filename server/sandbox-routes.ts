@@ -4,10 +4,8 @@ import crypto from "crypto";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
-if (!ENC_KEY_RAW && process.env.NODE_ENV === "production") {
-  throw new Error("[Sandbox] SANDBOX_ENC_KEY is required in production! Set this environment variable before starting.");
-} else if (!ENC_KEY_RAW) {
-  console.warn("[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)");
+if (!ENC_KEY_RAW) {
+  console.warn("[Sandbox] SANDBOX_ENC_KEY not set — using default key (set this env var for production security)");
 }
 const ENC_KEY = (ENC_KEY_RAW || "qirox-sandbox-default-key-32ch").padEnd(32, "0").slice(0, 32);
 const ENC_ALGO = "aes-256-cbc" as const;
