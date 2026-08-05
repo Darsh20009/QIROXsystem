@@ -190,7 +190,7 @@ export default function FooterDSV2() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-[var(--ds-z-base)]">
 
         {/* ── Top grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-10 md:gap-x-12 md:gap-y-0 mb-16 md:mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-14 md:gap-x-12 md:gap-y-0 mb-20 md:mb-24">
           <div className="col-span-1 md:col-span-5">
             <div className="mb-6">
               <Link href="/" className="hover:opacity-80 transition-opacity inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus-ring rounded-ds-sm">
@@ -272,8 +272,8 @@ export default function FooterDSV2() {
         </div>
 
         {/* ── Supported Countries ── */}
-        <div className="h-px bg-ds-border-hairline mb-8" />
-        <div className="mb-8">
+        <div className="h-px bg-ds-border-hairline mb-12" />
+        <div className="mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-7 h-7 rounded-ds-xl bg-ds-surface-1 flex items-center justify-center flex-shrink-0">
               <Globe className="w-3.5 h-3.5 text-ds-muted-foreground" strokeWidth={1.75} />
@@ -293,7 +293,7 @@ export default function FooterDSV2() {
         {/* ── App Download Strip ── */}
         {STORES.length > 0 && (
           <>
-            <div className="h-px bg-ds-border-hairline mb-8" />
+            <div className="h-px bg-ds-border-hairline mb-12" />
             <div className="flex flex-row items-center justify-between gap-4 mb-8">
               <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-ds-muted-foreground font-medium flex-shrink-0`}>
                 {L ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
@@ -329,8 +329,8 @@ export default function FooterDSV2() {
         )}
 
         {/* ── WhatsApp Channel ── */}
-        <div className="h-px bg-ds-border-hairline mb-8" />
-        <div className="mb-8">
+        <div className="h-px bg-ds-border-hairline mb-12" />
+        <div className="mb-12">
           <a href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i" target="_blank" rel="noopener noreferrer" data-testid="footer-whatsapp-channel"
             className="group flex flex-row items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-ds-2xl px-6 py-5 transition-all duration-ds-base shadow-ds-sm hover:shadow-ds-md hover:shadow-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]">
             <div className="flex items-center gap-4">
@@ -355,7 +355,7 @@ export default function FooterDSV2() {
         {/* ── Social Links ── */}
         {SOCIAL_LINKS.length > 0 && (
           <>
-            <div className="h-px bg-ds-border-hairline mb-8" />
+            <div className="h-px bg-ds-border-hairline mb-12" />
             <div className="flex flex-row items-center justify-between gap-4 mb-8">
               <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-ds-muted-foreground font-medium flex-shrink-0`}>
                 {L ? "تابعنا" : "Follow Us"}
@@ -373,7 +373,7 @@ export default function FooterDSV2() {
         )}
 
         {/* ── Copyright ── */}
-        <div className="h-px bg-ds-border-hairline mb-8" />
+        <div className="h-px bg-ds-border-hairline mb-12" />
         <div className="flex flex-row justify-between items-center gap-4">
           <p className="text-ds-muted-foreground text-ds-xs font-medium">
             © {new Date().getFullYear()} QIROX Systems Factory. {t("footer.rights")}.

@@ -926,8 +926,8 @@ export default function EmployeeProfile() {
                 </Button>
               </div>
 
-              {/* Apple Wallet — iOS only */}
-              {isIOS && (
+              {/* Apple Wallet — all devices */}
+              {(
                 <a
                   href={`/api/employee/apple-wallet-pass?token=${qrData?.token || ""}`}
                   download="qirox-employee.pkpass"

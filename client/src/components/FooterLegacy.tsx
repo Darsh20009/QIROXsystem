@@ -190,7 +190,7 @@ export default function FooterLegacy() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
 
         {/* ── Top grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-x-12 gap-y-14 mb-24">
           <div className="md:col-span-5">
             <div className="mb-6">
               <Link href="/" className="hover:opacity-80 transition-opacity inline-block">
@@ -272,8 +272,8 @@ export default function FooterLegacy() {
         </div>
 
         {/* ── Supported Countries ── */}
-        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
-        <div className="mb-8">
+        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-12" />
+        <div className="mb-12">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-7 h-7 rounded-xl bg-black/[0.05] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
               <Globe className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
@@ -293,7 +293,7 @@ export default function FooterLegacy() {
         {/* ── App Download Strip ── */}
         {STORES.length > 0 && (
           <>
-            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-12" />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
               <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-black/25 dark:text-white/25 font-medium flex-shrink-0`}>
                 {L ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
@@ -329,8 +329,8 @@ export default function FooterLegacy() {
         )}
 
         {/* ── WhatsApp Channel ── */}
-        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
-        <div className="mb-8">
+        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-12" />
+        <div className="mb-12">
           <a href="https://whatsapp.com/channel/0029VbCzt1a17En1ClfrWt2i" target="_blank" rel="noopener noreferrer" data-testid="footer-whatsapp-channel"
             className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#f0fdf4] dark:bg-[#0d2b1a] border border-[#25D366]/20 hover:border-[#25D366]/50 rounded-2xl px-6 py-5 transition-all duration-300 hover:shadow-lg hover:shadow-[#25D366]/10">
             <div className="flex items-center gap-4">
@@ -355,7 +355,7 @@ export default function FooterLegacy() {
         {/* ── Social Links ── */}
         {SOCIAL_LINKS.length > 0 && (
           <>
-            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-12" />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
               <p className={`text-[11px] ${L ? "tracking-normal" : "tracking-[2px]"} uppercase text-black/25 dark:text-white/25 font-medium flex-shrink-0`}>
                 {L ? "تابعنا" : "Follow Us"}
@@ -373,7 +373,7 @@ export default function FooterLegacy() {
         )}
 
         {/* ── Copyright ── */}
-        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+        <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-12" />
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-black/25 dark:text-white/25 text-xs">
             © {new Date().getFullYear()} QIROX Systems Factory. {t("footer.rights")}.
