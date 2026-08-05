@@ -17,7 +17,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: GIT_LFS_SKIP_SMUDGE
         value: "1"
       - key: SMTP2GO_SENDER
