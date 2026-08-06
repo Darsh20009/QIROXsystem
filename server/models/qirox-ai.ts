@@ -82,7 +82,7 @@ export const QiroxAILogModel = mongoose.model("QiroxAILog", QiroxAILogSchema);
 /* ── Settings ────────────────────────────────────────────────────────────── */
 const QiroxAISettingsSchema = new Schema({
   singleton:         { type: String, default: "main", unique: true },
-  model:             { type: String, default: "gpt-4o" },
+  model:             { type: String, default: "qirox-local-qwen2.5-0.5b" },
   temperature:       { type: Number, default: 0.8 },
   maxTokens:         { type: Number, default: 700 },
   topK:              { type: Number, default: 5 },
@@ -90,7 +90,7 @@ const QiroxAISettingsSchema = new Schema({
   language:          { type: String, default: "ar" },
   ragEnabled:        { type: Boolean, default: true },
   /** Use local ONNX AI instead of external OpenAI-compatible provider */
-  useLocalAI:        { type: Boolean, default: false },
+  useLocalAI:        { type: Boolean, default: true },
   localAIRequests:   { type: Number, default: 0 },
   localAISavedCalls: { type: Number, default: 0 },
 }, { timestamps: true });

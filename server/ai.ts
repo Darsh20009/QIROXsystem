@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
  * QIROX AI — Agentic Intelligence
- * Powered by OpenAI GPT-4o
+ * Local-first agentic intelligence. External providers are opt-in only.
  */
 import type { Express } from "express";
 import OpenAI from "openai";
@@ -26,20 +26,52 @@ const aiLimiter = rateLimit({
 /* ─── AI Provider — OpenAI GPT-4o ─── */
 
 let _openaiClient: OpenAI | null = null;
-let AI_MODEL = "gpt-4o";
-let AI_MODEL_LABEL = "QIROX AI (GPT-4o)";
-let _supportsVision = true;
+const LOCAL_MODEL = "qirox-local-qwen2.5-0.5b";
+let AI_MODEL = LOCAL_MODEL;
+let AI_MODEL_LABEL = "QIROX AI (محلي مجاني)";
+let _supportsVision = false;
+
+function externalAIEnabled() {
+  return process.env.AI_PROVIDER === "external";
+}
+
+async function createLocalCompletion(params: any): Promise<any> {
+  const { localChat } = await import("./lib/local-ai/index");
+  const messages = (params.messages || [])
+    .filter((m: any) => ["system", "user", "assistant"].includes(m.role))
+    .map((m: any) => ({ role: m.role, content: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }));
+  const result = await localChat(messages, { source: "agentic-local" });
+  if (params.stream) {
+    async function* stream() {
+      for (const part of result.reply.split(/(\s+)/)) {
+        if (part) yield { choices: [{ delta: { content: part } }] };
+      }
+    }
+    return stream();
+  }
+  return {
+    choices: [{ message: { role: "assistant", content: result.reply, tool_calls: undefined } }],
+    usage: { total_tokens: result.tokens },
+    model: LOCAL_MODEL,
+  };
+}
 
 function getOpenAIClient(): OpenAI {
   if (!_openaiClient) {
+    if (!externalAIEnabled()) {
+      _openaiClient = {
+        chat: { completions: { create: createLocalCompletion } },
+      } as any;
+      console.log("[AI] Provider: local Qwen2.5 — no daily API quota");
+      return _openaiClient;
+    }
     const openaiKey = process.env.OPENAI_API_KEY;
     const baseURL   = process.env.OPENAI_BASE_URL || undefined;
     if (openaiKey) {
       _openaiClient = new OpenAI({ apiKey: openaiKey, ...(baseURL ? { baseURL } : {}) });
       console.log(`[AI] Provider: ${baseURL || "openai.com"} — vision enabled`);
     } else {
-      _openaiClient = new OpenAI({ apiKey: "placeholder" });
-      console.log("[AI] No OPENAI_API_KEY found — AI features disabled");
+      throw new Error("AI_PROVIDER=external requires OPENAI_API_KEY or a compatible external key");
     }
   }
   return _openaiClient;

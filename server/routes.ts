@@ -8264,8 +8264,6 @@ export async function registerRoutes(
 
   // POST /api/ai/enhance-idea — public AI route for QuickStart wizard
   app.post("/api/ai/enhance-idea", async (req, res) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(503).json({ error: "خدمة الذكاء الاصطناعي غير متاحة حالياً" });
     const { idea, sector, features } = req.body || {};
     if (!idea || String(idea).trim().length < 5) return res.status(400).json({ error: "الفكرة قصيرة جداً" });
     const featuresStr = Array.isArray(features) && features.length ? features.join("، ") : "غير محددة";
@@ -8275,40 +8273,26 @@ export async function registerRoutes(
 اجعل الفكرة أكثر وضوحاً ودقة من الناحية التقنية وتجارية. لا تضف قائمة أو نقاط — فقرة واحدة متماسكة.`;
     const userMessage = `القطاع: ${sectorStr}\nالمميزات المطلوبة: ${featuresStr}\nالفكرة الأصلية: ${idea}`;
     try {
-      const { getOpenAIClient: _oaiEnhance } = await import("./lib/openai-client");
-      const openai = _oaiEnhance();
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        temperature: 0.65,
-        max_tokens: 300,
-      });
-      const enhanced = completion.choices[0]?.message?.content?.trim() || "";
-      res.json({ enhanced });
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat([
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ], { source: "enhance-idea" });
+      res.json({ enhanced: result.reply });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   // POST /api/ai/kimi — legacy route, now powered by OpenAI GPT-4o
   app.post("/api/ai/kimi", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(503).json({ error: "OPENAI_API_KEY غير مُعدَّ" });
     const { messages, systemPrompt } = req.body;
     try {
-      const { getOpenAIClient: _oaiKimi } = await import("./lib/openai-client");
-      const openai = _oaiKimi();
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt || "أنت QIROX AI، مساعد ذكاء اصطناعي متخصص لمنصة Qirox. تساعد الموظفين والمديرين والعملاء. تتحدث بالعربية افتراضياً وتقدم إجابات دقيقة ومفيدة وعملية." },
-          ...(messages || []),
-        ],
-        temperature: 0.7,
-      });
-      res.json({ choices: [{ message: { content: completion.choices[0]?.message?.content || "" } }] });
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat([
+        { role: "system", content: systemPrompt || "أنت QIROX AI، مساعد ذكاء اصطناعي متخصص لمنصة Qirox. تساعد الموظفين والمديرين والعملاء. تتحدث بالعربية افتراضياً وتقدم إجابات دقيقة ومفيدة وعملية." },
+        ...(messages || []),
+      ], { source: "kimi-legacy" });
+      res.json({ choices: [{ message: { content: result.reply } }] });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -9093,7 +9077,12 @@ export async function registerRoutes(
       // When absent we fall back to mkSolidPng() which produces valid PNG files using
       // only Node's built-in zlib — the pass will look plain but will open on iOS.
       let sharpLib: any = null;
-      try { sharpLib = (await import("sharp" as any)).default; } catch { /* no sharp */ }
+      try {
+        const sharpModule: any = await import("sharp" as any);
+        // esbuild and Node expose sharp with different ESM/CJS shapes.
+        sharpLib = sharpModule.default || sharpModule.sharp || sharpModule;
+        if (typeof sharpLib !== "function") sharpLib = null;
+      } catch { /* no sharp — pure PNG fallback remains valid */ }
 
       // ── Pure-JS PNG fallback ───────────────────────────────────────────────
       const mkSolidPng = (w: number, h: number, r = 10, g = 10, b = 22, a = 255): Buffer => {
@@ -9351,10 +9340,16 @@ export async function registerRoutes(
               : {}),
           }
         );
-        pkpassBuffer = pass.getAsBuffer(); // synchronous in v3
+        pkpassBuffer = pass.getAsBuffer(); // synchronous in passkit-generator v3
+        if (!Buffer.isBuffer(pkpassBuffer) || pkpassBuffer.length < 100)
+          throw new Error("Apple Wallet returned an invalid pass buffer");
       } catch (pkErr: any) {
-        console.error("[AppleWallet] passkit-generator error:", pkErr.message);
-        return res.status(500).json({ error: "فشل إنشاء بطاقة Wallet", detail: pkErr.message });
+        const detail = String(pkErr?.message || pkErr || "unknown error");
+        console.error("[AppleWallet] passkit-generator error:", detail, pkErr?.stack || "");
+        return res.status(500).json({
+          error: "فشل إنشاء بطاقة Wallet",
+          detail: detail.includes("function") ? "خطأ في مكتبة إنشاء بطاقة Apple Wallet بعد التجميع" : detail,
+        });
       }
 
       res.setHeader("Content-Type", "application/vnd.apple.pkpass");
@@ -10448,8 +10443,9 @@ export async function registerRoutes(
         ...history.slice(-8).map((h: any) => ({ role: h.role as "user"|"assistant", content: h.content })),
         { role: "user" as const, content: message },
       ];
-      const completion = await openai.chat.completions.create({ model: "gpt-4o", messages: msgs, max_tokens: 400, temperature: 0.7 });
-      res.json({ reply: completion.choices[0]?.message?.content || "..." });
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat(msgs, { source: "price-request-ai-help" });
+      res.json({ reply: result.reply || "..." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -15949,10 +15945,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
     try {
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
-      const { getOpenAIClient: _oaiContract } = await import("./lib/openai-client");
-      const openai = _oaiContract();
-      const contractModel = "gpt-4o";
-
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
 
 نوع المشروع: ${projectType || "تطوير برمجي"}
@@ -15975,13 +15967,9 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
 اجعل العقد رسمياً واحترافياً ومناسباً للبيئة السعودية.`;
 
-      const completion = await openai.chat.completions.create({
-        model: contractModel,
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 1500,
-      });
-      const contractText = completion.choices[0]?.message?.content || "تعذّر توليد العقد";
-      res.json({ contract: contractText });
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat([{ role: "user", content: prompt }], { source: "contract-generation" });
+      res.json({ contract: result.reply || "تعذّر توليد العقد" });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -15997,9 +15985,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (!["create", "improve"].includes(mode)) return res.status(400).json({ error: "وضع المعالجة غير صحيح" });
       if (mode === "improve" && !String(text || "").trim()) return res.status(400).json({ error: "النص مطلوب للتعديل" });
 
-      const { getOpenAIClient: _oaiDoc } = await import("./lib/openai-client");
-      const openai = _oaiDoc();
-      const model = "gpt-4o";
       const safeText = String(text || "").slice(0, 12000);
       const safeInstructions = String(instructions || "").slice(0, 3000);
       const docLabel = documentType === "contract" ? "عقد" : "فاتورة";
@@ -16022,13 +16007,9 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
 
 اكتب الناتج النهائي فقط بدون مقدمة شرح، وبدون Markdown، وبلغة عربية رسمية مفهومة.`;
 
-      const completion = await openai.chat.completions.create({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.35,
-        max_tokens: 2200,
-      });
-      res.json({ text: completion.choices[0]?.message?.content?.trim() || "" });
+      const { localChat } = await import("./lib/local-ai/index");
+      const result = await localChat([{ role: "user", content: prompt }], { source: "document-assistant" });
+      res.json({ text: result.reply?.trim() || "" });
     } catch (err: any) {
       console.error("[AI DOCUMENT ASSISTANT]", err);
       res.status(500).json({ error: err.message || "فشل توليد المستند" });
@@ -17196,7 +17177,8 @@ export async function registerInstallmentRoutes(app: Express) {
 
       try {
         const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
-        const model       = settings.model       || "gpt-4o";
+        const useLocalAI  = process.env.AI_PROVIDER !== "external";
+        const model       = settings.model || "qirox-local-qwen2.5-0.5b";
         const temperature = settings.temperature  ?? 0.8;
         const maxTokens   = settings.maxTokens    || 700;
         const topK        = settings.topK         || 5;
@@ -17220,7 +17202,7 @@ export async function registerInstallmentRoutes(app: Express) {
         send({ ragDocs }); // send metadata before content starts
 
         // ── Local AI path: generate full response, then stream word-by-word ─
-        if (settings.useLocalAI) {
+        if (useLocalAI) {
           try {
             const { localChat } = await import("./lib/local-ai/index");
             const lk = await localChat(messages, {
@@ -17368,7 +17350,7 @@ export async function registerInstallmentRoutes(app: Express) {
         llm: llmStatus,
         // legacy flat fields for backward compat
         ...embStatus,
-        useLocalAI: settings.useLocalAI || false,
+        useLocalAI: process.env.AI_PROVIDER !== "external" || settings.useLocalAI === true,
         localAIRequests: settings.localAIRequests || 0,
         localAISavedCalls: settings.localAISavedCalls || 0,
       });
@@ -17449,10 +17431,11 @@ export async function registerInstallmentRoutes(app: Express) {
           status: "ok",
           version: "1.0.0",
           models: {
-            chat:       settings.useLocalAI ? "qirox-local-qwen2.5-0.5b" : (settings.model || "gpt-4o"),
+            chat:       process.env.AI_PROVIDER !== "external" || settings.useLocalAI
+              ? "qirox-local-qwen2.5-0.5b" : (settings.model || "gpt-4o"),
             embedding:  getModelStatus().ready       ? "all-MiniLM-L6-v2 (384d)" : null,
             generation: getGenerationStatus().ready  ? "Qwen2.5-0.5B-Instruct"   : null,
-            mode:       settings.useLocalAI ? "local" : "external",
+            mode:       process.env.AI_PROVIDER !== "external" || settings.useLocalAI ? "local" : "external",
           },
           rag: { enabled: settings.ragEnabled !== false, documents: docCount, topK: settings.topK || 5 },
           rateLimit: "varies by key — check your key settings",
@@ -17488,7 +17471,7 @@ export async function registerInstallmentRoutes(app: Express) {
           }
           send({ ragDocs });
 
-          if (settings.useLocalAI) {
+          if (useLocalAI) {
             const { localChat } = await import("./lib/local-ai/index");
             const lk = await localChat(messages, {
               keyId: keyDoc._id?.toString(), source: "api-v1-stream", topK, liveContext: liveCtx,

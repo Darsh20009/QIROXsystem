@@ -3,7 +3,7 @@
 //
 // Purpose:
 //   Centralizes AI provider credentials and model selection.
-//   Provider: OpenAI when OPENAI_API_KEY is set, disabled otherwise.
+//   Provider: local by default; external providers are opt-in.
 //
 // Usage:
 //   import { buildAiConfig } from "./config/ai";
@@ -20,7 +20,7 @@ import {
 
 // ── Interface ─────────────────────────────────────────────────────────────────
 
-export type AiProvider = "openai" | "disabled";
+export type AiProvider = "local" | "openai" | "disabled";
 
 export interface OpenAiConfig {
   /** OpenAI API key. Maps to: OPENAI_API_KEY */
@@ -78,15 +78,17 @@ export const AI_DEFAULTS: Readonly<Partial<AiConfig>> = {
     maxTokens:   4096,
     temperature: 0.7,
   },
-  provider: "disabled",
-  enabled:  false,
+  provider: "local",
+  enabled:  true,
 };
 
 // ── Builder ───────────────────────────────────────────────────────────────────
 
 export function buildAiConfig(env: EnvBag = process.env): AiConfig {
   const openaiKey = env.OPENAI_API_KEY ?? "";
-  const provider: AiProvider = openaiKey ? "openai" : "disabled";
+  const provider: AiProvider = env.AI_PROVIDER === "external"
+    ? (openaiKey ? "openai" : "disabled")
+    : "local";
 
   return {
     provider,
@@ -109,7 +111,7 @@ export function buildAiConfig(env: EnvBag = process.env): AiConfig {
 export function validateAiConfig(config: AiConfig): ConfigValidationResult {
   const issues = [];
   if (!config.enabled) {
-    issues.push({ field: "ai.provider", message: "No AI provider configured — AI features will be disabled", severity: "warning" as const });
+    issues.push({ field: "ai.provider", message: "No external provider configured — local AI is active", severity: "info" as const });
   }
   if (config.openai.temperature < 0 || config.openai.temperature > 2) {
     issues.push({ field: "ai.openai.temperature", message: "Temperature must be between 0 and 2", severity: "warning" as const });

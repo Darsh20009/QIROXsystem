@@ -85,7 +85,7 @@ export default function AdminQiroxAI() {
 
   // Settings state
   const [settings, setSettings] = useState<AISettings>({
-    model: "gpt-4o", temperature: 0.8, maxTokens: 700, topK: 5,
+    model: "qirox-local-qwen2.5-0.5b", temperature: 0.8, maxTokens: 700, topK: 5,
     systemPrompt: "", ragEnabled: true,
   });
 
@@ -718,7 +718,7 @@ export default function AdminQiroxAI() {
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "وضع محلي" : "Local mode"}</p>
                   <Switch
-                    checked={settings.useLocalAI || false}
+                  checked={localAI?.useLocalAI ?? settings.useLocalAI ?? true}
                     onCheckedChange={v => setSettings(s => ({ ...s, useLocalAI: v }))}
                   />
                 </div>

@@ -1166,10 +1166,15 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     try {
       const { QiroxAISettingsModel } = await import("./models/qirox-ai");
       const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean();
-      if (settings?.useLocalAI) {
-        const { loadEmbeddingModel } = await import("./lib/local-ai/index");
+      if (process.env.AI_PROVIDER !== "external" || settings?.useLocalAI) {
+        const { loadEmbeddingModel, loadGenerationModel } = await import("./lib/local-ai/index");
         await loadEmbeddingModel();
-        console.log("[LocalAI] Embedding model warmed up on startup ✅");
+        // Generation is loaded independently; a failure here must not stop
+        // the server because the RAG extractor remains available.
+        loadGenerationModel().catch((e: any) =>
+          console.warn("[LocalAI] Generation warmup deferred:", e.message)
+        );
+        console.log("[LocalAI] Local models warmup started ✅");
       }
     } catch (e: any) {
       console.warn("[LocalAI] Startup warmup skipped:", e.message);

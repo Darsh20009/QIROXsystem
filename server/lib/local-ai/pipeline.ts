@@ -8,7 +8,10 @@
  *  4. Log usage — same shape as qiroxChat() for drop-in compatibility
  */
 
-import { embed, cosineSim, getModelStatus, getGenerationStatus, generateLocal } from "./embedding-engine";
+import {
+  embed, cosineSim, getModelStatus, getGenerationStatus,
+  generateLocal, loadGenerationModel,
+} from "./embedding-engine";
 import type { LLMMessage } from "./embedding-engine";
 import { KnowledgeDocModel, QiroxAILogModel } from "../../models/qirox-ai";
 import { tokenize, retrieveTopK } from "../../qirox-ai-engine";
@@ -96,7 +99,12 @@ function rrfFusion(
 async function hybridRetrieve(
   query: string, k = 5,
 ): Promise<{ title: string; content: string; score: number }[]> {
-  const bm25 = await retrieveTopK(query, k * 2);           // over-fetch for re-ranking
+  let bm25: { title: string; content: string; score: number }[] = [];
+  try {
+    bm25 = await retrieveTopK(query, k * 2);                // over-fetch for re-ranking
+  } catch (e: any) {
+    console.warn("[LocalAI] Knowledge retrieval skipped:", e.message);
+  }
 
   const { ready: embReady } = getModelStatus();
   if (!embReady) return bm25.slice(0, k);
@@ -164,18 +172,24 @@ export async function localChat(
   let reply = "";
 
   // ── Try local LLM first ───────────────────────────────────────────────
-  const { ready: llmReady } = getGenerationStatus();
-  if (llmReady) {
-    try {
+  let llmReady = getGenerationStatus().ready;
+  try {
+    // Load on first use as well as during the optional startup warmup. This
+    // keeps local AI self-contained on a fresh deployment.
+    if (!llmReady) await loadGenerationModel();
+    llmReady = getGenerationStatus().ready;
+    if (llmReady) {
       const systemPrompt = buildPrompt(ragContext, liveCtx);
       const llmMessages: LLMMessage[] = [
         { role: "system",    content: systemPrompt },
-        ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ...messages
+          .filter(m => ["system", "user", "assistant"].includes(m.role))
+          .map(m => ({ role: m.role as "user" | "assistant" | "system", content: m.content })),
       ];
       reply = await generateLocal(llmMessages, { maxNewTokens: 600, temperature: 0.7 });
-    } catch (e: any) {
-      console.warn("[LocalAI] LLM generation failed, using fallback:", e.message);
     }
+  } catch (e: any) {
+    console.warn("[LocalAI] LLM generation failed, using fallback:", e.message);
   }
 
   // ── Fallback: smart sentence extraction ───────────────────────────────
@@ -186,16 +200,22 @@ export async function localChat(
   const latencyMs = Date.now() - start;
   const approxTokens = Math.ceil((query.length + reply.length) / 4);
 
-  await QiroxAILogModel.create({
-    keyId:            opts.keyId || "local",
-    model:            llmReady ? "qirox-local-qwen2.5-0.5b" : "qirox-local-rag",
-    promptTokens:     Math.ceil(query.length / 4),
-    completionTokens: Math.ceil(reply.length / 4),
-    totalTokens:      approxTokens,
-    latencyMs,
-    source:           opts.source || "local",
-    success:          true,
-  });
+  // Logging is best-effort. Local AI must remain usable when MongoDB is
+  // temporarily unavailable; the response itself is not database-dependent.
+  try {
+    await QiroxAILogModel.create({
+      keyId:            opts.keyId || "local",
+      model:            llmReady ? "qirox-local-qwen2.5-0.5b" : "qirox-local-rag",
+      promptTokens:     Math.ceil(query.length / 4),
+      completionTokens: Math.ceil(reply.length / 4),
+      totalTokens:      approxTokens,
+      latencyMs,
+      source:           opts.source || "local",
+      success:          true,
+    });
+  } catch (e: any) {
+    console.warn("[LocalAI] Usage log skipped:", e.message);
+  }
 
   return { reply, tokens: approxTokens, ragDocs: docs.length, local: true };
 }

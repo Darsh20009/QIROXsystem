@@ -8,7 +8,7 @@
  */
 
 import crypto from "crypto";
-import { getOpenAIClient } from "./lib/openai-client";
+import { getExternalAIModel, getOpenAIClient, hasExternalAI } from "./lib/openai-client";
 import {
   KnowledgeDocModel,
   QiroxAIKeyModel,
@@ -207,8 +207,13 @@ export async function qiroxChat(
   opts: { keyId?: string; source?: string; useRag?: boolean } = {},
 ): Promise<{ reply: string; tokens: number; ragDocs: number }> {
   const start = Date.now();
-  const settings = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
-  const model        = (settings as any).model       || "gpt-4o";
+  let settings: any = {};
+  try {
+    settings = await QiroxAISettingsModel.findOne({ singleton: "main" }) || {};
+  } catch (e: any) {
+    console.warn("[QiroxAI] Settings unavailable; using local defaults:", e.message);
+  }
+  const model        = (settings as any).model       || getExternalAIModel();
   const temperature  = (settings as any).temperature ?? 0.8;
   const maxTokens    = (settings as any).maxTokens   || 700;
   const topK         = (settings as any).topK        || 5;
@@ -239,7 +244,12 @@ export async function qiroxChat(
   };
 
   // ── Local AI mode (no external API calls) ──────────────────────────────
-  const useLocalAI = (settings as any).useLocalAI === true;
+  // Local AI is the default: it is free, has no provider quota, and does not
+  // expose a paid API key. External AI is only an explicit fallback.
+  // Local is the product default. A persisted legacy `useLocalAI: false`
+  // must not silently switch the platform back to a paid provider.
+  const useLocalAI = process.env.AI_PROVIDER !== "external"
+    || (settings as any).useLocalAI === true;
   if (useLocalAI) {
     try {
       const { localChat } = await import("./lib/local-ai/index");
@@ -250,11 +260,15 @@ export async function qiroxChat(
         liveContext,
       });
       // Track savings
-      await QiroxAISettingsModel.findOneAndUpdate(
-        { singleton: "main" },
-        { $inc: { localAIRequests: 1, localAISavedCalls: 1 } },
-        { upsert: true },
-      );
+      try {
+        await QiroxAISettingsModel.findOneAndUpdate(
+          { singleton: "main" },
+          { $inc: { localAIRequests: 1, localAISavedCalls: 1 } },
+          { upsert: true },
+        );
+      } catch (e: any) {
+        console.warn("[QiroxAI] Usage counters skipped:", e.message);
+      }
       // Count key usage (local path was previously not counted)
       if (opts.keyId && opts.keyId !== "internal" && opts.keyId !== "local") {
         await QiroxAIKeyModel.findByIdAndUpdate(opts.keyId, {
@@ -264,8 +278,15 @@ export async function qiroxChat(
       }
       return { reply: result.reply, tokens: result.tokens, ragDocs: result.ragDocs };
     } catch (localErr: any) {
-      console.warn("[LocalAI] Falling back to external AI:", localErr.message);
-      // Fall through to external API
+      console.warn("[LocalAI] Local generation unavailable:", localErr.message);
+      if (!hasExternalAI()) {
+        return {
+          reply: "محرك الذكاء الاصطناعي المحلي غير جاهز حالياً. افتح لوحة QIROX AI واضغط تحميل نموذج التوليد، أو أعد المحاولة بعد قليل.",
+          tokens: 0,
+          ragDocs,
+        };
+      }
+      console.warn("[LocalAI] Falling back to configured external provider");
     }
   }
 
@@ -321,7 +342,9 @@ export async function validateApiKey(rawKey: string): Promise<IQiroxAIKeyDoc | n
     doc.usedDayReset = now;
     await doc.save();
   }
-  if (doc.usedToday >= doc.rateLimitPerDay) return null;
+  // Local inference has no provider quota or daily limit. The HTTP/IP
+  // limiter still protects the server from abusive bursts.
+  if (process.env.AI_PROVIDER === "external" && doc.usedToday >= doc.rateLimitPerDay) return null;
   return doc;
 }
 type IQiroxAIKeyDoc = Awaited<ReturnType<typeof QiroxAIKeyModel.findOne>> & { usedToday: number; rateLimitPerDay: number; usedDayReset: Date };
