@@ -1,0 +1,38 @@
+- [Zero Downtime Policy](zero-downtime-policy.md) — CTO directive: additive-only changes, no breaking DB/API/UI modifications, Feature Flags for all major features, expected downtime always ZERO.
+- [Apple Wallet Render fix](apple-wallet-render-fix.md) — "ve is not a function" crash: sharp was missing from ALWAYS_EXTERNAL in script/build.mjs; native addons must always be external.
+- [Google OAuth callback](google-oauth-callback.md) — GOOGLE_CALLBACK_URL env var takes priority; set to qiroxstudio.online so Replit dev + prod both use the same registered URL.
+- [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
+- [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
+- [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.
+- [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.
+- [QIROX Studio AI](qirox-studio-ai.md) — Smart provider: OPENAI_API_KEY→GPT-4o (vision on, no Chinese), MOONSHOT_API_KEY→Kimi (vision off). Video gen via /api/ai/video-proxy. Images use Arabic→English translation + flux+enhance. Anti-Chinese rule in ALL system prompts.
+- [Vite public directory](vite-public-dir.md) — Static files must be in client/public/ NOT root public/; Vite root is client/ so publicDir is client/public/.
+- [react-icons v5 breaking change](react-icons-v5.md) — SiLinkedin removed in v5; replace with lucide-react Linkedin. Also add react-icons to optimizeDeps.exclude in vite.config.ts to avoid pre-bundle named-export failures.
+- [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.
+- [Vite SIGBUS crash](vite-sigbus-crash.md) — serve pre-built dist/public instead of launching Vite (SIGBUS crash in this env).
+- [esbuild ALWAYS_EXTERNAL](esbuild-always-external.md) — ESM-only packages need ALWAYS_EXTERNAL + new Function('m','return import(m)') trick; passkit/baileys/transformers all fixed.
+- [dist/index.cjs git exclusion](dist-index-cjs-gitignore.md) — dist/index.cjs excluded from git (.gitignore) — bundled server bakes in env secrets which GitHub push protection blocks.
+- [attached_assets git exclusion](attached-assets-gitignore.md) — attached_assets/ excluded from git — Replit stores uploaded files there (screenshots, env var dumps with secrets) which trigger GitHub push protection.
+- [Group chat audio/image fixes](group-chat-media.md) — .webm MIME was video/webm (wrong), fixed to audio/webm; uploads get Cache-Control 7d; notification link → /groups/:id; GroupVoicePlayer has async play() + error handling.
+- [QMeet LiveKit SFU](qmeet-livekit-sfu.md) — P2P mesh → LiveKit SFU for 100+ participants; hybrid: LiveKit for media, WS for chat/reactions/polls; JWT built with Node.js crypto (no SDK); 3 env vars activate it.
+- [QIROX environment setup](qirox-env-setup.md) — fresh import needs npm install (root + mockup-sandbox) + MONGODB_URI; client changes need a vite build + restart since dev serves prebuilt dist; full tsc OOMs regardless of your changes.
+- [Customer Journey V2](customer-journey-v2.md) — V2 feature flags, API endpoints, and frontend wiring are all live. Flags persist via env vars; admin override endpoint exists at /api/admin/feature-flags/override.
+- [Live data shape drift](live-data-shape-drift.md) — /api/services runtime shape doesn't match its shared/schema.ts TS type; always curl live endpoints before trusting a schema.ts type for Mongo-backed routes.
+- [Design System V2 pilot](design-system-v2-pilot.md) — Landing Page rebuilt behind FEATURE_LANDING_DS_V2 in client/src/features/landing-ds-v2/; real content only, Team/Partners sections intentionally omitted pending real assets.
+- [Sector Pages](sector-pages.md) — 6 sector pages at /sector/:slug; home Systems section is horizontal scroll portrait cards linking there; sitemap + SEO included.
+- [Employee Profile Features](employee-profile-features.md) — Password change, Apple Wallet (.pkpass needs 3 Apple cert env vars), QR login card, 2FA link, log-revision-for-client endpoint + AdminModRequests UI.
+- [WhatsApp CRM](whatsapp-crm.md) — @whiskeysockets/baileys (free, no Chrome); SSE for QR+events; AI auto-reply with dialect matching; admin commands; /admin/whatsapp page.
+- [QIROX AI Hub](qirox-ai-hub.md) — BM25 RAG (pure math, no deps); KnowledgeDoc+QiroxAIKey+QiroxAILog+QiroxAISettings models; /admin/qirox-ai page; public /api/qirox-ai/chat endpoint (Bearer token).
+- [OpenAI base URL](openai-base-url.md) — All AI calls route through server/lib/openai-client.ts singleton; set OPENAI_BASE_URL env to redirect to BazaarLink or any OpenAI-compatible provider.
+- [PDF Print Fix](pdf-print-fix.md) — PDF download uses browser window.print() (not server pdf-lib) — fixes reversed Arabic text; ContractPrint.tsx at /admin/contract-print/:id.
+- [Apple Wallet certs](apple-wallet-certs.md) — Certs stored in server/certs/ (apple-pass-cert.pem, apple-pass-key.pem, apple-wwdr.pem); route reads files as fallback when env vars absent. passTypeId=pass.com.qirox.employee teamId=V4K6RM59LS.
+- [iOS OAuth in-app browser](ios-oauth-browser.md) — On Capacitor native, Google/Apple/GitHub OAuth uses Browser.open() (SFSafariViewController) not window.location. appUrlOpen listener handles callback; browserFinished is the fallback.
+- [QMeet zombie PC fix](qmeet-zombie-pc.md) — null ALL handlers (ontrack/onicecandidate/etc.) BEFORE close(), then guard every async handler with isCurrent() check to prevent stale state updates.
+- [Group Chat attachments](group-chat-attachments.md) — GroupChat supports image/voice/file attachments; server route already accepts them; GroupVoicePlayer component inline in GroupChat.tsx.
+- [Push banner persistence](push-banner-persistence.md) — PushPermissionBanner uses localStorage (not sessionStorage) with 7-day TTL so it re-shows after a week if user dismissed without subscribing.
+- [Finance Adjustments & Payroll Fix](finance-adjustments.md) — Payroll was missing from profit calc; FinanceAdjustmentModel added for manual bank-style control.
+- [Nav Items Coverage](nav-items-coverage.md) — ALL_NAV in EmployeeLayout.tsx now has ~70 entries; both ALL_NAV + ROLE_ITEMS must be updated when adding new pages.
+- [Client Stores admin](client-stores.md) — AdminClientStores.tsx at /admin/client-stores; 8 templates; ClientStoreModel in ecommerce.ts; server routes at /api/admin/client-stores (CRUD + publish + suspend).
+- [Apple Wallet certs deployed](apple-wallet-certs.md) — PEM files copied to server/certs/ AND set as env vars APPLE_PASS_CERT/APPLE_PASS_KEY/APPLE_WWDR_CERT; .gitignore has *.pem rule.
+- [QIROX Stores routing](stores-routing.md) — /s/:slug is public route (added to isPublicRoute check with startsWith); /my-store is auth-required; publicRoutes array uses exact match + startsWith for /templates/ /s/ /sector/.
+- [Vercel split deployment](vercel-split-deployment.md) — Vercel static hosting needs a separately deployed persistent API for sessions, MongoDB, WebSockets, and WhatsApp.

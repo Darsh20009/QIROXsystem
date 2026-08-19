@@ -1,0 +1,366 @@
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShieldCheck, Loader2, RefreshCw, CheckCircle2, AlertCircle, Sparkles, Star, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+const qiroxLogoPath = "/qirox-icon-nobg.png";
+import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+
+export default function VerifyEmail() {
+  const { dir, lang } = useI18n();
+  const [, setLocation] = useLocation();
+  const { data: user, isLoading } = useUser();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const L = lang === "ar";
+
+  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
+  const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
+  const justVerifiedRef = useRef(false);
+
+  const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
+
+  function getNextStep(u: any) {
+    if (!isRegisterFlow) return "/dashboard";
+    return u?.phoneVerified ? "/onboarding" : "/phone-verify?flow=register";
+  }
+
+  // Redirect if not authenticated or already verified
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) { setLocation("/login"); return; }
+    // Skip if we just finished verifying (let the success animation + setTimeout handle it)
+    if (justVerifiedRef.current) return;
+    if ((user as any).emailVerified && !verifySuccess) {
+      setLocation(getNextStep(user));
+    }
+  }, [user, isLoading, verifySuccess]);
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.slice(-1);
+    setOtpCode(newOtp);
+    if (value && index < 5) document.getElementById(`otp-ve-${index + 1}`)?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0)
+      document.getElementById(`otp-ve-${index - 1}`)?.focus();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newOtp = ["", "", "", "", "", ""];
+    pasted.split("").forEach((char, idx) => { if (idx < 6) newOtp[idx] = char; });
+    setOtpCode(newOtp);
+    document.getElementById(`otp-ve-${Math.min(pasted.length - 1, 5)}`)?.focus();
+  };
+
+  const handleVerify = async () => {
+    const code = otpCode.join("").trim();
+    if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
+    setIsVerifying(true);
+    setVerifyError("");
+
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: (user as any).email.trim().toLowerCase(), code: code.trim() }),
+      });
+    } catch {
+      setVerifyError("تعذّر الوصول إلى الخادم، تحقق من اتصالك بالإنترنت وأعد المحاولة");
+      setIsVerifying(false);
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من آخر رسالة في بريدك");
+      setIsVerifying(false);
+      return;
+    }
+
+    // Mark as just-verified so the useEffect guard doesn't redirect prematurely
+    justVerifiedRef.current = true;
+
+    // Update user cache
+    const updatedUser = { ...(user as any), emailVerified: true };
+    queryClient.setQueryData(["/api/user"], updatedUser);
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+
+    setIsVerifying(false);
+    setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
+    setTimeout(() => setLocation(getNextStep(updatedUser)), 2000);
+  };
+
+  const handleResend = async () => {
+    setIsResending(true);
+    setVerifyError("");
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast({ title: "تم إعادة الإرسال!", description: "تحقق من صندوق الوارد أو مجلد الإسبام" });
+        setOtpCode(["", "", "", "", "", ""]);
+        document.getElementById("otp-ve-0")?.focus();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setVerifyError(d.error || "تعذّر إرسال الرمز، حاول مجدداً");
+      }
+    } catch {
+      setVerifyError("حدث خطأ أثناء الإرسال");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+      <PageGraphics variant="auth" />
+        <Loader2 className="w-6 h-6 animate-spin text-black/30" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex bg-white" dir={dir}>
+      {/* Left decorative panel */}
+      <div className="hidden lg:flex w-[42%] bg-black flex-col justify-between p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+        <div className="relative z-10">
+          <Link href="/">
+            <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-10 w-auto object-contain invert opacity-90 hover:opacity-100 transition-opacity cursor-pointer" />
+          </Link>
+        </div>
+        <div className="relative z-10">
+          <h2 className="text-4xl font-black text-white font-heading leading-tight mb-4">
+            خطوة واحدة<br /><span className="text-white/40">لتفعيل حسابك</span>
+          </h2>
+          <p className="text-white/40 text-sm leading-relaxed max-w-xs">
+            أرسلنا رمز التحقق إلى بريدك الإلكتروني. أدخله لتفعيل حسابك والبدء في استخدام المنصة.
+          </p>
+        </div>
+        <div className="relative z-10 flex items-center gap-2 text-white/20 text-[11px]">
+          <span>QIROX Studio</span><span>·</span><span>منصة رقمية متكاملة</span>
+        </div>
+      </div>
+
+      {/* Right content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-y-auto">
+        <div className="lg:hidden mb-8 text-center">
+          <Link href="/">
+            <div className="inline-block hover:opacity-85 transition-opacity">
+              <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
+            </div>
+          </Link>
+        </div>
+
+        {/* Registration flow progress */}
+        {isRegisterFlow && (
+          <div className="w-full max-w-md mb-6">
+            <div className="flex items-center justify-between mb-2">
+              {[
+                { n: 1, label: L ? "البيانات" : "Info", done: true },
+                { n: 2, label: L ? "البريد" : "Email", done: false, active: true },
+                { n: 3, label: L ? "الجوال" : "Phone", done: false },
+                { n: 4, label: L ? "الترحيب" : "Welcome", done: false },
+              ].map((step, i) => (
+                <div key={step.n} className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1.5 ${step.active ? "text-black" : step.done ? "text-black dark:text-white" : "text-black/25"}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all
+                      ${step.active ? "border-black bg-black text-white" : step.done ? "border-black dark:border-white bg-black dark:bg-white text-white" : "border-black/15 bg-transparent text-black/25"}`}>
+                      {step.done ? "✓" : step.n}
+                    </div>
+                    <span className="text-xs font-bold hidden sm:block">{step.label}</span>
+                  </div>
+                  {i < 3 && <div className={`flex-1 h-0.5 mx-2 rounded-full ${step.done ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/10"}`} style={{ width: "2rem" }} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <AnimatePresence mode="wait">
+          {verifySuccess ? (
+            /* ── Welcome Screen ── */
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-md flex flex-col items-center text-center"
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.15, duration: 0.6, type: "spring", stiffness: 200 }}
+                className="relative mb-8"
+              >
+                <div className="w-24 h-24 rounded-3xl bg-black flex items-center justify-center shadow-2xl shadow-black/20">
+                  <CheckCircle2 className="w-12 h-12 text-white" />
+                </div>
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 rounded-full bg-black/25"
+                    initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0, 1, 0], x: Math.cos((i * 60 * Math.PI) / 180) * 55, y: Math.sin((i * 60 * Math.PI) / 180) * 55 }}
+                    transition={{ delay: 0.4 + i * 0.07, duration: 0.9, ease: "easeOut" }}
+                    style={{ top: "50%", left: "50%", marginTop: -4, marginLeft: -4 }}
+                  />
+                ))}
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }}>
+                <h1 className="text-3xl font-black text-black font-heading mb-2">
+                  {L ? `أهلاً بك${verifySuccess.name ? `، ${verifySuccess.name.split(" ")[0]}` : ""}!` : `Welcome${verifySuccess.name ? `, ${verifySuccess.name.split(" ")[0]}` : ""}!`}
+                </h1>
+                <p className="text-black/40 text-sm mb-6 leading-relaxed">{L ? "تم تفعيل حسابك بنجاح — لوحة تحكمك جاهزة الآن" : "Your account has been verified — your dashboard is ready"}</p>
+                <div className="space-y-2.5 mb-8">
+                  {[
+                    { icon: Star, text: L ? "تقديم طلبك الأول ومتابعة مراحل التنفيذ" : "Place your first order and track execution stages" },
+                    { icon: Sparkles, text: L ? "التواصل المباشر مع فريق QIROX Studio" : "Direct communication with the QIROX Studio team" },
+                    { icon: ArrowRight, text: L ? "متابعة مشاريعك ونسبة الإتمام" : "Track your projects and completion rate" },
+                  ].map(({ icon: Icon, text }, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.55 + idx * 0.1, duration: 0.4 }}
+                      className="flex items-center gap-3 bg-black/[0.03] rounded-xl px-4 py-3 text-right"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm text-black/70 font-medium">{text}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="flex items-center justify-center gap-2 text-xs text-black/30">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{L ? "جارٍ الانتقال للوحة التحكم..." : "Redirecting to your dashboard..."}</span>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          ) : (
+            /* ── OTP Form ── */
+            <motion.div
+              key="otp"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-md"
+            >
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
+                  <ShieldCheck className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-black font-heading text-black mb-2">{L ? "تأكيد البريد الإلكتروني" : "Verify Your Email"}</h1>
+                <p className="text-black/40 text-sm leading-relaxed">
+                  {L ? "أرسلنا رمز التحقق المكوّن من 6 أرقام إلى" : "We sent a 6-digit verification code to"}<br />
+                  <span className="text-black font-semibold" dir="ltr">{(user as any).email}</span>
+                </p>
+              </div>
+
+              {/* Account locked notice */}
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-black dark:text-white text-xs font-semibold mb-0.5">{L ? "حسابك مقفل مؤقتاً" : "Account Temporarily Locked"}</p>
+                  <p className="text-black dark:text-white text-[11px] leading-relaxed">
+                    {L ? "يجب تفعيل البريد الإلكتروني قبل الوصول للوحة التحكم. أدخل الرمز المُرسل إليك لإلغاء القفل." : "You must verify your email before accessing the dashboard. Enter the code sent to you to unlock."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Spam warning */}
+              <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
+                <span className="text-black dark:text-white text-base mt-0.5 flex-shrink-0">⚠️</span>
+                <div>
+                  <p className="text-black dark:text-white text-xs font-semibold mb-0.5">{L ? "لم يصل البريد؟" : "Didn't receive the email?"}</p>
+                  <p className="text-black dark:text-white text-[11px] leading-relaxed">
+                    {L ? <>تحقق من مجلد <strong>الإسبام / Spam</strong> — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.</> : <>Check your <strong>Spam</strong> folder — emails sometimes land there. If not found, click "Resend Code" below.</>}
+                  </p>
+                </div>
+              </div>
+
+              {/* OTP boxes */}
+              <div className="flex justify-center gap-3 mb-6" dir="ltr">
+                {otpCode.map((digit, i) => (
+                  <input
+                    key={i}
+                    id={`otp-ve-${i}`}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(i, e)}
+                    onPaste={i === 0 ? handleOtpPaste : undefined}
+                    data-testid={`otp-ve-box-${i}`}
+                    className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 outline-none transition-all duration-200 ${
+                      digit ? "border-black bg-black text-white" : "border-black/[0.15] bg-black/[0.02] text-black"
+                    } focus:border-black focus:ring-2 focus:ring-black/10`}
+                  />
+                ))}
+              </div>
+
+              {verifyError && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+                  <Alert variant="destructive" className="bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10 text-black dark:text-white rounded-xl">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">{verifyError}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+
+              <Button
+                onClick={handleVerify}
+                disabled={isVerifying || otpCode.join("").length !== 6}
+                className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mb-4"
+                data-testid="button-verify-email-page"
+              >
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                  <><CheckCircle2 className="w-4 h-4 ml-2" />{L ? "تأكيد وتفعيل الحساب" : "Verify & Activate Account"}</>
+                )}
+              </Button>
+
+              <div className="text-center space-y-3">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
+                  className="text-sm text-black/40 hover:text-black transition-colors flex items-center gap-1.5 mx-auto"
+                  data-testid="button-resend-otp-page"
+                >
+                  {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  {L ? "إعادة إرسال الرمز" : "Resend Code"}
+                </button>
+                <p className="text-[11px] text-black/25">{L ? "الرمز صالح لمدة 30 دقيقة" : "Code valid for 30 minutes"}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

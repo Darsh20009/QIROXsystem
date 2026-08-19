@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- ═══ Core pages — highest priority ═══ -->
+  <url>
+    <loc>https://qiroxstudio.online/</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/og-cover.png</image:loc>
+      <image:title>كيروكس استوديو | Qirox Studio — شركة برمجة سعودية في الرياض</image:title>
+      <image:caption>Qirox Studio — Saudi Software House, Riyadh</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/prices</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/about</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.92</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/systems</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/contact</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/join</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/consultation</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- ═══ Sector pages — كيروكس + القطاع ═══ -->
+  <url>
+    <loc>https://qiroxstudio.online/sector/ecommerce</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/ecommerce.jpg</image:loc>
+      <image:title>نظام متجر إلكتروني احترافي — كيروكس استوديو | Qirox E-Commerce System Saudi Arabia</image:title>
+      <image:caption>كيروكس استوديو — نظام إدارة المتاجر الإلكترونية</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/sector/restaurant</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/restaurant.jpg</image:loc>
+      <image:title>نظام إدارة مطاعم وكافيهات — كيروكس استوديو | Qirox Restaurant Management System</image:title>
+      <image:caption>كيروكس استوديو — نظام إدارة المطاعم والكافيهات</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/sector/corporate</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/corporate.jpg</image:loc>
+      <image:title>نظام إدارة شركات ERP — كيروكس استوديو | Qirox Corporate ERP System Saudi Arabia</image:title>
+      <image:caption>كيروكس استوديو — نظام إدارة الشركات والمؤسسات</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/sector/healthcare</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/healthcare.jpg</image:loc>
+      <image:title>نظام إدارة عيادات ومراكز صحية — كيروكس استوديو | Qirox Healthcare Management System</image:title>
+      <image:caption>كيروكس استوديو — نظام إدارة الرعاية الصحية</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/sector/ai</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/ai.jpg</image:loc>
+      <image:title>نظام الذكاء الاصطناعي للأعمال — كيروكس استوديو | Qirox AI Business System Saudi Arabia</image:title>
+      <image:caption>كيروكس استوديو — أنظمة الذكاء الاصطناعي</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/sector/education</loc>
+    <lastmod>2025-08-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/sectors/education.jpg</image:loc>
+      <image:title>نظام إدارة مدارس ومراكز تعليمية — كيروكس استوديو | Qirox Education Management System</image:title>
+      <image:caption>كيروكس استوديو — نظام إدارة المؤسسات التعليمية</image:caption>
+    </image:image>
+  </url>
+
+  <!-- ═══ Secondary pages ═══ -->
+  <url><loc>https://qiroxstudio.online/jobs</loc><lastmod>2025-08-01</lastmod><changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://qiroxstudio.online/news</loc><lastmod>2025-08-01</lastmod><changefreq>weekly</changefreq><priority>0.72</priority></url>
+  <url><loc>https://qiroxstudio.online/partners</loc><lastmod>2025-08-01</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://qiroxstudio.online/demos</loc><lastmod>2025-08-01</lastmod><changefreq>monthly</changefreq><priority>0.68</priority></url>
+  <url><loc>https://qiroxstudio.online/developers</loc><lastmod>2025-08-01</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://qiroxstudio.online/privacy</loc><lastmod>2025-08-01</lastmod><changefreq>yearly</changefreq><priority>0.30</priority></url>
+
+  <!-- ═══ Executive Profile Pages (high priority — Person entity SEO) ═══ -->
+  <url>
+    <loc>https://qiroxstudio.online/youssef-darwish</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/youssef-darwish-cto-qirox-1.jpg</image:loc>
+      <image:title>يوسف محمد درويش المدير التنفيذي التقني وشريك مؤسس كيروكس — Youssef Mohamed Darwish CTO Co-Founder QIROX Studio</image:title>
+      <image:caption>يوسف درويش — المدير التنفيذي التقني والشريك المؤسس، كيروكس ستوديو | Youssef Darwish CTO & Co-Founder QIROX Studio</image:caption>
+      <image:geo_location>Riyadh, Saudi Arabia</image:geo_location>
+      <image:license>https://qiroxstudio.online/youssef-darwish</image:license>
+    </image:image>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/youssef-darwish-cto-qirox-2.jpg</image:loc>
+      <image:title>Youssef Darwish QIROX Studio formal boardroom — يوسف درويش كيروكس مجلس الإدارة</image:title>
+      <image:caption>يوسف محمد درويش في مجلس الإدارة — كيروكس ستوديو | Youssef Darwish boardroom QIROX</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/youssef-darwish-cto-qirox-3.jpg</image:loc>
+      <image:title>يوسف درويش صورة احترافية — Youssef Mohamed Darwish professional photo QIROX</image:title>
+      <image:caption>يوسف محمد درويش صورة احترافية | Youssef Darwish professional QIROX Studio</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/youssef-darwish-cto-qirox-4.jpg</image:loc>
+      <image:title>يوسف محمد محمود درويش في مؤتمر الصناعة — Youssef Darwish industry conference QIROX CTO</image:title>
+      <image:caption>يوسف درويش في مؤتمر الصناعة | Youssef Darwish at QIROX industry conference</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://qiroxstudio.online/team/youssef-darwish</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://qiroxstudio.online/mohammed-aldabbani</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <image:image>
+      <image:loc>https://qiroxstudio.online/mohammed-aldabbani-ceo.jpg</image:loc>
+      <image:title>محمد الدباني الرئيس التنفيذي وشريك مؤسس كيروكس — Mohammed Aldabbani CEO Co-Founder QIROX Studio Saudi Arabia</image:title>
+      <image:caption>محمد الدباني — الرئيس التنفيذي والشريك المؤسس، كيروكس ستوديو | Mohammed Aldabbani CEO & Co-Founder QIROX Studio</image:caption>
+      <image:geo_location>Riyadh, Saudi Arabia</image:geo_location>
+      <image:license>https://qiroxstudio.online/mohammed-aldabbani</image:license>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://qiroxstudio.online/team/mohammed-aldabbani</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+</urlset>

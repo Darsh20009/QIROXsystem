@@ -1,0 +1,1 @@
+import{r as n}from"./vendor-react-Bzsngnqy.js";import{u as o}from"./leaflet-Cu_ciSmi.js";function r(){return o().map}function p(e){const t=r();return n.useEffect(function(){return t.on(e),function(){t.off(e)}},[t,e]),t}export{r as a,p as u};

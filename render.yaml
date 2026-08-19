@@ -1,0 +1,79 @@
+services:
+  - type: web
+    name: qirox-studio
+    runtime: node
+    nodeVersion: 20.20.0
+    buildCommand: |
+      mkdir -p node_modules runtime
+      printf '{"name":"runtime","version":"1.0.0","private":true}\n' > runtime/package.json
+      cd runtime
+      npm install --no-audit --no-fund --ignore-scripts @whiskeysockets/baileys passkit-generator @huggingface/transformers
+      npm install --no-audit --no-fund onnxruntime-node
+      cd ..
+      cp -r runtime/node_modules/. node_modules/
+      npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GIT_LFS_SKIP_SMUDGE
+        value: "1"
+      - key: SMTP2GO_SENDER
+        value: noreply@qiroxstudio.online
+      - key: SMTP2GO_SENDER_NAME
+        value: QIROX Studio
+      - key: EMAIL_LOGO_URL
+        value: https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png
+      - key: EMAIL_SITE_URL
+        value: https://qiroxstudio.online
+      # === SECRET ENV VARS (set manually in Render dashboard) ===
+      - key: SMTP2GO_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      # Optional server-managed GitHub token for Deployment Cloud.
+      # It is never sent back to the browser.
+      - key: GITHUB_PERSONAL_ACCESS_TOKEN
+        sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
+      - key: APPLE_PASS_CERT
+        sync: false
+      - key: APPLE_PASS_KEY
+        sync: false
+      - key: APPLE_WWDR_CERT
+        sync: false
+      - key: APPLE_PASS_TYPE_ID
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: SANDBOX_ENC_KEY
+        sync: false
+    autoDeploy: true

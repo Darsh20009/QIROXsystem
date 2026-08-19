@@ -1,0 +1,1331 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useUser } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Loader2, MessageSquare, Send, Users, Search, Paperclip,
+  Mic, X, Download, Play, Pause, FileText, CheckCheck, Check,
+  ArrowRight, Phone, PhoneCall, PhoneOff, PhoneIncoming,
+  Video, MoreVertical, Smile, Trash2,
+  Package, Activity, Wrench, ChevronDown, ChevronUp, Mail, Globe
+} from "lucide-react";
+import { useInboxSocket } from "@/hooks/useInboxSocket";
+import { UserAvatar } from "@/components/UserAvatar";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ─────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────
+function timeAgo(date: string | null, L = true) {
+    if (!date) return "";
+    const d = new Date(date);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (diff < 60) return L ? "الآن" : "now";
+    if (diff < 3600) return L ? `${Math.floor(diff / 60)} م` : `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return L ? `${Math.floor(diff / 3600)} س` : `${Math.floor(diff / 3600)}h`;
+    return d.toLocaleDateString(L ? "ar-SA" : "en-US", { month: "short", day: "numeric" });
+  }
+
+function formatTime(date: string, L = true) {
+    return new Date(date).toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+  }
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function roleLabel(role: string, L = true) {
+    const map: Record<string, string> = L ? {
+      admin: "مدير", manager: "مدير عام", developer: "مطور",
+      designer: "مصمم", support: "دعم", client: "عميل",
+      sales: "مبيعات", sales_manager: "مدير مبيعات", accountant: "محاسب",
+    } : {
+      admin: "Admin", manager: "Manager", developer: "Developer",
+      designer: "Designer", support: "Support", client: "Client",
+      sales: "Sales", sales_manager: "Sales Manager", accountant: "Accountant",
+    };
+    return map[role] || role;
+  }
+
+function getRoleGradient(role?: string) {
+  const map: Record<string, string> = {
+    admin:         "from-gray-800 to-black",
+    manager:       "from-slate-700 to-slate-900",
+    developer:     "from-black dark:from-white to-black dark:to-white",
+    designer:      "from-black dark:from-white to-black dark:to-white",
+    client:        "from-black dark:from-white to-black dark:to-white",
+    support:       "from-black dark:from-white to-black dark:to-white",
+    sales:         "from-black dark:from-white to-black dark:to-white",
+    sales_manager: "from-black dark:from-white to-black dark:to-white",
+    accountant:    "from-black dark:from-white to-black dark:to-white",
+  };
+  return map[role || ""] || "from-gray-500 to-gray-700";
+}
+
+// ─────────────────────────────────────────────────────────
+// Avatar (uses UserAvatar for photo/custom avatar support)
+// ─────────────────────────────────────────────────────────
+function Avatar({ name, role, online, size = "md", profilePhotoUrl, avatarConfig }: {
+  name: string; role?: string; online?: boolean; size?: "sm" | "md" | "lg";
+  profilePhotoUrl?: string; avatarConfig?: string;
+}) {
+  const avatarSize = size === "sm" ? "sm" : size === "lg" ? "lg" : "md";
+  const dotSz = size === "sm" ? "w-2 h-2 border" : "w-2.5 h-2.5 border-2";
+  return (
+    <div className="relative flex-shrink-0">
+      <UserAvatar
+        profilePhotoUrl={profilePhotoUrl}
+        avatarConfig={avatarConfig}
+        name={name}
+        role={role}
+        size={avatarSize as any}
+      />
+      {online !== undefined && (
+        <div className={`absolute bottom-0 left-0 ${dotSz} rounded-full border-white dark:border-gray-900 ${online ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-gray-300 dark:bg-gray-600"}`} />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Voice Player
+// ─────────────────────────────────────────────────────────
+function getAudioMimeType(url: string): string {
+  const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
+  if (ext === "oga" || ext === "ogg") return "audio/ogg";
+  if (ext === "weba" || ext === "webm") return "audio/webm";
+  if (ext === "m4a") return "audio/mp4";
+  if (ext === "mp3") return "audio/mpeg";
+  if (ext === "wav") return "audio/wav";
+  return "";
+}
+
+function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [loadError, setLoadError] = useState(false);
+
+  // Pause on unmount to prevent ghost audio playback
+  useEffect(() => {
+    return () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; } };
+  }, []);
+
+  const toggle = () => {
+    if (!audioRef.current || loadError) return;
+    if (playing) { audioRef.current.pause(); setPlaying(false); }
+    else { audioRef.current.play().catch(() => setLoadError(true)); setPlaying(true); }
+  };
+
+  const mimeType = getAudioMimeType(url);
+
+  return (
+    <div className="flex items-center gap-2.5 min-w-[160px] max-w-[220px]">
+      <audio ref={audioRef} preload="metadata"
+        onTimeUpdate={() => audioRef.current && setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0)}
+        onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
+        onEnded={() => { setPlaying(false); setProgress(0); }}
+        onError={() => setLoadError(true)}
+      >
+        <source src={url} type={mimeType || undefined} />
+      </audio>
+      <button
+        onClick={toggle}
+        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+          isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200"
+        } ${loadError ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+      </button>
+      <div className="flex-1">
+        <div className={`h-1.5 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
+          <div
+            className={`h-full rounded-full transition-all ${isMe ? "bg-white/70" : "bg-gray-500 dark:bg-gray-300"}`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <span className={`text-[9px] mt-0.5 block ${isMe ? "text-white/50" : "text-gray-400 dark:text-gray-400"}`}>
+          {loadError ? "⚠️ Error" : duration > 0 ? `${Math.floor(duration)}s` : "🎙️"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Read Receipt Icon
+// ─────────────────────────────────────────────────────────
+function ReadReceipt({ read }: { read: boolean }) {
+  if (read) {
+    return (
+      <span title="Seen" className="flex items-center">
+        <CheckCheck className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
+      </span>
+    );
+  }
+  return (
+    <span title="Sent">
+      <Check className="w-3.5 h-3.5 text-white/40" />
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Message Bubble
+// ─────────────────────────────────────────────────────────
+function MessageBubble({ msg, isMe, contact, onDelete, L = true }: { msg: any; isMe: boolean; contact: any; onDelete?: (id: string) => void; L?: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  const hasText = !!msg.body;
+  const hasAttachment = !!msg.attachmentUrl;
+  const attachType = msg.attachmentType;
+  const msgId = msg.id || msg._id;
+
+  return (
+    <div
+      className={`flex items-end gap-2 group ${isMe ? "flex-row-reverse" : ""}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} size="sm" profilePhotoUrl={contact?.profilePhotoUrl} avatarConfig={contact?.avatarConfig} />}
+
+      <div className={`max-w-[72%] sm:max-w-[60%] rounded-2xl overflow-hidden shadow-sm ${
+        isMe
+          ? "bg-gradient-to-br from-black dark:from-white to-black dark:to-white text-white rounded-tr-sm"
+          : "bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] text-gray-900 dark:text-gray-100 rounded-tl-sm"
+      }`}>
+        {/* Image */}
+        {hasAttachment && attachType === "image" && (
+          <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
+            <img src={msg.attachmentUrl} alt={msg.attachmentName || "image"} className="max-w-[240px] max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
+          </a>
+        )}
+        {/* Voice */}
+        {hasAttachment && attachType === "voice" && (
+          <div className="px-3.5 py-3">
+            <VoicePlayer url={msg.attachmentUrl} isMe={isMe} />
+          </div>
+        )}
+        {/* File */}
+        {hasAttachment && attachType === "file" && (
+          <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer"
+            className={`flex items-center gap-2.5 px-3.5 py-3 hover:opacity-80 transition-opacity ${isMe ? "text-white" : "text-gray-800 dark:text-gray-200"}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"}`}>
+              <FileText className={`w-4 h-4 ${isMe ? "text-white" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold truncate max-w-[160px]">{msg.attachmentName || (true ? "ملف" : "File")}</p>
+              {msg.attachmentSize && <p className={`text-[9px] ${isMe ? "text-white/50" : "text-gray-400"}`}>{formatSize(msg.attachmentSize)}</p>}
+            </div>
+            <Download className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+          </a>
+        )}
+        {/* Text */}
+        {hasText && (
+          <div className="px-3.5 py-2.5">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.body}</p>
+          </div>
+        )}
+        {/* Footer */}
+        <div className="px-3.5 pb-2 flex items-center justify-end gap-1.5">
+          <span className={`text-[9px] ${isMe ? "text-white/40" : "text-gray-400 dark:text-gray-500"}`}>
+            {formatTime(msg.createdAt, L)}
+          </span>
+          {isMe && <ReadReceipt read={!!msg.read} />}
+        </div>
+      </div>
+
+      {/* Delete button */}
+      {hovered && onDelete && (
+        <button
+          onClick={() => onDelete(msgId)}
+          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-600 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+          title="Delete"
+          data-testid={`button-delete-message-${msgId}`}
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Date Separator
+// ─────────────────────────────────────────────────────────
+function DateSeparator({ date, L = true }: { date: string; L?: boolean }) {
+    const d = new Date(date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    let label = d.toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "long", month: "long", day: "numeric" });
+    if (d.toDateString() === today.toDateString()) label = L ? "اليوم" : "Today";
+    else if (d.toDateString() === yesterday.toDateString()) label = L ? "الأمس" : "Yesterday";
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium px-2 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-black/[0.05] dark:border-white/[0.05] py-0.5">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Sound Notification
+// ─────────────────────────────────────────────────────────
+let audioCtx: AudioContext | null = null;
+function playNotificationSound() {
+  try {
+    if (!audioCtx) audioCtx = new AudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.2);
+  } catch {}
+}
+
+let ringInterval: ReturnType<typeof setInterval> | null = null;
+function startRingSound() {
+  if (ringInterval) return;
+  const playRing = () => {
+    try {
+      if (!audioCtx) audioCtx = new AudioContext();
+      const notes = [880, 1046, 880, 1046];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx!.createOscillator();
+        const gain = audioCtx!.createGain();
+        osc.connect(gain); gain.connect(audioCtx!.destination);
+        const t = audioCtx!.currentTime + i * 0.1;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+        osc.start(t); osc.stop(t + 0.1);
+      });
+    } catch {}
+  };
+  playRing();
+  ringInterval = setInterval(playRing, 2000);
+}
+function stopRingSound() {
+  if (ringInterval) { clearInterval(ringInterval); ringInterval = null; }
+}
+
+// ─────────────────────────────────────────────────────────
+// Incoming Call Overlay
+// ─────────────────────────────────────────────────────────
+interface IncomingCallState {
+  callerId: string;
+  callerName: string;
+  callerPhoto: string;
+  callerRole: string;
+  roomId: string;
+  callType: "video" | "voice";
+}
+
+function IncomingCallOverlay({ call, onAccept, onDecline }: {
+  call: IncomingCallState;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: -40 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: -40 }}
+        className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        dir="rtl"
+      >
+        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden w-[320px] max-w-[90vw]">
+          {/* Gradient header */}
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-black dark:to-gray-950 px-6 pt-8 pb-6 text-center relative">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
+              {[0,1,2].map(i => (
+                <motion.div key={i} className="w-1.5 h-1.5 bg-green-400 rounded-full"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
+              ))}
+            </div>
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-800 dark:to-black flex items-center justify-center text-white text-2xl font-black mx-auto mb-3 ring-4 ring-green-400/30 shadow-xl">
+              {call.callerPhoto
+                ? <img src={call.callerPhoto} alt={call.callerName} className="w-full h-full object-cover rounded-full" />
+                : call.callerName?.[0]?.toUpperCase()
+              }
+            </div>
+            <h2 className="text-white font-black text-xl">{call.callerName}</h2>
+            <p className="text-green-400 text-sm mt-1 font-medium animate-pulse">
+              {call.callType === "video" ? "📹 مكالمة فيديو واردة..." : "📞 مكالمة صوتية واردة..."}
+            </p>
+          </div>
+          {/* Actions */}
+          <div className="flex gap-4 p-6">
+            <button
+              onClick={onDecline}
+              className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group"
+              data-testid="button-decline-call"
+            >
+              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
+                <PhoneOff className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-sm font-bold text-red-600 dark:text-red-400">رفض</span>
+            </button>
+            <button
+              onClick={onAccept}
+              className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors group"
+              data-testid="button-accept-call"
+            >
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                <PhoneCall className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-sm font-bold text-green-600 dark:text-green-400">قبول</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Typing Indicator
+// ─────────────────────────────────────────────────────────
+function TypingDots() {
+  return (
+    <div className="flex items-end gap-2 px-1">
+      <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+        {[0, 150, 300].map(delay => (
+          <span key={delay} className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────
+export default function Inbox() {
+    const { data: user } = useUser();
+    const { toast } = useToast();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const me = user as any;
+
+  const [activeContact, setActiveContact] = useState<any>(null);
+  const [messageText, setMessageText] = useState("");
+  const [search, setSearch] = useState("");
+  const [newContactId, setNewContactId] = useState("");
+  const [newClientId, setNewClientId] = useState("");
+  const [isTypingLocal, setIsTypingLocal] = useState(false);
+  const [isTypingRemote, setIsTypingRemote] = useState(false);
+  const [isVoiceRemote, setIsVoiceRemote] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [showContacts, setShowContacts] = useState(true);
+  const [showClientContext, setShowClientContext] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<IncomingCallState | null>(null);
+  const [outgoingCall, setOutgoingCall] = useState<{ contactId: string; contactName: string; roomId: string; callType: "video" | "voice" } | null>(null);
+  const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const activeContactIdRef = useRef<string | null>(null);
+  activeContactIdRef.current = activeContact?.id || null;
+
+  // ── Call helpers ──
+  const handleAcceptCall = useCallback(async (call: IncomingCallState) => {
+    stopRingSound();
+    if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+    try {
+      await apiRequest("POST", "/api/inbox/call/accept", { callerId: call.callerId, roomId: call.roomId });
+    } catch {}
+    setIncomingCall(null);
+    // Navigate to QMeet room
+    window.location.href = `/employee/qmeet?room=${encodeURIComponent(call.roomId)}&autoJoin=1`;
+  }, []);
+
+  const handleDeclineCall = useCallback(async (call: IncomingCallState) => {
+    stopRingSound();
+    if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+    try {
+      await apiRequest("POST", "/api/inbox/call/decline", { callerId: call.callerId, roomId: call.roomId });
+    } catch {}
+    setIncomingCall(null);
+  }, []);
+
+  const initiateCall = useCallback(async (contactId: string, contactName: string, callType: "video" | "voice" = "video") => {
+    const roomId = `call-${me?.id}-${contactId}-${Date.now()}`;
+    try {
+      await apiRequest("POST", "/api/inbox/call/ring", { targetUserId: contactId, roomId, callType });
+      setOutgoingCall({ contactId, contactName, roomId, callType });
+      // Auto-dismiss after 30s if no answer
+      if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+      ringTimeoutRef.current = setTimeout(async () => {
+        setOutgoingCall(null);
+        toast({ title: L ? "لم يرد أحد" : "No answer", description: L ? `${contactName} لم يرد على المكالمة` : `${contactName} didn't answer` });
+        // Send missed call email
+        try { await apiRequest("POST", "/api/inbox/call/missed", { targetUserId: contactId, callerName: me?.fullName || me?.username }); } catch {}
+      }, 30000);
+      // Open QMeet and wait
+      window.location.href = `/employee/qmeet?room=${encodeURIComponent(roomId)}&autoJoin=1`;
+    } catch {
+      toast({ title: L ? "تعذّر الاتصال" : "Call failed", variant: "destructive" });
+    }
+  }, [me, L, toast]);
+
+  // ── WebSocket ──
+  const { connected, onlineUsers, sendTyping, sendVoiceRecording } = useInboxSocket({
+    userId: me?.id,
+    onEvent: (evt) => {
+      if (evt.type === "new_message") {
+        const fromId = String(evt.message?.fromUserId?.id || evt.message?.fromUserId);
+        const toId = String(evt.message?.toUserId?.id || evt.message?.toUserId);
+        queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/badges"] });
+        const active = activeContactIdRef.current;
+        if (active && (fromId === active || toId === active)) {
+          queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", active] });
+          setIsTypingRemote(false);
+        }
+        if (fromId !== String(me?.id)) {
+          playNotificationSound();
+          if (Notification.permission === "granted") {
+            const senderName = evt.message?.fromUserId?.fullName || "Message";
+            new Notification(`💬 ${senderName}`, { body: evt.message?.body || (L ? "رسالة جديدة" : "New message"), tag: `msg-${fromId}` });
+          }
+        }
+      }
+      if (evt.type === "typing" && String(evt.fromUserId) === activeContactIdRef.current) {
+        setIsTypingRemote(evt.isTyping);
+        if (evt.isTyping) setTimeout(() => setIsTypingRemote(false), 4000);
+      }
+      if (evt.type === "voice_recording" && String(evt.fromUserId) === activeContactIdRef.current) {
+        setIsVoiceRemote(evt.isRecording);
+      }
+      // ── Incoming call ──
+      if (evt.type === "call_ring") {
+        startRingSound();
+        setIncomingCall({
+          callerId: String(evt.callerId),
+          callerName: evt.callerName || "Unknown",
+          callerPhoto: evt.callerPhoto || "",
+          callerRole: evt.callerRole || "",
+          roomId: evt.roomId,
+          callType: evt.callType || "video",
+        });
+        // Auto-dismiss after 30s
+        if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+        ringTimeoutRef.current = setTimeout(() => {
+          stopRingSound();
+          setIncomingCall(null);
+        }, 30000);
+        if (Notification.permission === "granted") {
+          new Notification(`📞 ${L ? "مكالمة واردة من" : "Incoming call from"} ${evt.callerName}`, {
+            body: evt.callType === "video" ? (L ? "مكالمة فيديو" : "Video call") : (L ? "مكالمة صوتية" : "Voice call"),
+            tag: `call-${evt.callerId}`,
+          });
+        }
+      }
+      // ── Call accepted/declined ──
+      if (evt.type === "call_accepted") {
+        setOutgoingCall(null);
+        if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+        toast({ title: L ? "تم قبول المكالمة" : "Call accepted", description: L ? `${evt.acceptedName} قبل المكالمة` : `${evt.acceptedName} accepted the call` });
+      }
+      if (evt.type === "call_declined") {
+        setOutgoingCall(null);
+        if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+        toast({ title: L ? "رُفضت المكالمة" : "Call declined", description: L ? `${evt.declinedName} رفض المكالمة` : `${evt.declinedName} declined the call`, variant: "destructive" });
+      }
+      // ── Task update notification ──
+      if (evt.type === "task_status_update") {
+        toast({ title: L ? `📋 تحديث مهمة: ${evt.title}` : `📋 Task updated: ${evt.title}`, description: L ? `الحالة الجديدة: ${evt.status}` : `New status: ${evt.status}` });
+      }
+    },
+  });
+
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // ── Queries ──
+  const { data: allMessages = [], isLoading: loadingMsgs } = useQuery<any[]>({ queryKey: ["/api/inbox"] });
+
+  const { data: thread = [], isLoading: loadingThread } = useQuery<any[]>({
+    queryKey: ["/api/inbox/thread", activeContact?.id],
+    queryFn: async () => {
+      if (!activeContact?.id) return [];
+      const r = await fetch(`/api/inbox/thread/${activeContact.id}`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json();
+    },
+    enabled: !!activeContact?.id,
+    // Poll only when WebSocket is disconnected — prevents race condition with realtime events
+    refetchInterval: connected ? false : 6000,
+  });
+
+  const { data: employees = [] } = useQuery<any[]>({
+    queryKey: ["/api/employees"],
+    queryFn: async () => {
+      const r = await fetch("/api/employees", { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json();
+    },
+    enabled: !!user && user.role !== "client",
+  });
+
+  const { data: clients = [] } = useQuery<any[]>({
+    queryKey: ["/api/users/clients"],
+    queryFn: async () => {
+      const r = await fetch("/api/users/clients", { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json();
+    },
+    enabled: !!user && user.role !== "client",
+  });
+
+  const { data: clientContext } = useQuery<any>({
+    queryKey: ["/api/inbox/client-context", activeContact?.id],
+    queryFn: async () => {
+      if (!activeContact?.id) return null;
+      const r = await fetch(`/api/inbox/client-context/${activeContact.id}`, { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!activeContact?.id && activeContact?.role === "client" && me?.role !== "client",
+  });
+
+  // ── Contacts ──
+  const contacts = (() => {
+    const map = new Map<string, any>();
+    // First: build contacts from past conversations (with lastMsg/lastAt info)
+    for (const msg of allMessages) {
+      const other = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id)
+        ? msg.toUserId : msg.fromUserId;
+      if (!other || String(other?.id || other) === String(me?.id)) continue;
+      const oid = String(other?.id || other);
+      if (!map.has(oid)) {
+        map.set(oid, {
+          id: oid,
+          fullName: other?.fullName || other?.username || (L ? "مستخدم" : "User"),
+          role: other?.role || "client",
+          profilePhotoUrl: other?.profilePhotoUrl || "",
+          avatarConfig: other?.avatarConfig || "",
+          lastMsg: msg.body || (msg.attachmentType === "voice" ? "🎙️" : msg.attachmentType === "image" ? "🖼️" : "📎"),
+          lastAt: msg.createdAt,
+          unread: 0,
+        });
+      }
+    }
+    for (const msg of allMessages) {
+      if (!msg.read && String(msg.toUserId?.id || msg.toUserId) === String(me?.id)) {
+        const fid = String(msg.fromUserId?.id || msg.fromUserId);
+        const c = map.get(fid);
+        if (c) c.unread++;
+      }
+    }
+    // Second: add ALL employees/admins who aren't already in the map
+    // so users can start new conversations without needing a prior message
+    if (me?.role !== "client") {
+      for (const emp of employees) {
+        const eid = String(emp.id || emp._id);
+        if (eid === String(me?.id)) continue;
+        if (!map.has(eid)) {
+          map.set(eid, {
+            id: eid,
+            fullName: emp.fullName || emp.username || (L ? "موظف" : "Employee"),
+            role: emp.role,
+            profilePhotoUrl: emp.profilePhotoUrl || "",
+            avatarConfig: emp.avatarConfig || "",
+            lastMsg: null,
+            lastAt: null,
+            unread: 0,
+          });
+        }
+      }
+    }
+    const all = [...map.values()];
+    // Sort: conversations with messages first (by date desc), then alphabetically
+    return all.sort((a, b) => {
+      if (a.lastAt && b.lastAt) return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+      if (a.lastAt && !b.lastAt) return -1;
+      if (!a.lastAt && b.lastAt) return 1;
+      return (a.fullName || "").localeCompare(b.fullName || "");
+    });
+  })();
+
+  const filteredContacts = contacts.filter(c =>
+    (c.fullName || c.username || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Scroll to bottom when thread loads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [thread]);
+
+  // Focus input when chat opens on mobile
+  useEffect(() => {
+    if (activeContact && !showContacts) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [activeContact, showContacts]);
+
+  // ── Typing ──
+  const handleInputChange = (val: string) => {
+    setMessageText(val);
+    if (activeContact?.id) {
+      if (!isTypingLocal) { setIsTypingLocal(true); sendTyping(activeContact.id, true); }
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        setIsTypingLocal(false);
+        sendTyping(activeContact.id, false);
+      }, 2000);
+    }
+  };
+
+  // ── Mutations ──
+  const deleteMutation = useMutation({
+    mutationFn: async (msgId: string) => (await apiRequest("DELETE", `/api/inbox/${msgId}`)).json(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContact?.id] });
+    },
+    onError: () => toast({ title: L ? "تعذّر حذف الرسالة" : "Failed to delete message", variant: "destructive" }),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async (data: { body?: string; attachmentUrl?: string; attachmentType?: string; attachmentName?: string; attachmentSize?: number }) => {
+      if (!activeContact?.id) return;
+      return (await apiRequest("POST", "/api/inbox", { toUserId: activeContact.id, ...data })).json();
+    },
+    onSuccess: () => {
+      setMessageText("");
+      setIsTypingLocal(false);
+      if (activeContact?.id) sendTyping(activeContact.id, false);
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContact?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/badges"] });
+    },
+    onError: () => toast({ title: L ? "تعذّر إرسال الرسالة" : "Failed to send message", variant: "destructive" }),
+  });
+
+  const handleSend = () => {
+    if (!messageText.trim()) return;
+    sendMutation.mutate({ body: messageText.trim() });
+  };
+
+  // ── File Upload ──
+  const handleFileUpload = async (file: File) => {
+    if (!activeContact?.id) return;
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!data.url) throw new Error(L ? "فشل الرفع" : "Upload failed");
+      sendMutation.mutate({
+        attachmentUrl: data.url,
+        attachmentType: file.type.startsWith("image/") ? "image" : "file",
+        attachmentName: file.name,
+        attachmentSize: file.size,
+      });
+    } catch {
+      toast({ title: L ? "فشل رفع الملف" : "File upload failed", variant: "destructive" });
+    } finally { setUploadingFile(false); }
+  };
+
+  // ── Voice Recording ──
+  const getSupportedMimeType = () => {
+    const types = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    for (const t of types) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {} }
+    return "";
+  };
+
+  const startRecording = async () => {
+    if (!activeContact?.id) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks: BlobPart[] = [];
+      const mimeType = getSupportedMimeType();
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mr.ondataavailable = e => { if (e.data?.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setIsRecording(false);
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingTime(0);
+        if (activeContact?.id) sendVoiceRecording(activeContact.id, false);
+        const finalType = mimeType || mr.mimeType || "audio/webm";
+        const ext = finalType.includes("mp4") ? "m4a" : finalType.includes("ogg") ? "oga" : "weba";
+        const blob = new Blob(chunks, { type: finalType });
+        if (blob.size < 100) return;
+        const formData = new FormData();
+        formData.append("file", blob, `voice_${Date.now()}.${ext}`);
+        setUploadingFile(true);
+        try {
+          const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+          if (!res.ok) throw new Error("upload failed");
+          const data = await res.json();
+          if (data.url) sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: L ? "رسالة صوتية" : "Voice Message", attachmentSize: blob.size });
+        } catch { toast({ title: L ? "فشل إرسال الصوت" : "Voice upload failed", variant: "destructive" }); }
+        finally { setUploadingFile(false); }
+      };
+      mr.start(100);
+      setMediaRecorder(mr);
+      setIsRecording(true);
+      setRecordingTime(0);
+      if (activeContact?.id) sendVoiceRecording(activeContact.id, true);
+      recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    } catch { toast({ title: L ? "لا يمكن الوصول للمايك" : "Cannot access microphone", variant: "destructive" }); }
+  };
+
+  const stopRecording = () => { mediaRecorder?.stop(); setMediaRecorder(null); };
+  const cancelRecording = () => {
+    if (mediaRecorder) { mediaRecorder.ondataavailable = null; mediaRecorder.onstop = null; mediaRecorder.stop(); setMediaRecorder(null); }
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setRecordingTime(0);
+    if (activeContact?.id) sendVoiceRecording(activeContact.id, false);
+  };
+
+  // Group messages by date
+  const groupedThread = (() => {
+    const groups: { date: string; messages: any[] }[] = [];
+    for (const msg of thread) {
+      const dateKey = new Date(msg.createdAt).toDateString();
+      const last = groups[groups.length - 1];
+      if (last?.date === dateKey) last.messages.push(msg);
+      else groups.push({ date: dateKey, messages: [msg] });
+    }
+    return groups;
+  })();
+
+  const totalUnread = contacts.reduce((s, c) => s + c.unread, 0);
+
+  const openChat = (contact: any) => {
+    setActiveContact(contact);
+    setIsTypingRemote(false);
+    setIsVoiceRemote(false);
+    setShowContacts(false);
+    setShowClientContext(false);
+  };
+
+  const backToContacts = () => {
+    setShowContacts(true);
+  };
+
+  if (!user) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <p className="text-gray-400 text-sm">{L ? "يجب تسجيل الدخول" : "Please sign in"}</p>
+    </div>
+  );
+
+  return (
+    <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col" dir={dir}>
+
+      {/* ── Incoming Call Overlay ── */}
+      {incomingCall && (
+        <IncomingCallOverlay
+          call={incomingCall}
+          onAccept={() => handleAcceptCall(incomingCall)}
+          onDecline={() => handleDeclineCall(incomingCall)}
+        />
+      )}
+
+      {/* ── Outgoing Call Banner ── */}
+      {outgoingCall && (
+        <motion.div
+          initial={{ y: -60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 dark:bg-black text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10"
+        >
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <span className="text-sm font-bold">{L ? `جاري الاتصال بـ ${outgoingCall.contactName}...` : `Calling ${outgoingCall.contactName}...`}</span>
+          <button
+            onClick={() => { setOutgoingCall(null); if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current); }}
+            className="w-7 h-7 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+          >
+            <PhoneOff className="w-3.5 h-3.5 text-white" />
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── Top Bar (mobile only) ── */}
+      <div className="md:hidden bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-4 py-3 flex items-center gap-3 flex-shrink-0 safe-top">
+        {!showContacts && activeContact ? (
+          <>
+            <button onClick={backToContacts} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300" data-testid="button-back-to-contacts">
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} size="sm" profilePhotoUrl={activeContact.profilePhotoUrl} avatarConfig={activeContact.avatarConfig} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{activeContact.fullName}</p>
+              <p className="text-[10px] text-gray-400">
+                {isTypingRemote ? (L ? "يكتب..." : "typing...") : isVoiceRemote ? (L ? "يسجل صوتاً..." : "recording...") : onlineUsers.has(activeContact.id) ? (L ? "متصل الآن" : "Online") : roleLabel(activeContact.role, L)}
+              </p>
+            </div>
+            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center relative shadow-sm">
+              <MessageSquare className="w-4 h-4 text-white" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </span>
+              )}
+            </div>
+            <h1 className="font-black text-gray-900 dark:text-white text-sm flex-1">{L ? "صندوق الرسائل" : "Inbox"}</h1>
+            <div className={`flex items-center gap-1 text-[10px] ${connected ? "text-black dark:text-white" : "text-black/70 dark:text-white/70"}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
+              {connected ? (L ? "متصل" : "Online") : "..."}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── Contacts Panel ── */}
+        <div className={`
+          ${showContacts ? "flex" : "hidden"} md:flex
+          w-full md:w-[300px] lg:w-[320px]
+          flex-col flex-shrink-0
+          bg-white dark:bg-gray-900
+          md:border-l border-black/[0.06] dark:border-white/[0.06]
+        `}>
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-gradient-to-br from-black dark:from-white to-black dark:to-white rounded-xl flex items-center justify-center shadow-sm relative">
+                <MessageSquare className="w-4 h-4 text-white" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center">{totalUnread > 9 ? "9+" : totalUnread}</span>
+                )}
+              </div>
+              <div>
+                <h1 className="font-black text-sm text-gray-900 dark:text-white">{L ? "الرسائل" : "Messages"}</h1>
+                <div className="flex items-center gap-1">
+                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} />
+                  <p className="text-[10px] text-gray-400">{connected ? (L ? "متصل" : "Connected") : (L ? "جاري الاتصال..." : "Connecting...")}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="px-3 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]">
+            <div className="relative">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <Input
+                placeholder={L ? "بحث في المحادثات..." : "Search conversations..."}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-8 text-xs pr-8 bg-gray-50 dark:bg-gray-800 border-transparent focus:border-black/15 dark:border-white/15 dark:focus:border-black dark:border-white"
+                data-testid="input-search-contacts"
+              />
+            </div>
+          </div>
+
+          {/* New Message (employees only) */}
+          {me?.role !== "client" && (
+            <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.04] space-y-1.5">
+              {employees.length > 0 && (
+                <select
+                  value={newContactId}
+                  onChange={e => {
+                    const u = employees.find((emp: any) => emp.id === e.target.value);
+                    if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: u.role }); setNewContactId(""); }
+                  }}
+                  className="w-full h-8 text-xs border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  data-testid="select-new-contact"
+                >
+                  <option value="">{L ? "+ رسالة للفريق" : "+ Message team member"}</option>
+                  {employees.filter((e: any) => e.id !== me.id).map((e: any) => (
+                    <option key={e.id} value={e.id}>{e.employeeCode ? `[${e.employeeCode}] ` : ""}{e.fullName || e.username} ({roleLabel(e.role, L)})</option>
+                  ))}
+                </select>
+              )}
+              {clients.length > 0 && (
+                <select
+                  value={newClientId}
+                  onChange={e => {
+                    const u = clients.find((c: any) => c.id === e.target.value);
+                    if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: "client" }); setNewClientId(""); }
+                  }}
+                  className="w-full h-8 text-xs border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-lg px-2 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70"
+                  data-testid="select-new-client-contact"
+                >
+                  <option value="">{L ? "+ رسالة لعميل" : "+ Message a client"}</option>
+                  {clients.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.fullName || c.username} {c.email ? `(${c.email})` : ""}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Contacts List */}
+          <ScrollArea className="flex-1">
+            {loadingMsgs ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-300 dark:text-gray-600" />
+              </div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="py-12 text-center px-6">
+                <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                </div>
+                <p className="text-xs font-semibold text-gray-400">{L ? "لا توجد محادثات بعد" : "No conversations yet"}</p>
+                <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{L ? "ابدأ محادثة جديدة أعلاه" : "Start a new conversation above"}</p>
+              </div>
+            ) : (
+              <div className="py-1">
+                {filteredContacts.map(c => {
+                  const isOnline = onlineUsers.has(c.id);
+                  const isActive = activeContact?.id === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => openChat(c)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-all duration-150 ${
+                        isActive
+                          ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-r-2 border-black dark:border-white"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-800/60 border-r-2 border-transparent"
+                      }`}
+                      data-testid={`contact-${c.id}`}
+                    >
+                      <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" profilePhotoUrl={c.profilePhotoUrl} avatarConfig={c.avatarConfig} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className={`text-xs font-bold truncate ${isActive ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-gray-800 dark:text-gray-100"}`}>
+                            {c.fullName}
+                            {c.employeeCode && <span className="ml-1 text-[9px] font-mono text-violet-600 dark:text-violet-400">[{c.employeeCode}]</span>}
+                          </p>
+                          <span className="text-[9px] text-gray-400 flex-shrink-0 mr-1">{timeAgo(c.lastAt, L)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{c.lastMsg}</p>
+                          {c.unread > 0 && (
+                            <span className="w-4 h-4 bg-black dark:bg-white text-white text-[9px] font-bold rounded-full flex items-center justify-center flex-shrink-0 mr-1">
+                              {c.unread > 9 ? "9+" : c.unread}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* ── Chat Area ── */}
+        <div className={`
+          ${!showContacts || activeContact ? "flex" : "hidden"} md:flex
+          flex-1 flex-col overflow-hidden
+          bg-gray-50 dark:bg-gray-950
+        `}>
+          {!activeContact ? (
+            /* Empty state */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center px-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-black/[0.04] dark:from-white/[0.06] to-black/[0.04] dark:to-white/[0.06] dark:from-black dark:from-white dark:to-black dark:to-white rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+                  <MessageSquare className="w-9 h-9 text-black/70 dark:text-white/70 dark:text-black dark:text-white" />
+                </div>
+                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{L ? "اختر محادثة للبدء" : "Select a conversation"}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1.5">{L ? "ستظهر رسائلك هنا" : "Your messages will appear here"}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* ── Chat Header (desktop only) ── */}
+              <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-5 py-3 items-center gap-3 flex-shrink-0 shadow-sm">
+                <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} profilePhotoUrl={activeContact.profilePhotoUrl} avatarConfig={activeContact.avatarConfig} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
+                    {activeContact.role === "client" && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "عميل" : "Client"}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 h-4">
+                    {isVoiceRemote ? (
+                      <span className="text-[10px] text-black dark:text-white animate-pulse flex items-center gap-1">
+                        <Mic className="w-2.5 h-2.5" /> {L ? "يسجل صوتاً..." : "recording..."}
+                      </span>
+                    ) : isTypingRemote ? (
+                      <span className="text-[10px] text-black dark:text-white font-medium flex items-center gap-1">
+                        <span className="flex gap-0.5">
+                          {[0, 150, 300].map(d => <span key={d} className="w-1 h-1 bg-black/[0.08] dark:bg-white/[0.1] rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
+                        </span>
+                        {L ? "يكتب..." : "typing..."}
+                      </span>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(activeContact.id) ? "bg-black dark:bg-white" : "bg-gray-300 dark:bg-gray-600"}`} />
+                        {onlineUsers.has(activeContact.id) ? (L ? "متصل الآن" : "Online") : roleLabel(activeContact.role, L)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activeContact.role === "client" && me?.role !== "client" && (
+                    <button
+                      onClick={() => setShowClientContext(v => !v)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-black dark:text-white dark:text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white px-2 py-1 rounded-lg transition-colors"
+                      data-testid="button-toggle-client-context"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      {L ? "بيانات العميل" : "Client Info"}
+                      {showClientContext ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
+                  {/* ── Call Buttons (employees only, show when contact is online) ── */}
+                  {me?.role !== "client" && onlineUsers.has(activeContact.id) && (
+                    <>
+                      <button
+                        onClick={() => initiateCall(activeContact.id, activeContact.fullName, "voice")}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                        title={L ? "مكالمة صوتية" : "Voice call"}
+                        data-testid="button-voice-call"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => initiateCall(activeContact.id, activeContact.fullName, "video")}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                        title={L ? "مكالمة فيديو" : "Video call"}
+                        data-testid="button-video-call"
+                      >
+                        <Video className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  <div className={`w-2 h-2 rounded-full ${connected ? "bg-black dark:bg-white" : "bg-black/[0.08] dark:bg-white/[0.1]"}`} title={connected ? (L ? "متصل" : "Connected") : (L ? "غير متصل" : "Disconnected")} />
+                </div>
+              </div>
+
+              {/* ── Client Context Panel (employees chatting with clients) ── */}
+              {showClientContext && activeContact?.role === "client" && me?.role !== "client" && clientContext && (
+                <div className="hidden md:block bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-b border-black/10 dark:border-white/10 dark:border-black dark:border-white px-5 py-3">
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Client Info */}
+                    <div>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5">{L ? "بيانات العميل" : "Client Data"}</p>
+                      <div className="space-y-0.5">
+                        {clientContext.client?.email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-black/70 dark:text-white/70" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300 truncate">{clientContext.client.email}</span>
+                          </div>
+                        )}
+                        {clientContext.client?.country && (
+                          <div className="flex items-center gap-1.5">
+                            <Globe className="w-3 h-3 text-black/70 dark:text-white/70" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.country}</span>
+                          </div>
+                        )}
+                        {clientContext.client?.phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3 h-3 text-black/70 dark:text-white/70" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Orders */}
+                    <div>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Package className="w-3 h-3" /> {L ? "الطلبات" : "Orders"} ({clientContext.orders?.length || 0})</p>
+                      <div className="space-y-0.5">
+                        {(clientContext.orders || []).slice(0, 2).map((o: any) => (
+                          <div key={o._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                            <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{o.businessName || o.serviceType}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : o.status === 'pending' ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" : "bg-gray-100 text-gray-500"}`}>{o.status}</span>
+                              {o.totalAmount && <span className="text-[8px] text-gray-400">{o.totalAmount.toLocaleString()} ر.س</span>}
+                            </div>
+                          </div>
+                        ))}
+                        {!clientContext.orders?.length && <p className="text-[10px] text-gray-400">{L ? "لا توجد طلبات" : "No orders"}</p>}
+                      </div>
+                    </div>
+                    {/* Projects */}
+                    <div>
+                      <p className="text-[9px] font-black text-black dark:text-white dark:text-black/70 dark:text-white/70 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Activity className="w-3 h-3" /> {L ? "المشاريع" : "Projects"} ({clientContext.projects?.length || 0})</p>
+                      <div className="space-y-0.5">
+                        {(clientContext.projects || []).slice(0, 2).map((p: any) => (
+                          <div key={p._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-black/10 dark:border-white/10 dark:border-black dark:border-white">
+                            <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{p.title || (L ? "مشروع" : "Project")}</p>
+                            <p className="text-[8px] text-gray-400">{p.phase || "—"} • {p.progress || 0}%</p>
+                          </div>
+                        ))}
+                        {!clientContext.projects?.length && <p className="text-[10px] text-gray-400">{L ? "لا توجد مشاريع" : "No projects"}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Messages Area ── */}
+              <ScrollArea className="flex-1 px-3 sm:px-5 py-4">
+                {loadingThread ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-300 dark:text-gray-600" />
+                  </div>
+                ) : thread.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <MessageSquare className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                    </div>
+                    <p className="text-xs text-gray-400">{L ? "ابدأ المحادثة الآن" : "Start the conversation"}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {groupedThread.map(({ date, messages }) => (
+                      <div key={date}>
+                        <DateSeparator date={messages[0].createdAt} L={L} />
+                        <div className="space-y-1.5">
+                          {messages.map((msg: any) => {
+                            const isMe = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id);
+                            return (
+                              <MessageBubble
+                                key={msg.id || msg._id}
+                                msg={msg}
+                                isMe={isMe}
+                                contact={activeContact}
+                                onDelete={(id) => deleteMutation.mutate(id)}
+                                L={L}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    {(isTypingRemote || isVoiceRemote) && <TypingDots />}
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* ── Input Area ── */}
+              <div className="bg-white dark:bg-gray-900 border-t border-black/[0.06] dark:border-white/[0.06] p-3 flex-shrink-0 safe-bottom">
+                {/* Recording Bar */}
+                {isRecording && (
+                  <div className="flex items-center gap-3 mb-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-3 py-2.5">
+                    <div className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full animate-pulse" />
+                    <span className="text-xs font-semibold text-black dark:text-white dark:text-black/70 dark:text-white/70 flex-1">
+                      {L ? "تسجيل..." : "Recording..."} {recordingTime}s
+                    </span>
+                    <button onClick={cancelRecording} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors" data-testid="button-cancel-recording">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={stopRecording}
+                      className="bg-black dark:bg-white text-white text-xs px-3 py-1.5 rounded-lg hover:bg-black dark:bg-white transition-colors font-semibold flex items-center gap-1"
+                      data-testid="button-stop-recording"
+                    >
+                      <Send className="w-3 h-3" /> {L ? "إرسال" : "Send"}
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={e => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }}
+                    data-testid="input-file-upload"
+                  />
+
+                  {/* Attach */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile || isRecording}
+                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0"
+                    data-testid="button-attach-file"
+                  >
+                    {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                  </button>
+
+                  {/* Voice */}
+                  {!isRecording && (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={uploadingFile}
+                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors rounded-xl hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex-shrink-0"
+                      data-testid="button-start-recording"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Text Input */}
+                  {!isRecording && (
+                    <div className="flex-1 relative">
+                      <Input
+                        ref={inputRef}
+                        value={messageText}
+                        onChange={e => handleInputChange(e.target.value)}
+                        placeholder={L ? "اكتب رسالتك..." : "Write a message..."}
+                        className="h-10 text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-black/15 dark:border-white/15 dark:focus:border-black dark:border-white rounded-xl pr-3 pl-3"
+                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                        data-testid="input-message"
+                      />
+                    </div>
+                  )}
+
+                  {/* Send */}
+                  {!isRecording && (
+                    <Button
+                      type="submit"
+                      size="icon"
+                      className="w-10 h-10 bg-gradient-to-br from-black dark:from-white to-black dark:to-white text-white rounded-xl hover:from-black dark:from-white hover:to-black dark:to-white shadow-sm flex-shrink-0 disabled:opacity-70"
+                      disabled={!messageText.trim() || sendMutation.isPending}
+                      data-testid="button-send-message"
+                    >
+                      {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  )}
+                </form>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

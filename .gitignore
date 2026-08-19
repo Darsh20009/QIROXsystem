@@ -1,0 +1,41 @@
+node_modules
+dist/public/assets/*.png
+dist/public/assets/*.jpg
+dist/public/assets/*.jpeg
+dist/public/assets/*.webp
+dist/public/assets/*.gif
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+uploads/.local/state/
+
+# Large zip attachments — do NOT commit to git (GitHub 100MB limit)
+# These are dev-only uploaded files not needed in production
+attached_assets/*.zip
+
+# ── Security credentials — NEVER commit these ─────────────────────────────────
+# Private keys and certificates are compromised if committed.
+# Treat any leaked file as compromised and revoke/regenerate immediately.
+*.pem
+*.p12
+*.p8
+*.key
+*.csr
+*.cer
+*.crt
+*.jks
+*.keystore
+*.mobileprovision
+distribution*
+QIROX_Distribution*
+attached_assets/*.cer
+attached_assets/*.csr
+attached_assets/*.key
+attached_assets/*.p8
+attached_assets/AuthKey_*
+attached_assets/._*
+._*
+.whatsapp-auth/
+# dist/index.cjs is committed — pre-built bundle deployed directly to Render
+attached_assets/

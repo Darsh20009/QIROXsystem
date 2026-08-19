@@ -1,0 +1,62 @@
+{
+  "appId": "qiroxstudio.online",
+  "appName": "QIROX Studio",
+  "webDir": "dist/public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://qiroxstudio.online",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "ios": {
+    "minVersion": "16.0",
+    "buildVersion": "1",
+    "version": "1.0.0",
+    "backgroundColor": "#111111",
+    "scrollEnabled": true,
+    "allowsLinkPreview": false,
+    "handleApplicationNotifications": true,
+    "allowsBackForwardNavigationGestures": true,
+    "contentInset": "always",
+    "preferredContentMode": "mobile"
+  },
+  "android": {
+    "backgroundColor": "#111111",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "overlaysWebView": false,
+      "backgroundColor": "#111111"
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 1500,
+      "backgroundColor": "#111111",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#ffffff",
+      "useDialog": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "DARK",
+      "resizeOnFullScreen": true
+    },
+    "Browser": {
+      "windowName": "_self"
+    },
+    "Haptics": {},
+    "App": {
+      "launchUrl": "https://qiroxstudio.online"
+    }
+  }
+}

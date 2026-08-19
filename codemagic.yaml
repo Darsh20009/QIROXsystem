@@ -1,0 +1,367 @@
+workflows:
+
+  # ─── iOS Build (No Signing) ────────────────────────────────────────────────
+  ios-build:
+    name: iOS Build (No Signing)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: v20.20.0
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "qiroxstudio.online"
+        APP_NAME: "QIROX Studio"
+        APP_URL: "https://qiroxstudio.online"
+
+    scripts:
+      - name: Install dependencies and build web assets
+        script: |
+          set -e
+          # yarn avoids the "Exit handler never called!" npm v10 macOS bug
+          # that is triggered by packages with native bindings (canvas, bcrypt)
+          install_deps() {
+            for attempt in 1 2 3; do
+              rm -rf node_modules
+              if yarn install --ignore-scripts --non-interactive \
+                --network-timeout 300000; then
+                echo "Dependencies installed successfully on attempt ${attempt}"
+                return 0
+              fi
+              echo "Dependency install attempt ${attempt} failed; retrying..."
+              sleep 5
+            done
+            echo "Dependencies could not be installed after 3 attempts"
+            exit 1
+          }
+          install_deps
+          npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
+          GLOBAL=$(npm root -g)
+          mkdir -p node_modules/@vitejs node_modules/@tailwindcss
+          rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
+          rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
+          rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
+          node node_modules/vite/bin/vite.js build
+
+      - name: Add iOS platform (if not present)
+        script: |
+          if [ ! -d "ios" ]; then npx cap add ios; fi
+
+      - name: Sync Capacitor to iOS
+        script: |
+          set -e
+          CAP_VER="7.6.7"
+          npm install --legacy-peer-deps --omit=optional @capacitor/core || true
+          mkdir -p node_modules/@capacitor/ios
+          curl -sL "https://registry.npmjs.org/@capacitor/ios/-/ios-${CAP_VER}.tgz" \
+            | tar -xz --strip-components=1 -C node_modules/@capacitor/ios
+          npm install -g @capacitor/cli@${CAP_VER}
+          cap sync ios
+
+      - name: Set App Icon
+        script: |
+          ICON_SRC="client/public/qirox-icon.png"
+          ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          if [ -f "$ICON_SRC" ] && [ -d "$ICON_DEST" ]; then
+            sips -z 1024 1024 "$ICON_SRC" --out "$ICON_DEST/Icon-1024.png"
+          fi
+
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      - name: Build iOS (no signing)
+        script: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+
+  # ─── iOS Release (App Store / TestFlight) ─────────────────────────────────
+  ios-release:
+    name: iOS Release - TestFlight / App Store
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      node: v20.20.0
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ios-credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: qiroxstudio.online
+      vars:
+        BUNDLE_ID: "qiroxstudio.online"
+        APP_NAME: "QIROX Studio"
+        APP_URL: "https://qiroxstudio.online"
+        NOTIFY_EMAIL: "qiroxsystem@gmail.com"
+
+    scripts:
+      - name: Install dependencies and build web assets
+        script: |
+          set -e
+          # yarn avoids the "Exit handler never called!" npm v10 macOS bug
+          # that is triggered by packages with native bindings (canvas, bcrypt)
+          install_deps() {
+            for attempt in 1 2 3; do
+              rm -rf node_modules
+              if yarn install --ignore-scripts --non-interactive \
+                --network-timeout 300000; then
+                echo "Dependencies installed successfully on attempt ${attempt}"
+                return 0
+              fi
+              echo "Dependency install attempt ${attempt} failed; retrying..."
+              sleep 5
+            done
+            echo "Dependencies could not be installed after 3 attempts"
+            exit 1
+          }
+          install_deps
+          npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
+          GLOBAL=$(npm root -g)
+          mkdir -p node_modules/@vitejs node_modules/@tailwindcss
+          rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
+          rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
+          rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
+          node node_modules/vite/bin/vite.js build
+
+      - name: Add iOS platform (if not present)
+        script: |
+          if [ ! -d "ios" ]; then npx cap add ios; fi
+
+      - name: Sync Capacitor to iOS
+        script: |
+          set -e
+          CAP_VER="7.6.7"
+          npm install --legacy-peer-deps --omit=optional @capacitor/core || true
+          mkdir -p node_modules/@capacitor/ios
+          curl -sL "https://registry.npmjs.org/@capacitor/ios/-/ios-${CAP_VER}.tgz" \
+            | tar -xz --strip-components=1 -C node_modules/@capacitor/ios
+          npm install -g @capacitor/cli@${CAP_VER}
+          cap sync ios
+
+      - name: Set minimum iOS version to 16.0
+        script: |
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '16.0'/" ios/App/Podfile || true
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 16.0/g' \
+            ios/App/App.xcodeproj/project.pbxproj || true
+
+      - name: Set App Icon (all sizes)
+        script: |
+          set -e
+          ICON_SRC="client/public/qirox-icon.png"
+          ICON_DEST="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICON_DEST"
+          if [ ! -f "$ICON_SRC" ]; then echo "Icon not found: $ICON_SRC" && exit 1; fi
+          # Remove alpha channel: PNG -> JPEG (loses alpha, white bg) -> PNG
+          sips -s format jpeg "$ICON_SRC" --out /tmp/icon_flat.jpg
+          sips -s format png  /tmp/icon_flat.jpg --out /tmp/icon_notalpha.png
+          FLAT=/tmp/icon_notalpha.png
+          echo "Alpha removed. Has alpha: $(sips -g hasAlpha $FLAT | grep -o 'yes\|no')"
+          sips -z 20   20   "$FLAT" --out "$ICON_DEST/Icon-20.png"
+          sips -z 29   29   "$FLAT" --out "$ICON_DEST/Icon-29.png"
+          sips -z 40   40   "$FLAT" --out "$ICON_DEST/Icon-40.png"
+          sips -z 58   58   "$FLAT" --out "$ICON_DEST/Icon-58.png"
+          sips -z 60   60   "$FLAT" --out "$ICON_DEST/Icon-60.png"
+          sips -z 76   76   "$FLAT" --out "$ICON_DEST/Icon-76.png"
+          sips -z 80   80   "$FLAT" --out "$ICON_DEST/Icon-80.png"
+          sips -z 87   87   "$FLAT" --out "$ICON_DEST/Icon-87.png"
+          sips -z 120  120  "$FLAT" --out "$ICON_DEST/Icon-120.png"
+          sips -z 152  152  "$FLAT" --out "$ICON_DEST/Icon-152.png"
+          sips -z 167  167  "$FLAT" --out "$ICON_DEST/Icon-167.png"
+          sips -z 180  180  "$FLAT" --out "$ICON_DEST/Icon-180.png"
+          sips -z 1024 1024 "$FLAT" --out "$ICON_DEST/Icon-1024.png"
+          cp ios-assets/AppIcon-Contents.json "$ICON_DEST/Contents.json"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "ios/App/App/Info.plist" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "ios/App/App/Info.plist"
+          echo "AppIcon done - no alpha"
+
+      - name: Inject Info.plist permissions
+        script: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Camera for QR and face recognition'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Camera for QR and face recognition'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Microphone for video meetings'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Microphone for video meetings'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Photo library for file uploads'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Photo library for file uploads'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'Face ID for secure authentication'" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSFaceIDUsageDescription 'Face ID for secure authentication'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string qiroxstudio.online" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string qirox" "$PLIST" 2>/dev/null || true
+          # Bypass App Store export compliance prompt — app uses no non-exempt encryption
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST"
+
+      - name: Inject App.entitlements
+        script: |
+          cp ios-assets/App.entitlements ios/App/App/App.entitlements
+          echo "App.entitlements copied"
+
+      - name: Install CocoaPods
+        script: cd ios/App && pod install
+
+      - name: Set build number
+        script: |
+          # Use Codemagic BUILD_NUMBER (auto-increments each build) as CFBundleVersion
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          echo "CFBundleVersion set to: $BUILD_NUMBER"
+
+      - name: Set up code signing and build IPA
+        script: |
+          set -e
+          keychain add-certificates
+          xcode-project use-profiles
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
+
+      - name: Publish to TestFlight
+        script: |
+          set -e
+          python3 << 'PYEOF'
+          import os, sys
+          key = os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY', '')
+          key = key.replace('\\n', '\n').strip()
+          with open('/tmp/asc_key.p8', 'w') as f:
+              f.write(key + '\n')
+          lines = key.splitlines()
+          print(f"Key lines: {len(lines)}")
+          print(f"First: {lines[0] if lines else 'EMPTY'}")
+          PYEOF
+          if ! head -1 /tmp/asc_key.p8 | grep -q 'BEGIN'; then
+            echo "Key missing BEGIN header"
+            head -3 /tmp/asc_key.p8
+            exit 1
+          fi
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          [ -z "$IPA" ] && echo "No IPA found" && exit 1
+          app-store-connect publish \
+            --path "$IPA" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --private-key @file:/tmp/asc_key.p8 \
+            --testflight
+          echo "Uploaded to TestFlight"
+
+    publishing:
+      email:
+        recipients:
+          - qiroxsystem@gmail.com
+        notify:
+          success: true
+          failure: true
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+  # ─── Android TWA - Google Play ─────────────────────────────────────────────
+  android-release:
+    name: Android TWA - Google Play
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      node: v20.20.0
+      java: 17
+      vars:
+        PACKAGE_NAME: "online.qiroxstudio.twa"
+        APP_URL: "https://qiroxstudio.online"
+
+    scripts:
+      - name: Decode keystore
+        script: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android-twa/qirox-android.keystore
+
+      - name: Install Bubblewrap CLI
+        script: npm install -g @bubblewrap/cli
+
+      - name: Build Android TWA (AAB)
+        script: |
+          set -e
+          cd android-twa
+          bubblewrap build --skipPwaValidation --manifest twa-manifest.json
+
+      - name: Sign AAB
+        script: |
+          set -e
+          cd android-twa
+          AAB=$(find . -name "*.aab" | head -1)
+          jarsigner \
+            -keystore qirox-android.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$AAB" "$KEY_ALIAS"
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+      email:
+        recipients:
+          - qiroxsystem@gmail.com
+        notify:
+          success: true
+          failure: true
+
+    artifacts:
+      - android-twa/**/*.aab
+      - android-twa/**/*.apk
+
+  # ─── Web Build ─────────────────────────────────────────────────────────────
+  web-build:
+    name: QIROX Web Build
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      node: v20.20.0
+    scripts:
+      - name: Install dependencies and build
+        script: |
+          set -e
+          npm install --legacy-peer-deps --ignore-scripts
+          npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
+          GLOBAL=$(npm root -g)
+          mkdir -p node_modules/@vitejs node_modules/@tailwindcss
+          rm -rf node_modules/vite && cp -rL "$GLOBAL/vite" node_modules/vite
+          rm -rf node_modules/@vitejs/plugin-react && cp -rL "$GLOBAL/@vitejs/plugin-react" node_modules/@vitejs/plugin-react
+          rm -rf node_modules/@tailwindcss/vite && cp -rL "$GLOBAL/@tailwindcss/vite" node_modules/@tailwindcss/vite
+          node node_modules/vite/bin/vite.js build
+
+      - name: Build server
+        script: |
+          PKG_DEPS=$(node -e "
+            const p = require('./package.json');
+            const all = [...Object.keys(p.dependencies||{}), ...Object.keys(p.devDependencies||{})];
+            const allow = new Set(['axios','express','express-rate-limit','express-session','nodemailer','openai','passport','passport-local','pg','uuid','ws','zod','zod-validation-error','mongoose','connect-mongo','web-push','node-cron','pdf-lib','exceljs','mammoth','file-saver','fabric','recharts','digest-fetch','@paypal/paypal-server-sdk','bcrypt','bcryptjs','compression','multer','memorystore','simple-git','archiver','imapflow','mailparser','speakeasy']);
+            console.log(all.filter(d => !allow.has(d)).map(d => '--external:' + d).join(' '));
+          ")
+          node_modules/.bin/esbuild server/index.ts \
+            --platform=node --bundle --format=cjs \
+            --outfile=dist/index.cjs \
+            "--define:process.env.NODE_ENV=\"production\"" \
+            --minify $PKG_DEPS
+
+    publishing:
+      email:
+        recipients:
+          - qiroxsystem@gmail.com
+        notify:
+          success: true
+          failure: true
+
+    artifacts:
+      - dist/**

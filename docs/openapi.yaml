@@ -1,0 +1,228 @@
+openapi: 3.0.3
+info:
+  title: QIROX Studio API
+  version: "1.0.0"
+  description: >
+    QIROX platform API reference for Beta readiness. This document covers the
+    core public/health surface, authentication, AI, and the newer additive V2
+    domains (CRM V2, Proposal V2). It is intentionally scoped to the highest-
+    traffic and highest-risk endpoint groups rather than an exhaustive listing
+    of every route in this large platform — additional endpoints can be
+    appended here incrementally without any code change.
+servers:
+  - url: /
+    description: Same-origin (this server)
+tags:
+  - name: Health
+  - name: Auth
+  - name: AI
+  - name: CRM V2
+  - name: Proposal V2
+  - name: Mail
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Early liveness probe (available before DB connects)
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  timestamp: { type: string, format: date-time }
+                  service: { type: string, example: "QIROX Studio" }
+
+  /health/live:
+    get:
+      tags: [Health]
+      summary: Liveness — is the process alive?
+      responses:
+        "200": { description: Always 200 while the process is running }
+
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness — is MongoDB connected?
+      responses:
+        "200": { description: DB connected }
+        "503": { description: DB not connected }
+
+  /health/detailed:
+    get:
+      tags: [Health]
+      summary: Full diagnostic snapshot (DB, memory, feature flags, build id)
+      description: >
+        Returns 404 unless FEATURE_HEALTH_DETAILED_PUBLIC is on or the
+        X-Health-Secret header matches INTERNAL_HEALTH_SECRET.
+      parameters:
+        - in: header
+          name: X-Health-Secret
+          schema: { type: string }
+          required: false
+      responses:
+        "200": { description: Diagnostic snapshot }
+        "404": { description: Not authorised / not enabled }
+        "503": { description: DB not connected }
+
+  /api/public/feature-flags:
+    get:
+      tags: [Health]
+      summary: Snapshot of all FEATURE_* flags (read-only, no auth)
+      responses:
+        "200":
+          description: Flag snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  flags:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        enabled: { type: boolean }
+                        source: { type: string }
+
+  /api/login:
+    post:
+      tags: [Auth]
+      summary: Log in with username/email + password
+      description: Rate-limited (15 req / 15 min per IP).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        "200": { description: Authenticated (or 2FA challenge issued) }
+        "401": { description: Invalid credentials }
+        "429": { description: Rate limited }
+
+  /api/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+      description: Rate-limited (10 req / hour per IP).
+      responses:
+        "200": { description: Account created }
+        "429": { description: Rate limited }
+
+  /api/logout:
+    post:
+      tags: [Auth]
+      summary: Log out the current session
+      responses:
+        "200": { description: Logged out }
+
+  /api/user:
+    get:
+      tags: [Auth]
+      summary: Get the current authenticated user
+      responses:
+        "200": { description: Current user }
+        "401": { description: Not authenticated }
+
+  /api/ai/message:
+    post:
+      tags: [AI]
+      summary: Send a message to the QIROX AI assistant
+      description: >
+        Rate-limited (20 req / minute per IP) — added for Beta readiness to
+        protect paid upstream AI providers (OpenAI / Moonshot) from abuse.
+      responses:
+        "200": { description: AI response }
+        "429": { description: Rate limited }
+
+  /api/ai/generate-image:
+    post:
+      tags: [AI]
+      summary: Generate an image via the configured AI image provider
+      description: Rate-limited (20 req / minute per IP).
+      responses:
+        "200": { description: Generated image }
+        "429": { description: Rate limited }
+
+  /api/mail/test-connection:
+    post:
+      tags: [Mail]
+      summary: Verify SMTP/IMAP connectivity for a mail account
+      responses:
+        "200": { description: Connection result }
+
+  /api/v2/crm/stats:
+    get:
+      tags: [CRM V2]
+      summary: CRM V2 dashboard stats (staff-only)
+      description: Gated behind FEATURE_CRM_V2. Requires staff session.
+      responses:
+        "200": { description: Stats }
+        "401": { description: Not authenticated }
+        "404": { description: Feature flag disabled }
+
+  /api/v2/proposals:
+    get:
+      tags: [Proposal V2]
+      summary: List proposals (staff-only)
+      description: >
+        Gated behind FEATURE_PROPOSAL_V2 (default OFF). Additive architecture
+        introduced in Sprint D — does not affect the existing Quotation
+        system.
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [draft, sent, viewed, accepted, rejected, expired] }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        "200": { description: Proposal list }
+        "401": { description: Not authenticated }
+        "404": { description: Feature flag disabled }
+    post:
+      tags: [Proposal V2]
+      summary: Create a proposal (staff-only)
+      responses:
+        "201": { description: Created }
+        "401": { description: Not authenticated }
+        "404": { description: Feature flag disabled }
+
+  /api/v2/proposals/stats:
+    get:
+      tags: [Proposal V2]
+      summary: Proposal V2 aggregate stats
+      responses:
+        "200": { description: Stats }
+        "401": { description: Not authenticated }
+        "404": { description: Feature flag disabled }
+
+  /api/v2/proposals/public/{token}:
+    get:
+      tags: [Proposal V2]
+      summary: Public client-facing view of a single proposal via its share token
+      description: No auth required — token itself is the access control.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Proposal }
+        "404": { description: Not found, or feature flag disabled }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: connect.sid

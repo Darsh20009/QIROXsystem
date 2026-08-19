@@ -1,0 +1,485 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
+import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
+import {
+  Loader2, Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowUpRight, ArrowDownLeft,
+  Plus, Trash2, Users, Clock, ChevronLeft, CreditCard, CheckCircle2, XCircle, RefreshCw, Building2
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
+
+interface Client { id: string; fullName: string; username: string; email: string; }
+interface WalletTx { id: string; type: "debit" | "credit"; amount: number; description: string; note: string; addedBy?: { fullName: string }; createdAt: string; }
+interface WalletData { transactions: WalletTx[]; totalDebit: number; totalCredit: number; outstanding: number; }
+interface TopupRequest {
+  id: string;
+  amount: number;
+  status: "pending" | "approved" | "rejected";
+  bankName: string;
+  bankRef: string;
+  note: string;
+  createdAt: string;
+  rejectionReason?: string;
+  userId: { fullName: string; email: string; username: string };
+}
+
+function fmt(n: number) {
+  return n.toLocaleString("ar-SA", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+export default function AdminWallet() {
+  const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const [activeTab, setActiveTab] = useState<"clients" | "topups">("clients");
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState({ type: "credit", amount: "", description: "", note: "" });
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const { data: clients, isLoading: loadingClients } = useQuery<Client[]>({ queryKey: ["/api/admin/wallet/clients"] });
+  const { data: topupRequests, isLoading: loadingTopups } = useQuery<TopupRequest[]>({ queryKey: ["/api/admin/wallet/topup-requests"] });
+
+  const { data: walletData, isLoading: loadingWallet } = useQuery<WalletData>({
+    queryKey: ["/api/admin/wallet", selectedClient?.id],
+    queryFn: async () => {
+      const r = await fetch(`/api/admin/wallet/${selectedClient!.id}`, { credentials: "include" });
+      return r.json();
+    },
+    enabled: !!selectedClient,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/wallet/transaction", {
+        userId: selectedClient!.id, type: form.type,
+        amount: Number(form.amount), description: form.description, note: form.note,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet", selectedClient?.id] });
+      setAddOpen(false);
+      setForm({ type: "debit", amount: "", description: "", note: "" });
+      toast({ title: L ? "تمت الإضافة بنجاح" : "Added successfully" });
+    },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/wallet/transaction/${id}`); },
+    onError: (e: any) => toast({ title: e?.message || "فشل الحذف", variant: "destructive" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet", selectedClient?.id] });
+      setDeleteId(null);
+      toast({ title: L ? "تم الحذف" : "Deleted" });
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/admin/wallet/topup-approve/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet/topup-requests"] });
+      toast({ title: L ? "تم اعتماد طلب الشحن وإضافة الرصيد" : "Topup approved and balance added" });
+    },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      await apiRequest("POST", `/api/admin/wallet/topup-reject/${id}`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet/topup-requests"] });
+      setRejectId(null);
+      setRejectReason("");
+      toast({ title: L ? "تم رفض الطلب" : "Request rejected" });
+    },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const txs = walletData?.transactions || [];
+  const pendingTopups = (topupRequests || []).filter(r => r.status === 'pending');
+
+  return (
+    <><div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
+      <PageGraphics variant="dashboard" />
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto flex items-center gap-4">
+          <SidebarTrigger className="text-black/40 dark:text-white/40" />
+          {selectedClient && (
+            <button onClick={() => setSelectedClient(null)} className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors text-sm">
+              <ChevronLeft className="w-4 h-4" />{L ? "العملاء" : "Clients"}
+            </button>
+          )}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
+              <Wallet className="w-4 h-4 text-black/70 dark:text-white/70" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-black dark:text-white">
+                {selectedClient ? `${L ? "محفظة:" : "Wallet:"} ${selectedClient.fullName || selectedClient.username}` : (L ? "إدارة المحافظ" : "Wallet Management")}
+              </h1>
+              <p className="text-xs text-black/40 dark:text-white/40">
+                {selectedClient ? selectedClient.email : "Qirox Pay — إدارة المدفوعات والشحن"}
+              </p>
+            </div>
+          </div>
+          {selectedClient && (
+            <div className="mr-auto flex gap-2">
+              <Button onClick={() => { setForm(f => ({ ...f, type: "credit" })); setAddOpen(true); }} size="sm"
+                className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs gap-1.5" data-testid="button-add-credit">
+                <Plus className="w-3.5 h-3.5" />{L ? "شحن المحفظة" : "Top Up Wallet"}
+              </Button>
+              <Button onClick={() => { setForm(f => ({ ...f, type: "debit" })); setAddOpen(true); }} size="sm"
+                variant="outline" className="text-black dark:text-white border-black/10 dark:border-white/10 hover:border-black/15 dark:border-white/15 hover:bg-black/[0.04] dark:bg-white/[0.06] text-xs gap-1.5" data-testid="button-add-debit">
+                <TrendingDown className="w-3.5 h-3.5" />{L ? "إضافة مستحق" : "Add Receivable"}
+              </Button>
+            </div>
+          )}
+          {!selectedClient && pendingTopups.length > 0 && (
+            <Badge className="mr-auto bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 border-0">
+              {pendingTopups.length} {L ? "طلب شحن معلّق" : "pending topup requests"}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {!selectedClient ? (
+          <div className="space-y-5">
+            {/* Tabs */}
+            <div className="flex gap-1 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl p-1 max-w-sm">
+              {([
+                { id: "clients", label: L ? "محافظ العملاء" : "Client Wallets" },
+                { id: "topups", label: (L ? "طلبات الشحن" : "Topup Requests") + (pendingTopups.length ? ` (${pendingTopups.length})` : '') },
+              ] as const).map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  data-testid={`admin-tab-${tab.id}`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === tab.id ? "bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm" : "text-black/40 dark:text-white/40"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Client List */}
+            {activeTab === "clients" && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
+                <div className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اختر عميلاً لإدارة محفظته" : "Select a client to manage their wallet"}</h2>
+                </div>
+                {loadingClients ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-5 h-5 animate-spin text-black/20 dark:text-white/20" />
+                  </div>
+                ) : (
+                  <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                    {(clients || []).map(c => (
+                      <button key={c.id} onClick={() => setSelectedClient(c)} data-testid={`client-row-${c.id}`}
+                        className="w-full px-5 py-4 flex items-center gap-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors text-right">
+                        <div className="w-9 h-9 rounded-xl bg-black/[0.05] dark:bg-white/[0.07] flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-black text-black/40 dark:text-white/40">{(c.fullName || c.username)[0]}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-black dark:text-white truncate">{c.fullName || c.username}</p>
+                          <p className="text-xs text-black/40 dark:text-white/40 truncate">{c.email}</p>
+                        </div>
+                        <ChevronLeft className="w-4 h-4 text-black/20 dark:text-white/20 rotate-180" />
+                      </button>
+                    ))}
+                    {(clients || []).length === 0 && (
+                      <div className="py-16 text-center">
+                        <p className="text-sm text-black/30 dark:text-white/30">{L ? "لا يوجد عملاء" : "No clients found"}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Topup Requests */}
+            {activeTab === "topups" && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
+                <div className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  <h2 className="text-sm font-bold text-black dark:text-white">{L ? "طلبات شحن المحافظ" : "Wallet Topup Requests"}</h2>
+                </div>
+                {loadingTopups ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-5 h-5 animate-spin text-black/20 dark:text-white/20" />
+                  </div>
+                ) : (topupRequests || []).length === 0 ? (
+                  <div className="py-16 text-center">
+                    <CreditCard className="w-10 h-10 text-black/10 dark:text-white/10 mx-auto mb-3" />
+                    <p className="text-sm text-black/30 dark:text-white/30">{L ? "لا توجد طلبات شحن" : "No topup requests"}</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                    {(topupRequests || []).map(req => (
+                      <div key={req.id} className="px-5 py-5" data-testid={`topup-admin-${req.id}`}>
+                        <div className="flex items-start gap-4">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${req.status === 'approved' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : req.status === 'rejected' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white'}`}>
+                            {req.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />
+                              : req.status === 'rejected' ? <XCircle className="w-4 h-4 text-black dark:text-white" />
+                                : <RefreshCw className="w-4 h-4 text-black dark:text-white" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <p className="text-sm font-bold text-black dark:text-white flex items-center gap-1">{fmt(req.amount)} <SARIcon size={11} className="opacity-70" /></p>
+                              <Badge className={`text-[10px] border-0 flex-shrink-0 ${req.status === 'approved' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70' : req.status === 'rejected' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70'}`}>
+                                {req.status === 'approved' ? (L ? 'مُعتمد' : 'Approved') : req.status === 'rejected' ? (L ? 'مرفوض' : 'Rejected') : (L ? 'معلّق' : 'Pending')}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-black/60 dark:text-white/60 mb-0.5">
+                              {req.userId?.fullName || "—"} · {req.userId?.email || "—"}
+                            </p>
+                            <p className="text-xs text-black/40 dark:text-white/40 mb-0.5">
+                              {req.bankName || "—"} · {L ? "مرجع:" : "Ref:"} {req.bankRef || "—"}
+                            </p>
+                            {req.note && <p className="text-xs text-black/30 dark:text-white/30 mb-1">{req.note}</p>}
+                            {req.rejectionReason && <p className="text-xs text-black dark:text-white dark:text-black/70 dark:text-white/70">{L ? "سبب الرفض:" : "Rejection Reason:"} {req.rejectionReason}</p>}
+                            <div className="flex items-center gap-1 mt-1">
+                              <Clock className="w-3 h-3 text-black/20 dark:text-white/20" />
+                              <p className="text-[11px] text-black/30 dark:text-white/30">
+                                {new Date(req.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {req.status === 'pending' && (
+                          <div className="flex gap-2 mt-3 mr-13">
+                            <Button size="sm" onClick={() => approveMutation.mutate(req.id)}
+                              disabled={approveMutation.isPending}
+                              className="text-xs gap-1.5 bg-black dark:bg-white hover:bg-black dark:bg-white text-white"
+                              data-testid={`button-approve-topup-${req.id}`}>
+                              {approveMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                              {L ? "اعتماد وشحن" : "Approve & Top Up"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { setRejectId(req.id); setRejectReason(""); }}
+                              className="text-xs gap-1.5 text-black dark:text-white hover:text-black dark:text-white border-black/10 dark:border-white/10 hover:border-black/15 dark:border-white/15"
+                              data-testid={`button-reject-topup-${req.id}`}>
+                              <XCircle className="w-3 h-3" />
+                              {L ? "رفض" : "Reject"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Client Wallet Detail */
+          <div className="space-y-5">
+            {loadingWallet ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-4 text-center">
+                    <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center mx-auto mb-2">
+                      <TrendingDown className="w-4 h-4 text-black dark:text-white" />
+                    </div>
+                    <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">{L ? "إجمالي المستحق" : "Total Receivable"}</p>
+                    <p className="text-lg font-black text-black dark:text-white flex items-center justify-center gap-1">{fmt(walletData?.totalDebit || 0)} <SARIcon size={12} className="opacity-40" /></p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-4 text-center">
+                    <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white flex items-center justify-center mx-auto mb-2">
+                      <TrendingUp className="w-4 h-4 text-black dark:text-white" />
+                    </div>
+                    <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">{L ? "إجمالي المدفوع" : "Total Paid"}</p>
+                    <p className="text-lg font-black text-black dark:text-white flex items-center justify-center gap-1">{fmt(walletData?.totalCredit || 0)} <SARIcon size={12} className="opacity-40" /></p>
+                  </div>
+                  <div className={`rounded-2xl border p-4 text-center ${(walletData?.outstanding || 0) > 0 ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border-black/10 dark:border-white/10 dark:border-black dark:border-white"}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2 ${(walletData?.outstanding || 0) > 0 ? "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white"}`}>
+                      <AlertCircle className={`w-4 h-4 ${(walletData?.outstanding || 0) > 0 ? "text-black dark:text-white" : "text-black dark:text-white"}`} />
+                    </div>
+                    <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">{L ? "الرصيد المتبقي" : "Outstanding Balance"}</p>
+                    <p className={`text-lg font-black ${(walletData?.outstanding || 0) > 0 ? "text-black dark:text-white dark:text-black/70 dark:text-white/70" : "text-black dark:text-white dark:text-black/70 dark:text-white/70"}`}>
+                      <span className="flex items-center justify-center gap-1">{fmt(Math.abs(walletData?.outstanding || 0))} <SARIcon size={12} className="opacity-60" /></span>
+                    </p>
+                    {(walletData?.outstanding || 0) === 0 && <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mt-0.5">{L ? "مسدد بالكامل" : "Fully Settled"}</p>}
+                    {(walletData?.outstanding || 0) < 0 && <p className="text-[10px] text-black dark:text-white dark:text-black/70 dark:text-white/70 font-semibold mt-0.5">{L ? "رصيد دائن" : "Credit Balance"}</p>}
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.08]">
+                    <h2 className="text-sm font-bold text-black dark:text-white">{L ? "سجل المعاملات" : "Transaction History"} ({txs.length})</h2>
+                  </div>
+                  {txs.length === 0 ? (
+                    <div className="py-16 text-center">
+                      <Wallet className="w-10 h-10 text-black/10 dark:text-white/10 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-black/30 dark:text-white/30">{L ? "لا توجد معاملات بعد" : "No transactions yet"}</p>
+                      <Button onClick={() => setAddOpen(true)} size="sm" variant="outline" className="mt-4 text-xs gap-1.5">
+                        <Plus className="w-3.5 h-3.5" />{L ? "إضافة معاملة" : "Add Transaction"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <ScrollArea className="max-h-[500px]">
+                      <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                        {txs.map(tx => (
+                          <div key={tx.id} className="px-5 py-4 flex items-center gap-4" data-testid={`admin-tx-${tx.id}`}>
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === 'credit' ? 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white' : 'bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white'}`}>
+                              {tx.type === 'credit' ? <ArrowDownLeft className="w-4 h-4 text-black dark:text-white" /> : <ArrowUpRight className="w-4 h-4 text-black dark:text-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-black dark:text-white truncate">{tx.description}</p>
+                              {tx.note && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{tx.note}</p>}
+                              <div className="flex items-center gap-3 mt-1">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-black/20 dark:text-white/20" />
+                                  <p className="text-[11px] text-black/30 dark:text-white/30">
+                                    {new Date(tx.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                  </p>
+                                </div>
+                                {tx.addedBy && <p className="text-[11px] text-black/30 dark:text-white/30">· {tx.addedBy.fullName}</p>}
+                              </div>
+                            </div>
+                            <div className="text-left flex-shrink-0 ml-2">
+                              <p className={`text-base font-black ${tx.type === 'credit' ? 'text-black dark:text-white dark:text-black/70 dark:text-white/70' : 'text-black dark:text-white dark:text-black/70 dark:text-white/70'}`}>
+                                {tx.type === 'credit' ? '+' : '-'}{fmt(tx.amount)}
+                              </p>
+                              <SARIcon size={9} className="opacity-30 mt-0.5" />
+                            </div>
+                            <Badge className={`text-[10px] px-2 py-0.5 border-0 flex-shrink-0 ${tx.type === 'credit' ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70' : 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70'}`}>
+                              {tx.type === 'credit' ? (L ? 'دفعة' : 'Credit') : (L ? 'مستحق' : 'Debit')}
+                            </Badge>
+                            <button onClick={() => setDeleteId(tx.id)} data-testid={`delete-tx-${tx.id}`}
+                              className="w-7 h-7 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white flex items-center justify-center transition-colors group flex-shrink-0">
+                              <Trash2 className="w-3.5 h-3.5 text-black/20 dark:text-white/20 group-hover:text-black dark:text-white transition-colors" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Add Transaction Dialog */}
+    <Dialog open={addOpen} onOpenChange={o => { setAddOpen(o); if (!o) setForm({ type: "credit", amount: "", description: "", note: "" }); }}>
+      <DialogContent className="max-w-md" dir={dir}>
+        <DialogHeader>
+          <DialogTitle className="text-right flex items-center gap-2">
+            {form.type === "credit"
+              ? <><span className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center"><Plus className="w-4 h-4 text-black dark:text-white" /></span> {L ? "شحن محفظة العميل" : "Top Up Client Wallet"}</>
+              : <><span className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center"><TrendingDown className="w-4 h-4 text-black dark:text-white" /></span> {L ? "إضافة مستحق على العميل" : "Add Client Receivable"}</>
+            }
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {/* Type Switcher */}
+          <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: "credit" }))}
+              data-testid="btn-type-credit"
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${form.type === "credit" ? "bg-black dark:bg-white text-white shadow" : "text-black/40 hover:text-black/70"}`}>
+              <Plus className="w-3.5 h-3.5" /> {L ? "شحن المحفظة (إضافة رصيد)" : "Top Up (Add Balance)"}
+            </button>
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: "debit" }))}
+              data-testid="btn-type-debit"
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${form.type === "debit" ? "bg-black dark:bg-white text-white shadow" : "text-black/40 hover:text-black/70"}`}>
+              <TrendingDown className="w-3.5 h-3.5" /> {L ? "إضافة مستحق" : "Add Receivable"}
+            </button>
+          </div>
+          <p className="text-[11px] text-black/40 dark:text-white/40 bg-black/[0.02] rounded-lg px-3 py-2">
+            {form.type === "credit"
+              ? (L ? "✅ سيُضاف الرصيد مباشرة لمحفظة العميل ويستطيع استخدامه في الدفع" : "✅ Balance will be added directly to the client's wallet for payments")
+              : (L ? "⚠️ سيُسجَّل مبلغ مستحق على العميل (فاتورة/التزام مالي)" : "⚠️ A receivable will be recorded for the client (invoice/financial obligation)")}
+          </p>
+          <div>
+            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">{L ? "المبلغ" : "Amount"} (<SARIcon size={10} className="opacity-60" />) <span className="text-black/70 dark:text-white/70">*</span></Label>
+            <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.amount}
+              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-tx-amount"
+              className={form.type === "credit" ? "border-black/15 dark:border-white/15 focus:border-black dark:border-white" : "border-black/15 dark:border-white/15 focus:border-black dark:border-white"} dir="ltr" />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">{L ? "الوصف" : "Description"} <span className="text-black/70 dark:text-white/70">*</span></Label>
+            <Input
+              placeholder={form.type === "credit" ? (L ? "مثال: شحن محفظة بتحويل بنكي" : "e.g. Top up via bank transfer") : (L ? "مثال: رسوم اشتراك - باقة الاحترافية" : "e.g. Subscription fee - Pro plan")}
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))} data-testid="input-tx-description" />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">{L ? "ملاحظة (اختياري)" : "Note (optional)"}</Label>
+            <Textarea placeholder={L ? "أي تفاصيل إضافية..." : "Any additional details..."} value={form.note} rows={2}
+              onChange={e => setForm(f => ({ ...f, note: e.target.value }))} data-testid="input-tx-note" className="resize-none" />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setAddOpen(false)} className="text-xs">{L ? "إلغاء" : "Cancel"}</Button>
+          <Button onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !form.amount || !form.description}
+            className={`text-white text-xs gap-2 ${form.type === "credit" ? "bg-black dark:bg-white hover:bg-black dark:bg-white" : "bg-black dark:bg-white hover:bg-black dark:bg-white"}`}
+            data-testid="button-confirm-add">
+            {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : form.type === "credit" ? <Plus className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {form.type === "credit" ? (L ? "شحن المحفظة" : "Top Up Wallet") : (L ? "تسجيل المستحق" : "Record Receivable")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Delete Confirm */}
+    <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+      <AlertDialogContent dir={dir}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-right">{L ? "حذف المعاملة" : "Delete Transaction"}</AlertDialogTitle>
+          <AlertDialogDescription className="text-right">{L ? "هل أنت متأكد من حذف هذه المعاملة؟ لا يمكن التراجع." : "Are you sure you want to delete this transaction? This cannot be undone."}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel>{L ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => deleteMutation.mutate(deleteId!)} className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white">
+            {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (L ? "حذف" : "Delete")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Reject reason dialog */}
+    <Dialog open={!!rejectId} onOpenChange={o => { if (!o) { setRejectId(null); setRejectReason(""); } }}>
+      <DialogContent className="max-w-sm" dir={dir}>
+        <DialogHeader>
+          <DialogTitle className="text-right">{L ? "رفض طلب الشحن" : "Reject Topup Request"}</DialogTitle>
+        </DialogHeader>
+        <div className="py-2">
+          <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">{L ? "سبب الرفض (اختياري)" : "Rejection Reason (optional)"}</Label>
+          <Textarea placeholder={L ? "مثال: المبلغ غير متطابق مع الحوالة..." : "e.g. Amount does not match the transfer..."} value={rejectReason} rows={3}
+            onChange={e => setRejectReason(e.target.value)} className="resize-none" data-testid="input-reject-reason" />
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => { setRejectId(null); setRejectReason(""); }} className="text-xs">{L ? "إلغاء" : "Cancel"}</Button>
+          <Button onClick={() => rejectMutation.mutate({ id: rejectId!, reason: rejectReason })}
+            disabled={rejectMutation.isPending}
+            className="bg-black dark:bg-white hover:bg-black dark:bg-white text-white text-xs" data-testid="button-confirm-reject">
+            {rejectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (L ? "تأكيد الرفض" : "Confirm Rejection")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+}
