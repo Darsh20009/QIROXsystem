@@ -178,6 +178,34 @@ export async function registerRoutes(
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
 
+  const publicAppUrl = (() => {
+    const configured =
+      process.env.PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+    return configured.replace(/\/+$/, "");
+  })();
+  const frontendLoginUrl = (query = "") =>
+    publicAppUrl ? `${publicAppUrl}/login${query}` : `/login${query}`;
+  const oauthCallbackUrl = (provider: "google" | "github" | "apple") => {
+    const explicit =
+      provider === "google"
+        ? process.env.GOOGLE_CALLBACK_URL
+        : provider === "github"
+          ? process.env.GITHUB_CALLBACK_URL
+          : process.env.APPLE_CALLBACK_URL;
+    if (explicit) return explicit;
+
+    // A public app URL is normally the Vercel frontend.  Its /api route is
+    // proxied to Render, so using it keeps OAuth cookies on the frontend host.
+    if (publicAppUrl) return `${publicAppUrl}/api/auth/${provider}/callback`;
+
+    const devDomain = process.env.REPLIT_DEV_DOMAIN;
+    return devDomain
+      ? `https://${devDomain}/api/auth/${provider}/callback`
+      : `http://localhost:5000/api/auth/${provider}/callback`;
+  };
+
   // ─── Health endpoint ────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
     try {
@@ -210,15 +238,7 @@ export async function registerRoutes(
     if (GOOGLE_ENABLED) {
       const { Strategy: GoogleStrategy } = await import("passport-google-oauth20");
       const passport = (await import("passport")).default;
-      // In dev, use Replit domain if available so OAuth redirect works in the browser
-      const devDomain = process.env.REPLIT_DEV_DOMAIN;
-      const CALLBACK_URL =
-        process.env.GOOGLE_CALLBACK_URL ||
-        (process.env.NODE_ENV === "production"
-          ? "https://qiroxstudio.online/api/auth/google/callback"
-          : devDomain
-          ? `https://${devDomain}/api/auth/google/callback`
-          : `http://localhost:5000/api/auth/google/callback`);
+      const CALLBACK_URL = oauthCallbackUrl("google");
 
       passport.use(
         new GoogleStrategy(
@@ -282,15 +302,15 @@ export async function registerRoutes(
 
     // Route: Google OAuth callback
     app.get("/api/auth/google/callback", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.redirect("/login?error=google_disabled");
+      if (!GOOGLE_ENABLED) return res.redirect(frontendLoginUrl("?error=google_disabled"));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
       passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=google_failed");
+        if (err || !user) return res.redirect(frontendLoginUrl("?error=google_failed"));
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=google_failed");
+          if (loginErr) return res.redirect(frontendLoginUrl("?error=google_failed"));
           // Issue device token (trusted device — Google already verified identity)
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
@@ -303,7 +323,7 @@ export async function registerRoutes(
               ? "/admin"
               : "/employee/role-dashboard";
           // Pass device token via /login?googleToken=... so client can store it, then navigates
-          res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(frontendLoginUrl(`?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
         });
       })(req, res, next);
     });
@@ -321,13 +341,7 @@ export async function registerRoutes(
     if (GITHUB_ENABLED) {
       const { Strategy: GitHubStrategy } = await import("passport-github2");
       const passport = (await import("passport")).default;
-      const devDomain = process.env.REPLIT_DEV_DOMAIN;
-      const CALLBACK_URL =
-        process.env.NODE_ENV === "production"
-          ? "https://qiroxstudio.online/api/auth/github/callback"
-          : devDomain
-          ? `https://${devDomain}/api/auth/github/callback`
-          : `http://localhost:5000/api/auth/github/callback`;
+      const CALLBACK_URL = oauthCallbackUrl("github");
 
       passport.use(
         new GitHubStrategy(
@@ -387,15 +401,15 @@ export async function registerRoutes(
     });
 
     app.get("/api/auth/github/callback", async (req, res, next) => {
-      if (!GITHUB_ENABLED) return res.redirect("/login?error=github_disabled");
+      if (!GITHUB_ENABLED) return res.redirect(frontendLoginUrl("?error=github_disabled"));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
       passport.authenticate("github", { failureRedirect: "/login?error=github_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=github_failed");
+        if (err || !user) return res.redirect(frontendLoginUrl("?error=github_failed"));
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=github_failed");
+          if (loginErr) return res.redirect(frontendLoginUrl("?error=github_failed"));
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -406,7 +420,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(`/login?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(frontendLoginUrl(`?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
         });
       })(req, res, next);
     });
@@ -425,9 +439,7 @@ export async function registerRoutes(
     if (APPLE_ENABLED) {
       const AppleStrategy = (await import("passport-apple")).default;
       const passport = (await import("passport")).default;
-      // Apple only accepts registered return URLs — always use the production domain
-      // regardless of which environment the server is running in.
-      const CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback";
+      const CALLBACK_URL = oauthCallbackUrl("apple");
 
       // Apple private key may have literal \n from env var — convert to real newlines
       const privateKeyString = APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n");
@@ -513,15 +525,15 @@ export async function registerRoutes(
 
     // Apple sends POST to callback (not GET)
     app.post("/api/auth/apple/callback", express.urlencoded({ extended: true }), async (req, res, next) => {
-      if (!APPLE_ENABLED) return res.redirect("/login?error=apple_disabled");
+      if (!APPLE_ENABLED) return res.redirect(frontendLoginUrl("?error=apple_disabled"));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
       passport.authenticate("apple", { failureRedirect: "/login?error=apple_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=apple_failed");
+        if (err || !user) return res.redirect(frontendLoginUrl("?error=apple_failed"));
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=apple_failed");
+          if (loginErr) return res.redirect(frontendLoginUrl("?error=apple_failed"));
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -532,7 +544,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(`/login?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(frontendLoginUrl(`?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
         });
       })(req, res, next);
     });

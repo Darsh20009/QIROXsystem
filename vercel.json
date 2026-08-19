@@ -3,10 +3,12 @@
   "installCommand": "bash scripts/vercel-install.sh",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ]
+  "rewrites": {
+    "afterFiles": [
+      {
+        "source": "/(.*)",
+        "destination": "/"
+      }
+    ]
+  }
 }
