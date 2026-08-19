@@ -1,6 +1,6 @@
 - [Zero Downtime Policy](zero-downtime-policy.md) — CTO directive: additive-only changes, no breaking DB/API/UI modifications, Feature Flags for all major features, expected downtime always ZERO.
 - [Apple Wallet Render fix](apple-wallet-render-fix.md) — "ve is not a function" crash: sharp was missing from ALWAYS_EXTERNAL in script/build.mjs; native addons must always be external.
-- [OAuth callback routing](google-oauth-callback.md) — When Vercel fronts Render, providers return through Vercel’s `/api` proxy so OAuth sessions stay on the frontend host.
+- [Google OAuth callback](google-oauth-callback.md) — GOOGLE_CALLBACK_URL env var takes priority; set to qiroxstudio.online so Replit dev + prod both use the same registered URL.
 - [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
 - [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
 - [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.

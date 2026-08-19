@@ -19,20 +19,6 @@ services:
         value: production
       - key: PORT
         value: 10000
-      # Set these to the public Vercel frontend URL, e.g. https://app.example.com.
-      # OAuth callbacks deliberately go through Vercel's /api proxy so browser
-      # session cookies remain on the frontend domain.
-      - key: PUBLIC_APP_URL
-        sync: false
-      - key: GOOGLE_CALLBACK_URL
-        sync: false
-      - key: GITHUB_CALLBACK_URL
-        sync: false
-      - key: APPLE_CALLBACK_URL
-        sync: false
-      # Required for Apple Sign In because Apple posts the callback cross-site.
-      - key: SESSION_COOKIE_SAMESITE
-        value: none
       - key: GIT_LFS_SKIP_SMUDGE
         value: "1"
       - key: SMTP2GO_SENDER

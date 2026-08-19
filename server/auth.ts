@@ -66,11 +66,6 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const SESSION_DAYS = 14;
   const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
-  const requestedSameSite = (process.env.SESSION_COOKIE_SAMESITE || "lax").toLowerCase();
-  const sameSite: "lax" | "strict" | "none" =
-    requestedSameSite === "none" || requestedSameSite === "strict"
-      ? requestedSameSite
-      : "lax";
 
   // SEC-CRIT-001: SESSION_SECRET must be set — no hardcoded fallback allowed.
   // In production a missing secret is a hard crash. In development a random
@@ -108,10 +103,7 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: SESSION_MS,
       secure: process.env.NODE_ENV === "production",
-      // Apple returns to the callback using a cross-site POST.  SameSite=Lax
-      // drops the pre-authentication cookie on that request, which makes the
-      // provider flow fail.  Production can opt into None with Secure cookies.
-      sameSite,
+      sameSite: "lax" as const,
       httpOnly: true,
     },
   };

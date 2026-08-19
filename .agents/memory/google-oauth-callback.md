@@ -1,28 +1,27 @@
 ---
-name: OAuth callback routing
-description: How OAuth callback URLs preserve browser sessions when Vercel fronts a Render backend.
+name: Google OAuth callback URL
+description: How the Google OAuth callback URL is resolved and what env var controls it.
 ---
 
-# OAuth Callback Routing
+# Google OAuth Callback URL
 
 ## Rule
-When the React frontend is on Vercel and Express is on Render, register each
-provider callback on the **Vercel frontend domain** under `/api/auth/.../callback`,
-not directly on the Render domain. Vercel's `/api` proxy forwards the callback
-to Render and returns the session cookie to the browser on the frontend host.
+`GOOGLE_CALLBACK_URL` env var takes priority over the auto-generated URL in `server/routes.ts`.
 
-`GOOGLE_CALLBACK_URL`, `GITHUB_CALLBACK_URL`, and `APPLE_CALLBACK_URL` take
-priority. `PUBLIC_APP_URL` supplies the fallback frontend origin.
+```typescript
+const CALLBACK_URL =
+  process.env.GOOGLE_CALLBACK_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://qiroxstudio.online/api/auth/google/callback"
+    : devDomain
+    ? `https://${devDomain}/api/auth/google/callback`
+    : `http://localhost:5000/api/auth/google/callback`);
+```
 
-**Why:** A callback sent directly to Render creates a host-only session cookie
-for Render. Requests later made to Vercel’s `/api` host then do not carry that
-cookie. Apple also uses a cross-site POST callback, so production must use
-`SESSION_COOKIE_SAMESITE=none` with secure cookies.
+**Why:** The Replit dev domain changes every session, so `GOOGLE_CALLBACK_URL` is set to `https://qiroxstudio.online/api/auth/google/callback` (production) — the only URL registered in Google Cloud Console. This means Google OAuth always uses the production callback.
 
-**How to apply:** Set `PUBLIC_APP_URL` to the final Vercel URL and set each
-provider's explicit callback variable to the matching Vercel `/api/auth/...`
-path. Register exactly those URLs with Google, Apple, and GitHub. Set
-`RENDER_BACKEND_URL` only in Vercel so the proxy can reach the Render service.
+**Google Cloud Console Authorized Redirect URIs (as of this session):**
+- `https://qiroxstudio.online/api/auth/google/callback` ✅
+- `http://localhost:5000/api/auth/google/callback` (local dev, not used on Replit)
 
-For a new provider, use the matching `PROVIDER_CALLBACK_URL` override and send
-its callback through the frontend proxy as well.
+**How to apply:** If you add a new OAuth provider, use `process.env.PROVIDER_CALLBACK_URL ||` pattern to allow override without code changes.
