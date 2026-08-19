@@ -48,7 +48,6 @@ const ALL_SCOPES_DATA = [
   { id: "support",       icon: "🎧", ar: "الدعم",          en: "Support",       arD: "تذاكر خدمة العملاء",                   enD: "Customer support tickets" },
   { id: "files",         icon: "📁", ar: "الملفات",        en: "Files",         arD: "رفع وتنزيل ملفات المشروع",              enD: "Upload and download project files" },
   { id: "notifications", icon: "🔔", ar: "الإشعارات",     en: "Notifications", arD: "إرسال واستقبال الإشعارات",              enD: "Send and receive notifications" },
-  { id: "whatsapp_otp",  icon: "📱", ar: "رمز واتساب",     en: "WhatsApp OTP", arD: "إرسال والتحقق من رموز الجوال عبر واتساب", enD: "Send and verify phone codes via WhatsApp" },
 ];
 
 const WEBHOOK_EVENTS_DATA = [
@@ -203,9 +202,6 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
           {["/api/v1/me","/api/v1/orders","/api/v1/projects","/api/v1/invoices","/api/v1/stats","/api/v1/wallet","/api/v1/customers"].map(p => (
             <p key={p} className="text-black/70 dark:text-white/70">{baseUrl}{p}</p>
           ))}
-          <p className="text-white/30 mt-2">{L ? "# واتساب: فعّل صلاحية رمز واتساب ثم أرسل POST" : "# WhatsApp: enable WhatsApp OTP scope, then POST"}</p>
-          <p className="text-emerald-300">POST {baseUrl}/api/v1/whatsapp/otp/send</p>
-          <p className="text-emerald-300">POST {baseUrl}/api/v1/whatsapp/otp/verify</p>
         </div>
       </div>
 

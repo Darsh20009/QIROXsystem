@@ -38,11 +38,10 @@ const SCOPE_COLORS: Record<string, string> = {
   stats:     "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   wallet:    "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
   customers: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70",
-  whatsapp_otp: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 };
 const SCOPE_LABELS: Record<string, string> = {
   orders: "طلبات", projects: "مشاريع", invoices: "فواتير",
-  stats: "إحصائيات", wallet: "محفظة", customers: "عملاء", whatsapp_otp: "رمز واتساب",
+  stats: "إحصائيات", wallet: "محفظة", customers: "عملاء",
 };
 
 export default function AdminApiKeys() {

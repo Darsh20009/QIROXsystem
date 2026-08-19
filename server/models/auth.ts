@@ -98,29 +98,6 @@ const clientApiKeySchema = new mongoose.Schema({
 clientApiKeySchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.keyHash; return ret; } });
 export const ClientApiKeyModel = mongoose.models.ClientApiKey || mongoose.model("ClientApiKey", clientApiKeySchema);
 
-// Store-generated WhatsApp OTPs. The verification code is stored only as a
-// request-scoped hash so it cannot be recovered from the database.
-const storeWhatsAppOtpSchema = new mongoose.Schema({
-  apiKeyId:  { type: mongoose.Schema.Types.ObjectId, ref: "ClientApiKey", required: true, index: true },
-  clientId:  { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-  requestId: { type: String, required: true, unique: true, index: true },
-  phone:     { type: String, required: true, index: true },
-  codeHash:  { type: String, required: true },
-  name:      { type: String, required: true },
-  brandType: { type: String, required: true },
-  used:      { type: Boolean, default: false, index: true },
-  attempts:  { type: Number, default: 0 },
-  expiresAt: { type: Date, required: true, index: true },
-}, { timestamps: true });
-storeWhatsAppOtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-storeWhatsAppOtpSchema.set("toJSON", { transform: (_, ret: any) => {
-  delete ret.codeHash;
-  ret.id = ret._id?.toString();
-  return ret;
-} });
-export const StoreWhatsAppOtpModel =
-  mongoose.models.StoreWhatsAppOtp || mongoose.model("StoreWhatsAppOtp", storeWhatsAppOtpSchema);
-
 const authAppSchema = new mongoose.Schema({
   ownerId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   name:          { type: String, required: true },

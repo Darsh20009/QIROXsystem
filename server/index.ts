@@ -66,28 +66,6 @@ try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 const app = express();
 app.set("trust proxy", 1);
 
-// For a Vercel frontend served separately from the API, configure
-// CORS_ORIGINS as a comma-separated allowlist. Credentials are never allowed
-// for arbitrary origins.
-const corsOrigins = new Set(
-  String(process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((origin) => origin.trim().replace(/\/+$/, ""))
-    .filter(Boolean),
-);
-app.use((req, res, next) => {
-  const origin = String(req.headers.origin || "").trim().replace(/\/+$/, "");
-  if (origin && corsOrigins.has(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-    res.setHeader("Vary", "Origin");
-  }
-  if (req.method === "OPTIONS" && origin && corsOrigins.has(origin)) return res.sendStatus(204);
-  next();
-});
-
 // Gzip/Brotli compression — reduces response size by 60-80%, dramatically speeds up all API and static responses
 app.use(compression({
   level: 6,             // balanced speed vs compression (1=fastest, 9=smallest)

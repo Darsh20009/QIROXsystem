@@ -321,16 +321,13 @@ class WhatsAppModule extends EventEmitter {
   }
 
   // ── Send OTP via WhatsApp ─────────────────────────────────────────────────
-  async sendOTP(phoneRaw: string | null | undefined, otp: string, name: string, brandType = "") {
-    if (!phoneRaw) throw new Error("رقم الجوال مطلوب");
-    if (this.status !== "connected" || !this.sock) throw new Error("WhatsApp غير متصل");
+  async sendOTP(phoneRaw: string | null | undefined, otp: string, name: string) {
+    if (!phoneRaw || this.status !== "connected") return;
     const phone = phoneRaw.replace(/\D/g, "");
-    if (phone.length < 7) throw new Error("رقم الجوال غير صالح");
+    if (phone.length < 7) return;
     const chatId = `${phone}@s.whatsapp.net`;
-    const label = brandType ? `رمز التحقق لـ ${brandType}:` : "رمز التحقق الخاص بك:";
-    const msg = `مرحباً ${name || ""} 👋\n\n${label}\n\n*${otp}*\n\n⏱ صالح لمدة 10 دقائق.\n🔒 لا تشاركه مع أحد.`;
-    await this.sendText(chatId, msg, false);
-    return { sent: true, phone };
+    const msg = `مرحباً ${name || ""} 👋\n\nرمز التحقق الخاص بك:\n\n*${otp}*\n\n⏱ صالح لمدة 10 دقائق.\n🔒 لا تشاركه مع أحد.`;
+    await this.sendText(chatId, msg, false).catch(() => {});
   }
 
   // ── Send order/project update via WhatsApp ────────────────────────────────

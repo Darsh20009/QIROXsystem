@@ -35,4 +35,3 @@
 - [Client Stores admin](client-stores.md) — AdminClientStores.tsx at /admin/client-stores; 8 templates; ClientStoreModel in ecommerce.ts; server routes at /api/admin/client-stores (CRUD + publish + suspend).
 - [Apple Wallet certs deployed](apple-wallet-certs.md) — PEM files copied to server/certs/ AND set as env vars APPLE_PASS_CERT/APPLE_PASS_KEY/APPLE_WWDR_CERT; .gitignore has *.pem rule.
 - [QIROX Stores routing](stores-routing.md) — /s/:slug is public route (added to isPublicRoute check with startsWith); /my-store is auth-required; publicRoutes array uses exact match + startsWith for /templates/ /s/ /sector/.
-- [Vercel split deployment](vercel-split-deployment.md) — Vercel static hosting needs a separately deployed persistent API for sessions, MongoDB, WebSockets, and WhatsApp.

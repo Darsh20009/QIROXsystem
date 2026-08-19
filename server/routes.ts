@@ -37,13 +37,6 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
 });
-const storeOtpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "تم تجاوز حد رموز التحقق لهذا المتجر، حاول بعد 15 دقيقة" },
-});
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
@@ -58,25 +51,6 @@ const contactLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
-
-function configuredAuthOrigin(): string {
-  const origin =
-    process.env.AUTH_BASE_URL ||
-    process.env.PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-    "https://qiroxstudio.online";
-  return origin.replace(/\/+$/, "");
-}
-
-function callbackUrl(provider: "google" | "github" | "apple"): string {
-  return `${configuredAuthOrigin()}/api/auth/${provider}/callback`;
-}
-
-function frontendLoginUrl(query: string): string {
-  const origin = (process.env.PUBLIC_APP_URL || process.env.APP_URL || configuredAuthOrigin()).replace(/\/+$/, "");
-  return `${origin}/login?${query}`;
-}
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail, sendOwnerWAEmail, sendSupportTicketCreatedEmail, sendSupportTicketReplyEmail, sendAdminNewTicketEmail, sendTaskStatusEmail, sendIncomingCallEmail } from "./email";
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
@@ -241,7 +215,7 @@ export async function registerRoutes(
       const CALLBACK_URL =
         process.env.GOOGLE_CALLBACK_URL ||
         (process.env.NODE_ENV === "production"
-          ? callbackUrl("google")
+          ? "https://qiroxstudio.online/api/auth/google/callback"
           : devDomain
           ? `https://${devDomain}/api/auth/google/callback`
           : `http://localhost:5000/api/auth/google/callback`);
@@ -308,15 +282,15 @@ export async function registerRoutes(
 
     // Route: Google OAuth callback
     app.get("/api/auth/google/callback", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.redirect(frontendLoginUrl("error=google_disabled"));
+      if (!GOOGLE_ENABLED) return res.redirect("/login?error=google_disabled");
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
-      passport.authenticate("google", { failureRedirect: frontendLoginUrl("error=google_failed") }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect(frontendLoginUrl("error=google_failed"));
+      passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=google_failed");
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect(frontendLoginUrl("error=google_failed"));
+          if (loginErr) return res.redirect("/login?error=google_failed");
           // Issue device token (trusted device — Google already verified identity)
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
@@ -329,7 +303,7 @@ export async function registerRoutes(
               ? "/admin"
               : "/employee/role-dashboard";
           // Pass device token via /login?googleToken=... so client can store it, then navigates
-          res.redirect(frontendLoginUrl(`googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
+          res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
         });
       })(req, res, next);
     });
@@ -349,12 +323,11 @@ export async function registerRoutes(
       const passport = (await import("passport")).default;
       const devDomain = process.env.REPLIT_DEV_DOMAIN;
       const CALLBACK_URL =
-        process.env.GITHUB_CALLBACK_URL ||
-        (process.env.NODE_ENV === "production"
-          ? callbackUrl("github")
+        process.env.NODE_ENV === "production"
+          ? "https://qiroxstudio.online/api/auth/github/callback"
           : devDomain
           ? `https://${devDomain}/api/auth/github/callback`
-          : `http://localhost:5000/api/auth/github/callback`);
+          : `http://localhost:5000/api/auth/github/callback`;
 
       passport.use(
         new GitHubStrategy(
@@ -414,15 +387,15 @@ export async function registerRoutes(
     });
 
     app.get("/api/auth/github/callback", async (req, res, next) => {
-      if (!GITHUB_ENABLED) return res.redirect(frontendLoginUrl("error=github_disabled"));
+      if (!GITHUB_ENABLED) return res.redirect("/login?error=github_disabled");
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
-      passport.authenticate("github", { failureRedirect: frontendLoginUrl("error=github_failed") }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect(frontendLoginUrl("error=github_failed"));
+      passport.authenticate("github", { failureRedirect: "/login?error=github_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=github_failed");
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect(frontendLoginUrl("error=github_failed"));
+          if (loginErr) return res.redirect("/login?error=github_failed");
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -433,7 +406,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(frontendLoginUrl(`githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
+          res.redirect(`/login?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
         });
       })(req, res, next);
     });
@@ -452,9 +425,9 @@ export async function registerRoutes(
     if (APPLE_ENABLED) {
       const AppleStrategy = (await import("passport-apple")).default;
       const passport = (await import("passport")).default;
-      // Apple only accepts registered return URLs. Configure APPLE_CALLBACK_URL
-      // when the published domain differs from AUTH_BASE_URL.
-      const CALLBACK_URL = process.env.APPLE_CALLBACK_URL || callbackUrl("apple");
+      // Apple only accepts registered return URLs — always use the production domain
+      // regardless of which environment the server is running in.
+      const CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback";
 
       // Apple private key may have literal \n from env var — convert to real newlines
       const privateKeyString = APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n");
@@ -540,15 +513,15 @@ export async function registerRoutes(
 
     // Apple sends POST to callback (not GET)
     app.post("/api/auth/apple/callback", express.urlencoded({ extended: true }), async (req, res, next) => {
-      if (!APPLE_ENABLED) return res.redirect(frontendLoginUrl("error=apple_disabled"));
+      if (!APPLE_ENABLED) return res.redirect("/login?error=apple_disabled");
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
-      passport.authenticate("apple", { failureRedirect: frontendLoginUrl("error=apple_failed") }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect(frontendLoginUrl("error=apple_failed"));
+      passport.authenticate("apple", { failureRedirect: "/login?error=apple_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=apple_failed");
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect(frontendLoginUrl("error=apple_failed"));
+          if (loginErr) return res.redirect("/login?error=apple_failed");
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -559,7 +532,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(frontendLoginUrl(`appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`));
+          res.redirect(`/login?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
         });
       })(req, res, next);
     });
@@ -3753,7 +3726,7 @@ export async function registerRoutes(
     const count = await ClientApiKeyModel.countDocuments({ clientId: me._id || me.id, isActive: true });
     if (count >= 10) return res.status(400).json({ error: "الحد الأقصى 10 مفاتيح نشطة" });
 
-    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers", "subscriptions", "support", "files", "notifications", "whatsapp_otp"];
+    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers", "subscriptions", "support", "files", "notifications"];
     const cleanScopes = Array.isArray(scopes) ? scopes.filter((s: string) => VALID_SCOPES.includes(s)) : ["orders", "projects", "invoices", "stats"];
     if (cleanScopes.length === 0) return res.status(400).json({ error: "يجب اختيار صلاحية واحدة على الأقل" });
 
@@ -4065,129 +4038,6 @@ export async function registerRoutes(
   // ══════════════════════════════════════════════════════════════
   // === PUBLIC V1 API (authenticated via Bearer API key) ===
   // ══════════════════════════════════════════════════════════════
-
-  function verifyAllowedOrigin(req: any, res: any, keyDoc: any): boolean {
-    const origin = String(req.headers.origin || "").trim();
-    const allowedOrigins = Array.isArray(keyDoc?.allowedOrigins)
-      ? keyDoc.allowedOrigins.map((value: unknown) => String(value).trim()).filter(Boolean)
-      : [];
-    // Server-to-server requests do not include Origin and remain supported.
-    if (origin && allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
-      res.status(403).json({ error: "هذا الدومين غير مسموح لهذا المفتاح" });
-      return false;
-    }
-    return true;
-  }
-
-  function otpCodeHash(requestId: string, code: string): string {
-    return crypto.createHash("sha256").update(`${requestId}:${code}`).digest("hex");
-  }
-
-  // POST /api/v1/whatsapp/otp/send
-  // Required body: { phone, name, brandType }. Requires whatsapp_otp scope.
-  app.post("/api/v1/whatsapp/otp/send", storeOtpLimiter, async (req, res) => {
-    const ctx = await resolveApiKey(req, res);
-    if (!ctx || !verifyAllowedOrigin(req, res, ctx.keyDoc)) return;
-    if (!requireScope(ctx.scopes, "whatsapp_otp", res)) return;
-
-    const name = String(req.body?.name || "").trim();
-    const brandType = String(req.body?.brandType || req.body?.brand || "").trim();
-    if (!req.body?.phone || !name || !brandType) {
-      return res.status(400).json({ error: "phone و name و brandType مطلوبة" });
-    }
-
-    const phone = normalisePhone(String(req.body.phone));
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 7 || digits.length > 15) {
-      return res.status(400).json({ error: "رقم الجوال غير صالح. استخدم الصيغة الدولية مثل +9665xxxxxxxx" });
-    }
-    if (name.length > 120 || brandType.length > 80) {
-      return res.status(400).json({ error: "الاسم أو نوع المتجر أطول من الحد المسموح" });
-    }
-
-    const requestId = `waotp_${crypto.randomBytes(18).toString("hex")}`;
-    const code = genOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    const { StoreWhatsAppOtpModel } = await import("./models");
-
-    // A fresh code revokes previous unused codes for that store and phone.
-    await StoreWhatsAppOtpModel.updateMany(
-      { clientId: ctx.clientId, phone, used: false },
-      { $set: { used: true } },
-    );
-    await StoreWhatsAppOtpModel.create({
-      apiKeyId: ctx.keyDoc._id,
-      clientId: ctx.clientId,
-      requestId,
-      phone,
-      codeHash: otpCodeHash(requestId, code),
-      name,
-      brandType,
-      expiresAt,
-    });
-
-    try {
-      const { waModule } = await import("./whatsapp-module");
-      await waModule.sendOTP(phone, code, name, brandType);
-    } catch {
-      await StoreWhatsAppOtpModel.deleteOne({ requestId }).catch(() => {});
-      return res.status(503).json({
-        error: "خدمة واتساب غير متصلة حالياً",
-        code: "WHATSAPP_UNAVAILABLE",
-      });
-    }
-
-    // The verification code is deliberately never returned.
-    return res.status(202).json({
-      ok: true,
-      requestId,
-      phone,
-      expiresAt,
-      message: "تم إرسال رمز التحقق عبر واتساب",
-    });
-  });
-
-  // POST /api/v1/whatsapp/otp/verify
-  // Body: { requestId, phone, code }. Each code can be consumed once.
-  app.post("/api/v1/whatsapp/otp/verify", storeOtpLimiter, async (req, res) => {
-    const ctx = await resolveApiKey(req, res);
-    if (!ctx || !verifyAllowedOrigin(req, res, ctx.keyDoc)) return;
-    if (!requireScope(ctx.scopes, "whatsapp_otp", res)) return;
-
-    const requestId = String(req.body?.requestId || "").trim();
-    const phone = normalisePhone(String(req.body?.phone || ""));
-    const code = String(req.body?.code || "").replace(/\s/g, "");
-    if (!requestId || !phone || !/^\d{6}$/.test(code)) {
-      return res.status(400).json({ error: "requestId و phone و code المكون من 6 أرقام مطلوبة" });
-    }
-
-    const { StoreWhatsAppOtpModel } = await import("./models");
-    const record: any = await StoreWhatsAppOtpModel.findOne({
-      requestId,
-      clientId: ctx.clientId,
-      phone,
-      used: false,
-      expiresAt: { $gt: new Date() },
-    });
-    if (!record) return res.status(400).json({ verified: false, error: "الطلب غير موجود أو منتهي الصلاحية" });
-    if ((record.attempts || 0) >= 5) {
-      await StoreWhatsAppOtpModel.updateOne({ _id: record._id }, { $set: { used: true } });
-      return res.status(429).json({ verified: false, error: "تم تجاوز عدد المحاولات" });
-    }
-
-    if (otpCodeHash(requestId, code) !== record.codeHash) {
-      await StoreWhatsAppOtpModel.updateOne({ _id: record._id }, { $inc: { attempts: 1 } });
-      return res.status(400).json({ verified: false, error: "رمز التحقق غير صحيح" });
-    }
-
-    const consumed = await StoreWhatsAppOtpModel.findOneAndUpdate(
-      { _id: record._id, used: false },
-      { $set: { used: true } },
-      { new: true },
-    );
-    if (!consumed) return res.status(409).json({ verified: false, error: "تم استخدام الرمز مسبقاً" });
-    return res.json({ verified: true, requestId });
-  });
 
   // GET /api/v1/me — client identity
   app.get("/api/v1/me", async (req, res) => {

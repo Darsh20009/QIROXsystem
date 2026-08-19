@@ -85,12 +85,6 @@ export function setupAuth(app: Express) {
   }
 
   const mongoUri = (process.env.MONGODB_URI || "").replace(/\s+/g, "");
-  const configuredSameSite = String(process.env.SESSION_COOKIE_SAMESITE || "").toLowerCase();
-  const hasCrossOriginFrontend = String(process.env.CORS_ORIGINS || "").split(",").some(Boolean);
-  const sameSite: "lax" | "strict" | "none" =
-    configuredSameSite === "strict" || configuredSameSite === "none"
-      ? configuredSameSite
-      : hasCrossOriginFrontend ? "none" : "lax";
 
   const sessionSettings: session.SessionOptions = {
     store: mongoUri
@@ -108,8 +102,8 @@ export function setupAuth(app: Express) {
     rolling: true,
     cookie: {
       maxAge: SESSION_MS,
-      secure: process.env.NODE_ENV === "production" || sameSite === "none",
-      sameSite,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
       httpOnly: true,
     },
   };
