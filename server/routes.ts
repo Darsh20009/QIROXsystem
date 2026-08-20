@@ -55,6 +55,8 @@ import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOt
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
+import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
+import { normalizePhone } from "./notifications/phone";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -787,7 +789,9 @@ export async function registerRoutes(
         return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
       }
       const { UserModel: UM2, MailAccountModel: MAM } = await import("./models");
-      const normPhone = phone ? String(phone).trim() : "";
+      const phoneResult = phone ? normalizePhone(phone) : null;
+      if (phoneResult && !phoneResult.valid) return res.status(400).json({ error: phoneResult.reason });
+      const normPhone = phoneResult?.e164 || "";
       if (normPhone) {
         const dupPhone = await UM2.findOne({ phone: normPhone });
         if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
@@ -801,6 +805,17 @@ export async function registerRoutes(
         role,
         phone: normPhone || undefined,
       });
+      dispatchNotification({
+        event: "employee_welcome",
+        idempotencyKey: `employee-welcome:${(user as any).id || (user as any)._id}`,
+        recipient: { userId: String((user as any).id || (user as any)._id), name: fullName, email, phone: normPhone },
+        subject: "مرحباً بك في QIROX",
+        message: `مرحباً ${fullName}، يسعدنا انضمامك إلى فريق QIROX. راجع بريدك الإلكتروني للحصول على تفاصيل الدخول وابدأ من بوابة الموظفين.`,
+        actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee`,
+        channels: ["whatsapp"],
+        whatsappTemplate: "welcome_employee",
+        metadata: { source: "admin_user_create" },
+      }).catch(error => console.error("[Notifications] employee welcome:", error?.message || error));
 
       // Auto-create work email account in cPanel + mail system if requested
       if (createWorkEmail && workEmailAddress) {
@@ -927,7 +942,9 @@ export async function registerRoutes(
       const sanitized: Record<string, any> = {};
       for (const key of userFieldsWhitelist) {
         if (key === "phone" && req.body.phone !== undefined) {
-          sanitized.phone = String(req.body.phone).trim();
+          const normalized = normalizePhone(req.body.phone);
+          if (!normalized.valid) return res.status(400).json({ error: normalized.reason });
+          sanitized.phone = normalized.e164;
         } else if (key === "allowedPages" && req.body.allowedPages !== undefined) {
           // allowedPages is an array; empty array means "reset to role default" (stored as null/empty in DB)
           sanitized.allowedPages = Array.isArray(req.body.allowedPages) ? req.body.allowedPages : null;
@@ -1647,11 +1664,24 @@ export async function registerRoutes(
             details: [["الحالة الجديدة", statusAr]],
             waMessage: waMessages[req.body.status],
           }).catch(console.error);
-          // Send WhatsApp message directly via socket if connected
-          const { waModule: _waOrd } = await import("./whatsapp-module");
           const clientWAPhone = (clientUser as any)?.whatsappNumber || (clientUser as any)?.phone;
           if (waMessages[req.body.status]) {
-            _waOrd.sendNotification(clientWAPhone, waMessages[req.body.status]).catch(() => {});
+            dispatchNotification({
+              event: "order_status",
+              idempotencyKey: `order-status:${String(order.id)}:${req.body.status}`,
+              recipient: {
+                userId: String((order as any).userId),
+                name: clientUser?.fullName || clientUser?.username || "عميل",
+                email: clientUser?.email,
+                phone: clientWAPhone,
+              },
+              subject: `تحديث طلبك: ${statusAr}`,
+              message: waMessages[req.body.status],
+              actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/dashboard`,
+              channels: ["whatsapp"],
+              whatsappTemplate: "order_status",
+              metadata: { orderId: String(order.id), status: req.body.status },
+            }).catch(error => console.error("[Notifications] order status:", error?.message || error));
           }
         }
         const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
@@ -2370,7 +2400,7 @@ export async function registerRoutes(
       const progressChanged = input.progress !== undefined && oldProject?.progress !== input.progress;
       if ((statusChanged || progressChanged) && (project as any).clientId) {
         const { UserModel, NotificationModel } = await import("./models");
-        const clientUser = await UserModel.findById((project as any).clientId).select("email fullName username");
+        const clientUser = await UserModel.findById((project as any).clientId).select("email fullName username phone whatsappNumber");
         if (clientUser?.email) {
           sendProjectUpdateEmail(
             clientUser.email,
@@ -2382,6 +2412,22 @@ export async function registerRoutes(
           ).catch(console.error);
         }
         const notifMsg = statusChanged ? `تم تغيير حالة المشروع` : `تحديث تقدم المشروع: ${(project as any).progress || 0}%`;
+        dispatchNotification({
+          event: "project_update",
+          idempotencyKey: `project-update:${String(req.params.id)}:${String((project as any).updatedAt || Date.now())}`,
+          recipient: {
+            userId: String((project as any).clientId),
+            name: clientUser?.fullName || clientUser?.username || "عميل",
+            email: clientUser?.email,
+            phone: (clientUser as any)?.whatsappNumber || (clientUser as any)?.phone,
+          },
+          subject: "تحديث على مشروعك من QIROX",
+          message: `${notifMsg}: ${(project as any).name || "مشروعك"}.`,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/projects/${req.params.id}`,
+          channels: ["whatsapp"],
+          whatsappTemplate: "project_update",
+          metadata: { projectId: req.params.id, status: (project as any).status, progress: (project as any).progress },
+        }).catch(error => console.error("[Notifications] project update:", error?.message || error));
         await NotificationModel.create({ userId: (project as any).clientId, type: 'project', title: notifMsg, body: (project as any).name || "مشروعك", link: `/projects/${req.params.id}`, icon: '🚀' }).catch(() => {});
         pushNotification(String((project as any).clientId), { title: notifMsg, body: (project as any).name || "مشروعك", icon: '🚀', link: `/projects/${req.params.id}` });
         sendPushToUser(String((project as any).clientId), {
@@ -4424,6 +4470,15 @@ export async function registerRoutes(
       `;
       sendDirectEmail("info@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, hrEmailBody).catch(console.error);
       sendDirectEmail("qiroxsystem@gmail.com", "QIROX HR", `طلب توظيف جديد — ${fullName}`, hrEmailBody).catch(console.error);
+      dispatchNotification({
+        event: "job_application_received",
+        idempotencyKey: `job-application:${(application as any).id || (application as any)._id}`,
+        recipient: { name: fullName, email, phone },
+        subject: "تم استلام طلبك لدى QIROX",
+        message: `مرحباً ${fullName}، تم استلام طلب التوظيف الخاص بك بنجاح. سيتواصل معك فريق QIROX عند وجود تحديث.`,
+        channels: ["email", "whatsapp"],
+        metadata: { jobId, applicationId: String((application as any).id || (application as any)._id) },
+      }).catch(error => console.error("[Notifications] job application confirmation:", error?.message || error));
       res.status(201).json(application);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -4459,7 +4514,9 @@ export async function registerRoutes(
       if (existingByUsername) return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
 
       const { UserModel: UM4 } = await import("./models");
-      const hirePhone = phone ? String(phone).trim() : "";
+      const phoneResult = phone ? normalizePhone(phone) : null;
+      if (phoneResult && !phoneResult.valid) return res.status(400).json({ error: phoneResult.reason });
+      const hirePhone = phoneResult?.e164 || "";
       if (hirePhone) {
         const dupPhone = await UM4.findOne({ phone: hirePhone });
         if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
@@ -4480,6 +4537,17 @@ export async function registerRoutes(
       });
 
       sendWelcomeWithCredentialsEmail(email, fullName, normalizedUsername, rawPassword).catch(e => console.error("[HIRE] email failed:", e));
+      dispatchNotification({
+        event: "employee_hired",
+        idempotencyKey: `employee-hired:${(newUser as any).id || (newUser as any)._id}`,
+        recipient: { userId: String((newUser as any).id || (newUser as any)._id), name: fullName, email, phone: hirePhone },
+        subject: "مرحباً بك في QIROX",
+        message: `مرحباً ${fullName}، تم إنشاء حسابك كموظف في QIROX. ستصلك بيانات الدخول عبر البريد الإلكتروني.`,
+        actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee`,
+        channels: ["whatsapp"],
+        whatsappTemplate: "welcome_employee",
+        metadata: { source: "application_hire" },
+      }).catch(error => console.error("[Notifications] hired employee welcome:", error?.message || error));
       await storage.updateApplication(req.params.id, { status: "accepted" });
 
       console.log(`[HIRE] New employee created: ${normalizedUsername} / role:${role} / email:${email}`);
@@ -7261,7 +7329,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { InvoiceModel } = await import("./models");
-      const invoice: any = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username");
+      const invoice: any = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username phone whatsappNumber");
       if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
       const snap = invoice.clientSnapshot || {};
       const u = invoice.userId || {};
@@ -7281,6 +7349,22 @@ export async function registerRoutes(
         items: (invoice as any).items,
         createdAt: (invoice as any).createdAt,
       });
+      dispatchNotification({
+        event: "invoice_sent",
+        idempotencyKey: `invoice-sent:${String(invoice._id)}:${targetEmail}`,
+        recipient: {
+          userId: invoice.userId?._id ? String(invoice.userId._id) : undefined,
+          name: targetName,
+          email: targetEmail,
+          phone: invoice.userId?.whatsappNumber || invoice.userId?.phone || snap.phone,
+        },
+        subject: `فاتورتك ${invoice.invoiceNumber} من QIROX`,
+        message: `مرحباً ${targetName}، أرسلنا لك الفاتورة رقم ${invoice.invoiceNumber} عبر البريد الإلكتروني. يمكنك مراجعتها من حسابك في QIROX.`,
+        actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/invoices/${invoice._id}`,
+        channels: ["whatsapp"],
+        whatsappTemplate: "invoice_ready",
+        metadata: { invoiceId: String(invoice._id), invoiceNumber: invoice.invoiceNumber },
+      }).catch(error => console.error("[Notifications] invoice WhatsApp:", error?.message || error));
       res.json({ ok: true, message: "تم إرسال الفاتورة بنجاح" });
     } catch (err) {
       console.error("[INVOICE EMAIL]", err);
@@ -7592,6 +7676,22 @@ export async function registerRoutes(
       pdfBytes,
     });
     if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
+    dispatchNotification({
+      event: "quotation_sent",
+      idempotencyKey: `quotation-sent:${String(quotation._id)}:${targetEmail}`,
+      recipient: {
+        userId: client?._id ? String(client._id) : undefined,
+        name: targetName,
+        email: targetEmail,
+        phone: client?.whatsappNumber || client?.phone,
+      },
+      subject: `عرض السعر ${quotation.quotationNumber} من QIROX`,
+      message: `مرحباً ${targetName}، أرسلنا لك عرض السعر رقم ${quotation.quotationNumber} عبر البريد الإلكتروني. يمكنك مراجعته من الرابط المرفق.`,
+      actionUrl: link,
+      channels: ["whatsapp"],
+      whatsappTemplate: "quotation_ready",
+      metadata: { quotationId: String(quotation._id), quotationNumber: quotation.quotationNumber },
+    }).catch(error => console.error("[Notifications] quotation WhatsApp:", error?.message || error));
     await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status: "sent" } });
     res.json({ ok: true, message: `تم إرسال العرض إلى ${targetEmail}` });
   });
@@ -17742,6 +17842,100 @@ export async function registerInstallmentRoutes(app: Express) {
       } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
   }
+
+  // ─── Reliable outbound notifications ──────────────────────────────────────
+  // The API deliberately returns configuration state, never provider secrets.
+  app.get("/api/notifications/docs", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role === "client") return res.sendStatus(403);
+    res.json(notificationApiDocs);
+  });
+
+  app.get("/api/notifications/health", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+    try {
+      res.json(await getNotificationHealth());
+    } catch (error: any) {
+      res.status(503).json({ error: error?.message || "تعذر قراءة حالة القنوات" });
+    }
+  });
+
+  app.get("/api/notifications/templates", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role === "client") return res.sendStatus(403);
+    try {
+      res.json(await listNotificationTemplates());
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحميل القوالب" });
+    }
+  });
+
+  app.get("/api/notifications/deliveries", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role === "client") return res.sendStatus(403);
+    try {
+      const user = req.user as any;
+      const isManager = ["admin", "manager"].includes(user.role);
+      const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+      const { NotificationDeliveryModel } = await import("./models");
+      const filter = isManager ? {} : { "recipient.userId": user.id };
+      const deliveries = await NotificationDeliveryModel.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
+      res.json(deliveries.map((delivery: any) => ({
+        ...delivery,
+        id: String(delivery._id),
+        // The operator needs recipients and failure context, but not internal
+        // metadata that could later contain integration-specific values.
+        metadata: undefined,
+      })));
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحميل سجل التسليم" });
+    }
+  });
+
+  app.post("/api/notifications/send", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role === "client") return res.sendStatus(403);
+    const { recipient, subject, message, channels } = req.body || {};
+    if (!recipient || !message || String(message).trim().length === 0) {
+      return res.status(400).json({ error: "المستلم ونص الرسالة مطلوبان" });
+    }
+    const selectedChannels = Array.isArray(channels)
+      ? channels.filter((channel: unknown) => channel === "email" || channel === "whatsapp")
+      : ["email", "whatsapp"];
+    if (!selectedChannels.length) return res.status(400).json({ error: "اختر قناة إرسال واحدة على الأقل" });
+    const suppliedIdempotencyKey = req.get("Idempotency-Key") || req.body?.idempotencyKey;
+    if (!suppliedIdempotencyKey || String(suppliedIdempotencyKey).trim().length < 8) {
+      return res.status(400).json({ error: "مفتاح منع التكرار مطلوب لإرسال الرسالة" });
+    }
+    try {
+      const user = req.user as any;
+      const deliveries = await dispatchNotification({
+        event: "manual_employee_message",
+        idempotencyKey: `manual:${user.id}:${String(suppliedIdempotencyKey).trim().slice(0, 160)}`,
+        recipient: {
+          userId: recipient.userId ? String(recipient.userId) : undefined,
+          name: String(recipient.name || "").trim(),
+          email: String(recipient.email || "").trim(),
+          phone: String(recipient.phone || "").trim(),
+        },
+        subject: String(subject || "رسالة من QIROX").trim().slice(0, 180),
+        message: String(message).trim().slice(0, 4000),
+        actionUrl: req.body?.actionUrl ? String(req.body.actionUrl).slice(0, 1000) : undefined,
+        channels: selectedChannels,
+        metadata: { initiatedBy: String(user.id), source: "employee_whatsapp_crm" },
+      });
+      res.status(202).json({ ok: true, deliveries });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر إنشاء رسالة التسليم" });
+    }
+  });
+
+  app.post("/api/admin/notifications/deliveries/:id/retry", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+    try {
+      const delivery = await retryNotificationDelivery(req.params.id);
+      if (!delivery) return res.status(404).json({ error: "رسالة التسليم غير موجودة أو ليست قابلة لإعادة المحاولة" });
+      res.json({ ok: true, delivery });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذرت إعادة المحاولة" });
+    }
+  });
 
   // ─── WhatsApp Integration ─────────────────────────────────────────────────
   {

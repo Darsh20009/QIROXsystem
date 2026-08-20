@@ -105,6 +105,7 @@ export default function EmployeeWhatsappCRM() {
   const [editText, setEditText] = useState("");
   const [showTemplatePanel, setShowTemplatePanel] = useState(true);
   const [sentLog, setSentLog] = useState<Record<string, string>>({});
+  const [isSending, setIsSending] = useState(false);
 
   // ── Fetch clients
   const { data: users = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/admin/users"] });
@@ -135,19 +136,56 @@ export default function EmployeeWhatsappCRM() {
     return base.replace(/\{name\}/g, client.fullName || client.username || "");
   }
 
-  // ── Open WhatsApp
-  function openChat(client: any, e?: React.MouseEvent) {
+  // ── Send through the audited server queue (not a wa.me browser link).
+  async function openChat(client: any, e?: React.MouseEvent) {
     e?.stopPropagation();
     const phone = client.whatsappNumber || client.phone || "";
     if (!hasValidPhone(client)) {
       toast({ title: "لا يوجد رقم واتساب لهذا العميل", variant: "destructive" });
       return;
     }
-    const msg = getFinalMsg(client);
-    const link = buildWALink(phone, msg);
-    window.open(link, "_blank", "noopener,noreferrer");
-    setSentLog(prev => ({ ...prev, [client.id]: new Date().toLocaleTimeString("ar-SA") }));
-    toast({ title: `✅ تم فتح محادثة ${client.fullName}` });
+    setIsSending(true);
+    try {
+      const response = await fetch("/api/notifications/send", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: {
+            userId: client.id,
+            name: client.fullName || client.username || "",
+            email: client.email || "",
+            phone,
+          },
+          subject: "رسالة من QIROX",
+          message: getFinalMsg(client),
+          channels: ["whatsapp"],
+          idempotencyKey: crypto.randomUUID(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "تعذر إرسال الرسالة");
+      const delivery = data.deliveries?.[0];
+      const status = delivery?.status === "sent"
+        ? `أُرسلت ${new Date().toLocaleTimeString("ar-SA")}`
+        : delivery?.status === "retrying"
+          ? "قيد إعادة المحاولة"
+          : delivery?.status === "pending"
+            ? "قيد الإرسال"
+            : delivery?.status === "failed"
+              ? "فشل الإرسال"
+              : "مسجلة";
+      setSentLog(prev => ({ ...prev, [client.id]: status }));
+      toast({
+        title: delivery?.status === "sent" ? `تم إرسال الرسالة إلى ${client.fullName}` : "تم تسجيل الرسالة في قائمة التسليم",
+        description: delivery?.error || (delivery?.status === "retrying" ? "سيعيد النظام المحاولة تلقائياً." : undefined),
+        variant: delivery?.status === "failed" ? "destructive" : "default",
+      });
+    } catch (error: any) {
+      toast({ title: "تعذر إنشاء رسالة واتساب", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
   }
 
   function copyMsg(client: any) {
@@ -180,7 +218,7 @@ export default function EmployeeWhatsappCRM() {
             لوحة واتساب CRM
           </h1>
           <p className="text-xs text-black/40 dark:text-white/40 mt-1 mr-11">
-            تواصل مع عملائك عبر واتساب بسرعة وقوالب جاهزة
+            أرسل رسائل واتساب من النظام مع سجل تسليم وإعادة محاولة تلقائية
           </p>
         </div>
 
@@ -307,7 +345,7 @@ export default function EmployeeWhatsappCRM() {
                       <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={(e) => openChat(client, e)}
-                          disabled={!hasWA}
+                          disabled={!hasWA || isSending}
                           className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-[11px] font-bold transition-all ${
                             hasWA
                               ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
@@ -315,7 +353,7 @@ export default function EmployeeWhatsappCRM() {
                           }`}
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
-                          {hasWA ? "فتح محادثة" : "بدون رقم"}
+                          {hasWA ? (isSending ? "جارٍ الإرسال..." : "إرسال من النظام") : "بدون رقم"}
                         </button>
                         {hasWA && (
                           <button
@@ -374,13 +412,13 @@ export default function EmployeeWhatsappCRM() {
                         <div className="flex gap-1.5 shrink-0">
                           <button
                             onClick={() => openChat(client)}
-                            disabled={!hasWA}
+                            disabled={!hasWA || isSending}
                             className={`flex items-center gap-1.5 h-7 px-3 rounded-lg text-[11px] font-bold transition-all ${
                               hasWA ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-black/[0.04] text-black/20 cursor-not-allowed"
                             }`}
                           >
                             <MessageCircle className="w-3 h-3" />
-                            {hasWA ? "واتساب" : "بلا رقم"}
+                            {hasWA ? (isSending ? "جارٍ..." : "إرسال") : "بلا رقم"}
                           </button>
                           {hasWA && (
                             <button onClick={() => copyMsg(client)} className="h-7 w-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] hover:bg-black/[0.08] flex items-center justify-center transition-colors">

@@ -52,20 +52,33 @@ async function sendViaSmtp(cfg: ReturnType<typeof getEmailCfg>, to: string, toNa
   return true;
 }
 
+async function sendWithRetry(send: () => Promise<boolean>, context: string): Promise<boolean> {
+  const delays = [0, 750, 2_000];
+  let lastError: unknown;
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt]) await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+    try {
+      return await send();
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Email] ${context} failed (attempt ${attempt + 1}/${delays.length}):`, (err as any)?.message || err);
+    }
+  }
+  console.error(`[Email] ${context} failed after bounded retries:`, (lastError as any)?.message || lastError);
+  return false;
+}
+
 export async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const cfg = getEmailCfg();
-  try {
-    if (cfg.smtpHost && cfg.smtpUser && cfg.smtpPass) {
-      console.log(`[Email] Sending via cPanel SMTP (${cfg.smtpHost}) to ${to}`);
-      return await sendViaSmtp(cfg, to, toName, subject, htmlBody, textBody, attachments);
-    } else {
-      console.warn("[Email] No email provider configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
-      return false;
-    }
-  } catch (err) {
-    console.error("[Email] send error:", err);
+  if (!cfg.smtpHost || !cfg.smtpUser || !cfg.smtpPass) {
+    console.warn("[Email] No email provider configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
     return false;
   }
+  console.log(`[Email] Sending via cPanel SMTP (${cfg.smtpHost}) to ${to}`);
+  return sendWithRetry(
+    () => sendViaSmtp(cfg, to, toName, subject, htmlBody, textBody, attachments),
+    `send to ${to}`,
+  );
 }
 
 /**
@@ -91,7 +104,10 @@ export async function sendEmailAs(fromEmail: string, to: string, toName: string,
       senderName: account.displayName || cfg.senderName,
     };
     console.log(`[Email] Sending as ${fromEmail} via cPanel SMTP to ${to}`);
-    return await sendViaSmtp(customCfg, to, toName, subject, htmlBody, textBody);
+    return await sendWithRetry(
+      () => sendViaSmtp(customCfg, to, toName, subject, htmlBody, textBody),
+      `send as ${fromEmail} to ${to}`,
+    );
   } catch (err) {
     console.error(`[Email] sendEmailAs(${fromEmail}) error:`, err);
     return sendEmail(to, toName, subject, htmlBody, textBody);

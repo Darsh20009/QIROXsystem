@@ -1008,6 +1008,11 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   // Subdomain middleware FIRST — handles [slug].qiroxstudio.online requests
   registerSubdomainMiddleware(app);
   await registerRoutes(httpServer, app);
+  // Durable outbound-notification retries. This starts after routes and the
+  // database connection attempt, and is safe to run alongside existing mail/WA.
+  const { ensureNotificationTemplates, startNotificationWorker } = await import("./notifications/service");
+  await ensureNotificationTemplates().catch(error => console.error("[Notifications] template bootstrap:", error?.message || error));
+  startNotificationWorker();
   registerQMeetRoutes(app);
   startQMeetScheduler();
   await registerInstallmentRoutes(app);

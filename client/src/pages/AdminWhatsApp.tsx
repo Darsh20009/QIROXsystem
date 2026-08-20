@@ -1,6 +1,7 @@
 /**
  * AdminWhatsApp — QIROX WhatsApp CRM
- * - Connect WhatsApp Web via QR
+ * - Connect legacy WhatsApp Web via QR when used as the compatibility provider
+ * - Show the active reliable-delivery provider and queue state
  * - View & reply to conversations
  * - AI auto-responder settings
  * - Admin command panel
@@ -30,6 +31,10 @@ interface WAStatus { status: "disconnected"|"qr"|"connecting"|"connected"; qr: s
 interface WAChat { _id: string; chatId: string; name: string; phoneNumber: string; lastMessage: string; lastMessageAt: string; unreadCount: number; aiEnabled: boolean; }
 interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; }
 interface WASettings { adminNumbers: string[]; aiEnabled: boolean; aiDelaySeconds: number; systemPromptExtra: string; connectedPhone?: string; }
+interface NotificationHealth {
+  whatsapp?: { provider?: string; official?: boolean };
+  queue?: { pending?: number; failed?: number };
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtTime = (ts: string) => {
@@ -138,6 +143,12 @@ export default function AdminWhatsApp() {
   } as any);
   useEffect(() => { if (settingsData) setSettings(settingsData); }, [settingsData]);
 
+  const { data: notificationHealth } = useQuery<NotificationHealth>({
+    queryKey: ["/api/notifications/health"],
+    queryFn: () => fetch("/api/notifications/health", { credentials: "include" }).then(r => r.json()),
+    refetchInterval: 30_000,
+  });
+
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -222,6 +233,12 @@ export default function AdminWhatsApp() {
               <div className={`w-2 h-2 rounded-full ${statusColor}`} />
               <span className="text-[10px] text-black/50 dark:text-white/50">{statusLabel}</span>
             </div>
+            {notificationHealth?.whatsapp?.provider && (
+              <p className="text-[9px] text-black/35 dark:text-white/35 mt-0.5">
+                {notificationHealth.whatsapp.official ? "Meta Business" : "وضع التوافق: WhatsApp Web"}
+                {notificationHealth.queue?.failed ? ` · ${notificationHealth.queue.failed} رسائل تحتاج متابعة` : ""}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">

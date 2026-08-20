@@ -303,17 +303,19 @@ class WhatsAppModule extends EventEmitter {
   private async sendDisconnectAlert() {
     try {
       const { sendEmail } = await import("./email");
-      await sendEmail({
-        to: "youssefd.business@gmail.com",
-        subject: "⚠️ انقطع اتصال واتساب QIROX — تدخل فوري مطلوب",
-        html: `<div dir="rtl" style="font-family:Arial;padding:24px;background:#fff;">
+      const sent = await sendEmail(
+        "youssefd.business@gmail.com",
+        "Youssef",
+        "⚠️ انقطع اتصال واتساب QIROX — تدخل فوري مطلوب",
+        `<div dir="rtl" style="font-family:Arial;padding:24px;background:#fff;">
           <h2 style="color:#d32f2f;">⚠️ انقطع اتصال واتساب</h2>
           <p>انقطع اتصال واتساب QIROX CRM بعد <strong>10 محاولات إعادة اتصال فاشلة</strong>.</p>
           <p>النظام يواصل المحاولة تلقائياً، لكن يُنصح بالدخول للوحة التحكم والضغط على "اتصال" يدوياً لتسريع الاسترداد.</p>
           <p style="color:#888;font-size:12px;">الوقت: ${new Date().toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}</p>
           <a href="https://qiroxstudio.online/admin/whatsapp" style="display:inline-block;background:#25D366;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;margin-top:12px;">افتح واتساب CRM ←</a>
         </div>`,
-      });
+      );
+      if (!sent) throw new Error("SMTP delivery failed");
       console.log("[WA] Disconnect alert email sent to youssefd.business@gmail.com");
     } catch (e: any) {
       console.error("[WA] Failed to send disconnect alert:", e.message);
@@ -322,21 +324,23 @@ class WhatsAppModule extends EventEmitter {
 
   // ── Send OTP via WhatsApp ─────────────────────────────────────────────────
   async sendOTP(phoneRaw: string | null | undefined, otp: string, name: string) {
-    if (!phoneRaw || this.status !== "connected") return;
+    if (!phoneRaw) throw new Error("رقم واتساب غير متوفر");
+    if (this.status !== "connected") throw new Error("WhatsApp غير متصل");
     const phone = phoneRaw.replace(/\D/g, "");
-    if (phone.length < 7) return;
+    if (phone.length < 7) throw new Error("رقم واتساب غير صالح");
     const chatId = `${phone}@s.whatsapp.net`;
     const msg = `مرحباً ${name || ""} 👋\n\nرمز التحقق الخاص بك:\n\n*${otp}*\n\n⏱ صالح لمدة 10 دقائق.\n🔒 لا تشاركه مع أحد.`;
-    await this.sendText(chatId, msg, false).catch(() => {});
+    await this.sendText(chatId, msg, false);
   }
 
   // ── Send order/project update via WhatsApp ────────────────────────────────
   async sendNotification(phoneRaw: string | null | undefined, message: string) {
-    if (!phoneRaw || this.status !== "connected") return;
+    if (!phoneRaw) throw new Error("رقم واتساب غير متوفر");
+    if (this.status !== "connected") throw new Error("WhatsApp غير متصل");
     const phone = phoneRaw.replace(/\D/g, "");
-    if (phone.length < 7) return;
+    if (phone.length < 7) throw new Error("رقم واتساب غير صالح");
     const chatId = `${phone}@s.whatsapp.net`;
-    await this.sendText(chatId, message, false).catch(() => {});
+    await this.sendText(chatId, message, false);
   }
 
   // ── Send messages ─────────────────────────────────────────────────────────
