@@ -1,27 +1,13 @@
 ---
-name: Google OAuth callback URL
-description: How the Google OAuth callback URL is resolved and what env var controls it.
+name: Google OAuth callback and trust rules
+description: Callback allowlist plus the security rules required for Google account linking.
 ---
 
-# Google OAuth Callback URL
+# Google OAuth callback and trust rules
 
 ## Rule
-`GOOGLE_CALLBACK_URL` env var takes priority over the auto-generated URL in `server/routes.ts`.
+Only the approved QIROX callback may be used. `GOOGLE_CALLBACK_URL` may override the default only when it exactly matches the approved URL. OAuth state must be enabled when constructing the Passport Google strategy—not only on the route—so Passport uses its session-backed state store. Only Google-confirmed email addresses may be used to create or link local accounts.
 
-```typescript
-const CALLBACK_URL =
-  process.env.GOOGLE_CALLBACK_URL ||
-  (process.env.NODE_ENV === "production"
-    ? "https://qiroxstudio.online/api/auth/google/callback"
-    : devDomain
-    ? `https://${devDomain}/api/auth/google/callback`
-    : `http://localhost:5000/api/auth/google/callback`);
-```
+**Why:** Callback drift breaks Google configuration; route-level state did not bind callbacks to a browser session with the installed Passport strategy, allowing login CSRF. Unverified provider email claims must not establish control of an existing local account.
 
-**Why:** The Replit dev domain changes every session, so `GOOGLE_CALLBACK_URL` is set to `https://qiroxstudio.online/api/auth/google/callback` (production) — the only URL registered in Google Cloud Console. This means Google OAuth always uses the production callback.
-
-**Google Cloud Console Authorized Redirect URIs (as of this session):**
-- `https://qiroxstudio.online/api/auth/google/callback` ✅
-- `http://localhost:5000/api/auth/google/callback` (local dev, not used on Replit)
-
-**How to apply:** If you add a new OAuth provider, use `process.env.PROVIDER_CALLBACK_URL ||` pattern to allow override without code changes.
+**How to apply:** For every OAuth provider, use an explicit callback allowlist, a strategy-level session-backed state/nonce mechanism, and provider-verified identifiers before linking accounts.

@@ -317,6 +317,7 @@ export default function Login() {
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleCallbackHandled = useRef(false);
+  const oauthTwoFactorHandled = useRef(false);
   const [githubEnabled, setGithubEnabled] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
   const githubCallbackHandled = useRef(false);
@@ -380,6 +381,44 @@ export default function Login() {
       .catch(() => {});
   }, []);
 
+  // Google completes in the browser and redirects here. When the account has
+  // 2FA enabled, no session or trusted-device token is issued yet: load the
+  // server-side challenge and show the regular 2FA screen instead.
+  useEffect(() => {
+    if (oauthTwoFactorHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const tempToken = params.get("twoFactorToken");
+    if (!tempToken) return;
+    oauthTwoFactorHandled.current = true;
+    (async () => {
+      try {
+        const r = await fetch("/api/auth/2fa/challenge", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tempToken }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          toast({ title: "انتهت جلسة التحقق", description: data.error || "أعد تسجيل الدخول عبر Google.", variant: "destructive" });
+          window.history.replaceState({}, "", window.location.pathname);
+          return;
+        }
+        setTwoFA({ tempToken, methods: data.methods || [] });
+        setTwoFAMethod((data.methods || [])[0] || "");
+        setTwoFACode("");
+        setTwoFAPassphrase("");
+        setTwoFAError("");
+        setEmailOtpSent(false);
+        setTwoFAExpiresAt(Number(data.expiresAt) || Date.now() + 10 * 60 * 1000);
+        setTwoFASecondsLeft(Math.max(0, Math.floor(((Number(data.expiresAt) || Date.now()) - Date.now()) / 1000)));
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {
+        toast({ title: "تعذر بدء التحقق الثنائي", description: "تحقق من الاتصال ثم أعد تسجيل الدخول.", variant: "destructive" });
+      }
+    })();
+  }, [toast]);
+
   // Handle Google OAuth callback: pick up device token from URL param and navigate
   useEffect(() => {
     if (googleCallbackHandled.current) return;
@@ -390,7 +429,12 @@ export default function Login() {
       // Also handle ?error= from Google OAuth failure
       const googleError = params.get("error");
       if (googleError) {
-        toast({ title: "فشل تسجيل الدخول بـ Google", description: "حدث خطأ أثناء الاتصال بـ Google، حاول مرة أخرى", variant: "destructive" });
+        const configMessages: Record<string, string> = {
+          credentials_missing: "لم تُضبط بيانات Google في بيئة النشر بعد.",
+          callback_not_approved: "رابط العودة لـ Google لا يطابق الرابط المعتمد لـ QIROX.",
+          google_failed: "رفض Google الطلب أو تعذر التحقق من الحساب.",
+        };
+        toast({ title: "فشل تسجيل الدخول بـ Google", description: configMessages[googleError] || "حدث خطأ أثناء الاتصال بـ Google، حاول مرة أخرى", variant: "destructive" });
         window.history.replaceState({}, "", window.location.pathname);
       }
       return;
@@ -423,7 +467,13 @@ export default function Login() {
       const googleToken = cbUrl.searchParams.get("googleToken");
       const appleToken = cbUrl.searchParams.get("appleToken");
       const githubToken = cbUrl.searchParams.get("githubToken");
+        const twoFactorToken = cbUrl.searchParams.get("twoFactorToken");
       const nextPath = cbUrl.searchParams.get("next") || "/dashboard";
+        if (twoFactorToken) {
+          setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+          window.location.href = `/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`;
+          return;
+        }
       const token = googleToken || appleToken || githubToken;
       if (token) {
         saveDeviceToken(token);
@@ -617,11 +667,14 @@ export default function Login() {
           queryClient.setQueryData(["/api/user"], user);
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
           setTwoFA(null);
+          const redirectPath = typeof user.redirectPath === "string" && user.redirectPath.startsWith("/")
+            ? user.redirectPath
+            : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
           if (user.role === "client") {
             const returnUrl = sessionStorage.getItem("returnAfterLogin");
             if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
-            else setLocation("/dashboard");
-          } else { setLocation("/admin"); }
+            else setLocation(redirectPath);
+          } else { setLocation(redirectPath); }
         } else if (data.status === "denied") {
           setPushStatus("denied");
           setTwoFAError("تم رفض طلب تسجيل الدخول من الجهاز الآخر");
@@ -881,8 +934,9 @@ export default function Login() {
             setTwoFAPassphrase("");
             setTwoFAError("");
             setEmailOtpSent(false);
-            setTwoFAExpiresAt(Date.now() + 10 * 60 * 1000);
-            setTwoFASecondsLeft(600);
+            const expiresAt = Number(user.expiresAt) || Date.now() + 10 * 60 * 1000;
+            setTwoFAExpiresAt(expiresAt);
+            setTwoFASecondsLeft(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
             const epoch = Math.floor(Date.now() / 1000);
             setTotpSecondsLeft(30 - (epoch % 30));
             return;
@@ -1341,11 +1395,14 @@ export default function Login() {
                     } else {
                       queryClient.setQueryData(["/api/user"], data);
                       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                      const redirectPath = typeof data.redirectPath === "string" && data.redirectPath.startsWith("/")
+                        ? data.redirectPath
+                        : data.role === "client" ? "/dashboard" : "/employee/role-dashboard";
                       if (data.role === "client") {
                         const returnUrl = sessionStorage.getItem("returnAfterLogin");
                         if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
-                        else setLocation("/dashboard");
-                      } else { setLocation("/admin"); }
+                        else setLocation(redirectPath);
+                      } else { setLocation(redirectPath); }
                     }
                   } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                   setIs2FAVerifying(false);

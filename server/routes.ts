@@ -57,6 +57,7 @@ import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
 import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
 import { normalizePhone } from "./notifications/phone";
+import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -64,17 +65,69 @@ async function getPending2FA(tempToken: string) {
   const doc = await Pending2FAModel.findOne({ tempToken });
   if (!doc) return null;
   if (doc.expiresAt < new Date()) { await Pending2FAModel.deleteOne({ tempToken }); return null; }
-  return { userId: doc.userId, methods: doc.methods as string[], expiresAt: doc.expiresAt.getTime(), pushApproved: doc.pushApproved };
+  return {
+    userId: doc.userId,
+    methods: doc.methods as string[],
+    expiresAt: doc.expiresAt.getTime(),
+    pushApproved: doc.pushApproved,
+    authSource: doc.authSource || "password",
+    redirectPath: doc.redirectPath || "",
+    attempts: doc.attempts || 0,
+    maxAttempts: doc.maxAttempts || 5,
+    usedAt: doc.usedAt || null,
+  };
 }
-async function setPending2FA(tempToken: string, data: { userId: string; methods: string[]; expiresAt: number }) {
+async function setPending2FA(tempToken: string, data: {
+  userId: string;
+  methods: string[];
+  expiresAt: number;
+  authSource?: "password" | "google";
+  redirectPath?: string;
+}) {
+  const { Pending2FAModel } = await import("./models");
   await Pending2FAModel.findOneAndUpdate(
     { tempToken },
-    { tempToken, userId: data.userId, methods: data.methods, expiresAt: new Date(data.expiresAt), pushApproved: false },
+    {
+      tempToken,
+      userId: data.userId,
+      methods: data.methods,
+      expiresAt: new Date(data.expiresAt),
+      pushApproved: false,
+      authSource: data.authSource || "password",
+      redirectPath: data.redirectPath || "",
+      attempts: 0,
+      maxAttempts: 5,
+      usedAt: null,
+    },
     { upsert: true, returnDocument: "after" }
   );
 }
 async function deletePending2FA(tempToken: string) {
+  const { Pending2FAModel } = await import("./models");
   await Pending2FAModel.deleteOne({ tempToken });
+}
+
+async function consumePending2FAAttempt(tempToken: string) {
+  const { Pending2FAModel } = await import("./models");
+  return Pending2FAModel.findOneAndUpdate(
+    {
+      tempToken,
+      expiresAt: { $gt: new Date() },
+      usedAt: null,
+      $expr: { $lt: ["$attempts", "$maxAttempts"] },
+    },
+    { $inc: { attempts: 1 } },
+    { new: true },
+  );
+}
+
+async function consumePending2FA(tempToken: string) {
+  const { Pending2FAModel } = await import("./models");
+  return Pending2FAModel.findOneAndUpdate(
+    { tempToken, expiresAt: { $gt: new Date() }, usedAt: null },
+    { $set: { usedAt: new Date() } },
+    { new: true },
+  );
 }
 
 // ── MongoDB-backed push challenge helpers ─────────────────────────────────────
@@ -179,6 +232,108 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+  const dashboardForUser = (user: any) => {
+    if (user.role === "client") return "/dashboard";
+    return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
+  };
+  const maskEmail = (email: string) => {
+    const [name, domain] = String(email || "").split("@");
+    return domain ? `${name.slice(0, 2)}***@${domain}` : "حساب مستخدم";
+  };
+  const securityAlert = async (event: string, user: any, metadata: Record<string, unknown> = {}) => {
+    const tokenFingerprint = String(metadata.challengeFingerprint || "");
+    try {
+      const { ActivityLogModel } = await import("./models");
+      await ActivityLogModel.create({
+        userId: user?._id || user?.id || null,
+        action: event,
+        entity: "authentication",
+        entityId: String(user?._id || user?.id || ""),
+        details: metadata,
+      });
+      await dispatchNotification({
+        event: "authentication_security_alert",
+        idempotencyKey: `auth-alert:${event}:${tokenFingerprint || crypto.randomBytes(12).toString("hex")}`,
+        recipient: { name: "QIROX Security", email: "youssefd.business@gmail.com" },
+        subject: "تنبيه أمني من QIROX",
+        message: `حدث أمني يحتاج مراجعة: ${event}\nالحساب: ${maskEmail(user?.email)}\nراجع سجل النشاط في لوحة الإدارة.`,
+        channels: ["email"],
+        metadata: { event, userId: String(user?._id || user?.id || ""), ...metadata },
+      });
+    } catch (error: any) {
+      console.error("[AuthSecurity] could not record alert:", error?.message || error);
+    }
+  };
+  const getEnabled2FAMethods = async (userId: string) => {
+    const { UserModel, PushSubscriptionModel } = await import("./models");
+    const user = await UserModel.findById(userId)
+      .select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled email fullName username");
+    if (!user) return { user: null, methods: [] as string[] };
+    const methods: string[] = [];
+    if (user.totpEnabled) methods.push("totp");
+    if (user.emailOtpEnabled) methods.push("email");
+    if (user.recoveryPassphraseEnabled) methods.push("passphrase");
+    if (user.pushApprovalEnabled) {
+      const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(user._id) });
+      if (pushSubCount > 0) methods.unshift("push");
+    }
+    return { user, methods };
+  };
+  const create2FAChallenge = async (user: any, methods: string[], authSource: "password" | "google") => {
+    const tempToken = crypto.randomBytes(32).toString("hex");
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    await setPending2FA(tempToken, {
+      userId: String(user._id || user.id),
+      methods,
+      expiresAt,
+      authSource,
+      redirectPath: dashboardForUser(user),
+    });
+    return { tempToken, expiresAt, redirectPath: dashboardForUser(user) };
+  };
+  const send2FAEmailCode = async (tempToken: string, user: any, userAgent?: string) => {
+    const { OtpModel } = await import("./models");
+    const code = crypto.randomInt(100000, 1_000_000).toString();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+    const codeHash = crypto.createHash("sha256").update(`${tempToken}:${code}`).digest("hex");
+    await OtpModel.updateMany(
+      { challengeToken: tempToken, type: "2fa_email", used: false },
+      { $set: { used: true, usedAt: now } },
+    );
+    await OtpModel.create({
+      email: user.email,
+      code: "[protected]",
+      codeHash,
+      challengeToken: tempToken,
+      expiresAt,
+      type: "2fa_email",
+    });
+    const phone = normalizePhone(user.phone || user.whatsappNumber);
+    const results = await dispatchNotification({
+      event: "2fa_login_code",
+      idempotencyKey: `2fa-code:${crypto.createHash("sha256").update(tempToken).digest("hex")}:${crypto.randomBytes(12).toString("hex")}`,
+      recipient: {
+        userId: String(user._id || user.id),
+        name: user.fullName || user.username,
+        email: user.email,
+        phone: phone.valid ? phone.e164 : undefined,
+      },
+      subject: "رمز تسجيل الدخول إلى QIROX",
+      message: `رمز التحقق لتسجيل الدخول إلى QIROX هو: ${code}\nصالح لمدة 10 دقائق. لا تشاركه مع أي شخص.${userAgent ? "\nتم طلب الرمز لجهاز جديد." : ""}`,
+      channels: phone.valid ? ["email", "whatsapp"] : ["email"],
+      metadata: { purpose: "2fa_login", challengeFingerprint: crypto.createHash("sha256").update(tempToken).digest("hex").slice(0, 16) },
+      sensitive: true,
+    });
+    const accepted = results.some(result => ["sent", "pending", "retrying", "sending"].includes(result.status));
+    if (!accepted) {
+      await securityAlert("2fa_code_delivery_failed", user, {
+        challengeFingerprint: crypto.createHash("sha256").update(tempToken).digest("hex").slice(0, 16),
+      });
+      throw new Error("تعذر إرسال رمز التحقق. استخدم طريقة تحقق أخرى أو حاول لاحقاً.");
+    }
+    return { expiresAt: expiresAt.getTime(), channels: results.map(result => result.channel) };
+  };
 
   // ─── Health endpoint ────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
@@ -207,28 +362,36 @@ export async function registerRoutes(
   {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-    const GOOGLE_ENABLED = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+    const CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || APPROVED_GOOGLE_CALLBACK_URL;
+    const googleConfigError = !GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET
+      ? "credentials_missing"
+      : !isApprovedGoogleCallbackUrl(CALLBACK_URL)
+        ? "callback_not_approved"
+        : "";
+    const GOOGLE_ENABLED = !googleConfigError;
 
     if (GOOGLE_ENABLED) {
       const { Strategy: GoogleStrategy } = await import("passport-google-oauth20");
       const passport = (await import("passport")).default;
-      // In dev, use Replit domain if available so OAuth redirect works in the browser
-      const devDomain = process.env.REPLIT_DEV_DOMAIN;
-      const CALLBACK_URL =
-        process.env.GOOGLE_CALLBACK_URL ||
-        (process.env.NODE_ENV === "production"
-          ? "https://qiroxstudio.online/api/auth/google/callback"
-          : devDomain
-          ? `https://${devDomain}/api/auth/google/callback`
-          : `http://localhost:5000/api/auth/google/callback`);
 
       passport.use(
         new GoogleStrategy(
-          { clientID: GOOGLE_CLIENT_ID!, clientSecret: GOOGLE_CLIENT_SECRET!, callbackURL: CALLBACK_URL },
+          {
+            clientID: GOOGLE_CLIENT_ID!,
+            clientSecret: GOOGLE_CLIENT_SECRET!,
+            callbackURL: CALLBACK_URL,
+            // Passport selects the session-backed state store while creating
+            // the strategy. This binds callback responses to the browser that
+            // started the Google flow and prevents login CSRF.
+            state: true,
+          },
           async (_accessToken, _refreshToken, profile, done) => {
             try {
-              const email = profile.emails?.[0]?.value?.toLowerCase().trim();
-              if (!email) return done(new Error("لم يتم الحصول على البريد الإلكتروني من Google"));
+              // A matching email alone is not proof of account ownership.
+              // Only a Google-verified address may create or link an account.
+              const verifiedEmail = profile.emails?.find((item: any) => item?.verified && item?.value);
+              const email = verifiedEmail?.value?.toLowerCase().trim();
+              if (!email) return done(new Error("لم يتم الحصول على بريد Google موثّق"));
 
               // Try to find by googleId first, then by email
               let user = await UserModel.findOne({ googleId: profile.id });
@@ -277,33 +440,42 @@ export async function registerRoutes(
 
     // Route: start Google OAuth flow
     app.get("/api/auth/google", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ Google غير مفعّل حالياً" });
+      if (!GOOGLE_ENABLED) return res.redirect(`/login?error=${encodeURIComponent(googleConfigError)}`);
       const passport = (await import("passport")).default;
-      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+      // Passport stores a cryptographically-random transaction state in the
+      // initiating browser session and verifies it on callback. This prevents
+      // login CSRF / account substitution from an attacker-owned OAuth flow.
+      passport.authenticate("google", { scope: ["profile", "email"], state: true })(req, res, next);
     });
 
     // Route: Google OAuth callback
     app.get("/api/auth/google/callback", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.redirect("/login?error=google_disabled");
+      if (!GOOGLE_ENABLED) return res.redirect(`/login?error=${encodeURIComponent(googleConfigError)}`);
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
 
-      passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=google_failed");
+      passport.authenticate("google", async (err: any, user: any) => {
+        if (err || !user) {
+          await securityAlert("google_oauth_failed", null, { provider: "google" });
+          return res.redirect("/login?error=google_failed");
+        }
+        const { methods } = await getEnabled2FAMethods(String(user._id || user.id));
+        if (methods.length > 0) {
+          const challenge = await create2FAChallenge(user, methods, "google");
+          return res.redirect(`/login?twoFactorToken=${encodeURIComponent(challenge.tempToken)}`);
+        }
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=google_failed");
+          if (loginErr) {
+            await securityAlert("google_session_failed", user, { provider: "google" });
+            return res.redirect("/login?error=google_failed");
+          }
           // Issue device token (trusted device — Google already verified identity)
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
-          const MGMT_ROLES = ["admin", "manager"];
-          const redirectPath = user.role === "client"
-            ? "/dashboard"
-            : MGMT_ROLES.includes(user.role)
-              ? "/admin"
-              : "/employee/role-dashboard";
+          const redirectPath = dashboardForUser(user);
           // Pass device token via /login?googleToken=... so client can store it, then navigates
           res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
         });
@@ -311,7 +483,11 @@ export async function registerRoutes(
     });
 
     // Route: check if google is enabled
-    app.get("/api/auth/google/status", (_req, res) => res.json({ enabled: GOOGLE_ENABLED }));
+    app.get("/api/auth/google/status", (_req, res) => res.json({
+      enabled: GOOGLE_ENABLED,
+      callbackUrl: CALLBACK_URL,
+      ...(googleConfigError ? { error: googleConfigError } : {}),
+    }));
   }
   // ────────────────────────────────────────────────────────────────────────────
   // === GITHUB OAUTH ===
@@ -1048,6 +1224,47 @@ export async function registerRoutes(
     }
   });
 
+  // A deliberately guarded recovery path. It removes only second-factor
+  // enrollment; it never resets a password or invalidates active sessions.
+  app.post("/api/admin/users/:id/2fa/recover", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { confirmation, reason } = req.body || {};
+    if (confirmation !== "RESET_2FA" || String(reason || "").trim().length < 10) {
+      return res.status(400).json({ error: "تأكيد الاسترداد وسبب واضح (10 أحرف على الأقل) مطلوبان" });
+    }
+    try {
+      const { UserModel, Pending2FAModel, OtpModel, PushChallengeModel, ActivityLogModel } = await import("./models");
+      const target = await UserModel.findById(req.params.id).select("email fullName username");
+      if (!target) return res.sendStatus(404);
+      await UserModel.findByIdAndUpdate(target._id, {
+        $set: {
+          totpEnabled: false,
+          totpSecret: null,
+          emailOtpEnabled: false,
+          recoveryPassphraseEnabled: false,
+          recoveryPassphrase: null,
+          pushApprovalEnabled: false,
+        },
+      });
+      await Promise.all([
+        Pending2FAModel.deleteMany({ userId: String(target._id) }),
+        PushChallengeModel.deleteMany({ userId: String(target._id) }),
+        OtpModel.updateMany({ email: target.email, type: "2fa_email", used: false }, { $set: { used: true, usedAt: new Date() } }),
+      ]);
+      await ActivityLogModel.create({
+        userId: (req.user as any)._id || (req.user as any).id,
+        action: "admin_2fa_recovery",
+        entity: "user",
+        entityId: String(target._id),
+        details: { reason: String(reason).trim().slice(0, 500), target: maskEmail(target.email) },
+        ip: req.ip,
+      });
+      res.json({ ok: true, message: "تم تعطيل عوامل التحقق للحساب. يمكن للمستخدم إعدادها من جديد بعد تسجيل الدخول." });
+    } catch {
+      res.status(500).json({ error: "تعذر تنفيذ استرداد التحقق الثنائي حالياً" });
+    }
+  });
+
   // Internal Gate Verification
   app.post("/api/internal-gate/verify", (req, res) => {
     const { password } = req.body;
@@ -1064,24 +1281,10 @@ export async function registerRoutes(
         if (err) return next(err);
         if (!user) return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
         try {
-          const { UserModel } = await import("./models");
-          const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled email fullName username");
-          const methods: string[] = [];
-          if (dbUser?.totpEnabled) methods.push("totp");
-          if (dbUser?.emailOtpEnabled) methods.push("email");
-          if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
-          // Push Approval — only if user explicitly enabled it AND has active subscriptions
-          if (dbUser?.pushApprovalEnabled) {
-            const { PushSubscriptionModel } = await import("./models");
-            const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
-            if (pushSubCount > 0) {
-              methods.unshift("push"); // put push first as most convenient
-            }
-          }
+          const { user: dbUser, methods } = await getEnabled2FAMethods(String(user._id || user.id));
           if (methods.length > 0) {
-            const tempToken = crypto.randomBytes(32).toString("hex");
-            await setPending2FA(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
-            return res.status(200).json({ requires2FA: true, methods, tempToken });
+            const challenge = await create2FAChallenge(dbUser || user, methods, "password");
+            return res.status(200).json({ requires2FA: true, methods, ...challenge });
           }
           req.login(user, (loginErr: any) => {
             if (loginErr) return next(loginErr);
@@ -1102,6 +1305,17 @@ export async function registerRoutes(
       const session = await getPending2FA(tempToken);
       if (!session) return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" });
       if (!session.methods.includes(method)) return res.status(400).json({ error: "طريقة التحقق غير متوفرة" });
+      const challenge = await consumePending2FAAttempt(tempToken);
+      if (!challenge) {
+        const { UserModel } = await import("./models");
+        const lockedUser = await UserModel.findById(session.userId).select("email");
+        if (session.attempts >= session.maxAttempts - 1) {
+          await securityAlert("2fa_challenge_locked", lockedUser, {
+            challengeFingerprint: crypto.createHash("sha256").update(tempToken).digest("hex").slice(0, 16),
+          });
+        }
+        return res.status(429).json({ error: "تم تجاوز عدد محاولات التحقق. أعد تسجيل الدخول أو استخدم الاسترداد المعتمد." });
+      }
 
       const { UserModel, OtpModel } = await import("./models");
       const dbUser = await UserModel.findById(session.userId).select("+totpSecret +recoveryPassphrase");
@@ -1115,29 +1329,46 @@ export async function registerRoutes(
         verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), step: 30, window: 2 });
       } else if (method === "email") {
         if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
-        const latestOtp = await OtpModel.findOne({ email: dbUser.email, type: "2fa_email", used: false }).sort({ createdAt: -1 });
-        if (!latestOtp) return res.status(400).json({ error: "لم يتم إرسال رمز، أعد تسجيل الدخول" });
-        if (latestOtp.expiresAt < new Date()) return res.status(400).json({ error: "انتهت صلاحية الرمز" });
-        if (latestOtp.code !== String(code).trim()) return res.status(400).json({ error: "الرمز غير صحيح" });
-        await OtpModel.updateOne({ _id: latestOtp._id }, { used: true });
-        verified = true;
+        const codeHash = crypto.createHash("sha256").update(`${tempToken}:${String(code).trim()}`).digest("hex");
+        const usedOtp = await OtpModel.findOneAndUpdate(
+          {
+            email: dbUser.email,
+            type: "2fa_email",
+            challengeToken: tempToken,
+            codeHash,
+            used: false,
+            expiresAt: { $gt: new Date() },
+          },
+          { $set: { used: true, usedAt: new Date() } },
+          { new: true },
+        ).select("+codeHash");
+        verified = Boolean(usedOtp);
       } else if (method === "passphrase") {
         if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
         const bcrypt = await import("bcryptjs");
         verified = await bcrypt.default.compare(String(code).trim(), dbUser.recoveryPassphrase || "");
       }
 
-      if (!verified) return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+      if (!verified) {
+        if (challenge.attempts >= challenge.maxAttempts) {
+          await securityAlert("2fa_challenge_locked", dbUser, {
+            challengeFingerprint: crypto.createHash("sha256").update(tempToken).digest("hex").slice(0, 16),
+          });
+        }
+        return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+      }
 
-      await deletePending2FA(tempToken);
+      const consumed = await consumePending2FA(tempToken);
+      if (!consumed) return res.status(409).json({ error: "تم استخدام جلسة التحقق بالفعل. أعد تسجيل الدخول." });
       const safeUser = await UserModel.findById(session.userId);
       if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
       req.login(safeUser, (loginErr: any) => {
         if (loginErr) return next(loginErr);
-        res.status(200).json(sanitizeUser(safeUser));
+        deletePending2FA(tempToken).catch(() => {});
+        res.status(200).json({ ...sanitizeUser(safeUser), redirectPath: consumed.redirectPath || dashboardForUser(safeUser) });
       });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
+    } catch {
+      res.status(500).json({ error: "تعذر إكمال التحقق الثنائي حالياً" });
     }
   });
 
@@ -1147,19 +1378,34 @@ export async function registerRoutes(
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
       const session = await getPending2FA(tempToken);
       if (!session || !session.methods.includes("email")) return res.status(400).json({ error: "الجلسة غير صالحة" });
-      const { UserModel, OtpModel } = await import("./models");
+      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول." });
+      const { UserModel } = await import("./models");
       const user = await UserModel.findById(session.userId);
       if (!user?.email) return res.status(400).json({ error: "البريد غير متوفر" });
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-      await OtpModel.updateMany({ email: user.email, used: false, type: "2fa_email" }, { used: true });
-      await OtpModel.create({ email: user.email, code, expiresAt, type: "2fa_email" });
-      sendLoginOtpEmail(user.email, user.fullName || user.username, code, req.headers["user-agent"] as string).catch(console.error);
-      // Send OTP via WhatsApp if user has phone
-      const { waModule: _waM } = await import("./whatsapp-module");
-      _waM.sendOTP((user as any).phone || (user as any).whatsappNumber, code, user.fullName || user.username).catch(() => {});
-      res.json({ ok: true });
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+      const delivery = await send2FAEmailCode(tempToken, user, req.headers["user-agent"] as string);
+      res.json({ ok: true, expiresAt: delivery.expiresAt, channels: delivery.channels });
+    } catch (err: any) { res.status(503).json({ error: err.message || "تعذر إرسال رمز التحقق" }); }
+  });
+
+  // OAuth callbacks are redirects, so the login page retrieves the short-lived
+  // challenge state through this endpoint before showing the same 2FA UI.
+  app.post("/api/auth/2fa/challenge", otpLimiter, async (req, res) => {
+    const { tempToken } = req.body || {};
+    if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+    const mongo = (await import("mongoose")).default;
+    if (mongo.connection.readyState !== 1) {
+      return res.status(503).json({ error: "خدمة التحقق غير متاحة مؤقتاً. حاول لاحقاً." });
+    }
+    const session = await getPending2FA(String(tempToken));
+    if (!session || session.usedAt || session.attempts >= session.maxAttempts) {
+      return res.status(410).json({ error: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول." });
+    }
+    res.json({
+      methods: session.methods,
+      expiresAt: session.expiresAt,
+      redirectPath: session.redirectPath,
+      authSource: session.authSource,
+    });
   });
 
   /* ─── Push Approval 2FA (Google Prompt style) ─── */
@@ -1262,12 +1508,14 @@ export async function registerRoutes(
       const user = await UserModel.findById(challenge.userId);
       if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
 
-      await deletePending2FA(tempToken);
+      const consumed = await consumePending2FA(tempToken);
+      if (!consumed) return res.status(409).json({ error: "تم استخدام جلسة التحقق بالفعل. أعد تسجيل الدخول." });
       await deletePushChallenge(challengeId);
 
       req.login(user, (loginErr: any) => {
         if (loginErr) return next(loginErr);
-        res.status(200).json(sanitizeUser(user));
+        deletePending2FA(tempToken).catch(() => {});
+        res.status(200).json({ ...sanitizeUser(user), redirectPath: consumed.redirectPath || dashboardForUser(user) });
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -17880,6 +18128,11 @@ export async function registerInstallmentRoutes(app: Express) {
       res.json(deliveries.map((delivery: any) => ({
         ...delivery,
         id: String(delivery._id),
+        ...(delivery.sensitive ? {
+          subject: "رسالة تحقق حساسة",
+          body: undefined,
+          textBody: undefined,
+        } : {}),
         // The operator needs recipients and failure context, but not internal
         // metadata that could later contain integration-specific values.
         metadata: undefined,

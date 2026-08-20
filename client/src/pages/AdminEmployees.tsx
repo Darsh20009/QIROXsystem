@@ -394,6 +394,18 @@ export default function AdminEmployees() {
     onError: (err: any) => toast({ title: L ? "فشل إعادة التعيين" : "Reset failed", description: err.message, variant: "destructive" }),
   });
 
+  const resetTwoFactorMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${id}/2fa/recover`, { confirmation: "RESET_2FA", reason });
+      return res.json();
+    },
+    onSuccess: () => toast({
+      title: L ? "تم استرداد التحقق الثنائي" : "Two-factor recovery completed",
+      description: L ? "يمكن للموظف تسجيل الدخول وإعداد عوامل تحقق جديدة." : "The employee can sign in and configure new verification factors.",
+    }),
+    onError: (err: any) => toast({ title: L ? "فشل استرداد التحقق الثنائي" : "2FA recovery failed", description: err.message, variant: "destructive" }),
+  });
+
   const resetForm = () => {
     setForm(emptyForm);
     setShowForm(false);
@@ -442,6 +454,18 @@ export default function AdminEmployees() {
 
   const handleDelete = (emp: User) => {
     if (confirm(L ? `هل أنت متأكد من حذف ${emp.fullName}؟` : `Delete ${emp.fullName}?`)) deleteMutation.mutate(String(emp.id));
+  };
+
+  const handleTwoFactorRecovery = (emp: User) => {
+    if (!confirm(L
+      ? `سيتم تعطيل جميع عوامل التحقق الثنائي لـ ${emp.fullName} دون تغيير كلمة المرور أو الجلسات الحالية. متابعة؟`
+      : `This disables all 2FA factors for ${emp.fullName} without changing their password or active sessions. Continue?`)) return;
+    const reason = prompt(L ? "اكتب سبب الاسترداد (10 أحرف على الأقل):" : "Enter a recovery reason (10+ characters):") || "";
+    if (reason.trim().length < 10) {
+      toast({ title: L ? "سبب الاسترداد مطلوب" : "Recovery reason required", variant: "destructive" });
+      return;
+    }
+    resetTwoFactorMutation.mutate({ id: String(emp.id), reason: reason.trim() });
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -909,6 +933,9 @@ export default function AdminEmployees() {
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
                         {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
                       </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => handleTwoFactorRecovery(emp)} disabled={resetTwoFactorMutation.isPending} data-testid={`button-recover-2fa-${emp.id}`} title={L ? "استرداد التحقق الثنائي" : "Recover 2FA"}>
+                        {resetTwoFactorMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+                      </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:bg-black/[0.04] dark:bg-white/[0.06] hover:text-black dark:text-white" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-${emp.id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -956,6 +983,9 @@ export default function AdminEmployees() {
                       <>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
                           {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => handleTwoFactorRecovery(emp)} disabled={resetTwoFactorMutation.isPending} data-testid={`button-recover-2fa-list-${emp.id}`} title={L ? "استرداد التحقق الثنائي" : "Recover 2FA"}>
+                          {resetTwoFactorMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black dark:text-white" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-list-${emp.id}`}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </>

@@ -27,6 +27,9 @@ const notificationDeliverySchema = new Schema({
   subject: { type: String, default: "" },
   body: { type: String, default: "" },
   textBody: { type: String, default: "" },
+  // Sensitive deliveries (such as one-time login codes) remain available to
+  // the worker for a retry, but their body is never returned by operator APIs.
+  sensitive: { type: Boolean, default: false },
   template: { type: String, default: "" },
   metadata: { type: Schema.Types.Mixed, default: {} },
   attempts: { type: Number, default: 0 },

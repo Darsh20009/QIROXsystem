@@ -21,6 +21,7 @@ export type NotificationRequest = {
   channels?: NotificationChannel[];
   whatsappTemplate?: string;
   metadata?: Record<string, unknown>;
+  sensitive?: boolean;
 };
 
 type DeliveryResult = {
@@ -92,6 +93,7 @@ async function createDelivery(
       subject: request.subject,
       body,
       textBody: request.message,
+      sensitive: Boolean(request.sensitive),
       template: request.whatsappTemplate || "",
       metadata: request.metadata || {},
       lastError: hasRecipient

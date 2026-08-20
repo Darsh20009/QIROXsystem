@@ -79,6 +79,14 @@ export const GOOGLE_DEFAULTS: Readonly<Partial<GoogleConfig>> = {
   },
 };
 
+export const APPROVED_GOOGLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/google/callback";
+
+export function isApprovedGoogleCallbackUrl(callbackUrl: string): boolean {
+  // OAuth registrations are exact redirect URIs. Do not normalize: URL()
+  // would silently accept syntax such as an explicit default `:443` port.
+  return callbackUrl === APPROVED_GOOGLE_CALLBACK_URL;
+}
+
 // ── Builder ───────────────────────────────────────────────────────────────────
 
 export function buildGoogleConfig(env: EnvBag = process.env): GoogleConfig {
@@ -92,7 +100,7 @@ export function buildGoogleConfig(env: EnvBag = process.env): GoogleConfig {
     oauth: {
       clientId,
       clientSecret,
-      callbackUrl: env.GOOGLE_CALLBACK_URL ?? "",
+      callbackUrl: env.GOOGLE_CALLBACK_URL ?? APPROVED_GOOGLE_CALLBACK_URL,
       enabled:     Boolean(clientId && clientSecret),
     },
     sheets: {
@@ -110,8 +118,8 @@ export function validateGoogleConfig(config: GoogleConfig): ConfigValidationResu
   const issues = [];
   if (!config.oauth.enabled) {
     issues.push({ field: "google.oauth", message: "Google OAuth credentials not set — Sign in with Google will be disabled", severity: "warning" as const });
-  } else if (!config.oauth.callbackUrl) {
-    issues.push({ field: "google.oauth.callbackUrl", message: "GOOGLE_CALLBACK_URL is required for Google OAuth", severity: "error" as const });
+  } else if (!isApprovedGoogleCallbackUrl(config.oauth.callbackUrl)) {
+    issues.push({ field: "google.oauth.callbackUrl", message: "GOOGLE_CALLBACK_URL must use the approved QIROX callback URL", severity: "error" as const });
   }
   if (!config.sheets.enabled) {
     issues.push({ field: "google.sheets", message: "Google Sheets credentials not set — data sync will be unavailable", severity: "warning" as const });

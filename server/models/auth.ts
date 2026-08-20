@@ -4,8 +4,13 @@ import { transform } from "./utils";
 const otpSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
   code: { type: String, required: true },
+  // New authentication challenges store only a hash of the user-entered code.
+  // `code` remains for backward compatibility with older verification flows.
+  codeHash: { type: String, default: "", select: false },
+  challengeToken: { type: String, default: "", index: true },
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
+  usedAt: { type: Date, default: null },
   type: { type: String, enum: ["email_verify", "forgot_password", "login_otp", "2fa_email"], default: "forgot_password" },
 }, { timestamps: true });
 otpSchema.set('toJSON', { transform });
@@ -40,8 +45,13 @@ const pending2FASchema = new mongoose.Schema({
   userId:      { type: String, required: true },
   methods:     { type: [String], default: [] },
   pushApproved:{ type: Boolean, default: false },
+  authSource:  { type: String, enum: ["password", "google"], default: "password" },
+  redirectPath:{ type: String, default: "" },
+  attempts:    { type: Number, default: 0 },
+  maxAttempts: { type: Number, default: 5 },
+  usedAt:      { type: Date, default: null },
   expiresAt:   { type: Date, required: true, index: { expires: 0 } },
-});
+}, { timestamps: true });
 export const Pending2FAModel = mongoose.models.Pending2FA || mongoose.model("Pending2FA", pending2FASchema);
 
 const pushChallengeSchema = new mongoose.Schema({
