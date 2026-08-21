@@ -288,7 +288,12 @@ export default function EmployeeProfile() {
   });
 
   // QR Login Token
-  const { data: qrData, refetch: refetchQr } = useQuery<{ token: string | null; createdAt: string | null }>({
+  const { data: qrData, refetch: refetchQr } = useQuery<{
+    token: string;
+    createdAt: string;
+    expiresAt: string;
+    loginUrl: string;
+  }>({
     queryKey: ["/api/employee/qr-token"],
     queryFn: async () => {
       const r = await fetch("/api/employee/qr-token", { credentials: "include" });
@@ -319,9 +324,9 @@ export default function EmployeeProfile() {
     onError: (e: any) => toast({ title: e.message || (L ? "فشل تغيير الباسورد" : "Failed to change password"), variant: "destructive" }),
   });
 
-  const qrLoginUrl = qrData?.token
-    ? `${window.location.origin}/api/qr-login/${qrData.token}`
-    : null;
+  // The server owns this URL contract so the profile, Wallet pass, and scanner
+  // all use the same protected endpoint and canonical host.
+  const qrLoginUrl = qrData?.loginUrl || null;
 
   const addSkill = () => {
     if (!newSkill.trim()) return;
@@ -908,21 +913,27 @@ export default function EmployeeProfile() {
                             <span className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-white rounded-bl-md" />
                             <span className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-white rounded-br-md" />
 
-                            <div className="relative">
-                              <QRCodeCanvas
-                                id="qr-login-canvas"
-                                value={qrLoginUrl}
-                                size={150}
-                                level="H"
-                                includeMargin={false}
-                                bgColor="#ffffff"
-                                fgColor="#000000"
-                              />
-                              {/* Centered QIROX logo overlay */}
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-md bg-white flex items-center justify-center shadow-md ring-1 ring-black/10">
-                                <img src={qiroxLogoNoBgPath} alt="QIROX" crossOrigin="anonymous" className="w-7 h-7 object-contain" />
+                            {qrLoginUrl ? (
+                              <div className="relative">
+                                <QRCodeCanvas
+                                  id="qr-login-canvas"
+                                  value={qrLoginUrl}
+                                  size={150}
+                                  level="H"
+                                  includeMargin={false}
+                                  bgColor="#ffffff"
+                                  fgColor="#000000"
+                                />
+                                {/* Centered QIROX logo overlay */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-md bg-white flex items-center justify-center shadow-md ring-1 ring-black/10">
+                                  <img src={qiroxLogoNoBgPath} alt="QIROX" crossOrigin="anonymous" className="w-7 h-7 object-contain" />
+                                </div>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="w-[150px] h-[150px] flex items-center justify-center text-[10px] text-black/45">
+                                {L ? "جاري تجهيز رمز الدخول…" : "Preparing login QR…"}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -940,6 +951,11 @@ export default function EmployeeProfile() {
                         <div className="text-white/55 text-[9px] tracking-wide" dir="auto" data-dir-auto="true">
                           {L ? "افتح كاميرا هاتفك ووجهها للباركود" : "Open your phone camera & point it at the code"}
                         </div>
+                        {qrData?.expiresAt && (
+                          <div className="text-white/45 text-[8px]" dir="auto">
+                            {L ? `صالح حتى ${new Date(qrData.expiresAt).toLocaleDateString("ar-SA")}` : `Valid until ${new Date(qrData.expiresAt).toLocaleDateString()}`}
+                          </div>
+                        )}
                       </div>
 
                       {/* ID footer */}
@@ -997,7 +1013,7 @@ export default function EmployeeProfile() {
               {/* Apple Wallet — all devices */}
               {(
                 <a
-                  href={`/api/employee/apple-wallet-pass?token=${qrData?.token || ""}`}
+                  href="/api/employee/apple-wallet-pass"
                   download="qirox-employee.pkpass"
                   className="w-full flex items-center justify-center"
                   data-testid="button-apple-wallet"

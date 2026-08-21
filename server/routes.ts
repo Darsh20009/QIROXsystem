@@ -15,7 +15,6 @@ import fs from "fs";
 import express from "express";
 import crypto from "crypto";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
-import { deflateRawSync as _zlibDeflateRawSync } from "zlib";
 import { registerMailRoutes } from "./domains/mail";
 import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
@@ -51,6 +50,52 @@ const contactLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
+
+const QR_LOGIN_TOKEN_PATTERN = /^qrl_[a-f0-9]{64}$/i;
+const QR_LOGIN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+async function auditQrLogin(
+  req: any,
+  action: string,
+  options: { userId?: string | null; token?: string; reason?: string; role?: string } = {},
+) {
+  try {
+    const { ActivityLogModel } = await import("./models");
+    const tokenFingerprint = options.token
+      ? crypto.createHash("sha256").update(options.token).digest("hex").slice(0, 16)
+      : "invalid";
+    await ActivityLogModel.create({
+      userId: options.userId || null,
+      action,
+      entity: "qr_login",
+      entityId: tokenFingerprint,
+      details: {
+        tokenFingerprint,
+        reason: options.reason || "",
+        role: options.role || "",
+        sourceIp: req.ip || "",
+        userAgent: String(req.headers?.["user-agent"] || "").slice(0, 200),
+      },
+    });
+  } catch {
+    // A temporary audit-store failure must not turn into an authentication outage.
+  }
+}
+
+const qrLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const tokenFingerprint = crypto.createHash("sha256").update(String(req.params?.token || "")).digest("hex").slice(0, 16);
+    return `${ipKeyGenerator(req.ip)}:${tokenFingerprint}`;
+  },
+  handler: async (req, res) => {
+    void auditQrLogin(req, "qr_login_rate_limited", { token: String(req.params?.token || ""), reason: "rate_limited" });
+    return res.redirect("/login?qr=rate_limited");
+  },
+});
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail, sendOwnerWAEmail, sendSupportTicketCreatedEmail, sendSupportTicketReplyEmail, sendAdminNewTicketEmail, sendTaskStatusEmail, sendIncomingCallEmail } from "./email";
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
@@ -58,6 +103,7 @@ import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireN
 import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
 import { normalizePhone } from "./notifications/phone";
 import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
+import { createSolidPng } from "./lib/apple-wallet-png";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -235,6 +281,50 @@ export async function registerRoutes(
   const dashboardForUser = (user: any) => {
     if (user.role === "client") return "/dashboard";
     return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
+  };
+  const qrLoginUrl = (token: string) => {
+    const appUrl = (process.env.APP_URL || "https://qiroxstudio.online").replace(/\/+$/, "");
+    return `${appUrl}/api/qr-login/${token}`;
+  };
+  const ensureQrLoginToken = async (userId: string, rotate = false) => {
+    const { UserModel } = await import("./models");
+    const now = new Date();
+    const existing = await UserModel.findById(userId)
+      .select("qrLoginToken qrLoginTokenCreatedAt qrLoginTokenExpiresAt")
+      .lean();
+    if (!existing) throw new Error("employee_not_found");
+
+    const currentToken = String((existing as any).qrLoginToken || "");
+    const currentExpiry = (existing as any).qrLoginTokenExpiresAt ? new Date((existing as any).qrLoginTokenExpiresAt) : null;
+    const currentIsValid = QR_LOGIN_TOKEN_PATTERN.test(currentToken) && (!currentExpiry || currentExpiry > now);
+
+    if (!rotate && currentIsValid) {
+      // Existing cards retain their current token. Giving legacy tokens an
+      // expiry starts the new policy without invalidating issued cards today.
+      const expiresAt = currentExpiry || new Date(now.getTime() + QR_LOGIN_TTL_MS);
+      if (!currentExpiry) {
+        await UserModel.updateOne(
+          { _id: userId, qrLoginToken: currentToken, qrLoginTokenExpiresAt: null },
+          { $set: { qrLoginTokenExpiresAt: expiresAt } },
+        );
+      }
+      return {
+        token: currentToken,
+        createdAt: (existing as any).qrLoginTokenCreatedAt || now,
+        expiresAt,
+        rotated: false,
+      };
+    }
+
+    const token = `qrl_${crypto.randomBytes(32).toString("hex")}`;
+    const expiresAt = new Date(now.getTime() + QR_LOGIN_TTL_MS);
+    await UserModel.findByIdAndUpdate(userId, {
+      qrLoginToken: token,
+      qrLoginTokenCreatedAt: now,
+      qrLoginTokenExpiresAt: expiresAt,
+      qrLoginTokenRotatedAt: now,
+    });
+    return { token, createdAt: now, expiresAt, rotated: true };
   };
   const maskEmail = (email: string) => {
     const [name, domain] = String(email || "").split("@");
@@ -9377,62 +9467,92 @@ export async function registerRoutes(
   });
 
   // ── Employee QR Login Token ──────────────────────────────────────────────────
-  // Generate (or regenerate) a permanent QR login token for the current employee
+  // Rotate the bearer-style QR login token for the current employee.
   app.post("/api/employee/generate-qr-token", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { UserModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
-      const token = "qrl_" + crypto.randomBytes(32).toString("hex");
-      await (UserModel as any).findByIdAndUpdate(uid, {
-        qrLoginToken: token,
-        qrLoginTokenCreatedAt: new Date(),
+      const token = await ensureQrLoginToken(String(uid), true);
+      await auditQrLogin(req, "qr_login_token_rotated", {
+        userId: String(uid),
+        token: token.token,
+        reason: "employee_requested_rotation",
       });
-      res.json({ token });
+      res.json({ ...token, loginUrl: qrLoginUrl(token.token) });
     } catch (err: any) {
       res.status(500).json({ error: "فشل إنشاء رمز الباركود" });
     }
   });
 
-  // Return existing token (or null) for the current employee
+  // Always provide a current login QR for profile cards and Wallet passes.
   app.get("/api/employee/qr-token", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { UserModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
-      const user = await (UserModel as any).findById(uid).select("qrLoginToken qrLoginTokenCreatedAt").lean();
-      res.json({ token: user?.qrLoginToken || null, createdAt: user?.qrLoginTokenCreatedAt || null });
+      const token = await ensureQrLoginToken(String(uid));
+      res.json({ ...token, loginUrl: qrLoginUrl(token.token) });
     } catch (err: any) {
       res.status(500).json({ error: "فشل جلب رمز الباركود" });
     }
   });
 
-  // Public route: login with QR token — sets session and redirects
-  app.get("/api/qr-login/:token", async (req, res) => {
+  // Public bearer endpoint: a trusted QIROX QR starts the session flow.
+  // It is token-, IP-, expiration-, and audit-protected. QR users with 2FA
+  // are sent to their existing challenge instead of bypassing it.
+  app.get("/api/qr-login/:token", qrLoginLimiter, async (req, res) => {
     try {
       const { UserModel } = await import("./models");
+      const token = String(req.params.token || "");
+      if (!QR_LOGIN_TOKEN_PATTERN.test(token)) {
+        void auditQrLogin(req, "qr_login_rejected", { token, reason: "malformed_token" });
+        return res.redirect("/login?qr=invalid");
+      }
       // Do NOT use .lean() — Passport's serializeUser needs the `id` virtual
-      const userDoc = await (UserModel as any).findOne({ qrLoginToken: req.params.token });
-      if (!userDoc) return res.redirect("/login?qr=invalid");
+      const userDoc = await (UserModel as any).findOne({ qrLoginToken: token });
+      if (!userDoc) {
+        void auditQrLogin(req, "qr_login_rejected", { token, reason: "unknown_token" });
+        return res.redirect("/login?qr=invalid");
+      }
+      if (userDoc.qrLoginTokenExpiresAt && new Date(userDoc.qrLoginTokenExpiresAt) <= new Date()) {
+        void auditQrLogin(req, "qr_login_rejected", { userId: String(userDoc._id), token, reason: "expired_token", role: userDoc.role });
+        return res.redirect("/login?qr=expired");
+      }
       // Only allow employees (not clients) to use QR login
-      if (!userDoc.role || userDoc.role === "client") return res.redirect("/login?qr=denied");
+      if (!userDoc.role || userDoc.role === "client") {
+        void auditQrLogin(req, "qr_login_rejected", { userId: String(userDoc._id), token, reason: "role_denied", role: userDoc.role });
+        return res.redirect("/login?qr=denied");
+      }
+      await (UserModel as any).updateOne({ _id: userDoc._id }, { $set: { qrLoginTokenLastUsedAt: new Date() } });
+      const { methods } = await getEnabled2FAMethods(String(userDoc._id));
+      if (methods.length > 0) {
+        const challenge = await create2FAChallenge(userDoc, methods, "password");
+        void auditQrLogin(req, "qr_login_2fa_required", { userId: String(userDoc._id), token, role: userDoc.role });
+        return res.redirect(`/login?twoFactorToken=${encodeURIComponent(challenge.tempToken)}`);
+      }
       // Build a plain user object with id set so Passport's serializeUser works
       const user = { ...userDoc.toObject(), id: userDoc._id.toString() };
       // Log in the user via Passport
       req.login(user, (err) => {
         if (err) {
           console.error("[QR Login] req.login error:", err);
+          void auditQrLogin(req, "qr_login_failed", { userId: String(userDoc._id), token, reason: "session_error", role: userDoc.role });
           return res.redirect("/login?qr=error");
         }
         const dash = userDoc.role === "admin" ? "/admin" : "/employee";
         // Save session before redirect to ensure cookie is set
         req.session.save((saveErr) => {
-          if (saveErr) console.error("[QR Login] session save error:", saveErr);
+          if (saveErr) {
+            console.error("[QR Login] session save error:", saveErr);
+            void auditQrLogin(req, "qr_login_failed", { userId: String(userDoc._id), token, reason: "session_save_error", role: userDoc.role });
+          } else {
+            void auditQrLogin(req, "qr_login_succeeded", { userId: String(userDoc._id), token, role: userDoc.role });
+          }
           return res.redirect(dash);
         });
       });
     } catch (err) {
       console.error("[QR Login] error:", err);
+      void auditQrLogin(req, "qr_login_failed", { token: String(req.params.token || ""), reason: "unexpected_error" });
       res.redirect("/login?qr=error");
     }
   });
@@ -9479,10 +9599,10 @@ export async function registerRoutes(
       const jobTitle     = (empProfile as any)?.jobTitle || (userDoc as any)?.jobTitle || "Team Member";
       const employeeCode = (userDoc as any)?.employeeCode || "";
       const avatarUrl    = (userDoc as any)?.avatarUrl || (userDoc as any)?.profilePhotoUrl || "";
-      const qrToken      = (userDoc as any)?.qrLoginToken || "";
-      const qrValue      = qrToken
-        ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}`
-        : "https://qiroxstudio.online";
+       if (!userDoc) return res.status(404).json({ error: "لم يتم العثور على الموظف" });
+       const qr = await ensureQrLoginToken(String(uid));
+       const qrToken      = qr.token;
+       const qrValue      = qrLoginUrl(qrToken);
       // Initials fallback for avatar
       const initials = name.split(" ").slice(0, 2).map((w: string) => w[0]?.toUpperCase() || "").join("") || "QX";
 
@@ -9498,61 +9618,13 @@ export async function registerRoutes(
         if (typeof sharpLib !== "function") sharpLib = null;
       } catch { /* no sharp — pure PNG fallback remains valid */ }
 
-      // ── Pure-JS PNG fallback ───────────────────────────────────────────────
-      const mkSolidPng = (w: number, h: number, r = 10, g = 10, b = 22, a = 255): Buffer => {
-        // Build raw scanlines: each row = filter byte (0x00) + RGBA pixels
-        const row = Buffer.alloc(1 + w * 4);
-        row[0] = 0; // filter type None
-        for (let x = 0; x < w; x++) { row[1 + x*4] = r; row[2 + x*4] = g; row[3 + x*4] = b; row[4 + x*4] = a; }
-        const raw = Buffer.concat(Array.from({ length: h }, () => row));
-        // Deflate the raw image data using top-level import (avoids esbuild minification conflicts)
-        const compressed = _zlibDeflateRawSync(raw);
-        // Adler-32 for zlib wrapper
-        let s1 = 1, s2 = 0;
-        for (const byte of raw) { s1 = (s1 + byte) % 65521; s2 = (s2 + s1) % 65521; }
-        const adler = (s2 << 16) | s1;
-        // zlib wrapper: CMF=0x78 FLG=0x9c (deflate, level 6) + data + Adler-32
-        const zlibData = Buffer.alloc(2 + compressed.length + 4);
-        zlibData[0] = 0x78; zlibData[1] = 0x9c;
-        compressed.copy(zlibData, 2);
-        zlibData.writeUInt32BE(adler, 2 + compressed.length);
-        // PNG helper
-        const crc32 = (buf: Buffer): number => {
-          let c = 0xffffffff;
-          const t: number[] = [];
-          for (let n = 0; n < 256; n++) {
-            let x = n;
-            for (let k = 0; k < 8; k++) x = (x & 1) ? (0xedb88320 ^ (x >>> 1)) : (x >>> 1);
-            t[n] = x;
-          }
-          for (const b of buf) c = t[(c ^ b) & 0xff] ^ (c >>> 8);
-          return (c ^ 0xffffffff) >>> 0;
-        };
-        const chunk = (type: string, data: Buffer): Buffer => {
-          const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32BE(data.length, 0);
-          const typeBuf = Buffer.from(type, "ascii");
-          const crcBuf = Buffer.alloc(4);
-          crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
-          return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
-        };
-        const ihdr = Buffer.alloc(13);
-        ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
-        ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0; // bit-depth=8, colour=RGBA
-        return Buffer.concat([
-          Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]), // PNG signature
-          chunk("IHDR", ihdr),
-          chunk("IDAT", zlibData),
-          chunk("IEND", Buffer.alloc(0)),
-        ]);
-      };
-
       const sb = (s: string) => Buffer.from(s.trim());
 
       // icon.png — actual Qirox icon (qirox-icon-nobg.png) resized, fallback to solid dark PNG
       const iconSrcPath = pathLib.default.join(process.cwd(), "dist", "public", "qirox-icon-nobg.png");
       const iconSrcExists = fsSync.default.existsSync(iconSrcPath);
       const mkIcon = (size: number): Promise<Buffer> | Buffer => {
-        if (!sharpLib) return mkSolidPng(size, size, 10, 10, 22);
+         if (!sharpLib) return createSolidPng(size, size, 10, 10, 22);
         if (iconSrcExists) {
           return sharpLib(iconSrcPath)
             .resize(size, size, { fit: "contain", background: { r: 10, g: 10, b: 22, alpha: 1 } })
@@ -9567,7 +9639,7 @@ export async function registerRoutes(
 
       // logo.png — Qirox icon on transparent bg (fits Apple Wallet logo strip)
       const mkLogo = (w: number, h: number): Promise<Buffer> | Buffer => {
-        if (!sharpLib) return mkSolidPng(w, h, 0, 0, 0, 0);
+         if (!sharpLib) return createSolidPng(w, h, 0, 0, 0, 0);
         if (iconSrcExists) {
           return sharpLib(iconSrcPath)
             .resize(h, h, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -9583,7 +9655,7 @@ export async function registerRoutes(
 
       // background.png — black→charcoal gradient with subtle ring decorations
       const mkBackground = (w: number, h: number): Promise<Buffer> | Buffer => {
-        if (!sharpLib) return mkSolidPng(w, h, 8, 8, 15);
+         if (!sharpLib) return createSolidPng(w, h, 8, 8, 15);
         return sharpLib(sb(`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="85%" y2="100%">
@@ -9627,7 +9699,7 @@ export async function registerRoutes(
           } catch { /* fall through to initials */ }
         }
         // Fallback — gradient circle with initials (or solid colour when no sharp)
-        if (!sharpLib) return mkSolidPng(size, size, 30, 30, 58);
+         if (!sharpLib) return createSolidPng(size, size, 30, 30, 58);
         return sharpLib(sb(`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="av" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -9705,21 +9777,16 @@ export async function registerRoutes(
             { key: "qr",        label: "رابط تسجيل الدخول", value: qrValue },
           ],
         },
-        // Modern barcodes array + legacy barcode field (iOS 9 compat)
-        // Barcode triggers QR login when scanned — uses qr-login token if available,
-        // falls back to public employee profile URL so the pass always has a working barcode
+         // Modern barcodes array + legacy barcode field (iOS 9 compatibility).
+         // Both always use the single protected QR-login contract.
         barcodes: [{
-          message:         qrToken
-            ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}`
-            : `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
+           message:         qrValue,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",
         }],
         barcode: {
-          message:         qrToken
-            ? `${process.env.APP_URL || "https://qiroxstudio.online"}/api/qr-login/${qrToken}`
-            : `${process.env.APP_URL || "https://qiroxstudio.online"}/ep/${employeeCode || uid.toString()}`,
+           message:         qrValue,
           format:          "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
           altText:         employeeCode || "QIROX",

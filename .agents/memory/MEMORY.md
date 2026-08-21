@@ -22,6 +22,7 @@
 - [Design System V2 pilot](design-system-v2-pilot.md) — Landing Page rebuilt behind FEATURE_LANDING_DS_V2 in client/src/features/landing-ds-v2/; real content only, Team/Partners sections intentionally omitted pending real assets.
 - [Sector Pages](sector-pages.md) — 6 sector pages at /sector/:slug; home Systems section is horizontal scroll portrait cards linking there; sitemap + SEO included.
 - [Employee Profile Features](employee-profile-features.md) — Password change, Apple Wallet (.pkpass needs 3 Apple cert env vars), QR login card, 2FA link, log-revision-for-client endpoint + AdminModRequests UI.
+- [Employee QR login contract](employee-qr-login-contract.md) — Profile cards and Wallet passes use one protected canonical QR URL; public profile QR codes never authenticate.
 - [WhatsApp CRM](whatsapp-crm.md) — @whiskeysockets/baileys (free, no Chrome); SSE for QR+events; AI auto-reply with dialect matching; admin commands; /admin/whatsapp page.
 - [QIROX AI Hub](qirox-ai-hub.md) — BM25 RAG (pure math, no deps); KnowledgeDoc+QiroxAIKey+QiroxAILog+QiroxAISettings models; /admin/qirox-ai page; public /api/qirox-ai/chat endpoint (Bearer token).
 - [OpenAI base URL](openai-base-url.md) — All AI calls route through server/lib/openai-client.ts singleton; set OPENAI_BASE_URL env to redirect to BazaarLink or any OpenAI-compatible provider.

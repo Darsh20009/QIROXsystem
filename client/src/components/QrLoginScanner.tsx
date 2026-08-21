@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, QrCode, Camera, AlertCircle } from "lucide-react";
+import { Loader2, QrCode, Camera, AlertCircle, ExternalLink } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { classifyEmployeeQrValue } from "@/lib/qr-login";
 
 interface Props {
   open: boolean;
@@ -17,6 +18,7 @@ export function QrLoginScanner({ open, onClose }: Props) {
   const [error, setError] = useState<string>("");
   const [starting, setStarting] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [publicProfileUrl, setPublicProfileUrl] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +27,7 @@ export function QrLoginScanner({ open, onClose }: Props) {
     setError("");
     setStarting(true);
     setRedirecting(false);
+    setPublicProfileUrl("");
 
     (async () => {
       try {
@@ -59,22 +62,28 @@ export function QrLoginScanner({ open, onClose }: Props) {
     function handleDecoded(decoded: string) {
       setRedirecting(true);
       try {
-        let url: URL;
-        try {
-          url = new URL(decoded);
-        } catch {
-          url = new URL(decoded, window.location.origin);
-        }
-        if (!url.pathname.startsWith("/api/qr-login/")) {
+        const result = classifyEmployeeQrValue(decoded, window.location.origin);
+        if (result.kind === "invalid") {
           setRedirecting(false);
-          setError(L ? "هذا الباركود غير صالح للدخول" : "This QR is not a valid login code");
+          setError(
+            result.reason === "untrusted-origin"
+              ? (L ? "هذا الباركود من مصدر غير موثوق" : "This QR code is from an untrusted source")
+              : (L ? "هذا الباركود غير صالح لتسجيل الدخول" : "This QR is not a valid login code"),
+          );
+          return;
+        }
+        if (result.kind === "public-profile") {
+          try { scannerRef.current?.stop().catch(() => {}); } catch {}
+          setPublicProfileUrl(result.url.toString());
+          setRedirecting(false);
+          setError(L ? "هذه بطاقة ملف موظف عامة وليست رمزاً لتسجيل الدخول." : "This is a public employee profile, not a login QR.");
           return;
         }
         // Stop scanner before navigating
         try {
           scannerRef.current?.stop().catch(() => {});
         } catch {}
-        window.location.href = url.pathname + url.search;
+        window.location.assign(result.url.toString());
       } catch {
         setRedirecting(false);
         setError(L ? "هذا الباركود غير صالح" : "Invalid QR code");
@@ -141,6 +150,18 @@ export function QrLoginScanner({ open, onClose }: Props) {
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span className="leading-relaxed">{error}</span>
             </div>
+          )}
+
+          {publicProfileUrl && (
+            <Button
+              variant="outline"
+              onClick={() => window.location.assign(publicProfileUrl)}
+              className="w-full gap-2 border-black/10 dark:border-white/10"
+              data-testid="button-open-qr-public-profile"
+            >
+              <ExternalLink className="w-4 h-4" />
+              {L ? "فتح الملف العام" : "Open public profile"}
+            </Button>
           )}
 
           <div className="flex items-center gap-2 text-[11px] text-black/50 dark:text-white/50 justify-center">
