@@ -39,3 +39,4 @@ attached_assets/._*
 .whatsapp-auth/
 # dist/index.cjs is committed — pre-built bundle deployed directly to Render
 attached_assets/
+.model-cache/
