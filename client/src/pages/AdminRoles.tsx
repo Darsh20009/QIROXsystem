@@ -55,6 +55,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
   marketing:     ["dashboard","customers","crm","new_order","quotations","marketing_posts","checklist","mail","profile","my_finance"],
   accountant:    ["dashboard","finance","invoices","receipts","payroll","reports","checklist","mail","profile","my_finance"],
   support:       ["dashboard","support_tickets","customers","checklist","mail","profile","my_finance"],
+  data_entry:    ["dashboard","orders","customers","employees","contact_msgs","mail","profile","changelog"],
   hr:            ["dashboard","employees","payroll","attendance","checklist","mail","profile","my_finance"],
   merchant:      ["dashboard","checklist","mail","profile","my_finance"],
   content:       ["dashboard","products","news","marketing_posts","checklist","mail","profile","my_finance"],
@@ -70,6 +71,7 @@ const ROLE_META: Record<string, { labelAr: string; labelEn: string; icon: any; c
   marketing:     { labelAr: "تسويق",          labelEn: "Marketing",      icon: Megaphone,   color: "text-pink-600 dark:text-pink-400",      bg: "border-pink-200/50 dark:border-pink-700/30 bg-pink-50/40 dark:bg-pink-900/10",       badge: "bg-pink-600 text-white" },
   accountant:    { labelAr: "محاسب",          labelEn: "Accountant",     icon: CreditCard,  color: "text-amber-600 dark:text-amber-400",    bg: "border-amber-200/50 dark:border-amber-700/30 bg-amber-50/40 dark:bg-amber-900/10",    badge: "bg-amber-500 text-white" },
   support:       { labelAr: "دعم فني",        labelEn: "Support",        icon: Headphones,  color: "text-orange-600 dark:text-orange-400",  bg: "border-orange-200/50 dark:border-orange-700/30 bg-orange-50/40 dark:bg-orange-900/10",badge: "bg-orange-500 text-white" },
+  data_entry:    { labelAr: "إدخال البيانات", labelEn: "Data Entry",     icon: UserCog,     color: "text-cyan-700 dark:text-cyan-300",      bg: "border-cyan-200/50 dark:border-cyan-700/30 bg-cyan-50/40 dark:bg-cyan-900/10",    badge: "bg-cyan-700 text-white" },
   hr:            { labelAr: "موارد بشرية",    labelEn: "HR",             icon: UserCog,     color: "text-rose-600 dark:text-rose-400",      bg: "border-rose-200/50 dark:border-rose-700/30 bg-rose-50/40 dark:bg-rose-900/10",       badge: "bg-rose-500 text-white" },
   merchant:      { labelAr: "توصيل",          labelEn: "Delivery",       icon: Truck,       color: "text-stone-600 dark:text-stone-400",    bg: "border-stone-200/50 dark:border-stone-700/30 bg-stone-50/40 dark:bg-stone-900/10",    badge: "bg-stone-500 text-white" },
   content:       { labelAr: "محتوى",          labelEn: "Content",        icon: BookOpen,    color: "text-indigo-600 dark:text-indigo-400",  bg: "border-indigo-200/50 dark:border-indigo-700/30 bg-indigo-50/40 dark:bg-indigo-900/10",badge: "bg-indigo-500 text-white" },
@@ -84,7 +86,7 @@ export default function AdminRoles() {
   const { data: users } = useQuery<any[]>({ queryKey: ["/api/admin/users"] });
   const employees = (users || []).filter(u => u.role !== "client");
 
-  const roleOrder = ["admin","manager","developer","designer","sales","sales_manager","marketing","accountant","support","hr","merchant","content"];
+  const roleOrder = ["admin","manager","developer","designer","sales","sales_manager","marketing","accountant","support","data_entry","hr","merchant","content"];
 
   const roleCounts: Record<string, number> = {};
   roleOrder.forEach(r => { roleCounts[r] = employees.filter(e => e.role === r).length; });

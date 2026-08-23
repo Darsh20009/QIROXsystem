@@ -115,6 +115,7 @@ export default function AdminOrders() {
   const L = lang === "ar";
   const { data: currentUser } = useQuery<any>({ queryKey: ["/api/user"] });
   const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
+  const isDataEntry = currentUser?.role === "data_entry";
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
   const roleLabels = getRoleLabels(L);
@@ -569,7 +570,7 @@ export default function AdminOrders() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
+          {!isDataEntry && <Button
             variant="outline"
             size="sm"
             onClick={() => window.open("/api/admin/orders/export", "_blank")}
@@ -578,7 +579,7 @@ export default function AdminOrders() {
           >
             <Download className="w-3.5 h-3.5" />
             {L ? "تصدير CSV" : "Export CSV"}
-          </Button>
+          </Button>}
           <div className="flex items-center gap-1.5">
             <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="h-9 text-xs w-36 border-black/10" title={L ? "من تاريخ" : "From date"} />
             <span className="text-xs text-black/30">—</span>
@@ -2273,7 +2274,7 @@ export default function AdminOrders() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs text-black/50 mb-1 block">{L ? "الحالة" : "Status"}</Label>
-                <Select value={editProjectForm.status} onValueChange={v => setEditProjectForm(p => ({ ...p, status: v }))}>
+                <Select value={editProjectForm.status} onValueChange={v => setEditProjectForm(p => ({ ...p, status: v }))} disabled={isDataEntry}>
                   <SelectTrigger className="h-9 text-sm border-black/[0.12]">
                     <SelectValue />
                   </SelectTrigger>
@@ -2290,6 +2291,7 @@ export default function AdminOrders() {
                   type="number"
                   value={editProjectForm.totalAmount}
                   onChange={e => setEditProjectForm(p => ({ ...p, totalAmount: e.target.value }))}
+                  disabled={!canSeeFinance}
                   placeholder="0"
                   className="h-9 text-sm border-black/[0.12]"
                   dir="ltr"
@@ -2322,10 +2324,10 @@ export default function AdminOrders() {
                     businessName: editProjectForm.businessName,
                     projectType: editProjectForm.projectType,
                     sector: editProjectForm.sector,
-                    status: editProjectForm.status,
                     adminNotes: editProjectForm.adminNotes,
                   };
-                  if (editProjectForm.totalAmount) updates.totalAmount = Number(editProjectForm.totalAmount);
+                  if (!isDataEntry) updates.status = editProjectForm.status;
+                  if (canSeeFinance && editProjectForm.totalAmount) updates.totalAmount = Number(editProjectForm.totalAmount);
                   editProjectMutation.mutate({ id: selectedOrder.id, updates });
                 }}
               >

@@ -46,6 +46,7 @@ export default function Customers() {
   const L = lang === "ar";
   const { data: user } = useUser();
   const isAdmin = user && ["admin", "manager"].includes((user as any).role);
+  const isDataEntry = (user as any)?.role === "data_entry";
   const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -220,7 +221,7 @@ export default function Customers() {
               <option key={r.id} value={r.id}>{r.name}</option>
             ))}
           </select>
-          <Button
+          {!isDataEntry && <Button
             variant="outline"
             size="sm"
             onClick={() => window.open("/api/admin/customers/export", "_blank")}
@@ -229,7 +230,7 @@ export default function Customers() {
           >
             <Download className="w-3.5 h-3.5" />
             {L ? "تصدير CSV" : "Export CSV"}
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -494,14 +495,14 @@ export default function Customers() {
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button
+                        {isAdmin && <button
                           onClick={() => setDeleteTarget(customer)}
                           className="p-2 rounded-lg text-foreground/20 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                           title={L ? "حذف العميل" : "Delete customer"}
                           data-testid={`button-delete-customer-${customer.id}`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </button>}
                       </div>
                       {/* Show assigned sales rep badge */}
                       {(customer as any).assignedSalesName && (

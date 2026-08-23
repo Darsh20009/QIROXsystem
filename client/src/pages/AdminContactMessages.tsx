@@ -10,6 +10,7 @@ import { Loader2, Mail, MailOpen, Send, Trash2, Download, CheckCircle, Archive }
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
+import { useUser } from "@/hooks/use-auth";
 import { exportToExcel } from "@/lib/excel";
 
 interface ContactMessage {
@@ -41,6 +42,8 @@ export default function AdminContactMessages() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
+  const { data: user } = useUser();
+  const canDelete = ["admin", "manager"].includes((user as any)?.role);
   const STATUS_LABELS = getStatusLabels(L);
   const queryClient = useQueryClient();
   const [replyMap, setReplyMap] = useState<Record<string, string>>({});
@@ -131,10 +134,10 @@ export default function AdminContactMessages() {
             </p>
           </div>
         </div>
-        <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 dark:text-white dark:border-white/10" data-testid="button-export">
+        {canDelete && <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 dark:text-white dark:border-white/10" data-testid="button-export">
           <Download className="w-4 h-4" />
           {L ? "تصدير" : "Export"}
-        </Button>
+        </Button>}
       </div>
 
       <div className="flex gap-3 flex-wrap">
@@ -214,7 +217,7 @@ export default function AdminContactMessages() {
                     )}
 
                     <div className="flex gap-2 flex-wrap">
-                      <Button
+                      {canDelete && <Button
                         size="sm" variant="outline"
                         className="gap-1 text-xs dark:text-white dark:border-white/10"
                         onClick={() => updateMutation.mutate({ id: msg.id, status: "archived" })}
@@ -222,7 +225,7 @@ export default function AdminContactMessages() {
                       >
                         <Archive className="w-3.5 h-3.5" />
                         {L ? "أرشفة" : "Archive"}
-                      </Button>
+                      </Button>}
                       <Button
                         size="sm" variant="outline"
                         className="gap-1 text-xs text-black dark:text-white border-black/10 dark:border-white/10 hover:bg-black/[0.04] dark:bg-white/[0.06] dark:border-black dark:border-white dark:hover:bg-black dark:bg-white"

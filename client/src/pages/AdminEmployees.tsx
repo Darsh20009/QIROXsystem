@@ -15,16 +15,17 @@ import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 
 function getRoleLabels(L: boolean): Record<string, string> {
   return L ? {
     admin: "مدير النظام", manager: "مدير", accountant: "محاسب", sales_manager: "مدير مبيعات",
-    sales: "مبيعات", developer: "مطور", designer: "مصمم", support: "دعم فني", merchant: "توصيل", client: "عميل",
+    sales: "مبيعات", developer: "مطور", designer: "مصمم", support: "دعم فني", data_entry: "إدخال البيانات", merchant: "توصيل", client: "عميل",
   } : {
     admin: "System Admin", manager: "Manager", accountant: "Accountant", sales_manager: "Sales Manager",
-    sales: "Sales", developer: "Developer", designer: "Designer", support: "Support", merchant: "Delivery", client: "Client",
+    sales: "Sales", developer: "Developer", designer: "Designer", support: "Support", data_entry: "Data Entry", merchant: "Delivery", client: "Client",
   };
 }
 
@@ -34,7 +35,7 @@ const ROLE_HIERARCHY: { roles: string[]; level: number; icon: any; color: string
   { roles: ["manager"],                     level: 1, icon: BadgeCheck, color: "text-slate-700 dark:text-slate-300",   bg: "bg-slate-50 dark:bg-slate-900/30 border-slate-200/60 dark:border-slate-700/30", label: "الإدارة الوسطى",  labelEn: "Management" },
   { roles: ["sales_manager", "accountant"], level: 2, icon: BarChart3,  color: "text-blue-600 dark:text-blue-400",     bg: "bg-blue-50/60 dark:bg-blue-900/20 border-blue-200/50 dark:border-blue-700/30", label: "رؤساء الأقسام",   labelEn: "Department Heads" },
   { roles: ["developer", "designer"],       level: 3, icon: Code2,      color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50/50 dark:bg-violet-900/15 border-violet-200/50 dark:border-violet-700/30", label: "التقنية والتصميم", labelEn: "Tech & Design" },
-  { roles: ["sales", "support", "merchant"],level: 4, icon: Headphones, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50/50 dark:bg-emerald-900/15 border-emerald-200/50 dark:border-emerald-700/30", label: "الفريق التشغيلي", labelEn: "Operations" },
+  { roles: ["sales", "support", "data_entry", "merchant"],level: 4, icon: Headphones, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50/50 dark:bg-emerald-900/15 border-emerald-200/50 dark:border-emerald-700/30", label: "الفريق التشغيلي", labelEn: "Operations" },
 ];
 
 function getSystemId(emp: User, index: number): string {
@@ -197,11 +198,12 @@ const roleColors: Record<string, string> = {
   sales_manager: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   sales: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   support: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
+  data_entry: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   merchant: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10",
   client: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
-const employeeRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant"];
+const employeeRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "data_entry", "merchant", "hr", "marketing", "content"];
 
 interface EmployeeForm {
   username: string;
@@ -283,6 +285,9 @@ export default function AdminEmployees() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
+  const { data: currentUser } = useUser();
+  const isDataEntry = (currentUser as any)?.role === "data_entry";
+  const canManageStaff = ["admin", "manager"].includes((currentUser as any)?.role);
   const roleLabels = getRoleLabels(L);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -517,14 +522,14 @@ export default function AdminEmployees() {
           </h1>
           <p className="text-xs text-black/30 mt-1">{employees.length} {L ? "موظف" : "employees"} · {clients.length} {L ? "عميل" : "clients"}</p>
         </div>
-        <Button
+        {canManageStaff && <Button
           className="bg-black text-white hover:bg-black/80 text-xs h-9 px-5"
           onClick={() => { resetForm(); setShowForm(true); }}
           data-testid="button-add-employee"
         >
           <UserPlus className="w-4 h-4 ml-1.5" />
           {L ? "إضافة موظف" : "Add Employee"}
-        </Button>
+        </Button>}
       </div>
 
       <AnimatePresence>
@@ -543,19 +548,19 @@ export default function AdminEmployees() {
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "الاسم الكامل *" : "Full Name *"}</Label>
                     <Input value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} placeholder={L ? "أحمد محمد" : "John Doe"} className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-fullname" />
                   </div>
-                  <div>
+                  {!isDataEntry && <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "اسم المستخدم *" : "Username *"}</Label>
                     <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="ahmed_dev" className="h-9 text-xs border-black/[0.08]" disabled={!!editingId} data-testid="input-emp-username" />
-                  </div>
+                  </div>}
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "البريد الإلكتروني *" : "Email *"}</Label>
                     <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="ahmed@qirox.tech" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-email" />
                   </div>
-                  <div>
+                  {!isDataEntry && <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{editingId ? (L ? "كلمة مرور جديدة (اختياري)" : "New Password (optional)") : (L ? "كلمة المرور *" : "Password *")}</Label>
                     <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-password" />
-                  </div>
-                  <div>
+                  </div>}
+                  {!isDataEntry && <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "الدور *" : "Role *"}</Label>
                     <Select value={form.role} onValueChange={val => setForm({ ...form, role: val })}>
                       <SelectTrigger className="h-9 text-xs border-black/[0.08]" data-testid="select-emp-role">
@@ -565,12 +570,12 @@ export default function AdminEmployees() {
                         {employeeRoles.map(r => <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </div>}
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "رقم الهاتف" : "Phone Number"}</Label>
                     <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+966 5xx xxx xxxx" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-phone" />
                   </div>
-                  <div>
+                  {!isDataEntry && <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "نوع الراتب" : "Salary Type"}</Label>
                     <Select value={form.salaryType} onValueChange={val => setForm({ ...form, salaryType: val })}>
                       <SelectTrigger className="h-9 text-xs border-black/[0.08]" data-testid="select-emp-salary-type">
@@ -582,20 +587,20 @@ export default function AdminEmployees() {
                         <SelectItem value="commission">{L ? "عمولة" : "Commission"}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  {form.salaryType === "hourly" && (
+                  </div>}
+                  {!isDataEntry && form.salaryType === "hourly" && (
                     <div>
                       <Label className="text-[11px] text-black/40 mb-1.5 flex items-center gap-1">{L ? "سعر الساعة" : "Hourly Rate"} (<SARIcon size={9} className="opacity-60" />)</Label>
                       <Input type="number" value={form.hourlyRate} onChange={e => setForm({ ...form, hourlyRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-hourly-rate" />
                     </div>
                   )}
-                  {form.salaryType === "fixed" && (
+                  {!isDataEntry && form.salaryType === "fixed" && (
                     <div>
                       <Label className="text-[11px] text-black/40 mb-1.5 flex items-center gap-1">{L ? "الراتب الشهري الثابت" : "Fixed Monthly Salary"} (<SARIcon size={9} className="opacity-60" />)</Label>
                       <Input type="number" value={form.fixedSalary} onChange={e => setForm({ ...form, fixedSalary: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-fixed-salary" />
                     </div>
                   )}
-                  {form.salaryType === "commission" && (
+                  {!isDataEntry && form.salaryType === "commission" && (
                     <div>
                       <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "نسبة العمولة (%)" : "Commission Rate (%)"}</Label>
                       <Input type="number" value={form.commissionRate} onChange={e => setForm({ ...form, commissionRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-commission-rate" />
@@ -664,7 +669,7 @@ export default function AdminEmployees() {
                 )}
 
                 {/* Per-Employee Page Permissions */}
-                {editingId && (
+                 {editingId && !isDataEntry && (
                   <div className="mt-4 pt-4 border-t border-black/[0.06]">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] font-bold text-black/40 flex items-center gap-1.5">
@@ -722,7 +727,7 @@ export default function AdminEmployees() {
                 )}
 
                 {/* Additional Roles */}
-                {editingId && (
+                 {editingId && !isDataEntry && (
                   <div className="mt-4 pt-4 border-t border-black/[0.06]">
                     <p className="text-[11px] font-bold text-black/40 mb-2.5 flex items-center gap-1.5">
                       <Shield className="w-3 h-3" /> {L ? "أدوار إضافية (وصول متعدد الأقسام)" : "Additional Roles (cross-department access)"}

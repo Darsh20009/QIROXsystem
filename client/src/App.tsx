@@ -219,7 +219,7 @@ const Community = lazy(() => import("@/pages/Community"));
 // ── Role-guarded admin pages ─────────────────────────────────────────────────
 const ADMIN_MANAGER = ["admin", "manager"] as const;
 const ADMIN_MANAGER_ACCOUNTANT = ["admin", "manager", "accountant"] as const;
-const ADMIN_MANAGER_HR = ["admin", "manager", "hr"] as const;
+const ADMIN_MANAGER_HR = ["admin", "manager", "hr", "data_entry"] as const;
 const ADMIN_MANAGER_ACCOUNTANT_HR = ["admin", "manager", "accountant", "hr"] as const;
 const ADMIN_ONLY = ["admin"] as const;
 const ADMIN_MANAGER_SALES_ACCOUNTANT = ["admin", "manager", "sales_manager", "accountant"] as const;

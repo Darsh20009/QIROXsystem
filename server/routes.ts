@@ -1002,9 +1002,48 @@ export async function registerRoutes(
     }
   });
 
-  // Admin users list (Only for admin)
+  const userDirectoryRoles = ["admin", "manager", "hr", "data_entry"];
+  const staffRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "hr", "marketing", "content", "data_entry"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress", "allowedPages"];
+  const dataEntryUserFields = ["email", "fullName", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress"];
+  const dataEntryOrderFields = [
+    "serviceType", "planTier", "planPeriod", "planSegment", "businessName", "phone", "notes",
+    "projectType", "sector", "competitors", "visualStyle", "favoriteExamples", "requiredFunctions",
+    "requiredSystems", "siteLanguage", "whatsappIntegration", "socialIntegration", "hasLogo",
+    "needsLogoDesign", "hasHosting", "hasDomain", "logoUrl", "brandIdentityUrl", "filesUrl",
+    "contentUrl", "imagesUrl", "videoUrl", "commercialRegUrl", "taxRegUrl", "nationalIdUrl",
+    "files", "adminNotes", "internalNotes",
+  ];
+  const dataEntryOrderHiddenFields = [
+    "accessCredentials", "paymentMethod", "paymentProofUrl", "paymentStatus", "paymentRejectionReason",
+    "totalAmount", "walletAmountUsed", "marginPct", "isDepositPaid", "shippingFee", "ibanCertUrl", "items",
+    "scheduledMeeting",
+  ];
+  const dataEntrySpecFields = [
+    "projectName", "clientEmail", "projectStatus", "techStack", "database", "hosting", "framework",
+    "language", "customDomain", "stagingUrl", "productionUrl", "sslEnabled", "cdnEnabled",
+    "projectConcept", "targetAudience", "mainFeatures", "referenceLinks", "colorPalette",
+    "estimatedHours", "deadline", "startDate", "notes", "teamNotes", "technologies", "features",
+    "clientBrief", "projectIdeas",
+  ];
+  const dataEntrySpecHiddenFields = [
+    "totalBudget", "paidAmount", "databaseUri", "serverIp", "deploymentUsername",
+    "deploymentPassword", "variables", "customVars",
+  ];
+  const redactOrderForDataEntry = (order: any) => {
+    const safe = { ...(order?.toObject ? order.toObject() : order) };
+    for (const key of dataEntryOrderHiddenFields) delete safe[key];
+    return safe;
+  };
+  const redactSpecsForDataEntry = (specs: any) => {
+    const safe = { ...(specs?.toObject ? specs.toObject() : specs) };
+    for (const key of dataEntrySpecHiddenFields) delete safe[key];
+    return safe;
+  };
+
+  // Admin users list
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !userDirectoryRoles.includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const { UserModel } = await import("./models");
@@ -1032,8 +1071,7 @@ export async function registerRoutes(
     res.json(sanitizeUser(users));
   });
 
-  const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress", "allowedPages"];
+  const allowedRoles = [...staffRoles, "client"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
@@ -1201,21 +1239,40 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/users/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
+      const callerRole = (req.user as any).role;
+      const isDataEntry = callerRole === "data_entry";
+      if (isDataEntry) {
+        const target = await storage.getUser(req.params.id);
+        if (!target) return res.sendStatus(404);
+        if (["admin", "manager"].includes((target as any).role)) {
+          return res.status(403).json({ error: "لا يمكن لموظف إدخال البيانات تعديل حسابات الإدارة" });
+        }
+      }
       const sanitized: Record<string, any> = {};
-      for (const key of userFieldsWhitelist) {
+      const permittedFields = isDataEntry ? dataEntryUserFields : userFieldsWhitelist;
+      for (const key of permittedFields) {
         if (key === "phone" && req.body.phone !== undefined) {
-          const normalized = normalizePhone(req.body.phone);
-          if (!normalized.valid) return res.status(400).json({ error: normalized.reason });
-          sanitized.phone = normalized.e164;
+          const rawPhone = String(req.body.phone || "").trim();
+          if (!rawPhone) {
+            sanitized.phone = "";
+          } else {
+            const normalized = normalizePhone(rawPhone);
+            if (!normalized.valid) return res.status(400).json({ error: normalized.reason });
+            sanitized.phone = normalized.e164;
+          }
         } else if (key === "allowedPages" && req.body.allowedPages !== undefined) {
           // allowedPages is an array; empty array means "reset to role default" (stored as null/empty in DB)
           sanitized.allowedPages = Array.isArray(req.body.allowedPages) ? req.body.allowedPages : null;
-        } else if (req.body[key] !== undefined && req.body[key] !== "") {
-          sanitized[key] = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
+        } else if (req.body[key] !== undefined) {
+          const value = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
+          if (["username", "email", "fullName", "role"].includes(key) && value === "") {
+            return res.status(400).json({ error: "لا يمكن ترك الحقول الأساسية فارغة" });
+          }
+          sanitized[key] = value;
         }
       }
       if (sanitized.role && !allowedRoles.includes(sanitized.role)) {
@@ -1233,6 +1290,13 @@ export async function registerRoutes(
         const dupPhone = await UM3.findOne({ phone: sanitized.phone, _id: { $ne: new mongoose.Types.ObjectId(req.params.id) } });
         if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
       }
+      if (sanitized.email) {
+        const { UserModel: UM4 } = await import("./models");
+        const mongoose = await import("mongoose");
+        const duplicateEmail = await UM4.findOne({ email: sanitized.email.toLowerCase(), _id: { $ne: new mongoose.Types.ObjectId(req.params.id) } });
+        if (duplicateEmail) return res.status(400).json({ error: "البريد الإلكتروني مستخدم من قبل" });
+        sanitized.email = sanitized.email.toLowerCase();
+      }
       const user = await storage.updateUser(req.params.id, sanitized);
       if (!user) return res.sendStatus(404);
       invalidateUserCache(req.params.id);
@@ -1243,12 +1307,19 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/users/:id/avatar", (req, res, next) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     upload.single("file")(req, res, async (err) => {
       if (err instanceof multer.MulterError) return res.status(400).json({ error: "حجم الملف كبير جداً" });
       if (err) return res.status(400).json({ error: translateError(err) });
       if (!req.file) return res.status(400).json({ error: "لم يتم اختيار ملف" });
       try {
+        if ((req.user as any).role === "data_entry") {
+          const target = await storage.getUser(req.params.id);
+          if (!target) return res.sendStatus(404);
+          if (["admin", "manager"].includes((target as any).role)) {
+            return res.status(403).json({ error: "لا يمكن لموظف إدخال البيانات تعديل حسابات الإدارة" });
+          }
+        }
         const avatarUrl = `/uploads/${req.file.filename}`;
         const user = await storage.updateUser(req.params.id, { avatarUrl });
         if (!user) return res.sendStatus(404);
@@ -1270,9 +1341,9 @@ export async function registerRoutes(
       if (targetUser.role === "admin") {
         return res.status(400).json({ error: "لا يمكن حذف حساب المدير" });
       }
-      // Non-admin staff can only delete clients
-      if (callerRole !== "admin" && targetUser.role !== "client") {
-        return res.status(403).json({ error: "يُسمح فقط بحذف حسابات العملاء" });
+      // Managers can remove client or staff accounts, but never management accounts.
+      if (callerRole !== "admin" && ["admin", "manager"].includes(targetUser.role)) {
+        return res.status(403).json({ error: "لا يمكن للمدير حذف حسابات الإدارة" });
       }
       const userId = req.params.id;
       await storage.deleteUser(userId);
@@ -1880,7 +1951,7 @@ export async function registerRoutes(
 
   // === ADMIN CONTACT MESSAGES ===
   app.get("/api/admin/contact-messages", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { ContactMessageModel } = await import("./models");
       const msgs = await ContactMessageModel.find().sort({ createdAt: -1 }).limit(500).lean();
@@ -1889,7 +1960,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/contact-messages/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) return res.status(400).json({ error: "معرّف غير صالح" });
       const { ContactMessageModel } = await import("./models");
@@ -1935,7 +2006,7 @@ export async function registerRoutes(
     const statusFilter = req.query.status as string;
     const filter: any = {};
     // Regular employees only see orders assigned to them
-    const fullAccessRoles = ["admin", "manager", "owner", "accountant", "sales_manager"];
+    const fullAccessRoles = ["admin", "manager", "owner", "accountant", "sales_manager", "data_entry"];
     if (!fullAccessRoles.includes(currentRole)) {
       filter.assignedTo = currentUserId;
     }
@@ -1954,11 +2025,14 @@ export async function registerRoutes(
         .limit(limit)
         .lean();
       const data = docs.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
+      if (currentRole === "data_entry") {
+        return res.json({ data: data.map(redactOrderForDataEntry), total, page, totalPages: Math.ceil(total / limit) });
+      }
       return res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
     }
     // Backward-compat: no page param → return array (capped at 500)
     const orders = await storage.getOrdersWithUsers();
-    res.json(orders);
+    res.json(currentRole === "data_entry" ? orders.map(redactOrderForDataEntry) : orders);
   });
 
   app.get("/api/admin/orders/:id", async (req, res) => {
@@ -1967,26 +2041,33 @@ export async function registerRoutes(
     }
     const order = await storage.getOrderWithUser(req.params.id);
     if (!order) return res.sendStatus(404);
-    res.json(order);
+    res.json((req.user as any).role === "data_entry" ? redactOrderForDataEntry(order) : order);
   });
 
   app.patch("/api/admin/orders/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") {
       return res.sendStatus(403);
     }
-    const order = await storage.updateOrder(req.params.id, req.body);
+    const isDataEntry = (req.user as any).role === "data_entry";
+    const updates = isDataEntry
+      ? Object.fromEntries(dataEntryOrderFields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]))
+      : req.body;
+    if (isDataEntry && Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
+    }
+    const order = await storage.updateOrder(req.params.id, updates);
     // Send email + notification when status changes
-    if (req.body.status && order) {
+    if (updates.status && order) {
       try {
         const { NotificationModel, UserModel } = await import("./models");
         const clientUser = await UserModel.findById((order as any).userId).select("email fullName username phone whatsappNumber");
         if (clientUser?.email) {
-          sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order.id), req.body.status).catch(console.error);
+          sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order.id), updates.status).catch(console.error);
         }
         const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'تمت الموافقة', in_progress: 'قيد التنفيذ', review: 'مراجعة العميل', completed: 'مكتمل', rejected: 'مرفوض' };
         // Owner WA notification for key status changes
-        if (["approved","in_progress","completed","rejected","payment_rejected"].includes(req.body.status)) {
-          const statusAr = statusLabels[req.body.status] || req.body.status;
+        if (["approved","in_progress","completed","rejected","payment_rejected"].includes(updates.status)) {
+          const statusAr = statusLabels[updates.status] || updates.status;
           const waMessages: Record<string,string> = {
             approved: `مرحباً ${clientUser?.fullName || ""} 👋\nتم قبول طلبك #${String(order.id).slice(-8).toUpperCase()} ✅\nسيبدأ فريقنا بالعمل عليه قريباً.`,
             in_progress: `مرحباً ${clientUser?.fullName || ""} 👋\nبدأ فريق QIROX العمل على طلبك #${String(order.id).slice(-8).toUpperCase()} 🚀`,
@@ -2000,13 +2081,13 @@ export async function registerRoutes(
             clientPhone: (clientUser as any)?.phone || (clientUser as any)?.whatsappNumber || "",
             orderId: String(order.id),
             details: [["الحالة الجديدة", statusAr]],
-            waMessage: waMessages[req.body.status],
+            waMessage: waMessages[updates.status],
           }).catch(console.error);
           const clientWAPhone = (clientUser as any)?.whatsappNumber || (clientUser as any)?.phone;
-          if (waMessages[req.body.status]) {
+          if (waMessages[updates.status]) {
             dispatchNotification({
               event: "order_status",
-              idempotencyKey: `order-status:${String(order.id)}:${req.body.status}`,
+              idempotencyKey: `order-status:${String(order.id)}:${updates.status}`,
               recipient: {
                 userId: String((order as any).userId),
                 name: clientUser?.fullName || clientUser?.username || "عميل",
@@ -2014,23 +2095,23 @@ export async function registerRoutes(
                 phone: clientWAPhone,
               },
               subject: `تحديث طلبك: ${statusAr}`,
-              message: waMessages[req.body.status],
+            message: waMessages[updates.status],
               actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/dashboard`,
               channels: ["whatsapp"],
-              whatsappTemplate: "order_status",
-              metadata: { orderId: String(order.id), status: req.body.status },
+            whatsappTemplate: "order_status",
+            metadata: { orderId: String(order.id), status: updates.status },
             }).catch(error => console.error("[Notifications] order status:", error?.message || error));
           }
         }
-        const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
+        const notifTitle = `تحديث طلبك: ${statusLabels[updates.status] || updates.status}`;
         await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: notifTitle, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
         pushNotification(String((order as any).userId), { title: notifTitle, body: 'تم تحديث حالة طلبك', icon: '📋', link: '/dashboard' });
         sendPushToUser(String((order as any).userId), { title: notifTitle, body: 'اضغط لعرض تفاصيل طلبك', icon: '/icon-192.png', badge: '/favicon-32.png', tag: `order-${order.id}`, data: { url: '/dashboard' } }).catch(() => {});
         const { ActivityLogModel } = await import("./models");
-        ActivityLogModel.create({ userId: (req.user as any)?.id, action: 'update_order_status', entity: 'order', entityId: String(order.id), details: { status: req.body.status }, ip: req.ip }).catch(() => {});
+        ActivityLogModel.create({ userId: (req.user as any)?.id, action: 'update_order_status', entity: 'order', entityId: String(order.id), details: { status: updates.status }, ip: req.ip }).catch(() => {});
       } catch (e) { console.error("[OrderStatus]", e); }
     }
-    res.json(order);
+    res.json(isDataEntry ? redactOrderForDataEntry(order) : order);
   });
 
   // DELETE /api/admin/orders/:id — hard delete order/project (admin only)
@@ -2092,7 +2173,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/orders/:id/reject-transfer", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { OrderModel, NotificationModel, UserModel } = await import("./models");
       const { reason } = req.body;
@@ -2131,7 +2212,7 @@ export async function registerRoutes(
 
   // Admin: approve bank transfer payment proof
   app.post("/api/admin/orders/:id/approve-transfer", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { OrderModel, NotificationModel } = await import("./models");
       const order = await OrderModel.findByIdAndUpdate(
@@ -4978,7 +5059,7 @@ export async function registerRoutes(
   app.get("/api/admin/customers", async (req, res) => {
     const caller = req.user as any;
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const allowedRoles = ["admin", "manager", "sales_manager", "sales", "accountant"];
+    const allowedRoles = ["admin", "manager", "sales_manager", "sales", "accountant", "data_entry"];
     if (!allowedRoles.includes(caller.role)) return res.sendStatus(403);
     const users = await storage.getUsers();
     const clients = users.filter((u: any) => u.role === "client");
@@ -6001,18 +6082,26 @@ export async function registerRoutes(
   app.get("/api/admin/orders/:id/specs", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const specs = await storage.getOrderSpecs(req.params.id);
-    res.json(specs || {});
+    res.json((req.user as any).role === "data_entry" ? redactSpecsForDataEntry(specs || {}) : (specs || {}));
   });
 
   app.put("/api/admin/orders/:id/specs", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const specs = await storage.upsertOrderSpecs(req.params.id, req.body);
-    res.json(specs);
+    const isDataEntry = (req.user as any).role === "data_entry";
+    const updates = isDataEntry
+      ? Object.fromEntries(dataEntrySpecFields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]))
+      : req.body;
+    if (isDataEntry && Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
+    }
+    const specs = await storage.upsertOrderSpecs(req.params.id, updates);
+    res.json(isDataEntry ? redactSpecsForDataEntry(specs) : specs);
   });
 
   // Get project associated with an order (for admin usage guide management)
   app.get("/api/admin/orders/:id/project", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if ((req.user as any).role === "data_entry") return res.json(null);
     const { ProjectModel } = await import("./models");
     const project = await (ProjectModel as any).findOne({ orderId: req.params.id }).lean();
     if (!project) return res.json(null);
