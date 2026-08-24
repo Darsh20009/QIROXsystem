@@ -9,12 +9,109 @@ import type { Express, Request, Response, NextFunction } from "express";
 import OpenAI from "openai";
 import { getExternalAIModel, getOpenAIClient, hasExternalAI } from "./lib/openai-client";
 import { DeploymentProjectModel, DeploymentRunModel } from "./models";
+import {
+  deleteManagedService,
+  getCapacitySnapshot,
+  getDeploymentProvidersConfig,
+  getManagedDeployment,
+  isDeploymentProvider,
+  stopManagedService,
+  triggerManagedDeployment,
+  type DeploymentProvider,
+} from "./deployment-providers";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import os from "os";
+import { dispatchNotification } from "./notifications/service";
 
 const BASE_DOMAIN = process.env.QIROX_CLOUD_DOMAIN || "deployment.qiroxstudio.online";
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN || process.env.VERCEL_API_TOKEN || "";
+const DEPLOYMENT_MANAGEMENT_ROLES = ["admin", "manager", "developer"];
+
+function defaultDeploymentProvider(): DeploymentProvider {
+  return VERCEL_TOKEN ? "vercel" : "simulation";
+}
+
+function canManageDeployment(user: any, project?: any): boolean {
+  if (!user || !DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return false;
+  return ["admin", "manager"].includes(user.role) || !project || String(project.ownerId) === String(user._id);
+}
+
+function toPublicDeploymentProject(project: any) {
+  if (!project) return project;
+  const raw = typeof project.toObject === "function" ? project.toObject() : project;
+  const { githubToken: _githubToken, envVars, ...safe } = raw;
+  return {
+    ...safe,
+    envVars: (envVars || []).map((item: any) => ({
+      key: item.key || "",
+      isSecret: Boolean(item.isSecret),
+      // Secret values are write-only. A blank secret value in a later update
+      // preserves the existing value; deleting the row explicitly removes it.
+      value: item.isSecret ? "" : String(item.value || ""),
+      hasValue: Boolean(item.value),
+    })),
+  };
+}
+
+function mergeEnvironmentVariables(existing: any[] = [], incoming: any[]) {
+  if (!Array.isArray(incoming)) return existing;
+  const existingByKey = new Map(existing.map(item => [String(item.key || ""), item]));
+  return incoming
+    .filter(item => String(item?.key || "").trim())
+    .map(item => {
+      const key = String(item.key).trim();
+      const isSecret = Boolean(item.isSecret);
+      const previous = existingByKey.get(key);
+      const requestedValue = String(item.value || "");
+      return {
+        key,
+        isSecret,
+        value: isSecret && !requestedValue && previous?.isSecret ? previous.value : requestedValue,
+      };
+    });
+}
+
+async function auditDeploymentAction(req: Request | null, user: any, action: string, project: any, details: Record<string, unknown> = {}) {
+  try {
+    const { ActivityLogModel } = await import("./models");
+    await ActivityLogModel.create({
+      userId: user?._id || null,
+      action,
+      entity: "deployment_project",
+      entityId: String(project?._id || project?.id || ""),
+      details: { provider: project?.provider || defaultDeploymentProvider(), ...details },
+      ip: req?.ip || "",
+    });
+  } catch {
+    // Auditing must not make a provider deployment unavailable.
+  }
+}
+
+async function notifyDeploymentFailure(project: any, run: any, reason: string) {
+  try {
+    const { UserModel } = await import("./models");
+    const owner = await UserModel.findById(project.ownerId).select("fullName username email");
+    if (!owner?.email) return;
+    await dispatchNotification({
+      event: "deployment_failed",
+      idempotencyKey: `deployment-failed:${String(run._id)}:${String(project.provider || "")}`,
+      recipient: {
+        userId: String(owner._id),
+        name: owner.fullName || owner.username || "QIROX",
+        email: owner.email,
+      },
+      subject: `فشل نشر ${project.name}`,
+      message: `تعذر نشر مشروع ${project.name} عبر ${project.provider || "المزود المحدد"}. راجع سجل النشر لمعرفة السبب: ${reason.slice(0, 280)}`,
+      actionUrl: `/employee/deployment-cloud/${project._id}`,
+      channels: ["email"],
+      metadata: { projectId: String(project._id), runId: String(run._id), provider: project.provider || "" },
+    });
+  } catch {
+    // Notification delivery is intentionally best-effort after a durable run
+    // failure has already been written to the database.
+  }
+}
 
 function getAIClient(): { client: OpenAI; model: string } {
   // Use QIROX's local-first OpenAI-compatible adapter. When an external
@@ -297,6 +394,113 @@ async function simulateDeploy(run: any, project: any): Promise<void> {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   RAILWAY + RENDER — managed provider deployments
+══════════════════════════════════════════════════════════════ */
+async function deployViaManagedProvider(run: any, project: any): Promise<void> {
+  const provider = (project.provider || "simulation") as DeploymentProvider;
+  try {
+    const capacity = getCapacitySnapshot(provider);
+    await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+      capacityState: capacity.state,
+      capacityCheckedAt: new Date(),
+    });
+    if (!capacity.confirmed) {
+      throw new Error(`${capacity.message} لن يبدأ النشر حتى تتأكد السعة.`);
+    }
+    if (capacity.state === "exceeded") {
+      throw new Error(`${capacity.message} أوقف أو وسّع الموارد قبل بدء نشر جديد.`);
+    }
+
+    run.provider = provider;
+    run.status = "building";
+    run.startedAt = new Date();
+    run.logs.push({ time: new Date(), level: "info", message: `==> QIROX Cloud: النشر عبر ${provider}` });
+    run.logs.push({ time: new Date(), level: "info", message: `==> فحص السعة: ${capacity.message}` });
+    await run.save();
+    await DeploymentProjectModel.findByIdAndUpdate(project._id, { status: "building", providerStatus: "building" });
+
+    const initial = await triggerManagedDeployment(provider, project);
+    Object.assign(project, initial);
+    run.providerDeploymentId = initial.providerDeploymentId || "";
+    run.logs.push({ time: new Date(), level: "info", message: "==> تم إنشاء/تحديث مورد المزود وبدء النشر." });
+    if (initial.providerDeploymentId) {
+      run.logs.push({ time: new Date(), level: "info", message: `==> معرف النشر الخارجي: ${initial.providerDeploymentId}` });
+    }
+    await run.save();
+    await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+      ...initial,
+      provider,
+      providerStatus: initial.status || "building",
+      providerLastCheckedAt: new Date(),
+      isSimulated: false,
+    });
+
+    const startedAt = Date.now();
+    const seenLogs = new Set<string>();
+    while (Date.now() - startedAt < 300_000) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const remote = await getManagedDeployment(provider, project);
+      project.domain = remote.domain || project.domain;
+      project.providerStatus = remote.providerStatus || remote.status || "";
+      project.providerLastCheckedAt = new Date();
+
+      for (const entry of remote.logs || []) {
+        const key = `${entry.time instanceof Date ? entry.time.toISOString() : entry.time}:${entry.message}`;
+        if (!seenLogs.has(key)) {
+          seenLogs.add(key);
+          run.logs.push(entry);
+        }
+      }
+
+      if (remote.status === "success") {
+        run.status = "success";
+        run.completedAt = new Date();
+        run.buildDuration = Math.round((Date.now() - run.startedAt.getTime()) / 1000);
+        run.logs.push({ time: new Date(), level: "success", message: "==> تم النشر بنجاح." });
+        if (remote.domain) run.logs.push({ time: new Date(), level: "success", message: `==> الرابط: https://${remote.domain}` });
+        await run.save();
+        await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+          status: "live",
+          lastDeployAt: new Date(),
+          $inc: { deployCount: 1 },
+          domain: remote.domain || project.domain || "",
+          providerStatus: remote.providerStatus || "live",
+          providerLastCheckedAt: new Date(),
+        });
+        return;
+      }
+
+      if (remote.status === "failed" || remote.status === "suspended") {
+        throw new Error(`أبلغ ${provider} بالحالة: ${remote.providerStatus || remote.status}`);
+      }
+
+      run.status = "deploying";
+      await run.save();
+      await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+        status: "deploying",
+        domain: remote.domain || project.domain || "",
+        providerStatus: remote.providerStatus || remote.status || "building",
+        providerLastCheckedAt: new Date(),
+      });
+    }
+    throw new Error("انتهت مهلة مراقبة النشر (5 دقائق). راجع حالة المزود ثم أعد المحاولة.");
+  } catch (err: any) {
+    run.status = "failed";
+    run.error = String(err?.message || err);
+    run.completedAt = new Date();
+    run.buildDuration = Math.round((Date.now() - (run.startedAt?.getTime() || Date.now())) / 1000);
+    run.logs.push({ time: new Date(), level: "error", message: `==> فشل النشر: ${run.error}` });
+    await run.save();
+    await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+      status: "failed",
+      providerStatus: "failed",
+      providerLastCheckedAt: new Date(),
+    });
+    await notifyDeploymentFailure(project, run, run.error);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    ROUTES
 ══════════════════════════════════════════════════════════════ */
 export function registerDeploymentCloudRoutes(app: Express) {
@@ -306,8 +510,28 @@ export function registerDeploymentCloudRoutes(app: Express) {
     res.json({
       hasVercel: !!VERCEL_TOKEN,
       baseDomain: BASE_DOMAIN,
-      mode: VERCEL_TOKEN ? "vercel" : "simulation",
+      mode: defaultDeploymentProvider(),
+      providers: getDeploymentProvidersConfig(),
     });
+  });
+
+  // The browser sees connection/capacity state only. Provider credentials stay
+  // server-side in Replit Secrets.
+  app.get("/api/deploy/providers", (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+    if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
+    res.json(getDeploymentProvidersConfig());
+  });
+
+  app.get("/api/deploy/providers/:provider/usage", (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const provider = String(req.params.provider);
+    if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+    if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
+    if (!isDeploymentProvider(provider)) return res.status(400).json({ message: "مزود غير مدعوم" });
+    const snapshot = getCapacitySnapshot(provider);
+    res.json({ provider, ...snapshot, checkedAt: new Date() });
   });
 
   // ── List projects ──────────────────────────────────────────────────────────
@@ -315,10 +539,11 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
-      const isAdmin = ["admin", "manager", "developer"].includes(user.role);
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
+      const isAdmin = ["admin", "manager"].includes(user.role);
       const filter = isAdmin ? {} : { ownerId: String(user._id) };
       const projects = await DeploymentProjectModel.find(filter).sort({ createdAt: -1 }).lean();
-      res.json(projects);
+      res.json(projects.map(toPublicDeploymentProject));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
@@ -327,9 +552,13 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
       const project = await DeploymentProjectModel.findById(req.params.id).lean();
       if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
-      res.json(project);
+      if (!canManageDeployment(user, project) && String(project.ownerId) !== String(user._id)) {
+        return res.status(403).json({ message: "لا تملك صلاحية الوصول إلى هذا المشروع" });
+      }
+      res.json(toPublicDeploymentProject(project));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
@@ -338,10 +567,11 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!canManageDeployment(user)) return res.status(403).json({ message: "دورك لا يملك صلاحية إنشاء أو نشر المشاريع" });
       const {
         name, description, githubOwner, githubRepo, githubBranch, githubToken,
         githubRepoId, buildCommand, startCommand, outputDir, nodeVersion,
-        envVars, plan, region, serviceType,
+        envVars, plan, region, serviceType, provider, capacityLimitGb,
       } = req.body;
 
       if (!name || !githubOwner || !githubRepo) {
@@ -369,22 +599,24 @@ export function registerDeploymentCloudRoutes(app: Express) {
         } catch {}
       }
 
-      const domain = VERCEL_TOKEN
+      const selectedProvider: DeploymentProvider = provider || defaultDeploymentProvider();
+      if (!isDeploymentProvider(selectedProvider)) return res.status(400).json({ message: "مزود النشر غير صالح" });
+      const domain = selectedProvider === "vercel"
         ? `${slug}.vercel.app`
-        : `${slug}.${BASE_DOMAIN}`;
+        : selectedProvider === "simulation"
+          ? `${slug}.${BASE_DOMAIN}`
+          : "";
 
       const project = await DeploymentProjectModel.create({
         name, description, githubOwner, githubRepo,
         githubBranch: githubBranch || "main",
-        // Never persist the server-managed token in project documents.
-        githubToken: storedToken,
         githubRepoId: githubRepoId || "",
         buildCommand: buildCommand || "npm run build",
         startCommand: startCommand || "npm start",
         outputDir: outputDir || "dist",
         nodeVersion: nodeVersion || "20",
         framework,
-        envVars: envVars || [],
+        envVars: mergeEnvironmentVariables([], envVars || []),
         plan: plan || "starter",
         region: region || "me-1",
         serviceType: serviceType || "web",
@@ -394,10 +626,14 @@ export function registerDeploymentCloudRoutes(app: Express) {
         ownerName: user.fullName || user.username,
         avatarColor: randomColor(),
         status: "idle",
-        isSimulated: !VERCEL_TOKEN,
+        provider: selectedProvider,
+        capacityLimitGb: Number(capacityLimitGb) > 0 ? Number(capacityLimitGb) : 5,
+        capacityState: selectedProvider === "simulation" ? "not_applicable" : "unknown",
+        isSimulated: selectedProvider === "simulation",
       });
 
-      res.json(project);
+      await auditDeploymentAction(req, user, "create_deployment_project", project, { selectedProvider });
+      res.json(toPublicDeploymentProject(project));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
@@ -406,16 +642,27 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
-      const { name, description, githubBranch, githubToken, buildCommand,
-              startCommand, outputDir, nodeVersion, envVars, autoDeploy, plan, region, customDomain, logoUrl, documentation } = req.body;
+      const existing = await DeploymentProjectModel.findById(req.params.id);
+      if (!existing) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, existing)) return res.status(403).json({ message: "لا تملك صلاحية تعديل هذا المشروع" });
+      const { name, description, githubBranch, buildCommand,
+              startCommand, outputDir, nodeVersion, envVars, autoDeploy, plan, region, customDomain, logoUrl, documentation, capacityLimitGb } = req.body;
+      const updateFields: any = {
+        name, description, githubBranch, buildCommand,
+        startCommand, outputDir, nodeVersion, autoDeploy, plan, region, customDomain, logoUrl, documentation,
+        ...(Array.isArray(envVars) ? { envVars: mergeEnvironmentVariables(existing.envVars || [], envVars) } : {}),
+        ...(Number(capacityLimitGb) > 0 ? { capacityLimitGb: Number(capacityLimitGb) } : {}),
+      };
+      for (const key of Object.keys(updateFields)) {
+        if (updateFields[key] === undefined) delete updateFields[key];
+      }
       const project = await DeploymentProjectModel.findByIdAndUpdate(
         req.params.id,
-        { name, description, githubBranch, githubToken, buildCommand,
-          startCommand, outputDir, nodeVersion, envVars, autoDeploy, plan, region, customDomain, logoUrl, documentation },
+        updateFields,
         { new: true }
       );
-      if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
-      res.json(project);
+      await auditDeploymentAction(req, user, "update_deployment_project", project, { fieldsUpdated: Object.keys(req.body || {}).filter(key => key !== "githubToken" && key !== "envVars") });
+      res.json(toPublicDeploymentProject(project));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
@@ -425,6 +672,8 @@ export function registerDeploymentCloudRoutes(app: Express) {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
       const project = await DeploymentProjectModel.findById(req.params.id).lean() as any;
+      if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project)) return res.status(403).json({ message: "لا تملك صلاحية حذف هذا المشروع" });
 
       // Delete from Vercel too if applicable
       if (project?.vercelProjectId && VERCEL_TOKEN) {
@@ -432,9 +681,14 @@ export function registerDeploymentCloudRoutes(app: Express) {
           await vercelFetch(`/v9/projects/${project.vercelProjectId}`, "DELETE");
         } catch {}
       }
+      const provider = (project.provider || defaultDeploymentProvider()) as DeploymentProvider;
+      if (provider === "railway" || provider === "render") {
+        await deleteManagedService(provider, project);
+      }
 
       await DeploymentProjectModel.findByIdAndDelete(req.params.id);
       await DeploymentRunModel.deleteMany({ projectId: req.params.id });
+      await auditDeploymentAction(req, user, "delete_deployment_project", project);
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
@@ -447,12 +701,25 @@ export function registerDeploymentCloudRoutes(app: Express) {
 
       const project = await DeploymentProjectModel.findById(req.params.id);
       if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project)) return res.status(403).json({ message: "لا تملك صلاحية نشر هذا المشروع" });
       if (["building", "deploying"].includes(project.status)) {
         return res.status(409).json({ message: "يوجد نشر جارٍ بالفعل" });
       }
+      const provider = (project.provider || defaultDeploymentProvider()) as DeploymentProvider;
+      if (!isDeploymentProvider(provider)) return res.status(400).json({ message: "مزود النشر غير صالح" });
+      if (provider === "railway" || provider === "render") {
+        const capacity = getCapacitySnapshot(provider);
+        await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+          capacityState: capacity.state,
+          capacityCheckedAt: new Date(),
+        });
+        if (!capacity.confirmed || capacity.state === "exceeded") {
+          return res.status(409).json({ message: `${capacity.message} لم يبدأ النشر.` });
+        }
+      }
 
       let commitSha = "", commitMsg = "";
-      const activeToken = project.githubToken || (user as any).githubDeployToken || getManagedGitHubToken();
+      const activeToken = (user as any).githubDeployToken || getManagedGitHubToken();
       if (activeToken) {
         try {
           const commit = await githubFetch(
@@ -476,13 +743,19 @@ export function registerDeploymentCloudRoutes(app: Express) {
         logs: [{ time: new Date(), level: "info", message: "==> في الطابور..." }],
         startedAt: null,
         completedAt: null,
-        isSimulated: !VERCEL_TOKEN,
+        provider,
+        isSimulated: provider === "simulation",
       });
 
-      res.json({ runId: run._id, message: "بدأ النشر", mode: VERCEL_TOKEN ? "vercel" : "simulation" });
+      await auditDeploymentAction(req, user, "trigger_deployment", project, { runId: String(run._id), provider });
+      res.json({ runId: run._id, message: "بدأ النشر", mode: provider });
 
       // Choose deployment method
-      const deployFn = VERCEL_TOKEN ? deployViaVercel : simulateDeploy;
+      const deployFn = provider === "railway" || provider === "render"
+        ? deployViaManagedProvider
+        : provider === "vercel" && VERCEL_TOKEN
+          ? deployViaVercel
+          : simulateDeploy;
       deployFn(run, project).catch(async (err) => {
         run.status = "failed";
         run.error = err.message;
@@ -490,6 +763,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
         run.logs.push({ time: new Date(), level: "error", message: `خطأ غير متوقع: ${err.message}` });
         await run.save();
         await DeploymentProjectModel.findByIdAndUpdate(project._id, { status: "failed" });
+        await notifyDeploymentFailure(project, run, String(err?.message || err));
       });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
@@ -499,6 +773,12 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
+      const project = await DeploymentProjectModel.findById(req.params.id).lean();
+      if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project) && String(project.ownerId) !== String(user._id)) {
+        return res.status(403).json({ message: "لا تملك صلاحية الوصول إلى سجلات المشروع" });
+      }
       const runs = await DeploymentRunModel.find({ projectId: req.params.id })
         .sort({ createdAt: -1 }).limit(20).lean();
       res.json(runs);
@@ -510,8 +790,13 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
       const run = await DeploymentRunModel.findById(req.params.runId).lean();
       if (!run) return res.status(404).json({ message: "النشر غير موجود" });
+      const project = await DeploymentProjectModel.findById(run.projectId).lean();
+      if (!project || (!canManageDeployment(user, project) && String(project.ownerId) !== String(user._id))) {
+        return res.status(403).json({ message: "لا تملك صلاحية الوصول إلى سجل النشر" });
+      }
       res.json(run);
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
@@ -523,13 +808,76 @@ export function registerDeploymentCloudRoutes(app: Express) {
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
       const run = await DeploymentRunModel.findById(req.params.runId);
       if (!run) return res.status(404).json({ message: "النشر غير موجود" });
+      const project = await DeploymentProjectModel.findById(run.projectId);
+      if (!project || !canManageDeployment(user, project)) return res.status(403).json({ message: "لا تملك صلاحية إلغاء هذا النشر" });
       run.status = "cancelled";
       run.completedAt = new Date();
       run.logs.push({ time: new Date(), level: "info", message: "==> تم الإلغاء من قِبل المستخدم" });
       await run.save();
       await DeploymentProjectModel.findByIdAndUpdate(run.projectId, { status: "idle" });
+      await auditDeploymentAction(req, user, "cancel_deployment", project, { runId: String(run._id) });
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // ── Refresh external provider state and logs ────────────────────────────────
+  app.post("/api/deploy/projects/:id/refresh", async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية الوصول إلى النشر السحابي" });
+      const project = await DeploymentProjectModel.findById(req.params.id);
+      if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project) && String(project.ownerId) !== String(user._id)) {
+        return res.status(403).json({ message: "لا تملك صلاحية مراقبة هذا المشروع" });
+      }
+      const provider = (project.provider || defaultDeploymentProvider()) as DeploymentProvider;
+      const capacity = getCapacitySnapshot(provider);
+      let remote: any = null;
+      if (provider === "railway" || provider === "render") {
+        remote = await getManagedDeployment(provider, project);
+      }
+      const nextStatus = remote?.status === "success" ? "live"
+        : remote?.status === "failed" ? "failed"
+          : remote?.status === "suspended" ? "suspended"
+            : project.status;
+      const updated = await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+        status: nextStatus,
+        ...(remote?.domain ? { domain: remote.domain } : {}),
+        ...(remote?.providerStatus ? { providerStatus: remote.providerStatus } : {}),
+        providerLastCheckedAt: new Date(),
+        capacityState: capacity.state,
+        capacityCheckedAt: new Date(),
+      }, { new: true }).lean();
+      await auditDeploymentAction(req, user, "refresh_deployment_provider", project, { provider, capacityState: capacity.state });
+      res.json({ project: toPublicDeploymentProject(updated), provider, capacity, logs: remote?.logs || [] });
+    } catch (e: any) { res.status(502).json({ message: `تعذر تحديث حالة المزود: ${e.message}` }); }
+  });
+
+  // ── Stop a managed service without deleting its deployment history ─────────
+  app.post("/api/deploy/projects/:id/stop", async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      const project = await DeploymentProjectModel.findById(req.params.id);
+      if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project)) return res.status(403).json({ message: "لا تملك صلاحية إيقاف هذه الخدمة" });
+      const provider = (project.provider || defaultDeploymentProvider()) as DeploymentProvider;
+      if (provider === "railway" || provider === "render") await stopManagedService(provider, project);
+      await DeploymentProjectModel.findByIdAndUpdate(project._id, {
+        status: "suspended",
+        providerStatus: "suspended",
+        providerLastCheckedAt: new Date(),
+      });
+      await auditDeploymentAction(req, user, "stop_deployment_service", project, { provider });
+      res.json({ ok: true, status: "suspended" });
+    } catch (e: any) { res.status(502).json({ message: `تعذر إيقاف الخدمة: ${e.message}` }); }
+  });
+
+  // Retry deliberately delegates to the guarded deploy route. HTTP 307
+  // preserves the POST body/method and therefore retains all capacity checks.
+  app.post("/api/deploy/projects/:id/retry", (req: Request, res: Response) => {
+    res.redirect(307, `/api/deploy/projects/${req.params.id}/deploy`);
   });
 
   // ── GitHub: list repos ─────────────────────────────────────────────────────
@@ -537,6 +885,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
       const token = resolveGitHubToken(req, req.body.token);
       if (!token) return res.status(400).json({ message: "token مطلوب" });
       const repos = await githubFetch("/user/repos?sort=updated&per_page=100&type=all", token);
@@ -560,6 +909,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
       const { owner, repo } = req.body;
       const token = resolveGitHubToken(req, req.body.token);
       if (!token || !owner || !repo) return res.status(400).json({ message: "token, owner, repo مطلوبة" });
@@ -573,6 +923,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
       const token = resolveGitHubToken(req, req.body.token);
       if (!token) return res.status(400).json({ message: "token مطلوب" });
       const ghUser = await githubFetch("/user", token);
@@ -585,6 +936,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية النشر السحابي" });
       const { logs, framework, buildCommand, errorMessage, question } = req.body;
       if (!logs && !errorMessage) return res.status(400).json({ message: "logs أو errorMessage مطلوب" });
 
@@ -635,8 +987,10 @@ ${logText}
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية النشر السحابي" });
       const project = await DeploymentProjectModel.findById(req.params.id).lean() as any;
       if (!project) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, project) && String(project.ownerId) !== String(user._id)) return res.status(403).json({ message: "لا تملك صلاحية هذا المشروع" });
 
       const { client: ai, model } = getAIClient();
 
@@ -689,7 +1043,11 @@ ${logText}
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية النشر السحابي" });
       const { logoUrl } = req.body;
+      const existing = await DeploymentProjectModel.findById(req.params.id);
+      if (!existing) return res.status(404).json({ message: "المشروع غير موجود" });
+      if (!canManageDeployment(user, existing)) return res.status(403).json({ message: "لا تملك صلاحية تعديل هذا المشروع" });
       const project = await DeploymentProjectModel.findByIdAndUpdate(
         req.params.id, { logoUrl }, { new: true }
       );
@@ -708,6 +1066,7 @@ ${logText}
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية النشر السحابي" });
       const isAdmin = ["admin", "manager"].includes(user.role);
       const filter = isAdmin ? {} : { ownerId: String(user._id) };
       const [totalProjects, liveProjects, failedProjects, totalRuns, recentRuns] = await Promise.all([
@@ -725,6 +1084,9 @@ ${logText}
 
   // ── GitHub OAuth: availability check ──────────────────────────────────────
   app.get("/api/deploy/github/oauth/available", (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ available: false });
+    if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ available: false, message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
     const hasOAuth = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
       const hasSystemToken = !!getManagedGitHubToken();
     res.json({ available: hasOAuth, hasSystemToken });
@@ -732,6 +1094,9 @@ ${logText}
 
   // ── GitHub OAuth: start ────────────────────────────────────────────────────
   app.get("/api/deploy/github/oauth/start", (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user) return res.redirect("/login");
+    if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).send("لا تملك صلاحية استخدام GitHub للنشر");
     const clientId = process.env.GITHUB_CLIENT_ID;
     if (!clientId) return res.redirect("/employee/deployment-cloud?oauth=no_config");
     const siteUrl = process.env.EMAIL_SITE_URL || `https://${req.hostname}`;
@@ -746,6 +1111,10 @@ ${logText}
 
   // ── GitHub OAuth: callback ─────────────────────────────────────────────────
   app.get("/api/deploy/github/oauth/callback", async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    if (!user || !DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) {
+      return res.redirect("/login");
+    }
     const { code } = req.query;
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
@@ -760,13 +1129,10 @@ ${logText}
       const accessToken = tokenData.access_token;
       if (!accessToken) return res.redirect("/employee/deployment-cloud?oauth=error");
       (req as any).session.githubDeployToken = accessToken;
-      const user = (req as any).user;
-      if (user) {
-        try {
-          const { UserModel } = await import("./models");
-          await UserModel.findByIdAndUpdate(user._id, { githubDeployToken: accessToken });
-        } catch {}
-      }
+      try {
+        const { UserModel } = await import("./models");
+        await UserModel.findByIdAndUpdate(user._id, { githubDeployToken: accessToken });
+      } catch {}
       res.redirect("/employee/deployment-cloud?oauth=success");
     } catch {
       res.redirect("/employee/deployment-cloud?oauth=error");
@@ -778,6 +1144,7 @@ ${logText}
     try {
       const user = (req as any).user;
       if (!user) return res.status(401).json({ connected: false });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ connected: false, message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
       const token = resolveGitHubToken(req);
       if (!token) return res.json({ connected: false });
       const ghUser = await githubFetch("/user", token);
@@ -792,14 +1159,14 @@ ${logText}
   // ── GitHub OAuth: disconnect ───────────────────────────────────────────────
   app.post("/api/deploy/github/oauth/disconnect", async (req: Request, res: Response) => {
     try {
-      if ((req as any).session) (req as any).session.githubDeployToken = undefined;
       const user = (req as any).user;
-      if (user) {
-        try {
-          const { UserModel } = await import("./models");
-          await UserModel.findByIdAndUpdate(user._id, { $unset: { githubDeployToken: 1 } });
-        } catch {}
-      }
+      if (!user) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+      if (!DEPLOYMENT_MANAGEMENT_ROLES.includes(user.role)) return res.status(403).json({ message: "دورك لا يملك صلاحية استخدام GitHub للنشر" });
+      if ((req as any).session) (req as any).session.githubDeployToken = undefined;
+      try {
+        const { UserModel } = await import("./models");
+        await UserModel.findByIdAndUpdate(user._id, { $unset: { githubDeployToken: 1 } });
+      } catch {}
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ message: e.message }); }
   });

@@ -40,3 +40,4 @@
 - [Data Entry access policy](data-entry-access-policy.md) — Data Entry is limited to operational content and profile data; never grant financial, deployment, credential, role, password, or deletion access.
 - [Executive identity SEO](executive-identity-seo.md) — Preserve canonical profile-image URLs when correcting identities so existing image-search links resolve to the right portrait.
 - [Lazy page cache recovery](lazy-page-cache-recovery.md) — PWA cache versions must advance with deployments so stale lazy-loaded chunks do not trigger the global maintenance fallback.
+- [Managed provider capacity](managed-provider-capacity.md) — Railway/Render deployment is gated by verified capacity values and has a server-side kill switch; never assume public APIs expose billable usage.

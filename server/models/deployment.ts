@@ -18,7 +18,7 @@ const deploymentProjectSchema = new mongoose.Schema({
   domain:              { type: String, default: "" },
   customDomain:        { type: String, default: "" },
   status:              { type: String, enum: ["idle", "building", "deploying", "live", "failed", "suspended"], default: "idle" },
-  githubToken:         { type: String, default: "" },
+  githubToken:         { type: String, default: "", select: false },
   autoDeploy:          { type: Boolean, default: true },
   region:              { type: String, default: "me-1" },
   plan:                { type: String, enum: ["free", "starter", "pro", "enterprise"], default: "starter" },
@@ -30,10 +30,32 @@ const deploymentProjectSchema = new mongoose.Schema({
   logoUrl:             { type: String, default: "" },
   documentation:       { type: String, default: "" },
   isSimulated:         { type: Boolean, default: false },
+  provider:            { type: String, enum: ["simulation", "vercel", "railway", "render"], default: "simulation", index: true },
+  providerProjectId:   { type: String, default: "" },
+  providerServiceId:   { type: String, default: "" },
+  providerEnvironmentId:{ type: String, default: "" },
+  providerDeploymentId:{ type: String, default: "" },
+  providerStatus:      { type: String, default: "" },
+  providerLastCheckedAt:{ type: Date, default: null },
+  capacityLimitGb:     { type: Number, default: 5 },
+  capacityState:       { type: String, enum: ["unknown", "healthy", "warning", "exceeded", "not_applicable"], default: "unknown" },
+  capacityCheckedAt:   { type: Date, default: null },
   vercelProjectId:     { type: String, default: "" },
   vercelDeploymentId:  { type: String, default: "" },
 }, { timestamps: true });
-deploymentProjectSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+deploymentProjectSchema.set("toJSON", {
+  transform: (_: any, ret: any) => {
+    ret.id = ret._id?.toString();
+    delete ret.githubToken;
+    ret.envVars = (ret.envVars || []).map((item: any) => ({
+      key: item.key || "",
+      isSecret: Boolean(item.isSecret),
+      value: item.isSecret ? "" : String(item.value || ""),
+      hasValue: Boolean(item.value),
+    }));
+    return ret;
+  },
+});
 export const DeploymentProjectModel = mongoose.models.DeploymentProject || mongoose.model("DeploymentProject", deploymentProjectSchema);
 
 const deploymentRunSchema = new mongoose.Schema({
@@ -49,6 +71,8 @@ const deploymentRunSchema = new mongoose.Schema({
   buildDuration: { type: Number, default: 0 },
   error:         { type: String, default: "" },
   aiFixSuggestion: { type: String, default: "" },
+  provider:        { type: String, default: "simulation" },
+  providerDeploymentId: { type: String, default: "" },
   startedAt:    { type: Date, default: null },
   completedAt:  { type: Date, default: null },
 }, { timestamps: true });

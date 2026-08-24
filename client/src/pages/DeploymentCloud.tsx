@@ -530,8 +530,19 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
   });
   const [loading, setLoading] = useState(false);
   const [repoSearch, setRepoSearch] = useState("");
+  const [provider, setProvider] = useState("simulation");
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: deployConfig } = useQuery<any>({
+    queryKey: ["/api/deploy/config"],
+    queryFn: async () => (await fetch("/api/deploy/config")).json(),
+    staleTime: 30_000,
+  });
+  const providers = deployConfig?.providers || [];
+
+  useEffect(() => {
+    if (deployConfig?.mode && provider === "simulation") setProvider(deployConfig.mode);
+  }, [deployConfig?.mode]);
 
   const STEPS = ["service", "github", "repo", "config"];
   const STEP_LABELS = ["الخدمة", "GitHub", "المستودع", "الإعدادات"];
@@ -629,7 +640,7 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
     try {
       const [owner, repoName] = selectedRepo.full_name.split("/");
       await apiRequest("POST", "/api/deploy/projects", {
-        ...form, serviceType,
+        ...form, serviceType, provider,
         githubOwner: owner, githubRepo: repoName,
         githubToken: token || ghUser?.token || "",
         githubRepoId: selectedRepo.repoId || selectedRepo.id || "",
@@ -694,6 +705,35 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
           {step === "service" && (
             <>
               <ServiceTypeStep selected={serviceType} onSelect={setServiceType} />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-white/70">مزود النشر</p>
+                  <span className="text-[10px] text-gray-400 dark:text-white/35">يُحفظ الاتصال في أسرار الخادم</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {providers.map((item: any) => {
+                    const unavailable = !item.deployable;
+                    return (
+                      <button key={item.id} type="button" onClick={() => setProvider(item.id)}
+                        className={`text-right rounded-xl border p-2.5 transition-colors ${
+                          provider === item.id
+                            ? "border-violet-500 bg-violet-500/10"
+                            : "border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02]"
+                        }`}>
+                        <div className="flex items-center gap-1.5">
+                          <Cloud size={13} className={provider === item.id ? "text-violet-400" : "text-gray-400"} />
+                          <span className="text-xs font-semibold text-gray-900 dark:text-white">{item.label}</span>
+                          <span className={`mr-auto w-1.5 h-1.5 rounded-full ${unavailable ? "bg-amber-400" : "bg-emerald-400"}`} />
+                        </div>
+                        <p className="mt-1 text-[10px] leading-4 text-gray-400 dark:text-white/35 line-clamp-2">{item.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {provider !== "simulation" && !providers.find((item: any) => item.id === provider)?.configured && (
+                  <p className="text-[11px] text-amber-500">يمكن إنشاء المشروع، لكن لن يبدأ نشر فعلي قبل إكمال اتصال المزود وتأكيد السعة.</p>
+                )}
+              </div>
               <button onClick={() => setStep("github")}
                 className="w-full bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2">
                 التالي
@@ -812,16 +852,20 @@ function CreateProjectModal({ onClose, onCreated, initialStep = "service" }: {
               <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-[11px] text-gray-400 dark:text-white/40">الرابط بعد النشر</p>
-                  {getDeployMode() === "vercel" ? (
+                  {provider === "vercel" ? (
                     <span className="text-[9px] bg-black/50 border border-black/10 dark:border-white/10 text-gray-500 dark:text-white/50 px-1.5 py-0.5 rounded font-mono">Vercel ✓</span>
-                  ) : (
+                  ) : provider === "simulation" ? (
                     <span className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-mono">محاكاة</span>
+                  ) : (
+                    <span className="text-[9px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-mono">{providers.find((item: any) => item.id === provider)?.label || provider}</span>
                   )}
                 </div>
                 <p className="text-xs text-violet-300 font-mono">
-                  {getDeployMode() === "vercel"
+                  {provider === "vercel"
                     ? `${form.name ? form.name.toLowerCase().replace(/[^a-z0-9]/g,"-") : "your-project"}.vercel.app`
-                    : `${form.name ? form.name.toLowerCase().replace(/[^a-z0-9]/g,"-") : "your-project"}.${getBaseDomain()}`
+                    : provider === "simulation"
+                      ? `${form.name ? form.name.toLowerCase().replace(/[^a-z0-9]/g,"-") : "your-project"}.${getBaseDomain()}`
+                      : "يُعيّنه المزود عند نجاح النشر"
                   }
                 </p>
               </div>
@@ -875,6 +919,9 @@ function ProjectCard({ project, onClick }: { project: any; onClick: () => void }
             </span>
             {project.serviceType && (
               <span className="text-[10px] text-gray-400 dark:text-white/25">{SERVICE_TYPES.find(s => s.id === project.serviceType)?.title || project.serviceType}</span>
+            )}
+            {project.provider && (
+              <span className="text-[10px] text-violet-400 flex items-center gap-1"><Cloud size={9} />{project.provider === "simulation" ? "محاكاة" : project.provider}</span>
             )}
             {project.documentation && (
               <span className="text-[10px] text-violet-400 flex items-center gap-0.5"><BookOpen size={8} /> موثّق</span>
@@ -1036,6 +1083,37 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
     onError: (e: any) => toast({ title: "فشل الإلغاء", description: e?.message, variant: "destructive" }),
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/deploy/projects/${project.id || project._id}/refresh`, {}),
+    onSuccess: () => {
+      toast({ title: "تم تحديث حالة المزود" });
+      qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
+      qc.invalidateQueries({ queryKey: ["/api/deploy/projects", project.id || project._id] });
+      refetchRuns();
+    },
+    onError: (e: any) => toast({ title: "تعذر التحديث", description: e.message, variant: "destructive" }),
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/deploy/projects/${project.id || project._id}/stop`, {}),
+    onSuccess: () => {
+      toast({ title: "تم إيقاف الخدمة" });
+      qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
+      qc.invalidateQueries({ queryKey: ["/api/deploy/projects", project.id || project._id] });
+    },
+    onError: (e: any) => toast({ title: "تعذر إيقاف الخدمة", description: e.message, variant: "destructive" }),
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/deploy/projects/${project.id || project._id}/retry`, {}),
+    onSuccess: () => {
+      toast({ title: "بدأت إعادة المحاولة" });
+      qc.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
+      refetchRuns();
+    },
+    onError: (e: any) => toast({ title: "تعذرت إعادة المحاولة", description: e.message, variant: "destructive" }),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -1084,11 +1162,24 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
                 <Square size={12} /> إلغاء
               </button>
             ) : (
-              <button onClick={() => deployMutation.mutate()} disabled={deployMutation.isPending}
-                className="flex items-center gap-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-3 py-2 rounded-xl transition-all font-semibold">
-                {deployMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />}
-                نشر الآن
-              </button>
+              <>
+                <button onClick={() => refreshMutation.mutate()} disabled={refreshMutation.isPending}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/50 hover:text-gray-900 dark:hover:text-white bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] px-3 py-2 rounded-xl transition-all">
+                  <RefreshCw size={12} className={refreshMutation.isPending ? "animate-spin" : ""} /> تحديث
+                </button>
+                {currentProject.status === "live" && currentProject.provider !== "simulation" && (
+                  <button onClick={() => stopMutation.mutate()} disabled={stopMutation.isPending}
+                    className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/20 px-3 py-2 rounded-xl transition-all">
+                    {stopMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Square size={12} />} إيقاف
+                  </button>
+                )}
+                <button onClick={() => currentProject.status === "failed" ? retryMutation.mutate() : deployMutation.mutate()}
+                  disabled={deployMutation.isPending || retryMutation.isPending}
+                  className="flex items-center gap-1.5 text-xs text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-3 py-2 rounded-xl transition-all font-semibold">
+                  {deployMutation.isPending || retryMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : currentProject.status === "failed" ? <RotateCcw size={12} /> : <Rocket size={12} />}
+                  {currentProject.status === "failed" ? "إعادة المحاولة" : "نشر الآن"}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -1100,6 +1191,28 @@ function ProjectDetail({ project, onBack }: { project: any; onBack: () => void }
               className="text-gray-400 dark:text-white/30 hover:text-gray-700 dark:hover:text-white/70 transition-colors"><Copy size={11} /></button>
           </div>
         )}
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] p-3">
+            <p className="text-[10px] text-gray-400 dark:text-white/35">المزود</p>
+            <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-white">{currentProject.provider === "simulation" ? "محاكاة QIROX" : currentProject.provider || "Vercel"}</p>
+          </div>
+          <div className="rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] p-3">
+            <p className="text-[10px] text-gray-400 dark:text-white/35">حالة المزود</p>
+            <p className="mt-1 text-xs font-semibold text-gray-800 dark:text-white">{currentProject.providerStatus || "بانتظار أول فحص"}</p>
+          </div>
+          <div className="rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] p-3">
+            <p className="text-[10px] text-gray-400 dark:text-white/35">السعة</p>
+            <p className={`mt-1 text-xs font-semibold ${
+              currentProject.capacityState === "exceeded" ? "text-red-400" :
+              currentProject.capacityState === "warning" ? "text-amber-400" : "text-gray-800 dark:text-white"
+            }`}>
+              {currentProject.capacityState === "not_applicable" ? "لا تنطبق" :
+               currentProject.capacityState === "unknown" ? "تحتاج تأكيداً" :
+               currentProject.capacityState === "exceeded" ? "تم تجاوز الحد" :
+               currentProject.capacityState === "warning" ? "قريبة من الحد" : "متاحة"}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-1 bg-black/[0.025] dark:bg-white/[0.025] p-1 rounded-xl border border-black/[0.07] dark:border-white/[0.07] w-fit flex-wrap">
