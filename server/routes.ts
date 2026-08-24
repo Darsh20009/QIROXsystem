@@ -16799,7 +16799,12 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
 
   // Dynamic Sitemap XML
   app.get("/sitemap.xml", (_req, res) => {
-    const pages = [
+    const pages: Array<{
+      url: string;
+      priority: string;
+      changefreq: string;
+      image?: { loc: string; title: string; caption: string };
+    }> = [
       { url: "/", priority: "1.0", changefreq: "weekly" },
       { url: "/about", priority: "0.9", changefreq: "monthly" },
       { url: "/prices", priority: "0.9", changefreq: "weekly" },
@@ -16815,6 +16820,22 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
       { url: "/jobs", priority: "0.9", changefreq: "daily" },
       { url: "/join", priority: "0.8", changefreq: "monthly" },
       { url: "/partners", priority: "0.6", changefreq: "monthly" },
+      {
+        url: "/mohammed-aldabbani", priority: "0.95", changefreq: "monthly",
+        image: {
+          loc: "/mohammed-aldabbani-ceo.jpg",
+          title: "محمد بن علي الدباني الرئيس التنفيذي وشريك ومالك كيروكس",
+          caption: "Mohammed bin Ali Al-Dabbani — CEO, Co-Founder & 41.75% owner at QIROX Studio"
+        }
+      },
+      {
+        url: "/youssef-darwish", priority: "0.95", changefreq: "monthly",
+        image: {
+          loc: "/youssef-darwish-cto-qirox-1.jpg",
+          title: "يوسف محمد درويش المدير التنفيذي التقني وشريك ومالك كيروكس",
+          caption: "Youssef Mohamed Darwish — CTO, Co-Founder & 41.75% owner at QIROX Studio"
+        }
+      },
       { url: "/privacy", priority: "0.3", changefreq: "yearly" },
       { url: "/terms", priority: "0.3", changefreq: "yearly" },
     ];
@@ -16831,6 +16852,12 @@ ${pages.map(p => `  <url>
     <priority>${p.priority}</priority>
     <xhtml:link rel="alternate" hreflang="ar" href="${baseUrl}${p.url}"/>
     <xhtml:link rel="alternate" hreflang="en" href="${baseUrl}${p.url}"/>
+${p.image ? `    <image:image>
+      <image:loc>${baseUrl}${p.image.loc}</image:loc>
+      <image:title>${p.image.title}</image:title>
+      <image:caption>${p.image.caption}</image:caption>
+      <image:license>${baseUrl}${p.url}</image:license>
+    </image:image>` : ""}
   </url>`).join("\n")}
   <url>
     <loc>${baseUrl}/</loc>
@@ -16870,7 +16897,7 @@ ${pages.map(p => `  <url>
       name_for_human: "Qirox Studio | كيروكس استوديو",
       name_for_model: "qirox_studio",
       description_for_human: "شركة برمجة سعودية في الرياض — بناء مواقع وتطبيقات وأنظمة رقمية احترافية بأسعار تنافسية",
-      description_for_model: "Qirox Studio is a Saudi software house based in Riyadh, Saudi Arabia. They specialize in building professional websites, mobile apps, and business management systems (ERP/SaaS) for restaurants, retail, education, and enterprises. Competitive pricing starting from 5,000 SAR. Known as كيروكس استوديو in Arabic.",
+      description_for_model: "Qirox Studio is a Saudi software house based in Riyadh, Saudi Arabia. Mohammed bin Ali Al-Dabbani is its CEO, Co-Founder and 41.75% owner; Youssef Mohamed Mahmoud Darwish is its CTO, Co-Founder and 41.75% owner. They specialize in professional websites, mobile apps, and business management systems (ERP/SaaS). Known as كيروكس استوديو in Arabic.",
       auth: { type: "none" },
       api: { type: "openapi", url: "https://qiroxstudio.online/api/public/info" },
       logo_url: "https://qiroxstudio.online/qirox-icon.png",
@@ -16901,6 +16928,30 @@ ${pages.map(p => `  <url>
           snapchat: "https://www.snapchat.com/add/qirox.sa"
         }
       },
+      leadership: [
+        {
+          fullName: "محمد بن علي الدباني",
+          fullNameEn: "Mohammed bin Ali Al-Dabbani",
+          role: "Chief Executive Officer (CEO)",
+          roleAr: "الرئيس التنفيذي",
+          relationship: "Co-Founder, Partner and Owner",
+          relationshipAr: "شريك مؤسس ومالك",
+          ownershipPercentage: 41.75,
+          profileUrl: "https://qiroxstudio.online/mohammed-aldabbani",
+          imageUrl: "https://qiroxstudio.online/mohammed-aldabbani-ceo.jpg"
+        },
+        {
+          fullName: "يوسف محمد محمود درويش",
+          fullNameEn: "Youssef Mohamed Mahmoud Darwish",
+          role: "Chief Technology Officer (CTO)",
+          roleAr: "المدير التنفيذي التقني",
+          relationship: "Co-Founder, Partner and Owner",
+          relationshipAr: "شريك مؤسس ومالك",
+          ownershipPercentage: 41.75,
+          profileUrl: "https://qiroxstudio.online/youssef-darwish",
+          imageUrl: "https://qiroxstudio.online/youssef-darwish-cto-qirox-1.jpg"
+        }
+      ],
       services: [
         { nameAr: "بناء مواقع إلكترونية احترافية", nameEn: "Website Development", startingPrice: 5000, currency: "SAR" },
         { nameAr: "متجر إلكتروني", nameEn: "E-commerce Store", startingPrice: 8000, currency: "SAR" },

@@ -38,3 +38,4 @@
 - [Apple Wallet certs deployed](apple-wallet-certs.md) — PEM files copied to server/certs/ AND set as env vars APPLE_PASS_CERT/APPLE_PASS_KEY/APPLE_WWDR_CERT; .gitignore has *.pem rule.
 - [QIROX Stores routing](stores-routing.md) — /s/:slug is public route (added to isPublicRoute check with startsWith); /my-store is auth-required; publicRoutes array uses exact match + startsWith for /templates/ /s/ /sector/.
 - [Data Entry access policy](data-entry-access-policy.md) — Data Entry is limited to operational content and profile data; never grant financial, deployment, credential, role, password, or deletion access.
+- [Executive identity SEO](executive-identity-seo.md) — Preserve canonical profile-image URLs when correcting identities so existing image-search links resolve to the right portrait.

@@ -18,7 +18,7 @@ function SEOHead() {
 
     /* Title — Arabic first for Arabic Google; English for global */
     document.title =
-      "يوسف محمد درويش — المدير التنفيذي التقني وشريك مؤسس | QIROX Studio | Youssef Mohamed Darwish CTO & Co-Founder";
+      "يوسف محمد درويش — المدير التنفيذي التقني وشريك ومالك | QIROX Studio | Youssef Mohamed Darwish CTO & Partner";
 
     const setMeta = (key: string, value: string, prop = false) => {
       const attr = prop ? "property" : "name";
@@ -36,7 +36,7 @@ function SEOHead() {
     /* ── Primary SEO ── */
     setMeta(
       "description",
-      "يوسف محمد درويش — المدير التنفيذي التقني (CTO) وشريك مؤسس في شركة QIROX Studio، مواليد 18 أغسطس 2000، مصري الجنسية. Youssef Mohamed Darwish, Chief Technology Officer & Co-Founder at QIROX Studio Saudi Arabia, born 18/08/2000, Egyptian."
+      "يوسف محمد درويش — المدير التنفيذي التقني (CTO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio، مواليد 18 أغسطس 2000، مصري الجنسية. Youssef Mohamed Darwish, Chief Technology Officer, Co-Founder and 41.75% owner at QIROX Studio Saudi Arabia, born 18/08/2000, Egyptian."
     );
     setMeta(
       "keywords",
@@ -47,10 +47,10 @@ function SEOHead() {
 
     /* ── Open Graph (profile type — critical for Google Knowledge Panel) ── */
     setMeta("og:type", "profile", true);
-    setMeta("og:title", "يوسف محمد درويش — CTO وشريك مؤسس | Youssef Mohamed Darwish", true);
+    setMeta("og:title", "يوسف محمد درويش — CTO وشريك ومالك | Youssef Mohamed Darwish", true);
     setMeta(
       "og:description",
-      "المدير التنفيذي التقني وشريك مؤسس في QIROX Studio. مصري. مواليد 18/08/2000. Chief Technology Officer & Co-Founder at QIROX Studio, Egyptian, born 18/08/2000.",
+      "المدير التنفيذي التقني والشريك المؤسس والمالك بنسبة 41.75% في QIROX Studio. مصري. مواليد 18/08/2000. Chief Technology Officer, Co-Founder and 41.75% owner at QIROX Studio, Egyptian, born 18/08/2000.",
       true
     );
     setMeta("og:url", PAGE, true);
@@ -69,10 +69,10 @@ function SEOHead() {
 
     /* ── Twitter Card ── */
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", "Youssef Mohamed Darwish — CTO & Co-Founder at QIROX Studio");
+    setMeta("twitter:title", "Youssef Mohamed Darwish — CTO, Partner & Co-Founder at QIROX Studio");
     setMeta(
       "twitter:description",
-      "Chief Technology Officer & Co-Founder at QIROX Studio, Saudi Arabia. يوسف محمد درويش، المدير التنفيذي التقني والشريك المؤسس، كيروكس ستوديو. Egyptian. Born 18/08/2000."
+      "Chief Technology Officer, Co-Founder and 41.75% owner at QIROX Studio, Saudi Arabia. يوسف محمد درويش، المدير التنفيذي التقني والشريك المؤسس والمالك، كيروكس ستوديو. Egyptian. Born 18/08/2000."
     );
     setMeta("twitter:image", HERO_IMG);
     setMeta("twitter:image:alt", "Youssef Mohamed Darwish CTO QIROX Studio");
@@ -117,8 +117,13 @@ function SEOHead() {
           "sameAs": "https://www.wikidata.org/wiki/Q79"
         },
         "description":
-          "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، المدير التنفيذي التقني (CTO) والشريك المؤسس في شركة QIROX Studio السعودية. يقود الفريق التقني ويشرف على بناء الأنظمة الرقمية المتكاملة لعملاء المنطقة. Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian technologist and entrepreneur, serving as Chief Technology Officer & Co-Founder of QIROX Studio, Saudi Arabia.",
+          "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، المدير التنفيذي التقني (CTO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio السعودية. يقود الفريق التقني ويشرف على بناء الأنظمة الرقمية المتكاملة لعملاء المنطقة. Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian technologist and entrepreneur, serving as Chief Technology Officer, Co-Founder and 41.75% owner of QIROX Studio, Saudi Arabia.",
         "jobTitle": ["Chief Technology Officer", "Co-Founder", "Partner"],
+        "additionalProperty": {
+          "@type": "PropertyValue",
+          "name": "Ownership stake in QIROX Studio",
+          "value": "41.75%"
+        },
         "hasOccupation": {
           "@type": "Occupation",
           "name": "Chief Technology Officer",
@@ -190,7 +195,7 @@ function SEOHead() {
         "url": PAGE,
         "name": "يوسف محمد درويش — Youssef Mohamed Darwish | QIROX Studio",
         "description":
-          "الصفحة الرسمية ليوسف محمد درويش، المدير التنفيذي التقني والشريك المؤسس في QIROX Studio. Official profile page of Youssef Mohamed Darwish, CTO & Co-Founder at QIROX Studio.",
+          "الصفحة الرسمية ليوسف محمد درويش، المدير التنفيذي التقني والشريك المؤسس والمالك بنسبة 41.75% في QIROX Studio. Official profile page of Youssef Mohamed Darwish, CTO, Co-Founder and 41.75% owner at QIROX Studio.",
         "mainEntity": { "@id": `${PAGE}#person` },
         "breadcrumb": {
           "@type": "BreadcrumbList",
@@ -214,7 +219,7 @@ function SEOHead() {
             "name": "من هو يوسف درويش؟",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، هو المدير التنفيذي التقني (CTO) والشريك المؤسس في شركة QIROX Studio السعودية. يقود الفريق التقني ويشرف على بناء المنصات الرقمية وأنظمة الذكاء الاصطناعي."
+              "text": "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، هو المدير التنفيذي التقني (CTO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio السعودية. يقود الفريق التقني ويشرف على بناء المنصات الرقمية وأنظمة الذكاء الاصطناعي."
             }
           },
           {
@@ -222,7 +227,7 @@ function SEOHead() {
             "name": "Who is Youssef Mohamed Darwish?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian entrepreneur and technologist serving as Chief Technology Officer (CTO) and Co-Founder at QIROX Studio, a leading Saudi technology company. He leads the technical vision and software engineering of the company."
+              "text": "Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian entrepreneur and technologist serving as Chief Technology Officer (CTO), Co-Founder and 41.75% owner at QIROX Studio. He leads the technical vision and software engineering of the company."
             }
           },
           {
@@ -348,9 +353,9 @@ const faqs = [
     q_ar: "من هو يوسف محمد درويش؟",
     q_en: "Who is Youssef Mohamed Darwish?",
     a_ar:
-      "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، المدير التنفيذي التقني (CTO) والشريك المؤسس في شركة QIROX Studio. يقود الرؤية التقنية ويشرف على بناء الأنظمة الرقمية المتكاملة.",
+      "يوسف محمد درويش (مواليد 18 أغسطس 2000) مصري الجنسية، المدير التنفيذي التقني (CTO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio. يقود الرؤية التقنية ويشرف على بناء الأنظمة الرقمية المتكاملة.",
     a_en:
-      "Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian entrepreneur and technologist serving as CTO & Co-Founder at QIROX Studio, Saudi Arabia. He leads the company's technical vision and software platforms.",
+      "Youssef Mohamed Darwish (born 18 August 2000) is an Egyptian entrepreneur and technologist serving as CTO, Co-Founder and 41.75% owner at QIROX Studio, Saudi Arabia. He leads the company's technical vision and software platforms.",
   },
   {
     q_ar: "ما منصبه في QIROX Studio؟",
@@ -438,6 +443,9 @@ export default function TeamYoussefDarwish() {
                 <span className="px-4 py-1.5 rounded-full border border-white/15 text-sm font-bold text-white/90 bg-white/5 backdrop-blur-sm">
                   Co-Founder · شريك مؤسس
                 </span>
+                <span className="px-4 py-1.5 rounded-full border border-white/15 text-sm font-bold text-white/90 bg-white/5 backdrop-blur-sm">
+                  Partner & Owner · 41.75%
+                </span>
               </div>
 
               {/* Quick facts row */}
@@ -457,7 +465,7 @@ export default function TeamYoussefDarwish() {
           <p className="text-white/25 text-xs tracking-widest whitespace-nowrap">
             يوسف درويش&nbsp;·&nbsp;يوسف محمد درويش&nbsp;·&nbsp;يوسف محمد محمود درويش&nbsp;·&nbsp;
             Youssef Darwish&nbsp;·&nbsp;Youssef Mohamed Darwish&nbsp;·&nbsp;Youssef Mohammed Darwish&nbsp;·&nbsp;
-            CTO QIROX&nbsp;·&nbsp;كيروكس ستوديو&nbsp;·&nbsp;المدير التنفيذي التقني&nbsp;·&nbsp;شريك مؤسس&nbsp;·&nbsp;مصر
+            CTO QIROX&nbsp;·&nbsp;كيروكس ستوديو&nbsp;·&nbsp;المدير التنفيذي التقني&nbsp;·&nbsp;شريك ومالك 41.75%&nbsp;·&nbsp;مصر
           </p>
         </section>
 
@@ -473,7 +481,7 @@ export default function TeamYoussefDarwish() {
               <p className="text-gray-600 leading-loose text-[15px] mb-4">
                 <strong className="text-black">يوسف محمد محمود درويش</strong> (مواليد{" "}
                 <strong className="text-black">18 أغسطس 2000</strong>، مصري الجنسية) هو المدير
-                التنفيذي التقني (CTO) والشريك المؤسس في{" "}
+                التنفيذي التقني (CTO) والشريك المؤسس والمالك بنسبة <strong className="text-black">41.75%</strong> في{" "}
                 <strong className="text-black">شركة QIROX Studio</strong>، إحدى شركات التقنية
                 الرائدة في المملكة العربية السعودية.
               </p>
@@ -497,7 +505,7 @@ export default function TeamYoussefDarwish() {
               <p className="text-gray-600 leading-loose text-[15px] mb-4">
                 <strong className="text-black">Youssef Mohamed Darwish</strong> (born{" "}
                 <strong className="text-black">18 August 2000</strong>, Egyptian) is the Chief
-                Technology Officer and Co-Founder at{" "}
+                Technology Officer, Co-Founder and 41.75% owner at{" "}
                 <strong className="text-black">QIROX Studio</strong>, a leading Saudi technology
                 company specializing in intelligent digital solutions.
               </p>
@@ -527,6 +535,7 @@ export default function TeamYoussefDarwish() {
                 { label_ar: "الجنسية", label_en: "Nationality", value_ar: "🇪🇬 مصري", value_en: "🇪🇬 Egyptian", icon: "" },
                 { label_ar: "تاريخ الميلاد", label_en: "Date of Birth", value_ar: "18 / 08 / 2000", value_en: "18 Aug 2000", icon: "📅" },
                 { label_ar: "المنصب", label_en: "Position", value_ar: "CTO · شريك مؤسس", value_en: "CTO · Co-Founder", icon: "💼" },
+                { label_ar: "حصة الملكية", label_en: "Ownership", value_ar: "41.75% · شريك ومالك", value_en: "41.75% · Partner & Owner", icon: "🤝" },
                 { label_ar: "الشركة", label_en: "Company", value_ar: "كيروكس ستوديو", value_en: "QIROX Studio", icon: "🏢" },
                 { label_ar: "موقع العمل", label_en: "Based In", value_ar: "الرياض، السعودية", value_en: "Riyadh, Saudi Arabia", icon: "📍" },
                 { label_ar: "المجال", label_en: "Industry", value_ar: "تقنية المعلومات", value_en: "Information Technology", icon: "💻" },
@@ -662,7 +671,7 @@ export default function TeamYoussefDarwish() {
             يوسف درويش | يوسف محمد درويش | يوسف محمد محمود درويش | يوسف درويش كيروكس |
             Youssef Darwish | Youssef Mohamed Darwish | Youssef Mohammed Darwish |
             Youssef M. Darwish | youssef darwish cto | youssef darwish qirox |
-            CTO QIROX Studio | Chief Technology Officer QIROX | Co-Founder QIROX |
+            CTO QIROX Studio | Chief Technology Officer QIROX | Co-Founder QIROX | Partner & Owner 41.75% |
             مصري | Egyptian | مواليد 18 أغسطس 2000 | born August 18 2000 |
             المدير التنفيذي التقني | شريك مؤسس | تقنية | ذكاء اصطناعي |
             الرياض السعودية | Riyadh Saudi Arabia | QIROX Studio Saudi Arabia

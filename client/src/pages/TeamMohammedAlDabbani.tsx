@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * SEO + AEO Head — Mohammed Ali Al-Dabbani (CEO & Co-Founder, QIROX Studio)
+ * SEO + AEO Head — Mohammed bin Ali Al-Dabbani (CEO, Co-Founder & Partner, QIROX Studio)
  * Injects: Person · ProfilePage · FAQPage · BreadcrumbList schemas
  * ───────────────────────────────────────────────────────────────────────────── */
 function SEOHead() {
@@ -11,7 +11,7 @@ function SEOHead() {
     const HERO_IMG = `${BASE}/mohammed-aldabbani-ceo.jpg`;
 
     document.title =
-      "محمد الدباني — الرئيس التنفيذي وشريك مؤسس | QIROX Studio | Mohammed Aldabbani CEO & Co-Founder";
+      "محمد بن علي الدباني — الرئيس التنفيذي وشريك ومالك | QIROX Studio | Mohammed bin Ali Al-Dabbani CEO & Partner";
 
     const setMeta = (key: string, value: string, prop = false) => {
       const attr = prop ? "property" : "name";
@@ -22,23 +22,23 @@ function SEOHead() {
 
     /* ── Primary SEO ── */
     setMeta("description",
-      "محمد الدباني — الرئيس التنفيذي (CEO) وشريك مؤسس في شركة QIROX Studio، المملكة العربية السعودية. يقود الرؤية الاستراتيجية ومسيرة الشركة نحو الريادة التقنية. Mohammed Aldabbani, Chief Executive Officer & Co-Founder at QIROX Studio, Saudi Arabia.");
+      "محمد بن علي الدباني — الرئيس التنفيذي (CEO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio، المملكة العربية السعودية. يقود الرؤية الاستراتيجية ومسيرة الشركة نحو الريادة التقنية. Mohammed bin Ali Al-Dabbani, Chief Executive Officer, Co-Founder and 41.75% owner at QIROX Studio, Saudi Arabia.");
     setMeta("keywords",
-      "محمد الدباني, محمد علي الدباني, محمد الدبانى, الدباني كيروكس, الرئيس التنفيذي كيروكس, CEO كيروكس, شريك مؤسس كيروكس, Mohammed Aldabbani, Mohammed Ali Al-Dabbani, Mohammed Al-Dabbani, mohmmed aldbani, mohammed aldabbani ceo, mohammed aldabbani qirox, QIROX CEO, كيروكس ستوديو");
+      "محمد بن علي الدباني, محمد الدباني, محمد علي الدباني, محمد الدبانى, الدباني كيروكس, الرئيس التنفيذي كيروكس, CEO كيروكس, شريك مؤسس كيروكس, Mohammed bin Ali Al-Dabbani, Mohammed Aldabbani, Mohammed Ali Al-Dabbani, Mohammed Al-Dabbani, mohmmed aldbani, mohammed aldabbani ceo, mohammed aldabbani qirox, QIROX CEO, كيروكس ستوديو");
     setMeta("robots", "index, follow, max-image-preview:large, max-snippet:-1");
-    setMeta("author", "Mohammed Aldabbani — QIROX Studio");
+    setMeta("author", "Mohammed bin Ali Al-Dabbani — QIROX Studio");
 
     /* ── Open Graph ── */
     setMeta("og:type", "profile", true);
-    setMeta("og:title", "محمد الدباني — CEO وشريك مؤسس | Mohammed Aldabbani | QIROX Studio", true);
+    setMeta("og:title", "محمد بن علي الدباني — CEO وشريك ومالك | Mohammed bin Ali Al-Dabbani | QIROX Studio", true);
     setMeta("og:description",
-      "الرئيس التنفيذي والشريك المؤسس في QIROX Studio، المملكة العربية السعودية. Chief Executive Officer & Co-Founder at QIROX Studio, Saudi Arabia.", true);
+      "الرئيس التنفيذي والشريك المؤسس والمالك بنسبة 41.75% في QIROX Studio، المملكة العربية السعودية. Chief Executive Officer, Co-Founder and 41.75% owner at QIROX Studio, Saudi Arabia.", true);
     setMeta("og:url", PAGE, true);
     setMeta("og:image", HERO_IMG, true);
     setMeta("og:image:secure_url", HERO_IMG, true);
     setMeta("og:image:width", "1080", true);
     setMeta("og:image:height", "1350", true);
-    setMeta("og:image:alt", "Mohammed Aldabbani CEO & Co-Founder QIROX Studio — محمد الدباني الرئيس التنفيذي كيروكس", true);
+    setMeta("og:image:alt", "Mohammed bin Ali Al-Dabbani CEO, Co-Founder & Partner QIROX Studio — محمد بن علي الدباني الرئيس التنفيذي كيروكس", true);
     setMeta("og:image:type", "image/jpeg", true);
     setMeta("og:site_name", "QIROX Studio", true);
     setMeta("og:locale", "ar_SA", true);
@@ -49,11 +49,11 @@ function SEOHead() {
 
     /* ── Twitter Card ── */
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", "Mohammed Aldabbani — CEO & Co-Founder at QIROX Studio");
+    setMeta("twitter:title", "Mohammed bin Ali Al-Dabbani — CEO, Partner & Co-Founder at QIROX Studio");
     setMeta("twitter:description",
-      "Chief Executive Officer & Co-Founder at QIROX Studio, Saudi Arabia. محمد الدباني، الرئيس التنفيذي والشريك المؤسس، كيروكس ستوديو.");
+      "Chief Executive Officer, Co-Founder and 41.75% owner at QIROX Studio, Saudi Arabia. محمد بن علي الدباني، الرئيس التنفيذي والشريك المؤسس والمالك، كيروكس ستوديو.");
     setMeta("twitter:image", HERO_IMG);
-    setMeta("twitter:image:alt", "Mohammed Aldabbani CEO QIROX Studio");
+    setMeta("twitter:image:alt", "Mohammed bin Ali Al-Dabbani CEO QIROX Studio");
 
     /* ── Canonical ── */
     let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
@@ -67,7 +67,7 @@ function SEOHead() {
         "@context": "https://schema.org",
         "@type": "Person",
         "@id": `${PAGE}#person`,
-        "name": "Mohammed Aldabbani",
+        "name": "Mohammed bin Ali Al-Dabbani",
         "alternateName": [
           "محمد الدباني",
           "محمد علي الدباني",
@@ -78,7 +78,7 @@ function SEOHead() {
           "محمد الدباني CEO",
           "محمد الدباني كيروكس"
         ],
-        "givenName": "Mohammed Ali",
+        "givenName": "Mohammed bin Ali",
         "familyName": "Al-Dabbani",
         "nationality": {
           "@type": "Country",
@@ -91,8 +91,13 @@ function SEOHead() {
           "sameAs": "https://www.wikidata.org/wiki/Q851"
         },
         "description":
-          "محمد الدباني الرئيس التنفيذي (CEO) والشريك المؤسس في شركة QIROX Studio السعودية. يقود الرؤية الاستراتيجية للشركة ويوجّه مسيرتها نحو الريادة في التقنية والأنظمة الرقمية. Mohammed Aldabbani is the Chief Executive Officer and Co-Founder of QIROX Studio, a leading Saudi technology company. He drives the company's strategic vision and business growth.",
+          "محمد بن علي الدباني الرئيس التنفيذي (CEO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio السعودية. يقود الرؤية الاستراتيجية للشركة ويوجّه مسيرتها نحو الريادة في التقنية والأنظمة الرقمية. Mohammed bin Ali Al-Dabbani is the Chief Executive Officer, Co-Founder and 41.75% owner of QIROX Studio, a Saudi technology company.",
         "jobTitle": ["Chief Executive Officer", "Co-Founder", "Partner"],
+        "additionalProperty": {
+          "@type": "PropertyValue",
+          "name": "Ownership stake in QIROX Studio",
+          "value": "41.75%"
+        },
         "hasOccupation": {
           "@type": "Occupation",
           "name": "Chief Executive Officer",
@@ -108,8 +113,8 @@ function SEOHead() {
           {
             "@type": "ImageObject",
             "url": `${BASE}/mohammed-aldabbani-ceo.jpg`,
-            "name": "Mohammed Aldabbani CEO QIROX Studio official portrait — محمد الدباني الرئيس التنفيذي كيروكس",
-            "description": "محمد الدباني الرئيس التنفيذي والشريك المؤسس كيروكس ستوديو — صورة رسمية",
+            "name": "Mohammed bin Ali Al-Dabbani CEO QIROX Studio official portrait — محمد بن علي الدباني الرئيس التنفيذي كيروكس",
+            "description": "محمد بن علي الدباني الرئيس التنفيذي والشريك المؤسس والمالك في كيروكس ستوديو — صورة رسمية",
             "representativeOfPage": true
           }
         ],
@@ -137,16 +142,16 @@ function SEOHead() {
         "@type": "ProfilePage",
         "@id": PAGE,
         "url": PAGE,
-        "name": "محمد الدباني — Mohammed Aldabbani | QIROX Studio",
+        "name": "محمد بن علي الدباني — Mohammed bin Ali Al-Dabbani | QIROX Studio",
         "description":
-          "الصفحة الرسمية لمحمد الدباني، الرئيس التنفيذي والشريك المؤسس في QIROX Studio. Official profile of Mohammed Aldabbani, CEO & Co-Founder at QIROX Studio.",
+          "الصفحة الرسمية لمحمد بن علي الدباني، الرئيس التنفيذي والشريك المؤسس والمالك بنسبة 41.75% في QIROX Studio. Official profile of Mohammed bin Ali Al-Dabbani, CEO, Co-Founder and 41.75% owner at QIROX Studio.",
         "mainEntity": { "@id": `${PAGE}#person` },
         "breadcrumb": {
           "@type": "BreadcrumbList",
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "QIROX Studio", "item": BASE },
             { "@type": "ListItem", "position": 2, "name": "فريق العمل | Team", "item": `${BASE}/about` },
-            { "@type": "ListItem", "position": 3, "name": "محمد الدباني — Mohammed Aldabbani", "item": PAGE }
+            { "@type": "ListItem", "position": 3, "name": "محمد بن علي الدباني — Mohammed bin Ali Al-Dabbani", "item": PAGE }
           ]
         },
         "inLanguage": ["ar", "en"],
@@ -163,7 +168,7 @@ function SEOHead() {
             "name": "من هو محمد الدباني؟",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "محمد الدباني هو الرئيس التنفيذي (CEO) والشريك المؤسس في شركة QIROX Studio، إحدى شركات التقنية الرائدة في المملكة العربية السعودية. يقود الرؤية الاستراتيجية للشركة ويوجّه مسيرتها نحو الريادة في الأنظمة الرقمية والذكاء الاصطناعي."
+              "text": "محمد بن علي الدباني هو الرئيس التنفيذي (CEO) والشريك المؤسس والمالك بنسبة 41.75% في شركة QIROX Studio. يقود الرؤية الاستراتيجية للشركة ويوجّه مسيرتها نحو الريادة في الأنظمة الرقمية والذكاء الاصطناعي."
             }
           },
           {
@@ -171,7 +176,7 @@ function SEOHead() {
             "name": "Who is Mohammed Aldabbani?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Mohammed Aldabbani is the Chief Executive Officer (CEO) and Co-Founder at QIROX Studio, a leading Saudi technology company. He drives the company's strategic vision and growth, serving clients across Saudi Arabia and the Gulf region."
+              "text": "Mohammed bin Ali Al-Dabbani is the Chief Executive Officer (CEO), Co-Founder and 41.75% owner at QIROX Studio. He drives the company's strategic vision and growth across Saudi Arabia and the Gulf region."
             }
           },
           {
@@ -306,8 +311,8 @@ export default function TeamMohammedAlDabbani() {
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-white/0 scale-105 blur-lg" />
               <img
                 src="/mohammed-aldabbani-ceo.jpg"
-                alt="محمد الدباني الرئيس التنفيذي وشريك مؤسس كيروكس ستوديو — Mohammed Aldabbani CEO & Co-Founder QIROX Studio"
-                title="Mohammed Aldabbani — Chief Executive Officer & Co-Founder at QIROX Studio"
+                alt="محمد بن علي الدباني الرئيس التنفيذي وشريك مؤسس ومالك كيروكس ستوديو — Mohammed bin Ali Al-Dabbani CEO, Co-Founder & Partner QIROX Studio"
+                title="Mohammed bin Ali Al-Dabbani — Chief Executive Officer, Co-Founder & Partner at QIROX Studio"
                 className="relative w-52 h-64 md:w-64 md:h-80 object-cover object-top rounded-2xl border border-white/10 shadow-2xl"
                 loading="eager"
                 fetchPriority="high"
@@ -327,13 +332,13 @@ export default function TeamMohammedAlDabbani() {
 
               {/* Arabic name — largest for Arabic Google */}
               <h1 className="text-5xl md:text-6xl font-black leading-tight mb-2" itemProp="alternateName">
-                محمد الدباني
+                محمد بن علي الدباني
               </h1>
               <h2 className="text-xl md:text-2xl font-bold text-white/60 mb-1" itemProp="name">
-                Mohammed Aldabbani
+                Mohammed bin Ali Al-Dabbani
               </h2>
               <p className="text-sm text-white/30 mb-6">
-                Mohammed Ali Al-Dabbani · محمد علي الدباني
+                Mohammed bin Ali Al-Dabbani · محمد بن علي الدباني
               </p>
 
               {/* Role badges */}
@@ -343,6 +348,9 @@ export default function TeamMohammedAlDabbani() {
                 </span>
                 <span className="px-4 py-1.5 rounded-full border border-white/15 text-sm font-bold text-white/90 bg-white/5 backdrop-blur-sm">
                   Co-Founder · شريك مؤسس
+                </span>
+                <span className="px-4 py-1.5 rounded-full border border-white/15 text-sm font-bold text-white/90 bg-white/5 backdrop-blur-sm">
+                  Partner & Owner · 41.75%
                 </span>
               </div>
 
@@ -376,8 +384,8 @@ export default function TeamMohammedAlDabbani() {
                 <h2 className="text-2xl font-black text-black">من هو محمد الدباني؟</h2>
               </div>
               <p className="text-gray-600 leading-loose text-[15px] mb-4">
-                <strong className="text-black">محمد علي الدباني</strong>، سعودي الجنسية، الرئيس التنفيذي (CEO)
-                والشريك المؤسس في <strong className="text-black">شركة QIROX Studio</strong>، إحدى شركات
+                <strong className="text-black">محمد بن علي الدباني</strong>، سعودي الجنسية، الرئيس التنفيذي (CEO)
+                والشريك المؤسس والمالك بنسبة <strong className="text-black">41.75%</strong> في <strong className="text-black">شركة QIROX Studio</strong>، إحدى شركات
                 التقنية الرائدة في المملكة العربية السعودية المتخصصة في بناء الأنظمة الرقمية الذكية.
               </p>
               <p className="text-gray-600 leading-loose text-[15px] mb-4">
@@ -396,8 +404,8 @@ export default function TeamMohammedAlDabbani() {
                 <h2 className="text-2xl font-black text-black">About Mohammed Aldabbani</h2>
               </div>
               <p className="text-gray-600 leading-loose text-[15px] mb-4">
-                <strong className="text-black">Mohammed Ali Al-Dabbani</strong>, Saudi national, is the
-                Chief Executive Officer (CEO) and Co-Founder of{" "}
+                <strong className="text-black">Mohammed bin Ali Al-Dabbani</strong>, Saudi national, is the
+                Chief Executive Officer (CEO), Co-Founder and 41.75% owner of{" "}
                 <strong className="text-black">QIROX Studio</strong>, a leading Saudi technology company
                 specializing in intelligent digital solutions.
               </p>
@@ -422,9 +430,10 @@ export default function TeamMohammedAlDabbani() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label_ar: "الاسم الكامل", label_en: "Full Name", value_ar: "محمد علي الدباني", value_en: "Mohammed Ali Al-Dabbani" },
+                { label_ar: "الاسم الكامل", label_en: "Full Name", value_ar: "محمد بن علي الدباني", value_en: "Mohammed bin Ali Al-Dabbani" },
                 { label_ar: "الجنسية", label_en: "Nationality", value_ar: "🇸🇦 سعودي", value_en: "🇸🇦 Saudi Arabian" },
                 { label_ar: "المنصب", label_en: "Position", value_ar: "CEO · شريك مؤسس", value_en: "CEO · Co-Founder" },
+                { label_ar: "حصة الملكية", label_en: "Ownership", value_ar: "41.75% · شريك ومالك", value_en: "41.75% · Partner & Owner" },
                 { label_ar: "الشركة", label_en: "Company", value_ar: "كيروكس ستوديو", value_en: "QIROX Studio" },
                 { label_ar: "موقع العمل", label_en: "Based In", value_ar: "الرياض، السعودية", value_en: "Riyadh, Saudi Arabia" },
                 { label_ar: "المجال", label_en: "Industry", value_ar: "تقنية المعلومات", value_en: "Information Technology" },
@@ -456,16 +465,16 @@ export default function TeamMohammedAlDabbani() {
               <div className="overflow-hidden rounded-2xl bg-gray-100">
                 <img
                   src="/mohammed-aldabbani-ceo.jpg"
-                  alt="محمد الدباني الرئيس التنفيذي وشريك مؤسس كيروكس ستوديو السعودية — Mohammed Aldabbani CEO Co-Founder QIROX Studio Saudi Arabia"
-                  title="Mohammed Ali Al-Dabbani — CEO & Co-Founder, QIROX Studio"
+                  alt="محمد بن علي الدباني الرئيس التنفيذي وشريك مؤسس ومالك كيروكس ستوديو السعودية — Mohammed bin Ali Al-Dabbani CEO Co-Founder Partner QIROX Studio Saudi Arabia"
+                  title="Mohammed bin Ali Al-Dabbani — CEO, Co-Founder & Partner, QIROX Studio"
                   className="w-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                   loading="eager"
                   itemProp="image"
                 />
               </div>
               <figcaption className="text-center mt-4">
-                <p className="font-black text-black text-sm">محمد الدباني — الرئيس التنفيذي، كيروكس ستوديو</p>
-                <p className="text-gray-400 text-xs mt-0.5">Mohammed Aldabbani — CEO & Co-Founder, QIROX Studio</p>
+                <p className="font-black text-black text-sm">محمد بن علي الدباني — الرئيس التنفيذي، كيروكس ستوديو</p>
+                <p className="text-gray-400 text-xs mt-0.5">Mohammed bin Ali Al-Dabbani — CEO, Co-Founder & Partner, QIROX Studio</p>
               </figcaption>
             </figure>
           </div>
@@ -502,9 +511,9 @@ export default function TeamMohammedAlDabbani() {
                 alt="محمد الدباني CEO كيروكس"
                 className="w-20 h-20 rounded-full object-cover object-top mx-auto mb-4 border-2 border-white/10"
               />
-              <p className="font-black text-white text-base">محمد الدباني</p>
-              <p className="text-white/40 text-xs">Mohammed Aldabbani</p>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white/10 text-[11px] font-bold text-white">CEO · Co-Founder</span>
+              <p className="font-black text-white text-base">محمد بن علي الدباني</p>
+              <p className="text-white/40 text-xs">Mohammed bin Ali Al-Dabbani</p>
+              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white/10 text-[11px] font-bold text-white">CEO · Partner · 41.75%</span>
             </div>
             {/* Youssef card — link */}
             <a href="/youssef-darwish" className="bg-gray-50 border border-black/[0.06] rounded-2xl p-6 text-center hover:shadow-md transition-shadow block">
@@ -515,7 +524,7 @@ export default function TeamMohammedAlDabbani() {
               />
               <p className="font-black text-black text-base">يوسف محمد درويش</p>
               <p className="text-black/40 text-xs">Youssef Mohamed Darwish</p>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-black/[0.06] text-[11px] font-bold text-black/60">CTO · Co-Founder</span>
+              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-black/[0.06] text-[11px] font-bold text-black/60">CTO · Partner · 41.75%</span>
             </a>
           </div>
         </section>
@@ -561,10 +570,10 @@ export default function TeamMohammedAlDabbani() {
         {/* ── HIDDEN SEO text block ── */}
         <div style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0.001 }} aria-hidden="true">
           <p>
-            محمد الدباني | محمد علي الدباني | محمد الدبانى | الدباني كيروكس |
-            Mohammed Aldabbani | Mohammed Ali Al-Dabbani | Mohammed Al-Dabbani |
+            محمد بن علي الدباني | محمد الدباني | محمد علي الدباني | محمد الدبانى | الدباني كيروكس |
+            Mohammed bin Ali Al-Dabbani | Mohammed Aldabbani | Mohammed Ali Al-Dabbani | Mohammed Al-Dabbani |
             mohmmed aldbani | CEO QIROX Studio | Chief Executive Officer QIROX |
-            Co-Founder QIROX | شريك مؤسس كيروكس | الرئيس التنفيذي كيروكس |
+            Co-Founder QIROX | Partner & Owner 41.75% | شريك مؤسس ومالك 41.75% كيروكس | الرئيس التنفيذي كيروكس |
             سعودي | Saudi Arabian | الرياض السعودية | Riyadh Saudi Arabia |
             QIROX Studio Saudi Arabia | كيروكس ستوديو | مؤسس كيروكس
           </p>

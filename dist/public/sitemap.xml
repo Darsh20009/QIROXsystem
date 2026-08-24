@@ -141,13 +141,13 @@
   <!-- ═══ Executive Profile Pages (high priority — Person entity SEO) ═══ -->
   <url>
     <loc>https://qiroxstudio.online/youssef-darwish</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
       <image:loc>https://qiroxstudio.online/youssef-darwish-cto-qirox-1.jpg</image:loc>
-      <image:title>يوسف محمد درويش المدير التنفيذي التقني وشريك مؤسس كيروكس — Youssef Mohamed Darwish CTO Co-Founder QIROX Studio</image:title>
-      <image:caption>يوسف درويش — المدير التنفيذي التقني والشريك المؤسس، كيروكس ستوديو | Youssef Darwish CTO & Co-Founder QIROX Studio</image:caption>
+      <image:title>يوسف محمد درويش المدير التنفيذي التقني وشريك ومالك كيروكس — Youssef Mohamed Darwish CTO Partner QIROX Studio</image:title>
+      <image:caption>يوسف درويش — المدير التنفيذي التقني والشريك المؤسس والمالك بنسبة 41.75%، كيروكس ستوديو | Youssef Darwish CTO, Co-Founder & 41.75% owner QIROX Studio</image:caption>
       <image:geo_location>Riyadh, Saudi Arabia</image:geo_location>
       <image:license>https://qiroxstudio.online/youssef-darwish</image:license>
     </image:image>
@@ -169,27 +169,27 @@
   </url>
   <url>
     <loc>https://qiroxstudio.online/team/youssef-darwish</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
 
   <url>
     <loc>https://qiroxstudio.online/mohammed-aldabbani</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
       <image:loc>https://qiroxstudio.online/mohammed-aldabbani-ceo.jpg</image:loc>
-      <image:title>محمد الدباني الرئيس التنفيذي وشريك مؤسس كيروكس — Mohammed Aldabbani CEO Co-Founder QIROX Studio Saudi Arabia</image:title>
-      <image:caption>محمد الدباني — الرئيس التنفيذي والشريك المؤسس، كيروكس ستوديو | Mohammed Aldabbani CEO & Co-Founder QIROX Studio</image:caption>
+      <image:title>محمد بن علي الدباني الرئيس التنفيذي وشريك ومالك كيروكس — Mohammed bin Ali Al-Dabbani CEO Partner QIROX Studio Saudi Arabia</image:title>
+      <image:caption>محمد بن علي الدباني — الرئيس التنفيذي والشريك المؤسس والمالك بنسبة 41.75%، كيروكس ستوديو | Mohammed bin Ali Al-Dabbani CEO, Co-Founder & 41.75% owner QIROX Studio</image:caption>
       <image:geo_location>Riyadh, Saudi Arabia</image:geo_location>
       <image:license>https://qiroxstudio.online/mohammed-aldabbani</image:license>
     </image:image>
   </url>
   <url>
     <loc>https://qiroxstudio.online/team/mohammed-aldabbani</loc>
-    <lastmod>2026-08-10</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
