@@ -203,6 +203,7 @@ async function getPushChallenge(challengeId: string) {
   return { userId: doc.userId, number: doc.number, status: doc.status as "pending"|"approved"|"denied", tempToken: doc.tempToken, expiresAt: doc.expiresAt.getTime(), deviceInfo: doc.deviceInfo };
 }
 async function setPushChallenge(challengeId: string, data: { userId: string; number: number; status: "pending"|"approved"|"denied"; tempToken: string; expiresAt: number; deviceInfo?: string }) {
+  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.findOneAndUpdate(
     { challengeId },
     { challengeId, ...data, expiresAt: new Date(data.expiresAt) },
@@ -210,9 +211,11 @@ async function setPushChallenge(challengeId: string, data: { userId: string; num
   );
 }
 async function updatePushChallengeStatus(challengeId: string, status: "approved"|"denied") {
+  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.updateOne({ challengeId }, { status });
 }
 async function deletePushChallenge(challengeId: string) {
+  const { PushChallengeModel } = await import("./models");
   await PushChallengeModel.deleteOne({ challengeId });
 }
 
