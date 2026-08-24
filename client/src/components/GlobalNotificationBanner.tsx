@@ -77,7 +77,21 @@ export function GlobalNotificationBanner() {
     mutationFn: async (id: string) => {
       await apiRequest("PATCH", `/api/notifications/${id}/read`, {});
     },
+    onMutate: (id: string) => {
+      // Optimistically remove it from the banner so a background refetch
+      // cannot flash the same notification back while the request is pending.
+      queryClient.setQueryData<any[]>(["/api/notifications"], (current = []) =>
+        current.map(n => n.id === id ? { ...n, read: true } : n)
+      );
+      queryClient.setQueryData<{ count: number }>(["/api/notifications/unread-count"], (current) =>
+        current ? { count: Math.max(0, (current.count || 0) - 1) } : current
+      );
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+    },
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
     },
@@ -109,6 +123,9 @@ export function GlobalNotificationBanner() {
       setVisible(false);
       return;
     }
+    // Closing (including the automatic 10-second dismissal) means the
+    // employee has seen it. Persist that state so it does not return.
+    markReadMutation.mutate(id);
     setDismissedIds(prev => new Set([...prev, id]));
     const remaining = activeNotifications.filter(n => n.id !== id);
     if (remaining.length === 0) {
@@ -116,7 +133,7 @@ export function GlobalNotificationBanner() {
     } else {
       setCurrentIndex(0);
     }
-  }, [activeNotifications]);
+  }, [activeNotifications, markReadMutation]);
 
   const handleClick = (n: any) => {
     markReadMutation.mutate(n.id);
