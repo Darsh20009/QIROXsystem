@@ -51,6 +51,24 @@ const contactLimiter = rateLimit({
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
 
+const storeWhatsAppRateBuckets = new Map<string, { startedAt: number; count: number }>();
+function consumeStoreWhatsAppRateLimit(keyId: string, configuredLimit: number) {
+  const now = Date.now();
+  const limit = Math.min(Math.max(Math.floor(configuredLimit || 30), 1), 300);
+  const current = storeWhatsAppRateBuckets.get(keyId);
+  const bucket = !current || now - current.startedAt >= 60_000
+    ? { startedAt: now, count: 0 }
+    : current;
+  bucket.count += 1;
+  storeWhatsAppRateBuckets.set(keyId, bucket);
+  return {
+    allowed: bucket.count <= limit,
+    limit,
+    remaining: Math.max(0, limit - bucket.count),
+    resetAt: bucket.startedAt + 60_000,
+  };
+}
+
 const QR_LOGIN_TOKEN_PATTERN = /^qrl_[a-f0-9]{64}$/i;
 const QR_LOGIN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -4184,16 +4202,26 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
     const { ClientApiKeyModel } = await import("./models");
-    const { name, projectName, scopes, expiresAt, allowedOrigins } = req.body;
+    const { name, projectName, scopes, expiresAt, allowedOrigins, storeId } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: "اسم المفتاح مطلوب" });
 
     // Limit 10 active keys per client
     const count = await ClientApiKeyModel.countDocuments({ clientId: me._id || me.id, isActive: true });
     if (count >= 10) return res.status(400).json({ error: "الحد الأقصى 10 مفاتيح نشطة" });
 
-    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers", "subscriptions", "support", "files", "notifications"];
+    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers", "subscriptions", "support", "files", "notifications", "whatsapp"];
     const cleanScopes = Array.isArray(scopes) ? scopes.filter((s: string) => VALID_SCOPES.includes(s)) : ["orders", "projects", "invoices", "stats"];
     if (cleanScopes.length === 0) return res.status(400).json({ error: "يجب اختيار صلاحية واحدة على الأقل" });
+
+    let linkedStoreId: string | null = storeId ? String(storeId) : null;
+    if (linkedStoreId) {
+      const { ClientStoreModel } = await import("./models");
+      const store = await (ClientStoreModel as any).findOne({ _id: linkedStoreId, clientId: me._id || me.id }).select("_id");
+      if (!store) return res.status(400).json({ error: "المتجر غير موجود أو لا يتبع حسابك" });
+    }
+    if (cleanScopes.includes("whatsapp") && !linkedStoreId) {
+      return res.status(400).json({ error: "صلاحية واتساب تتطلب ربط المفتاح بمتجر" });
+    }
 
     const rawKey = "qrx_live_" + crypto.randomBytes(28).toString("hex");
     const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
@@ -4202,6 +4230,7 @@ export async function registerRoutes(
     try {
       const doc = await ClientApiKeyModel.create({
         clientId: me._id || me.id,
+        storeId: linkedStoreId,
         name: name.trim(),
         projectName: (projectName || "").trim(),
         keyHash, keyPrefix,
@@ -4222,12 +4251,25 @@ export async function registerRoutes(
     const { ClientApiKeyModel } = await import("./models");
     const doc = await ClientApiKeyModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
     if (!doc) return res.sendStatus(404);
-    const { name, isActive, scopes, allowedOrigins, projectName } = req.body;
+    const { name, isActive, scopes, allowedOrigins, projectName, storeId } = req.body;
     if (name !== undefined) doc.name = name;
     if (projectName !== undefined) doc.projectName = projectName;
     if (isActive !== undefined) doc.isActive = isActive;
     if (scopes !== undefined) doc.scopes = scopes;
     if (allowedOrigins !== undefined) doc.allowedOrigins = allowedOrigins;
+    if (storeId !== undefined) {
+      if (storeId) {
+        const { ClientStoreModel } = await import("./models");
+        const store = await (ClientStoreModel as any).findOne({ _id: String(storeId), clientId: me._id || me.id }).select("_id");
+        if (!store) return res.status(400).json({ error: "المتجر غير موجود أو لا يتبع حسابك" });
+        doc.storeId = store._id;
+      } else {
+        doc.storeId = null;
+      }
+    }
+    if (Array.isArray(doc.scopes) && doc.scopes.includes("whatsapp") && !doc.storeId) {
+      return res.status(400).json({ error: "صلاحية واتساب تتطلب ربط المفتاح بمتجر" });
+    }
     await doc.save();
     res.json(doc.toJSON());
   });
@@ -4601,6 +4643,155 @@ export async function registerRoutes(
       seen.add(key); return true;
     }).map((o: any) => ({ name: o.customerName, email: o.customerEmail, phone: o.customerPhone, firstOrderAt: o.createdAt }));
     res.json({ total: customers.length, data: customers });
+  });
+
+  // ── Store WhatsApp API ─────────────────────────────────────────────────────
+  // A key is bound to exactly one store for this namespace. Each request is
+  // one outbound message; batching/repetition is intentionally not supported.
+  app.post("/api/v1/stores/whatsapp/messages", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "whatsapp", res)) return;
+
+    const storeId = String(ctx.keyDoc.storeId || "");
+    if (!storeId) return res.status(403).json({ error: "API key is not bound to a store" });
+
+    const { ClientStoreModel, NotificationDeliveryModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findOne({
+      _id: storeId,
+      clientId: ctx.clientId,
+      status: "active",
+    }).select("_id storeNameAr storeNameEn status subdomain");
+    if (!store) {
+      return res.status(403).json({ error: "Store is not found, not owned by this key, or not active" });
+    }
+
+    const recipient = req.body?.recipient || {};
+    const rawPhone = String(recipient.phone || req.body?.phone || "").trim();
+    const phone = normalizePhone(rawPhone);
+    const message = String(req.body?.message || "").trim();
+    const suppliedIdempotencyKey = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
+    if (!phone.valid) return res.status(400).json({ error: phone.reason || "A valid recipient phone is required" });
+    if (!message) return res.status(400).json({ error: "Message is required" });
+    if (message.length > 4000) return res.status(400).json({ error: "Message must not exceed 4000 characters" });
+    if (suppliedIdempotencyKey.length < 8 || suppliedIdempotencyKey.length > 160) {
+      return res.status(400).json({ error: "Idempotency-Key must be between 8 and 160 characters" });
+    }
+
+    const idempotencyKey = `store-whatsapp:${storeId}:${suppliedIdempotencyKey}`;
+    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({
+      phone: phone.e164,
+      message,
+      name: String(recipient.name || "").trim().slice(0, 160),
+    })).digest("hex");
+    const existing = await NotificationDeliveryModel.findOne({
+      idempotencyKey,
+      channel: "whatsapp",
+      storeId,
+    });
+    if (existing) {
+      if (String((existing as any).metadata?.payloadHash || "") !== payloadHash) {
+        return res.status(409).json({ error: "Idempotency-Key was already used with a different message", code: "IDEMPOTENCY_CONFLICT" });
+      }
+      return res.status(200).json({
+        ok: true,
+        replayed: true,
+        delivery: {
+          id: String(existing._id),
+          channel: existing.channel,
+          status: existing.status,
+          provider: existing.provider || null,
+          providerMessageId: existing.providerMessageId || null,
+          attempts: existing.attempts,
+          sentAt: existing.sentAt || null,
+          lastError: existing.lastError || null,
+          createdAt: existing.createdAt,
+        },
+      });
+    }
+
+    const health: any = await getNotificationHealth().catch(() => null);
+    const whatsappHealth = health?.whatsapp;
+    if (!whatsappHealth?.configured) {
+      return res.status(503).json({ error: "WhatsApp provider is not configured", code: "WHATSAPP_NOT_CONFIGURED" });
+    }
+    if (whatsappHealth.provider !== "meta" && whatsappHealth.status?.status !== "connected") {
+      return res.status(503).json({ error: "QIROX WhatsApp is not connected", code: "WHATSAPP_NOT_CONNECTED" });
+    }
+
+    const rate = consumeStoreWhatsAppRateLimit(String(ctx.keyDoc._id), Number(ctx.keyDoc.rateLimitPerMinute) || 30);
+    res.setHeader("X-RateLimit-Limit", String(rate.limit));
+    res.setHeader("X-RateLimit-Remaining", String(rate.remaining));
+    res.setHeader("X-RateLimit-Reset", String(Math.ceil(rate.resetAt / 1000)));
+    if (!rate.allowed) {
+      return res.status(429).json({ error: "WhatsApp rate limit exceeded", code: "RATE_LIMITED", retryAfterSeconds: Math.ceil((rate.resetAt - Date.now()) / 1000) });
+    }
+
+    try {
+      const deliveries = await dispatchNotification({
+        event: "store_whatsapp_message",
+        idempotencyKey,
+        storeId,
+        recipient: {
+          name: String(recipient.name || "").trim().slice(0, 160),
+          phone: phone.e164,
+        },
+        subject: "Store WhatsApp message",
+        message,
+        channels: ["whatsapp"],
+        metadata: {
+          source: "store_whatsapp_api",
+          storeId,
+          keyId: String(ctx.keyDoc._id),
+          payloadHash,
+        },
+      });
+      const result = deliveries[0];
+      const delivery = await NotificationDeliveryModel.findById(result?.id).lean();
+      res.status(202).json({
+        ok: true,
+        replayed: false,
+        delivery: delivery ? {
+          id: String((delivery as any)._id),
+          channel: (delivery as any).channel,
+          status: (delivery as any).status,
+          provider: (delivery as any).provider || null,
+          providerMessageId: (delivery as any).providerMessageId || null,
+          attempts: (delivery as any).attempts,
+          sentAt: (delivery as any).sentAt || null,
+          lastError: (delivery as any).lastError || null,
+          createdAt: (delivery as any).createdAt,
+        } : result,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Unable to create WhatsApp delivery" });
+    }
+  });
+
+  // Query this store's own outbound message log.
+  app.get("/api/v1/stores/whatsapp/messages", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "whatsapp", res)) return;
+    const storeId = String(ctx.keyDoc.storeId || "");
+    if (!storeId) return res.status(403).json({ error: "API key is not bound to a store" });
+    const { ClientStoreModel, NotificationDeliveryModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findOne({ _id: storeId, clientId: ctx.clientId, status: "active" }).select("_id");
+    if (!store) return res.status(403).json({ error: "Store is not found, not owned by this key, or not active" });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+    const deliveries = await NotificationDeliveryModel.find({ storeId, channel: "whatsapp" })
+      .sort({ createdAt: -1 }).limit(limit).lean();
+    res.json({
+      data: deliveries.map((delivery: any) => ({
+        id: String(delivery._id),
+        status: delivery.status,
+        provider: delivery.provider || null,
+        providerMessageId: delivery.providerMessageId || null,
+        recipient: { name: delivery.recipient?.name || "", phone: delivery.recipient?.phone || "" },
+        attempts: delivery.attempts,
+        sentAt: delivery.sentAt || null,
+        lastError: delivery.lastError || null,
+        createdAt: delivery.createdAt,
+      })),
+    });
   });
 
   // === CHAT API ===
@@ -13192,6 +13383,24 @@ export async function registerRoutes(
       .sort({ createdAt: -1 });
     if (!store) return res.status(404).json({ error: "لا يوجد متجر مرتبط بحسابك" });
     res.json(store);
+  });
+
+  // GET /api/client/my-stores — all stores owned by the authenticated client
+  app.get("/api/client/my-stores", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "client") return res.sendStatus(403);
+    const { ClientStoreModel } = await import("./models");
+    const stores = await (ClientStoreModel as any).find({ clientId: (req.user as any)._id })
+      .select("_id storeNameAr storeNameEn status subdomain customDomain")
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(stores.map((store: any) => ({
+      id: String(store._id),
+      storeNameAr: store.storeNameAr || "",
+      storeNameEn: store.storeNameEn || "",
+      status: store.status,
+      subdomain: store.subdomain || "",
+      customDomain: store.customDomain || "",
+    })));
   });
 
   // GET /api/admin/client-stores/clients — list clients without stores (for picker)

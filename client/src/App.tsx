@@ -876,8 +876,15 @@ function ClientQuickNav() {
 class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    // If we already retried (tracked via sessionStorage), start with retried=true
-    this.state = { hasError: false, retried: !!sessionStorage.getItem("__errRetried") };
+    // Track recovery by route so an earlier, unrelated page error cannot make
+    // a future page immediately fall through to the maintenance screen.
+    const retriedAt = Number(sessionStorage.getItem(this.recoveryKey()) || 0);
+    const recentRetry = retriedAt > 0 && Date.now() - retriedAt < 2 * 60 * 1000;
+    this.state = { hasError: false, retried: recentRetry };
+  }
+
+  private recoveryKey() {
+    return `__qiroxPageErrorRetry:${window.location.pathname}`;
   }
 
   static getDerivedStateFromError() {
@@ -889,14 +896,33 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
     console.error("[QIROX] Component stack:", info?.componentStack);
 
     if (!this.state.retried) {
-      // Auto-reload once for ANY error (chunk errors, transient auth errors, etc.)
-      sessionStorage.setItem("__errRetried", "1");
+      // A stale deployment can leave the browser with an old entry bundle that
+      // requests a hashed lazy chunk no longer on the server. Clear PWA caches
+      // before the one recovery reload so the fresh entry bundle is guaranteed.
+      sessionStorage.setItem(this.recoveryKey(), String(Date.now()));
       this.setState({ retried: true }, () => {
-        window.location.reload();
+        void (async () => {
+          try {
+            const registration = await navigator.serviceWorker?.getRegistration();
+            await registration?.update();
+            if (window.caches) {
+              const keys = await caches.keys();
+              await Promise.all(
+                keys
+                  .filter(key => key.startsWith("qirox-") && !key.startsWith("qirox-pending"))
+                  .map(key => caches.delete(key)),
+              );
+            }
+          } catch (recoveryError) {
+            console.warn("[QIROX] Page recovery cache reset failed:", recoveryError);
+          }
+          window.location.reload();
+        })();
       });
     } else {
-      // Second crash — clear the flag so next fresh load can retry again
-      sessionStorage.removeItem("__errRetried");
+      // Second crash on the same route: show the fallback, but let a later
+      // navigation attempt recover again instead of locking the whole session.
+      sessionStorage.removeItem(this.recoveryKey());
     }
   }
 

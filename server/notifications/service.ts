@@ -9,6 +9,7 @@ export type NotificationChannel = "email" | "whatsapp";
 export type NotificationRequest = {
   event: string;
   idempotencyKey: string;
+  storeId?: string;
   recipient: {
     userId?: string;
     name?: string;
@@ -82,6 +83,7 @@ async function createDelivery(
       event: request.event,
       idempotencyKey: request.idempotencyKey,
       channel,
+      storeId: request.storeId || null,
       status: hasRecipient ? "pending" : "skipped",
       recipient: {
         userId: request.recipient.userId || null,

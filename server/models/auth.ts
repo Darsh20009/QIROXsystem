@@ -94,6 +94,7 @@ export const PreRegPhoneOtpModel = mongoose.models.PreRegPhoneOtp || mongoose.mo
 
 const clientApiKeySchema = new mongoose.Schema({
   clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  storeId:       { type: mongoose.Schema.Types.ObjectId, ref: "ClientStore", default: null, index: true },
   name:          { type: String, required: true },
   projectName:   { type: String, default: "" },
   keyHash:       { type: String, required: true, index: true },
@@ -103,6 +104,7 @@ const clientApiKeySchema = new mongoose.Schema({
   expiresAt:     { type: Date, default: null },
   lastUsedAt:    { type: Date, default: null },
   requestCount:  { type: Number, default: 0 },
+  rateLimitPerMinute: { type: Number, default: 30, min: 1, max: 300 },
   allowedOrigins:{ type: [String], default: [] },
 }, { timestamps: true });
 clientApiKeySchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.keyHash; return ret; } });

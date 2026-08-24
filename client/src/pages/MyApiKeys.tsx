@@ -18,6 +18,7 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 type ApiKey = {
   id: string; name: string; projectName: string; keyPrefix: string;
+  storeId?: string | null;
   scopes: string[]; isActive: boolean; expiresAt: string | null;
   lastUsedAt: string | null; requestCount: number;
   allowedOrigins: string[]; createdAt: string;
@@ -36,6 +37,15 @@ type EmbedToken = {
   expiresAt: string | null; createdAt: string;
 };
 
+type ClientStore = {
+  id: string;
+  storeNameAr: string;
+  storeNameEn: string;
+  status: "draft" | "active" | "suspended" | "cancelled";
+  subdomain?: string;
+  customDomain?: string;
+};
+
 // ── Constants ────────────────────────────────────────────────────────────────
 const ALL_SCOPES_DATA = [
   { id: "orders",        icon: "📦", ar: "الطلبات",        en: "Orders",        arD: "قراءة الطلبات والحالات",                enD: "Read orders and statuses" },
@@ -48,6 +58,7 @@ const ALL_SCOPES_DATA = [
   { id: "support",       icon: "🎧", ar: "الدعم",          en: "Support",       arD: "تذاكر خدمة العملاء",                   enD: "Customer support tickets" },
   { id: "files",         icon: "📁", ar: "الملفات",        en: "Files",         arD: "رفع وتنزيل ملفات المشروع",              enD: "Upload and download project files" },
   { id: "notifications", icon: "🔔", ar: "الإشعارات",     en: "Notifications", arD: "إرسال واستقبال الإشعارات",              enD: "Send and receive notifications" },
+  { id: "whatsapp",     icon: "📱", ar: "واتساب المتجر",  en: "Store WhatsApp", arD: "إرسال رسالة واحدة عبر واتساب QIROX", enD: "Send one message through QIROX WhatsApp" },
 ];
 
 const WEBHOOK_EVENTS_DATA = [
@@ -156,16 +167,17 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
   const [newKey, setNewKey]       = useState<(ApiKey & { rawKey?: string }) | null>(null);
   const [copied, setCopied]       = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", projectName: "", scopes: ["orders","projects","invoices","stats"] as string[], expiresAt: "", allowedOrigins: "" });
+  const [form, setForm] = useState({ name: "", projectName: "", storeId: "", scopes: ["orders","projects","invoices","stats"] as string[], expiresAt: "", allowedOrigins: "" });
 
   const { data: keys = [], isLoading } = useQuery<ApiKey[]>({ queryKey: ["/api/my-api-keys"] });
+  const { data: stores = [] } = useQuery<ClientStore[]>({ queryKey: ["/api/client/my-stores"] });
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => (await apiRequest("POST", "/api/my-api-keys", data)).json(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-api-keys"] });
       setShowCreate(false); setNewKey(data);
-      setForm({ name: "", projectName: "", scopes: ["orders","projects","invoices","stats"], expiresAt: "", allowedOrigins: "" });
+      setForm({ name: "", projectName: "", storeId: "", scopes: ["orders","projects","invoices","stats"], expiresAt: "", allowedOrigins: "" });
     },
     onError: (err: any) => toast({ title: L ? "خطأ" : "Error", description: err.message, variant: "destructive" }),
   });
@@ -199,9 +211,14 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
           <p className="text-white/30">{L ? "# أضف المفتاح في رأس الطلب" : "# Add the key in the request header"}</p>
           <p>Authorization: Bearer qrx_live_xxxxxxxxxx...</p>
           <p className="text-white/30 mt-2">{L ? "# المسارات المتاحة (GET)" : "# Available endpoints (GET)"}</p>
-          {["/api/v1/me","/api/v1/orders","/api/v1/projects","/api/v1/invoices","/api/v1/stats","/api/v1/wallet","/api/v1/customers"].map(p => (
+          {["/api/v1/me","/api/v1/orders","/api/v1/projects","/api/v1/invoices","/api/v1/stats","/api/v1/wallet","/api/v1/customers","/api/v1/stores/whatsapp/messages"].map(p => (
             <p key={p} className="text-black/70 dark:text-white/70">{baseUrl}{p}</p>
           ))}
+           <p className="text-white/30 mt-3">{L ? "# واتساب المتجر: رسالة واحدة لمستلم واحد" : "# Store WhatsApp: one message to one recipient"}</p>
+           <p className="text-black/70 dark:text-white/70">POST {baseUrl}/api/v1/stores/whatsapp/messages</p>
+           <p className="text-black/70 dark:text-white/70">Idempotency-Key: order-12345678</p>
+           <p className="text-black/70 dark:text-white/70 break-all">{`{"recipient":{"phone":"+966501234567"},"message":"..."} `}</p>
+           <p className="text-black/70 dark:text-white/70">GET {baseUrl}/api/v1/stores/whatsapp/messages</p>
         </div>
       </div>
 
@@ -251,6 +268,7 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-bold text-sm">{key.name}</p>
                       {key.projectName && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-1.5 py-0.5 rounded-full">{key.projectName}</span>}
+                       {key.storeId && <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white text-black dark:text-white dark:text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10 dark:border-black dark:border-white px-1.5 py-0.5 rounded-full">{stores.find(s => s.id === key.storeId)?.storeNameAr || stores.find(s => s.id === key.storeId)?.storeNameEn || "Store"}</span>}
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border-black/10 dark:border-white/10 dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70 dark:border-black dark:border-white" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}>
                         {key.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                       </span>
@@ -315,6 +333,25 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
                 ))}
               </div>
             </div>
+            {form.scopes.includes("whatsapp") && (
+              <div>
+                <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "متجر واتساب *" : "WhatsApp Store *"}</label>
+                <select
+                  value={form.storeId}
+                  onChange={e => setForm(f => ({ ...f, storeId: e.target.value }))}
+                  className="w-full h-10 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-900 px-3 text-sm"
+                  data-testid="select-whatsapp-store"
+                >
+                  <option value="">{L ? "اختر المتجر المرتبط..." : "Select the linked store..."}</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>
+                      {store.storeNameAr || store.storeNameEn || store.subdomain || store.id} · {store.status === "active" ? (L ? "نشط" : "Active") : (L ? "غير منشور" : "Not active")}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-black/30 dark:text-white/30 mt-1">{L ? "لا يمكن الإرسال إلا بعد نشر المتجر." : "Messages can only be sent after the store is published."}</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "تاريخ الانتهاء (اختياري)" : "Expiry Date (optional)"}</label>
@@ -332,6 +369,7 @@ function ApiKeysTab({ L, dir, toast }: { L: boolean; dir: string; toast: any }) 
             <Button onClick={() => {
               if (!form.name.trim()) { toast({ title: L ? "اسم المفتاح مطلوب" : "Key name required", variant: "destructive" }); return; }
               if (!form.scopes.length) { toast({ title: L ? "اختر صلاحية واحدة" : "Select at least one scope", variant: "destructive" }); return; }
+               if (form.scopes.includes("whatsapp") && !form.storeId) { toast({ title: L ? "اختر متجر واتساب" : "Select a WhatsApp store", variant: "destructive" }); return; }
               createMutation.mutate({ ...form, allowedOrigins: form.allowedOrigins.split(",").map(s => s.trim()).filter(Boolean), expiresAt: form.expiresAt || null });
             }} disabled={createMutation.isPending} data-testid="btn-confirm-create"
               className="w-full h-11 rounded-2xl bg-black hover:bg-black/80 dark:bg-white dark:text-black gap-2 font-bold">

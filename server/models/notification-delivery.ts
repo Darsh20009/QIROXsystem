@@ -9,6 +9,7 @@ const notificationDeliverySchema = new Schema({
   event: { type: String, required: true, index: true },
   idempotencyKey: { type: String, required: true, index: true },
   channel: { type: String, enum: ["email", "whatsapp"], required: true, index: true },
+  storeId: { type: Schema.Types.ObjectId, ref: "ClientStore", default: null, index: true },
   status: {
     type: String,
     enum: ["pending", "sending", "sent", "retrying", "failed", "skipped"],
