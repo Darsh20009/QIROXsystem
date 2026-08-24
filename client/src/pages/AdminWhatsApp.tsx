@@ -30,7 +30,8 @@ import { useI18n } from "@/lib/i18n";
 interface WAStatus { status: "disconnected"|"qr"|"connecting"|"connected"; qr: string|null; phoneNumber: string|null; }
 interface WAChat { _id: string; chatId: string; name: string; phoneNumber: string; lastMessage: string; lastMessageAt: string; unreadCount: number; aiEnabled: boolean; }
 interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; }
-interface WASettings { adminNumbers: string[]; aiEnabled: boolean; aiDelaySeconds: number; systemPromptExtra: string; connectedPhone?: string; }
+interface WASavedMessage { _id: string; text: string; createdAt?: string; }
+interface WASettings { adminNumbers: string[]; aiEnabled: boolean; aiDelaySeconds: number; systemPromptExtra: string; connectedPhone?: string; savedMessages: WASavedMessage[]; }
 interface NotificationHealth {
   whatsapp?: { provider?: string; official?: boolean };
   queue?: { pending?: number; failed?: number };
@@ -60,7 +61,8 @@ export default function AdminWhatsApp() {
   const [replyText, setReplyText] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newAdminNum, setNewAdminNum] = useState("");
-  const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 60, systemPromptExtra: "" });
+  const [newSavedMessage, setNewSavedMessage] = useState("");
+  const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 60, systemPromptExtra: "", savedMessages: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<EventSource | null>(null);
 
@@ -197,6 +199,27 @@ export default function AdminWhatsApp() {
   const saveSettingsMutation = useMutation({
     mutationFn: (data: Partial<WASettings>) => apiRequest("PATCH", "/api/admin/whatsapp/settings", data).then(r => r.json()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/settings"] }); toast({ title: L ? "✅ تم حفظ الإعدادات" : "✅ Settings saved" }); setSettingsOpen(false); },
+  });
+
+  const saveSavedMessageMutation = useMutation({
+    mutationFn: (text: string) => apiRequest("POST", "/api/admin/whatsapp/saved-messages", { text }).then(r => r.json()),
+    onSuccess: (saved: WASavedMessage) => {
+      setSettings(s => ({ ...s, savedMessages: [...(s.savedMessages || []), saved] }));
+      setNewSavedMessage("");
+      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/settings"] });
+      toast({ title: L ? "تم حفظ الرسالة" : "Message saved" });
+    },
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل حفظ الرسالة" : "Failed to save message"), variant: "destructive" }),
+  });
+
+  const deleteSavedMessageMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/whatsapp/saved-messages/${encodeURIComponent(id)}`).then(r => r.json()),
+    onSuccess: (data: { savedMessages?: WASavedMessage[] }) => {
+      setSettings(s => ({ ...s, savedMessages: data.savedMessages || [] }));
+      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/settings"] });
+      toast({ title: L ? "تم حذف الرسالة" : "Message deleted" });
+    },
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل حذف الرسالة" : "Failed to delete message"), variant: "destructive" }),
   });
 
   const selectedChat = chats.find(c => c.chatId === selectedChatId);
@@ -451,6 +474,25 @@ export default function AdminWhatsApp() {
                       <p className="text-[10px] text-amber-700">{L ? "الذكاء الاصطناعي متوقف — أنت في وضع الرد البشري" : "AI off — you're in manual reply mode"}</p>
                     </div>
                   )}
+                   {settings.savedMessages?.length > 0 && (
+                     <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                       <span className="text-[9px] text-black/30 dark:text-white/30 shrink-0">{L ? "رسائل محفوظة" : "Saved"}</span>
+                       {settings.savedMessages.map(saved => (
+                         <Button
+                           key={saved._id}
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           title={saved.text}
+                           onClick={() => sendMutation.mutate(saved.text)}
+                           disabled={sendMutation.isPending}
+                           className="h-7 max-w-[180px] shrink-0 rounded-lg border-[#25D366]/30 bg-[#25D366]/5 px-2.5 text-[10px] text-[#128C7E] hover:bg-[#25D366]/15 dark:text-[#7ee2b8]"
+                         >
+                           <span className="truncate">{saved.text}</span>
+                         </Button>
+                       ))}
+                     </div>
+                   )}
                   <div className="flex items-end gap-2">
                     <Textarea
                       value={replyText}
@@ -495,6 +537,7 @@ export default function AdminWhatsApp() {
             <TabsList className="w-full">
               <TabsTrigger value="ai" className="flex-1">{L ? "الذكاء الاصطناعي" : "AI"}</TabsTrigger>
               <TabsTrigger value="admin" className="flex-1">{L ? "أرقام الأدمن" : "Admin Numbers"}</TabsTrigger>
+             <TabsTrigger value="saved" className="flex-1">{L ? "رسائل محفوظة" : "Saved"}</TabsTrigger>
             </TabsList>
 
             {/* AI settings */}
@@ -600,6 +643,56 @@ export default function AdminWhatsApp() {
                 </div>
               </div>
             </TabsContent>
+
+           {/* Saved messages */}
+           <TabsContent value="saved" className="space-y-3 mt-4">
+             <div>
+               <label className="text-xs font-medium text-black/50 dark:text-white/40 mb-1 block">
+                 {L ? "أضف رسالة سريعة" : "Add a quick message"}
+               </label>
+               <div className="flex items-end gap-2">
+                 <Textarea
+                   value={newSavedMessage}
+                   onChange={e => setNewSavedMessage(e.target.value)}
+                   placeholder={L ? "مثال: شكرًا لك، سأعود إليك قريبًا" : "e.g. Thank you, I’ll get back to you soon"}
+                   rows={2}
+                   maxLength={1000}
+                   className="text-sm border-black/10 dark:border-white/10 resize-none"
+                 />
+                 <Button
+                   type="button"
+                   size="icon"
+                   className="shrink-0 bg-[#25D366] hover:bg-[#22c55e] text-white"
+                   onClick={() => { if (newSavedMessage.trim()) saveSavedMessageMutation.mutate(newSavedMessage.trim()); }}
+                   disabled={saveSavedMessageMutation.isPending || !newSavedMessage.trim()}
+                   title={L ? "حفظ الرسالة" : "Save message"}
+                 >
+                   {saveSavedMessageMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                 </Button>
+               </div>
+               <p className="text-[10px] text-black/30 dark:text-white/30 mt-1">{L ? "ستظهر الرسالة كزر سريع أسفل المحادثة لإرسالها مرة واحدة." : "It will appear as a quick button below the chat and sends once per click."}</p>
+             </div>
+
+             <div className="space-y-1.5 max-h-52 overflow-y-auto">
+               {(settings.savedMessages || []).map(saved => (
+                 <div key={saved._id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]">
+                   <p className="text-xs text-black/70 dark:text-white/70 whitespace-pre-wrap break-words flex-1">{saved.text}</p>
+                   <button
+                     type="button"
+                     onClick={() => deleteSavedMessageMutation.mutate(saved._id)}
+                     disabled={deleteSavedMessageMutation.isPending}
+                     title={L ? "حذف" : "Delete"}
+                     className="p-1.5 rounded-lg text-black/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 shrink-0"
+                   >
+                     <X className="w-3.5 h-3.5" />
+                   </button>
+                 </div>
+               ))}
+               {(!settings.savedMessages || settings.savedMessages.length === 0) && (
+                 <p className="text-[11px] text-black/25 dark:text-white/25 text-center py-5">{L ? "لا توجد رسائل محفوظة بعد" : "No saved messages yet"}</p>
+               )}
+             </div>
+           </TabsContent>
           </Tabs>
 
           <Button

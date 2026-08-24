@@ -35,6 +35,13 @@ const waSettingsSchema = new Schema({
   aiDelaySeconds:    { type: Number, default: 60 },
   systemPromptExtra: { type: String, default: "" },
   connectedPhone:    { type: String },
+  savedMessages:     {
+    type: [{
+      text: { type: String, required: true, maxlength: 1000 },
+      createdAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
 }, { timestamps: true });
 
 export const WAMessageModel  = mongoose.models.WAMessage  || mongoose.model("WAMessage",  waMessageSchema);

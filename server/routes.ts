@@ -18513,6 +18513,37 @@ export async function registerInstallmentRoutes(app: Express) {
       allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
       try { res.json(await waModule.saveSettings(update)); } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
+
+    app.post("/api/admin/whatsapp/saved-messages", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+      if (!text) return res.status(400).json({ error: "نص الرسالة مطلوب" });
+      if (text.length > 1000) return res.status(400).json({ error: "الرسالة طويلة جداً (الحد الأقصى 1000 حرف)" });
+      try {
+        const { WASettingsModel } = await import("./models/whatsapp");
+        const updated = await WASettingsModel.findOneAndUpdate(
+          {},
+          { $push: { savedMessages: { text } } },
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        ).lean();
+        const savedMessages: any[] = (updated as any)?.savedMessages || [];
+        res.json(savedMessages[savedMessages.length - 1] || { text });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.delete("/api/admin/whatsapp/saved-messages/:id", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      try {
+        const { WASettingsModel } = await import("./models/whatsapp");
+        const updated = await WASettingsModel.findOneAndUpdate(
+          {},
+          { $pull: { savedMessages: { _id: req.params.id } } },
+          { new: true },
+        ).lean();
+        if (!updated) return res.status(404).json({ error: "الإعدادات غير موجودة" });
+        res.json({ ok: true, savedMessages: (updated as any).savedMessages || [] });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
   }
 
   // ─── PWA + Lead Data routes (see server/routes-pwa.ts) ────────────────────
