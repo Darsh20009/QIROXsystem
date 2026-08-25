@@ -352,6 +352,17 @@ export default function ProjectDetailsSetup() {
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { data: provisioning } = useQuery<any>({
+    queryKey: ["/api/orders", orderId, "provisioning"],
+    enabled: Boolean(orderId),
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}/provisioning`, { credentials: "include" });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error("تعذر تحميل حالة تجهيز المشروع");
+      return response.json();
+    },
+    retry: false,
+  });
 
   const [section, setSection] = useState(0);
   const [saved, setSaved] = useState(false);
@@ -436,6 +447,28 @@ export default function ProjectDetailsSetup() {
         businessName={form.businessName} sector={form.sector}
         targetAudience={form.targetAudience} onApply={text => set("requiredFunctions", text)}
       />
+
+      {provisioning && (
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <div className="rounded-xl border border-black/[0.08] bg-black/[0.02] px-4 py-3 flex items-start gap-3">
+            {provisioning.status === "ready_for_configuration"
+              ? <BadgeCheck className="w-5 h-5 mt-0.5 text-black/60 shrink-0" />
+              : <AlertCircle className="w-5 h-5 mt-0.5 text-black/60 shrink-0" />}
+            <div>
+              <p className="text-sm font-bold text-black/80">
+                {provisioning.status === "ready_for_configuration" && "تم تجهيز مساحة مشروعك"}
+                {["queued", "in_progress"].includes(provisioning.status) && "يجري تجهيز مساحة مشروعك"}
+                {provisioning.status === "failed" && "تأخر تجهيز مساحة مشروعك"}
+              </p>
+              <p className="text-xs text-black/50 mt-1">
+                {provisioning.status === "ready_for_configuration" && "يتم إنشاء المستودع وقاعدة البيانات والنشر عند اعتماد إعداداتها من الفريق."}
+                {["queued", "in_progress"].includes(provisioning.status) && "سنخبرك فور اكتمال التجهيز. يمكنك متابعة إدخال تفاصيل مشروعك الآن."}
+                {provisioning.status === "failed" && "لم تتأثر بياناتك. تواصل مع فريق الدعم لإعادة المحاولة."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sticky header with progress */}
       <div className="sticky top-0 z-30 bg-black dark:bg-gray-950 shadow-2xl">

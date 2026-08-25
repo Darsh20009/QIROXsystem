@@ -108,7 +108,7 @@ export default function EmployeeWhatsappCRM() {
   const [isSending, setIsSending] = useState(false);
 
   // ── Fetch clients
-  const { data: users = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/admin/users"] });
+  const { data: users = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/whatsapp/crm/clients"] });
   const clients = users.filter(u => u.role === "client");
 
   // ── Filtered list

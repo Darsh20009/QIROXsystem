@@ -378,7 +378,7 @@ export async function registerRoutes(
   const getEnabled2FAMethods = async (userId: string) => {
     const { UserModel, PushSubscriptionModel } = await import("./models");
     const user = await UserModel.findById(userId)
-      .select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled email fullName username");
+      .select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled whatsappOtpEnabled phoneVerified email fullName username phone whatsappNumber");
     if (!user) return { user: null, methods: [] as string[] };
     const methods: string[] = [];
     if (user.totpEnabled) methods.push("totp");
@@ -388,6 +388,7 @@ export async function registerRoutes(
       const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(user._id) });
       if (pushSubCount > 0) methods.unshift("push");
     }
+    if (user.whatsappOtpEnabled && user.phoneVerified && normalizePhone(user.whatsappNumber || user.phone).valid) methods.push("whatsapp");
     return { user, methods };
   };
   const create2FAChallenge = async (user: any, methods: string[], authSource: "password" | "google") => {
@@ -444,6 +445,30 @@ export async function registerRoutes(
       throw new Error("تعذر إرسال رمز التحقق. استخدم طريقة تحقق أخرى أو حاول لاحقاً.");
     }
     return { expiresAt: expiresAt.getTime(), channels: results.map(result => result.channel) };
+  };
+
+  const send2FAWhatsAppCode = async (tempToken: string, user: any) => {
+    const phone = normalizePhone(user.whatsappNumber || user.phone);
+    if (!phone.valid) throw new Error("رقم واتساب غير متوفر أو غير صالح");
+    const code = crypto.randomInt(100000, 1_000_000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const codeHash = crypto.createHash("sha256").update(`${tempToken}:${code}`).digest("hex");
+    const { OtpModel } = await import("./models");
+    await OtpModel.updateMany(
+      { email: user.email, type: "2fa_whatsapp", challengeToken: tempToken, used: false },
+      { $set: { used: true, usedAt: new Date() } },
+    );
+    await OtpModel.create({
+      email: user.email,
+      code: "[protected]",
+      codeHash,
+      challengeToken: tempToken,
+      expiresAt,
+      type: "2fa_whatsapp",
+    });
+    const { waModule } = await import("./whatsapp-module");
+    await waModule.sendOTP(phone.e164, code, user.fullName || user.username || "");
+    return { expiresAt: expiresAt.getTime() };
   };
 
   // ─── Health endpoint ────────────────────────────────────────────────────────
@@ -1061,6 +1086,132 @@ export async function registerRoutes(
     for (const key of dataEntrySpecHiddenFields) delete safe[key];
     return safe;
   };
+  const toPublicProvisioning = (record: any) => {
+    const source = record?.toObject ? record.toObject() : record;
+    if (!source) return null;
+    return {
+      id: String(source._id || source.id),
+      orderId: String(source.orderId),
+      projectId: source.projectId ? String(source.projectId) : null,
+      status: source.status,
+      attempts: source.attempts || 0,
+      steps: {
+        project: source.steps?.project || "pending",
+        repository: source.steps?.repository || "not_configured",
+        database: source.steps?.database || "not_configured",
+        deployment: source.steps?.deployment || "not_configured",
+      },
+      lastError: source.lastError || "",
+      lastAttemptAt: source.lastAttemptAt || null,
+      completedAt: source.completedAt || null,
+      updatedAt: source.updatedAt || null,
+    };
+  };
+  const provisionApprovedOrder = async (order: any) => {
+    if (order.paymentStatus !== "approved" && order.status !== "approved") {
+      throw new Error("لا يمكن تجهيز المشروع قبل اعتماد الطلب أو الدفع");
+    }
+    const { ProjectModel, OrderProvisioningModel, NotificationModel } = await import("./models");
+    const orderId = String(order._id || order.id);
+    const clientId = String(order.userId);
+    const now = new Date();
+    const leaseExpiresAt = new Date(now.getTime() + 5 * 60 * 1000);
+    const provisioningUpdate = {
+      $setOnInsert: {
+        orderId,
+        clientId,
+        status: "queued",
+        steps: { project: "pending", repository: "not_configured", database: "not_configured", deployment: "not_configured" },
+      },
+    };
+    try {
+      await OrderProvisioningModel.findOneAndUpdate({ orderId }, provisioningUpdate, { upsert: true, new: true });
+    } catch (error: any) {
+      if (error?.code !== 11000) throw error;
+      await OrderProvisioningModel.findOneAndUpdate({ orderId }, provisioningUpdate, { new: true });
+    }
+    const claimedProvisioning = await OrderProvisioningModel.findOneAndUpdate(
+      {
+        orderId,
+        $or: [
+          { status: { $in: ["queued", "failed", "ready_for_configuration"] } },
+          { status: "in_progress", leaseExpiresAt: { $lt: now } },
+          { status: "in_progress", leaseExpiresAt: { $exists: false } },
+          { status: "in_progress", leaseExpiresAt: null },
+        ],
+      },
+      { $inc: { attempts: 1 }, $set: { status: "in_progress", lastAttemptAt: now, leaseExpiresAt, lastError: "" } },
+      { new: true },
+    );
+    if (!claimedProvisioning) {
+      const [project, provisioning] = await Promise.all([
+        ProjectModel.findOne({ orderId }),
+        OrderProvisioningModel.findOne({ orderId }),
+      ]);
+      return { project, provisioning, projectCreated: false, pending: true };
+    }
+
+    try {
+      let project = await ProjectModel.findOne({ orderId });
+      let projectCreated = false;
+      if (!project) {
+        try {
+          project = await ProjectModel.create({
+            _id: order._id || order.id,
+            orderId,
+            clientId,
+            status: "new",
+            progress: 0,
+            startDate: now,
+          });
+          projectCreated = true;
+        } catch (error: any) {
+          if (error?.code !== 11000) throw error;
+          project = await ProjectModel.findById(order._id || order.id);
+        }
+      }
+      if (!project) throw new Error("تعذر إنشاء سجل المشروع");
+
+      const provisioning = await OrderProvisioningModel.findOneAndUpdate(
+        { orderId },
+        {
+          $set: {
+            projectId: project._id,
+            status: "ready_for_configuration",
+            "steps.project": "ready",
+            "steps.repository": "not_configured",
+            "steps.database": "not_configured",
+            "steps.deployment": "not_configured",
+            lastError: "",
+            completedAt: now,
+          },
+          $unset: { leaseExpiresAt: 1 },
+        },
+        { new: true },
+      );
+
+      if (projectCreated) {
+        await NotificationModel.create({
+          userId: clientId,
+          type: "project",
+          title: "تم تجهيز مساحة مشروعك",
+          body: "أصبح مشروعك جاهزاً لاستلام التفاصيل وبدء التنفيذ.",
+          link: `/projects/${project._id}`,
+          icon: "📋",
+        }).catch(() => {});
+      }
+      return { project, provisioning, projectCreated, pending: false };
+    } catch (error) {
+      await OrderProvisioningModel.findOneAndUpdate(
+        { orderId },
+        {
+          $set: { status: "failed", "steps.project": "failed", lastError: "تعذر تجهيز المشروع. أعد المحاولة لاحقاً." },
+          $unset: { leaseExpiresAt: 1 },
+        },
+      ).catch(() => {});
+      throw error;
+    }
+  };
 
   // Admin users list
   app.get("/api/admin/users", async (req, res) => {
@@ -1426,6 +1577,7 @@ export async function registerRoutes(
           recoveryPassphraseEnabled: false,
           recoveryPassphrase: null,
           pushApprovalEnabled: false,
+          whatsappOtpEnabled: false,
         },
       });
       await Promise.all([
@@ -1525,6 +1677,22 @@ export async function registerRoutes(
           { new: true },
         ).select("+codeHash");
         verified = Boolean(usedOtp);
+      } else if (method === "whatsapp") {
+        if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
+        const codeHash = crypto.createHash("sha256").update(`${tempToken}:${String(code).trim()}`).digest("hex");
+        const usedOtp = await OtpModel.findOneAndUpdate(
+          {
+            email: dbUser.email,
+            type: "2fa_whatsapp",
+            challengeToken: tempToken,
+            codeHash,
+            used: false,
+            expiresAt: { $gt: new Date() },
+          },
+          { $set: { used: true, usedAt: new Date() } },
+          { new: true },
+        ).select("+codeHash");
+        verified = Boolean(usedOtp);
       } else if (method === "passphrase") {
         if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
         const bcrypt = await import("bcryptjs");
@@ -1567,6 +1735,23 @@ export async function registerRoutes(
       const delivery = await send2FAEmailCode(tempToken, user, req.headers["user-agent"] as string);
       res.json({ ok: true, expiresAt: delivery.expiresAt, channels: delivery.channels });
     } catch (err: any) { res.status(503).json({ error: err.message || "تعذر إرسال رمز التحقق" }); }
+  });
+
+  app.post("/api/auth/resend-2fa-whatsapp", otpLimiter, async (req, res) => {
+    try {
+      const { tempToken } = req.body;
+      if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const session = await getPending2FA(tempToken);
+      if (!session || !session.methods.includes("whatsapp")) return res.status(400).json({ error: "الجلسة غير صالحة" });
+      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول." });
+      const { UserModel } = await import("./models");
+      const user = await UserModel.findById(session.userId).select("email fullName username phone whatsappNumber");
+      if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
+      const delivery = await send2FAWhatsAppCode(tempToken, user);
+      res.json({ ok: true, expiresAt: delivery.expiresAt });
+    } catch (err: any) {
+      res.status(503).json({ error: err.message || "تعذر إرسال رمز واتساب" });
+    }
   });
 
   // OAuth callbacks are redirects, so the login page retrieves the short-lived
@@ -2076,6 +2261,9 @@ export async function registerRoutes(
     if (isDataEntry && Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
     }
+    if (updates.status === "approved" && !["admin", "manager"].includes((req.user as any).role)) {
+      return res.status(403).json({ error: "اعتماد الطلبات متاح للإدارة فقط" });
+    }
     const order = await storage.updateOrder(req.params.id, updates);
     // Send email + notification when status changes
     if (updates.status && order) {
@@ -2131,6 +2319,13 @@ export async function registerRoutes(
         const { ActivityLogModel } = await import("./models");
         ActivityLogModel.create({ userId: (req.user as any)?.id, action: 'update_order_status', entity: 'order', entityId: String(order.id), details: { status: updates.status }, ip: req.ip }).catch(() => {});
       } catch (e) { console.error("[OrderStatus]", e); }
+    }
+    if (updates.status === "approved" && order) {
+      try {
+        await provisionApprovedOrder(order);
+      } catch (error: any) {
+        console.error("[OrderProvisioning] status approval:", error?.message || error);
+      }
     }
     res.json(isDataEntry ? redactOrderForDataEntry(order) : order);
   });
@@ -2233,7 +2428,7 @@ export async function registerRoutes(
 
   // Admin: approve bank transfer payment proof
   app.post("/api/admin/orders/:id/approve-transfer", async (req, res) => {
-    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { OrderModel, NotificationModel } = await import("./models");
       const order = await OrderModel.findByIdAndUpdate(
@@ -2253,8 +2448,28 @@ export async function registerRoutes(
         icon: "✅",
       }).catch(console.error);
       pushNotification(String(order.userId), { title: notifTitle, body: notifBody, icon: "✅", link: "/dashboard" });
-      res.json({ success: true });
+      let provisioning: any = null;
+      try {
+        provisioning = (await provisionApprovedOrder(order)).provisioning;
+      } catch (error: any) {
+        console.error("[OrderProvisioning] transfer approval:", error?.message || error);
+      }
+      res.json({ success: true, provisioning: toPublicProvisioning(provisioning) });
     } catch (e) { res.status(500).json({ error: "فشل القبول" }); }
+  });
+
+  app.post("/api/admin/orders/:id/provision", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { OrderModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const { provisioning, projectCreated } = await provisionApprovedOrder(order);
+      res.json({ ok: true, projectCreated, provisioning: toPublicProvisioning(provisioning) });
+    } catch (error: any) {
+      console.error("[OrderProvisioning] retry:", error?.message || error);
+      res.status(503).json({ error: "تعذر تجهيز المشروع حالياً. أعد المحاولة لاحقاً." });
+    }
   });
 
   // ═══════════════════════════════════════════════
@@ -2787,6 +3002,22 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: "فشل تحديث التفاصيل" });
+    }
+  });
+
+  app.get("/api/orders/:id/provisioning", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { OrderModel, OrderProvisioningModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id).select("userId");
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const user = req.user as any;
+      if (user.role === "client" && String(order.userId) !== String(user.id || user._id)) return res.sendStatus(403);
+      const provisioning = await OrderProvisioningModel.findOne({ orderId: order._id });
+      if (!provisioning) return res.status(404).json({ error: "لم تبدأ التهيئة بعد" });
+      res.json(toPublicProvisioning(provisioning));
+    } catch {
+      res.status(500).json({ error: "تعذر تحميل حالة تجهيز المشروع" });
     }
   });
 
@@ -14636,18 +14867,22 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { UserModel, PushSubscriptionModel } = await import("./models");
       const user = req.user as any;
-      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled");
+      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled whatsappOtpEnabled phoneVerified phone whatsappNumber");
       const totp = dbUser?.totpEnabled || false;
       const emailOtp = dbUser?.emailOtpEnabled || false;
       const passphrase = dbUser?.recoveryPassphraseEnabled || false;
       const pushApproval = dbUser?.pushApprovalEnabled || false;
+      const whatsappOtp = Boolean(dbUser?.whatsappOtpEnabled && dbUser?.phoneVerified && normalizePhone(dbUser?.whatsappNumber || dbUser?.phone).valid);
       const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
       res.json({
-        enabled: totp || emailOtp || passphrase || pushApproval,
+        enabled: totp || emailOtp || passphrase || pushApproval || whatsappOtp,
         totp,
         emailOtp,
         passphrase,
         pushApproval,
+        whatsappOtp,
+        phoneVerified: Boolean(dbUser?.phoneVerified),
+        hasWhatsAppNumber: normalizePhone(dbUser?.whatsappNumber || dbUser?.phone).valid,
         hasPushSubscriptions: pushSubCount > 0,
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -14696,6 +14931,34 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       await UserModel.findByIdAndUpdate(user._id || user.id, { emailOtpEnabled: false });
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/whatsapp-otp/enable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const dbUser = await UserModel.findById(user._id || user.id).select("phone whatsappNumber phoneVerified");
+      if (!dbUser?.phoneVerified || !normalizePhone(dbUser.whatsappNumber || dbUser.phone).valid) {
+        return res.status(400).json({ error: "وثّق رقم جوالك أولاً قبل تفعيل التحقق عبر واتساب" });
+      }
+      await UserModel.findByIdAndUpdate(user._id || user.id, { whatsappOtpEnabled: true });
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "تعذر تفعيل التحقق عبر واتساب" });
+    }
+  });
+
+  app.post("/api/2fa/whatsapp-otp/disable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { whatsappOtpEnabled: false });
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "تعذر إلغاء التحقق عبر واتساب" });
+    }
   });
 
   app.post("/api/2fa/passphrase/setup", async (req, res) => {
@@ -18755,6 +19018,22 @@ export async function registerInstallmentRoutes(app: Express) {
         if (!updated) return res.status(404).json({ error: "الإعدادات غير موجودة" });
         res.json({ ok: true, savedMessages: (updated as any).savedMessages || [] });
       } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    // Employee CRM client directory — profile/contact fields only, never admin settings.
+    app.get("/api/whatsapp/crm/clients", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !["admin", ...staffRoles].includes(role)) return res.sendStatus(403);
+      try {
+        const { UserModel } = await import("./models");
+        const clients = await UserModel.find({ role: "client" })
+          .select("role fullName username email phone whatsappNumber avatarUrl")
+          .sort({ fullName: 1 })
+          .lean();
+        res.json(clients);
+      } catch {
+        res.status(500).json({ error: "تعذر تحميل قائمة العملاء" });
+      }
     });
   }
 

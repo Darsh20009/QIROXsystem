@@ -83,7 +83,7 @@ const ALL_NAV: Record<string, NavItem> = {
   qi_agent:          { id: "qi_agent",          labelAr: "QIROX Studio AI",      labelEn: "QIROX Studio AI",      icon: Sparkles,        href: "/employee/studio",            group: "tools" },
   ai_hub:            { id: "ai_hub",            labelAr: "QIROX AI Hub",         labelEn: "QIROX AI Hub",         icon: Brain,           href: "/admin/qirox-ai",             group: "tools" },
   local_ai:          { id: "local_ai",          labelAr: "Local AI Engine",      labelEn: "Local AI Engine",      icon: Cpu,             href: "/admin/local-ai",             group: "tools" },
-  admin_whatsapp:    { id: "admin_whatsapp",    labelAr: "واتساب الإداري",      labelEn: "Admin WhatsApp",       icon: MessageSquare,   href: "/admin/whatsapp",             group: "tools" },
+  admin_whatsapp:    { id: "admin_whatsapp",    labelAr: "ربط واتساب API",      labelEn: "WhatsApp API",          icon: MessageSquare,   href: "/admin/whatsapp",             group: "tools" },
   checklist:         { id: "checklist",         labelAr: "قائمة المهام",         labelEn: "My Checklist",         icon: CheckSquare,     href: "/employee/checklist",         group: "tools" },
   qmeet:             { id: "qmeet",             labelAr: "الاجتماعات",          labelEn: "Meetings",             icon: Video,           href: "/admin/qmeet",                group: "tools" },
   kanban:            { id: "kanban",            labelAr: "لوحة المهام",          labelEn: "Task Board",           icon: ClipboardList,   href: "/admin/kanban",               group: "tools" },
@@ -128,19 +128,19 @@ const ALL_NAV: Record<string, NavItem> = {
 
 // Mobile drawer shows a compact set — same as the original sidebar before the expansion
 const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
-  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "mail", "profile", "changelog"],
-  manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
-  developer:     ["dashboard", "mod_requests", "orders", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
-  designer:      ["dashboard", "mod_requests", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
+  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "mail", "profile", "changelog"],
+  manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
+  developer:     ["dashboard", "mod_requests", "orders", "whatsapp_crm", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
+  designer:      ["dashboard", "mod_requests", "whatsapp_crm", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
   sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
   sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "checklist", "mail", "profile", "my_finance"],
   marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
-  accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "wallet", "reports", "checklist", "mail", "profile", "my_finance"],
-  support:       ["dashboard", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
-  data_entry:    ["dashboard", "orders", "customers", "employees", "contact_msgs", "mail", "profile", "changelog"],
-  hr:            ["dashboard", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
-  merchant:      ["dashboard", "shipments", "checklist", "mail", "profile", "my_finance"],
-  content:       ["dashboard", "products", "news", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
+  accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "reports", "checklist", "mail", "profile", "my_finance"],
+  support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
+  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "employees", "contact_msgs", "mail", "profile", "changelog"],
+  hr:            ["dashboard", "whatsapp_crm", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
+  merchant:      ["dashboard", "whatsapp_crm", "shipments", "checklist", "mail", "profile", "my_finance"],
+  content:       ["dashboard", "whatsapp_crm", "products", "news", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
 };
 
 const ROLE_ITEMS: Record<string, string[]> = {
@@ -189,23 +189,23 @@ const ROLE_ITEMS: Record<string, string[]> = {
     // HR
     "employees", "attendance",
     // Tools
-    "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "local_ai", "checklist", "sys_dashboards", "activity_log",
+    "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "activity_log",
     // Config (limited)
     "settings",
     // Personal
     "mail", "profile", "changelog",
   ],
-  developer:     ["dashboard", "mod_requests", "orders", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
-  designer:      ["dashboard", "mod_requests", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
+  developer:     ["dashboard", "mod_requests", "orders", "whatsapp_crm", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
+  designer:      ["dashboard", "mod_requests", "whatsapp_crm", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
   sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
   sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "contracts", "abandoned_carts", "discount_codes", "reports", "profit_report", "sales_reports", "checklist", "mail", "profile", "my_finance"],
   marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews", "push_notif", "checklist", "mail", "profile", "my_finance"],
-  accountant:    ["dashboard", "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "sales_reports", "reports", "bank_settings", "checklist", "mail", "profile", "my_finance"],
-  support:       ["dashboard", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "sla", "checklist", "mail", "profile", "my_finance"],
-  data_entry:    ["dashboard", "orders", "customers", "employees", "contact_msgs", "mail", "profile", "changelog"],
-  hr:            ["dashboard", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
-  merchant:      ["dashboard", "shipments", "checklist", "mail", "profile", "my_finance"],
-  content:       ["dashboard", "products", "news", "marketing_posts", "templates", "checklist", "mail", "profile", "my_finance"],
+  accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "sales_reports", "reports", "bank_settings", "checklist", "mail", "profile", "my_finance"],
+  support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "sla", "checklist", "mail", "profile", "my_finance"],
+  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "employees", "contact_msgs", "mail", "profile", "changelog"],
+  hr:            ["dashboard", "whatsapp_crm", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
+  merchant:      ["dashboard", "whatsapp_crm", "shipments", "checklist", "mail", "profile", "my_finance"],
+  content:       ["dashboard", "whatsapp_crm", "products", "news", "marketing_posts", "templates", "checklist", "mail", "profile", "my_finance"],
 };
 const DEFAULT_ITEMS = ["dashboard", "mail", "profile"];
 

@@ -11,7 +11,7 @@ const otpSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
   usedAt: { type: Date, default: null },
-  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp", "2fa_email"], default: "forgot_password" },
+  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp", "2fa_email", "2fa_whatsapp"], default: "forgot_password" },
 }, { timestamps: true });
 otpSchema.set('toJSON', { transform });
 otpSchema.set('toObject', { transform });

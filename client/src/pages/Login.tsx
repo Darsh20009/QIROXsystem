@@ -410,6 +410,7 @@ export default function Login() {
         setTwoFAPassphrase("");
         setTwoFAError("");
         setEmailOtpSent(false);
+             setWhatsappOtpSent(false);
         setTwoFAExpiresAt(Number(data.expiresAt) || Date.now() + 10 * 60 * 1000);
         setTwoFASecondsLeft(Math.max(0, Math.floor(((Number(data.expiresAt) || Date.now()) - Date.now()) / 1000)));
         window.history.replaceState({}, "", window.location.pathname);
@@ -618,6 +619,8 @@ export default function Login() {
   const [is2FAResending, setIs2FAResending] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
+  const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
+  const [isSendingWhatsappOtp, setIsSendingWhatsappOtp] = useState(false);
 
   const [twoFAExpiresAt, setTwoFAExpiresAt] = useState<number | null>(null);
   const [twoFASecondsLeft, setTwoFASecondsLeft] = useState(600);
@@ -1158,12 +1161,13 @@ export default function Login() {
                     onClick={() => {
                       setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError("");
                       if (m !== "email") setEmailOtpSent(false);
+                       if (m !== "whatsapp") setWhatsappOtpSent(false);
                       if (m !== "push") { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }
                     }}
                     className={`py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all text-center leading-tight ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
                     data-testid={`tab-2fa-${m}`}
                   >
-                    {m === "totp" ? "🔐 المصادقة" : m === "email" ? "📧 البريد" : m === "push" ? "🔔 إشعار الجهاز" : "🛡️ الاسترداد"}
+                     {m === "totp" ? "🔐 المصادقة" : m === "email" ? "📧 البريد" : m === "whatsapp" ? "📱 واتساب" : m === "push" ? "🔔 إشعار الجهاز" : "🛡️ الاسترداد"}
                   </button>
                 ))}
               </div>
@@ -1256,6 +1260,66 @@ export default function Login() {
                   disabled={is2FAResending}
                   className="text-xs text-black/40 hover:text-black/70 transition-colors underline"
                   data-testid="button-resend-2fa-email"
+                >
+                  {is2FAResending ? "جارٍ الإرسال..." : "إعادة إرسال الرمز"}
+                </button>
+              </div>
+            )}
+
+            {twoFAMethod === "whatsapp" && !whatsappOtpSent && (
+              <div className="space-y-4 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-black/[0.05] mx-auto">
+                  <MessageSquare className="w-6 h-6 text-black/50" />
+                </div>
+                <p className="text-sm text-black/60">سيتم إرسال رمز التحقق إلى رقم واتساب المسجّل في حسابك</p>
+                <Button
+                  onClick={async () => {
+                    setIsSendingWhatsappOtp(true);
+                    setTwoFAError("");
+                    try {
+                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                      if (r.ok) { setWhatsappOtpSent(true); toast({ title: "تم إرسال الرمز عبر واتساب", description: "تحقق من رسائل واتساب وأدخل الرمز هنا" }); }
+                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إرسال رمز واتساب"); }
+                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                    setIsSendingWhatsappOtp(false);
+                  }}
+                  disabled={isSendingWhatsappOtp}
+                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
+                  data-testid="button-send-2fa-whatsapp"
+                >
+                  {isSendingWhatsappOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                    <><MessageSquare className="w-4 h-4 ml-2" />إرسال رمز واتساب</>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {twoFAMethod === "whatsapp" && whatsappOtpSent && (
+              <div className="space-y-3">
+                <p className="text-sm text-black/60">أدخل الرمز المرسل إلى واتساب:</p>
+                <Input
+                  value={twoFACode}
+                  onChange={e => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoFocus
+                  data-testid="input-2fa-whatsapp"
+                />
+                <button
+                  onClick={async () => {
+                    setIs2FAResending(true);
+                    try {
+                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                      if (r.ok) { toast({ title: "تم إعادة إرسال الرمز عبر واتساب" }); setTwoFACode(""); }
+                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إعادة الإرسال"); }
+                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                    setIs2FAResending(false);
+                  }}
+                  disabled={is2FAResending}
+                  className="text-xs text-black/40 hover:text-black/70 transition-colors underline"
+                  data-testid="button-resend-2fa-whatsapp"
                 >
                   {is2FAResending ? "جارٍ الإرسال..." : "إعادة إرسال الرمز"}
                 </button>
@@ -1407,7 +1471,7 @@ export default function Login() {
                   } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                   setIs2FAVerifying(false);
                 }}
-                disabled={is2FAVerifying || (twoFAMethod === "email" && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+                disabled={is2FAVerifying || ((twoFAMethod === "email" || twoFAMethod === "whatsapp") && !(twoFAMethod === "email" ? emailOtpSent : whatsappOtpSent)) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
                 className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
                 data-testid="button-verify-2fa"
               >
@@ -1418,7 +1482,7 @@ export default function Login() {
             )}
 
             <div className="text-center mt-4">
-              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setWhatsappOtpSent(false); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
                 العودة لتسجيل الدخول
               </button>
             </div>

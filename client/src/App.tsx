@@ -365,7 +365,7 @@ function AdminRouter() {
         <Route path="/admin/bank-settings" component={G_BankSettings} />
         <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
         <Route path="/admin/mod-requests" component={AdminModRequests} />
-        <Route path="/admin/whatsapp" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminWhatsApp /></RoleGuard>} />
+        <Route path="/admin/whatsapp" component={() => <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminWhatsApp /></RoleGuard>} />
         <Route path="/admin/qirox-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminQiroxAI /></RoleGuard>} />
         <Route path="/admin/local-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminLocalAI /></RoleGuard>} />
         <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />

@@ -134,6 +134,27 @@ orderSpecsSchema.set('toJSON', { transform });
 orderSpecsSchema.set('toObject', { transform });
 export const OrderSpecsModel = mongoose.models.OrderSpecs || mongoose.model("OrderSpecs", orderSpecsSchema);
 
+const orderProvisioningSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, unique: true, index: true },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
+  status: { type: String, enum: ["queued", "in_progress", "ready_for_configuration", "failed"], default: "queued", index: true },
+  attempts: { type: Number, default: 0 },
+  steps: {
+    project: { type: String, enum: ["pending", "ready", "failed"], default: "pending" },
+    repository: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
+    database: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
+    deployment: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
+  },
+  lastError: { type: String, default: "" },
+  lastAttemptAt: { type: Date, default: null },
+  leaseExpiresAt: { type: Date, default: null, index: true },
+  completedAt: { type: Date, default: null },
+}, { timestamps: true });
+orderProvisioningSchema.set("toJSON", { transform });
+orderProvisioningSchema.set("toObject", { transform });
+export const OrderProvisioningModel = mongoose.models.OrderProvisioning || mongoose.model("OrderProvisioning", orderProvisioningSchema);
+
 const modificationRequestSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   projectId: String,

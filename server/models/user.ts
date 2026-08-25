@@ -64,6 +64,7 @@ const userSchema = new mongoose.Schema({
   recoveryPassphraseEnabled: { type: Boolean, default: false },
   pushApprovalEnabled: { type: Boolean, default: false },
   phoneVerified: { type: Boolean, default: false },
+  whatsappOtpEnabled: { type: Boolean, default: false },
   referralCode: { type: String, sparse: true, index: true },
   referredBy: { type: String, default: null },
   referralCreditsEarned: { type: Number, default: 0 },
