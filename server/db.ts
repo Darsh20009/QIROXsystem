@@ -1,5 +1,6 @@
 import { connManager } from "./connection-manager";
 import { loadSystemSettings } from "./system-settings";
+import { ensureInvestorDistributionIndex } from "./services/investor-distribution";
 
 export async function connectToDatabase() {
   if (!process.env.MONGODB_URI) {
@@ -28,4 +29,7 @@ export async function connectToDatabase() {
     connManager.setEmailSettings(emailOverrides as any);
     console.log("[DB] Email settings applied from SystemSettings");
   }
+
+  await ensureInvestorDistributionIndex();
+  console.log("[DB] Investor distribution uniqueness index verified");
 }

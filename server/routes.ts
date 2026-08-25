@@ -1176,7 +1176,7 @@ export async function registerRoutes(
           },
           $unset: { leaseExpiresAt: 1 },
         },
-        { new: true },
+        { returnDocument: "after" },
       );
 
       if (projectCreated) {
@@ -8895,8 +8895,11 @@ export async function registerRoutes(
       (OperationalExpenseModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
       // Payroll (paid salaries — status=paid)
       (PayrollRecordModel as any).aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$netSalary' } } }]),
-      // Manual finance adjustments (positive = revenue boost, negative = extra cost)
-      (FinanceAdjustmentModel as any).aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]).catch(() => []),
+      // Manual finance adjustments (credit adds revenue, debit adds cost).
+      (FinanceAdjustmentModel as any).aggregate([
+        { $match: { isVoided: { $ne: true } } },
+        { $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, { $multiply: ['$amount', -1] }, '$amount'] } } } },
+      ]).catch(() => []),
     ]);
 
     const arMonths = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -14352,9 +14355,20 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { InvestorProfileModel, UserModel, PromotionLogModel } = await import("./models");
       const { userId, stakePercentage, notes } = req.body;
+      const normalizedStake = Number(stakePercentage ?? 0);
       if (!userId) return res.status(400).json({ error: "معرف المستخدم مطلوب" });
+      if (!Number.isFinite(normalizedStake) || normalizedStake < 0 || normalizedStake > 100) {
+        return res.status(400).json({ error: "نسبة الملكية يجب أن تكون بين 0 و100" });
+      }
       const existing = await InvestorProfileModel.findOne({ userId });
       if (existing) return res.status(400).json({ error: "هذا المستخدم لديه ملف مستثمر بالفعل" });
+      const stakeTotals = await InvestorProfileModel.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: null, total: { $sum: "$stakePercentage" } } },
+      ]);
+      if ((Number(stakeTotals[0]?.total) || 0) + normalizedStake > 100.000001) {
+        return res.status(400).json({ error: "إجمالي ملكيات المستثمرين النشطين لا يمكن أن يتجاوز 100%" });
+      }
       // Set role to investor if not already
       const targetUser = await UserModel.findById(userId);
       if (!targetUser) return res.status(404).json({ error: "المستخدم غير موجود" });
@@ -14365,7 +14379,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         // Add investor to additionalRoles
         await UserModel.findByIdAndUpdate(userId, { $addToSet: { additionalRoles: "investor" } });
       }
-      const profile = await InvestorProfileModel.create({ userId, stakePercentage: stakePercentage || 0, notes: notes || "" });
+      const profile = await InvestorProfileModel.create({ userId, stakePercentage: normalizedStake, notes: String(notes || "").slice(0, 2000) });
       await PromotionLogModel.create({ targetUserId: userId, promotedById: user._id || user.id, fromRole: oldRole, toRole: "investor", reason: "تعيين كمستثمر في QIROX", type: "role_add" });
       res.json(profile);
     } catch (e) { res.status(500).json({ error: "فشل إنشاء الملف" }); }
@@ -14378,7 +14392,27 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (user.role !== "admin") return res.sendStatus(403);
     try {
       const { InvestorProfileModel } = await import("./models");
-      const updated = await InvestorProfileModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" })
+      const existing = await InvestorProfileModel.findById(req.params.id);
+      if (!existing) return res.status(404).json({ error: "ملف المستثمر غير موجود" });
+      const nextStake = req.body.stakePercentage === undefined ? Number(existing.stakePercentage) : Number(req.body.stakePercentage);
+      const nextActive = req.body.isActive === undefined ? Boolean(existing.isActive) : Boolean(req.body.isActive);
+      if (!Number.isFinite(nextStake) || nextStake < 0 || nextStake > 100) {
+        return res.status(400).json({ error: "نسبة الملكية يجب أن تكون بين 0 و100" });
+      }
+      const stakeTotals = await InvestorProfileModel.aggregate([
+        { $match: { _id: { $ne: existing._id }, isActive: true } },
+        { $group: { _id: null, total: { $sum: "$stakePercentage" } } },
+      ]);
+      if (nextActive && (Number(stakeTotals[0]?.total) || 0) + nextStake > 100.000001) {
+        return res.status(400).json({ error: "إجمالي ملكيات المستثمرين النشطين لا يمكن أن يتجاوز 100%" });
+      }
+      const allowedUpdate = {
+        stakePercentage: nextStake,
+        isActive: nextActive,
+        isVerified: req.body.isVerified === undefined ? existing.isVerified : Boolean(req.body.isVerified),
+        notes: req.body.notes === undefined ? existing.notes : String(req.body.notes || "").slice(0, 2000),
+      };
+      const updated = await InvestorProfileModel.findByIdAndUpdate(req.params.id, { $set: allowedUpdate }, { returnDocument: "after", runValidators: true })
         .populate("userId", "fullName username email jobTitle profilePhotoUrl");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
@@ -14424,6 +14458,264 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   });
 
   // ═══════════════════════════════════════════════════════════════════
+  // ═══════ MONTHLY INVESTOR PROFIT DISTRIBUTIONS (additive) ═══════════
+  // ═══════════════════════════════════════════════════════════════════
+  const distributionReviewRoles = ["admin", "manager", "accountant"];
+  const distributionApprovalRoles = ["admin"];
+
+  // Preview is read-only and deliberately uses the same service as creation.
+  app.get("/api/admin/investor-distributions/preview", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionReviewRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorProfileModel, QiroxSystemSettingsModel } = await import("./models");
+      const { calculateMonthlyProfit, parseDistributionPeriod } = await import("./services/investor-distribution");
+      const calculation = await calculateMonthlyProfit(req.query.period);
+      const parsed = parseDistributionPeriod(req.query.period);
+      const investors: any[] = await InvestorProfileModel.find({ isActive: true, stakePercentage: { $gt: 0 } })
+        .populate("userId", "fullName email").sort({ stakePercentage: -1 }).lean();
+      const settings: any = await QiroxSystemSettingsModel.findOne({ key: "main" }).lean();
+      const distributionPercentage = Number(req.query.distributionPercentage ?? 100);
+      if (!Number.isFinite(distributionPercentage) || distributionPercentage < 0 || distributionPercentage > 100) {
+        return res.status(400).json({ error: "نسبة التوزيع يجب أن تكون بين 0 و100" });
+      }
+      const distributableAmount = calculation.netProfit > 0
+        ? calculation.netProfit * distributionPercentage / 100
+        : 0;
+      const investorLines = investors.map((investor: any) => ({
+        investorId: String(investor._id),
+        userId: String(investor.userId?._id || investor.userId),
+        investorName: investor.userId?.fullName || "مستثمر",
+        ownershipPercentage: Number(investor.stakePercentage) || 0,
+        dueAmount: distributableAmount * (Number(investor.stakePercentage) || 0) / 100,
+      }));
+      res.json({
+        ...calculation,
+        settings: { currency: settings?.currency || "SAR" },
+        period: parsed.period,
+        distributionPercentage,
+        distributableAmount,
+        investorLines,
+        eligible: calculation.netProfit > 0 && investors.length > 0,
+      });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message || "تعذر حساب نتيجة الشهر" });
+    }
+  });
+
+  // Review/listing is available to finance reviewers; payment data is still
+  // returned only to authorized administrative roles.
+  app.get("/api/admin/investor-distributions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionReviewRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorDistributionModel } = await import("./models");
+      const filter: any = {};
+      if (req.query.period) filter.period = String(req.query.period);
+      const distributions = await InvestorDistributionModel.find(filter)
+        .populate("createdBy", "fullName username")
+        .populate("approvedBy", "fullName username")
+        .populate("investorLines.userId", "fullName username email")
+        .sort({ period: -1 }).limit(120).lean();
+      res.json(distributions);
+    } catch (e) { res.status(500).json({ error: "فشل جلب توزيعات الأرباح" }); }
+  });
+
+  // Create a draft. The unique period index is the final concurrency guard.
+  app.post("/api/admin/investor-distributions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionReviewRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorDistributionModel, InvestorProfileModel, QiroxSystemSettingsModel } = await import("./models");
+      const { calculateMonthlyProfit, parseDistributionPeriod } = await import("./services/investor-distribution");
+      const parsed = parseDistributionPeriod(req.body.period);
+      const calculation = await calculateMonthlyProfit(parsed.period);
+      if (calculation.netProfit <= 0) return res.status(400).json({ error: "لا يمكن إنشاء توزيع من ربح شهري صفري أو سلبي" });
+      const distributionPercentage = Number(req.body.distributionPercentage ?? 100);
+      if (!Number.isFinite(distributionPercentage) || distributionPercentage < 0 || distributionPercentage > 100) {
+        return res.status(400).json({ error: "نسبة التوزيع يجب أن تكون بين 0 و100" });
+      }
+      const investors: any[] = await InvestorProfileModel.find({ isActive: true, stakePercentage: { $gt: 0 } })
+        .populate("userId", "fullName").lean();
+      if (!investors.length) return res.status(400).json({ error: "لا يوجد مستثمرون نشطون بحصص مسجلة" });
+      const ownershipTotal = investors.reduce((total: number, investor: any) => total + (Number(investor.stakePercentage) || 0), 0);
+      if (ownershipTotal > 100.000001) {
+        return res.status(400).json({ error: "إجمالي ملكيات المستثمرين النشطين يتجاوز 100% ولا يمكن إنشاء توزيع" });
+      }
+      const distributableAmount = calculation.netProfit * distributionPercentage / 100;
+      const investorLines = investors.map((investor: any) => {
+        const ownershipPercentage = Number(investor.stakePercentage) || 0;
+        const dueAmount = distributableAmount * ownershipPercentage / 100;
+        return {
+          investorId: investor._id,
+          userId: investor.userId?._id || investor.userId,
+          investorName: investor.userId?.fullName || "مستثمر",
+          ownershipPercentage,
+          dueAmount,
+          paidAmount: 0,
+          remainingAmount: dueAmount,
+          status: "pending",
+          payments: [],
+        };
+      });
+      const settings: any = await QiroxSystemSettingsModel.findOne({ key: "main" }).lean();
+      const distribution = await InvestorDistributionModel.create({
+        period: parsed.period, year: parsed.year, month: parsed.month,
+        currency: settings?.currency || "SAR",
+        revenue: calculation.revenue,
+        projectExpenses: calculation.projectExpenses,
+        operationalExpenses: calculation.operationalExpenses,
+        payrollExpenses: calculation.payrollExpenses,
+        employeePaymentExpenses: calculation.employeePaymentExpenses,
+        adjustments: calculation.adjustments,
+        totalCosts: calculation.totalCosts,
+        netProfit: calculation.netProfit,
+        distributionPercentage,
+        distributableAmount,
+        investorLines,
+        notes: String(req.body.notes || "").slice(0, 2000),
+        createdBy: (req.user as any)._id || (req.user as any).id,
+      });
+      await logActivity((req.user as any)._id || (req.user as any).id, "create_investor_distribution", "investor_distribution", String(distribution._id), { period: parsed.period, distributableAmount }, req.ip);
+      res.status(201).json(distribution);
+    } catch (e: any) {
+      if (e?.code === 11000) return res.status(409).json({ error: "يوجد توزيع مسجل لهذا الشهر بالفعل" });
+      res.status(400).json({ error: e.message || "فشل إنشاء توزيع الأرباح" });
+    }
+  });
+
+  // Only the administrator can commit the distribution for payment.
+  app.patch("/api/admin/investor-distributions/:id/approve", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionApprovalRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorDistributionModel } = await import("./models");
+      const user = req.user as any;
+      const distribution: any = await InvestorDistributionModel.findOneAndUpdate(
+        { _id: req.params.id, status: "draft" },
+        { $set: { status: "approved", approvedBy: user._id || user.id, approvedAt: new Date() } },
+        { returnDocument: "after" },
+      );
+      if (!distribution) return res.status(404).json({ error: "المسودة غير موجودة أو تمت معالجتها" });
+      await logActivity(user._id || user.id, "approve_investor_distribution", "investor_distribution", req.params.id, { period: distribution.period }, req.ip);
+      res.json(distribution);
+    } catch (e) { res.status(500).json({ error: "فشل اعتماد التوزيع" }); }
+  });
+
+  app.patch("/api/admin/investor-distributions/:id/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionApprovalRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorDistributionModel } = await import("./models");
+      const user = req.user as any;
+      const distribution: any = await InvestorDistributionModel.findOneAndUpdate(
+        { _id: req.params.id, status: { $in: ["draft", "approved"] }, $nor: [{ "investorLines.paidAmount": { $gt: 0 } }] },
+        { $set: { status: "cancelled", cancelledBy: user._id || user.id, cancelledAt: new Date(), cancellationReason: String(req.body.reason || "").slice(0, 500) } },
+        { returnDocument: "after" },
+      );
+      if (!distribution) return res.status(409).json({ error: "لا يمكن إلغاء توزيع غير موجود أو بدأ صرفه" });
+      await logActivity(user._id || user.id, "cancel_investor_distribution", "investor_distribution", req.params.id, { period: distribution.period }, req.ip);
+      res.json(distribution);
+    } catch (e) { res.status(500).json({ error: "فشل إلغاء التوزيع" }); }
+  });
+
+  // Atomic conditional update prevents two admins from paying the same
+  // remaining balance concurrently or paying more than the entitlement.
+  app.post("/api/admin/investor-distributions/:id/payments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!distributionApprovalRoles.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { InvestorDistributionModel } = await import("./models");
+      const amount = Number(req.body.amount);
+      const lineId = String(req.body.lineId || "");
+      if (!lineId || !Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "معرف المستثمر والمبلغ مطلوبان" });
+      const user = req.user as any;
+      const distribution: any = await InvestorDistributionModel.findOneAndUpdate(
+        {
+          _id: req.params.id,
+          status: { $in: ["approved", "partial_paid"] },
+          investorLines: { $elemMatch: { _id: lineId, remainingAmount: { $gte: amount } } },
+        },
+        [
+          {
+            $set: {
+              investorLines: {
+                $map: {
+                  input: "$investorLines",
+                  as: "line",
+                  in: {
+                    $cond: [
+                      { $eq: [{ $toString: "$$line._id" }, lineId] },
+                      {
+                        $mergeObjects: [
+                          "$$line",
+                          {
+                            paidAmount: { $add: [{ $ifNull: ["$$line.paidAmount", 0] }, amount] },
+                            remainingAmount: { $subtract: [{ $ifNull: ["$$line.remainingAmount", 0] }, amount] },
+                            status: {
+                              $cond: [
+                                { $lte: [{ $subtract: [{ $ifNull: ["$$line.remainingAmount", 0] }, amount] }, 0.000001] },
+                                "paid",
+                                "partial",
+                              ],
+                            },
+                            payments: {
+                              $concatArrays: [
+                                { $ifNull: ["$$line.payments", []] },
+                                [{
+                                  amount,
+                                  paidAt: new Date(),
+                                  reference: String(req.body.reference || "").slice(0, 200),
+                                  notes: String(req.body.notes || "").slice(0, 1000),
+                                  paidBy: user._id || user.id,
+                                }],
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                      "$$line",
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          {
+            $set: {
+              status: {
+                $cond: [
+                  {
+                    $and: [
+                      { $gt: [{ $size: "$investorLines" }, 0] },
+                      {
+                        $allElementsTrue: {
+                          $map: {
+                            input: "$investorLines",
+                            as: "line",
+                            in: { $lte: ["$$line.remainingAmount", 0.000001] },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  "paid",
+                  "partial_paid",
+                ],
+              },
+            },
+          },
+        ] as any,
+        { returnDocument: "after", updatePipeline: true },
+      );
+      if (!distribution) return res.status(409).json({ error: "المبلغ يتجاوز المتبقي أو أن التوزيع غير معتمد" });
+      const line = distribution.investorLines?.find((item: any) => String(item._id) === lineId);
+      await logActivity(user._id || user.id, "pay_investor_distribution", "investor_distribution", req.params.id, { period: distribution.period, lineId, amount, reference: req.body.reference || "" }, req.ip);
+      res.json({ distribution, line });
+    } catch (e) { res.status(500).json({ error: "فشل تسجيل دفعة المستثمر" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
   // ══════════════ INVESTOR PORTAL (Self-service) ════════════════════
   // ═══════════════════════════════════════════════════════════════════
 
@@ -14434,17 +14726,48 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { InvestorProfileModel, QiroxSystemSettingsModel } = await import("./models");
       const user = req.user as any;
       const uid = user._id || user.id;
-      const [profile, settings, allInvestors] = await Promise.all([
+       const [profile, settings, allInvestors] = await Promise.all([
         InvestorProfileModel.findOne({ userId: uid }).populate("userId", "fullName username email jobTitle bio profilePhotoUrl"),
         QiroxSystemSettingsModel.findOne({ key: "main" }),
-        InvestorProfileModel.find({ isActive: true }).populate("userId", "fullName username profilePhotoUrl jobTitle"),
+         InvestorProfileModel.find({ isActive: true }).populate("userId", "fullName username profilePhotoUrl jobTitle"),
       ]);
       if (!profile) return res.status(404).json({ error: "ليس لديك ملف مستثمر" });
-      const totalStake = allInvestors.reduce((s: number, i: any) => s + (i.stakePercentage || 0), 0);
+       // Investors must not receive other investors' identities or ownership
+       // data. Management keeps the existing aggregate view for this portal.
+       const visibleInvestors = ["admin", "manager"].includes(user.role)
+         ? allInvestors
+         : allInvestors.filter((investor: any) => String(investor.userId?._id || investor.userId) === String(uid));
+       const totalStake = visibleInvestors.reduce((s: number, i: any) => s + (i.stakePercentage || 0), 0);
       const valuation = settings?.systemValuation || 0;
       const myValue = valuation * (profile.stakePercentage / 100);
-      res.json({ profile, settings, allInvestors, totalStake, myValue });
+       res.json({ profile, settings, allInvestors: visibleInvestors, totalStake, myValue });
     } catch (e) { res.status(500).json({ error: "فشل جلب الملف" }); }
+  });
+
+  // Investor self-service: query is always scoped through the authenticated
+  // user's own profile and returns only that user's line items.
+  app.get("/api/investor/distributions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { InvestorProfileModel, InvestorDistributionModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const profile: any = await InvestorProfileModel.findOne({ userId: uid }).select("_id").lean();
+      if (!profile) return res.status(404).json({ error: "ليس لديك ملف مستثمر" });
+      const distributions: any[] = await InvestorDistributionModel.find({
+        status: { $in: ["approved", "partial_paid", "paid"] },
+        "investorLines.investorId": profile._id,
+      }).sort({ period: -1 }).lean();
+      res.json(distributions.map((distribution: any) => ({
+        id: String(distribution._id),
+        period: distribution.period,
+        currency: distribution.currency,
+        netProfit: distribution.netProfit,
+        distributionPercentage: distribution.distributionPercentage,
+        status: distribution.status,
+        line: distribution.investorLines.find((line: any) => String(line.investorId) === String(profile._id)),
+      })));
+    } catch (e) { res.status(500).json({ error: "فشل جلب توزيعاتك" }); }
   });
 
   // My investment payments

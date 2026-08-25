@@ -254,13 +254,66 @@ const financeAdjustmentSchema = new mongoose.Schema({
   notes:       { type: String, default: '' },
   isVoided:    { type: Boolean, default: false },
 }, { timestamps: true });
-financeAdjustmentSchema.pre('save', function(next) {
+financeAdjustmentSchema.pre('save', function() {
   this.signedAmount = this.direction === 'credit' ? this.amount : -this.amount;
   if (!this.month && this.date) {
     const d = this.date instanceof Date ? this.date : new Date(this.date);
     this.month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
-  next();
 });
 financeAdjustmentSchema.set('toJSON', { transform });
 export const FinanceAdjustmentModel = mongoose.models.FinanceAdjustment || mongoose.model("FinanceAdjustment", financeAdjustmentSchema);
+
+// ─── Monthly investor profit distributions ───────────────────────────────────
+// Additive ledger: existing investor profiles and investment payments remain
+// unchanged. A distribution stores the accounting snapshot used to calculate
+// entitlements so later edits cannot silently change an approved payout.
+const distributionPaymentSchema = new mongoose.Schema({
+  amount: { type: Number, required: true, min: 0 },
+  paidAt: { type: Date, default: Date.now },
+  reference: { type: String, default: "" },
+  notes: { type: String, default: "" },
+  paidBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+}, { _id: true });
+
+const distributionLineSchema = new mongoose.Schema({
+  investorId: { type: mongoose.Schema.Types.ObjectId, ref: "InvestorProfile", required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  investorName: { type: String, default: "" },
+  ownershipPercentage: { type: Number, required: true, min: 0, max: 100 },
+  dueAmount: { type: Number, required: true, min: 0 },
+  paidAmount: { type: Number, default: 0, min: 0 },
+  remainingAmount: { type: Number, required: true, min: 0 },
+  status: { type: String, enum: ["pending", "partial", "paid"], default: "pending" },
+  payments: { type: [distributionPaymentSchema], default: [] },
+}, { _id: true });
+
+const investorDistributionSchema = new mongoose.Schema({
+  period: { type: String, required: true, match: /^\d{4}-(0[1-9]|1[0-2])$/ },
+  year: { type: Number, required: true, min: 2000 },
+  month: { type: Number, required: true, min: 1, max: 12 },
+  currency: { type: String, default: "SAR" },
+  revenue: { type: Number, required: true, min: 0 },
+  projectExpenses: { type: Number, required: true, min: 0 },
+  operationalExpenses: { type: Number, required: true, min: 0 },
+  payrollExpenses: { type: Number, required: true, min: 0 },
+  employeePaymentExpenses: { type: Number, required: true, min: 0 },
+  adjustments: { type: Number, required: true },
+  totalCosts: { type: Number, required: true, min: 0 },
+  netProfit: { type: Number, required: true },
+  distributionPercentage: { type: Number, required: true, min: 0, max: 100, default: 100 },
+  distributableAmount: { type: Number, required: true, min: 0 },
+  investorLines: { type: [distributionLineSchema], default: [] },
+  status: { type: String, enum: ["draft", "approved", "partial_paid", "paid", "cancelled"], default: "draft", index: true },
+  notes: { type: String, default: "" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  approvedAt: { type: Date },
+  cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  cancelledAt: { type: Date },
+  cancellationReason: { type: String, default: "" },
+}, { timestamps: true });
+investorDistributionSchema.index({ period: 1 }, { unique: true });
+investorDistributionSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+investorDistributionSchema.set("toObject", { transform });
+export const InvestorDistributionModel = mongoose.models.InvestorDistribution || mongoose.model("InvestorDistribution", investorDistributionSchema);

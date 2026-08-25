@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
+import { useUser } from "@/hooks/use-auth";
 import {
   TrendingUp, DollarSign, Users, Plus, Loader2, CheckCircle2,
   XCircle, Eye, Edit2, Search, Wallet, Percent, FileText,
@@ -30,6 +31,17 @@ type Payment = {
   createdAt: string; userId: { fullName: string; username: string };
 };
 
+type DistributionLine = {
+  _id: string; investorId: string; investorName: string; ownershipPercentage: number;
+  dueAmount: number; paidAmount: number; remainingAmount: number;
+};
+type Distribution = {
+  id?: string; _id?: string; period: string; currency: string; netProfit: number;
+  distributionPercentage: number; distributableAmount: number;
+  status: "draft" | "approved" | "partial_paid" | "paid" | "cancelled";
+  investorLines: DistributionLine[];
+};
+
 type AllUsersResp = { users: { id: string; _id?: string; fullName: string; username: string; email: string; role: string }[] };
 
 function getStatusConfig(L: boolean) { return {
@@ -39,11 +51,12 @@ function getStatusConfig(L: boolean) { return {
 };
 }
 
-type Tab = "investors" | "payments";
+type Tab = "investors" | "payments" | "distributions";
 
 export default function AdminInvestors() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
+  const { data: currentUser } = useUser();
   const L = lang === "ar";
   const STATUS_CONFIG = getStatusConfig(L);
   const [tab, setTab] = useState<Tab>("investors");
@@ -55,6 +68,12 @@ export default function AdminInvestors() {
   const [newStake, setNewStake] = useState("0");
   const [newNotes, setNewNotes] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [distributionMonth, setDistributionMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [distributionPercentage, setDistributionPercentage] = useState("100");
+  const [distributionNotes, setDistributionNotes] = useState("");
+  const [paymentTarget, setPaymentTarget] = useState<{ distributionId: string; line: DistributionLine } | null>(null);
+  const [distributionPayment, setDistributionPayment] = useState({ amount: "", reference: "", notes: "" });
+  const isAdmin = (currentUser as any)?.role === "admin";
 
   const { data: investors = [], isLoading } = useQuery<InvestorProfile[]>({ queryKey: ["/api/admin/investors"] });
 
@@ -76,6 +95,28 @@ export default function AdminInvestors() {
       return r.json();
     },
     enabled: addOpen,
+  });
+
+  const { data: distributions = [], isLoading: distributionsLoading } = useQuery<Distribution[]>({
+    queryKey: ["/api/admin/investor-distributions"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/investor-distributions", { credentials: "include" });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    enabled: tab === "distributions",
+  });
+
+  const { data: distributionPreview, isLoading: previewLoading, error: previewError } = useQuery<any>({
+    queryKey: ["/api/admin/investor-distributions/preview", distributionMonth, distributionPercentage],
+    queryFn: async () => {
+      const params = new URLSearchParams({ period: distributionMonth, distributionPercentage });
+      const r = await fetch(`/api/admin/investor-distributions/preview?${params}`, { credentials: "include" });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error || "Failed");
+      return body;
+    },
+    enabled: tab === "distributions" && /^\d{4}-(0[1-9]|1[0-2])$/.test(distributionMonth),
   });
 
   const addInvestorMutation = useMutation({
@@ -109,6 +150,54 @@ export default function AdminInvestors() {
       toast({ title: L ? "✅ تم تحديث حالة الدفعة" : "✅ Payment status updated" });
     },
     onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
+  });
+
+  const createDistributionMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/investor-distributions", {
+      period: distributionMonth,
+      distributionPercentage: Number(distributionPercentage),
+      notes: distributionNotes,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/investor-distributions"] });
+      setDistributionNotes("");
+      toast({ title: L ? "تم إنشاء مسودة توزيع الأرباح" : "Distribution draft created" });
+    },
+    onError: (e: any) => toast({ title: e?.message || (L ? "فشل إنشاء المسودة" : "Failed"), variant: "destructive" }),
+  });
+
+  const approveDistributionMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/admin/investor-distributions/${id}/approve`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/investor-distributions"] });
+      toast({ title: L ? "تم اعتماد التوزيع وأصبح جاهزاً للصرف" : "Distribution approved for payment" });
+    },
+    onError: (e: any) => toast({ title: e?.message || (L ? "فشل الاعتماد" : "Approval failed"), variant: "destructive" }),
+  });
+
+  const cancelDistributionMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/admin/investor-distributions/${id}/cancel`, { reason: "إلغاء من لوحة المستثمرين" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/investor-distributions"] });
+      toast({ title: L ? "تم إلغاء التوزيع" : "Distribution cancelled" });
+    },
+    onError: (e: any) => toast({ title: e?.message || (L ? "لا يمكن الإلغاء" : "Cancellation failed"), variant: "destructive" }),
+  });
+
+  const payDistributionMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/admin/investor-distributions/${paymentTarget?.distributionId}/payments`, {
+      lineId: paymentTarget?.line._id,
+      amount: Number(distributionPayment.amount),
+      reference: distributionPayment.reference,
+      notes: distributionPayment.notes,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/investor-distributions"] });
+      setPaymentTarget(null);
+      setDistributionPayment({ amount: "", reference: "", notes: "" });
+      toast({ title: L ? "تم تسجيل دفعة المستثمر" : "Investor payment recorded" });
+    },
+    onError: (e: any) => toast({ title: e?.message || (L ? "فشل تسجيل الدفعة" : "Payment failed"), variant: "destructive" }),
   });
 
   const totalInvested = investors.reduce((s, i) => s + i.totalInvested, 0);
@@ -165,6 +254,7 @@ export default function AdminInvestors() {
           {([
             { id: "investors" as Tab, label: L ? "المستثمرون" : "Investors", icon: Users },
             { id: "payments" as Tab, label: L ? "الدفعات" : "Payments", icon: DollarSign },
+            { id: "distributions" as Tab, label: L ? "توزيع الأرباح" : "Profit Distributions", icon: TrendingUp },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-black dark:border-white text-black dark:text-white dark:text-black/70 dark:text-white/70" : "border-transparent text-black/40 dark:text-white/40"}`}
@@ -265,6 +355,100 @@ export default function AdminInvestors() {
             )}
           </div>
         )}
+
+        {/* Monthly profit distributions */}
+        {tab === "distributions" && (
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 p-5 space-y-4">
+              <div>
+                <h3 className="font-bold text-black dark:text-white">{L ? "تجهيز توزيع شهري" : "Prepare Monthly Distribution"}</h3>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-1">{L ? "تُحفظ أرقام الشهر ونسب الملكية داخل المسودة قبل الاعتماد." : "The month's figures and ownership snapshots are stored in the draft."}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "الشهر" : "Month"}</label>
+                  <Input type="month" value={distributionMonth} onChange={e => setDistributionMonth(e.target.value)} data-testid="input-distribution-month" />
+                </div>
+                <div>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "نسبة التوزيع %" : "Distribution %"}</label>
+                  <Input type="number" min={0} max={100} value={distributionPercentage} onChange={e => setDistributionPercentage(e.target.value)} data-testid="input-distribution-percentage" />
+                </div>
+                <div>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "ملاحظة" : "Note"}</label>
+                  <Input value={distributionNotes} onChange={e => setDistributionNotes(e.target.value)} placeholder={L ? "اختياري" : "Optional"} data-testid="input-distribution-notes" />
+                </div>
+              </div>
+              {previewLoading ? <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-black/30 dark:text-white/30" /></div> : previewError ? (
+                <p className="text-sm text-red-600">{(previewError as Error).message}</p>
+              ) : distributionPreview && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {[
+                    [L ? "الإيراد" : "Revenue", distributionPreview.revenue],
+                    [L ? "التكاليف" : "Costs", distributionPreview.totalCosts],
+                    [L ? "التعديلات" : "Adjustments", distributionPreview.adjustments],
+                    [L ? "صافي الربح" : "Net profit", distributionPreview.netProfit],
+                    [L ? "قابل للتوزيع" : "Distributable", distributionPreview.distributableAmount],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-3">
+                      <p className="text-[11px] text-black/40 dark:text-white/40">{label}</p>
+                      <p className="font-black text-black dark:text-white">{Number(value || 0).toLocaleString(L ? "ar-SA" : "en-US")} <SARIcon size={11} className="inline opacity-60" /></p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button
+                onClick={() => createDistributionMutation.mutate()}
+                disabled={!distributionPreview?.eligible || createDistributionMutation.isPending}
+                className="gap-2 bg-black dark:bg-white text-white dark:text-black"
+                data-testid="btn-create-distribution"
+              >
+                {createDistributionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {L ? "إنشاء مسودة الشهر" : "Create Monthly Draft"}
+              </Button>
+            </div>
+
+            {distributionsLoading ? <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div> :
+              distributions.length === 0 ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><TrendingUp className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />{L ? "لا توجد توزيعات شهرية بعد" : "No monthly distributions yet"}</div> :
+              distributions.map((distribution) => {
+                const id = String(distribution.id || distribution._id);
+                const paid = distribution.investorLines.reduce((sum, line) => sum + (line.paidAmount || 0), 0);
+                const statusLabel = distribution.status === "draft" ? (L ? "مسودة" : "Draft") :
+                  distribution.status === "approved" ? (L ? "معتمد" : "Approved") :
+                  distribution.status === "partial_paid" ? (L ? "صرف جزئي" : "Partially paid") :
+                  distribution.status === "paid" ? (L ? "صُرف بالكامل" : "Paid") : (L ? "ملغى" : "Cancelled");
+                return (
+                  <div key={id} className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 p-5 space-y-4" data-testid={`distribution-${id}`}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="font-black text-black dark:text-white">{distribution.period}</p>
+                        <p className="text-xs text-black/40 dark:text-white/40">{L ? "صافي الربح" : "Net profit"}: {distribution.netProfit.toLocaleString(L ? "ar-SA" : "en-US")} {distribution.currency} · {L ? "الموزع" : "Distributed"}: {distribution.distributableAmount.toLocaleString(L ? "ar-SA" : "en-US")} {distribution.currency}</p>
+                      </div>
+                      <Badge className="border-0">{statusLabel}</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {distribution.investorLines.map(line => (
+                        <div key={line._id} className="flex items-center gap-3 rounded-xl bg-black/[0.025] dark:bg-white/[0.03] p-3 flex-wrap">
+                          <div className="flex-1 min-w-[150px]"><p className="text-sm font-semibold text-black dark:text-white">{line.investorName}</p><p className="text-xs text-black/40 dark:text-white/40">{line.ownershipPercentage}%</p></div>
+                          <p className="text-sm font-bold text-black dark:text-white">{line.dueAmount.toLocaleString(L ? "ar-SA" : "en-US")} {distribution.currency}</p>
+                          <p className="text-xs text-black/40 dark:text-white/40">{L ? "متبقي" : "Remaining"}: {line.remainingAmount.toLocaleString(L ? "ar-SA" : "en-US")}</p>
+                          {isAdmin && ["approved", "partial_paid"].includes(distribution.status) && line.remainingAmount > 0 && (
+                            <Button size="sm" variant="outline" onClick={() => { setPaymentTarget({ distributionId: id, line }); setDistributionPayment({ amount: String(line.remainingAmount), reference: "", notes: "" }); }} data-testid={`btn-pay-distribution-${line._id}`}>
+                              <Wallet className="w-3.5 h-3.5 ml-1" />{L ? "تسجيل صرف" : "Record payment"}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap border-t border-black/[0.06] dark:border-white/[0.06] pt-3">
+                      {isAdmin && distribution.status === "draft" && <Button size="sm" onClick={() => approveDistributionMutation.mutate(id)} disabled={approveDistributionMutation.isPending} className="bg-black dark:bg-white text-white dark:text-black"><CheckCircle2 className="w-3.5 h-3.5 ml-1" />{L ? "اعتماد" : "Approve"}</Button>}
+                      {isAdmin && ["draft", "approved"].includes(distribution.status) && <Button size="sm" variant="outline" onClick={() => cancelDistributionMutation.mutate(id)} disabled={cancelDistributionMutation.isPending}><XCircle className="w-3.5 h-3.5 ml-1" />{L ? "إلغاء" : "Cancel"}</Button>}
+                      <span className="text-xs text-black/40 dark:text-white/40 mr-auto">{L ? "إجمالي المصروف" : "Paid"}: {paid.toLocaleString(L ? "ar-SA" : "en-US")} {distribution.currency}</span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
 
       {/* Add Investor Dialog */}
@@ -330,6 +514,21 @@ export default function AdminInvestors() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!paymentTarget} onOpenChange={v => !v && setPaymentTarget(null)}>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><Wallet className="w-5 h-5" />{L ? "تسجيل دفعة أرباح" : "Record profit payment"}</DialogTitle></DialogHeader>
+          {paymentTarget && <div className="space-y-4">
+            <p className="text-sm text-black/50 dark:text-white/50">{paymentTarget.line.investorName} · {L ? "المتبقي" : "Remaining"} {paymentTarget.line.remainingAmount.toLocaleString(L ? "ar-SA" : "en-US")}</p>
+            <Input type="number" min={0.01} max={paymentTarget.line.remainingAmount} value={distributionPayment.amount} onChange={e => setDistributionPayment(p => ({ ...p, amount: e.target.value }))} placeholder={L ? "المبلغ" : "Amount"} data-testid="input-distribution-payment" />
+            <Input value={distributionPayment.reference} onChange={e => setDistributionPayment(p => ({ ...p, reference: e.target.value }))} placeholder={L ? "مرجع التحويل (اختياري)" : "Transfer reference (optional)"} data-testid="input-distribution-payment-reference" />
+            <Input value={distributionPayment.notes} onChange={e => setDistributionPayment(p => ({ ...p, notes: e.target.value }))} placeholder={L ? "ملاحظة (اختياري)" : "Note (optional)"} />
+            <Button className="w-full bg-black dark:bg-white text-white dark:text-black" onClick={() => payDistributionMutation.mutate()} disabled={!Number(distributionPayment.amount) || Number(distributionPayment.amount) > paymentTarget.line.remainingAmount || payDistributionMutation.isPending} data-testid="btn-confirm-distribution-payment">
+              {payDistributionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 ml-1" />}{L ? "حفظ الدفعة" : "Save payment"}
+            </Button>
+          </div>}
         </DialogContent>
       </Dialog>
     </div>

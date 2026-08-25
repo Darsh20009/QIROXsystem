@@ -13,7 +13,8 @@
     "check-env": "npx tsx scripts/check-env.ts",
     "smoke": "npx tsx scripts/smoke-test.ts",
     "test:deployment-providers": "tsx --test server/deployment-providers.test.ts",
-    "test:store-whatsapp": "tsx --test server/store-whatsapp.test.ts"
+    "test:store-whatsapp": "tsx --test server/store-whatsapp.test.ts",
+    "test:investor-distributions": "tsx --test server/investor-distribution.test.ts"
   },
   "dependencies": {
     "@capacitor/app": "^7.1.2",

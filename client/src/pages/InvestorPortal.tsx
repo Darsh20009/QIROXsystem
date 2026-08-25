@@ -31,6 +31,12 @@ type Payment = {
   adminNote: string; createdAt: string;
 };
 
+type InvestorDistribution = {
+  id: string; period: string; currency: string; netProfit: number;
+  distributionPercentage: number; status: "draft" | "approved" | "partial_paid" | "paid";
+  line: { dueAmount: number; paidAmount: number; remainingAmount: number; ownershipPercentage: number; payments: { amount: number; paidAt: string; reference: string }[] };
+};
+
 const STATUS_CONFIG = {
   pending: { label: "بانتظار المراجعة", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: Clock },
   approved: { label: "موافق", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70", icon: CheckCircle2 },
@@ -109,7 +115,7 @@ function SignaturePad({ onChange }: { onChange: (data: string) => void }) {
   );
 }
 
-type Tab = "overview" | "payments" | "submit";
+type Tab = "overview" | "distributions" | "payments" | "submit";
 
 export default function InvestorPortal() {
   const { dir } = useI18n();
@@ -134,6 +140,10 @@ export default function InvestorPortal() {
   });
   const { data: payments = [], isLoading: payLoading } = useQuery<Payment[]>({
     queryKey: ["/api/investor/payments"],
+    enabled: isInvestorOrAdmin,
+  });
+  const { data: distributions = [], isLoading: distributionLoading } = useQuery<InvestorDistribution[]>({
+    queryKey: ["/api/investor/distributions"],
     enabled: isInvestorOrAdmin,
   });
 
@@ -289,6 +299,7 @@ export default function InvestorPortal() {
         <div className="flex gap-2 border-b border-black/[0.06] dark:border-white/[0.06]">
           {([
             { id: "overview" as Tab, label: "نظرة عامة", icon: BarChart3 },
+            { id: "distributions" as Tab, label: "أرباحي الشهرية", icon: TrendingUp },
             { id: "payments" as Tab, label: "سجل الدفعات", icon: DollarSign },
             { id: "submit" as Tab, label: "إرسال دفعة جديدة", icon: Upload },
           ]).map(t => (
@@ -344,6 +355,32 @@ export default function InvestorPortal() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Payments Tab */}
+        {tab === "distributions" && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 p-5">
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><TrendingUp className="w-4 h-4" /> سجل أرباحك الشهرية</h3>
+              <p className="text-xs text-black/40 dark:text-white/40 mt-1">تظهر هنا توزيعات ملفك فقط، دون بيانات المستثمرين الآخرين.</p>
+            </div>
+            {distributionLoading ? <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div> :
+              distributions.length === 0 ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><TrendingUp className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />لا توجد توزيعات أرباح مسجلة حتى الآن</div> :
+              distributions.map(distribution => (
+                <div key={distribution.id} className="p-5 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 space-y-3" data-testid={`my-distribution-${distribution.id}`}>
+                  <div className="flex justify-between items-start gap-3 flex-wrap">
+                    <div><p className="font-black text-black dark:text-white">{distribution.period}</p><p className="text-xs text-black/40 dark:text-white/40">صافي ربح الشهر: {distribution.netProfit.toLocaleString("ar-SA")} {distribution.currency} · نسبة التوزيع {distribution.distributionPercentage}%</p></div>
+                    <Badge className="border-0">{distribution.status === "paid" ? "صُرفت بالكامل" : distribution.status === "partial_paid" ? "صرف جزئي" : "معتمدة"}</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.03] p-3"><p className="text-xs text-black/40 dark:text-white/40">المستحق</p><p className="font-black text-black dark:text-white">{distribution.line.dueAmount.toLocaleString("ar-SA")} {distribution.currency}</p></div>
+                    <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.03] p-3"><p className="text-xs text-black/40 dark:text-white/40">المصروف</p><p className="font-black text-black dark:text-white">{distribution.line.paidAmount.toLocaleString("ar-SA")} {distribution.currency}</p></div>
+                    <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.03] p-3"><p className="text-xs text-black/40 dark:text-white/40">المتبقي</p><p className="font-black text-black dark:text-white">{distribution.line.remainingAmount.toLocaleString("ar-SA")} {distribution.currency}</p></div>
+                  </div>
+                  {distribution.line.payments?.length > 0 && <div className="space-y-1">{distribution.line.payments.map((payment, index) => <p key={index} className="text-xs text-black/40 dark:text-white/40">دفعة {new Date(payment.paidAt).toLocaleDateString("ar-SA")}: {payment.amount.toLocaleString("ar-SA")} {distribution.currency}{payment.reference ? ` · ${payment.reference}` : ""}</p>)}</div>}
+                </div>
+              ))}
           </div>
         )}
 
