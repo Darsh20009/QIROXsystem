@@ -172,6 +172,7 @@ const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
 const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
 const EmbedDashboard = lazy(() => import("@/pages/EmbedDashboard"));
 const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
+const AdminStoreWhatsApp = lazy(() => import("@/pages/AdminStoreWhatsApp"));
 const Demos = lazy(() => import("@/pages/Demos"));
 const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
@@ -421,6 +422,7 @@ function AdminRouter() {
         <Route path="/admin/switch-reminders" component={AdminSwitchReminders} />
         <Route path="/my-api-keys" component={MyApiKeys} />
         <Route path="/admin/api-keys" component={AdminApiKeys} />
+        <Route path="/admin/store-whatsapp" component={AdminStoreWhatsApp} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={PublicSupport} />
         <Route path="/support/tickets" component={SupportTickets} />

@@ -19,6 +19,7 @@ tags:
   - name: CRM V2
   - name: Proposal V2
   - name: Mail
+  - name: Store WhatsApp Business
 
 paths:
   /api/health:
@@ -220,8 +221,79 @@ paths:
         "200": { description: Proposal }
         "404": { description: Not found, or feature flag disabled }
 
+  /api/v1/stores/whatsapp/messages:
+    get:
+      tags: [Store WhatsApp Business]
+      summary: List this key's own store WhatsApp deliveries
+      security: [{ StoreWhatsAppKey: [] }]
+      responses:
+        "200": { description: Isolated delivery history for the bound store key }
+        "401": { description: Missing or invalid dedicated store key }
+        "403": { description: Disabled, expired, inactive-store, origin, or scope rejection }
+    post:
+      tags: [Store WhatsApp Business]
+      summary: Send one Store WhatsApp Business Cloud message
+      description: >
+        Requires a dedicated qrx_wa_live_ key and an Idempotency-Key header.
+        The key is bound to one active store. Requests consume one quota unit
+        only once; retries with the same idempotency key replay the same delivery.
+        Store traffic uses Meta WhatsApp Business Cloud only and never falls
+        back to the internal CRM connection.
+      security: [{ StoreWhatsAppKey: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 160 }
+          description: Unique stable key supplied by the calling system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient]
+              properties:
+                recipient:
+                  type: object
+                  required: [phone]
+                  properties:
+                    name: { type: string, example: "سارة" }
+                    phone: { type: string, example: "+966501234567" }
+                message:
+                  type: string
+                  description: Free-form text (subject to Meta customer-service rules).
+                template:
+                  type: object
+                  description: Approved Meta template. Requires templates:send scope.
+                  required: [name]
+                  properties:
+                    name: { type: string, example: "order_update" }
+                    language: { type: string, example: "ar" }
+                    parameters:
+                      type: array
+                      items: { type: string }
+            examples:
+              text:
+                value:
+                  recipient: { phone: "+966501234567", name: "سارة" }
+                  message: "تم تجهيز طلبك."
+              template:
+                value:
+                  recipient: { phone: "+966501234567" }
+                  template: { name: "order_update", language: "ar", parameters: ["1234"] }
+      responses:
+        "202": { description: Delivery created and queued or processed }
+        "200": { description: Idempotent replay of an existing delivery }
+        "409": { description: Idempotency key reused with a different payload }
+        "429": { description: Rate or recurring quota limit exceeded }
+
 components:
   securitySchemes:
+    StoreWhatsAppKey:
+      type: http
+      scheme: bearer
+      bearerFormat: qrx_wa_live_
     sessionCookie:
       type: apiKey
       in: cookie

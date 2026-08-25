@@ -18,3 +18,4 @@ export * from "./models/system";
 export * from "./models/client-tools";
 export * from "./models/proposal-v2";
 export * from "./models/notification-delivery";
+export * from "./models/whatsapp";

@@ -51,24 +51,6 @@ const contactLimiter = rateLimit({
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
 
-const storeWhatsAppRateBuckets = new Map<string, { startedAt: number; count: number }>();
-function consumeStoreWhatsAppRateLimit(keyId: string, configuredLimit: number) {
-  const now = Date.now();
-  const limit = Math.min(Math.max(Math.floor(configuredLimit || 30), 1), 300);
-  const current = storeWhatsAppRateBuckets.get(keyId);
-  const bucket = !current || now - current.startedAt >= 60_000
-    ? { startedAt: now, count: 0 }
-    : current;
-  bucket.count += 1;
-  storeWhatsAppRateBuckets.set(keyId, bucket);
-  return {
-    allowed: bucket.count <= limit,
-    limit,
-    remaining: Math.max(0, limit - bucket.count),
-    resetAt: bucket.startedAt + 60_000,
-  };
-}
-
 const QR_LOGIN_TOKEN_PATTERN = /^qrl_[a-f0-9]{64}$/i;
 const QR_LOGIN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -122,6 +104,13 @@ import { dispatchNotification, getNotificationHealth, listNotificationTemplates,
 import { normalizePhone } from "./notifications/phone";
 import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
 import { createSolidPng } from "./lib/apple-wallet-png";
+import {
+  claimStoreWhatsAppRequest,
+  createStoreWhatsAppSecret,
+  reserveStoreWhatsAppRateLimit,
+  reserveStoreWhatsAppQuota,
+  hashStoreWhatsAppKey,
+} from "./notifications/store-whatsapp";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -4622,6 +4611,112 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // ── Store WhatsApp Business keys (manager console) ─────────────────────────
+  app.get("/api/admin/store-whatsapp/keys", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StoreWhatsAppApiKeyModel, StoreWhatsAppQuotaModel } = await import("./models");
+    const now = new Date();
+    const keys = await StoreWhatsAppApiKeyModel.find().populate("storeId", "storeNameAr storeNameEn status").populate("clientId", "fullName email username").sort({ createdAt: -1 }).lean();
+    const quotas = await StoreWhatsAppQuotaModel.find({ periodEnd: { $gt: now } }).lean();
+    const quotaMap = new Map(quotas.map((quota: any) => [String(quota.keyId), quota]));
+    res.json(keys.map((key: any) => {
+      const quota = quotaMap.get(String(key._id));
+      return {
+        ...key, id: String(key._id), keyHash: undefined,
+        usage: quota ? {
+          used: quota.used, limit: quota.limit, remaining: Math.max(0, quota.limit - quota.used),
+          periodStart: quota.periodStart, periodEnd: quota.periodEnd,
+        } : { used: 0, limit: key.quotaLimit, remaining: key.quotaLimit, periodStart: null, periodEnd: null },
+      };
+    }));
+  });
+
+  app.post("/api/admin/store-whatsapp/keys", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { storeId, name, scopes, allowedOrigins, expiresAt, rateLimitPerMinute, quotaPeriod, quotaLimit } = req.body || {};
+    if (!storeId || !String(name || "").trim()) return res.status(400).json({ error: "المتجر واسم المفتاح مطلوبان" });
+    const { ClientStoreModel, StoreWhatsAppApiKeyModel } = await import("./models");
+    const store = await (ClientStoreModel as any).findById(storeId).select("_id clientId");
+    if (!store) return res.status(404).json({ error: "المتجر غير موجود" });
+    const activeCount = await StoreWhatsAppApiKeyModel.countDocuments({ storeId, isActive: true });
+    if (activeCount >= 20) return res.status(400).json({ error: "الحد الأقصى 20 مفتاحًا نشطًا لكل متجر" });
+    const validScopes = ["messages:send", "templates:send"];
+    const cleanScopes = Array.isArray(scopes) ? scopes.filter((scope: string) => validScopes.includes(scope)) : ["messages:send", "templates:send"];
+    if (!cleanScopes.length) return res.status(400).json({ error: "اختر صلاحية واحدة على الأقل" });
+    const parsedExpiry = expiresAt ? new Date(expiresAt) : null;
+    if (parsedExpiry && isNaN(parsedExpiry.getTime())) return res.status(400).json({ error: "تاريخ الانتهاء غير صالح" });
+    const secret = createStoreWhatsAppSecret();
+    const key = await StoreWhatsAppApiKeyModel.create({
+      storeId: store._id, clientId: store.clientId, name: String(name).trim(),
+      ...secret, scopes: cleanScopes,
+      allowedOrigins: Array.isArray(allowedOrigins) ? allowedOrigins.map((origin: unknown) => String(origin).trim()).filter(Boolean).slice(0, 30) : [],
+      expiresAt: parsedExpiry,
+      rateLimitPerMinute: Math.min(Math.max(Number(rateLimitPerMinute) || 30, 1), 300),
+      quotaPeriod: quotaPeriod === "bimonthly" ? "bimonthly" : "monthly",
+      quotaLimit: Math.min(Math.max(Number(quotaLimit) || 1000, 1), 1000000),
+    });
+    const { keyHash: _keyHash, ...safeKey } = key.toJSON();
+    res.status(201).json({ ...safeKey, rawKey: secret.rawKey });
+  });
+
+  app.patch("/api/admin/store-whatsapp/keys/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StoreWhatsAppApiKeyModel } = await import("./models");
+    const key = await StoreWhatsAppApiKeyModel.findById(req.params.id);
+    if (!key) return res.sendStatus(404);
+    const { name, isActive, scopes, allowedOrigins, expiresAt, rateLimitPerMinute, quotaPeriod, quotaLimit } = req.body || {};
+    if (name !== undefined) key.name = String(name).trim().slice(0, 120);
+    if (isActive !== undefined) { key.isActive = Boolean(isActive); if (!key.isActive) key.revokedAt = new Date(); }
+    if (Array.isArray(scopes)) key.scopes = scopes.filter((scope: string) => ["messages:send", "templates:send"].includes(scope));
+    if (allowedOrigins !== undefined) key.allowedOrigins = Array.isArray(allowedOrigins) ? allowedOrigins.map((origin: unknown) => String(origin).trim()).filter(Boolean).slice(0, 30) : [];
+    if (expiresAt !== undefined) key.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (rateLimitPerMinute !== undefined) key.rateLimitPerMinute = Math.min(Math.max(Number(rateLimitPerMinute) || 30, 1), 300);
+    if (quotaPeriod !== undefined) key.quotaPeriod = quotaPeriod === "bimonthly" ? "bimonthly" : "monthly";
+    if (quotaLimit !== undefined) key.quotaLimit = Math.min(Math.max(Number(quotaLimit) || 1000, 1), 1000000);
+    await key.save();
+    res.json(key.toJSON());
+  });
+
+  app.post("/api/admin/store-whatsapp/keys/:id/rotate", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StoreWhatsAppApiKeyModel } = await import("./models");
+    const current = await StoreWhatsAppApiKeyModel.findById(req.params.id);
+    if (!current) return res.sendStatus(404);
+    const secret = createStoreWhatsAppSecret();
+    const replacement = await StoreWhatsAppApiKeyModel.create({
+      storeId: current.storeId, clientId: current.clientId, name: `${current.name} (rotated)`,
+      scopes: current.scopes, allowedOrigins: current.allowedOrigins, expiresAt: current.expiresAt,
+      rateLimitPerMinute: current.rateLimitPerMinute, quotaPeriod: current.quotaPeriod, quotaLimit: current.quotaLimit,
+      rotatedFrom: current._id, ...secret,
+    });
+    current.isActive = false;
+    current.revokedAt = new Date();
+    await current.save();
+    const { keyHash: _keyHash, ...safeReplacement } = replacement.toJSON();
+    res.status(201).json({ ...safeReplacement, rawKey: secret.rawKey });
+  });
+
+  app.get("/api/admin/store-whatsapp/keys/:id/usage", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StoreWhatsAppApiKeyModel, StoreWhatsAppQuotaModel, NotificationDeliveryModel } = await import("./models");
+    const key = await StoreWhatsAppApiKeyModel.findById(req.params.id).lean();
+    if (!key) return res.sendStatus(404);
+    const [quotas, deliveries] = await Promise.all([
+      StoreWhatsAppQuotaModel.find({ keyId: key._id }).sort({ periodStart: -1 }).limit(12).lean(),
+      NotificationDeliveryModel.find({ storeId: key.storeId, channel: "whatsapp", "metadata.storeWhatsAppKeyId": String(key._id) }).sort({ createdAt: -1 }).limit(100).lean(),
+    ]);
+    res.json({
+      key: { ...key, id: String(key._id), keyHash: undefined },
+      quotas: quotas.map((quota: any) => ({ ...quota, id: String(quota._id), remaining: Math.max(0, quota.limit - quota.used) })),
+      deliveries: deliveries.map((delivery: any) => ({ ...deliveryResponse(delivery), recipient: delivery.recipient, template: delivery.template || null })),
+      summary: {
+        total: deliveries.length,
+        sent: deliveries.filter((delivery: any) => delivery.status === "sent").length,
+        failed: deliveries.filter((delivery: any) => delivery.status === "failed").length,
+      },
+    });
+  });
+
   // ══════════════════════════════════════════════════════════════
   // === WEBHOOKS (ربط إشعارات الأحداث بأنظمتك الخارجية) ===
   // ══════════════════════════════════════════════════════════════
@@ -4879,153 +4974,159 @@ export async function registerRoutes(
     res.json({ total: customers.length, data: customers });
   });
 
-  // ── Store WhatsApp API ─────────────────────────────────────────────────────
-  // A key is bound to exactly one store for this namespace. Each request is
-  // one outbound message; batching/repetition is intentionally not supported.
-  app.post("/api/v1/stores/whatsapp/messages", async (req, res) => {
-    const ctx = await resolveApiKey(req, res); if (!ctx) return;
-    if (!requireScope(ctx.scopes, "whatsapp", res)) return;
-
-    const storeId = String(ctx.keyDoc.storeId || "");
-    if (!storeId) return res.status(403).json({ error: "API key is not bound to a store" });
-
-    const { ClientStoreModel, NotificationDeliveryModel } = await import("./models");
-    const store = await (ClientStoreModel as any).findOne({
-      _id: storeId,
-      clientId: ctx.clientId,
-      status: "active",
-    }).select("_id storeNameAr storeNameEn status subdomain");
-    if (!store) {
-      return res.status(403).json({ error: "Store is not found, not owned by this key, or not active" });
+  // ── Store WhatsApp Business Cloud API ──────────────────────────────────────
+  // This namespace never uses the internal Baileys session. It accepts only
+  // dedicated qrx_wa_live_ keys, each bound to exactly one active store.
+  async function resolveStoreWhatsAppKey(req: any, res: any) {
+    const authorization = String(req.headers.authorization || "");
+    if (!authorization.startsWith("Bearer qrx_wa_live_")) {
+      res.status(401).json({ error: "Missing or invalid Store WhatsApp API key" });
+      return null;
     }
+    const { StoreWhatsAppApiKeyModel, ClientStoreModel } = await import("./models");
+    const key = await StoreWhatsAppApiKeyModel.findOne({ keyHash: hashStoreWhatsAppKey(authorization.slice(7)) }).select("+keyHash");
+    if (!key) { res.status(401).json({ error: "Store WhatsApp API key not found" }); return null; }
+    if (!key.isActive) { res.status(403).json({ error: "Store WhatsApp API key is disabled" }); return null; }
+    if (key.expiresAt && key.expiresAt < new Date()) { res.status(403).json({ error: "Store WhatsApp API key has expired" }); return null; }
+    const origin = String(req.get("origin") || "").trim();
+    const allowedOrigins = (key.allowedOrigins || []).map((value: string) => value.trim()).filter(Boolean);
+    if (origin && allowedOrigins.length && !allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
+      res.status(403).json({ error: "Request origin is not allowed for this key", code: "ORIGIN_NOT_ALLOWED" });
+      return null;
+    }
+    const store = await (ClientStoreModel as any).findOne({ _id: key.storeId, clientId: key.clientId, status: "active" }).select("_id clientId status");
+    if (!store) { res.status(403).json({ error: "Store is inactive or no longer belongs to this key" }); return null; }
+    StoreWhatsAppApiKeyModel.updateOne({ _id: key._id }, { $set: { lastUsedAt: new Date() }, $inc: { requestCount: 1 } }).exec().catch(() => {});
+    return { key, storeId: String(store._id), clientId: String(key.clientId) };
+  }
 
+  function hasStoreWhatsAppScope(key: any, scope: string, res: any) {
+    if (!(key.scopes || []).includes(scope)) {
+      res.status(403).json({ error: `Store WhatsApp key does not have '${scope}' permission` });
+      return false;
+    }
+    return true;
+  }
+
+  function deliveryResponse(delivery: any) {
+    return {
+      id: String(delivery._id),
+      status: delivery.status,
+      provider: delivery.provider || null,
+      providerMessageId: delivery.providerMessageId || null,
+      attempts: delivery.attempts,
+      sentAt: delivery.sentAt || null,
+      lastError: delivery.lastError || null,
+      createdAt: delivery.createdAt,
+    };
+  }
+
+  app.post("/api/v1/stores/whatsapp/messages", async (req, res) => {
+    const ctx = await resolveStoreWhatsAppKey(req, res); if (!ctx) return;
     const recipient = req.body?.recipient || {};
-    const rawPhone = String(recipient.phone || req.body?.phone || "").trim();
-    const phone = normalizePhone(rawPhone);
+    const phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim());
     const message = String(req.body?.message || "").trim();
-    const suppliedIdempotencyKey = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
+    const template = req.body?.template || null;
+    const idempotencyToken = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
+    if (!hasStoreWhatsAppScope(ctx.key, template ? "templates:send" : "messages:send", res)) return;
     if (!phone.valid) return res.status(400).json({ error: phone.reason || "A valid recipient phone is required" });
-    if (!message) return res.status(400).json({ error: "Message is required" });
+    if (!message && !template) return res.status(400).json({ error: "message or approved template is required" });
     if (message.length > 4000) return res.status(400).json({ error: "Message must not exceed 4000 characters" });
-    if (suppliedIdempotencyKey.length < 8 || suppliedIdempotencyKey.length > 160) {
+    if (idempotencyToken.length < 8 || idempotencyToken.length > 160) {
       return res.status(400).json({ error: "Idempotency-Key must be between 8 and 160 characters" });
     }
 
-    const idempotencyKey = `store-whatsapp:${storeId}:${suppliedIdempotencyKey}`;
+    const templateName = template ? String(template.name || "").trim() : "";
+    const templateLanguage = template ? String(template.language || "ar").trim() : "";
+    const templateParameters = template && Array.isArray(template.parameters) ? template.parameters.map(String).slice(0, 20) : [];
+    if (template && (!/^[a-z0-9_]{1,128}$/.test(templateName) || !/^[a-z]{2,3}(?:_[A-Z]{2})?$/.test(templateLanguage))) {
+      return res.status(400).json({ error: "Template name or language is invalid" });
+    }
+    if (templateParameters.some((value: string) => value.length > 1024)) {
+      return res.status(400).json({ error: "Template parameters must not exceed 1024 characters" });
+    }
+
     const payloadHash = crypto.createHash("sha256").update(JSON.stringify({
-      phone: phone.e164,
-      message,
-      name: String(recipient.name || "").trim().slice(0, 160),
+      phone: phone.e164, message, name: String(recipient.name || "").trim(), templateName, templateLanguage, templateParameters,
     })).digest("hex");
-    const existing = await NotificationDeliveryModel.findOne({
-      idempotencyKey,
-      channel: "whatsapp",
-      storeId,
-    });
-    if (existing) {
-      if (String((existing as any).metadata?.payloadHash || "") !== payloadHash) {
-        return res.status(409).json({ error: "Idempotency-Key was already used with a different message", code: "IDEMPOTENCY_CONFLICT" });
+    const claim = await claimStoreWhatsAppRequest(String(ctx.key._id), ctx.storeId, idempotencyToken, payloadHash);
+    const { NotificationDeliveryModel, StoreWhatsAppRequestModel } = await import("./models");
+    if (!claim.owner) {
+      const existingDelivery = claim.request?.deliveryId
+        ? await NotificationDeliveryModel.findById(claim.request.deliveryId).lean()
+        : null;
+      if (String(claim.request?.payloadHash || "") !== payloadHash) {
+        return res.status(409).json({ error: "Idempotency-Key was already used with a different request", code: "IDEMPOTENCY_CONFLICT" });
       }
       return res.status(200).json({
-        ok: true,
+        ok: claim.request?.status === "accepted",
         replayed: true,
-        delivery: {
-          id: String(existing._id),
-          channel: existing.channel,
-          status: existing.status,
-          provider: existing.provider || null,
-          providerMessageId: existing.providerMessageId || null,
-          attempts: existing.attempts,
-          sentAt: existing.sentAt || null,
-          lastError: existing.lastError || null,
-          createdAt: existing.createdAt,
-        },
+        ...(existingDelivery ? { delivery: deliveryResponse(existingDelivery) } : { status: claim.request?.status, error: claim.request?.error || null }),
       });
     }
 
-    const health: any = await getNotificationHealth().catch(() => null);
-    const whatsappHealth = health?.whatsapp;
-    if (!whatsappHealth?.configured) {
-      return res.status(503).json({ error: "WhatsApp provider is not configured", code: "WHATSAPP_NOT_CONFIGURED" });
-    }
-    if (whatsappHealth.provider !== "meta" && whatsappHealth.status?.status !== "connected") {
-      return res.status(503).json({ error: "QIROX WhatsApp is not connected", code: "WHATSAPP_NOT_CONNECTED" });
-    }
-
-    const rate = consumeStoreWhatsAppRateLimit(String(ctx.keyDoc._id), Number(ctx.keyDoc.rateLimitPerMinute) || 30);
+    const rate = await reserveStoreWhatsAppRateLimit(ctx.key);
     res.setHeader("X-RateLimit-Limit", String(rate.limit));
     res.setHeader("X-RateLimit-Remaining", String(rate.remaining));
     res.setHeader("X-RateLimit-Reset", String(Math.ceil(rate.resetAt / 1000)));
     if (!rate.allowed) {
-      return res.status(429).json({ error: "WhatsApp rate limit exceeded", code: "RATE_LIMITED", retryAfterSeconds: Math.ceil((rate.resetAt - Date.now()) / 1000) });
+      await StoreWhatsAppRequestModel.updateOne(
+        { _id: claim.request._id },
+        { $set: { status: "rejected", error: "RATE_LIMITED", expiresAt: rate.resetAt } },
+      );
+      return res.status(429).json({ error: "WhatsApp rate limit exceeded", code: "RATE_LIMITED", retryAfterSeconds: Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000) });
     }
 
+    const quota = await reserveStoreWhatsAppQuota(ctx.key);
+    if (!quota.allowed) {
+      await StoreWhatsAppRequestModel.updateOne({ _id: claim.request._id }, { $set: { status: "rejected", error: "QUOTA_EXCEEDED" } });
+      return res.status(429).json({ error: "Store WhatsApp quota exceeded", code: "QUOTA_EXCEEDED", quota });
+    }
     try {
-      const deliveries = await dispatchNotification({
+      const result = (await dispatchNotification({
         event: "store_whatsapp_message",
-        idempotencyKey,
-        storeId,
-        recipient: {
-          name: String(recipient.name || "").trim().slice(0, 160),
-          phone: phone.e164,
-        },
-        subject: "Store WhatsApp message",
+        idempotencyKey: `store-whatsapp:${String(ctx.key._id)}:${idempotencyToken}`,
+        storeId: ctx.storeId,
+        recipient: { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
+        subject: "Store WhatsApp Business message",
         message,
         channels: ["whatsapp"],
+        whatsappTemplate: templateName,
         metadata: {
-          source: "store_whatsapp_api",
-          storeId,
-          keyId: String(ctx.keyDoc._id),
+          source: "store_whatsapp_business_api",
+          storeWhatsApp: true,
+          storeWhatsAppKeyId: String(ctx.key._id),
           payloadHash,
+          ...(templateName ? { metaTemplateName: templateName, metaTemplateLanguage: templateLanguage, metaTemplateParameters: templateParameters } : {}),
         },
-      });
-      const result = deliveries[0];
+      }))[0];
       const delivery = await NotificationDeliveryModel.findById(result?.id).lean();
-      res.status(202).json({
-        ok: true,
-        replayed: false,
-        delivery: delivery ? {
-          id: String((delivery as any)._id),
-          channel: (delivery as any).channel,
-          status: (delivery as any).status,
-          provider: (delivery as any).provider || null,
-          providerMessageId: (delivery as any).providerMessageId || null,
-          attempts: (delivery as any).attempts,
-          sentAt: (delivery as any).sentAt || null,
-          lastError: (delivery as any).lastError || null,
-          createdAt: (delivery as any).createdAt,
-        } : result,
-      });
+      await StoreWhatsAppRequestModel.updateOne(
+        { _id: claim.request._id },
+        { $set: { status: "accepted", deliveryId: delivery?._id || null, quotaId: quota.quotaId } },
+      );
+      res.status(202).json({ ok: true, replayed: false, quota, delivery: delivery ? deliveryResponse(delivery) : result });
     } catch (error: any) {
+      await StoreWhatsAppRequestModel.updateOne({ _id: claim.request._id }, { $set: { status: "rejected", quotaId: quota.quotaId, error: String(error?.message || "DELIVERY_CREATE_FAILED").slice(0, 500) } });
       res.status(500).json({ error: error?.message || "Unable to create WhatsApp delivery" });
     }
   });
 
-  // Query this store's own outbound message log.
   app.get("/api/v1/stores/whatsapp/messages", async (req, res) => {
-    const ctx = await resolveApiKey(req, res); if (!ctx) return;
-    if (!requireScope(ctx.scopes, "whatsapp", res)) return;
-    const storeId = String(ctx.keyDoc.storeId || "");
-    if (!storeId) return res.status(403).json({ error: "API key is not bound to a store" });
-    const { ClientStoreModel, NotificationDeliveryModel } = await import("./models");
-    const store = await (ClientStoreModel as any).findOne({ _id: storeId, clientId: ctx.clientId, status: "active" }).select("_id");
-    if (!store) return res.status(403).json({ error: "Store is not found, not owned by this key, or not active" });
+    const ctx = await resolveStoreWhatsAppKey(req, res); if (!ctx) return;
+    if (!hasStoreWhatsAppScope(ctx.key, "messages:send", res)) return;
+    const { NotificationDeliveryModel } = await import("./models");
     const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
-    const deliveries = await NotificationDeliveryModel.find({ storeId, channel: "whatsapp" })
-      .sort({ createdAt: -1 }).limit(limit).lean();
-    res.json({
-      data: deliveries.map((delivery: any) => ({
-        id: String(delivery._id),
-        status: delivery.status,
-        provider: delivery.provider || null,
-        providerMessageId: delivery.providerMessageId || null,
-        recipient: { name: delivery.recipient?.name || "", phone: delivery.recipient?.phone || "" },
-        attempts: delivery.attempts,
-        sentAt: delivery.sentAt || null,
-        lastError: delivery.lastError || null,
-        createdAt: delivery.createdAt,
-      })),
-    });
+    const deliveries = await NotificationDeliveryModel.find({
+      storeId: ctx.storeId,
+      channel: "whatsapp",
+      "metadata.storeWhatsAppKeyId": String(ctx.key._id),
+    }).sort({ createdAt: -1 }).limit(limit).lean();
+    res.json({ data: deliveries.map((delivery: any) => ({
+      ...deliveryResponse(delivery),
+      recipient: { name: delivery.recipient?.name || "", phone: delivery.recipient?.phone || "" },
+      template: delivery.template || null,
+    })) });
   });
 
   // === CHAT API ===

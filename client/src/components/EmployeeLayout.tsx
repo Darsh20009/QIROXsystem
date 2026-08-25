@@ -113,6 +113,7 @@ const ALL_NAV: Record<string, NavItem> = {
   conn_settings:     { id: "conn_settings",     labelAr: "إعدادات الاتصال",     labelEn: "Connections",          icon: Link2,           href: "/admin/connection-settings",  group: "config" },
   app_publish:       { id: "app_publish",       labelAr: "نشر التطبيق",          labelEn: "App Publish",          icon: Smartphone,      href: "/admin/app-publish",          group: "config" },
   api_keys:          { id: "api_keys",          labelAr: "مفاتيح API",           labelEn: "API Keys",             icon: Key,             href: "/admin/api-keys",             group: "config" },
+  store_whatsapp:    { id: "store_whatsapp",    labelAr: "واتساب أعمال للمتاجر",labelEn: "Store WhatsApp",       icon: MessageSquare,   href: "/admin/store-whatsapp",       group: "config" },
   cron_jobs:         { id: "cron_jobs",         labelAr: "المهام المجدولة",      labelEn: "Cron Jobs",            icon: RefreshCcw,      href: "/admin/cron-jobs",            group: "config" },
   atlas_db:          { id: "atlas_db",          labelAr: "قاعدة البيانات",       labelEn: "MongoDB Atlas",        icon: Database,        href: "/admin/atlas",                group: "config" },
   qirox_settings:    { id: "qirox_settings",    labelAr: "إعدادات QIROX",        labelEn: "QIROX Settings",       icon: SlidersHorizontal,href: "/admin/qirox-settings",      group: "config" },
@@ -167,7 +168,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "gamification", "activity_log",
     // Config (admin only)
     "settings", "roles", "sys_features", "mod_config", "conn_settings", "app_publish",
-    "api_keys", "cron_jobs", "atlas_db", "qirox_settings", "extra_addons", "data_requests", "countries",
+    "api_keys", "store_whatsapp", "cron_jobs", "atlas_db", "qirox_settings", "extra_addons", "data_requests", "countries",
     // Personal
     "mail", "profile", "changelog",
   ],
@@ -191,7 +192,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     // Tools
     "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "activity_log",
     // Config (limited)
-    "settings",
+    "settings", "store_whatsapp",
     // Personal
     "mail", "profile", "changelog",
   ],

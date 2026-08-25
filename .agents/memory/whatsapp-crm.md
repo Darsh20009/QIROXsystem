@@ -54,6 +54,20 @@ description: Free WhatsApp Web integration via @whiskeysockets/baileys — AI au
 - Significantly lighter on resources
 - Same QR-based auth flow as WhatsApp Web
 
+## Store WhatsApp Business boundary
+- Store-facing API traffic must use Meta WhatsApp Business Cloud only, with a
+  dedicated store-scoped key, durable idempotency claim, and atomic quota
+  reservation. It must never fall back to the Baileys CRM session.
+
+**Why:** The QR-connected session is an internal operational CRM identity,
+not an externally provisioned WhatsApp Business transport. Falling back would
+break store isolation and could send a customer's transactional traffic through
+the wrong account.
+
+**How to apply:** Any new store/system WhatsApp endpoint belongs on the
+official delivery path, records a delivery result, and keeps retries tied to
+the original quota reservation and idempotency key.
+
 ## Connection lifecycle
 1. POST /connect → `waModule.connect()` starts Baileys
 2. SSE streams QR → frontend shows QRCodeCanvas

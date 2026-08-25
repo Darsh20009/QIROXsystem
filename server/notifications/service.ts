@@ -127,23 +127,26 @@ async function sendWhatsAppThroughMeta(delivery: any): Promise<{ provider: strin
   // QIROX template keys are internal. A Meta template is used only when its
   // approved name is explicitly configured, so a local template never
   // accidentally masquerades as an approved Meta template.
+  const directTemplateName = String(delivery.metadata?.metaTemplateName || "").trim();
   const templateKey = String(delivery.template || "")
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "_");
-  const template = templateKey ? process.env[`WHATSAPP_META_TEMPLATE_${templateKey}`] || "" : "";
+  const template = directTemplateName || (templateKey ? process.env[`WHATSAPP_META_TEMPLATE_${templateKey}`] || "" : "");
   const payload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     to,
   };
   if (template) {
     payload.type = "template";
+    const parameters = Array.isArray(delivery.metadata?.metaTemplateParameters)
+      ? delivery.metadata.metaTemplateParameters
+        .map((value: unknown) => ({ type: "text", text: String(value) }))
+        .slice(0, 20)
+      : [];
     payload.template = {
       name: template,
-      language: { code: process.env.WHATSAPP_META_TEMPLATE_LANGUAGE || "ar" },
-      components: [{
-        type: "body",
-        parameters: [{ type: "text", text: String(delivery.textBody || "") }],
-      }],
+      language: { code: String(delivery.metadata?.metaTemplateLanguage || process.env.WHATSAPP_META_TEMPLATE_LANGUAGE || "ar") },
+      ...(parameters.length ? { components: [{ type: "body", parameters }] } : {}),
     };
   } else {
     // Meta permits free-form text only within its customer-service window.
@@ -177,6 +180,14 @@ async function sendWhatsAppThroughBaileys(delivery: any): Promise<{ provider: st
 async function sendWhatsApp(delivery: any): Promise<{ provider: string; messageId?: string }> {
   const provider = (process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase();
   const metaConfigured = Boolean(process.env.WHATSAPP_META_ACCESS_TOKEN && process.env.WHATSAPP_META_PHONE_NUMBER_ID);
+  // Store API traffic is always official Business Cloud traffic. It must
+  // never fall through to the internal Baileys session.
+  if (delivery.metadata?.storeWhatsApp === true) {
+    if (!metaConfigured) {
+      throw new Error("Meta WhatsApp Business غير مهيأ: أضف WHATSAPP_META_ACCESS_TOKEN وWHATSAPP_META_PHONE_NUMBER_ID");
+    }
+    return sendWhatsAppThroughMeta(delivery);
+  }
   if (provider === "meta" || (!provider && metaConfigured)) return sendWhatsAppThroughMeta(delivery);
   if (provider === "baileys" || !provider) return sendWhatsAppThroughBaileys(delivery);
   throw new Error("WHATSAPP_PROVIDER غير مدعوم. استخدم meta أو baileys");
