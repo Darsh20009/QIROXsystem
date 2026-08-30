@@ -21,6 +21,18 @@ import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { cache, CACHE_TTL } from "./cache";
+import {
+  DATA_ENTRY_ORDER_HIDDEN_FIELDS,
+  DATA_ENTRY_SPEC_HIDDEN_FIELDS,
+  DATA_ENTRY_USER_FIELDS,
+  isAllowedPartnerLogoMimeType,
+  preserveOriginalLogoUrl,
+  projectDataEntryUser,
+  projectDataEntryUsers,
+  redactFields,
+  redactSensitiveFields,
+  roleCanAccess,
+} from "./data-entry-policy";
 
 // ── Rate limiters ────────────────────────────────────────────────
 const loginLimiter = rateLimit({
@@ -276,8 +288,7 @@ const partnerLogoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
-    if (allowed.includes(file.mimetype)) cb(null, true);
+    if (isAllowedPartnerLogoMimeType(file.mimetype)) cb(null, true);
     else cb(new Error("نوع الشعار غير مسموح به"));
   },
 });
@@ -917,7 +928,7 @@ export async function registerRoutes(
 
   app.post("/api/upload/partner-logo", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (!["admin", "manager", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!roleCanAccess((req.user as any).role, "partnerLogo", "create")) return res.sendStatus(403);
     partnerLogoUpload.single("file")(req, res, async (err) => {
       if (err instanceof multer.MulterError) {
         return res.status(400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "حجم الشعار كبير جداً (الحد الأقصى 10 ميجابايت)" : "تعذر رفع الشعار" });
@@ -940,21 +951,23 @@ export async function registerRoutes(
           const sharpLib = sharpModule.default || sharpModule.sharp || sharpModule;
           if (typeof sharpLib !== "function") throw new Error("image processor unavailable");
           await sharpLib(req.file.buffer).ensureAlpha().png({ compressionLevel: 9 }).toFile(path.join(uploadsDir, pngFilename));
+          const logoResult = preserveOriginalLogoUrl(`/uploads/${originalFilename}`, `/uploads/${pngFilename}`);
           return res.json({
-            url: `/uploads/${pngFilename}`,
-            originalUrl: `/uploads/${originalFilename}`,
+            url: logoResult.logoUrl,
+            originalUrl: logoResult.logoOriginalUrl,
             filename: req.file.originalname,
             size: req.file.size,
-            processed: true,
+            processed: logoResult.processed,
           });
         } catch (processingError: any) {
           console.warn("[partner-logo] processing failed:", processingError?.message || "unknown error");
+          const logoResult = preserveOriginalLogoUrl(`/uploads/${originalFilename}`, null);
           return res.json({
-            url: `/uploads/${originalFilename}`,
-            originalUrl: `/uploads/${originalFilename}`,
+            url: logoResult.logoUrl,
+            originalUrl: logoResult.logoOriginalUrl,
             filename: req.file.originalname,
             size: req.file.size,
-            processed: false,
+            processed: logoResult.processed,
             warning: "تعذر تجهيز نسخة PNG شفافة، تم الاحتفاظ بالملف الأصلي.",
           });
         }
@@ -1129,7 +1142,7 @@ export async function registerRoutes(
   const userDirectoryRoles = ["admin", "manager", "hr", "data_entry"];
   const staffRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "hr", "marketing", "content", "data_entry"];
   const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress", "allowedPages"];
-  const dataEntryUserFields = ["email", "fullName", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "workEmail", "bio", "address", "city", "taxNumber", "organizationName", "commercialRegistration", "nationalAddress"];
+  const dataEntryUserFields = [...DATA_ENTRY_USER_FIELDS];
   const dataEntryOrderFields = [
     "serviceType", "planTier", "planPeriod", "planSegment", "businessName", "phone", "notes",
     "projectType", "sector", "competitors", "visualStyle", "favoriteExamples", "requiredFunctions",
@@ -1138,11 +1151,7 @@ export async function registerRoutes(
     "contentUrl", "imagesUrl", "videoUrl", "commercialRegUrl", "taxRegUrl", "nationalIdUrl",
     "files", "adminNotes", "internalNotes",
   ];
-  const dataEntryOrderHiddenFields = [
-    "accessCredentials", "paymentMethod", "paymentProofUrl", "paymentStatus", "paymentRejectionReason",
-    "totalAmount", "walletAmountUsed", "marginPct", "isDepositPaid", "shippingFee", "ibanCertUrl", "items",
-    "scheduledMeeting",
-  ];
+  const dataEntryOrderHiddenFields = [...DATA_ENTRY_ORDER_HIDDEN_FIELDS];
   const dataEntrySpecFields = [
     "projectName", "clientEmail", "projectStatus", "techStack", "database", "hosting", "framework",
     "language", "customDomain", "stagingUrl", "productionUrl", "sslEnabled", "cdnEnabled",
@@ -1150,19 +1159,14 @@ export async function registerRoutes(
     "estimatedHours", "deadline", "startDate", "notes", "teamNotes", "technologies", "features",
     "clientBrief", "projectIdeas",
   ];
-  const dataEntrySpecHiddenFields = [
-    "totalBudget", "paidAmount", "databaseUri", "serverIp", "deploymentUsername",
-    "deploymentPassword", "variables", "customVars",
-  ];
+  const dataEntrySpecHiddenFields = [...DATA_ENTRY_SPEC_HIDDEN_FIELDS];
   const redactOrderForDataEntry = (order: any) => {
     const safe = { ...(order?.toObject ? order.toObject() : order) };
-    for (const key of dataEntryOrderHiddenFields) delete safe[key];
-    return safe;
+    return redactFields(safe, dataEntryOrderHiddenFields);
   };
   const redactSpecsForDataEntry = (specs: any) => {
     const safe = { ...(specs?.toObject ? specs.toObject() : specs) };
-    for (const key of dataEntrySpecHiddenFields) delete safe[key];
-    return safe;
+    return redactFields(safe, dataEntrySpecHiddenFields);
   };
   const toPublicProvisioning = (record: any) => {
     const source = record?.toObject ? record.toObject() : record;
@@ -1301,6 +1305,8 @@ export async function registerRoutes(
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
     const search = (req.query.search as string || "").trim();
     const roleFilter = req.query.role as string;
+    const isDataEntry = (req.user as any).role === "data_entry";
+    const serializeUsers = (value: any) => isDataEntry ? projectDataEntryUsers(value) : sanitizeUser(value);
     if (page > 0) {
       const filter: any = {};
       if (search) filter.$or = [
@@ -1315,10 +1321,10 @@ export async function registerRoutes(
         .skip((page - 1) * limit)
         .limit(limit)
         .lean();
-      return res.json({ data: sanitizeUser(docs), total, page, totalPages: Math.ceil(total / limit) });
+      return res.json({ data: serializeUsers(docs), total, page, totalPages: Math.ceil(total / limit) });
     }
     const users = await storage.getUsers();
-    res.json(sanitizeUser(users));
+    res.json(serializeUsers(users));
   });
 
   const allowedRoles = [...staffRoles, "client"];
@@ -2721,7 +2727,10 @@ export async function registerRoutes(
       const allowed = rolesParam.split(",").map((r: string) => r.trim());
       employees = employees.filter((u: any) => allowed.includes(u.role));
     }
-    res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
+    const isDataEntry = (req.user as any).role === "data_entry";
+    res.json(isDataEntry
+      ? employees.map((u: any) => projectDataEntryUser(u))
+      : employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
   });
 
   // ICE server credentials endpoint — STUN always + TURN if configured
@@ -4663,7 +4672,7 @@ export async function registerRoutes(
 
   // ── Admin: all keys ──
   app.get("/api/admin/api-keys", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager","data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "apiKeys", "read")) return res.sendStatus(403);
     const { ClientApiKeyModel, UserModel } = await import("./models");
     const { clientId, status } = req.query as any;
     const filter: any = {};
@@ -4678,11 +4687,7 @@ export async function registerRoutes(
     users.forEach((u: any) => { userMap[String(u._id)] = u; });
     const isDataEntry = (req.user as any).role === "data_entry";
     const result = keys.map((k: any) => {
-      const safe = { ...k };
-      delete safe.keyHash;
-      delete safe.rawKey;
-      delete safe.secret;
-      delete safe.token;
+      const safe = redactSensitiveFields(k);
       const client = userMap[String(k.clientId)] || null;
       return {
         ...safe,
@@ -4694,7 +4699,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/api-keys/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "apiKeys", "update")) return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     const doc = await ClientApiKeyModel.findById(req.params.id);
     if (!doc) return res.sendStatus(404);
@@ -4707,7 +4712,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/api-keys/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "apiKeys", "delete")) return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     await ClientApiKeyModel.findByIdAndDelete(req.params.id);
     res.sendStatus(204);
@@ -6063,7 +6068,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/partners", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "read")) {
       return res.sendStatus(403);
     }
     const partners = await storage.getAllPartners();
@@ -6071,7 +6076,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/partners", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "create")) {
       return res.sendStatus(403);
     }
     const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
@@ -6083,7 +6088,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/partners/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "update")) {
       return res.sendStatus(403);
     }
     const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
@@ -6094,7 +6099,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/partners/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "delete")) {
       return res.sendStatus(403);
     }
     await storage.deletePartner(req.params.id);
@@ -16405,7 +16410,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // GET /api/admin/kanban/tasks — list all plan tasks
   app.get("/api/admin/kanban/tasks", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "read")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
       const me = req.user as any;
@@ -16421,7 +16426,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // POST /api/admin/kanban/tasks — create a new plan task
   app.post("/api/admin/kanban/tasks", async (req, res) => {
-    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "create")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel, NotificationModel } = await import("./models");
       const me = req.user as any;
@@ -16469,7 +16474,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // PATCH /api/admin/kanban/tasks/:id/status — move task between stages
   app.patch("/api/admin/kanban/tasks/:id/status", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "statusUpdate")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel, UserModel } = await import("./models");
       const me = req.user as any;
@@ -16513,7 +16518,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // PATCH /api/admin/kanban/tasks/:id — edit full task details
   app.patch("/api/admin/kanban/tasks/:id", async (req, res) => {
-    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "update")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
       const { title, description, priority, assignedTo, deadline, plan, devPlan, projectName } = req.body;
@@ -16538,7 +16543,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // DELETE /api/admin/kanban/tasks/:id — delete a task
   app.delete("/api/admin/kanban/tasks/:id", async (req, res) => {
-    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "delete")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
       await (KanbanTaskModel as any).findByIdAndDelete(req.params.id);
