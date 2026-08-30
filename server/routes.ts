@@ -14,6 +14,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
 import { registerMailRoutes } from "./domains/mail";
 import { registerCustomerV2Routes } from "./routes/customer-v2";
@@ -111,6 +112,17 @@ import {
   reserveStoreWhatsAppQuota,
   hashStoreWhatsAppKey,
 } from "./notifications/store-whatsapp";
+import {
+  PROJECT_INTEGRATION_TYPES,
+  PROJECT_INTEGRATION_ENVIRONMENTS,
+  createProjectIntegrationSecret,
+  projectIntegrationApiPath,
+  projectIntegrationDocsPath,
+  hashProjectIntegrationKey,
+  reserveProjectIntegrationRateLimit,
+  serializeProjectIntegration,
+  projectIntegrationApiDocs,
+} from "./project-integrations";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -5146,13 +5158,11 @@ export async function registerRoutes(
 
   // ─── Project integrations (safe management + external project API) ───────
   const getProjectIntegrationRefQuery = (ref: string) => {
-    const mongoose = require("mongoose");
     if (!mongoose.Types.ObjectId.isValid(ref)) return null;
     return { $or: [{ orderId: ref }, { projectId: ref }] };
   };
 
   const projectIntegrationResponse = (integration: any, req: any, orderId?: string) => {
-    const { serializeProjectIntegration } = require("./project-integrations");
     return serializeProjectIntegration(integration, req, orderId);
   };
 
@@ -5166,7 +5176,6 @@ export async function registerRoutes(
 
   // Public, secret-free documentation for developers.
   app.get("/api/v1/projects/integrations/docs", (_req, res) => {
-    const { projectIntegrationApiDocs } = require("./project-integrations");
     res.json(projectIntegrationApiDocs);
   });
 
@@ -5204,13 +5213,11 @@ export async function registerRoutes(
     if (!requireIntegrationManager(req, res)) return;
     const type = String(req.body?.type || "").trim();
     const environment = String(req.body?.environment || "development").trim();
-    const { PROJECT_INTEGRATION_TYPES, PROJECT_INTEGRATION_ENVIRONMENTS, createProjectIntegrationSecret, projectIntegrationApiPath, projectIntegrationDocsPath } = require("./project-integrations");
     if (!PROJECT_INTEGRATION_TYPES.includes(type)) return res.status(400).json({ error: "نوع التكامل غير مدعوم" });
     if (!PROJECT_INTEGRATION_ENVIRONMENTS.includes(environment)) return res.status(400).json({ error: "بيئة التكامل غير مدعومة" });
 
     try {
-      const mongoose = await import("mongoose");
-      if (!mongoose.default.Types.ObjectId.isValid(req.params.id)) return res.sendStatus(404);
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.sendStatus(404);
       const { OrderModel, ProjectModel, ProjectIntegrationModel } = await import("./models");
       const order = await (OrderModel as any).findById(req.params.id).select("_id").lean();
       if (!order) return res.sendStatus(404);
@@ -5284,7 +5291,6 @@ export async function registerRoutes(
       const current = await (ProjectIntegrationModel as any).findById(req.params.id).lean();
       if (!current) return res.sendStatus(404);
       const type = current.type;
-      const { createProjectIntegrationSecret, projectIntegrationApiPath, projectIntegrationDocsPath } = require("./project-integrations");
       const secret = createProjectIntegrationSecret(type);
       const replacement = await (ProjectIntegrationModel as any).create({
         projectId: current.projectId || null,
@@ -5329,7 +5335,6 @@ export async function registerRoutes(
     const query = getProjectIntegrationRefQuery(req.params.projectId);
     if (!query) { res.status(404).json({ error: "Project not found" }); return null; }
     const { ProjectIntegrationModel } = await import("./models");
-    const { hashProjectIntegrationKey, reserveProjectIntegrationRateLimit } = require("./project-integrations");
     const integration = await (ProjectIntegrationModel as any).findOne({
       ...query,
       type,
