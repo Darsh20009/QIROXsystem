@@ -43,3 +43,4 @@
 - [Lazy page cache recovery](lazy-page-cache-recovery.md) — PWA cache versions must advance with deployments so stale lazy-loaded chunks do not trigger the global maintenance fallback.
 - [Managed provider capacity](managed-provider-capacity.md) — Railway/Render deployment is gated by verified capacity values and has a server-side kill switch; never assume public APIs expose billable usage.
 - [Mongoose pre-save hooks](mongoose-presave-hooks.md) — On the current Mongoose runtime, synchronous pre-save hooks must not call a `next` callback.
+- [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.

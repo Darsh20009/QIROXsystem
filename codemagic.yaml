@@ -228,21 +228,18 @@ workflows:
       - name: Publish to TestFlight
         script: |
           set -e
+          umask 077
+          trap 'rm -f /tmp/asc_key.p8' EXIT
           python3 << 'PYEOF'
           import os, sys
           key = os.environ.get('APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY', '')
           key = key.replace('\\n', '\n').strip()
+          if not (key.startswith('-----BEGIN PRIVATE KEY-----') and
+                  key.endswith('-----END PRIVATE KEY-----')):
+              raise SystemExit('App Store Connect private key is missing or malformed')
           with open('/tmp/asc_key.p8', 'w') as f:
               f.write(key + '\n')
-          lines = key.splitlines()
-          print(f"Key lines: {len(lines)}")
-          print(f"First: {lines[0] if lines else 'EMPTY'}")
           PYEOF
-          if ! head -1 /tmp/asc_key.p8 | grep -q 'BEGIN'; then
-            echo "Key missing BEGIN header"
-            head -3 /tmp/asc_key.p8
-            exit 1
-          fi
           IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
           [ -z "$IPA" ] && echo "No IPA found" && exit 1
           app-store-connect publish \
