@@ -9,7 +9,7 @@ import {
   reserveProjectIntegrationRateLimit,
   serializeProjectIntegration,
 } from "./project-integrations";
-import { dispatchNotification } from "./notifications/service";
+import { dispatchNotification, processDueNotificationDeliveries } from "./notifications/service";
 import { NotificationDeliveryModel } from "./models/notification-delivery";
 import { ProjectIntegrationModel } from "./models/project-integrations";
 
@@ -141,6 +141,7 @@ test("project integration keys are scoped, revocable, expirable, and idempotent"
 
 test("a failed project WhatsApp delivery is replay-safe and never falls back to Baileys", {
   skip: !process.env.MONGODB_URI,
+  concurrency: false,
 }, async () => {
   await mongoose.connect(process.env.MONGODB_URI!);
   const marker = `project-provider-outage-${new mongoose.Types.ObjectId()}`;
@@ -244,6 +245,79 @@ test("a failed project WhatsApp delivery is replay-safe and never falls back to 
       else process.env[key] = originalSmtpEnv[key];
     }
     await NotificationDeliveryModel.deleteMany({ idempotencyKey: { $in: [marker, `${marker}-no-baileys`, `${marker}-smtp`] } });
+    await mongoose.disconnect();
+  }
+});
+
+test("an expired project WhatsApp lease recovers through Meta with durable sanitized error context", {
+  skip: !process.env.MONGODB_URI,
+  concurrency: false,
+}, async () => {
+  await mongoose.connect(process.env.MONGODB_URI!);
+  const marker = `project-provider-crash-recovery-${new mongoose.Types.ObjectId()}`;
+  const originalFetch = globalThis.fetch;
+  const originalProvider = process.env.WHATSAPP_PROVIDER;
+  const originalToken = process.env.WHATSAPP_META_ACCESS_TOKEN;
+  const originalPhoneId = process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+  let providerCalls = 0;
+
+  try {
+    // Recovery must honor the project delivery boundary, not the global
+    // provider preference used by the internal WhatsApp session.
+    process.env.WHATSAPP_PROVIDER = "baileys";
+    process.env.WHATSAPP_META_ACCESS_TOKEN = "meta-recovery-secret";
+    process.env.WHATSAPP_META_PHONE_NUMBER_ID = "recovery-phone-number";
+    globalThis.fetch = (async () => {
+      providerCalls += 1;
+      throw new Error("Meta recovery failed after provider accepted request access_token=meta-recovery-secret");
+    }) as typeof fetch;
+
+    const delivery = await NotificationDeliveryModel.create({
+      event: "project_whatsapp_worker_crash",
+      idempotencyKey: marker,
+      channel: "whatsapp",
+      status: "sending",
+      recipient: {
+        name: "Recovery Test",
+        phone: "+966501234567",
+        normalizedPhone: "+966501234567",
+      },
+      subject: "test",
+      body: "test",
+      textBody: "test",
+      metadata: { source: "project_integration_api", projectWhatsApp: true },
+      attempts: 1,
+      maxAttempts: 3,
+      lastError: "worker crashed after claiming the delivery",
+      claimToken: "crashed-worker-claim",
+      leaseExpiresAt: new Date(Date.now() - 1_000),
+    });
+
+    const recoveredCount = await processDueNotificationDeliveries();
+    const recovered = await NotificationDeliveryModel.findById(delivery._id).lean();
+
+    assert.equal(recoveredCount, 1, "the worker should discover the expired sending lease");
+    assert.equal(providerCalls, 1, "recovery should make one Meta attempt");
+    assert.ok(recovered);
+    assert.equal(recovered.status, "retrying", "a recoverable provider failure must remain durable");
+    assert.equal(recovered.attempts, 2, "the recovery claim must count as a new attempt");
+    assert.match(recovered.lastError, /Meta recovery failed after provider accepted request/);
+    assert.equal(recovered.lastError.includes("meta-recovery-secret"), false, "provider credentials must not be persisted");
+    assert.match(recovered.lastError, /access_token=\[redacted\]/, "credential fields must be redacted");
+    assert.equal(JSON.stringify(recovered).includes("meta-recovery-secret"), false, "provider credentials must not leak through the durable record");
+    assert.equal(recovered.leaseExpiresAt, null, "the recovered attempt must release its lease");
+    assert.notEqual(recovered.claimToken, "crashed-worker-claim", "recovery must replace the crashed worker claim");
+    assert.equal(recovered.metadata?.projectWhatsApp, true);
+    assert.equal(recovered.provider, "", "a failed recovery must not claim a provider message id");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalProvider === undefined) delete process.env.WHATSAPP_PROVIDER;
+    else process.env.WHATSAPP_PROVIDER = originalProvider;
+    if (originalToken === undefined) delete process.env.WHATSAPP_META_ACCESS_TOKEN;
+    else process.env.WHATSAPP_META_ACCESS_TOKEN = originalToken;
+    if (originalPhoneId === undefined) delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+    else process.env.WHATSAPP_META_PHONE_NUMBER_ID = originalPhoneId;
+    await NotificationDeliveryModel.deleteMany({ idempotencyKey: marker });
     await mongoose.disconnect();
   }
 });
