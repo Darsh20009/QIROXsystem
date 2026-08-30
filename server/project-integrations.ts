@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export const PROJECT_INTEGRATION_TYPES = ["whatsapp", "email"] as const;
+export const PROJECT_INTEGRATION_TYPES = ["whatsapp", "email", "api"] as const;
 export const PROJECT_INTEGRATION_ENVIRONMENTS = ["development", "staging", "production"] as const;
 export type ProjectIntegrationType = (typeof PROJECT_INTEGRATION_TYPES)[number];
 export type ProjectIntegrationEnvironment = (typeof PROJECT_INTEGRATION_ENVIRONMENTS)[number];
@@ -19,7 +19,9 @@ export function createProjectIntegrationSecret(type: ProjectIntegrationType) {
 }
 
 export function integrationTypeLabel(type: ProjectIntegrationType): string {
-  return type === "whatsapp" ? "WhatsApp Business" : "Project Email";
+  if (type === "whatsapp") return "WhatsApp Business";
+  if (type === "email") return "Project Email";
+  return "Project Integration API";
 }
 
 export function projectIntegrationApiPath(orderId: string, type: ProjectIntegrationType): string {
@@ -96,6 +98,7 @@ export const projectIntegrationApiDocs = {
   limits: {
     whatsapp: { messageMaxLength: 4000, idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
     email: { messageMaxLength: 100000, subjectMaxLength: 200, idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
+    api: { messageMaxLength: 100000, channels: ["email", "whatsapp"], idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
   },
   endpoints: [
     {
@@ -109,6 +112,12 @@ export const projectIntegrationApiDocs = {
       path: "/api/v1/projects/:projectId/email",
       body: { recipient: { email: "customer@example.com", name: "اسم المستلم" }, subject: "عنوان الرسالة", message: "نص الرسالة" },
       description: "إرسال بريد المشروع عبر مزود SMTP المهيأ.",
+    },
+    {
+      method: "POST",
+      path: "/api/v1/projects/:projectId/api",
+      body: { channel: "email", recipient: { email: "customer@example.com", name: "اسم المستلم" }, subject: "عنوان الرسالة", message: "نص الرسالة" },
+      description: "نقطة الربط العامة للمشروع؛ اختر email أو whatsapp مع نفس مفتاح الربط.",
     },
   ],
   headers: {

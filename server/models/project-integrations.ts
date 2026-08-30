@@ -4,7 +4,7 @@ import { transform } from "./utils";
 const projectIntegrationSchema = new Schema({
   projectId: { type: Schema.Types.ObjectId, ref: "Project", default: null, index: true },
   orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true, index: true },
-  type: { type: String, enum: ["whatsapp", "email"], required: true, index: true },
+  type: { type: String, enum: ["whatsapp", "email", "api"], required: true, index: true },
   environment: { type: String, enum: ["development", "staging", "production"], default: "development" },
   label: { type: String, default: "تكامل المشروع", trim: true, maxlength: 120 },
   status: { type: String, enum: ["active", "disabled", "expired"], default: "active", index: true },

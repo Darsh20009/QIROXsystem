@@ -5314,7 +5314,13 @@ export async function registerRoutes(
         orderId: order._id,
         type,
         environment,
-        label: String(req.body?.label || "").trim().slice(0, 120) || (type === "whatsapp" ? "WhatsApp Business للمشروع" : "البريد الإلكتروني للمشروع"),
+        label: String(req.body?.label || "").trim().slice(0, 120) || (
+          type === "whatsapp"
+            ? "WhatsApp Business للمشروع"
+            : type === "email"
+              ? "البريد الإلكتروني للمشروع"
+              : "API الربط العام للمشروع"
+        ),
         status: "active",
         keyHash: secret.keyHash,
         keyPrefix: secret.keyPrefix,
@@ -5323,7 +5329,7 @@ export async function registerRoutes(
         documentationPath: projectIntegrationDocsPath(),
         allowedOrigins: Array.isArray(req.body?.allowedOrigins) ? req.body.allowedOrigins.map(String).map((v: string) => v.trim()).filter(Boolean).slice(0, 20) : [],
         rateLimitPerMinute: Math.min(Math.max(Number(req.body?.rateLimitPerMinute) || 30, 1), 300),
-        maxMessageLength: type === "email" ? 100000 : 4000,
+        maxMessageLength: type === "whatsapp" ? 4000 : 100000,
         createdBy: (req.user as any)?.id || null,
       });
       res.status(201).json({ integration: projectIntegrationResponse(integration, req, String(order._id)), secret: secret.rawKey });
@@ -5386,7 +5392,7 @@ export async function registerRoutes(
         documentationPath: current.documentationPath || projectIntegrationDocsPath(),
         allowedOrigins: current.allowedOrigins || [],
         rateLimitPerMinute: current.rateLimitPerMinute || 30,
-        maxMessageLength: current.maxMessageLength || (type === "email" ? 100000 : 4000),
+        maxMessageLength: current.maxMessageLength || (type === "whatsapp" ? 4000 : 100000),
         rotatedFrom: current._id,
         createdBy: (req.user as any)?.id || null,
       });
@@ -5403,7 +5409,7 @@ export async function registerRoutes(
 
   const resolveProjectIntegrationKey = async (req: any, res: any, type: string) => {
     const authorization = String(req.get("authorization") || "");
-    if (!/^Bearer\s+qrx_project_(whatsapp|email)_[a-f0-9]{64}$/i.test(authorization)) {
+    if (!/^Bearer\s+qrx_project_(whatsapp|email|api)_[a-f0-9]{64}$/i.test(authorization)) {
       res.status(401).json({ error: "Project integration Bearer key is required" });
       return null;
     }
@@ -5446,8 +5452,13 @@ export async function registerRoutes(
     return integration;
   };
 
-  const handleProjectIntegrationMessage = async (type: "whatsapp" | "email", req: any, res: any) => {
-    const integration = await resolveProjectIntegrationKey(req, res, type);
+  const handleProjectIntegrationMessage = async (
+    channel: "whatsapp" | "email",
+    req: any,
+    res: any,
+    credentialType: "whatsapp" | "email" | "api" = channel,
+  ) => {
+    const integration = await resolveProjectIntegrationKey(req, res, credentialType);
     if (!integration) return;
     const recipient = req.body?.recipient || {};
     const idempotencyToken = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
@@ -5461,7 +5472,7 @@ export async function registerRoutes(
     let templateLanguage = "ar";
     let templateParameters: string[] = [];
 
-    if (type === "whatsapp") {
+    if (channel === "whatsapp") {
       phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim()) as any;
       const template = req.body?.template;
       if (template) {
@@ -5485,24 +5496,25 @@ export async function registerRoutes(
       recipient.email = email;
     }
 
-    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({ type, recipient, subject, message, templateName, templateLanguage, templateParameters })).digest("hex");
+    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({ channel, credentialType, recipient, subject, message, templateName, templateLanguage, templateParameters })).digest("hex");
     try {
       const result = (await dispatchNotification({
-        event: `project_${type}_message`,
+        event: `project_${channel}_message`,
         idempotencyKey: `project-integration:${String(integration._id)}:${idempotencyToken}`,
-        recipient: type === "email"
+        recipient: channel === "email"
           ? { name: String(recipient.name || "").trim().slice(0, 160), email: recipient.email }
           : { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
         subject: subject || "Project WhatsApp Business message",
         message,
-        channels: [type],
+        channels: [channel],
         whatsappTemplate: templateName,
         metadata: {
           source: "project_integration_api",
           projectIntegrationId: String(integration._id),
           environment: integration.environment,
           payloadHash,
-          ...(type === "whatsapp" ? { projectWhatsApp: true } : {}),
+          ...(channel === "whatsapp" ? { projectWhatsApp: true } : {}),
+          ...(credentialType === "api" ? { projectIntegrationApi: true } : {}),
           ...(templateName ? { metaTemplateName: templateName, metaTemplateLanguage: templateLanguage, metaTemplateParameters: templateParameters } : {}),
         },
       }))[0];
@@ -5516,6 +5528,13 @@ export async function registerRoutes(
 
   app.post("/api/v1/projects/:projectId/whatsapp", (req, res) => handleProjectIntegrationMessage("whatsapp", req, res));
   app.post("/api/v1/projects/:projectId/email", (req, res) => handleProjectIntegrationMessage("email", req, res));
+  app.post("/api/v1/projects/:projectId/api", (req, res) => {
+    const channel = String(req.body?.channel || "").trim().toLowerCase();
+    if (channel !== "email" && channel !== "whatsapp") {
+      return res.status(400).json({ error: "channel must be email or whatsapp" });
+    }
+    return handleProjectIntegrationMessage(channel, req, res, "api");
+  });
 
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {

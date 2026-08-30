@@ -16,6 +16,9 @@ import { ProjectIntegrationModel } from "./models/project-integrations";
 test("project integration secrets stay one-time and rate limits are isolated", async () => {
   const secret = createProjectIntegrationSecret("whatsapp");
   assert.match(secret.rawKey, /^qrx_project_whatsapp_[a-f0-9]{64}$/);
+  const apiSecret = createProjectIntegrationSecret("api");
+  assert.match(apiSecret.rawKey, /^qrx_project_api_[a-f0-9]{64}$/);
+  assert.equal(projectIntegrationApiPath("project-1", "api"), "/api/v1/projects/project-1/api");
   assert.equal(hashProjectIntegrationKey(secret.rawKey), secret.keyHash);
   assert.notEqual(secret.rawKey, secret.keyHash);
   assert.equal(secret.keyPrefix, `${secret.rawKey.slice(0, 24)}...`);
@@ -40,7 +43,8 @@ test("project integration secrets stay one-time and rate limits are isolated", a
   assert.equal(serializedText.includes(secret.rawKey), false, "raw key must never be serialized");
   assert.equal(serializedText.includes(secret.keyHash), false, "key hash must never be serialized");
   assert.equal(serialized?.keyPrefix, secret.keyPrefix);
-  assert.equal(projectIntegrationApiDocs.endpoints.length, 2);
+  assert.equal(projectIntegrationApiDocs.endpoints.length, 3);
+  assert.deepEqual(projectIntegrationApiDocs.limits.api.channels, ["email", "whatsapp"]);
   assert.equal(JSON.stringify(projectIntegrationApiDocs).includes("WHATSAPP_META_ACCESS_TOKEN"), false);
 
   const rateKey = `unit-${new mongoose.Types.ObjectId()}`;

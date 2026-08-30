@@ -509,11 +509,12 @@ const orderStatusColors: Record<string, { bg: string; text: string; label: strin
 };
 
 function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: string; mode?: "manage" | "readonly" }) {
+  type ProjectIntegrationType = "whatsapp" | "email" | "api";
   const { dir } = useI18n();
   const { toast } = useToast();
   const canManage = mode === "manage";
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<"whatsapp" | "email">("whatsapp");
+  const [selectedType, setSelectedType] = useState<ProjectIntegrationType>("whatsapp");
   const [environment, setEnvironment] = useState("development");
   const [label, setLabel] = useState("");
   const [rateLimit, setRateLimit] = useState("30");
@@ -566,8 +567,11 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
     onError: () => toast({ title: "تعذر تدوير المفتاح", variant: "destructive" }),
   });
 
-  const integrationByType = (type: string) => integrations.find((item: any) => item.type === type && item.status !== "disabled") || integrations.find((item: any) => item.type === type);
-  const openSetup = (type: "whatsapp" | "email") => {
+  const integrationByType = (type: ProjectIntegrationType) => integrations.find((item: any) => item.type === type && item.status !== "disabled") || integrations.find((item: any) => item.type === type);
+  const integrationTitle = (type: ProjectIntegrationType) => (
+    type === "whatsapp" ? "WhatsApp Business" : type === "email" ? "البريد الإلكتروني" : "API الربط العام"
+  );
+  const openSetup = (type: ProjectIntegrationType) => {
     const existing = integrationByType(type);
     setSelectedType(type);
     setEnvironment(existing?.environment || "development");
@@ -581,6 +585,7 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
   const cards = [
     { type: "whatsapp" as const, title: "WhatsApp Business", description: "إرسال رسمي عبر Meta، منفصل عن جلسة CRM الداخلية", icon: MessageSquare },
     { type: "email" as const, title: "البريد الإلكتروني", description: "إرسال بريد المشروع عبر مزود SMTP المهيأ", icon: Mail },
+    { type: "api" as const, title: "API الربط العام", description: "نقطة موحّدة للتكاملات الخارجية عبر البريد أو WhatsApp", icon: Link2 },
   ];
 
   if (!orderId) return null;
@@ -595,7 +600,7 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
         </div>
         {isLoading && <Loader2 className="w-4 h-4 animate-spin text-black/30 dark:text-white/30" />}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {cards.map(({ type, title, description, icon: Icon }) => {
           const integration = integrationByType(type);
           return (
@@ -634,7 +639,7 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
       {canManage && (
         <Dialog open={dialogOpen} onOpenChange={open => { setDialogOpen(open); if (!open) setNewSecret(null); }}>
           <DialogContent className="max-w-lg rounded-2xl" dir={dir}>
-            <DialogHeader><DialogTitle className="text-right flex items-center gap-2 font-black"><KeyRound className="w-4 h-4" /> إعداد {selectedType === "whatsapp" ? "WhatsApp Business" : "البريد الإلكتروني"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="text-right flex items-center gap-2 font-black"><KeyRound className="w-4 h-4" /> إعداد {integrationTitle(selectedType)}</DialogTitle></DialogHeader>
             {newSecret ? (
               <div className="space-y-4">
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] p-4">
@@ -1542,9 +1547,15 @@ function EmployeeDashboard({ user }: { user: any }) {
                               </label>
                             </div>
                           </div>
-                        </div>
+                         </div>
 
-                        {/* Section 4: Environment Variables */}
+                         {/* Project integrations */}
+                         <ProjectIntegrationsPanel
+                           orderId={selectedOrder.id}
+                           mode={user?.role === "admin" || user?.role === "manager" ? "manage" : "readonly"}
+                         />
+
+                         {/* Section 4: Environment Variables */}
                         <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
                           <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-1 flex items-center gap-2">
                             <KeyRound className="w-3.5 h-3.5" />
@@ -1598,11 +1609,6 @@ function EmployeeDashboard({ user }: { user: any }) {
                           </div>
                         </div>
 
-                        {/* Project integrations */}
-                        <ProjectIntegrationsPanel
-                          orderId={selectedOrder.id}
-                          mode={user?.role === "admin" || user?.role === "manager" ? "manage" : "readonly"}
-                        />
 
                         {/* Section 6: Notes */}
                         <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
