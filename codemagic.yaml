@@ -18,13 +18,12 @@ workflows:
       - name: Install dependencies and build web assets
         script: |
           set -e
-          # yarn avoids the "Exit handler never called!" npm v10 macOS bug
-          # that is triggered by packages with native bindings (canvas, bcrypt)
+          # Use the repository lockfile. The Codemagic image may provide
+          # modern Yarn, where --ignore-scripts is not a supported option.
           install_deps() {
             for attempt in 1 2 3; do
               rm -rf node_modules
-              if yarn install --ignore-scripts --non-interactive \
-                --network-timeout 300000; then
+              if npm ci --ignore-scripts --legacy-peer-deps; then
                 echo "Dependencies installed successfully on attempt ${attempt}"
                 return 0
               fi
@@ -107,13 +106,12 @@ workflows:
       - name: Install dependencies and build web assets
         script: |
           set -e
-          # yarn avoids the "Exit handler never called!" npm v10 macOS bug
-          # that is triggered by packages with native bindings (canvas, bcrypt)
+          # Use the repository lockfile. The Codemagic image may provide
+          # modern Yarn, where --ignore-scripts is not a supported option.
           install_deps() {
             for attempt in 1 2 3; do
               rm -rf node_modules
-              if yarn install --ignore-scripts --non-interactive \
-                --network-timeout 300000; then
+              if npm ci --ignore-scripts --legacy-peer-deps; then
                 echo "Dependencies installed successfully on attempt ${attempt}"
                 return 0
               fi
