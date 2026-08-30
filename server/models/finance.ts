@@ -185,6 +185,45 @@ const investmentPaymentSchema = new mongoose.Schema({
 investmentPaymentSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const InvestmentPaymentModel = mongoose.models.InvestmentPayment || mongoose.model("InvestmentPayment", investmentPaymentSchema);
 
+/**
+ * Approve an investment payment exactly once.
+ *
+ * The status predicate is part of the atomic payment update. MongoDB therefore
+ * lets only one concurrent request claim a pending payment; retries that see
+ * an already-approved payment return it without applying another increment.
+ */
+export async function approveInvestmentPayment(
+  paymentId: mongoose.Types.ObjectId | string,
+  approvedBy: mongoose.Types.ObjectId | string,
+  adminNote = "",
+) {
+  const payment = await InvestmentPaymentModel.findOneAndUpdate(
+    { _id: paymentId, status: "pending" },
+    {
+      $set: {
+        status: "approved",
+        adminNote,
+        approvedBy,
+        approvedAt: new Date(),
+      },
+    },
+    { returnDocument: "after" },
+  );
+
+  if (payment) {
+    await InvestorProfileModel.findByIdAndUpdate(payment.investorId, {
+      $inc: { totalInvested: payment.amount },
+    });
+    return { payment, applied: true };
+  }
+
+  // A retry after the successful claim is intentionally a no-op.
+  return {
+    payment: await InvestmentPaymentModel.findById(paymentId),
+    applied: false,
+  };
+}
+
 const operationalExpenseSchema = new mongoose.Schema({
   category: { type: String, enum: ["operational", "marketing", "admin", "product", "other"], default: "operational" },
   description: { type: String, required: true },

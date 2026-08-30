@@ -5,6 +5,7 @@ import {
   EmployeePaymentModel,
   FinanceAdjustmentModel,
   InvestorDistributionModel,
+  InvestmentPaymentModel,
   InvestorProfileModel,
   InvoiceModel,
   OperationalExpenseModel,
@@ -12,6 +13,7 @@ import {
   OrderModel,
   PayrollRecordModel,
   UserModel,
+  approveInvestmentPayment,
 } from "./models";
 import { calculateMonthlyProfit, ensureInvestorDistributionIndex, parseDistributionPeriod } from "./services/investor-distribution";
 
@@ -26,6 +28,7 @@ test("monthly investor distributions calculate snapshots and protect payouts", a
   const paidAt = new Date(start.getFullYear(), start.getMonth(), 10);
   const userIds: mongoose.Types.ObjectId[] = [];
   const distributionIds: mongoose.Types.ObjectId[] = [];
+  const paymentIds: mongoose.Types.ObjectId[] = [];
 
   try {
     await ensureInvestorDistributionIndex();
@@ -42,6 +45,35 @@ test("monthly investor distributions calculate snapshots and protect payouts", a
       InvestorProfileModel.create({ userId: investorA._id, stakePercentage: 25, isActive: true }),
       InvestorProfileModel.create({ userId: investorB._id, stakePercentage: 75, isActive: true }),
     ]) as any[];
+
+    const investmentPayment: any = await InvestmentPaymentModel.create({
+      investorId: profileA._id,
+      userId: investorA._id,
+      amount: 2500,
+      description: marker,
+    });
+    paymentIds.push(investmentPayment._id);
+    const concurrentApprovals = await Promise.all(
+      Array.from({ length: 8 }, () => approveInvestmentPayment(investmentPayment._id, admin._id)),
+    );
+    assert.equal(
+      concurrentApprovals.filter((result) => result.applied).length,
+      1,
+      "only one concurrent approval can apply the investment",
+    );
+    assert.equal(
+      Number((await InvestorProfileModel.findById(profileA._id)).totalInvested),
+      2500,
+      "concurrent approval must increment totalInvested once",
+    );
+    const retryApproval = await approveInvestmentPayment(investmentPayment._id, admin._id);
+    assert.equal(retryApproval.applied, false, "retrying an approved payment is a no-op");
+    assert.equal(
+      Number((await InvestorProfileModel.findById(profileA._id)).totalInvested),
+      2500,
+      "retrying approval must not increment totalInvested again",
+    );
+
     const order: any = await OrderModel.create({ userId: client._id, status: "approved", businessName: marker, totalAmount: 1000 });
     const invoice: any = await InvoiceModel.create({
       orderId: order._id, userId: client._id, invoiceNumber: marker, amount: 1000, totalAmount: 1000, status: "paid", paidAt,
@@ -169,6 +201,7 @@ test("monthly investor distributions calculate snapshots and protect payouts", a
   } finally {
     await Promise.all([
       InvestorDistributionModel.deleteMany({ _id: { $in: distributionIds } }),
+      InvestmentPaymentModel.deleteMany({ _id: { $in: paymentIds } }),
       InvestorProfileModel.deleteMany({ userId: { $in: userIds } }),
       UserModel.deleteMany({ _id: { $in: userIds } }),
       InvoiceModel.deleteMany({ invoiceNumber: marker }),

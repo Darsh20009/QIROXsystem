@@ -14458,17 +14458,32 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     const user = req.user as any;
     if (user.role !== "admin") return res.sendStatus(403);
     try {
-      const { InvestmentPaymentModel, InvestorProfileModel } = await import("./models");
+      const { InvestmentPaymentModel, approveInvestmentPayment } = await import("./models");
       const { status, adminNote } = req.body;
       if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "الحالة غير صحيحة" });
-      const payment = await InvestmentPaymentModel.findByIdAndUpdate(req.params.id, {
-        $set: { status, adminNote: adminNote || "", approvedBy: user._id || user.id, approvedAt: new Date() }
-      }, { returnDocument: "after" });
-      if (!payment) return res.status(404).json({ error: "الدفعة غير موجودة" });
+
       if (status === "approved") {
-        await InvestorProfileModel.findByIdAndUpdate(payment.investorId, { $inc: { totalInvested: payment.amount } });
+        const result = await approveInvestmentPayment(req.params.id, user._id || user.id, adminNote || "");
+        if (!result.payment) return res.status(404).json({ error: "الدفعة غير موجودة" });
+        if (result.payment.status !== "approved") {
+          return res.status(409).json({ error: "لا يمكن اعتماد دفعة مرفوضة" });
+        }
+        return res.json(result.payment);
       }
-      res.json(payment);
+
+      const payment = await InvestmentPaymentModel.findOneAndUpdate(
+        { _id: req.params.id, status: "pending" },
+        { $set: { status: "rejected", adminNote: adminNote || "" } },
+        { returnDocument: "after" },
+      );
+      if (payment) return res.json(payment);
+
+      const existing = await InvestmentPaymentModel.findById(req.params.id);
+      if (!existing) return res.status(404).json({ error: "الدفعة غير موجودة" });
+      if (existing.status === "approved") {
+        return res.status(409).json({ error: "لا يمكن رفض دفعة معتمدة" });
+      }
+      res.json(existing);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });
 
