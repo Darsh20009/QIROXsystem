@@ -30,3 +30,10 @@ const openOAuthNative = async (path: string) => {
 **Why:** Apple Guideline 4 rejects apps that open the system browser (Safari.app) for sign-in. SFSafariViewController is Apple's recommended in-app solution. `@capacitor/browser` wraps it automatically.
 
 **How to apply:** Any new OAuth provider added must also call `openOAuthNative(path)` on native, not `window.location.href`. The `handleGoogleLogin`, `handleAppleLogin`, `handleGithubLogin` functions in Login.tsx all follow this pattern.
+
+## Session regeneration
+Capture the native-flow marker before calling `req.login`; Passport may regenerate the session during login and discard transient session fields. Pass the captured boolean into the final redirect helper.
+
+**Why:** Without capturing it before `req.login`, a successful native OAuth callback can fall back to `/login` instead of returning through the app's custom URL scheme.
+
+**How to apply:** Keep the provider callback's native state separate from the post-login session state, and use it for success and failure redirects after Passport finishes.

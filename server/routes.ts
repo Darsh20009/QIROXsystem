@@ -292,6 +292,15 @@ export async function registerRoutes(
     if (user.role === "client") return "/dashboard";
     return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
   };
+  // Native OAuth is opened in Capacitor Browser (SFSafariViewController on
+  // iOS). Keep the provider callback on the server, then hand the short-lived
+  // result back to the app through its registered qirox:// URL scheme.
+  const nativeOAuthRedirect = (req: Request, path: string, nativeOverride?: boolean) => {
+    const session = req.session as any;
+    const isNative = nativeOverride ?? session?.nativeOAuth === true;
+    if (session?.nativeOAuth) delete session.nativeOAuth;
+    return isNative ? `qirox://oauth/callback${path}` : path;
+  };
   const qrLoginUrl = (token: string) => {
     const appUrl = (process.env.APP_URL || "https://qiroxstudio.online").replace(/\/+$/, "");
     return `${appUrl}/api/qr-login/${token}`;
@@ -565,7 +574,8 @@ export async function registerRoutes(
 
     // Route: start Google OAuth flow
     app.get("/api/auth/google", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.redirect(`/login?error=${encodeURIComponent(googleConfigError)}`);
+      if (req.query.native === "1") (req.session as any).nativeOAuth = true;
+      if (!GOOGLE_ENABLED) return res.redirect(nativeOAuthRedirect(req, `/login?error=${encodeURIComponent(googleConfigError)}`));
       const passport = (await import("passport")).default;
       // Passport stores a cryptographically-random transaction state in the
       // initiating browser session and verifies it on callback. This prevents
@@ -575,25 +585,26 @@ export async function registerRoutes(
 
     // Route: Google OAuth callback
     app.get("/api/auth/google/callback", async (req, res, next) => {
-      if (!GOOGLE_ENABLED) return res.redirect(`/login?error=${encodeURIComponent(googleConfigError)}`);
+      if (!GOOGLE_ENABLED) return res.redirect(nativeOAuthRedirect(req, `/login?error=${encodeURIComponent(googleConfigError)}`));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
+      const nativeOAuth = (req.session as any)?.nativeOAuth === true;
 
       passport.authenticate("google", async (err: any, user: any) => {
         if (err || !user) {
           await securityAlert("google_oauth_failed", null, { provider: "google" });
-          return res.redirect("/login?error=google_failed");
+          return res.redirect(nativeOAuthRedirect(req, "/login?error=google_failed", nativeOAuth));
         }
         const { methods } = await getEnabled2FAMethods(String(user._id || user.id));
         if (methods.length > 0) {
           const challenge = await create2FAChallenge(user, methods, "google");
-          return res.redirect(`/login?twoFactorToken=${encodeURIComponent(challenge.tempToken)}`);
+          return res.redirect(nativeOAuthRedirect(req, `/login?twoFactorToken=${encodeURIComponent(challenge.tempToken)}`));
         }
         req.login(user, async (loginErr) => {
           if (loginErr) {
             await securityAlert("google_session_failed", user, { provider: "google" });
-            return res.redirect("/login?error=google_failed");
+            return res.redirect(nativeOAuthRedirect(req, "/login?error=google_failed", nativeOAuth));
           }
           // Issue device token (trusted device — Google already verified identity)
           const plainToken = randomBytes(48).toString("hex");
@@ -602,7 +613,7 @@ export async function registerRoutes(
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
           const redirectPath = dashboardForUser(user);
           // Pass device token via /login?googleToken=... so client can store it, then navigates
-          res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(nativeOAuthRedirect(req, `/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`, nativeOAuth));
         });
       })(req, res, next);
     });
@@ -684,21 +695,23 @@ export async function registerRoutes(
     }
 
     app.get("/api/auth/github", async (req, res, next) => {
+      if (req.query.native === "1") (req.session as any).nativeOAuth = true;
       if (!GITHUB_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ GitHub غير مفعّل حالياً" });
       const passport = (await import("passport")).default;
       passport.authenticate("github", { scope: ["user:email"] })(req, res, next);
     });
 
     app.get("/api/auth/github/callback", async (req, res, next) => {
-      if (!GITHUB_ENABLED) return res.redirect("/login?error=github_disabled");
+      if (!GITHUB_ENABLED) return res.redirect(nativeOAuthRedirect(req, "/login?error=github_disabled"));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
+      const nativeOAuth = (req.session as any)?.nativeOAuth === true;
 
-      passport.authenticate("github", { failureRedirect: "/login?error=github_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=github_failed");
+      passport.authenticate("github", {}, async (err: any, user: any) => {
+        if (err || !user) return res.redirect(nativeOAuthRedirect(req, "/login?error=github_failed", nativeOAuth));
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=github_failed");
+          if (loginErr) return res.redirect(nativeOAuthRedirect(req, "/login?error=github_failed", nativeOAuth));
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -709,7 +722,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(`/login?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(nativeOAuthRedirect(req, `/login?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`, nativeOAuth));
         });
       })(req, res, next);
     });
@@ -809,6 +822,7 @@ export async function registerRoutes(
 
     // Start Apple Sign In flow
     app.get("/api/auth/apple", async (req, res, next) => {
+      if (req.query.native === "1") (req.session as any).nativeOAuth = true;
       if (!APPLE_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ Apple غير مفعّل حالياً" });
       const passport = (await import("passport")).default;
       passport.authenticate("apple")(req, res, next);
@@ -816,15 +830,16 @@ export async function registerRoutes(
 
     // Apple sends POST to callback (not GET)
     app.post("/api/auth/apple/callback", express.urlencoded({ extended: true }), async (req, res, next) => {
-      if (!APPLE_ENABLED) return res.redirect("/login?error=apple_disabled");
+      if (!APPLE_ENABLED) return res.redirect(nativeOAuthRedirect(req, "/login?error=apple_disabled"));
       const passport = (await import("passport")).default;
       const { DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
+      const nativeOAuth = (req.session as any)?.nativeOAuth === true;
 
-      passport.authenticate("apple", { failureRedirect: "/login?error=apple_failed" }, async (err: any, user: any) => {
-        if (err || !user) return res.redirect("/login?error=apple_failed");
+      passport.authenticate("apple", {}, async (err: any, user: any) => {
+        if (err || !user) return res.redirect(nativeOAuthRedirect(req, "/login?error=apple_failed", nativeOAuth));
         req.login(user, async (loginErr) => {
-          if (loginErr) return res.redirect("/login?error=apple_failed");
+          if (loginErr) return res.redirect(nativeOAuthRedirect(req, "/login?error=apple_failed", nativeOAuth));
           const plainToken = randomBytes(48).toString("hex");
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -835,7 +850,7 @@ export async function registerRoutes(
             : MGMT_ROLES.includes(user.role)
               ? "/admin"
               : "/employee/role-dashboard";
-          res.redirect(`/login?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+          res.redirect(nativeOAuthRedirect(req, `/login?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`, nativeOAuth));
         });
       })(req, res, next);
     });

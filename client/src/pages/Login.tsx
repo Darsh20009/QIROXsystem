@@ -66,7 +66,7 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
   }, []);
 
   return (
-    <div className="hidden lg:flex w-[44%] flex-col justify-between relative overflow-hidden flex-shrink-0"
+    <div className="hidden xl:flex w-[44%] flex-col justify-between relative overflow-hidden flex-shrink-0"
       style={{ background: "#0e0e12" }}
     >
       {/* Subtle top-right light bloom */}
@@ -452,13 +452,15 @@ export default function Login() {
 
   // ── Native OAuth: open SFSafariViewController / Chrome Custom Tabs ──────────
   // On iOS/Android (Capacitor), we must NOT redirect to the system browser.
-  // Instead we use @capacitor/browser which wraps SFSafariViewController (iOS)
-  // and Chrome Custom Tabs (Android) — both are in-app and pass App Store review.
+  // @capacitor/browser wraps SFSafariViewController (iOS) and Chrome Custom
+  // Tabs (Android). The server returns to qirox:// so the result comes back
+  // through the native App listener instead of leaving the app in the browser.
   const openOAuthNative = useCallback(async (path: string) => {
     const { Browser } = await import("@capacitor/browser");
     const { App } = await import("@capacitor/app");
     const serverUrl = getServerUrl(); // e.g. https://qiroxstudio.online
-    const url = `${serverUrl}${path}`;
+    const separator = path.includes("?") ? "&" : "?";
+    const url = `${serverUrl}${path}${separator}native=1`;
     // Listen for the deep-link / universal-link callback coming back into the app
     const handle = await App.addListener("appUrlOpen", async (data: { url: string }) => {
       await handle.remove();
@@ -470,11 +472,11 @@ export default function Login() {
       const githubToken = cbUrl.searchParams.get("githubToken");
         const twoFactorToken = cbUrl.searchParams.get("twoFactorToken");
       const nextPath = cbUrl.searchParams.get("next") || "/dashboard";
-        if (twoFactorToken) {
-          setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
-          window.location.href = `/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`;
-          return;
-        }
+      if (twoFactorToken) {
+        setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+        window.location.href = `/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`;
+        return;
+      }
       const token = googleToken || appleToken || githubToken;
       if (token) {
         saveDeviceToken(token);
@@ -498,7 +500,14 @@ export default function Login() {
         setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
       }
     });
-    await Browser.open({ url, toolbarColor: "#000000", windowName: "_self" });
+    try {
+      await Browser.open({ url, toolbarColor: "#000000", windowName: "_self" });
+    } catch {
+      await finishHandle.remove();
+      await handle.remove();
+      setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
+      toast({ title: "تعذّر فتح تسجيل الدخول", description: "حاول مرة أخرى", variant: "destructive" });
+    }
   }, [toast]);
 
   const handleGoogleLogin = () => {
@@ -977,10 +986,10 @@ export default function Login() {
       />
 
       {/* Right form area */}
-      <div className="flex-1 flex flex-col items-center px-6 py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
+      <div className="flex-1 flex flex-col items-center px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-8 xl:px-6 xl:py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
 
         {/* ── Decorative background layer ── */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none md:max-xl:opacity-40">
           {/* Dot grid */}
           <div className="absolute inset-0 opacity-[0.5]" style={{
             backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1.2px, transparent 1.2px)",
@@ -1034,7 +1043,7 @@ export default function Login() {
           </svg>
         </div>
         {/* Mobile logo */}
-        <div className="lg:hidden mb-8 text-center">
+        <div className="lg:hidden md:max-xl:hidden mb-8 text-center">
           <Link href="/">
             <div className="inline-block hover:opacity-85 transition-opacity">
               <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
@@ -1133,7 +1142,7 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-md"
+            className="w-full max-w-md md:max-w-[440px] xl:max-w-md"
           >
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
@@ -1494,7 +1503,7 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-md"
+            className="w-full max-w-md md:max-w-[440px] xl:max-w-md"
           >
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
@@ -1583,10 +1592,10 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-md"
+          className="w-full max-w-md md:max-w-[440px] xl:max-w-md"
         >
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 md:mb-6">
             {/* Brand mark above title */}
             <div className="flex items-center gap-2.5 mb-4">
               <Link href="/">
@@ -1603,14 +1612,14 @@ export default function Login() {
               {/* Vertical accent line */}
               <div className="absolute right-0 top-0 bottom-0 w-[3px] rounded-full bg-gradient-to-b from-black via-black/60 to-transparent" />
               <div className="pr-4">
-                <h1 className="text-[2.1rem] font-black font-heading text-black leading-tight tracking-tight">
+                <h1 className="text-[2.1rem] md:text-[1.95rem] font-black font-heading text-black leading-tight tracking-tight">
                   {isRegister
                     ? (isEmployeeRegister ? "تسجيل موظف" : "إنشاء حساب")
                     : "تسجيل الدخول"
                   }
                 </h1>
                 {isRegister && (
-                  <span className="text-[2.1rem] font-black font-heading leading-tight tracking-tight text-black/25 block">
+                  <span className="text-[2.1rem] md:text-[1.95rem] font-black font-heading leading-tight tracking-tight text-black/25 block">
                     {isEmployeeRegister ? "جديد" : "جديد"}
                   </span>
                 )}
@@ -1663,7 +1672,7 @@ export default function Login() {
                 />
 
                 {/* Google colored icon column */}
-                <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-black/[0.07] bg-gradient-to-br from-white to-black/[0.02]">
+                <div className="relative flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l border-black/[0.07] bg-gradient-to-br from-white to-black/[0.02]">
                   {/* Four Google color corner dots */}
                   <span className="absolute top-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-[#4285F4] opacity-70" />
                   <span className="absolute top-[7px] left-[7px] w-[5px] h-[5px] rounded-full bg-[#EA4335] opacity-70" />
@@ -1680,7 +1689,7 @@ export default function Login() {
                 </div>
 
                 {/* Text area */}
-                <div className="flex-1 px-4 py-3.5 text-right">
+                <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
                   <p className="text-black font-bold text-[14px] leading-snug">
                     {googleLoading
                       ? "جارٍ الاتصال بـ Google..."
@@ -1690,7 +1699,7 @@ export default function Login() {
                     }
                   </p>
                   {!googleLoading && (
-                    <p className="text-black/35 text-[10.5px] font-medium mt-0.5">
+                    <p className="text-black/35 text-[10.5px] md:max-xl:hidden font-medium mt-0.5">
                       دخول سريع · آمن · بضغطة واحدة
                     </p>
                   )}
@@ -1724,7 +1733,7 @@ export default function Login() {
                     whileHover={{ x: "120%" }}
                     transition={{ duration: 0.45, ease: "easeInOut" }}
                   />
-                  <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-white/10 bg-black/20">
+                  <div className="relative flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l border-white/10 bg-black/20">
                     {githubLoading ? (
                       <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
@@ -1734,12 +1743,12 @@ export default function Login() {
                       <SiGithub className="w-[22px] h-[22px] text-white" />
                     )}
                   </div>
-                  <div className="flex-1 px-4 py-3.5 text-right">
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
                     <p className="text-white font-bold text-[14px] leading-snug">
                       {githubLoading ? "جارٍ الاتصال بـ GitHub..." : isRegister ? "إنشاء حساب بـ GitHub" : "تسجيل الدخول بـ GitHub"}
                     </p>
                     {!githubLoading && (
-                      <p className="text-white/40 text-[10.5px] font-medium mt-0.5">دخول سريع · آمن · بضغطة واحدة</p>
+                    <p className="text-white/40 text-[10.5px] md:max-xl:hidden font-medium mt-0.5">دخول سريع · آمن · بضغطة واحدة</p>
                     )}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10" />
@@ -1765,7 +1774,7 @@ export default function Login() {
                     whileHover={{ x: "120%" }}
                     transition={{ duration: 0.45, ease: "easeInOut" }}
                   />
-                  <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-white/10 bg-white/[0.06]">
+                  <div className="relative flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l border-white/10 bg-white/[0.06]">
                     {appleLoading ? (
                       <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
@@ -1775,12 +1784,12 @@ export default function Login() {
                       <SiApple className="w-[24px] h-[24px] text-white" />
                     )}
                   </div>
-                  <div className="flex-1 px-4 py-3.5 text-right">
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
                     <p className="text-white font-bold text-[14px] leading-snug">
                       {appleLoading ? "جارٍ الاتصال بـ Apple..." : isRegister ? "إنشاء حساب بـ Apple" : "تسجيل الدخول بـ Apple"}
                     </p>
                     {!appleLoading && (
-                      <p className="text-white/40 text-[10.5px] font-medium mt-0.5">دخول سريع · آمن · بضغطة واحدة</p>
+                    <p className="text-white/40 text-[10.5px] md:max-xl:hidden font-medium mt-0.5">دخول سريع · آمن · بضغطة واحدة</p>
                     )}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/[0.07]" />
@@ -1825,10 +1834,10 @@ export default function Login() {
                       : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
                   }`}
                 >
-                  <div className={`flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
                     <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
                   </div>
-                  <div className="flex-1 px-4 py-3.5 text-right">
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
                     <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
                     <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
                       {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
@@ -1890,10 +1899,10 @@ export default function Login() {
                       : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
                   }`}
                 >
-                  <div className={`flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
                     <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
                   </div>
-                  <div className="flex-1 px-4 py-3.5 text-right">
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
                     <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
                     <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
                       {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
@@ -2346,7 +2355,7 @@ export default function Login() {
       </div>
 
       {/* ── Mobile-only fixed bottom brand bar ── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 overflow-hidden" style={{ height: "44px" }}>
+      <div className="lg:hidden md:max-xl:hidden fixed bottom-0 inset-x-0 z-50 overflow-hidden" style={{ height: "44px" }}>
         {/* Dark background */}
         <div className="absolute inset-0 bg-[#030508]" />
         {/* Green grid */}

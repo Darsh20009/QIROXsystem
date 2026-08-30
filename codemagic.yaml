@@ -13,6 +13,7 @@ workflows:
         BUNDLE_ID: "qiroxstudio.online"
         APP_NAME: "QIROX Studio"
         APP_URL: "https://qiroxstudio.online"
+        SUPPORT_URL: "https://qiroxstudio.online/support"
 
     scripts:
       - name: Install dependencies and build web assets
@@ -100,6 +101,7 @@ workflows:
         BUNDLE_ID: "qiroxstudio.online"
         APP_NAME: "QIROX Studio"
         APP_URL: "https://qiroxstudio.online"
+        SUPPORT_URL: "https://qiroxstudio.online/support"
         NOTIFY_EMAIL: "qiroxsystem@gmail.com"
 
     scripts:
@@ -274,6 +276,7 @@ workflows:
       vars:
         PACKAGE_NAME: "online.qiroxstudio.twa"
         APP_URL: "https://qiroxstudio.online"
+        SUPPORT_URL: "https://qiroxstudio.online/support"
 
     scripts:
       - name: Decode keystore

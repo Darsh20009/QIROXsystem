@@ -18,7 +18,8 @@
     "handleApplicationNotifications": true,
     "allowsBackForwardNavigationGestures": true,
     "contentInset": "always",
-    "preferredContentMode": "mobile"
+    "preferredContentMode": "mobile",
+    "scheme": "qirox"
   },
   "android": {
     "backgroundColor": "#111111",

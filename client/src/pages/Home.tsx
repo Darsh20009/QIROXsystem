@@ -35,6 +35,7 @@ import {
 import { SiWhatsapp, SiInstagram, SiX, SiGoogle, SiApple } from "react-icons/si";
 import { isCapacitorNative, getServerUrl } from "@/lib/server-url";
 import { Linkedin } from "lucide-react";
+import { saveDeviceToken } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-auth";
 
 // ─── Sector SVG Illustrations ────────────────────────────────────────────────
@@ -978,11 +979,23 @@ export default function Home() {
   const openOAuthNative = useCallback(async (path: string) => {
     const { Browser } = await import("@capacitor/browser");
     const { App } = await import("@capacitor/app");
-    const url = `${getServerUrl()}${path}`;
-    const handle = await App.addListener("appUrlOpen", async () => {
+    const separator = path.includes("?") ? "&" : "?";
+    const url = `${getServerUrl()}${path}${separator}native=1`;
+    const handle = await App.addListener("appUrlOpen", async (data: { url: string }) => {
       await handle.remove();
-      await Browser.close();
-      window.location.href = "/dashboard";
+      try { await Browser.close(); } catch {}
+      const callbackUrl = new URL(data.url);
+      const token = callbackUrl.searchParams.get("googleToken")
+        || callbackUrl.searchParams.get("appleToken");
+      const twoFactorToken = callbackUrl.searchParams.get("twoFactorToken");
+      if (twoFactorToken) {
+        window.location.href = `/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`;
+      } else if (token) {
+        saveDeviceToken(token);
+        window.location.href = callbackUrl.searchParams.get("next") || "/dashboard";
+      } else {
+        window.location.href = "/login?error=oauth_failed";
+      }
     });
     const fb = await Browser.addListener("browserFinished", async () => {
       await fb.remove(); await handle.remove();
