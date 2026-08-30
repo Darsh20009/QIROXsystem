@@ -5239,7 +5239,7 @@ export async function registerRoutes(
         keyHash: secret.keyHash,
         keyPrefix: secret.keyPrefix,
         publicIdentifier,
-        apiBasePath: projectIntegrationApiPath(String(order._id), type),
+        apiBasePath: projectIntegrationApiPath(String(project?._id || order._id), type),
         documentationPath: projectIntegrationDocsPath(),
         allowedOrigins: Array.isArray(req.body?.allowedOrigins) ? req.body.allowedOrigins.map(String).map((v: string) => v.trim()).filter(Boolean).slice(0, 20) : [],
         rateLimitPerMinute: Math.min(Math.max(Number(req.body?.rateLimitPerMinute) || 30, 1), 300),
