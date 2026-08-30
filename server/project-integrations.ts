@@ -30,6 +30,26 @@ export function projectIntegrationDocsPath(): string {
   return "/api/v1/projects/integrations/docs";
 }
 
+const rateBuckets = new Map<string, { startedAt: number; count: number }>();
+
+export function reserveProjectIntegrationRateLimit(integrationId: string, limit: number) {
+  const now = Date.now();
+  const bucket = rateBuckets.get(integrationId);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    const fresh = { startedAt: now, count: 1 };
+    rateBuckets.set(integrationId, fresh);
+    return { allowed: true, limit, remaining: Math.max(0, limit - 1), resetAt: new Date(now + 60_000) };
+  }
+  bucket.count += 1;
+  const allowed = bucket.count <= limit;
+  return {
+    allowed,
+    limit,
+    remaining: Math.max(0, limit - bucket.count),
+    resetAt: new Date(bucket.startedAt + 60_000),
+  };
+}
+
 export function getRequestBaseUrl(req: any): string {
   const forwardedProto = String(req.get?.("x-forwarded-proto") || "").split(",")[0].trim();
   const protocol = forwardedProto || req.protocol || "https";

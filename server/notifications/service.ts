@@ -182,7 +182,7 @@ async function sendWhatsApp(delivery: any): Promise<{ provider: string; messageI
   const metaConfigured = Boolean(process.env.WHATSAPP_META_ACCESS_TOKEN && process.env.WHATSAPP_META_PHONE_NUMBER_ID);
   // Store API traffic is always official Business Cloud traffic. It must
   // never fall through to the internal Baileys session.
-  if (delivery.metadata?.storeWhatsApp === true) {
+  if (delivery.metadata?.storeWhatsApp === true || delivery.metadata?.projectWhatsApp === true) {
     if (!metaConfigured) {
       throw new Error("Meta WhatsApp Business غير مهيأ: أضف WHATSAPP_META_ACCESS_TOKEN وWHATSAPP_META_PHONE_NUMBER_ID");
     }

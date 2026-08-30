@@ -5144,6 +5144,294 @@ export async function registerRoutes(
     })) });
   });
 
+  // ─── Project integrations (safe management + external project API) ───────
+  const getProjectIntegrationRefQuery = (ref: string) => {
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(ref)) return null;
+    return { $or: [{ orderId: ref }, { projectId: ref }] };
+  };
+
+  const projectIntegrationResponse = (integration: any, req: any, orderId?: string) => {
+    const { serializeProjectIntegration } = require("./project-integrations");
+    return serializeProjectIntegration(integration, req, orderId);
+  };
+
+  const requireIntegrationManager = (req: any, res: any) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any)?.role)) {
+      res.sendStatus(req.isAuthenticated() ? 403 : 401);
+      return false;
+    }
+    return true;
+  };
+
+  // Public, secret-free documentation for developers.
+  app.get("/api/v1/projects/integrations/docs", (_req, res) => {
+    const { projectIntegrationApiDocs } = require("./project-integrations");
+    res.json(projectIntegrationApiDocs);
+  });
+
+  // Staff can see safe integration metadata; only admin/manager can mutate it.
+  app.get("/api/admin/orders/:id/integrations", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role === "client") return res.sendStatus(403);
+    const query = getProjectIntegrationRefQuery(req.params.id);
+    if (!query) return res.json([]);
+    try {
+      const { ProjectIntegrationModel } = await import("./models");
+      const integrations = await (ProjectIntegrationModel as any).find({ orderId: req.params.id }).sort({ type: 1, createdAt: -1 }).lean();
+      res.json(integrations.map((item: any) => projectIntegrationResponse(item, req, req.params.id)));
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحميل تكاملات المشروع" });
+    }
+  });
+
+  // A client can see only safe metadata for their own order.
+  app.get("/api/orders/:id/integrations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { OrderModel, ProjectIntegrationModel } = await import("./models");
+      const order = await (OrderModel as any).findById(req.params.id).select("_id userId").lean();
+      if (!order) return res.sendStatus(404);
+      const user = req.user as any;
+      if (user?.role === "client" && String(order.userId) !== String(user.id)) return res.sendStatus(403);
+      const integrations = await (ProjectIntegrationModel as any).find({ orderId: order._id }).sort({ type: 1, createdAt: -1 }).lean();
+      res.json(integrations.map((item: any) => projectIntegrationResponse(item, req, req.params.id)));
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحميل تكاملات المشروع" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/integrations", async (req, res) => {
+    if (!requireIntegrationManager(req, res)) return;
+    const type = String(req.body?.type || "").trim();
+    const environment = String(req.body?.environment || "development").trim();
+    const { PROJECT_INTEGRATION_TYPES, PROJECT_INTEGRATION_ENVIRONMENTS, createProjectIntegrationSecret, projectIntegrationApiPath, projectIntegrationDocsPath } = require("./project-integrations");
+    if (!PROJECT_INTEGRATION_TYPES.includes(type)) return res.status(400).json({ error: "نوع التكامل غير مدعوم" });
+    if (!PROJECT_INTEGRATION_ENVIRONMENTS.includes(environment)) return res.status(400).json({ error: "بيئة التكامل غير مدعومة" });
+
+    try {
+      const mongoose = await import("mongoose");
+      if (!mongoose.default.Types.ObjectId.isValid(req.params.id)) return res.sendStatus(404);
+      const { OrderModel, ProjectModel, ProjectIntegrationModel } = await import("./models");
+      const order = await (OrderModel as any).findById(req.params.id).select("_id").lean();
+      if (!order) return res.sendStatus(404);
+      const existing = await (ProjectIntegrationModel as any).findOne({
+        orderId: order._id, type, environment, status: "active",
+      }).select("_id").lean();
+      if (existing) return res.status(409).json({ error: "يوجد تكامل مفعّل من نفس النوع والبيئة", code: "INTEGRATION_EXISTS" });
+
+      const secret = createProjectIntegrationSecret(type);
+      const project = await (ProjectModel as any).findOne({ orderId: order._id }).select("_id").lean();
+      const publicIdentifier = `qrx_${type}_${crypto.randomBytes(8).toString("hex")}`;
+      const integration = await (ProjectIntegrationModel as any).create({
+        projectId: project?._id || null,
+        orderId: order._id,
+        type,
+        environment,
+        label: String(req.body?.label || "").trim().slice(0, 120) || (type === "whatsapp" ? "WhatsApp Business للمشروع" : "البريد الإلكتروني للمشروع"),
+        status: "active",
+        keyHash: secret.keyHash,
+        keyPrefix: secret.keyPrefix,
+        publicIdentifier,
+        apiBasePath: projectIntegrationApiPath(String(order._id), type),
+        documentationPath: projectIntegrationDocsPath(),
+        allowedOrigins: Array.isArray(req.body?.allowedOrigins) ? req.body.allowedOrigins.map(String).map((v: string) => v.trim()).filter(Boolean).slice(0, 20) : [],
+        rateLimitPerMinute: Math.min(Math.max(Number(req.body?.rateLimitPerMinute) || 30, 1), 300),
+        maxMessageLength: type === "email" ? 100000 : 4000,
+        createdBy: (req.user as any)?.id || null,
+      });
+      res.status(201).json({ integration: projectIntegrationResponse(integration, req, String(order._id)), secret: secret.rawKey });
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: "تعذر إنشاء مفتاح جديد بسبب تعارض، حاول مرة أخرى" });
+      res.status(500).json({ error: error?.message || "تعذر إنشاء التكامل" });
+    }
+  });
+
+  app.patch("/api/admin/project-integrations/:id", async (req, res) => {
+    if (!requireIntegrationManager(req, res)) return;
+    try {
+      const { ProjectIntegrationModel } = await import("./models");
+      const update: any = {};
+      if (req.body?.label !== undefined) update.label = String(req.body.label).trim().slice(0, 120);
+      if (req.body?.status !== undefined) {
+        if (!["active", "disabled"].includes(String(req.body.status))) return res.status(400).json({ error: "حالة التكامل غير مدعومة" });
+        update.status = String(req.body.status);
+        if (update.status === "disabled") update.revokedAt = new Date();
+        else update.revokedAt = null;
+      }
+      if (req.body?.allowedOrigins !== undefined) {
+        if (!Array.isArray(req.body.allowedOrigins)) return res.status(400).json({ error: "allowedOrigins يجب أن تكون قائمة" });
+        update.allowedOrigins = req.body.allowedOrigins.map(String).map((v: string) => v.trim()).filter(Boolean).slice(0, 20);
+      }
+      if (req.body?.expiresAt !== undefined) {
+        update.expiresAt = req.body.expiresAt ? new Date(req.body.expiresAt) : null;
+        if (update.expiresAt && Number.isNaN(update.expiresAt.getTime())) return res.status(400).json({ error: "تاريخ الانتهاء غير صالح" });
+      }
+      if (req.body?.rateLimitPerMinute !== undefined) {
+        update.rateLimitPerMinute = Math.min(Math.max(Number(req.body.rateLimitPerMinute) || 30, 1), 300);
+      }
+      const integration = await (ProjectIntegrationModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean();
+      if (!integration) return res.sendStatus(404);
+      res.json(projectIntegrationResponse(integration, req, String(integration.orderId)));
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحديث التكامل" });
+    }
+  });
+
+  app.post("/api/admin/project-integrations/:id/rotate", async (req, res) => {
+    if (!requireIntegrationManager(req, res)) return;
+    try {
+      const { ProjectIntegrationModel } = await import("./models");
+      const current = await (ProjectIntegrationModel as any).findById(req.params.id).lean();
+      if (!current) return res.sendStatus(404);
+      const type = current.type;
+      const { createProjectIntegrationSecret, projectIntegrationApiPath, projectIntegrationDocsPath } = require("./project-integrations");
+      const secret = createProjectIntegrationSecret(type);
+      const replacement = await (ProjectIntegrationModel as any).create({
+        projectId: current.projectId || null,
+        orderId: current.orderId,
+        type,
+        environment: current.environment,
+        label: current.label,
+        status: "active",
+        keyHash: secret.keyHash,
+        keyPrefix: secret.keyPrefix,
+        publicIdentifier: `qrx_${type}_${crypto.randomBytes(8).toString("hex")}`,
+        apiBasePath: current.apiBasePath || projectIntegrationApiPath(String(current.orderId), type),
+        documentationPath: current.documentationPath || projectIntegrationDocsPath(),
+        allowedOrigins: current.allowedOrigins || [],
+        rateLimitPerMinute: current.rateLimitPerMinute || 30,
+        maxMessageLength: current.maxMessageLength || (type === "email" ? 100000 : 4000),
+        rotatedFrom: current._id,
+        createdBy: (req.user as any)?.id || null,
+      });
+      await (ProjectIntegrationModel as any).updateOne(
+        { _id: current._id },
+        { $set: { status: "disabled", revokedAt: new Date() } },
+      );
+      res.status(201).json({ integration: projectIntegrationResponse(replacement, req, String(current.orderId)), secret: secret.rawKey });
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: "تعذر تدوير المفتاح بسبب تعارض، حاول مرة أخرى" });
+      res.status(500).json({ error: error?.message || "تعذر تدوير المفتاح" });
+    }
+  });
+
+  const resolveProjectIntegrationKey = async (req: any, res: any, type: string) => {
+    const authorization = String(req.get("authorization") || "");
+    if (!/^Bearer\s+qrx_project_(whatsapp|email)_[a-f0-9]{64}$/i.test(authorization)) {
+      res.status(401).json({ error: "Project integration Bearer key is required" });
+      return null;
+    }
+    const rawKey = authorization.slice(7).trim();
+    if (!rawKey.toLowerCase().startsWith(`qrx_project_${type}_`)) {
+      res.status(403).json({ error: "This key is not valid for this integration" });
+      return null;
+    }
+    const query = getProjectIntegrationRefQuery(req.params.projectId);
+    if (!query) { res.status(404).json({ error: "Project not found" }); return null; }
+    const { ProjectIntegrationModel } = await import("./models");
+    const { hashProjectIntegrationKey, reserveProjectIntegrationRateLimit } = require("./project-integrations");
+    const integration = await (ProjectIntegrationModel as any).findOne({
+      ...query,
+      type,
+      keyHash: hashProjectIntegrationKey(rawKey),
+    }).select("+keyHash").lean();
+    if (!integration) { res.status(401).json({ error: "Project integration key not found" }); return null; }
+    if (integration.status !== "active") { res.status(403).json({ error: "Project integration key is disabled" }); return null; }
+    if (integration.expiresAt && new Date(integration.expiresAt) <= new Date()) {
+      res.status(403).json({ error: "Project integration key has expired" }); return null;
+    }
+    const origin = String(req.get("origin") || "").trim();
+    const allowedOrigins = (integration.allowedOrigins || []).map((value: string) => value.trim()).filter(Boolean);
+    if (origin && allowedOrigins.length && !allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
+      res.status(403).json({ error: "Request origin is not allowed for this key", code: "ORIGIN_NOT_ALLOWED" });
+      return null;
+    }
+    const rate = reserveProjectIntegrationRateLimit(String(integration._id), Number(integration.rateLimitPerMinute) || 30);
+    res.setHeader("X-RateLimit-Limit", String(rate.limit));
+    res.setHeader("X-RateLimit-Remaining", String(rate.remaining));
+    res.setHeader("X-RateLimit-Reset", String(Math.ceil(rate.resetAt.getTime() / 1000)));
+    if (!rate.allowed) {
+      res.status(429).json({ error: "Project integration rate limit exceeded", code: "RATE_LIMITED", retryAfterSeconds: Math.max(1, Math.ceil((rate.resetAt.getTime() - Date.now()) / 1000)) });
+      return null;
+    }
+    (ProjectIntegrationModel as any).updateOne(
+      { _id: integration._id },
+      { $set: { lastUsedAt: new Date() }, $inc: { requestCount: 1 } },
+    ).exec().catch(() => {});
+    return integration;
+  };
+
+  const handleProjectIntegrationMessage = async (type: "whatsapp" | "email", req: any, res: any) => {
+    const integration = await resolveProjectIntegrationKey(req, res, type);
+    if (!integration) return;
+    const recipient = req.body?.recipient || {};
+    const idempotencyToken = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
+    if (idempotencyToken.length < 8 || idempotencyToken.length > 160) {
+      return res.status(400).json({ error: "Idempotency-Key must be between 8 and 160 characters" });
+    }
+    let message = String(req.body?.message || req.body?.body || "").trim();
+    let subject = String(req.body?.subject || "").trim().slice(0, 200);
+    let phone = { valid: true, e164: "", reason: "" } as any;
+    let templateName = "";
+    let templateLanguage = "ar";
+    let templateParameters: string[] = [];
+
+    if (type === "whatsapp") {
+      phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim()) as any;
+      const template = req.body?.template;
+      if (template) {
+        templateName = String(template.name || "").trim();
+        templateLanguage = String(template.language || "ar").trim();
+        templateParameters = Array.isArray(template.parameters) ? template.parameters.map(String).slice(0, 20) : [];
+        if (!/^[a-z0-9_]{1,128}$/.test(templateName) || !/^[a-z]{2,3}(?:_[A-Z]{2})?$/.test(templateLanguage)) {
+          return res.status(400).json({ error: "Template name or language is invalid" });
+        }
+        if (templateParameters.some(value => value.length > 1024)) return res.status(400).json({ error: "Template parameters must not exceed 1024 characters" });
+      }
+      if (!phone.valid) return res.status(400).json({ error: phone.reason || "A valid recipient phone is required" });
+      if (!message && !templateName) return res.status(400).json({ error: "message or approved template is required" });
+      if (message.length > 4000) return res.status(400).json({ error: "Message must not exceed 4000 characters" });
+    } else {
+      const email = String(recipient.email || req.body?.to || req.body?.email || "").trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) return res.status(400).json({ error: "A valid recipient email is required" });
+      if (!subject) return res.status(400).json({ error: "subject is required" });
+      if (!message) return res.status(400).json({ error: "message is required" });
+      if (message.length > 100000) return res.status(400).json({ error: "Message must not exceed 100000 characters" });
+      recipient.email = email;
+    }
+
+    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({ type, recipient, subject, message, templateName, templateLanguage, templateParameters })).digest("hex");
+    try {
+      const result = (await dispatchNotification({
+        event: `project_${type}_message`,
+        idempotencyKey: `project-integration:${String(integration._id)}:${idempotencyToken}`,
+        recipient: type === "email"
+          ? { name: String(recipient.name || "").trim().slice(0, 160), email: recipient.email }
+          : { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
+        subject: subject || "Project WhatsApp Business message",
+        message,
+        channels: [type],
+        whatsappTemplate: templateName,
+        metadata: {
+          source: "project_integration_api",
+          projectIntegrationId: String(integration._id),
+          environment: integration.environment,
+          payloadHash,
+          ...(type === "whatsapp" ? { projectWhatsApp: true } : {}),
+          ...(templateName ? { metaTemplateName: templateName, metaTemplateLanguage: templateLanguage, metaTemplateParameters: templateParameters } : {}),
+        },
+      }))[0];
+      const { NotificationDeliveryModel } = await import("./models");
+      const delivery = result?.id ? await (NotificationDeliveryModel as any).findById(result.id).lean() : null;
+      res.status(202).json({ ok: true, delivery: delivery ? deliveryResponse(delivery) : result });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Unable to create project integration delivery" });
+    }
+  };
+
+  app.post("/api/v1/projects/:projectId/whatsapp", (req, res) => handleProjectIntegrationMessage("whatsapp", req, res));
+  app.post("/api/v1/projects/:projectId/email", (req, res) => handleProjectIntegrationMessage("email", req, res));
+
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
