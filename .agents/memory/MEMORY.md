@@ -44,3 +44,4 @@
 - [Managed provider capacity](managed-provider-capacity.md) — Railway/Render deployment is gated by verified capacity values and has a server-side kill switch; never assume public APIs expose billable usage.
 - [Mongoose pre-save hooks](mongoose-presave-hooks.md) — On the current Mongoose runtime, synchronous pre-save hooks must not call a `next` callback.
 - [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.
+- [Post-merge setup](post-merge-setup.md) — Use deterministic npm ci plus a rebuild; do not auto-run the legacy PostgreSQL push in the MongoDB-primary project.
