@@ -29,6 +29,8 @@ import {
   preserveOriginalLogoUrl,
   projectDataEntryUser,
   projectDataEntryUsers,
+  redactDataEntryRecord,
+  redactDataEntryTask,
   redactFields,
   redactSensitiveFields,
   roleCanAccess,
@@ -1556,7 +1558,7 @@ export async function registerRoutes(
       const user = await storage.updateUser(req.params.id, sanitized);
       if (!user) return res.sendStatus(404);
       invalidateUserCache(req.params.id);
-      res.json(sanitizeUser(user));
+      res.json(isDataEntry ? projectDataEntryUser(user as any) : sanitizeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }
@@ -1579,7 +1581,12 @@ export async function registerRoutes(
         const avatarUrl = `/uploads/${req.file.filename}`;
         const user = await storage.updateUser(req.params.id, { avatarUrl });
         if (!user) return res.sendStatus(404);
-        res.json({ avatarUrl, user: sanitizeUser(user) });
+        res.json({
+          avatarUrl,
+          user: (req.user as any).role === "data_entry"
+            ? projectDataEntryUser(user as any)
+            : sanitizeUser(user),
+        });
       } catch (e: any) {
         res.status(500).json({ error: translateError(e) });
       }
@@ -2708,7 +2715,10 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const allUsers = await storage.getUsers();
     const employees = allUsers.filter((u: any) => u.role !== "client");
-    res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role })));
+    const isDataEntry = (req.user as any).role === "data_entry";
+    res.json(isDataEntry
+      ? employees.map((u: any) => projectDataEntryUser(u))
+      : employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role })));
   });
 
   app.get("/api/users/clients", async (req, res) => {
@@ -4513,6 +4523,7 @@ export async function registerRoutes(
   app.get("/api/my-api-keys", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    if (me.role === "data_entry") return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     const keys = await ClientApiKeyModel.find({ clientId: me._id || me.id }).sort({ createdAt: -1 });
     res.json(keys);
@@ -4522,6 +4533,7 @@ export async function registerRoutes(
   app.post("/api/my-api-keys", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    if (me.role === "data_entry") return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     const { name, projectName, scopes, expiresAt, allowedOrigins, storeId } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: "اسم المفتاح مطلوب" });
@@ -4569,6 +4581,7 @@ export async function registerRoutes(
   app.patch("/api/my-api-keys/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    if (me.role === "data_entry") return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     const doc = await ClientApiKeyModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
     if (!doc) return res.sendStatus(404);
@@ -4599,6 +4612,7 @@ export async function registerRoutes(
   app.delete("/api/my-api-keys/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    if (me.role === "data_entry") return res.sendStatus(403);
     const { ClientApiKeyModel } = await import("./models");
     await ClientApiKeyModel.findOneAndDelete({ _id: req.params.id, clientId: me._id || me.id });
     res.sendStatus(204);
@@ -4608,6 +4622,7 @@ export async function registerRoutes(
   app.get("/api/my-api-keys/:id/preview", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    if (me.role === "data_entry") return res.sendStatus(403);
     const cid = me._id || me.id;
     const { ClientApiKeyModel, OrderModel, ProjectModel, InvoiceModel } = await import("./models");
     const key = await ClientApiKeyModel.findOne({ _id: req.params.id, clientId: cid }).lean();
@@ -4687,7 +4702,7 @@ export async function registerRoutes(
     users.forEach((u: any) => { userMap[String(u._id)] = u; });
     const isDataEntry = (req.user as any).role === "data_entry";
     const result = keys.map((k: any) => {
-      const safe = redactSensitiveFields(k);
+      const safe = isDataEntry ? redactDataEntryRecord(k) : redactSensitiveFields(k);
       const client = userMap[String(k.clientId)] || null;
       return {
         ...safe,
@@ -6091,7 +6106,9 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const partners = await storage.getAllPartners();
-    res.json(partners);
+    res.json((req.user as any).role === "data_entry"
+      ? partners.map((partner: any) => redactDataEntryRecord(partner))
+      : partners);
   });
 
   app.post("/api/admin/partners", async (req, res) => {
@@ -6103,7 +6120,9 @@ export async function registerRoutes(
     if (!String(input.name || "").trim() || !String(input.logoUrl || "").trim()) return res.status(400).json({ error: "الاسم والشعار مطلوبان" });
     const partner = await storage.createPartner(input);
     cache.invalidate("public:partners");
-    res.status(201).json(partner);
+    res.status(201).json((req.user as any).role === "data_entry"
+      ? redactDataEntryRecord(partner)
+      : partner);
   });
 
   app.patch("/api/admin/partners/:id", async (req, res) => {
@@ -6114,7 +6133,9 @@ export async function registerRoutes(
     const input = Object.fromEntries(fields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
     const partner = await storage.updatePartner(req.params.id, input);
     cache.invalidate("public:partners");
-    res.json(partner);
+    res.json((req.user as any).role === "data_entry"
+      ? redactDataEntryRecord(partner)
+      : partner);
   });
 
   app.delete("/api/admin/partners/:id", async (req, res) => {
@@ -6432,7 +6453,9 @@ export async function registerRoutes(
     ];
     await ModPlanConfigModel.insertMany(defaults);
   }
-  seedModPlanConfigs().catch(console.error);
+  if (process.env.NODE_ENV !== "test") {
+    seedModPlanConfigs().catch(console.error);
+  }
 
   // Migrate existing ModPlanConfig records to new quota values (runs on every startup, idempotent)
   async function migrateModPlanConfigs() {
@@ -6455,7 +6478,9 @@ export async function registerRoutes(
       );
     }
   }
-  migrateModPlanConfigs().catch(console.error);
+  if (process.env.NODE_ENV !== "test") {
+    migrateModPlanConfigs().catch(console.error);
+  }
 
   async function getQuotaForOrder(order: any) {
     const planTier = order.planTier?.toLowerCase();
@@ -15284,8 +15309,10 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     } catch (e) { console.error("[SubscriptionReminder] error:", e); }
   }
   // Run immediately on startup then every 24 hours
-  setTimeout(() => checkSubscriptionRenewals().catch(() => {}), 5000);
-  setInterval(() => checkSubscriptionRenewals().catch(() => {}), 24 * 60 * 60 * 1000);
+  if (process.env.NODE_ENV !== "test") {
+    setTimeout(() => checkSubscriptionRenewals().catch(() => {}), 5000);
+    setInterval(() => checkSubscriptionRenewals().catch(() => {}), 24 * 60 * 60 * 1000);
+  }
 
   // ─── Addon Subscription Expiry Checker ──────────────────────────────────────
   async function checkAddonExpiry() {
@@ -15318,11 +15345,15 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (expiredSubs.length > 0) console.log(`[AddonExpiry] Marked ${expiredSubs.length} subscription(s) as expired`);
     } catch (e) { console.error("[AddonExpiry] error:", e); }
   }
-  setTimeout(() => checkAddonExpiry().catch(() => {}), 8000);
-  setInterval(() => checkAddonExpiry().catch(() => {}), 6 * 60 * 60 * 1000);
+  if (process.env.NODE_ENV !== "test") {
+    setTimeout(() => checkAddonExpiry().catch(() => {}), 8000);
+    setInterval(() => checkAddonExpiry().catch(() => {}), 6 * 60 * 60 * 1000);
+  }
 
   // Initialize seed data (deferred — don't block Vite startup)
-  seedDatabase().catch((e: any) => console.error("[Seed] error:", e.message));
+  if (process.env.NODE_ENV !== "test") {
+    seedDatabase().catch((e: any) => console.error("[Seed] error:", e.message));
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // ══ QiroxAuth — TOTP-as-a-Service for External Websites ═══════════
@@ -16439,7 +16470,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         .populate("assignedTo", "fullName username")
         .populate("createdBy", "fullName username")
         .lean();
-      res.json(tasks);
+      res.json(me.role === "data_entry" ? tasks.map((task: any) => redactDataEntryTask(task)) : tasks);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -16505,7 +16536,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (me.role === "data_entry" && String(oldTask.assignedTo || "") !== String(me._id || me.id)) return res.sendStatus(403);
       const task = await (KanbanTaskModel as any).findByIdAndUpdate(req.params.id, { status }, { returnDocument: "after", new: true })
         .populate("assignedTo", "fullName username").lean();
-      res.json(task);
+      res.json(me.role === "data_entry" ? redactDataEntryTask(task) : task);
       // Send email and notification to assigned employee
       if (task && task.assignedTo) {
         const assignedUser = task.assignedTo as any;
@@ -16556,7 +16587,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         .populate("createdBy", "fullName username")
         .lean();
       if (!task) return res.status(404).json({ error: "المهمة غير موجودة" });
-      res.json(task);
+      res.json((req.user as any).role === "data_entry" ? redactDataEntryTask(task) : task);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

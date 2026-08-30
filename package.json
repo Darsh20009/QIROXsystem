@@ -16,7 +16,8 @@
     "test:store-whatsapp": "tsx --test server/store-whatsapp.test.ts",
     "test:investor-distributions": "tsx --test server/investor-distribution.test.ts",
     "test:project-integrations": "tsx --test server/project-integrations.test.ts",
-    "test:data-entry-policy": "tsx --test server/data-entry-policy.test.ts"
+    "test:data-entry-policy": "tsx --test server/data-entry-policy.test.ts",
+    "test:data-entry-http": "tsx --test server/data-entry-http.test.ts"
   },
   "dependencies": {
     "@capacitor/app": "^7.1.2",

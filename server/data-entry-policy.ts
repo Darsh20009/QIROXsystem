@@ -134,12 +134,75 @@ export const DATA_ENTRY_SPEC_HIDDEN_FIELDS = [
   "deploymentUsername", "deploymentPassword", "variables", "customVars",
 ] as const;
 
+export const DATA_ENTRY_RESPONSE_HIDDEN_FIELDS = [
+  ...DATA_ENTRY_SENSITIVE_FIELDS,
+  "role",
+  "allowedPages",
+  "permissions",
+  "walletBalance",
+  "salary",
+  "totalAmount",
+  "paymentStatus",
+  "paymentMethod",
+  "paymentProofUrl",
+  "deployToken",
+] as const;
+
+export function redactDataEntryRecord(value: unknown): unknown {
+  const source = value && typeof (value as any).toObject === "function"
+    ? (value as any).toObject()
+    : value;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return value;
+  return redactFields(
+    redactSensitiveFields(source as Record<string, unknown>),
+    DATA_ENTRY_RESPONSE_HIDDEN_FIELDS,
+  );
+}
+
+/**
+ * Kanban tasks contain a mixed `plan` object. Keep the same deployment and
+ * credential boundary as project specs, plus fields that can appear on the
+ * task itself or in populated user references.
+ */
+export const DATA_ENTRY_TASK_HIDDEN_FIELDS = [
+  ...DATA_ENTRY_SENSITIVE_FIELDS,
+  ...DATA_ENTRY_SPEC_HIDDEN_FIELDS,
+  "deployToken",
+  "githubDeployToken",
+  "githubRepo",
+  "role",
+  "allowedPages",
+  "permissions",
+] as const;
+
 export function redactFields<T extends Record<string, unknown>>(
   value: T,
   fields: readonly string[],
 ): Partial<T> {
   const safe = { ...value } as Partial<T>;
   for (const field of fields) delete safe[field as keyof T];
+  return safe;
+}
+
+export function redactDataEntryTask(value: unknown): unknown {
+  const source = value && typeof (value as any).toObject === "function"
+    ? (value as any).toObject()
+    : value;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return value;
+
+  const redactRecord = (record: Record<string, unknown>): Record<string, unknown> =>
+    redactFields(
+      redactSensitiveFields(record),
+      DATA_ENTRY_TASK_HIDDEN_FIELDS,
+    ) as Record<string, unknown>;
+
+  const safe = redactRecord(source as Record<string, unknown>);
+  for (const field of ["plan", "devPlan", "assignedTo", "createdBy"]) {
+    const nested = safe[field];
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      safe[field] = redactRecord(nested as Record<string, unknown>);
+    }
+  }
   return safe;
 }
 

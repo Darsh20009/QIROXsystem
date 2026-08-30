@@ -14,7 +14,9 @@ import { seedDefaultAccounts } from "../../mail-imap";
 
 export async function registerMailRoutes(app: Express): Promise<void> {
   // Seed default corporate accounts on startup (preserves legacy behaviour)
-  seedDefaultAccounts().catch(console.error);
+  if (process.env.NODE_ENV !== "test") {
+    seedDefaultAccounts().catch(console.error);
+  }
 
   // ── Account management (admin only) ──────────────────────────────────────
 
