@@ -228,6 +228,11 @@ function MessageBubble({ msg, isMe, contact, onDelete, L = true }: { msg: any; i
             <Download className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
           </a>
         )}
+        {msg.subject && (
+          <div className={`px-3.5 pt-3 ${hasAttachment || hasText ? "" : "pb-1"}`}>
+            <p className="text-[11px] font-bold opacity-70">{msg.subject}</p>
+          </div>
+        )}
         {/* Text */}
         {hasText && (
           <div className="px-3.5 py-2.5">
@@ -429,6 +434,7 @@ export default function Inbox() {
 
   const [activeContact, setActiveContact] = useState<any>(null);
   const [messageText, setMessageText] = useState("");
+  const [subject, setSubject] = useState("");
   const [search, setSearch] = useState("");
   const [newContactId, setNewContactId] = useState("");
   const [newClientId, setNewClientId] = useState("");
@@ -720,12 +726,13 @@ export default function Inbox() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: async (data: { body?: string; attachmentUrl?: string; attachmentType?: string; attachmentName?: string; attachmentSize?: number }) => {
+    mutationFn: async (data: { body?: string; subject?: string; attachmentUrl?: string; attachmentType?: string; attachmentName?: string; attachmentSize?: number }) => {
       if (!activeContact?.id) return;
       return (await apiRequest("POST", "/api/inbox", { toUserId: activeContact.id, ...data })).json();
     },
     onSuccess: () => {
       setMessageText("");
+      setSubject("");
       setIsTypingLocal(false);
       if (activeContact?.id) sendTyping(activeContact.id, false);
       queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
@@ -737,7 +744,7 @@ export default function Inbox() {
 
   const handleSend = () => {
     if (!messageText.trim()) return;
-    sendMutation.mutate({ body: messageText.trim() });
+    sendMutation.mutate({ body: messageText.trim(), subject: subject.trim() || undefined });
   };
 
   // ── File Upload ──
@@ -747,14 +754,15 @@ export default function Inbox() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
+      const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+      const data = await res.json().catch(() => ({}));
       if (!data.url) throw new Error(L ? "فشل الرفع" : "Upload failed");
       sendMutation.mutate({
         attachmentUrl: data.url,
         attachmentType: file.type.startsWith("image/") ? "image" : "file",
         attachmentName: file.name,
         attachmentSize: file.size,
+        subject: subject.trim() || undefined,
       });
     } catch {
       toast({ title: L ? "فشل رفع الملف" : "File upload failed", variant: "destructive" });
@@ -793,7 +801,7 @@ export default function Inbox() {
           const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
           if (!res.ok) throw new Error("upload failed");
           const data = await res.json();
-          if (data.url) sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: L ? "رسالة صوتية" : "Voice Message", attachmentSize: blob.size });
+          if (data.url) sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: L ? "رسالة صوتية" : "Voice Message", attachmentSize: blob.size, subject: subject.trim() || undefined });
         } catch { toast({ title: L ? "فشل إرسال الصوت" : "Voice upload failed", variant: "destructive" }); }
         finally { setUploadingFile(false); }
       };
@@ -831,6 +839,7 @@ export default function Inbox() {
 
   const openChat = (contact: any) => {
     setActiveContact(contact);
+    setSubject("");
     setIsTypingRemote(false);
     setIsVoiceRemote(false);
     setShowContacts(false);
@@ -1239,6 +1248,15 @@ export default function Inbox() {
 
               {/* ── Input Area ── */}
               <div className="bg-white dark:bg-gray-900 border-t border-black/[0.06] dark:border-white/[0.06] p-3 flex-shrink-0 safe-bottom">
+                <div className="mb-2">
+                  <Input
+                    value={subject}
+                    onChange={e => setSubject(e.target.value.slice(0, 160))}
+                    placeholder={L ? "موضوع اختياري للمحادثة" : "Optional conversation subject"}
+                    className="h-8 text-xs bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg"
+                    data-testid="input-message-subject"
+                  />
+                </div>
                 {/* Recording Bar */}
                 {isRecording && (
                   <div className="flex items-center gap-3 mb-3 bg-black/[0.04] dark:bg-white/[0.06] dark:bg-black dark:bg-white border border-black/10 dark:border-white/10 dark:border-black dark:border-white rounded-xl px-3 py-2.5">

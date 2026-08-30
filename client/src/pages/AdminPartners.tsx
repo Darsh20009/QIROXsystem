@@ -17,6 +17,7 @@ import { type Partner } from "@shared/schema";
 import { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
+import { useUser } from "@/hooks/use-auth";
 
 const SERVICES = [
   "نظام إدارة المطاعم",
@@ -41,6 +42,9 @@ interface FormData {
   name: string;
   nameAr: string;
   logoUrl: string;
+  logoOriginalUrl?: string;
+  logoProcessingStatus?: "processed" | "fallback" | "unknown";
+  logoProcessingWarning?: string;
   websiteUrl: string;
   category: string;
   sortOrder: string;
@@ -58,6 +62,9 @@ const emptyForm: FormData = {
   name: "",
   nameAr: "",
   logoUrl: "",
+  logoOriginalUrl: "",
+  logoProcessingStatus: "unknown",
+  logoProcessingWarning: "",
   websiteUrl: "",
   category: "",
   sortOrder: "0",
@@ -74,6 +81,8 @@ const emptyForm: FormData = {
 export default function AdminPartners() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
+  const { data: user } = useUser();
+  const isDataEntry = (user as any)?.role === "data_entry";
   const L = lang === "ar";
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -94,6 +103,9 @@ export default function AdminPartners() {
       name: partner.name,
       nameAr: partner.nameAr || "",
       logoUrl: partner.logoUrl,
+      logoOriginalUrl: partner.logoOriginalUrl || "",
+      logoProcessingStatus: partner.logoProcessingStatus || "unknown",
+      logoProcessingWarning: partner.logoProcessingWarning || "",
       websiteUrl: partner.websiteUrl || "",
       category: partner.category || "",
       sortOrder: partner.sortOrder?.toString() || "0",
@@ -116,6 +128,9 @@ export default function AdminPartners() {
     name: data.name,
     nameAr: data.nameAr || undefined,
     logoUrl: data.logoUrl,
+    logoOriginalUrl: data.logoOriginalUrl || "",
+    logoProcessingStatus: data.logoProcessingStatus || "unknown",
+    logoProcessingWarning: data.logoProcessingWarning || "",
     websiteUrl: data.websiteUrl || undefined,
     category: data.category || undefined,
     sortOrder: data.sortOrder ? Number(data.sortOrder) : 0,
@@ -196,6 +211,9 @@ export default function AdminPartners() {
       name: partner.name,
       nameAr: partner.nameAr || "",
       logoUrl: partner.logoUrl,
+      logoOriginalUrl: partner.logoOriginalUrl || "",
+      logoProcessingStatus: partner.logoProcessingStatus || "unknown",
+      logoProcessingWarning: partner.logoProcessingWarning || "",
       websiteUrl: partner.websiteUrl || "",
       category: partner.category || "",
       sortOrder: partner.sortOrder?.toString() || "0",
@@ -309,7 +327,7 @@ export default function AdminPartners() {
                 <div className="flex items-start gap-4">
                   {/* Logo */}
                   <div className="w-16 h-16 rounded-xl bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
-                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" style={{ mixBlendMode: "multiply" }} />
+                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
                   </div>
 
                   <div className="flex-1 min-w-0 pt-1">
@@ -375,11 +393,11 @@ export default function AdminPartners() {
                       data-testid={`button-edit-partner-${partner.id}`}>
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => { if (confirm(L ? "هل تريد حذف هذا الشريك؟" : "Delete this partner?")) deleteMutation.mutate(partner.id); }}
+                    {!isDataEntry && <button onClick={() => { if (confirm(L ? "هل تريد حذف هذا الشريك؟" : "Delete this partner?")) deleteMutation.mutate(partner.id); }}
                       className="p-1.5 rounded-lg text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] dark:hover:bg-black dark:bg-white transition-colors"
                       data-testid={`button-delete-partner-${partner.id}`}>
                       <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    </button>}
                   </div>
                 </div>
               </div>
@@ -509,7 +527,23 @@ export default function AdminPartners() {
             </div>
 
             {/* Logo */}
-            <ImageUpload label={L ? "لوجو الشريك *" : "Partner Logo *"} value={formData.logoUrl} onChange={url => set("logoUrl", url)} />
+            <ImageUpload
+              label={L ? "لوجو الشريك *" : "Partner Logo *"}
+              value={formData.logoUrl}
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+              uploadEndpoint="/api/upload/partner-logo"
+              onUploadResult={result => {
+                set("logoOriginalUrl", result.originalUrl || "");
+                set("logoProcessingStatus", result.processed === false ? "fallback" : "processed");
+                set("logoProcessingWarning", result.warning || "");
+              }}
+              onChange={url => set("logoUrl", url)}
+            />
+            {formData.logoProcessingWarning && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {formData.logoProcessingWarning}
+              </p>
+            )}
 
             {/* Website + Category + Sort */}
             <div className="grid grid-cols-2 gap-4">

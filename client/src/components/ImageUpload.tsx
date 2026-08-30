@@ -16,19 +16,21 @@ interface MultiProps {
 type Props = (SingleProps | MultiProps) & {
   label?: string;
   accept?: string;
+  uploadEndpoint?: string;
+  onUploadResult?: (result: { url: string; originalUrl?: string; processed?: boolean; warning?: string }) => void;
 };
 
-async function uploadFile(file: File): Promise<string> {
+async function uploadFile(file: File, endpoint: string) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch("/api/upload", { method: "POST", body: fd });
-  if (!res.ok) throw new Error("فشل رفع الصورة");
-  const data = await res.json();
-  return data.url as string;
+  const res = await fetch(endpoint, { method: "POST", body: fd, credentials: "include" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "فشل رفع الصورة");
+  return data;
 }
 
 export function ImageUpload(props: Props) {
-  const { label, accept = "image/*" } = props;
+  const { label, accept = "image/*", uploadEndpoint = "/api/upload", onUploadResult } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,13 +49,15 @@ export function ImageUpload(props: Props) {
       if (props.multiple) {
         const uploaded: string[] = [];
         for (const file of Array.from(files)) {
-          const url = await uploadFile(file);
-          uploaded.push(url);
+          const result = await uploadFile(file, uploadEndpoint);
+          onUploadResult?.(result);
+          uploaded.push(result.url);
         }
         props.onChange([...urls, ...uploaded]);
       } else {
-        const url = await uploadFile(files[0]);
-        (props as SingleProps).onChange(url);
+        const result = await uploadFile(files[0], uploadEndpoint);
+        onUploadResult?.(result);
+        (props as SingleProps).onChange(result.url);
       }
     } catch (e: any) {
       setError(e.message || "حدث خطأ أثناء الرفع");
@@ -122,7 +126,7 @@ export function ImageUpload(props: Props) {
       {urls.length > 0 && (
         <div className={`grid gap-2 ${props.multiple ? "grid-cols-3" : "grid-cols-1"}`}>
           {urls.map((url, idx) => (
-            <div key={idx} className="relative group rounded-lg overflow-hidden border border-black/08 dark:border-white/08 aspect-video bg-black/[0.02] dark:bg-white/[0.02]">
+            <div key={idx} className="relative group rounded-lg overflow-hidden border border-black/[0.08] dark:border-white/[0.08] aspect-video bg-black/[0.02] dark:bg-white/[0.02]">
               {url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
                 <img
                   src={url}

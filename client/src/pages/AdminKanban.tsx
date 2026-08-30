@@ -126,12 +126,13 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
   );
 }
 
-function TaskCard({ task, onMove, onDelete, onEdit, employees }: {
+function TaskCard({ task, onMove, onDelete, onEdit, employees, readOnly = false }: {
   task: any;
   onMove: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, data: any) => void;
   employees: any[];
+  readOnly?: boolean;
 }) {
   const [showMove, setShowMove] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -205,11 +206,11 @@ function TaskCard({ task, onMove, onDelete, onEdit, employees }: {
             {task.description && <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5 truncate">{task.description}</p>}
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={e => { e.stopPropagation(); setShowDetail(true); setEditMode(true); }}
+            {!readOnly && <button onClick={e => { e.stopPropagation(); setShowDetail(true); setEditMode(true); }}
               className="p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-400 transition-colors"
               title={L ? "تعديل" : "Edit"} data-testid={`button-edit-task-${task._id}`}>
               <Pencil className="w-3 h-3" />
-            </button>
+            </button>}
             <button onClick={e => { e.stopPropagation(); setShowMove(v => !v); }}
               className="p-1 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
               data-testid={`button-move-task-${task._id}`}>
@@ -233,11 +234,11 @@ function TaskCard({ task, onMove, onDelete, onEdit, employees }: {
         )}
         <div className="flex items-center justify-between mt-1">
           <span className="text-[9px] text-black/25 dark:text-white/25">{L ? "مهمة" : "Task"}</span>
-          <button onClick={e => { e.stopPropagation(); if (confirm(L ? "حذف هذه المهمة؟" : "Delete this task?")) onDelete(task._id); }}
+          {!readOnly && <button onClick={e => { e.stopPropagation(); if (confirm(L ? "حذف هذه المهمة؟" : "Delete this task?")) onDelete(task._id); }}
             className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-500 text-black/30 transition-colors"
             data-testid={`button-delete-task-${task._id}`}>
             <Trash2 className="w-3 h-3" />
-          </button>
+          </button>}
         </div>
         <AnimatePresence>
           {showMove && (
@@ -268,11 +269,11 @@ function TaskCard({ task, onMove, onDelete, onEdit, employees }: {
               </DialogTitle>
               <div className="flex items-center gap-2">
                 {!editMode ? (
-                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setEditMode(true)} data-testid="button-enter-edit-mode">
+                  !readOnly && <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setEditMode(true)} data-testid="button-enter-edit-mode">
                     <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
                   </Button>
                 ) : (
-                  <div className="flex gap-2">
+                  !readOnly && <div className="flex gap-2">
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditMode(false)}>{L ? "إلغاء" : "Cancel"}</Button>
                     <Button size="sm" className="h-7 text-xs gap-1 bg-black dark:bg-white text-white dark:text-black" onClick={handleSave} data-testid="button-save-task">
                       <Save className="w-3 h-3" /> {L ? "حفظ" : "Save"}
@@ -509,6 +510,7 @@ export default function AdminKanban() {
   const [taskSearch, setTaskSearch] = useState("");
   const [myTasksOnly, setMyTasksOnly] = useState(false);
   const { data: currentUser } = useUser();
+  const isDataEntry = (currentUser as any)?.role === "data_entry";
   const [createOpen, setCreateOpen] = useState(false);
   const [templateType, setTemplateType] = useState<"custom" | "website_plan" | "development">("custom");
   const [form, setForm] = useState({
@@ -658,11 +660,11 @@ export default function AdminKanban() {
           <Button variant="ghost" size="sm" onClick={() => { refetch(); refetchTasks(); }} data-testid="button-refresh-kanban">
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
-          <Button size="sm" className="bg-black text-white dark:bg-white dark:text-black h-8 text-xs gap-1.5"
+          {!isDataEntry && <Button size="sm" className="bg-black text-white dark:bg-white dark:text-black h-8 text-xs gap-1.5"
             onClick={() => setCreateOpen(true)} data-testid="button-create-task">
             <Plus className="w-3.5 h-3.5" />
             {L ? "مهمة جديدة" : "New Task"}
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -690,6 +692,7 @@ export default function AdminKanban() {
                         onMove={(id, status) => moveTaskMutation.mutate({ id, status })}
                         onDelete={(id) => deleteTaskMutation.mutate(id)}
                         onEdit={(id, data) => editTaskMutation.mutate({ id, data })}
+                        readOnly={isDataEntry}
                         employees={employees} />
                     ))}
                   </AnimatePresence>

@@ -13,6 +13,7 @@ import {
   Loader2, Users, Globe,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useUser } from "@/hooks/use-auth";
 
 type ApiKey = {
   id: string;
@@ -47,6 +48,8 @@ const SCOPE_LABELS: Record<string, string> = {
 export default function AdminApiKeys() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
+  const { data: user } = useUser();
+  const isDataEntry = (user as any)?.role === "data_entry";
   const L = lang === "ar";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -248,8 +251,8 @@ export default function AdminApiKeys() {
                   ))}
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
+                {/* Actions: data entry can inspect safe metadata, but cannot mutate keys. */}
+                {!isDataEntry && <div className="flex gap-2">
                   <Button
                     onClick={() => { toggleMutation.mutate({ id: selected.id || selected._id, isActive: !selected.isActive }); setSelected(null); }}
                     disabled={toggleMutation.isPending}
@@ -267,7 +270,7 @@ export default function AdminApiKeys() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                </div>
+                </div>}
               </div>
             </>
           )}

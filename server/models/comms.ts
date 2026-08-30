@@ -23,6 +23,7 @@ const inboxMessageSchema = new mongoose.Schema({
   csSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'CsSession', index: true },
   fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  subject: { type: String, default: "", maxlength: 160 },
   body: { type: String, default: "" },
   read: { type: Boolean, default: false, index: true },
   attachmentUrl: String,

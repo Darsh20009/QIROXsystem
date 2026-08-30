@@ -324,6 +324,10 @@ export interface Partner {
   name: string;
   nameAr?: string;
   logoUrl: string;
+  logoOriginalUrl?: string;
+  logoProcessingStatus?: "processed" | "fallback" | "unknown";
+  logoProcessingWarning?: string;
+  logoProcessedAt?: Date;
   websiteUrl?: string;
   category?: string;
   sortOrder: number;
@@ -340,6 +344,9 @@ export interface InsertPartner {
   name: string;
   nameAr?: string;
   logoUrl: string;
+  logoOriginalUrl?: string;
+  logoProcessingStatus?: "processed" | "fallback" | "unknown";
+  logoProcessingWarning?: string;
   websiteUrl?: string;
   category?: string;
   sortOrder?: number;

@@ -242,6 +242,9 @@ function G_ExtraAddons(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><Admi
 function G_AdminRoles(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminRoles /></RoleGuard>; }
 function G_ModConfig() { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminModConfig /></RoleGuard>; }
 function G_AdminWallet(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminWallet /></RoleGuard>; }
+function G_Partners(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminPartners /></RoleGuard>; }
+function G_ApiKeys(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminApiKeys /></RoleGuard>; }
+function G_Kanban(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminKanban /></RoleGuard>; }
 function G_Dashboard()  { return <RoleGuard allowedRoles={["admin", "manager", "client"]} redirectTo="/employee/role-dashboard"><Dashboard /></RoleGuard>; }
 // Sprint 003 — gated by FEATURE_DASHBOARD_V2; falls back to existing /dashboard when disabled
 function G_DashboardV2() {
@@ -360,7 +363,7 @@ function AdminRouter() {
         <Route path="/admin/gamification" component={AdminGamification} />
         <Route path="/admin/finance" component={G_Finance} />
         <Route path="/admin/templates" component={AdminTemplates} />
-        <Route path="/admin/partners" component={AdminPartners} />
+        <Route path="/admin/partners" component={G_Partners} />
         <Route path="/admin/news" component={AdminNews} />
         <Route path="/admin/jobs" component={AdminJobs} />
         <Route path="/admin/bank-settings" component={G_BankSettings} />
@@ -421,7 +424,7 @@ function AdminRouter() {
         <Route path="/admin/investors" component={AdminInvestors} />
         <Route path="/admin/switch-reminders" component={AdminSwitchReminders} />
         <Route path="/my-api-keys" component={MyApiKeys} />
-        <Route path="/admin/api-keys" component={AdminApiKeys} />
+        <Route path="/admin/api-keys" component={G_ApiKeys} />
         <Route path="/admin/store-whatsapp" component={AdminStoreWhatsApp} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={PublicSupport} />
@@ -451,7 +454,7 @@ function AdminRouter() {
         <Route path="/employee/whatsapp-crm" component={EmployeeWhatsappCRM} />
         <Route path="/employee/leads-data" component={EmployeeLeadsData} />
         <Route path="/employee/my-finance" component={EmployeeMyFinance} />
-        <Route path="/admin/kanban" component={AdminKanban} />
+        <Route path="/admin/kanban" component={G_Kanban} />
         <Route path="/admin/ai-sessions" component={AdminAISessions} />
         <Route path="/admin/referrals" component={AdminReferrals} />
         <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />

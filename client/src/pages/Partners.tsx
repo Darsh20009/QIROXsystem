@@ -141,13 +141,13 @@ export default function Partners() {
                     <div className="p-6">
                       <div className="flex items-start gap-4 mb-4">
                         {/* Logo */}
-                        <div className="w-16 h-16 rounded-xl bg-white dark:bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
+                        <div className="w-16 h-16 rounded-xl bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
                           {partner.websiteUrl ? (
                             <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain mix-blend-multiply" loading="lazy" style={{ mixBlendMode: "multiply" }} />
+                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
                             </a>
                           ) : (
-                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain mix-blend-multiply" loading="lazy" style={{ mixBlendMode: "multiply" }} />
+                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
                           )}
                         </div>
 
@@ -234,10 +234,10 @@ export default function Partners() {
                 <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-white p-1.5">
                   {partner.url ? (
                     <a href={partner.url} target="_blank" rel="noopener noreferrer">
-                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" style={{ mixBlendMode: "multiply" }} />
+                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                     </a>
                   ) : (
-                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" style={{ mixBlendMode: "multiply" }} />
+                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                   )}
                 </div>
                 {partner.url ? (

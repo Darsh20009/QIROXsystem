@@ -270,6 +270,18 @@ const uploadLarge = multer({
   },
 });
 
+// Partner logos have their own upload contract so message/file uploads keep
+// their existing behavior. The original buffer is persisted before conversion.
+const partnerLogoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("نوع الشعار غير مسموح به"));
+  },
+});
+
 // ── Atomic Wallet Helpers ────────────────────────────────────────────────────
 // Uses MongoDB document-level atomicity ($inc with condition) — safe without Replica Set
 
@@ -900,6 +912,56 @@ export async function registerRoutes(
       if (!req.file) return res.status(400).json({ error: "لم يتم اختيار أي ملف" });
       const url = `/uploads/${req.file.filename}`;
       res.json({ url, filename: req.file.originalname, size: req.file.size });
+    });
+  });
+
+  app.post("/api/upload/partner-logo", (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!["admin", "manager", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
+    partnerLogoUpload.single("file")(req, res, async (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "حجم الشعار كبير جداً (الحد الأقصى 10 ميجابايت)" : "تعذر رفع الشعار" });
+      }
+      if (err) return res.status(400).json({ error: "نوع الشعار غير مسموح به" });
+      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار أي شعار" });
+
+      const ext = ({
+        "image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif",
+        "image/webp": ".webp", "image/svg+xml": ".svg",
+      } as Record<string, string>)[req.file.mimetype] || ".img";
+      const base = crypto.randomBytes(16).toString("hex");
+      const originalFilename = `${base}-original${ext}`;
+      const pngFilename = `${base}.png`;
+      try {
+        // Always preserve the source, including when sharp rejects malformed data.
+        await fs.promises.writeFile(path.join(uploadsDir, originalFilename), req.file.buffer);
+        try {
+          const sharpModule: any = await import("sharp");
+          const sharpLib = sharpModule.default || sharpModule.sharp || sharpModule;
+          if (typeof sharpLib !== "function") throw new Error("image processor unavailable");
+          await sharpLib(req.file.buffer).ensureAlpha().png({ compressionLevel: 9 }).toFile(path.join(uploadsDir, pngFilename));
+          return res.json({
+            url: `/uploads/${pngFilename}`,
+            originalUrl: `/uploads/${originalFilename}`,
+            filename: req.file.originalname,
+            size: req.file.size,
+            processed: true,
+          });
+        } catch (processingError: any) {
+          console.warn("[partner-logo] processing failed:", processingError?.message || "unknown error");
+          return res.json({
+            url: `/uploads/${originalFilename}`,
+            originalUrl: `/uploads/${originalFilename}`,
+            filename: req.file.originalname,
+            size: req.file.size,
+            processed: false,
+            warning: "تعذر تجهيز نسخة PNG شفافة، تم الاحتفاظ بالملف الأصلي.",
+          });
+        }
+      } catch (writeError: any) {
+        console.error("[partner-logo] save failed:", writeError?.message || "unknown error");
+        return res.status(500).json({ error: "تعذر حفظ الشعار. لم يتم اعتماد التغيير." });
+      }
     });
   });
 
@@ -4601,7 +4663,7 @@ export async function registerRoutes(
 
   // ── Admin: all keys ──
   app.get("/api/admin/api-keys", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager","data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ClientApiKeyModel, UserModel } = await import("./models");
     const { clientId, status } = req.query as any;
     const filter: any = {};
@@ -4614,7 +4676,20 @@ export async function registerRoutes(
     const users = await (UserModel as any).find({ _id: { $in: clientIds } }).select("fullName email username").lean();
     const userMap: any = {};
     users.forEach((u: any) => { userMap[String(u._id)] = u; });
-    const result = keys.map((k: any) => ({ ...k, id: String(k._id), client: userMap[String(k.clientId)] || null }));
+    const isDataEntry = (req.user as any).role === "data_entry";
+    const result = keys.map((k: any) => {
+      const safe = { ...k };
+      delete safe.keyHash;
+      delete safe.rawKey;
+      delete safe.secret;
+      delete safe.token;
+      const client = userMap[String(k.clientId)] || null;
+      return {
+        ...safe,
+        id: String(k._id),
+        client: client && (isDataEntry ? { fullName: client.fullName || client.username || "—" } : client),
+      };
+    });
     res.json(result);
   });
 
@@ -5988,7 +6063,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/partners", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const partners = await storage.getAllPartners();
@@ -5996,19 +6071,24 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/partners", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
-    const partner = await storage.createPartner(req.body);
+    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
+    const input = Object.fromEntries(fields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
+    if (!String(input.name || "").trim() || !String(input.logoUrl || "").trim()) return res.status(400).json({ error: "الاسم والشعار مطلوبان" });
+    const partner = await storage.createPartner(input);
     cache.invalidate("public:partners");
     res.status(201).json(partner);
   });
 
   app.patch("/api/admin/partners/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
-    const partner = await storage.updatePartner(req.params.id, req.body);
+    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
+    const input = Object.fromEntries(fields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
+    const partner = await storage.updatePartner(req.params.id, input);
     cache.invalidate("public:partners");
     res.json(partner);
   });
@@ -7987,7 +8067,7 @@ export async function registerRoutes(
       const mongooseLib = await import("mongoose");
       const { InboxMessageModel, NotificationModel, UserModel } = await import("./models");
       const { pushToUser } = await import("./ws");
-      const { toUserId, body, orderId, attachmentUrl, attachmentType, attachmentName, attachmentSize } = req.body;
+      const { toUserId, body, subject, orderId, attachmentUrl, attachmentType, attachmentName, attachmentSize } = req.body;
       if (!toUserId || (!body?.trim() && !attachmentUrl)) return res.status(400).json({ error: "المستقبل مطلوب وإما رسالة أو مرفق" });
       if (!mongooseLib.default.Types.ObjectId.isValid(String(toUserId))) {
         return res.status(400).json({ error: "معرّف المستقبل غير صالح" });
@@ -7995,6 +8075,7 @@ export async function registerRoutes(
       const me = req.user as any;
       const msgData: any = {
         fromUserId: me.id, toUserId,
+        subject: typeof subject === "string" ? subject.trim().slice(0, 160) : "",
         body: body?.trim() || "",
         orderId: orderId && mongooseLib.default.Types.ObjectId.isValid(String(orderId)) ? orderId : undefined,
       };
@@ -16224,19 +16305,30 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { ProjectModel, OrderModel } = await import("./models");
-      const projects = await (ProjectModel as any).find().sort({ updatedAt: -1 }).limit(200)
-        .populate("clientId", "fullName username email")
+      const me = req.user as any;
+      const projectFilter = me.role === "data_entry" ? { managerId: me._id || me.id } : {};
+      const projects = await (ProjectModel as any).find(projectFilter).sort({ updatedAt: -1 }).limit(200)
+        .populate("clientId", "fullName username")
         .populate("managerId", "fullName username");
       const withOrders = await Promise.all(projects.map(async (p: any) => {
-        const order = await (OrderModel as any).findById(p.orderId).select("businessName sector planTier totalAmount");
-        return { ...p.toObject(), order };
+        const order = await (OrderModel as any).findById(p.orderId).select("businessName sector planTier");
+        const project = p.toObject();
+        if (me.role === "data_entry") {
+          delete project.totalAmount;
+          delete project.paymentStatus;
+          delete project.financialStatus;
+          delete project.clientSecret;
+          delete project.deployToken;
+          delete project.githubDeployToken;
+        }
+        return { ...project, order };
       }));
       res.json(withOrders);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.patch("/api/admin/kanban/:projectId/status", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { ProjectModel } = await import("./models");
       const { status } = req.body;
@@ -16316,7 +16408,9 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
-      const tasks = await (KanbanTaskModel as any).find()
+      const me = req.user as any;
+      const filter = me.role === "data_entry" ? { assignedTo: me._id || me.id } : {};
+      const tasks = await (KanbanTaskModel as any).find(filter)
         .sort({ createdAt: -1 })
         .populate("assignedTo", "fullName username")
         .populate("createdBy", "fullName username")
@@ -16327,7 +16421,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // POST /api/admin/kanban/tasks — create a new plan task
   app.post("/api/admin/kanban/tasks", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { KanbanTaskModel, NotificationModel } = await import("./models");
       const me = req.user as any;
@@ -16378,12 +16472,15 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { KanbanTaskModel, UserModel } = await import("./models");
+      const me = req.user as any;
       const { status } = req.body;
       const allowed = ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"];
       if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
       const oldTask = await (KanbanTaskModel as any).findById(req.params.id).lean();
+      if (!oldTask) return res.status(404).json({ error: "المهمة غير موجودة" });
+      if (me.role === "data_entry" && String(oldTask.assignedTo || "") !== String(me._id || me.id)) return res.sendStatus(403);
       const task = await (KanbanTaskModel as any).findByIdAndUpdate(req.params.id, { status }, { returnDocument: "after", new: true })
-        .populate("assignedTo", "fullName username email").lean();
+        .populate("assignedTo", "fullName username").lean();
       res.json(task);
       // Send email and notification to assigned employee
       if (task && task.assignedTo) {
@@ -16416,7 +16513,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // PATCH /api/admin/kanban/tasks/:id — edit full task details
   app.patch("/api/admin/kanban/tasks/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
       const { title, description, priority, assignedTo, deadline, plan, devPlan, projectName } = req.body;
@@ -16441,7 +16538,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // DELETE /api/admin/kanban/tasks/:id — delete a task
   app.delete("/api/admin/kanban/tasks/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if (!req.isAuthenticated() || ["client", "data_entry"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
       await (KanbanTaskModel as any).findByIdAndDelete(req.params.id);
