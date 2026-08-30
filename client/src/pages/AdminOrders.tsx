@@ -16,6 +16,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
+import { ProjectIntegrationsPanel } from "@/components/ProjectIntegrationsPanel";
 
 interface Employee {
   id: string;
@@ -795,23 +796,23 @@ export default function AdminOrders() {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
-                <TabsList className="w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0">
-                  <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                <TabsList className="w-full max-w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden">
+                  <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
                     {L ? "تفاصيل الطلب" : "Order Details"}
                   </TabsTrigger>
-                  <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                  <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
                     {L ? "المواصفات التقنية" : "Technical Specs"}
                   </TabsTrigger>
-                  <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                  <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
                     {L ? "إدارة الطلب" : "Manage Order"}
                   </TabsTrigger>
-                  <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                  <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <DollarSign className="w-3 h-3" />{L ? "التكاليف والأرباح" : "Costs & Profits"}
                   </TabsTrigger>
-                  <TabsTrigger value="files" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                  <TabsTrigger value="files" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <Paperclip className="w-3 h-3" />{L ? "ملفات المشروع" : "Project Files"}
                   </TabsTrigger>
-                  <TabsTrigger value="team" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                  <TabsTrigger value="team" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <Users className="w-3 h-3" />{L ? "فريق العمل" : "Team"}
                   </TabsTrigger>
                 </TabsList>
@@ -1370,6 +1371,12 @@ export default function AdminOrders() {
                             </div>
                           </div>
                         </div>
+
+                         {/* Project integrations */}
+                         <ProjectIntegrationsPanel
+                           orderId={selectedOrder.id}
+                           mode={["admin", "manager"].includes(currentUser?.role || "") ? "manage" : "readonly"}
+                         />
 
                         {/* Design Notes */}
                         <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
