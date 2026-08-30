@@ -51,6 +51,7 @@ test("project integration secrets stay one-time and rate limits are isolated", a
   assert.equal(reserveProjectIntegrationRateLimit(`unit-${new mongoose.Types.ObjectId()}`, 2).allowed, true);
 });
 
+
 test("project integration keys are scoped, revocable, expirable, and idempotent", {
   skip: !process.env.MONGODB_URI,
 }, async () => {
@@ -130,6 +131,115 @@ test("project integration keys are scoped, revocable, expirable, and idempotent"
   } finally {
     await NotificationDeliveryModel.deleteMany({ idempotencyKey: marker });
     if (integrationId) await ProjectIntegrationModel.deleteOne({ _id: integrationId });
+    await mongoose.disconnect();
+  }
+});
+
+test("a failed project WhatsApp delivery is replay-safe and never falls back to Baileys", {
+  skip: !process.env.MONGODB_URI,
+}, async () => {
+  await mongoose.connect(process.env.MONGODB_URI!);
+  const marker = `project-provider-outage-${new mongoose.Types.ObjectId()}`;
+  const originalFetch = globalThis.fetch;
+  const originalProvider = process.env.WHATSAPP_PROVIDER;
+  const originalToken = process.env.WHATSAPP_META_ACCESS_TOKEN;
+  const originalPhoneId = process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+  const smtpEnvKeys = [
+    "CPANEL_SMTP_HOST", "CPANEL_SMTP_USER", "CPANEL_SMTP_PASS",
+    "SMTP_HOST", "SMTP_USER", "SMTP_PASS",
+  ];
+  const originalSmtpEnv = Object.fromEntries(smtpEnvKeys.map(key => [key, process.env[key]]));
+  let providerCalls = 0;
+
+  try {
+    process.env.WHATSAPP_PROVIDER = "meta";
+    process.env.WHATSAPP_META_ACCESS_TOKEN = "meta-test-secret";
+    process.env.WHATSAPP_META_PHONE_NUMBER_ID = "test-phone-number";
+    globalThis.fetch = (async () => {
+      providerCalls += 1;
+      throw new Error("temporary Meta outage access_token=meta-test-secret");
+    }) as typeof fetch;
+
+    const request = {
+      event: "project_whatsapp_provider_outage",
+      idempotencyKey: marker,
+      recipient: { name: "Test", phone: "+966501234567" },
+      subject: "test",
+      message: "test",
+      channels: ["whatsapp" as const],
+      metadata: { source: "project_integration_api", projectWhatsApp: true },
+    };
+    const first = await dispatchNotification(request);
+    await NotificationDeliveryModel.updateOne(
+      { _id: first[0]?.id },
+      { $set: { nextAttemptAt: new Date(Date.now() - 1_000) } },
+    );
+    const second = await dispatchNotification(request);
+    const delivery = await NotificationDeliveryModel.findOne({ idempotencyKey: marker, channel: "whatsapp" }).lean();
+
+    assert.equal(first[0]?.id, second[0]?.id, "a replay must return the original delivery");
+    assert.equal(providerCalls, 1, "a replay must not call the provider again");
+    assert.equal(await NotificationDeliveryModel.countDocuments({ idempotencyKey: marker, channel: "whatsapp" }), 1);
+    assert.ok(delivery);
+    assert.ok(["retrying", "failed"].includes(delivery.status));
+    assert.ok(delivery.lastError);
+    assert.equal(delivery.lastError.includes("meta-test-secret"), false, "provider secrets must not be persisted");
+    assert.match(delivery.lastError, /temporary Meta outage/);
+
+    // Project WhatsApp traffic must stay on Meta even when the global
+    // preference is set to the internal Baileys provider.
+    process.env.WHATSAPP_PROVIDER = "baileys";
+    globalThis.fetch = (async () => {
+      providerCalls += 1;
+      return new Response(JSON.stringify({ messages: [{ id: "meta-message-id" }] }), { status: 200 });
+    }) as typeof fetch;
+    const projectOnlyMeta = await dispatchNotification({
+      ...request,
+      idempotencyKey: `${marker}-no-baileys`,
+    });
+    assert.equal(projectOnlyMeta[0]?.status, "sent", "project traffic must use Meta, not Baileys");
+    assert.equal(projectOnlyMeta[0]?.channel, "whatsapp");
+    assert.equal(providerCalls, 2, "project traffic must invoke Meta even when Baileys is the global preference");
+
+    for (const key of smtpEnvKeys) delete process.env[key];
+    const smtpRequest = {
+      event: "project_email_provider_outage",
+      idempotencyKey: `${marker}-smtp`,
+      recipient: { name: "Test", email: "test@example.com" },
+      subject: "test",
+      message: "test",
+      channels: ["email" as const],
+      metadata: { source: "project_integration_api" },
+    };
+    const smtpFirst = await dispatchNotification(smtpRequest);
+    await NotificationDeliveryModel.updateOne(
+      { _id: smtpFirst[0]?.id },
+      { $set: { nextAttemptAt: new Date(Date.now() - 1_000) } },
+    );
+    const smtpSecond = await dispatchNotification(smtpRequest);
+    const smtpDelivery = await NotificationDeliveryModel.findOne({
+      idempotencyKey: smtpRequest.idempotencyKey,
+      channel: "email",
+    }).lean();
+    assert.equal(smtpFirst[0]?.id, smtpSecond[0]?.id, "an SMTP replay must return the original delivery");
+    assert.equal(smtpFirst[0]?.status, "retrying");
+    assert.equal(smtpSecond[0]?.status, "retrying");
+    assert.equal(smtpSecond[0]?.error, "تعذر تسليم البريد عبر SMTP");
+    assert.equal(smtpDelivery?.attempts, 1, "an SMTP replay must not create a second attempt");
+    assert.equal(smtpDelivery?.lastError, "تعذر تسليم البريد عبر SMTP");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalProvider === undefined) delete process.env.WHATSAPP_PROVIDER;
+    else process.env.WHATSAPP_PROVIDER = originalProvider;
+    if (originalToken === undefined) delete process.env.WHATSAPP_META_ACCESS_TOKEN;
+    else process.env.WHATSAPP_META_ACCESS_TOKEN = originalToken;
+    if (originalPhoneId === undefined) delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+    else process.env.WHATSAPP_META_PHONE_NUMBER_ID = originalPhoneId;
+    for (const key of smtpEnvKeys) {
+      if (originalSmtpEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = originalSmtpEnv[key];
+    }
+    await NotificationDeliveryModel.deleteMany({ idempotencyKey: { $in: [marker, `${marker}-no-baileys`, `${marker}-smtp`] } });
     await mongoose.disconnect();
   }
 });

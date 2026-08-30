@@ -32,6 +32,11 @@ type DeliveryResult = {
   error?: string;
 };
 
+type DeliveryClaim = {
+  delivery: any;
+  created: boolean;
+};
+
 let workerTimer: NodeJS.Timeout | undefined;
 let lastWhatsAppAlertAt = 0;
 const MAX_ALERT_FREQUENCY_MS = 30 * 60 * 1000;
@@ -62,16 +67,39 @@ function deliverySummary(delivery: any): DeliveryResult {
   };
 }
 
+function sanitizeDeliveryError(error: unknown, channel: NotificationChannel): string {
+  const fallback = channel === "whatsapp"
+    ? "تعذر إرسال الرسالة عبر مزود واتساب"
+    : "تعذر تسليم الرسالة عبر SMTP";
+  let message = String((error as any)?.message || error || "").trim();
+  if (!message) return fallback;
+
+  // Provider errors can contain credentials or connection URLs. Preserve
+  // useful diagnostics while ensuring the durable record is safe to expose.
+  const secretValues = [
+    process.env.WHATSAPP_META_ACCESS_TOKEN,
+    process.env.CPANEL_SMTP_PASS,
+    process.env.SMTP_PASS,
+  ].filter((value): value is string => Boolean(value));
+  for (const secret of secretValues) message = message.split(secret).join("[redacted]");
+  message = message
+    .replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]")
+    .replace(/\b(access_token|api_key|apikey|token|password|pass|secret)\s*[:=]\s*["']?([^\s"',;}]+)/gi, "$1=[redacted]")
+    .replace(/:\/\/[^/\s:@]+:[^@\s/]+@/g, "://[redacted]@");
+
+  return message.slice(0, 1000) || fallback;
+}
+
 async function createDelivery(
   request: NotificationRequest,
   channel: NotificationChannel,
-): Promise<any> {
+): Promise<DeliveryClaim> {
   const phone = normalizePhone(request.recipient.phone);
   const existing = await NotificationDeliveryModel.findOne({
     idempotencyKey: request.idempotencyKey,
     channel,
   });
-  if (existing) return existing;
+  if (existing) return { delivery: existing, created: false };
 
   const hasRecipient = channel === "email"
     ? Boolean(request.recipient.email)
@@ -79,7 +107,7 @@ async function createDelivery(
   const body = channel === "email" ? buildEmailBody(request.message, request.actionUrl) : request.message;
 
   try {
-    return await NotificationDeliveryModel.create({
+    const delivery = await NotificationDeliveryModel.create({
       event: request.event,
       idempotencyKey: request.idempotencyKey,
       channel,
@@ -104,10 +132,12 @@ async function createDelivery(
           ? "لا يوجد بريد إلكتروني للمستلم"
           : phone.reason || "لا يوجد رقم واتساب صالح للمستلم",
     });
+    return { delivery, created: true };
   } catch (error: any) {
     // Concurrent requests for the same event should re-use the durable delivery.
     if (error?.code === 11000) {
-      return NotificationDeliveryModel.findOne({ idempotencyKey: request.idempotencyKey, channel });
+      const delivery = await NotificationDeliveryModel.findOne({ idempotencyKey: request.idempotencyKey, channel });
+      if (delivery) return { delivery, created: false };
     }
     throw error;
   }
@@ -269,7 +299,7 @@ export async function processNotificationDelivery(id: string): Promise<DeliveryR
     }
     return deliverySummary(finalized);
   } catch (error: any) {
-    const reason = String(error?.message || error || "فشل غير معروف").slice(0, 1000);
+    const reason = sanitizeDeliveryError(error, delivery.channel);
     if (delivery.channel === "whatsapp") await alertWhatsAppHealth(reason).catch(() => {});
 
     let update: Record<string, unknown>;
@@ -301,9 +331,13 @@ export async function processNotificationDelivery(id: string): Promise<DeliveryR
 
 export async function dispatchNotification(request: NotificationRequest): Promise<DeliveryResult[]> {
   const channels = Array.from(new Set(request.channels?.length ? request.channels : ["email", "whatsapp"]));
-  const deliveries = await Promise.all(channels.map(channel => createDelivery(request, channel)));
-  const results = await Promise.all(deliveries.map(async delivery => {
+  const claims = await Promise.all(channels.map(channel => createDelivery(request, channel)));
+  const results = await Promise.all(claims.map(async ({ delivery, created }) => {
     if (delivery.status === "skipped") return deliverySummary(delivery);
+    // Replaying an idempotency key must be read-only. Retries are driven by
+    // the worker or the explicit admin retry endpoint, never by the caller's
+    // replay of a request that may already have reached the provider.
+    if (!created) return deliverySummary(delivery);
     return (await processNotificationDelivery(String(delivery._id))) || deliverySummary(delivery);
   }));
   return results;
