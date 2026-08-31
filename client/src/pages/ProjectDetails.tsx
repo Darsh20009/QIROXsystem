@@ -18,6 +18,8 @@ import { useI18n } from "@/lib/i18n";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { ImageUpload } from "@/components/ImageUpload";
+import ProjectGitHubCard from "@/components/ProjectGitHubCard";
+import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
 
 function extractYouTubeId(url: string): string {
   const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
@@ -245,6 +247,11 @@ export default function ProjectDetails() {
             );
           })}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ProjectGitHubCard project={project} lang={lang} />
+        <ProjectSubscriptionCard project={project} lang={lang} />
       </div>
 
       <Tabs defaultValue={section} className="w-full" dir={dir}>

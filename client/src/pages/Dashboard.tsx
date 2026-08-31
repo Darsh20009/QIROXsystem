@@ -30,12 +30,15 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
 import { ClientHeroVisual } from "@/components/ClientHeroVisual";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
+import ProjectGitHubCard from "@/components/ProjectGitHubCard";
+import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Clock },
   approved: { label: "تمت الموافقة", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
   in_progress: { label: "قيد التنفيذ", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: Activity },
   completed: { label: "مكتمل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
+  closed: { label: "مكتمل", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: CheckCircle2 },
   rejected: { label: "مرفوض", color: "text-black dark:text-white", bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", icon: AlertCircle },
   cancelled: { label: "ملغي", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: AlertCircle },
 };
@@ -2220,6 +2223,11 @@ export default function Dashboard() {
 
   const pendingOrders = orders?.filter((o: any) => o.status === 'pending') || [];
   const activeProjects = projects?.filter((p: any) => (p.status as string) !== 'completed' && (p.status as string) !== 'closed') || [];
+  // Keep closed projects visible when they have a subscription, so clients can
+  // continue to see the repository and the service countdown after delivery.
+  const projectCards = projects?.filter((p: any) =>
+    (p.status as string) !== "completed" && ((p.status as string) !== "closed" || !!p.subscription)
+  ) || [];
   const linkedOrderIds = new Set(
     (projects || [])
       .map((p: any) => String(p.orderId?._id || p.orderId || ""))
@@ -2751,7 +2759,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            ) : activeProjects.length === 0 && activeUnlinkedOrders.length === 0 ? (
+            ) : projectCards.length === 0 && activeUnlinkedOrders.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.08] p-16 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-3xl bg-black/[0.03] dark:bg-white/[0.05] flex items-center justify-center mb-5">
                   <Layers className="w-10 h-10 text-black/10 dark:text-white/10" />
@@ -2848,7 +2856,7 @@ export default function Dashboard() {
                     </motion.div>
                   );
                 })}
-                {activeProjects.map((project: any, i: number) => {
+                {projectCards.map((project: any, i: number) => {
                   const st = statusMap[project.status] || statusMap['pending'];
                   const pct = project.progress || 0;
                   const r = 28, cx = 36, cy = 36, circ = 2 * Math.PI * r;
@@ -3010,6 +3018,11 @@ export default function Dashboard() {
 
                           {/* Team Tasks */}
                           <ProjectTasksMini projectId={project.id} lang={lang} />
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+                            <ProjectGitHubCard project={project} lang={lang} compact />
+                            <ProjectSubscriptionCard project={project} lang={lang} compact />
+                          </div>
 
                           {/* Actions */}
                           <div className="flex items-center gap-2 pt-3 border-t border-black/[0.04] dark:border-white/[0.05]">

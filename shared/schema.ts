@@ -466,12 +466,12 @@ export interface ProjectSubscription {
   clientId: string;
   planTier?: string;
   planSegment?: string;
-  period: "monthly" | "6months" | "annual";
-  durationDays: number;
+  period: "monthly" | "6months" | "annual" | "lifetime";
+  durationDays?: number | null;
   startedAt?: Date | string | null;
   expiresAt?: Date | string | null;
   status: "active" | "expired" | "suspended";
-  remainingDays: number;
+  remainingDays?: number | null;
   percentRemaining: number;
 }
 

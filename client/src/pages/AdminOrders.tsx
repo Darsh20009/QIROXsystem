@@ -21,6 +21,7 @@ import {
   resetGitHubVisibilitySelection,
 } from "@/lib/github-visibility-state";
 import { ProjectIntegrationsPanel } from "@/components/ProjectIntegrationsPanel";
+import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
 
 interface Employee {
   id: string;
@@ -339,6 +340,7 @@ export default function AdminOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       toast({ title: L ? "تم تحديث الطلب بنجاح" : "Order updated successfully" });
     },
     onError: () => toast({ title: L ? "خطأ في تحديث الطلب" : "Error updating order", variant: "destructive" }),
@@ -1685,6 +1687,9 @@ export default function AdminOrders() {
 
                       {["admin", "manager"].includes(currentUser?.role || "") && (
                         <div className="border border-black/[0.08] rounded-2xl p-4 bg-white space-y-4" data-testid="github-provisioning-panel">
+                          {orderProject && (
+                            <ProjectSubscriptionCard project={orderProject} lang={lang} compact />
+                          )}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-xl bg-black/[0.04] flex items-center justify-center">

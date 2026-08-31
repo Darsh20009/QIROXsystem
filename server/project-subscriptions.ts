@@ -1,4 +1,4 @@
-import { ProjectSubscriptionModel } from "./models";
+import { ProjectSubscriptionModel } from "./models/project-subscriptions";
 
 export const PROJECT_SUBSCRIPTION_PERIOD_DAYS: Record<string, number> = {
   monthly: 30,
@@ -7,7 +7,8 @@ export const PROJECT_SUBSCRIPTION_PERIOD_DAYS: Record<string, number> = {
   annual: 365,
 };
 
-export function normalizeProjectSubscriptionPeriod(period: unknown): "monthly" | "6months" | "annual" | null {
+export function normalizeProjectSubscriptionPeriod(period: unknown): "monthly" | "6months" | "annual" | "lifetime" | null {
+  if (period === "lifetime") return "lifetime";
   if (period === "monthly") return "monthly";
   if (period === "6months" || period === "sixmonth") return "6months";
   if (period === "annual") return "annual";
@@ -16,7 +17,7 @@ export function normalizeProjectSubscriptionPeriod(period: unknown): "monthly" |
 
 export function getProjectSubscriptionDurationDays(period: unknown): number | null {
   const normalized = normalizeProjectSubscriptionPeriod(period);
-  return normalized ? PROJECT_SUBSCRIPTION_PERIOD_DAYS[normalized] : null;
+  return normalized === "lifetime" ? null : normalized ? PROJECT_SUBSCRIPTION_PERIOD_DAYS[normalized] : null;
 }
 
 export function serializeProjectSubscription(source: any, now = new Date()) {
@@ -24,9 +25,10 @@ export function serializeProjectSubscription(source: any, now = new Date()) {
   const value = source.toObject ? source.toObject() : source;
   const startedAt = value.startedAt ? new Date(value.startedAt) : null;
   const expiresAt = value.expiresAt ? new Date(value.expiresAt) : null;
-  const isExpired = !!expiresAt && expiresAt.getTime() <= now.getTime();
+  const isLifetime = value.period === "lifetime";
+  const isExpired = !isLifetime && !!expiresAt && expiresAt.getTime() <= now.getTime();
   const remainingMs = expiresAt ? Math.max(0, expiresAt.getTime() - now.getTime()) : 0;
-  const remainingDays = expiresAt ? Math.ceil(remainingMs / 86400000) : 0;
+  const remainingDays = isLifetime ? null : expiresAt ? Math.ceil(remainingMs / 86400000) : 0;
   const totalMs = startedAt && expiresAt ? Math.max(1, expiresAt.getTime() - startedAt.getTime()) : null;
 
   return {
@@ -42,7 +44,7 @@ export function serializeProjectSubscription(source: any, now = new Date()) {
     expiresAt: value.expiresAt || null,
     status: isExpired ? "expired" : value.status,
     remainingDays,
-    percentRemaining: totalMs && expiresAt
+    percentRemaining: isLifetime ? 100 : totalMs && expiresAt
       ? Math.max(0, Math.min(100, Math.round((remainingMs / totalMs) * 100)))
       : 0,
   };
@@ -61,11 +63,11 @@ export async function startProjectSubscription({
 }) {
   const period = normalizeProjectSubscriptionPeriod(order?.planPeriod || client?.subscriptionPeriod);
   const durationDays = getProjectSubscriptionDurationDays(period);
-  if (!period || !durationDays) {
+  if (!period || (period !== "lifetime" && !durationDays)) {
     return { subscription: null, created: false };
   }
 
-  const expiresAt = new Date(startedAt.getTime() + durationDays * 86400000);
+  const expiresAt = durationDays ? new Date(startedAt.getTime() + durationDays * 86400000) : null;
   const result: any = await ProjectSubscriptionModel.updateOne(
     { projectId },
     {

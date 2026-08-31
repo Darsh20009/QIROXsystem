@@ -7424,10 +7424,16 @@ export async function registerRoutes(
   app.get("/api/admin/orders/:id/project", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     if ((req.user as any).role === "data_entry") return res.json(null);
-    const { ProjectModel } = await import("./models");
+    const { ProjectModel, ProjectSubscriptionModel } = await import("./models");
+    const { serializeProjectSubscription } = await import("./project-subscriptions");
     const project = await (ProjectModel as any).findOne({ orderId: req.params.id }).lean();
     if (!project) return res.json(null);
-    res.json({ ...project, id: String((project as any)._id) });
+    const subscription = await ProjectSubscriptionModel.findOne({ projectId: project._id }).lean();
+    res.json({
+      ...project,
+      id: String((project as any)._id),
+      subscription: serializeProjectSubscription(subscription),
+    });
   });
 
   // Client can view specs for their own orders

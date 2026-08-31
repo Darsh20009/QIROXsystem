@@ -19,7 +19,8 @@
     "test:data-entry-policy": "tsx --test server/data-entry-policy.test.ts",
     "test:data-entry-http": "tsx --test server/data-entry-http.test.ts",
     "test:github-repositories": "tsx --test server/github-repositories.test.ts",
-    "test:github-visibility-ui": "tsx --test client/src/lib/github-visibility-state.test.ts"
+    "test:github-visibility-ui": "tsx --test client/src/lib/github-visibility-state.test.ts",
+    "test:project-subscriptions": "tsx --test server/project-subscriptions.test.ts"
   },
   "dependencies": {
     "@capacitor/app": "^7.1.2",
