@@ -144,6 +144,7 @@ import {
   serializeProjectIntegration,
   projectIntegrationApiDocs,
 } from "./project-integrations";
+import { startProjectSubscription } from "./project-subscriptions";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -3562,35 +3563,39 @@ export async function registerRoutes(
       }
     } catch (e) { console.error("[Email] project update email error:", e); }
 
-    // ── Auto-start subscription when project reaches "delivery" status ──
+    // ── Start a project-specific subscription only at final completion ──
     try {
       const statusChanged = input.status && oldProject?.status !== input.status;
-      if (statusChanged && input.status === "delivery" && (project as any).clientId) {
+      if (statusChanged && input.status === "closed" && (project as any).clientId) {
+        const { UserModel, OrderModel, NotificationModel } = await import("./models");
         const client = await UserModel.findById((project as any).clientId);
-        if (client && (client as any).subscriptionPeriod && !(client as any).subscriptionStartDate) {
-          // Calculate duration based on plan
-          const period = (client as any).subscriptionPeriod as string;
-          const durationDays = period === "monthly" ? 30 : period === "6months" ? 180 : 365;
-          const startDate = new Date();
-          const expiresAt = new Date(startDate.getTime() + durationDays * 86400000);
-          await UserModel.findByIdAndUpdate(client._id, {
-            $set: { subscriptionStartDate: startDate, subscriptionExpiresAt: expiresAt, subscriptionStatus: "active" },
-          });
-          // Notify all managers/admins
-          const staff = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").lean();
-          const clientName = (client as any).fullName || (client as any).username || "العميل";
-          const projectName = (project as any).name || "المشروع";
+        const orderId = (project as any).orderId?._id || (project as any).orderId;
+        const order = orderId ? await OrderModel.findById(orderId) : null;
+        const activation = await startProjectSubscription({
+          projectId: String((project as any)._id || (project as any).id || req.params.id),
+          order,
+          client,
+        });
+
+        // The unique projectId + $setOnInsert makes this notification idempotent
+        // even when two status updates arrive at the same time.
+        if (activation.created && activation.subscription) {
+          const staff = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
+          const clientName = (client as any)?.fullName || (client as any)?.username || "العميل";
+          const projectName = (order as any)?.businessName || (order as any)?.serviceType || "المشروع";
+          const expiresAt = new Date((activation.subscription as any).expiresAt);
+          const durationDays = Number((activation.subscription as any).durationDays || 0);
           for (const emp of staff) {
             await NotificationModel.create({
-              userId: String(emp._id), type: 'subscription',
-              title: `🚀 بدأ اشتراك ${clientName}`,
-              body: `تم تسليم مشروع "${projectName}" — بدأ العد التنازلي للاشتراك (${durationDays} يوم)`,
-              link: '/admin/subscription-plans', icon: '📅',
+              userId: String(emp._id), type: "subscription",
+              title: `بدأ اشتراك مشروع ${clientName}`,
+              body: `اكتمل مشروع "${projectName}" — بدأ الاشتراك (${durationDays} يوم)`,
+              link: `/projects/${String((project as any)._id || req.params.id)}`, icon: "📅",
             }).catch(() => {});
             pushNotification(String(emp._id), {
-              title: `بدأ اشتراك ${clientName}`,
-              body: `تم تسليم "${projectName}" — ينتهي الاشتراك: ${expiresAt.toLocaleDateString("ar-SA")}`,
-              icon: '📅', link: '/admin/subscription-plans',
+              title: `بدأ اشتراك مشروع ${clientName}`,
+              body: `اكتمل "${projectName}" — ينتهي الاشتراك: ${expiresAt.toLocaleDateString("ar-SA")}`,
+              icon: "📅", link: `/projects/${String((project as any)._id || req.params.id)}`,
             });
           }
         }

@@ -3,6 +3,7 @@ export * from "./models/auth";
 export * from "./models/hr";
 export * from "./models/orders";
 export * from "./models/projects";
+export * from "./models/project-subscriptions";
 export * from "./models/services";
 export * from "./models/finance";
 export * from "./models/comms";

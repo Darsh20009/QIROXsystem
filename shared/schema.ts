@@ -459,6 +459,22 @@ export interface OrderSpecs {
   updatedAt?: Date;
 }
 
+export interface ProjectSubscription {
+  id: string;
+  projectId: string;
+  orderId: string;
+  clientId: string;
+  planTier?: string;
+  planSegment?: string;
+  period: "monthly" | "6months" | "annual";
+  durationDays: number;
+  startedAt?: Date | string | null;
+  expiresAt?: Date | string | null;
+  status: "active" | "expired" | "suspended";
+  remainingDays: number;
+  percentRemaining: number;
+}
+
 // --- Modification Requests (MongoDB) ---
 export const modificationRequestPriorities = ['low', 'medium', 'high', 'urgent'] as const;
 export type ModificationRequestPriority = (typeof modificationRequestPriorities)[number];

@@ -13,8 +13,9 @@ import {
 import {
   UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel,
   NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel, ModificationRequestModel,
-  QiroxProductModel, CartModel, OrderSpecsModel
+  QiroxProductModel, CartModel, OrderSpecsModel, ProjectSubscriptionModel
 } from "./models";
+import { serializeProjectSubscription } from "./project-subscriptions";
 
 export interface IStorage {
   // Users
@@ -297,12 +298,27 @@ export class MongoStorage implements IStorage {
       }
     }
     const projects = await ProjectModel.find(query).populate("orderId", "serviceType sector businessName planTier notes totalAmount items planPeriod planSegment").populate("managerId", "username fullName").sort({ createdAt: -1 });
-    return projects.map(p => ({ ...p.toObject(), id: p._id.toString() })) as any;
+    const projectIds = projects.map(project => project._id);
+    const subscriptions = await ProjectSubscriptionModel.find({ projectId: { $in: projectIds } }).lean();
+    const subscriptionsByProject = new Map(
+      subscriptions.map(subscription => [String(subscription.projectId), serializeProjectSubscription(subscription)]),
+    );
+    return projects.map(p => ({
+      ...p.toObject(),
+      id: p._id.toString(),
+      subscription: subscriptionsByProject.get(String(p._id)) || null,
+    })) as any;
   }
 
   async getProject(id: string): Promise<Project | undefined> {
     const project = await ProjectModel.findById(id).populate("orderId", "serviceType sector businessName planTier notes totalAmount items planPeriod planSegment").populate("managerId", "username fullName");
-    return project ? { ...project.toObject(), id: project._id.toString() } : undefined as any;
+    if (!project) return undefined as any;
+    const subscription = await ProjectSubscriptionModel.findOne({ projectId: project._id }).lean();
+    return {
+      ...project.toObject(),
+      id: project._id.toString(),
+      subscription: serializeProjectSubscription(subscription),
+    } as any;
   }
 
   async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project> {
