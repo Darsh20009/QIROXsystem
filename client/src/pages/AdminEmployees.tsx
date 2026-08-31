@@ -933,7 +933,7 @@ export default function AdminEmployees() {
                   <Button size="sm" variant="outline" className="flex-1 h-8 text-xs border-black/[0.08] gap-1" onClick={() => startEdit(emp)} data-testid={`button-edit-${emp.id}`}>
                     <Edit2 className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
                   </Button>
-                  {emp.role !== 'admin' && (
+                  {emp.role !== 'admin' && !isDataEntry && (
                     <>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
                         {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
@@ -984,7 +984,7 @@ export default function AdminEmployees() {
                   <Badge className={`text-[10px] border hidden md:flex ${roleColors[emp.role] || roleColors.client}`}>{roleLabels[emp.role] || emp.role}</Badge>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black/60" onClick={() => startEdit(emp)} data-testid={`button-edit-list-${emp.id}`}><Edit2 className="w-3.5 h-3.5" /></Button>
-                    {emp.role !== 'admin' && (
+                    {emp.role !== 'admin' && !isDataEntry && (
                       <>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
                           {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}

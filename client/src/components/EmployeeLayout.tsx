@@ -25,9 +25,10 @@ import {
   Store, Briefcase, FileSignature, Award, Package2, Boxes,
   MessageCircle, Map, BarChart2, Bell as BellIcon, RefreshCcw,
   TrendingDown, AlertCircle, Building, Send, Globe2,
+  ChevronDown,
 } from "lucide-react";
 
-interface NavItem {
+export interface NavItem {
   id: string;
   labelAr: string;
   labelEn: string;
@@ -38,6 +39,7 @@ interface NavItem {
 
 const ALL_NAV: Record<string, NavItem> = {
   // ── Main Operations ───────────────────────────────────────────────────────
+  workspace:         { id: "workspace",         labelAr: "مساحات العمل",        labelEn: "Workspaces",            icon: LayoutDashboard, href: "/employee/workspace",         group: "main" },
   dashboard:         { id: "dashboard",         labelAr: "لوحتي",               labelEn: "My Dashboard",        icon: LayoutDashboard, href: "/employee/role-dashboard",    group: "main" },
   orders:            { id: "orders",            labelAr: "المشاريع",             labelEn: "Projects",             icon: Package,         href: "/admin/orders",               group: "main" },
   customers:         { id: "customers",         labelAr: "العملاء",              labelEn: "Clients",              icon: Users,           href: "/admin/customers",            group: "main" },
@@ -138,7 +140,7 @@ const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
   marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
   accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "reports", "checklist", "mail", "profile", "my_finance"],
   support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
-  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "api_keys", "employees", "contact_msgs", "mail", "profile", "changelog"],
+  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "employees", "contact_msgs", "mail", "profile", "changelog"],
   hr:            ["dashboard", "whatsapp_crm", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
   merchant:      ["dashboard", "whatsapp_crm", "shipments", "checklist", "mail", "profile", "my_finance"],
   content:       ["dashboard", "whatsapp_crm", "products", "news", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
@@ -203,12 +205,58 @@ const ROLE_ITEMS: Record<string, string[]> = {
   marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews", "push_notif", "checklist", "mail", "profile", "my_finance"],
   accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "sales_reports", "reports", "bank_settings", "checklist", "mail", "profile", "my_finance"],
   support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "sla", "checklist", "mail", "profile", "my_finance"],
-  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "api_keys", "employees", "contact_msgs", "mail", "profile", "changelog"],
+  data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "employees", "contact_msgs", "mail", "profile", "changelog"],
   hr:            ["dashboard", "whatsapp_crm", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
   merchant:      ["dashboard", "whatsapp_crm", "shipments", "checklist", "mail", "profile", "my_finance"],
   content:       ["dashboard", "whatsapp_crm", "products", "news", "marketing_posts", "templates", "checklist", "mail", "profile", "my_finance"],
 };
 const DEFAULT_ITEMS = ["dashboard", "mail", "profile"];
+
+export function getAllowedEmployeeNavItems(role: string, allowedPages?: string[] | null): NavItem[] {
+  const ids = allowedPages && allowedPages.length > 0
+    ? allowedPages
+    : (ROLE_ITEMS[role] || DEFAULT_ITEMS);
+  return [ALL_NAV.workspace, ...ids.map(id => ALL_NAV[id]).filter(Boolean)];
+}
+
+const WORKSPACE_META: Record<string, { labelAr: string; labelEn: string; descriptionAr: string; descriptionEn: string; icon: React.ElementType; candidates: string[] }> = {
+  overview: {
+    labelAr: "لوحة العمل", labelEn: "Work dashboard",
+    descriptionAr: "أهم ما يحتاج انتباهك اليوم في مكان واحد.",
+    descriptionEn: "Your most important work for today, in one place.",
+    icon: LayoutDashboard, candidates: ["/employee/workspace", "/employee/role-dashboard"],
+  },
+  clients: {
+    labelAr: "العملاء والمبيعات", labelEn: "Clients & sales",
+    descriptionAr: "العملاء المحتملون، المتابعات، والطلبات الجديدة.",
+    descriptionEn: "Leads, follow-ups, and new client requests.",
+    icon: Users, candidates: ["/employee/crm", "/admin/customers", "/employee/new-order"],
+  },
+  delivery: {
+    labelAr: "المشاريع والتنفيذ", labelEn: "Projects & delivery",
+    descriptionAr: "حالة المشاريع، المهام، وطلبات التعديل.",
+    descriptionEn: "Project status, assigned tasks, and change requests.",
+    icon: Package, candidates: ["/admin/orders", "/admin/kanban", "/admin/mod-requests", "/employee/checklist"],
+  },
+  communication: {
+    labelAr: "التواصل", labelEn: "Communication",
+    descriptionAr: "الرسائل، واتساب، الاجتماعات، ودعم العملاء.",
+    descriptionEn: "Mail, WhatsApp, meetings, and customer support.",
+    icon: MessageSquare, candidates: ["/employee/mail", "/employee/whatsapp-crm", "/cs-chat", "/admin/qmeet"],
+  },
+  finance: {
+    labelAr: "المالية والتقارير", labelEn: "Finance & reports",
+    descriptionAr: "المتابعة المالية والتقارير التي يسمح بها دورك.",
+    descriptionEn: "Financial follow-up and reports available to your role.",
+    icon: BarChart3, candidates: ["/admin/finance", "/admin/analytics", "/admin/sales-reports", "/employee/my-finance"],
+  },
+  administration: {
+    labelAr: "الفريق والإدارة", labelEn: "Team & administration",
+    descriptionAr: "الموظفون، الصلاحيات، وإعدادات التشغيل.",
+    descriptionEn: "Employees, permissions, and operational settings.",
+    icon: Settings, candidates: ["/admin", "/admin/employees", "/admin/settings"],
+  },
+};
 
 const ROLE_LABELS: Record<string, [string, string]> = {
   admin:         ["مدير النظام", "System Admin"],
@@ -476,6 +524,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const [aiOpen, setAiOpen] = useState(false);
   const [viewAsRole, setViewAsRole] = useState<string | null>(null);
   const [scopePanelOpen, setScopePanelOpen] = useState(false);
+  const [allNavigationOpen, setAllNavigationOpen] = useState(false);
   const [location] = useLocation();
   const { data: user } = useUser();
   const { lang } = useI18n();
@@ -490,8 +539,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     // Use custom allowedPages per employee if set by admin (overrides role default)
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
-    const ids = (customPages && customPages.length > 0) ? customPages : (ROLE_ITEMS[role] || DEFAULT_ITEMS);
-    return ids.map(id => ALL_NAV[id]).filter(Boolean);
+    return getAllowedEmployeeNavItems(role, customPages);
   }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope]);
 
   const grouped = useMemo(() => {
@@ -504,6 +552,20 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   }, [navItems]);
 
   const orderedGroups = GROUP_ORDER.filter(g => grouped[g]?.length > 0);
+
+  const workspaceItems = useMemo(() => {
+    const byHref = new Map(navItems.map(item => [item.href, item]));
+    return Object.entries(WORKSPACE_META)
+      .map(([id, meta]) => {
+        const item = meta.candidates.map(href => byHref.get(href)).find(Boolean);
+        if (!item) return null;
+        return { id, meta, item: item as NavItem };
+      })
+      .filter(Boolean) as { id: string; meta: typeof WORKSPACE_META[string]; item: NavItem }[];
+  }, [navItems]);
+
+  const workspaceHrefs = useMemo(() => new Set(workspaceItems.map(({ item }) => item.href)), [workspaceItems]);
+  const currentPageIsInAllTools = navItems.some(item => item.href !== "/employee/role-dashboard" && item.href !== "/employee/workspace" && location.startsWith(item.href) && !workspaceHrefs.has(item.href));
 
   const roleLabel = userRole
     ? (ROLE_LABELS[userRole] || [userRole, userRole])
@@ -593,37 +655,78 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           role={userRole}
         />
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-hide">
-          {itemsOrderedGroups.map(group => (
-            <div key={group}>
-              <p className="text-[9px] font-black text-black/25 dark:text-white/22 uppercase tracking-[0.18em] px-2 mb-1.5">
-                {L ? GROUP_LABELS[group]?.[0] : GROUP_LABELS[group]?.[1]}
-              </p>
-              <div className="space-y-0.5">
-                {itemsGrouped[group].map(item => {
-                  const active = isActive(item.href);
-                  return (
-                    <Link key={item.id} href={item.href}>
-                      <button
-                        onClick={onItemClick}
-                        data-testid={`employee-nav-${item.id}`}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 text-right ${
-                          active
-                            ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
-                            : "text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"
-                        }`}
-                      >
-                        <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? "" : "opacity-60"}`} />
-                        <span className="flex-1 text-right truncate">{L ? item.labelAr : item.labelEn}</span>
-                        {active && <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-black/40 flex-shrink-0" />}
-                      </button>
-                    </Link>
-                  );
-                })}
-              </div>
+        {/* Compact workspace navigation. The full, permission-filtered list stays available below. */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
+          <p className="text-[9px] font-black text-black/25 dark:text-white/22 uppercase tracking-[0.18em] px-2 mb-1.5">
+            {L ? "مساحات العمل" : "Workspaces"}
+          </p>
+          <div className="space-y-0.5">
+            {workspaceItems.map(({ id, meta, item }) => {
+              const active = isActive(item.href) || (id === "overview" && location === "/employee/workspace");
+              return (
+                <Link key={id} href={item.href}>
+                  <button
+                    onClick={onItemClick}
+                    data-testid={`employee-workspace-${id}`}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 text-right ${
+                      active
+                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                        : "text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"
+                    }`}
+                  >
+                    <meta.icon className={`w-4 h-4 flex-shrink-0 ${active ? "" : "opacity-60"}`} />
+                    <span className="flex-1 text-right truncate">{L ? meta.labelAr : meta.labelEn}</span>
+                    {active && <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-black/40 flex-shrink-0" />}
+                  </button>
+                </Link>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setAllNavigationOpen(value => !value)}
+            data-testid="employee-all-tools-toggle"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 mt-3 rounded-xl text-[12px] font-bold text-black/45 dark:text-white/40 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white transition-colors text-right"
+          >
+            <Layers className="w-4 h-4 opacity-60" />
+            <span className="flex-1">{L ? "كل الأدوات والصفحات" : "All tools & pages"}</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${allNavigationOpen || currentPageIsInAllTools ? "rotate-180" : ""}`} />
+          </button>
+
+          {(allNavigationOpen || currentPageIsInAllTools) && (
+            <div className="mt-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.06] space-y-4">
+              {itemsOrderedGroups.map(group => (
+                <div key={group}>
+                  <p className="text-[9px] font-black text-black/25 dark:text-white/22 uppercase tracking-[0.18em] px-2 mb-1.5">
+                    {L ? GROUP_LABELS[group]?.[0] : GROUP_LABELS[group]?.[1]}
+                  </p>
+                  <div className="space-y-0.5">
+                    {itemsGrouped[group].filter(item => !workspaceHrefs.has(item.href)).map(item => {
+                      const active = isActive(item.href);
+                      return (
+                        <Link key={item.id} href={item.href}>
+                          <button
+                            onClick={onItemClick}
+                            data-testid={`employee-nav-${item.id}`}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all duration-150 text-right ${
+                              active
+                                ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                                : "text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"
+                            }`}
+                          >
+                            <item.icon className={`w-3.5 h-3.5 flex-shrink-0 ${active ? "" : "opacity-60"}`} />
+                            <span className="flex-1 text-right truncate">{L ? item.labelAr : item.labelEn}</span>
+                            {active && <div className="w-1.5 h-1.5 rounded-full bg-white/40 dark:bg-black/40 flex-shrink-0" />}
+                          </button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </nav>
 
         {/* ── Role Scope Panel (Admin/Manager only) ── */}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useUser, useLogout } from "@/hooks/use-auth";
 import {
   Sidebar,
@@ -18,7 +19,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen, Trophy
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen, Trophy, ChevronDown
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -61,8 +62,48 @@ interface NavItem {
   section?: string;
 }
 
+const WORKSPACE_LABELS: Record<string, { ar: string; en: string; descriptionAr: string; descriptionEn: string; icon: any; candidates: string[] }> = {
+  overview: {
+    ar: "لوحة العمل", en: "Work dashboard",
+    descriptionAr: "أهم ما يحتاج انتباهك اليوم في مكان واحد.",
+    descriptionEn: "Your most important work for today, in one place.",
+    icon: LayoutDashboard, candidates: ["/employee/workspace", "/dashboard", "/admin"],
+  },
+  clients: {
+    ar: "العملاء والمبيعات", en: "Clients & sales",
+    descriptionAr: "العملاء المحتملون، المتابعات، والطلبات الجديدة.",
+    descriptionEn: "Leads, follow-ups, and new client requests.",
+    icon: Users, candidates: ["/employee/crm", "/admin/customers", "/employee/new-order"],
+  },
+  projects: {
+    ar: "المشاريع والتنفيذ", en: "Projects & delivery",
+    descriptionAr: "حالة المشاريع، المهام، والموافقات المطلوبة.",
+    descriptionEn: "Project status, tasks, and approvals that need attention.",
+    icon: FolderOpen, candidates: ["/admin/orders", "/admin/kanban", "/admin/project-data"],
+  },
+  communication: {
+    ar: "التواصل", en: "Communication",
+    descriptionAr: "الرسائل، واتساب، الاجتماعات، ودعم العملاء.",
+    descriptionEn: "Mail, WhatsApp, meetings, and customer support.",
+    icon: MessageSquare, candidates: ["/employee/mail", "/inbox", "/cs-chat", "/admin/qmeet"],
+  },
+  finance: {
+    ar: "المالية والتقارير", en: "Finance & reports",
+    descriptionAr: "المتابعة المالية والتقارير التي يسمح بها دورك.",
+    descriptionEn: "Financial follow-up and reports available to your role.",
+    icon: Wallet, candidates: ["/admin/finance", "/admin/analytics", "/admin/sales-reports"],
+  },
+  administration: {
+    ar: "الفريق والإدارة", en: "Team & administration",
+    descriptionAr: "الموظفون، الصلاحيات، وإعدادات التشغيل.",
+    descriptionEn: "Employees, permissions, and operational settings.",
+    icon: Settings2, candidates: ["/admin/employees", "/admin/roles", "/admin/qirox-settings"],
+  },
+};
+
 export function AppSidebar() {
   const [location] = useLocation();
+  const [allNavigationOpen, setAllNavigationOpen] = useState(false);
   const { data: user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -98,6 +139,7 @@ export function AppSidebar() {
 
     // Employee — main (visible to ALL employees)
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee", section: "main" },
+    { title: ar ? "مساحات العمل" : "Workspaces", icon: LayoutDashboard, url: "/employee/workspace", group: "employee", section: "main" },
 
     // Employee — clients (فريق المبيعات والدعم فقط)
     { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "clients", allowedRoles: CLIENT_OPS_ROLES },
@@ -330,6 +372,15 @@ export function AppSidebar() {
     return false;
   });
 
+  const workspaceItems = Object.entries(WORKSPACE_LABELS)
+    .map(([id, meta]) => {
+      const item = meta.candidates.map(url => menuItems.find(candidate => candidate.url === url)).find(Boolean);
+      return item ? { id, meta, item } : null;
+    })
+    .filter(Boolean) as { id: string; meta: typeof WORKSPACE_LABELS[string]; item: NavItem }[];
+  const workspaceUrls = new Set(workspaceItems.map(({ item }) => item.url));
+  const currentPageIsInAllTools = menuItems.some(item => !workspaceUrls.has(item.url) && location.startsWith(item.url));
+
   const employeeItems = menuItems.filter(i => i.group === "employee");
   const adminItems = menuItems.filter(i => i.group === "admin");
   const clientItems = menuItems.filter(i => i.group === "client" || i.group === "public");
@@ -434,6 +485,70 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {/* Compact workspace navigation. Detailed pages remain available under All tools. */}
+        {user && user.role !== "client" && user.role !== "supplier" && workspaceItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px]">
+              {ar ? "مساحات العمل" : "Workspaces"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {workspaceItems.map(({ id, meta, item }) => {
+                  const active = id === "overview"
+                    ? location === "/employee/workspace" || location === "/dashboard" || location === "/admin"
+                    : location.startsWith(item.url);
+                  return (
+                    <SidebarMenuItem key={`workspace-${id}`}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        tooltip={ar ? meta.ar : meta.en}
+                        className={`px-3 py-2 transition-colors rounded-xl ${active ? "bg-black/[0.06] dark:bg-white/[0.07]" : "hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
+                      >
+                        <Link href={item.url} className="flex items-center gap-3 w-full">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${active ? "bg-[#0f172a] dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.06]"}`}>
+                            <meta.icon className={`w-3.5 h-3.5 ${active ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"}`} />
+                          </div>
+                          <span className={`text-sm flex-1 truncate ${active ? "font-bold text-black dark:text-white" : "font-medium text-black/55 dark:text-white/50"}`}>
+                            {ar ? meta.ar : meta.en}
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setAllNavigationOpen(value => !value)}
+                    className="px-3 py-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"
+                    data-testid="sidebar-all-tools-toggle"
+                  >
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06]">
+                      <Layers className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                    </div>
+                    <span className="text-sm flex-1 text-black/50 dark:text-white/45">{ar ? "كل الأدوات والصفحات" : "All tools & pages"}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-black/30 dark:text-white/30 transition-transform ${allNavigationOpen || currentPageIsInAllTools ? "rotate-180" : ""}`} />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {user && user.role !== "client" && user.role !== "supplier" && (allNavigationOpen || currentPageIsInAllTools) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px]">
+              {ar ? "كل الأدوات والصفحات" : "All tools & pages"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {renderSectionedItems(employeeItems.filter(item => !workspaceUrls.has(item.url)))}
+                {renderSectionedItems(adminItems.filter(item => !workspaceUrls.has(item.url)))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Supplier menu */}
         {supplierItems.length > 0 && (
           <SidebarGroup>
@@ -461,7 +576,7 @@ export function AppSidebar() {
         )}
 
         {/* Employee menu */}
-        {employeeItems.length > 0 && (
+        {employeeItems.length > 0 && !(user && user.role !== "client" && user.role !== "supplier") && (
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -472,7 +587,7 @@ export function AppSidebar() {
         )}
 
         {/* Admin / Management section */}
-        {adminItems.length > 0 && (
+        {adminItems.length > 0 && !(user && user.role !== "client" && user.role !== "supplier") && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px] flex items-center gap-2">
               <span>{ar ? "إدارة النظام" : "System Admin"}</span>

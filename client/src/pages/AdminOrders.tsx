@@ -579,12 +579,12 @@ export default function AdminOrders() {
         <div>
           <h1 className="text-xl font-bold text-black flex items-center gap-2.5">
             <FileText className="w-6 h-6 text-black/40" />
-            {L ? "إدارة المشاريع" : "Projects Management"}
+            {L ? "مركز المشاريع والتنفيذ" : "Projects & Delivery Center"}
           </h1>
           <p className="text-xs text-black/35 mt-0.5">
             {isLimitedRole
-              ? (L ? `مشاريعك المعيّنة (${filteredOrders.length})` : `Your assigned projects (${filteredOrders.length})`)
-              : (L ? "عرض وإدارة وملء بيانات جميع المشاريع" : "View, manage, and fill in all project data")
+              ? (L ? `مشاريعك المعيّنة (${filteredOrders.length}) مع الخطوة التالية لكل مشروع` : `Your assigned projects (${filteredOrders.length}) with a clear next step`)
+              : (L ? "افتح أي مشروع لمراجعة الطلب والتجهيز والمهام والتكاملات والتسليم في ملف واحد" : "Open a project to review its request, setup, tasks, integrations, and delivery in one record")
             }
           </p>
         </div>
@@ -816,13 +816,13 @@ export default function AdminOrders() {
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
                 <TabsList className="w-full max-w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden">
                   <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
-                    {L ? "تفاصيل الطلب" : "Order Details"}
+                    {L ? "نظرة المشروع" : "Project Overview"}
                   </TabsTrigger>
                   <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
-                    {L ? "المواصفات التقنية" : "Technical Specs"}
+                    {L ? "التجهيز والتكاملات" : "Setup & Integrations"}
                   </TabsTrigger>
                   <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
-                    {L ? "إدارة الطلب" : "Manage Order"}
+                    {L ? "المتابعة والتسليم" : "Follow-up & Delivery"}
                   </TabsTrigger>
                   <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <DollarSign className="w-3 h-3" />{L ? "التكاليف والأرباح" : "Costs & Profits"}

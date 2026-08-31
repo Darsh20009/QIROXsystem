@@ -103,6 +103,7 @@ const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
 const PublicSupport = lazy(() => import("@/pages/PublicSupport"));
 const EmployeeHub = lazy(() => import("@/pages/EmployeeHub"));
+const EmployeeWorkspace = lazy(() => import("@/pages/EmployeeWorkspace"));
 const EmployeeWelcome = lazy(() => import("@/pages/EmployeeWelcome"));
 const EmployeeMail = lazy(() => import("@/pages/EmployeeMail"));
 const AdminMailAccounts = lazy(() => import("@/pages/AdminMailAccounts"));
@@ -243,7 +244,7 @@ function G_AdminRoles(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><Ad
 function G_ModConfig() { return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminModConfig /></RoleGuard>; }
 function G_AdminWallet(){ return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminWallet /></RoleGuard>; }
 function G_Partners(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminPartners /></RoleGuard>; }
-function G_ApiKeys(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminApiKeys /></RoleGuard>; }
+function G_ApiKeys(){ return <RoleGuard allowedRoles={["admin", "manager"]}><AdminApiKeys /></RoleGuard>; }
 function G_Kanban(){ return <RoleGuard allowedRoles={["admin", "manager", "data_entry"]}><AdminKanban /></RoleGuard>; }
 function G_Dashboard()  { return <RoleGuard allowedRoles={["admin", "manager", "client"]} redirectTo="/employee/role-dashboard"><Dashboard /></RoleGuard>; }
 // Sprint 003 — gated by FEATURE_DASHBOARD_V2; falls back to existing /dashboard when disabled
@@ -430,6 +431,7 @@ function AdminRouter() {
         <Route path="/support" component={PublicSupport} />
         <Route path="/support/tickets" component={SupportTickets} />
         <Route path="/employee" component={EmployeeWelcome} />
+        <Route path="/employee/workspace" component={EmployeeWorkspace} />
         <Route path="/employee/profile" component={EmployeeHub} />
         <Route path="/employee/mail" component={EmployeeMail} />
         <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
