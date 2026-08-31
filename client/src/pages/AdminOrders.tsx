@@ -464,6 +464,24 @@ export default function AdminOrders() {
     saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: specsForm });
   };
 
+  const addIntegrationKeyHint = ({ type, environment }: { type: "whatsapp" | "email" | "api"; environment: string }) => {
+    if (!selectedOrder) return;
+    const typeName = type.toUpperCase();
+    const environmentName = environment.toUpperCase();
+    const variableName = `QIROX_PROJECT_${typeName}_KEY_${environmentName}`;
+    const variableHint = `${variableName}=<ONE_TIME_KEY_FROM_QIROX>`;
+    const lines = specsForm.variables.split(/\r?\n/);
+    const existingIndex = lines.findIndex(line => line.trim().split("=")[0] === variableName);
+    const nextLines = existingIndex >= 0
+      ? lines.map((line, index) => index === existingIndex ? variableHint : line)
+      : [...lines.filter((line, index) => line.trim() || index < lines.length - 1), variableHint];
+    const variables = nextLines.join("\n");
+    const nextSpecs = { ...specsForm, variables };
+    setSpecsForm(nextSpecs);
+    saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: nextSpecs });
+    toast({ title: `تمت إضافة ${variableName} إلى مفاتيح البيئة` });
+  };
+
   const editProjectMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Record<string, any> }) =>
       apiRequest("PATCH", `/api/admin/orders/${id}`, updates).then(r => r.json()),
@@ -1376,6 +1394,7 @@ export default function AdminOrders() {
                          <ProjectIntegrationsPanel
                            orderId={selectedOrder.id}
                            mode={["admin", "manager"].includes(currentUser?.role || "") ? "manage" : "readonly"}
+                           onSecretCreated={addIntegrationKeyHint}
                          />
 
                         {/* Design Notes */}

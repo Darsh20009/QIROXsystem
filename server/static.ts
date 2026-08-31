@@ -24,7 +24,8 @@ export function serveStatic(app: Express) {
     },
   }));
 
-  app.use("/{*path}", (_req, res) => {
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
     res.setHeader("Cache-Control", "no-cache, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });

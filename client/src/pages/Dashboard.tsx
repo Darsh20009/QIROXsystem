@@ -508,7 +508,15 @@ const orderStatusColors: Record<string, { bg: string; text: string; label: strin
   rejected: { bg: "bg-black/[0.04] dark:bg-white/[0.06] border-black/10 dark:border-white/10", text: "text-black dark:text-white", label: "مرفوض" },
 };
 
-function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: string; mode?: "manage" | "readonly" }) {
+function ProjectIntegrationsPanel({
+  orderId,
+  mode = "manage",
+  onSecretCreated,
+}: {
+  orderId?: string;
+  mode?: "manage" | "readonly";
+  onSecretCreated?: (details: { type: "whatsapp" | "email" | "api"; environment: string }) => void;
+}) {
   type ProjectIntegrationType = "whatsapp" | "email" | "api";
   const { dir } = useI18n();
   const { toast } = useToast();
@@ -543,6 +551,10 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [endpoint] });
       setNewSecret(data.secret);
+      onSecretCreated?.({
+        type: selectedType,
+        environment: data.integration?.environment || environment,
+      });
       toast({ title: "تم إنشاء التكامل. احفظ المفتاح الآن" });
     },
     onError: () => toast({ title: "تعذر إنشاء التكامل", variant: "destructive" }),
@@ -562,6 +574,10 @@ function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: stri
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [endpoint] });
       setNewSecret(data.secret);
+      onSecretCreated?.({
+        type: selectedType,
+        environment: data.integration?.environment || environment,
+      });
       toast({ title: "تم تدوير المفتاح. احفظ المفتاح الجديد الآن" });
     },
     onError: () => toast({ title: "تعذر تدوير المفتاح", variant: "destructive" }),
@@ -779,6 +795,21 @@ function EmployeeDashboard({ user }: { user: any }) {
     },
     onError: () => toast({ title: "خطأ في حفظ المواصفات", variant: "destructive" }),
   });
+
+  const addIntegrationKeyHint = ({ type, environment }: { type: "whatsapp" | "email" | "api"; environment: string }) => {
+    if (!selectedOrder) return;
+    const variableName = `QIROX_PROJECT_${type.toUpperCase()}_KEY_${environment.toUpperCase()}`;
+    const variableHint = `${variableName}=<ONE_TIME_KEY_FROM_QIROX>`;
+    const lines = specsForm.variables.split(/\r?\n/);
+    const existingIndex = lines.findIndex(line => line.trim().split("=")[0] === variableName);
+    const nextLines = existingIndex >= 0
+      ? lines.map((line, index) => index === existingIndex ? variableHint : line)
+      : [...lines.filter((line, index) => line.trim() || index < lines.length - 1), variableHint];
+    const nextSpecs = { ...specsForm, variables: nextLines.join("\n") };
+    setSpecsForm(nextSpecs);
+    saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: nextSpecs });
+    toast({ title: `تمت إضافة ${variableName} إلى مفاتيح البيئة` });
+  };
 
   const updateOrderMutation = useMutation({
     mutationFn: async (data: { orderId: string; status?: string; adminNotes?: string }) => {
@@ -1553,6 +1584,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                          <ProjectIntegrationsPanel
                            orderId={selectedOrder.id}
                            mode={user?.role === "admin" || user?.role === "manager" ? "manage" : "readonly"}
+                            onSecretCreated={addIntegrationKeyHint}
                          />
 
                          {/* Section 4: Environment Variables */}

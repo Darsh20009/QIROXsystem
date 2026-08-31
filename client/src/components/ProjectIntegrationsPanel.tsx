@@ -10,7 +10,20 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type ProjectIntegrationType = "whatsapp" | "email" | "api";
 
-export function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId?: string; mode?: "manage" | "readonly" }) {
+type ProjectIntegrationSecretDetails = {
+  type: ProjectIntegrationType;
+  environment: string;
+};
+
+export function ProjectIntegrationsPanel({
+  orderId,
+  mode = "manage",
+  onSecretCreated,
+}: {
+  orderId?: string;
+  mode?: "manage" | "readonly";
+  onSecretCreated?: (details: ProjectIntegrationSecretDetails) => void;
+}) {
   const { dir } = useI18n();
   const { toast } = useToast();
   const canManage = mode === "manage";
@@ -44,6 +57,10 @@ export function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [endpoint] });
       setNewSecret(data.secret);
+      onSecretCreated?.({
+        type: selectedType,
+        environment: data.integration?.environment || environment,
+      });
       toast({ title: "تم إنشاء التكامل. احفظ المفتاح الآن" });
     },
     onError: () => toast({ title: "تعذر إنشاء التكامل", variant: "destructive" }),
@@ -63,6 +80,10 @@ export function ProjectIntegrationsPanel({ orderId, mode = "manage" }: { orderId
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [endpoint] });
       setNewSecret(data.secret);
+      onSecretCreated?.({
+        type: selectedType,
+        environment: data.integration?.environment || environment,
+      });
       toast({ title: "تم تدوير المفتاح. احفظ المفتاح الجديد الآن" });
     },
     onError: () => toast({ title: "تعذر تدوير المفتاح", variant: "destructive" }),

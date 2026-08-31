@@ -46,3 +46,4 @@
 - [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.
 - [Post-merge setup](post-merge-setup.md) — Use deterministic npm ci plus a rebuild; do not auto-run the legacy PostgreSQL push in the MongoDB-primary project.
 - [HTTP route test sessions](http-route-test-sessions.md) — Mongo-backed route tests must isolate the session store or the test process can remain open after all assertions pass.
+- [Project integration secret policy](project-integration-secret-policy.md) — Environment Variables receives a placeholder only; raw integration secrets remain one-time and are never persisted in specs.

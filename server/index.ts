@@ -1092,7 +1092,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
         }
       },
     }));
-    app.use("/{*path}", (_req: Request, res: Response) => {
+     app.use((req: Request, res: Response, next: NextFunction) => {
+       if (req.path.startsWith("/api/")) return next();
       res.setHeader("Cache-Control", "no-cache, must-revalidate");
       res.sendFile(path.join(distPublicPath, "index.html"));
     });
