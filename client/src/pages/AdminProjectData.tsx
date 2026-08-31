@@ -733,13 +733,16 @@ function OrderCard({ order: initialOrder }: { order: any }) {
                     </div>
                   )}
                   {/* Infrastructure */}
-                  {(specs.githubRepoUrl || specs.serverIp || specs.customDomain || specs.productionUrl || specs.stagingUrl) && (
+                  {(specs.githubRepoUrl || specs.githubRepoName || specs.serverIp || specs.customDomain || specs.productionUrl || specs.stagingUrl) && (
                     <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl px-4 py-1 mb-3">
                       <div className="flex items-center gap-1.5 py-2 border-b border-gray-100 dark:border-white/[0.04]">
                         <Globe className="w-3 h-3 text-gray-400 dark:text-slate-500 shrink-0" />
                         <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Infrastructure</span>
                       </div>
+                      <InfoRow label="مستودع GitHub"     value={specs.githubRepoOwner && specs.githubRepoName ? `${specs.githubRepoOwner}/${specs.githubRepoName}` : specs.githubRepoName} />
                       <InfoRow label="رابط GitHub"       value={specs.githubRepoUrl} />
+                      <InfoRow label="رؤية المستودع"     value={specs.githubVisibility === "public" ? "عام" : specs.githubVisibility === "private" ? "خاص" : undefined} />
+                      <InfoRow label="حالة المستودع"     value={specs.githubProvisioningStatus === "ready" ? "جاهز" : specs.githubProvisioningStatus === "failed" ? "فشل التجهيز" : undefined} />
                       <InfoRow label="IP الخادم"         value={specs.serverIp} />
                       <InfoRow label="الدومين"           value={specs.customDomain} />
                       <InfoRow label="رابط الإنتاج"      value={specs.productionUrl} />

@@ -63,6 +63,7 @@ const orderSchema = new mongoose.Schema({
   adminNotes: String,
   internalNotes: { type: String, default: "" },
   orderNumber: { type: String, sparse: true },
+  githubVisibility: { type: String, enum: ["public", "private"], default: "private" },
 }, { timestamps: true });
 orderSchema.index({ userId: 1, status: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
@@ -104,6 +105,13 @@ const orderSpecsSchema = new mongoose.Schema({
   framework: String,
   language: String,
   githubRepoUrl: String,
+  githubRepoName: String,
+  githubRepoId: String,
+  githubRepoOwner: String,
+  githubVisibility: { type: String, enum: ["public", "private"] },
+  githubVisibilityVersion: { type: Number, default: 0, select: false },
+  githubProvisioningStatus: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
+  githubProvisioningError: { type: String, default: "" },
   databaseUri: String,
   serverIp: String,
   deploymentUsername: String,
@@ -140,6 +148,9 @@ const orderProvisioningSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
   status: { type: String, enum: ["queued", "in_progress", "ready_for_configuration", "failed"], default: "queued", index: true },
   attempts: { type: Number, default: 0 },
+  githubActorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  repositoryVisibility: { type: String, enum: ["public", "private"], default: "private" },
+  repositoryVisibilityVersion: { type: Number, default: 0 },
   steps: {
     project: { type: String, enum: ["pending", "ready", "failed"], default: "pending" },
     repository: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
@@ -149,6 +160,7 @@ const orderProvisioningSchema = new mongoose.Schema({
   lastError: { type: String, default: "" },
   lastAttemptAt: { type: Date, default: null },
   leaseExpiresAt: { type: Date, default: null, index: true },
+  leaseToken: { type: String, default: null, select: false },
   completedAt: { type: Date, default: null },
 }, { timestamps: true });
 orderProvisioningSchema.set("toJSON", { transform });

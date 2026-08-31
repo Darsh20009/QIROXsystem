@@ -1,0 +1,12 @@
+---
+name: GitHub repository provisioning
+description: Durable idempotency and ownership rules for automatic project repository setup.
+---
+
+Create or adopt one deterministic repository per project through the approved-order provisioning lease. Prefer the managed GitHub identity; without it, pin the first provisioning actor so another administrator cannot retry into a different GitHub account. Fence external work and state transitions with the current lease.
+
+Repository visibility is an authoritative, monotonically versioned setting. Provisioning and settings changes serialize through the same lease, and stale workers must not overwrite newer Project or OrderSpecs metadata.
+
+**Why:** A time-only lease can expire while external GitHub work is still running, creating repositories in different accounts or letting an old visibility write reverse a newer administrator choice.
+
+**How to apply:** Any future GitHub setup or retry path must reuse the deterministic name, adopt create conflicts, use the managed/pinned identity, verify lease ownership around external calls, and carry the visibility version into metadata writes.

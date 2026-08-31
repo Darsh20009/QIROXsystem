@@ -16,6 +16,10 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
+import {
+  canSaveGitHubVisibility,
+  resetGitHubVisibilitySelection,
+} from "@/lib/github-visibility-state";
 import { ProjectIntegrationsPanel } from "@/components/ProjectIntegrationsPanel";
 
 interface Employee {
@@ -128,6 +132,8 @@ export default function AdminOrders() {
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [editProgress, setEditProgress] = useState(0);
   const [editPriority, setEditPriority] = useState("medium");
+  const [githubVisibility, setGithubVisibility] = useState<"public" | "private">("private");
+  const [githubVisibilityOrderId, setGithubVisibilityOrderId] = useState<string | null>(null);
   const [aiChecklist, setAiChecklist] = useState<{ name: string; tasks: string[] }[]>([]);
   const [aiChecklistLoading, setAiChecklistLoading] = useState(false);
   const [aiChecklistExpanded, setAiChecklistExpanded] = useState<Record<number, boolean>>({});
@@ -183,6 +189,22 @@ export default function AdminOrders() {
     },
   });
 
+  const {
+    data: githubSetup,
+    isLoading: isLoadingGithubSetup,
+    isFetching: isFetchingGithubSetup,
+    isSuccess: isGithubSetupSuccess,
+  } = useQuery<any>({
+    queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'],
+    enabled: !!selectedOrder?.id && ["admin", "manager"].includes(currentUser?.role || ""),
+    placeholderData: undefined,
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/orders/${selectedOrder!.id}/github`, { credentials: "include" });
+      if (!res.ok) throw new Error("تعذر تحميل حالة GitHub");
+      return res.json();
+    },
+  });
+
   const { data: projectMembers } = useQuery<any[]>({
     queryKey: ['/api/projects', orderProject?.id, 'members'],
     enabled: !!orderProject?.id,
@@ -218,6 +240,9 @@ export default function AdminOrders() {
   // Reset "initialized" flag whenever the selected order changes so forms reload for the new order
   useEffect(() => {
     formInitializedForOrder.current = null;
+    const reset = resetGitHubVisibilitySelection();
+    setGithubVisibility(reset.visibility);
+    setGithubVisibilityOrderId(reset.loadedOrderId);
   }, [selectedOrder?.id]);
 
   // Only initialize guide/delivery forms once per order (not on background refetches)
@@ -282,6 +307,30 @@ export default function AdminOrders() {
     }
   }, [selectedOrderSpecs]);
 
+  useEffect(() => {
+    if (
+      selectedOrder?.id
+      && isGithubSetupSuccess
+      && !isFetchingGithubSetup
+      && githubSetup?.repository?.visibility
+    ) {
+      setGithubVisibility(githubSetup.repository.visibility);
+      setGithubVisibilityOrderId(selectedOrder.id);
+    }
+  }, [
+    githubSetup?.repository?.visibility,
+    isFetchingGithubSetup,
+    isGithubSetupSuccess,
+    selectedOrder?.id,
+  ]);
+
+  const isGithubVisibilityReady = canSaveGitHubVisibility(
+    selectedOrder?.id,
+    githubVisibilityOrderId,
+    isGithubSetupSuccess,
+    isFetchingGithubSetup,
+  );
+
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
       const res = await apiRequest("PATCH", `/api/admin/orders/${id}`, updates);
@@ -289,6 +338,7 @@ export default function AdminOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
       toast({ title: L ? "تم تحديث الطلب بنجاح" : "Order updated successfully" });
     },
     onError: () => toast({ title: L ? "خطأ في تحديث الطلب" : "Error updating order", variant: "destructive" }),
@@ -356,22 +406,45 @@ export default function AdminOrders() {
 
   const convertToProjectMutation = useMutation({
     mutationFn: async (order: OrderData) => {
-      const res = await apiRequest("POST", "/api/admin/projects", {
-        orderId: order.id,
-        clientId: order.userId,
-        status: "new",
-        progress: 0,
-      });
+      const res = await apiRequest("POST", `/api/admin/orders/${order.id}/provision`);
       return res.json();
     },
     onSuccess: (_data, order) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', order.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', order.id, 'specs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', order.id, 'github'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      toast({ title: L ? "تم إنشاء المشروع بنجاح" : "Project created successfully" });
-      setSelectedOrder(null);
+      toast({ title: L ? "تم تجهيز المشروع ومستودع GitHub" : "Project and GitHub repository provisioned" });
     },
-    onError: () => toast({ title: L ? "فشل إنشاء المشروع" : "Failed to create project", variant: "destructive" }),
+    onError: (error: any) => toast({
+      title: L ? "توقف تجهيز المستودع" : "Repository provisioning stopped",
+      description: error?.message || (L ? "تحقق من اتصال GitHub ثم أعد المحاولة" : "Check the GitHub connection and retry"),
+      variant: "destructive",
+    }),
+  });
+
+  const githubVisibilityMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder || !isGithubVisibilityReady) {
+        throw new Error(L ? "انتظر تحميل إعدادات GitHub للطلب المحدد" : "Wait for the selected order's GitHub settings to load");
+      }
+      const res = await apiRequest("PATCH", `/api/admin/orders/${selectedOrder.id}/github/settings`, {
+        visibility: githubVisibility,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      toast({ title: L ? "تم حفظ رؤية المستودع" : "Repository visibility saved" });
+    },
+    onError: (error: any) => toast({
+      title: L ? "تعذر حفظ رؤية المستودع" : "Could not save repository visibility",
+      description: error?.message,
+      variant: "destructive",
+    }),
   });
 
   const phoneReqMutation = useMutation({
@@ -1610,18 +1683,121 @@ export default function AdminOrders() {
                         {L ? "حفظ التغييرات" : "Save Changes"}
                       </Button>
 
-                      {["approved", "in_progress"].includes(selectedOrder.status) && (
-                        <div className="pt-3 border-t border-black/[0.05]">
-                          <Button
-                            variant="outline"
-                            className="w-full h-10 gap-2 text-sm border-black/10 hover:border-black/20 hover:bg-black/[0.02]"
-                            onClick={() => convertToProjectMutation.mutate(selectedOrder)}
-                            disabled={convertToProjectMutation.isPending}
-                            data-testid="button-convert-to-project"
-                          >
-                            {convertToProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
-                            تحويل إلى مشروع رسمي
-                          </Button>
+                      {["admin", "manager"].includes(currentUser?.role || "") && (
+                        <div className="border border-black/[0.08] rounded-2xl p-4 bg-white space-y-4" data-testid="github-provisioning-panel">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-xl bg-black/[0.04] flex items-center justify-center">
+                                <Link2 className="w-4 h-4 text-black/60" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-black">{L ? "مستودع GitHub" : "GitHub Repository"}</p>
+                                <p className="text-[10px] text-black/40">
+                                  {githubSetup?.connection?.connected
+                                    ? `${L ? "متصل بالحساب" : "Connected as"} ${githubSetup.connection.login}`
+                                    : L ? "غير متصل" : "Not connected"}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                              githubSetup?.repository?.status === "ready"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : githubSetup?.repository?.status === "failed"
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-black/[0.04] text-black/50"
+                            }`}>
+                              {isLoadingGithubSetup
+                                ? (L ? "جارٍ التحقق" : "Checking")
+                                : githubSetup?.repository?.status === "ready"
+                                  ? (L ? "جاهز" : "Ready")
+                                  : githubSetup?.repository?.status === "failed"
+                                    ? (L ? "فشل" : "Failed")
+                                    : (L ? "بانتظار التجهيز" : "Pending")}
+                            </span>
+                          </div>
+
+                          {githubSetup?.repository?.url && (
+                            <a
+                              href={githubSetup.repository.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between gap-2 rounded-xl border border-black/[0.07] px-3 py-2 text-xs text-black/70 hover:bg-black/[0.02]"
+                            >
+                              <span className="truncate" dir="ltr">{githubSetup.repository.owner}/{githubSetup.repository.name}</span>
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                            </a>
+                          )}
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-black/45 mb-1.5">{L ? "رؤية المستودع" : "Repository visibility"}</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setGithubVisibility("private")}
+                                disabled={!isGithubVisibilityReady}
+                                className={`h-9 rounded-xl border text-xs font-semibold ${githubVisibility === "private" ? "bg-black text-white border-black" : "bg-white text-black/60 border-black/10"}`}
+                                data-testid="github-visibility-private"
+                              >
+                                {L ? "خاص" : "Private"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setGithubVisibility("public")}
+                                disabled={!isGithubVisibilityReady}
+                                className={`h-9 rounded-xl border text-xs font-semibold ${githubVisibility === "public" ? "bg-black text-white border-black" : "bg-white text-black/60 border-black/10"}`}
+                                data-testid="github-visibility-public"
+                              >
+                                {L ? "عام" : "Public"}
+                              </button>
+                            </div>
+                            <Button
+                              variant="outline"
+                              className="w-full h-9 mt-2 text-xs border-black/10"
+                              onClick={() => githubVisibilityMutation.mutate()}
+                              disabled={!isGithubVisibilityReady || githubVisibilityMutation.isPending}
+                              data-testid="button-save-github-visibility"
+                            >
+                              {githubVisibilityMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin ml-2" />}
+                              {L ? "حفظ الرؤية" : "Save visibility"}
+                            </Button>
+                          </div>
+
+                          {!githubSetup?.connection?.connected && (
+                            <div className="grid sm:grid-cols-2 gap-2">
+                              <a href="/employee/deployment-cloud" className="h-9 rounded-xl bg-black text-white text-xs font-semibold flex items-center justify-center">
+                                {L ? "ربط حساب GitHub" : "Connect GitHub"}
+                              </a>
+                              <a
+                                href="https://github.com/settings/tokens/new?scopes=repo&description=QIROX%20Project%20Provisioning"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="h-9 rounded-xl border border-black/10 text-black/65 text-xs font-semibold flex items-center justify-center gap-1.5"
+                              >
+                                {L ? "إنشاء Classic PAT" : "Create Classic PAT"}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
+
+                          {githubSetup?.repository?.error && (
+                            <p className="text-xs leading-5 text-red-700 bg-red-50 rounded-xl px-3 py-2">
+                              {githubSetup.repository.error}
+                            </p>
+                          )}
+
+                          {["approved", "in_progress"].includes(selectedOrder.status) && githubSetup?.repository?.status !== "ready" && (
+                            <Button
+                              className="w-full h-10 gap-2 text-sm bg-black text-white"
+                              onClick={() => convertToProjectMutation.mutate(selectedOrder)}
+                              disabled={convertToProjectMutation.isPending}
+                              data-testid="button-convert-to-project"
+                            >
+                              {convertToProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                              {githubSetup?.repository?.status === "failed"
+                                ? (L ? "إعادة محاولة تجهيز المستودع" : "Retry repository provisioning")
+                                : (L ? "تجهيز المشروع والمستودع" : "Provision project and repository")}
+                            </Button>
+                          )}
                         </div>
                       )}
 

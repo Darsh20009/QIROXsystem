@@ -445,6 +445,13 @@ export interface OrderSpecs {
   teamNotes?: string;
   clientBrief?: string;
   projectIdeas?: string;
+  githubRepoUrl?: string;
+  githubRepoName?: string;
+  githubRepoId?: string;
+  githubRepoOwner?: string;
+  githubVisibility?: 'public' | 'private';
+  githubProvisioningStatus?: 'not_configured' | 'ready' | 'failed';
+  githubProvisioningError?: string;
   colorPalette?: string[];
   referenceLinks?: string[];
   customVars?: Record<string, any>;

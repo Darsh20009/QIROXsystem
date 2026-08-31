@@ -461,7 +461,7 @@ export default function ProjectDetailsSetup() {
                 {provisioning.status === "failed" && "تأخر تجهيز مساحة مشروعك"}
               </p>
               <p className="text-xs text-black/50 mt-1">
-                {provisioning.status === "ready_for_configuration" && "يتم إنشاء المستودع وقاعدة البيانات والنشر عند اعتماد إعداداتها من الفريق."}
+                {provisioning.status === "ready_for_configuration" && "تم إنشاء وربط مستودع المشروع، وتستكمل قاعدة البيانات والنشر بعد اعتماد إعداداتها من الفريق."}
                 {["queued", "in_progress"].includes(provisioning.status) && "سنخبرك فور اكتمال التجهيز. يمكنك متابعة إدخال تفاصيل مشروعك الآن."}
                 {provisioning.status === "failed" && "لم تتأثر بياناتك. تواصل مع فريق الدعم لإعادة المحاولة."}
               </p>

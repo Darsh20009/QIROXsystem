@@ -17,7 +17,9 @@
     "test:investor-distributions": "tsx --test server/investor-distribution.test.ts",
     "test:project-integrations": "tsx --test server/project-integrations.test.ts",
     "test:data-entry-policy": "tsx --test server/data-entry-policy.test.ts",
-    "test:data-entry-http": "tsx --test server/data-entry-http.test.ts"
+    "test:data-entry-http": "tsx --test server/data-entry-http.test.ts",
+    "test:github-repositories": "tsx --test server/github-repositories.test.ts",
+    "test:github-visibility-ui": "tsx --test client/src/lib/github-visibility-state.test.ts"
   },
   "dependencies": {
     "@capacitor/app": "^7.1.2",

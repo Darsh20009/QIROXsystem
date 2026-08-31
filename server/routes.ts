@@ -17,6 +17,13 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
 import { registerMailRoutes } from "./domains/mail";
+import {
+  ensureGitHubRepository,
+  githubFetch,
+  githubRepositoryName,
+  resolveGitHubToken,
+  updateGitHubRepositoryVisibility,
+} from "./github-repositories";
 import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
@@ -1191,20 +1198,23 @@ export async function registerRoutes(
       updatedAt: source.updatedAt || null,
     };
   };
-  const provisionApprovedOrder = async (order: any) => {
+  const provisionApprovedOrder = async (order: any, req?: express.Request) => {
     if (order.paymentStatus !== "approved" && order.status !== "approved") {
       throw new Error("لا يمكن تجهيز المشروع قبل اعتماد الطلب أو الدفع");
     }
-    const { ProjectModel, OrderProvisioningModel, NotificationModel } = await import("./models");
+    const { ProjectModel, OrderProvisioningModel, OrderSpecsModel, NotificationModel } = await import("./models");
     const orderId = String(order._id || order.id);
     const clientId = String(order.userId);
     const now = new Date();
+    const leaseToken = crypto.randomUUID();
     const leaseExpiresAt = new Date(now.getTime() + 5 * 60 * 1000);
     const provisioningUpdate = {
       $setOnInsert: {
         orderId,
         clientId,
         status: "queued",
+        repositoryVisibility: order.githubVisibility === "public" ? "public" : "private",
+        repositoryVisibilityVersion: 0,
         steps: { project: "pending", repository: "not_configured", database: "not_configured", deployment: "not_configured" },
       },
     };
@@ -1224,7 +1234,7 @@ export async function registerRoutes(
           { status: "in_progress", leaseExpiresAt: null },
         ],
       },
-      { $inc: { attempts: 1 }, $set: { status: "in_progress", lastAttemptAt: now, leaseExpiresAt, lastError: "" } },
+      { $inc: { attempts: 1 }, $set: { status: "in_progress", lastAttemptAt: now, leaseExpiresAt, leaseToken, lastError: "" } },
       { new: true },
     );
     if (!claimedProvisioning) {
@@ -1256,23 +1266,176 @@ export async function registerRoutes(
       }
       if (!project) throw new Error("تعذر إنشاء سجل المشروع");
 
+      let repositoryMetadata: any;
+      try {
+        const specs = await OrderSpecsModel.findOne({ orderId }).lean() as any;
+        const actorId = String((claimedProvisioning as any).githubActorId || (req as any)?.user?._id || (req as any)?.user?.id || "");
+        const actorLease = await OrderProvisioningModel.findOneAndUpdate(
+          { orderId, leaseToken, status: "in_progress" },
+          {
+            $set: {
+              ...(actorId && !(claimedProvisioning as any).githubActorId ? { githubActorId: actorId } : {}),
+              leaseExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+            },
+          },
+          { returnDocument: "after" },
+        );
+        if (!actorLease) {
+          const provisioning = await OrderProvisioningModel.findOne({ orderId });
+          return { project, provisioning, projectCreated, pending: true };
+        }
+        const desiredVisibility = (actorLease as any).repositoryVisibility === "public" ? "public" : "private";
+        const visibilityVersion = Number((actorLease as any).repositoryVisibilityVersion || 0);
+        const pinnedActorId = String((actorLease as any).githubActorId || actorId || "");
+        const getToken = () => resolveGitHubToken(
+          req,
+          true,
+          process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : pinnedActorId || undefined,
+        );
+        const existingRepositoryReady = Boolean(
+          project.githubRepoId
+          && project.githubRepoName
+          && project.githubRepoOwner
+          && project.repoUrl,
+        );
+        if (existingRepositoryReady) {
+          if (project.githubVisibility !== desiredVisibility) {
+            repositoryMetadata = await updateGitHubRepositoryVisibility(
+              await getToken(),
+              project.githubRepoOwner,
+              project.githubRepoName,
+              desiredVisibility,
+            );
+          } else {
+            repositoryMetadata = {
+              id: String(project.githubRepoId),
+              name: project.githubRepoName,
+              owner: project.githubRepoOwner,
+              htmlUrl: project.repoUrl,
+              visibility: desiredVisibility,
+            };
+          }
+        } else {
+          const projectName = specs?.projectName
+            || order.businessName
+            || order.projectType
+            || order.orderNumber
+            || "QIROX Project";
+          repositoryMetadata = await ensureGitHubRepository({
+            token: await getToken(),
+            name: githubRepositoryName(projectName, orderId),
+            description: `QIROX project: ${String(projectName).slice(0, 120)}`,
+            visibility: desiredVisibility,
+          });
+        }
+
+        const stillOwnsLease = await OrderProvisioningModel.findOneAndUpdate(
+          { orderId, leaseToken, status: "in_progress" },
+          {
+            $set: {
+              "steps.repository": "ready",
+              leaseExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+            },
+          },
+          { returnDocument: "after" },
+        );
+        if (!stillOwnsLease) {
+          const provisioning = await OrderProvisioningModel.findOne({ orderId });
+          return { project, provisioning, projectCreated, pending: true };
+        }
+
+        const repositoryUpdate = {
+          githubRepoName: repositoryMetadata.name,
+          githubRepoId: repositoryMetadata.id,
+          githubRepoOwner: repositoryMetadata.owner,
+          githubVisibility: repositoryMetadata.visibility,
+          githubVisibilityVersion: visibilityVersion,
+          githubProvisioningStatus: "ready",
+          githubProvisioningError: "",
+        };
+        const [updatedProject] = await Promise.all([
+          ProjectModel.findOneAndUpdate(
+            {
+              _id: project._id,
+              $or: [
+                { githubVisibilityVersion: { $lte: visibilityVersion } },
+                { githubVisibilityVersion: { $exists: false } },
+              ],
+            },
+            { $set: { ...repositoryUpdate, repoUrl: repositoryMetadata.htmlUrl } },
+            { returnDocument: "after" },
+          ),
+          OrderSpecsModel.findOneAndUpdate(
+            {
+              orderId,
+              $or: [
+                { githubVisibilityVersion: { $lte: visibilityVersion } },
+                { githubVisibilityVersion: { $exists: false } },
+              ],
+            },
+            { $set: { ...repositoryUpdate, githubRepoUrl: repositoryMetadata.htmlUrl } },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+          ),
+        ]);
+        if (updatedProject) project = updatedProject;
+      } catch (repositoryError: any) {
+        const safeMessage = !repositoryError?.message || repositoryError.message === "GitHub connection is not configured"
+          ? "اتصال GitHub غير مهيأ. اربط حساب GitHub ثم أعد المحاولة."
+          : repositoryError?.status === 401 || repositoryError?.status === 403
+            ? "اتصال GitHub لا يملك الصلاحية المطلوبة لإنشاء المستودع. أعد الربط بصلاحية repo."
+            : "تعذر إنشاء أو ربط مستودع GitHub. تحقق من الاتصال ثم أعد المحاولة.";
+        const failedProvisioning = await OrderProvisioningModel.findOneAndUpdate(
+          { orderId, leaseToken },
+          {
+            $set: {
+              projectId: project._id,
+              status: "failed",
+              "steps.project": "ready",
+              "steps.repository": "failed",
+              lastError: safeMessage,
+            },
+            $unset: { leaseExpiresAt: 1, leaseToken: 1 },
+          },
+          { returnDocument: "after" },
+        ).catch(() => null);
+        if (failedProvisioning) {
+          await Promise.all([
+            ProjectModel.findByIdAndUpdate(project._id, {
+              $set: { githubProvisioningStatus: "failed", githubProvisioningError: safeMessage },
+            }),
+            OrderSpecsModel.findOneAndUpdate(
+              { orderId },
+              { $set: { githubProvisioningStatus: "failed", githubProvisioningError: safeMessage } },
+              { upsert: true, setDefaultsOnInsert: true },
+            ),
+          ]).catch(() => {});
+        }
+        repositoryError.provisioningStage = "repository";
+        repositoryError.publicMessage = safeMessage;
+        throw repositoryError;
+      }
+
       const provisioning = await OrderProvisioningModel.findOneAndUpdate(
-        { orderId },
+        { orderId, leaseToken },
         {
           $set: {
             projectId: project._id,
             status: "ready_for_configuration",
             "steps.project": "ready",
-            "steps.repository": "not_configured",
+            "steps.repository": "ready",
             "steps.database": "not_configured",
             "steps.deployment": "not_configured",
             lastError: "",
             completedAt: now,
           },
-          $unset: { leaseExpiresAt: 1 },
+          $unset: { leaseExpiresAt: 1, leaseToken: 1 },
         },
         { returnDocument: "after" },
       );
+      if (!provisioning) {
+        const currentProvisioning = await OrderProvisioningModel.findOne({ orderId });
+        return { project, provisioning: currentProvisioning, projectCreated, pending: true };
+      }
 
       if (projectCreated) {
         await NotificationModel.create({
@@ -1285,12 +1448,18 @@ export async function registerRoutes(
         }).catch(() => {});
       }
       return { project, provisioning, projectCreated, pending: false };
-    } catch (error) {
+    } catch (error: any) {
+      const repositoryFailed = error?.provisioningStage === "repository";
       await OrderProvisioningModel.findOneAndUpdate(
-        { orderId },
+        { orderId, leaseToken },
         {
-          $set: { status: "failed", "steps.project": "failed", lastError: "تعذر تجهيز المشروع. أعد المحاولة لاحقاً." },
-          $unset: { leaseExpiresAt: 1 },
+          $set: {
+            status: "failed",
+            "steps.project": repositoryFailed ? "ready" : "failed",
+            ...(repositoryFailed ? { "steps.repository": "failed" } : {}),
+            lastError: error?.publicMessage || "تعذر تجهيز المشروع. أعد المحاولة لاحقاً.",
+          },
+          $unset: { leaseExpiresAt: 1, leaseToken: 1 },
         },
       ).catch(() => {});
       throw error;
@@ -2413,7 +2582,7 @@ export async function registerRoutes(
     }
     if (updates.status === "approved" && order) {
       try {
-        await provisionApprovedOrder(order);
+        await provisionApprovedOrder(order, req);
       } catch (error: any) {
         console.error("[OrderProvisioning] status approval:", error?.message || error);
       }
@@ -2541,7 +2710,7 @@ export async function registerRoutes(
       pushNotification(String(order.userId), { title: notifTitle, body: notifBody, icon: "✅", link: "/dashboard" });
       let provisioning: any = null;
       try {
-        provisioning = (await provisionApprovedOrder(order)).provisioning;
+        provisioning = (await provisionApprovedOrder(order, req)).provisioning;
       } catch (error: any) {
         console.error("[OrderProvisioning] transfer approval:", error?.message || error);
       }
@@ -2555,11 +2724,196 @@ export async function registerRoutes(
       const { OrderModel } = await import("./models");
       const order = await OrderModel.findById(req.params.id);
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
-      const { provisioning, projectCreated } = await provisionApprovedOrder(order);
+      const { provisioning, projectCreated } = await provisionApprovedOrder(order, req);
       res.json({ ok: true, projectCreated, provisioning: toPublicProvisioning(provisioning) });
     } catch (error: any) {
       console.error("[OrderProvisioning] retry:", error?.message || error);
       res.status(503).json({ error: "تعذر تجهيز المشروع حالياً. أعد المحاولة لاحقاً." });
+    }
+  });
+
+  app.get("/api/admin/orders/:id/github", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+
+      let connection: any = { connected: false };
+      const provisioningActorId = String((provisioning as any)?.githubActorId || "");
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : provisioningActorId || undefined,
+      );
+      if (token) {
+        try {
+          const account = await githubFetch("/user", token);
+          connection = {
+            connected: true,
+            login: account.login || "",
+            avatarUrl: account.avatar_url || "",
+            name: account.name || "",
+          };
+        } catch {
+          connection = { connected: false };
+        }
+      }
+
+      res.json({
+        connection,
+        repository: {
+          status: (project as any)?.githubProvisioningStatus || (specs as any)?.githubProvisioningStatus || provisioning?.steps?.repository || "not_configured",
+          url: (project as any)?.repoUrl || (specs as any)?.githubRepoUrl || "",
+          name: (project as any)?.githubRepoName || (specs as any)?.githubRepoName || "",
+          id: (project as any)?.githubRepoId || (specs as any)?.githubRepoId || "",
+          owner: (project as any)?.githubRepoOwner || (specs as any)?.githubRepoOwner || "",
+          visibility: (project as any)?.githubVisibility || (specs as any)?.githubVisibility || (provisioning as any)?.repositoryVisibility || (order as any).githubVisibility || "private",
+          error: (project as any)?.githubProvisioningError || (specs as any)?.githubProvisioningError || provisioning?.lastError || "",
+        },
+        provisioning: toPublicProvisioning(provisioning),
+      });
+    } catch {
+      res.status(500).json({ error: "تعذر تحميل حالة GitHub" });
+    }
+  });
+
+  app.patch("/api/admin/orders/:id/github/settings", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const visibility = req.body?.visibility;
+    if (!["public", "private"].includes(visibility)) {
+      return res.status(400).json({ error: "الرؤية يجب أن تكون public أو private" });
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const settingsLeaseToken = crypto.randomUUID();
+      const settingsLeaseExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await OrderProvisioningModel.findOneAndUpdate(
+        { orderId: req.params.id },
+        {
+          $setOnInsert: {
+            orderId: req.params.id,
+            clientId: order.userId,
+            status: "queued",
+            steps: { project: "pending", repository: "not_configured", database: "not_configured", deployment: "not_configured" },
+          },
+        },
+        { upsert: true },
+      ).catch((error: any) => {
+        if (error?.code !== 11000) throw error;
+      });
+      const previousProvisioning = await OrderProvisioningModel.findOneAndUpdate(
+        {
+          orderId: req.params.id,
+          $or: [
+            { status: { $ne: "in_progress" } },
+            { leaseExpiresAt: { $lt: new Date() } },
+            { leaseExpiresAt: { $exists: false } },
+            { leaseExpiresAt: null },
+          ],
+        },
+        {
+          $set: {
+            status: "in_progress",
+            leaseToken: settingsLeaseToken,
+            leaseExpiresAt: settingsLeaseExpiresAt,
+            repositoryVisibility: visibility,
+          },
+          $inc: { repositoryVisibilityVersion: 1 },
+        },
+        { returnDocument: "before" },
+      );
+      if (!previousProvisioning) {
+        return res.status(409).json({ error: "يجري تجهيز المستودع الآن. انتظر اكتماله ثم أعد حفظ الرؤية." });
+      }
+      const visibilityVersion = Number((previousProvisioning as any).repositoryVisibilityVersion || 0) + 1;
+      const restoreProvisioning = async () => {
+        await OrderProvisioningModel.findOneAndUpdate(
+          { orderId: req.params.id, leaseToken: settingsLeaseToken },
+          {
+            $set: {
+              status: previousProvisioning.status || "queued",
+              repositoryVisibility: visibility,
+            },
+            $unset: { leaseToken: 1, leaseExpiresAt: 1 },
+          },
+        );
+      };
+      const project = await ProjectModel.findOne({ orderId: req.params.id });
+      const provisioning = await OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean() as any;
+      let repository: any = null;
+      if (project?.githubRepoOwner && project?.githubRepoName && project?.githubProvisioningStatus === "ready") {
+        const token = await resolveGitHubToken(
+          req,
+          true,
+          process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String(provisioning?.githubActorId || "") || undefined,
+        );
+        try {
+          repository = await updateGitHubRepositoryVisibility(
+            token,
+            project.githubRepoOwner,
+            project.githubRepoName,
+            visibility,
+          );
+        } catch (error: any) {
+          await restoreProvisioning().catch(() => {});
+          const message = error?.status === 401 || error?.status === 403
+            ? "اتصال GitHub لا يملك صلاحية تغيير رؤية المستودع."
+            : "تعذر تغيير رؤية المستودع في GitHub. تحقق من الاتصال.";
+          return res.status(503).json({ error: message });
+        }
+        const renewedSettingsLease = await OrderProvisioningModel.findOneAndUpdate(
+          { orderId: req.params.id, leaseToken: settingsLeaseToken, status: "in_progress" },
+          { $set: { leaseExpiresAt: new Date(Date.now() + 5 * 60 * 1000) } },
+          { returnDocument: "after" },
+        );
+        if (!renewedSettingsLease) {
+          return res.status(409).json({ error: "تغيرت حالة التجهيز أثناء تحديث GitHub. أعد المحاولة للتأكد من المزامنة." });
+        }
+        await Promise.all([
+          OrderModel.findByIdAndUpdate(req.params.id, { $set: { githubVisibility: repository.visibility } }),
+          ProjectModel.findOneAndUpdate({
+            _id: project._id,
+            $or: [
+              { githubVisibilityVersion: { $lte: visibilityVersion } },
+              { githubVisibilityVersion: { $exists: false } },
+            ],
+          }, {
+            $set: { githubVisibility: repository.visibility, githubVisibilityVersion: visibilityVersion, repoUrl: repository.htmlUrl },
+          }),
+          OrderSpecsModel.findOneAndUpdate(
+            {
+              orderId: req.params.id,
+              $or: [
+                { githubVisibilityVersion: { $lte: visibilityVersion } },
+                { githubVisibilityVersion: { $exists: false } },
+              ],
+            },
+            { $set: { githubVisibility: repository.visibility, githubVisibilityVersion: visibilityVersion, githubRepoUrl: repository.htmlUrl } },
+            { upsert: true, setDefaultsOnInsert: true },
+          ),
+        ]);
+      } else {
+        await Promise.all([
+          OrderModel.findByIdAndUpdate(req.params.id, { $set: { githubVisibility: visibility } }),
+          OrderSpecsModel.findOneAndUpdate(
+            { orderId: req.params.id },
+            { $set: { githubVisibility: visibility, githubVisibilityVersion: visibilityVersion } },
+            { upsert: true, setDefaultsOnInsert: true },
+          ),
+        ]);
+      }
+      await restoreProvisioning();
+      res.json({ ok: true, visibility: repository?.visibility || visibility });
+    } catch {
+      res.status(500).json({ error: "تعذر حفظ إعدادات GitHub" });
     }
   });
 
