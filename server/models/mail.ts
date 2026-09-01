@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 const mailAccountSchema = new mongoose.Schema({
   emailAddress:   { type: String, required: true, unique: true },
   password:       { type: String, required: true },
+  // Legacy accounts default to employee mail. Customer accounts are isolated
+  // to their owner and never participate in the internal shared-mail policy.
+  accountType:    { type: String, enum: ["employee", "customer"], default: "employee", index: true },
+  ownerUserId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+  sourceOrderId:  { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
   displayName:    { type: String, default: "" },
   jobTitle:       { type: String, default: "" },
   imapHost:       { type: String, default: "server222.web-hosting.com" },

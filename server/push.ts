@@ -1,4 +1,6 @@
 import webpush from "web-push";
+import http2 from "node:http2";
+import { createSign } from "node:crypto";
 
 const VAPID_PUBLIC_FALLBACK = "BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4";
 const VAPID_PRIVATE_FALLBACK = "eFqX9qfBVzFTErtXbAEl-WqN1sBqoQfwHbafUGtXeGk";
@@ -98,4 +100,79 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   } catch (err) {
     console.error("[PUSH] sendPushToUser error:", err);
   }
+
+  // Native iOS delivery is additive. It activates only when APNs credentials
+  // are configured, while the existing PWA delivery remains unchanged.
+  await sendNativePushToUser(userId, payload).catch((err) => {
+    console.error("[APNS] sendNativePushToUser error:", err?.message || err);
+  });
+}
+
+function base64Url(value: Buffer | string): string {
+  return Buffer.from(value).toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function apnsJwt(): string | null {
+  const keyId = process.env.APNS_KEY_ID;
+  const teamId = process.env.APNS_TEAM_ID;
+  const privateKey = process.env.APNS_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  if (!keyId || !teamId || !privateKey) return null;
+
+  const header = base64Url(JSON.stringify({ alg: "ES256", kid: keyId }));
+  const claims = base64Url(JSON.stringify({ iss: teamId, iat: Math.floor(Date.now() / 1000) }));
+  const unsigned = `${header}.${claims}`;
+  const signer = createSign("SHA256");
+  signer.update(unsigned);
+  signer.end();
+  const signature = signer.sign({ key: privateKey, dsaEncoding: "ieee-p1363" });
+  return `${unsigned}.${base64Url(signature)}`;
+}
+
+async function sendApnsToken(token: string, payload: PushPayload): Promise<number> {
+  const jwt = apnsJwt();
+  if (!jwt) return 0;
+  const host = process.env.APNS_HOST || "https://api.push.apple.com";
+  const client = http2.connect(host);
+  const body = JSON.stringify({
+    aps: {
+      alert: { title: payload.title, body: payload.body },
+      sound: "default",
+      badge: 1,
+    },
+    ...(payload.data || {}),
+  });
+
+  return await new Promise<number>((resolve, reject) => {
+    const request = client.request({
+      ":method": "POST",
+      ":path": `/3/device/${encodeURIComponent(token)}`,
+      authorization: `bearer ${jwt}`,
+      "apns-topic": process.env.APNS_BUNDLE_ID || "qiroxstudio.online",
+      "apns-push-type": "alert",
+      "apns-priority": "10",
+      "content-type": "application/json",
+      "content-length": Buffer.byteLength(body),
+    });
+    let status = 0;
+    request.on("response", (headers) => { status = Number(headers[":status"] || 0); });
+    request.on("error", reject);
+    request.on("end", () => { client.close(); resolve(status); });
+    request.setEncoding("utf8");
+    request.resume();
+    request.end(body);
+  });
+}
+
+export async function sendNativePushToUser(userId: string, payload: PushPayload): Promise<void> {
+  const jwt = apnsJwt();
+  if (!jwt) return;
+  const { NativePushTokenModel } = await import("./models");
+  const tokens = await NativePushTokenModel.find({ userId }, { token: 1 }).lean() as any[];
+  const stale: string[] = [];
+  await Promise.all(tokens.map(async (record) => {
+    const status = await sendApnsToken(String(record.token), payload);
+    if (status === 410 || status === 400) stale.push(String(record._id));
+  }));
+  if (stale.length) await NativePushTokenModel.deleteMany({ _id: { $in: stale } });
 }

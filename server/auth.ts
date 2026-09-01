@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
 import MongoStore from "connect-mongo";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
@@ -117,6 +117,38 @@ export function setupAuth(app: Express) {
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Native Capacitor browsers do not share the Safari/Chrome OAuth session
+  // cookie with the WebView. OAuth therefore returns a short-lived device
+  // bearer token which must authenticate subsequent API requests directly.
+  // The token is only accepted in its fixed hex format and is always looked
+  // up by hash; the raw value is never persisted or logged.
+  app.use(async (req, _res, next) => {
+    if (req.user) return next();
+
+    const rawToken = String(req.headers["x-device-token"] || "").trim();
+    if (!/^[a-f0-9]{96}$/i.test(rawToken)) return next();
+
+    try {
+      const { DeviceTokenModel } = await import("./models/auth");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      const deviceToken = await DeviceTokenModel.findOne({
+        tokenHash,
+        expiresAt: { $gt: new Date() },
+      }).lean();
+
+      if (!deviceToken) return next();
+
+      const user = await storage.getUser(String(deviceToken.userId));
+      if (!user) return next();
+
+      setCachedUser(user.id, user);
+      (req as any).user = user;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  });
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {

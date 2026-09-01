@@ -62,7 +62,7 @@ export default function AdminWhatsApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newAdminNum, setNewAdminNum] = useState("");
   const [newSavedMessage, setNewSavedMessage] = useState("");
-  const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 60, systemPromptExtra: "", savedMessages: [] });
+  const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 5, systemPromptExtra: "", savedMessages: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<EventSource | null>(null);
 

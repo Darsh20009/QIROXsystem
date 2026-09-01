@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
 import { MailAccountModel, MailCacheModel, UserModel } from "./models";
 import type { Document } from "mongoose";
+import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 
 export interface MailAccountDoc {
   _id: string;
@@ -53,17 +54,30 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
     socketTimeout: 8000,
     connectionTimeout: 8000,
   });
+  // ImapFlow emits socket failures independently of the promise returned by
+  // connect/logout. Always consume that event so a mailbox outage cannot
+  // terminate the application or become an uncaught exception.
+  client.on("error", () => {});
 
   const messages: EmailMessage[] = [];
+  let connected = false;
 
   // Race against a timeout to avoid hanging the API response
-  const connectWithTimeout = () => Promise.race([
-    client.connect(),
-    new Promise<never>((_, rej) => setTimeout(() => rej(new Error("IMAP connection timeout")), 9000)),
-  ]);
+  const connectWithTimeout = () => {
+    // Promise.race does not consume a later rejection from the losing
+    // connection attempt. Attach a handler so a timed-out IMAP socket cannot
+    // become a process-level unhandled rejection.
+    const connection = client.connect();
+    connection.catch(() => {});
+    return Promise.race([
+      connection,
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("IMAP connection timeout")), 9000)),
+    ]);
+  };
 
   try {
     await connectWithTimeout();
+    connected = true;
     const mailbox = await client.mailboxOpen(folder);
     const total = mailbox.exists;
 
@@ -112,7 +126,11 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
 
     await client.logout();
   } catch (err) {
-    try { await client.logout(); } catch {}
+    // A timed-out connection cannot be logged out cleanly; calling logout on
+    // that state emits a second unhandled "Connection not available" error.
+    if (connected) {
+      try { await client.logout(); } catch {}
+    }
     throw err;
   }
 
@@ -379,12 +397,20 @@ export async function seedDefaultAccounts(): Promise<void> {
       sharedWith: [],
     },
     {
+      emailAddress: "hr@qirox.online",
+      password: "ASDqwe@12345678",
+      displayName: "Qirox HR",
+      jobTitle: "الموارد البشرية",
+      isShared: true,
+      sharedWith: ALL_EMPLOYEE_MAIL_ROLES,
+    },
+    {
       emailAddress: "info@qirox.online",
       password: "ASDqwe@12345678",
       displayName: "QIROX Info",
       jobTitle: "البريد العام",
       isShared: true,
-      sharedWith: ["admin", "ceo", "cto", "manager"],
+      sharedWith: ALL_EMPLOYEE_MAIL_ROLES,
     },
     {
       emailAddress: "support@qirox.online",
@@ -392,7 +418,7 @@ export async function seedDefaultAccounts(): Promise<void> {
       displayName: "QIROX Support",
       jobTitle: "الدعم الفني",
       isShared: true,
-      sharedWith: ["admin", "ceo", "cto", "manager", "support"],
+      sharedWith: ALL_EMPLOYEE_MAIL_ROLES,
     },
   ];
 
@@ -405,12 +431,17 @@ export async function seedDefaultAccounts(): Promise<void> {
   await MailAccountModel.deleteOne({ emailAddress: "m.aldbani@qirox.online" }).catch(() => {});
 
   for (const acc of defaults) {
-    const { password, ...rest } = acc;
+    const { password, isShared: _isShared, sharedWith: _sharedWith, ...rest } = acc;
+    const isTeamWide = ["support@qirox.online", "info@qirox.online", "hr@qirox.online"].includes(acc.emailAddress);
     await MailAccountModel.findOneAndUpdate(
       { emailAddress: acc.emailAddress },
       {
         $setOnInsert: rest,
-        $set: { password },
+        // Also update existing records so an old restricted assignment is
+        // corrected automatically on the next server start.
+        $set: isTeamWide
+          ? { password, isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES }
+          : { password },
       },
       { upsert: true }
     );

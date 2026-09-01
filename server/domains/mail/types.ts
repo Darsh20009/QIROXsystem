@@ -21,6 +21,9 @@ export interface MailAccountEntity {
   _id:            string;
   emailAddress:   string;
   password:       string;
+  accountType?:   "employee" | "customer";
+  ownerUserId?:   string | null;
+  sourceOrderId?: string | null;
   displayName:    string;
   jobTitle:       string;
   imapHost:       string;
@@ -76,6 +79,9 @@ export interface SafeMailAccount {
   emailAddress:   string;
   displayName:    string;
   jobTitle:       string;
+  accountType?:   "employee" | "customer";
+  ownerUserId?:   string | null;
+  sourceOrderId?: string | null;
   imapHost:       string;
   imapPort:       number;
   smtpHost:       string;

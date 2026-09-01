@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { isTeamWideMailAccount } from "./mail-access";
 
 /**
  * Corporate Mail routes — IMAP/SMTP email account management for employees.
@@ -17,6 +18,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
     const role = user.role || "client";
     const uid = (user._id || user.id || "").toString();
     if (role === "admin") return true;
+    if (isTeamWideMailAccount(role, account)) return true;
     // Legacy single-assignee
     if (account.assignedUserId && account.assignedUserId.toString() === uid) return true;
     // New multi-assignee list
@@ -38,6 +40,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
       const uid = (user._id || user.id || "").toString();
       const filtered = all.filter(a => {
         if (role === "admin") return true;
+        if (isTeamWideMailAccount(role, a)) return true;
         if (a.assignedUserId && a.assignedUserId.toString() === uid) return true;
         if (Array.isArray(a.assignedUserIds) && a.assignedUserIds.some((x: any) => String(x) === uid)) return true;
         if (a.isShared && a.sharedWith?.includes(role)) return true;

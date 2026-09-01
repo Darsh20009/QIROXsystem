@@ -986,7 +986,7 @@ export default function Login() {
       />
 
       {/* Right form area */}
-      <div className="flex-1 flex flex-col items-center px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-8 xl:px-6 xl:py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
+      <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-20 sm:px-6 sm:py-8 md:px-10 md:py-8 xl:px-6 xl:py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
 
         {/* ── Decorative background layer ── */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none md:max-xl:opacity-40">

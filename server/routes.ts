@@ -124,6 +124,7 @@ import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
 import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
 import { normalizePhone } from "./notifications/phone";
+import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
 import { createSolidPng } from "./lib/apple-wallet-png";
 import {
@@ -144,7 +145,53 @@ import {
   serializeProjectIntegration,
   projectIntegrationApiDocs,
 } from "./project-integrations";
-import { backfillLegacyProjectSubscriptions, startProjectSubscription } from "./project-subscriptions";
+import {
+  backfillLegacyProjectSubscriptions,
+  getEffectiveProjectSubscription,
+  serializeProjectSubscription,
+  serializeProjectSubscriptionRenewalRequest,
+  startProjectSubscription,
+} from "./project-subscriptions";
+
+async function attachAdminProjectSubscriptionSummaries(orders: any[], include: boolean) {
+  if (!include || orders.length === 0) return orders;
+  const { ProjectModel, ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel } = await import("./models");
+  const orderIds = orders.map((order) => order?._id || order?.id).filter(Boolean);
+  const projects = await ProjectModel.find({ orderId: { $in: orderIds } })
+    .select("_id orderId status")
+    .lean();
+  if (projects.length === 0) return orders;
+
+  const projectIds = projects.map((project: any) => project._id);
+  const [subscriptions, renewalRequests] = await Promise.all([
+    ProjectSubscriptionModel.find({ projectId: { $in: projectIds } }).lean(),
+    ProjectSubscriptionRenewalRequestModel.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 }).lean(),
+  ]);
+  const subscriptionsByProject = new Map(
+    subscriptions.map((subscription: any) => [String(subscription.projectId), serializeProjectSubscription(subscription)]),
+  );
+  const renewalByProject = new Map<string, any>();
+  for (const request of renewalRequests) {
+    const key = String(request.projectId);
+    if (!renewalByProject.has(key)) renewalByProject.set(key, serializeProjectSubscriptionRenewalRequest(request));
+  }
+  const projectsByOrder = new Map(projects.map((project: any) => [String(project.orderId), project]));
+
+  return orders.map((order) => {
+    const project: any = projectsByOrder.get(String(order?._id || order?.id));
+    if (!project) return order;
+    const renewalRequest = renewalByProject.get(String(project._id)) || null;
+    return {
+      ...order,
+      projectId: String(project._id),
+      projectSubscription: getEffectiveProjectSubscription(
+        subscriptionsByProject.get(String(project._id)) || null,
+        renewalRequest,
+      ),
+      projectSubscriptionRenewalRequest: renewalRequest,
+    };
+  });
+}
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -1637,8 +1684,10 @@ export async function registerRoutes(
             imapPort: 993,
             smtpHost: smtpHost,
             smtpPort: smtpPort,
-            isShared: true,
-            sharedWith: MGMT,
+             isShared: true,
+             sharedWith: ["hr@qirox.online", "info@qirox.online", "support@qirox.online"].includes(acc.emailAddress)
+               ? ALL_EMPLOYEE_MAIL_ROLES
+               : MGMT,
             assignedUserIds: [],
             assignedUserId: null,
           },
@@ -2491,14 +2540,20 @@ export async function registerRoutes(
         .skip((page - 1) * limit)
         .limit(limit)
         .lean();
-      const data = docs.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
+      const data = await attachAdminProjectSubscriptionSummaries(
+        docs.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId })),
+        ["admin", "manager"].includes(currentRole),
+      );
       if (currentRole === "data_entry") {
         return res.json({ data: data.map(redactOrderForDataEntry), total, page, totalPages: Math.ceil(total / limit) });
       }
       return res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
     }
     // Backward-compat: no page param → return array (capped at 500)
-    const orders = await storage.getOrdersWithUsers();
+    const orders = await attachAdminProjectSubscriptionSummaries(
+      await storage.getOrdersWithUsers(),
+      ["admin", "manager"].includes(currentRole),
+    );
     res.json(currentRole === "data_entry" ? orders.map(redactOrderForDataEntry) : orders);
   });
 
@@ -3599,6 +3654,47 @@ export async function registerRoutes(
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر تنفيذ ترحيل اشتراكات المشاريع" });
+    }
+  });
+
+  app.patch("/api/admin/projects/:projectId/subscription/adjust", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const deltaDays = Number(req.body?.days);
+      if (!Number.isInteger(deltaDays) || deltaDays === 0 || Math.abs(deltaDays) > 3650) {
+        return res.status(400).json({ error: "عدد الأيام يجب أن يكون رقماً صحيحاً بين -3650 و3650" });
+      }
+
+      const { ProjectSubscriptionModel } = await import("./models");
+      const subscription = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
+      if (!subscription) return res.status(404).json({ error: "لا يوجد اشتراك لهذا المشروع" });
+      if (subscription.period === "lifetime") {
+        return res.status(400).json({ error: "الاشتراك الدائم لا يحتاج إلى تعديل مدة" });
+      }
+      if (!subscription.expiresAt) {
+        return res.status(400).json({ error: "تاريخ انتهاء الاشتراك غير صالح" });
+      }
+
+      const now = new Date();
+      const currentExpiry = new Date(subscription.expiresAt);
+      const anchor = currentExpiry > now ? currentExpiry : now;
+      const nextExpiry = new Date(anchor.getTime() + deltaDays * 86400000);
+      if (nextExpiry <= now) {
+        return res.status(400).json({ error: "لا يمكن تقليل الاشتراك إلى صفر يوم" });
+      }
+
+      const currentDuration = Number(subscription.durationDays) || 0;
+      subscription.expiresAt = nextExpiry;
+      subscription.durationDays = Math.max(1, currentDuration + deltaDays);
+      subscription.status = "active";
+      await subscription.save();
+
+      res.json({
+        subscription: serializeProjectSubscription(subscription),
+        adjustmentDays: deltaDays,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تعديل مدة اشتراك المشروع" });
     }
   });
 
@@ -13240,6 +13336,17 @@ export async function registerRoutes(
       }
       fireNotifyAdmins(`📅 حجز استشارة جديدة`, `${clientName} — ${consultationType || 'هاتفية'}: ${topic || 'استشارة عامة'}`, { type: 'info', link: '/admin/consultation', icon: '📅' });
 
+      // WhatsApp is a best-effort companion channel. The booking is already
+      // persisted; a disconnected CRM session must never make the booking fail.
+      if (clientPhone) {
+        import("./whatsapp-module").then(({ waModule }) =>
+          waModule.sendNotification(
+            clientPhone,
+            `تم استلام طلب حجزك في QIROX يا ${clientName}.\nالموضوع: ${topic || "استشارة عامة"}\nسيتواصل معك الفريق لتأكيد الموعد.`,
+          ).catch(() => {})
+        ).catch(() => {});
+      }
+
       res.status(201).json(booking);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -13573,8 +13680,24 @@ export async function registerRoutes(
         if (booking.clientId) {
           fireNotify(String(booking.clientId), `✅ تم تأكيد موعد استشارتك`, `${booking.topic || 'استشارة عامة'} — ${booking.startTime || ''}`, { type: 'info', link: '/dashboard', icon: '📅', tag: `consult-${booking._id}` });
         }
+        if (booking.clientPhone) {
+          import("./whatsapp-module").then(({ waModule }) =>
+            waModule.sendNotification(
+              booking.clientPhone,
+              `تم تأكيد موعدك مع QIROX ✅\n${booking.topic || "استشارة عامة"}\n${booking.date ? new Date(booking.date).toLocaleDateString("ar-SA") : ""} ${booking.startTime || ""}${booking.meetingLink ? `\nرابط اللقاء: ${booking.meetingLink}` : ""}`,
+            ).catch(() => {})
+          ).catch(() => {});
+        }
       } else if (req.body.status === "cancelled" && booking.clientId) {
         fireNotify(String(booking.clientId), `❌ تم إلغاء موعد الاستشارة`, `${booking.topic || 'الموعد'} تم إلغاؤه — يمكنك حجز موعد جديد`, { type: 'error', link: '/dashboard', icon: '❌', tag: `consult-cancel-${booking._id}` });
+        if (booking.clientPhone) {
+          import("./whatsapp-module").then(({ waModule }) =>
+            waModule.sendNotification(
+              booking.clientPhone,
+              `تم إلغاء موعد الاستشارة في QIROX.\nيمكنك طلب موعد جديد من هنا: https://qiroxstudio.online/consultation`,
+            ).catch(() => {})
+          ).catch(() => {});
+        }
       } else if (req.body.status === "completed" && booking.clientId) {
         fireNotify(String(booking.clientId), `🎉 اكتملت جلسة الاستشارة`, `شكراً على وقتك — ${booking.topic || ''}`, { type: 'success', link: '/dashboard', icon: '🎉', tag: `consult-done-${booking._id}` });
       }

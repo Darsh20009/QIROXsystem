@@ -42,6 +42,12 @@ export function canAccessAccount(user: MailUser, account: MailAccountEntity): bo
   const role = user.role || "client";
   const uid = (user._id || "").toString();
 
+  // Customer mailboxes are private to their owner. They must never inherit
+  // the internal shared-mail rules used by employee accounts.
+  if ((account as any).accountType === "customer") {
+    return role === "client" && String((account as any).ownerUserId || "") === uid;
+  }
+
   if (role === "admin") return true;
 
   if (account.assignedUserId && account.assignedUserId.toString() === uid) return true;

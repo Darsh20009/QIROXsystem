@@ -17,6 +17,34 @@ export interface WAEvent {
   [key: string]: any;
 }
 
+const ARABIC_STATUS: Record<string, string> = {
+  pending: "قيد المراجعة",
+  approved: "تمت الموافقة",
+  in_progress: "قيد التنفيذ",
+  review: "بانتظار مراجعة العميل",
+  completed: "مكتمل",
+  closed: "مغلق",
+  rejected: "مرفوض",
+  cancelled: "ملغى",
+};
+
+function cleanText(value: unknown): string {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function isArabicMessage(value: string): boolean {
+  const arabic = (value.match(/[\u0600-\u06FF]/g) || []).length;
+  return arabic >= 2 || arabic > value.length * 0.15;
+}
+
+function isBadArabicReply(reply: string, userMessage: string): boolean {
+  if (!isArabicMessage(userMessage)) return false;
+  const arabicChars = (reply.match(/[\u0600-\u06FF]/g) || []).length;
+  const latinChars = (reply.match(/[a-z]/gi) || []).length;
+  const frenchMarkers = /\b(je|vous|nous|bonjour|merci|avec|pour|dans|est|les|des|une|votre)\b/i;
+  return frenchMarkers.test(reply) || (arabicChars < 8 && latinChars > 12);
+}
+
 // ── Singleton module ──────────────────────────────────────────────────────────
 class WhatsAppModule extends EventEmitter {
   private sock: any = null;
@@ -454,6 +482,11 @@ class WhatsAppModule extends EventEmitter {
       return;
     }
 
+    // ── Client actions (real system operations, not AI promises) ─────────────
+    if (matchedUser && await this.handleClientAction(chatId, body, matchedUser, resolvedPhone)) {
+      return;
+    }
+
     // ── AI auto-responder ─────────────────────────────────────────────────
     if (!settings.aiEnabled && settings.aiEnabled !== undefined) return;
 
@@ -491,7 +524,9 @@ class WhatsAppModule extends EventEmitter {
     }
 
     // Schedule AI reply (0 delay = instant)
-    const delayMs = ((settings.aiDelaySeconds ?? 60)) * 1000;
+    // Keep WhatsApp conversational. A missing setting should never make the
+    // customer wait the old 60-second fallback.
+    const delayMs = Math.max(0, Number(settings.aiDelaySeconds ?? 5)) * 1000;
     const existing = this.pendingAITimers.get(chatId);
     if (existing) clearTimeout(existing);
 
@@ -514,6 +549,164 @@ class WhatsAppModule extends EventEmitter {
       const timer = setTimeout(() => doReply().catch(() => {}), delayMs);
       this.pendingAITimers.set(chatId, timer);
     }
+  }
+
+  // ── Client actions ───────────────────────────────────────────────────────
+  // Keep deterministic actions outside the LLM. The assistant can explain
+  // results, but only these server-side handlers can create a booking or expose
+  // the requesting client's own data.
+  private async handleClientAction(chatId: string, body: string, client: any, resolvedPhone: string): Promise<boolean> {
+    const text = cleanText(body);
+    const lower = text.toLowerCase();
+    const clientId = client._id || client.id;
+    const clientName = client.fullName || client.username || "عميل QIROX";
+    const clientPhone = cleanText(client.whatsappNumber || client.phone || resolvedPhone);
+
+    // The account shortcut gives the client their own portal, projects,
+    // orders, subscriptions and safe project preview links.
+    if (/(حسابي|لوحتي|مشاريعي|طلباتي|اشتراكي|حالة طلبي|status|my account|my projects|my orders)/i.test(lower)) {
+      try {
+        const { OrderModel, ProjectModel, ProjectSubscriptionModel } = await import("./models");
+        const [orders, projects, subscriptions] = await Promise.all([
+          OrderModel.find({ userId: clientId }).sort({ createdAt: -1 }).limit(5).lean(),
+          ProjectModel.find({ clientId }).sort({ createdAt: -1 }).limit(5).lean(),
+          ProjectSubscriptionModel.find({ clientId }).sort({ createdAt: -1 }).limit(5).lean(),
+        ]);
+
+        const orderLines = (orders as any[]).map((order) =>
+          `• #${String(order._id).slice(-6).toUpperCase()} — ${order.projectType || order.businessName || "طلب"} — ${ARABIC_STATUS[order.status] || order.status || "غير محدد"}`
+        ).join("\n") || "• لا توجد طلبات مسجلة";
+        const projectLines = (projects as any[]).map((project) => {
+          const link = project.productionUrl || project.stagingUrl;
+          return `• ${project.name || project.title || "مشروع"} — ${ARABIC_STATUS[project.status] || project.status || "غير محدد"}${link ? `\n  ${link}` : ""}`;
+        }).join("\n") || "• لا توجد مشاريع مسجلة";
+        const subscriptionLines = (subscriptions as any[]).map((subscription) => {
+          const lifetime = subscription.period === "lifetime";
+          const expiresAt = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
+          const remaining = lifetime
+            ? "دائم"
+            : expiresAt
+              ? `${Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86400000))} يوم متبقٍ`
+              : "غير محدد";
+          return `• ${subscription.planTier || "اشتراك المشروع"} — ${remaining}${expiresAt ? ` — ينتهي ${expiresAt.toLocaleDateString("ar-SA")}` : ""}`;
+        }).join("\n") || "• لا يوجد اشتراك مشروع مسجل";
+
+        await this.sendText(
+          chatId,
+          `مرحباً ${clientName}، هذه معلومات حسابك في QIROX:\n\n` +
+          `📋 الطلبات:\n${orderLines}\n\n` +
+          `🧩 المشاريع:\n${projectLines}\n\n` +
+          `⏳ الاشتراكات:\n${subscriptionLines}\n\n` +
+          `🔐 لفتح لوحة حسابك وتفاصيل الملفات:\nhttps://qiroxstudio.online/dashboard`,
+          false,
+        );
+      } catch (error: any) {
+        console.error("[WA] Client account action failed:", error.message);
+        await this.sendText(chatId, "تعذر تحميل بيانات حسابك الآن. حاول بعد قليل أو افتح https://qiroxstudio.online/dashboard", false);
+      }
+      return true;
+    }
+
+    // Only return the number belonging to the requesting chat/client.
+    if (/(رقم جوالي|رقم الجوال|جوال[يى]|mobile number|my phone)/i.test(lower)) {
+      await this.sendText(
+        chatId,
+        clientPhone
+          ? `رقم الجوال المسجل في حسابك هو: ${clientPhone}`
+          : "لا يوجد رقم جوال مسجل في حسابك. حدّث بياناتك من لوحة الحساب: https://qiroxstudio.online/dashboard",
+        false,
+      );
+      return true;
+    }
+
+    // Explicit booking commands create a pending consultation and return a
+    // trackable reference. Questions about availability are left to the AI.
+    const bookingMatch = text.match(/^(?:احجز|أبغى أحجز|ابغى احجز|أرغب بالحجز|ارغب بالحجز|حجز لي|موعد لي|book|schedule)(?:\s+(.*))?$/i);
+    if (bookingMatch) {
+      const topic = cleanText(bookingMatch[1]) || "استشارة عامة عبر واتساب";
+      try {
+        const { ConsultationBookingModel, UserModel } = await import("./models");
+        const recent = await ConsultationBookingModel.findOne({
+          clientId,
+          status: "pending",
+          createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) },
+        }).sort({ createdAt: -1 }).lean();
+        if (recent) {
+          const existingRef = `QS-${String((recent as any)._id).slice(-6).toUpperCase()}`;
+          await this.sendText(chatId, `لديك طلب حجز قيد المراجعة بالفعل.\nرقم المرجع: *${existingRef}*\nhttps://qiroxstudio.online/track/${existingRef}`, false);
+          return true;
+        }
+
+        const booking = await ConsultationBookingModel.create({
+          clientId,
+          clientName,
+          clientEmail: client.email || "",
+          clientPhone,
+          consultationType: "phone",
+          topic,
+          notes: "تم إنشاء الحجز عبر مساعد QIROX في واتساب.",
+          status: "pending",
+        });
+        const bookingId = String((booking as any)._id || (booking as any).id);
+        const refNumber = `QS-${bookingId.slice(-6).toUpperCase()}`;
+
+        const admins = await UserModel.find(
+          { role: { $in: ["admin", "manager", "sales", "sales_manager"] } },
+          { email: 1, fullName: 1 },
+        ).lean();
+        const { sendConsultationNotificationEmail } = await import("./email");
+        await Promise.all(admins.map((admin: any) => admin.email
+          ? sendConsultationNotificationEmail(admin.email, admin.fullName || admin.email, {
+              bookingId,
+              clientName,
+              clientEmail: client.email || "",
+              clientPhone,
+              date: "سيتم التحديد لاحقاً",
+              startTime: "",
+              endTime: "",
+              consultationType: "phone",
+              topic,
+            }).catch((error: any) => console.error("[WA] Booking notification failed:", error.message))
+          : Promise.resolve()));
+
+        await this.sendText(
+          chatId,
+          `تم تسجيل طلب الحجز بنجاح يا ${clientName}.\n\n` +
+          `الموضوع: ${topic}\n` +
+          `رقم المرجع: *${refNumber}*\n` +
+          `سيتواصل معك فريق QIROX لتأكيد الموعد.\n\n` +
+          `متابعة الطلب:\nhttps://qiroxstudio.online/track/${refNumber}`,
+          false,
+        );
+      } catch (error: any) {
+        console.error("[WA] Client booking failed:", error.message);
+        await this.sendText(chatId, "لم يتم إنشاء الحجز لأن النظام واجه مشكلة مؤقتة. حاول مرة أخرى بعد قليل.", false);
+      }
+      return true;
+    }
+
+    if (/(حجوزاتي|مواعيدي|حجزياتي|my bookings|my appointments)/i.test(lower)) {
+      try {
+        const { ConsultationBookingModel } = await import("./models");
+        const bookings = await ConsultationBookingModel.find({ clientId }).sort({ createdAt: -1 }).limit(5).lean();
+        const status: Record<string, string> = {
+          pending: "قيد المراجعة", confirmed: "مؤكد", rejected: "مرفوض",
+          cancelled: "ملغى", completed: "مكتمل",
+        };
+        const lines = (bookings as any[]).map((booking) => {
+          const ref = `QS-${String(booking._id).slice(-6).toUpperCase()}`;
+          const date = booking.date ? new Date(booking.date).toLocaleDateString("ar-SA") : "بانتظار تحديد الموعد";
+          return `• ${ref} — ${status[booking.status] || booking.status} — ${date}\n  https://qiroxstudio.online/track/${ref}`;
+        }).join("\n") || "لا توجد حجوزات مسجلة.";
+        await this.sendText(chatId, `حجوزاتك في QIROX:\n\n${lines}`, false);
+      } catch (error: any) {
+        console.error("[WA] Client bookings lookup failed:", error.message);
+        await this.sendText(chatId, "تعذر تحميل حجوزاتك الآن. حاول بعد قليل.", false);
+      }
+      return true;
+    }
+
+    return false;
   }
 
   // ── Employee command handler ──────────────────────────────────────────────
@@ -590,38 +783,18 @@ class WhatsAppModule extends EventEmitter {
     const history: any[] = await WAMessageModel.find({ chatId }).sort({ timestamp: -1 }).limit(20).lean();
     history.reverse();
 
-    // Determine if this is the very first message (no prior history)
-    const isFirstContact = history.filter((m: any) => !m.fromMe).length <= 1;
+    const extra = settings?.systemPromptExtra ? `\n\nمعلومات إضافية معتمدة من فريق QIROX:\n${settings.systemPromptExtra}` : "";
+    const languageRule = `هذه محادثة واتساب لعميل عربي. اكتب بالعربية دائماً وبلهجة سعودية/خليجية طبيعية ومفهومة. لا تكتب الفرنسية أو الصينية أو أي لغة أخرى. إذا كتب العميل بالإنجليزية بوضوح، يمكن الرد بالإنجليزية؛ أما أي لغة غير العربية والإنجليزية فاطلب منه التوضيح بالعربية. لا تخترع تنفيذ إجراء: استخدم فقط المعلومات الموجودة في السياق.`;
+    const contextMessage = {
+      role: "system" as const,
+      content: `${languageRule}\nاسم العميل: ${senderName}${extra}${clientContext}\n\nإذا سأل العميل عن حسابه أو مشاريعه أو طلباته فقدم له رابط لوحة التحكم، ولا تعرض بيانات أي شخص آخر.`,
+    };
 
-    const { getOpenAIClient: _getOAI } = await import("./lib/openai-client");
-    const openai = _getOAI();
-
-    const extra = settings?.systemPromptExtra ? `\n\nمعلومات إضافية من الفريق:\n${settings.systemPromptExtra}` : "";
-
-    const greetingRule = isFirstContact
-      ? `5. هذه أول رسالة من العميل — ابدأ بتحية مناسبة قصيرة حسب لهجته (هلا 👋 / أهلاً / Hello)`
-      : `5. المحادثة جارية — لا تبدأ بتحية مجدداً ولا تقل "هلا" مرة أخرى. استمر في الموضوع مباشرة بناءً على سياق المحادثة السابقة.`;
-
-    const systemPrompt = `أنت مساعد QIROX الذكي — شركة تطوير برمجيات وأنظمة رقمية بالسعودية.
-اسمك في هذه المحادثة: مساعد QIROX. تتحدث مع: ${senderName}.
-
-🏢 QIROX Studio | qiroxstudio.online
-📋 الخدمات: مواقع، تطبيقات موبايل، أنظمة إدارة، هوية بصرية، تسويق رقمي
-💰 الباقات: Lite (699 ر.س) / Pro (1,249 ر.س) / Infinity (1,699 ر.س) | qiroxstudio.online/prices
-🕐 الدوام: السبت–الخميس، 9 ص–6 م (توقيت الرياض)
-
-📌 قواعد صارمة:
-1. تكلم بنفس لهجة الشخص بالضبط — سعودي↔سعودي، مصري↔مصري، عراقي↔عراقي، إنجليزي↔إنجليزي
-2. لا تستخدم الصينية أو أي لغة غير لغة المستخدم أبداً
-3. أسلوب ودود وحيوي كزميل — مش رسمي، مش بارد، بدون كليشيهات
-4. ردود قصيرة ومباشرة — بدون حشو أو تكرار
-${greetingRule}
-6. إذا سألك عن الرابط أو الموقع: qiroxstudio.online
-7. إذا الموضوع خارج نطاقنا، وجّهه للفريق بطريقة ودية${extra}${clientContext}`;
-
-    // Build conversation — include all history for proper context
+    // Use the same QIROX AI Hub as the admin/API assistant. This enables RAG
+    // over the managed knowledge base, live system context and one provider
+    // path instead of a disconnected WhatsApp-only prompt.
     const chatMessages: any[] = [
-      { role: "system", content: systemPrompt },
+      contextMessage,
       ...history.map((m: any) => ({
         role: m.fromMe ? "assistant" : "user",
         content: m.body || "(رسالة وسائط)",
@@ -633,14 +806,24 @@ ${greetingRule}
       chatMessages.push({ role: "user", content: "(أكمل المحادثة)" });
     }
 
-    const resp = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: chatMessages,
-      max_tokens: 450,
-      temperature: 0.8,
+    const { qiroxChat } = await import("./qirox-ai-engine");
+    const result = await qiroxChat(chatMessages, {
+      source: "whatsapp",
+      useRag: true,
     });
-
-    return (resp.choices[0]?.message?.content || "").trim();
+    const reply = result.reply.trim();
+    if (!reply) {
+      return isArabicMessage(history.at(-1)?.body || "")
+        ? "أهلاً بك في QIROX. اكتب سؤالك عن الخدمات أو مشروعك أو حسابك وسأساعدك."
+        : "QIROX is ready to help with your services, project, or account.";
+    }
+    // The local model can occasionally ignore the language instruction and
+    // answer in French. Do not send that to a customer; a clear Arabic
+    // fallback is better than a confident but unusable reply.
+    if (isBadArabicReply(reply, history.at(-1)?.body || "")) {
+      return "أهلاً بك في QIROX. أقدر أساعدك في الخدمات، حالة الطلب، المشاريع، الاشتراك، الحجز، أو فتح لوحة حسابك. اكتب طلبك بالعربية وسأتابع معك.";
+    }
+    return reply;
   }
 
   // ── Admin command handler ─────────────────────────────────────────────────

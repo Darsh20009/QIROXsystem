@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import {
   Mail, Send, Inbox, Trash2, RefreshCw, Loader2,
@@ -10,6 +11,7 @@ import {
   ShieldAlert, Copy, Check, MonitorSmartphone, Smartphone,
   ExternalLink, Settings, Maximize2, Minimize2, Tag, Archive,
   ChevronDown,
+  KeyRound,
 } from "lucide-react";
 const qiroxLogo = "/qirox-icon-nobg.png";
 
@@ -134,7 +136,9 @@ export default function EmployeeMail() {
   const L = lang === "ar";
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { data: currentUser } = useUser();
   const dir = L ? "rtl" : "ltr";
+  const isClient = currentUser?.role === "client";
 
   const [selectedAccountId, setSelectedAccountId] = useState<string|null>(null);
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
@@ -152,6 +156,8 @@ export default function EmployeeMail() {
   const [composeBody, setComposeBody] = useState("");
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [sending, setSending] = useState(false);
+  const [customerMailName, setCustomerMailName] = useState("");
+  const [customerMailPassword, setCustomerMailPassword] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* Queries */
@@ -171,6 +177,7 @@ export default function EmployeeMail() {
 
   const selectedAccount = accounts.find((a:MailAccount)=>a.id===selectedAccountId);
   const unread = messages.filter((m:EmailMessage)=>!m.seen).length;
+  const showSelfServiceSetup = !!currentUser && currentUser.role !== "admin" && accounts.length === 0;
 
   const markSeen = useMutation({
     mutationFn: async({uid,folder}:{uid:number;folder:string})=>{ const r=await fetch(`/api/mail/seen/${selectedAccountId}`,{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({uid,folder})}); if(!r.ok) throw new Error("fail"); return r.json(); },
@@ -179,6 +186,32 @@ export default function EmployeeMail() {
   const deleteMail = useMutation({
     mutationFn: async(uid:number)=>{ const r=await fetch(`/api/mail/message/${selectedAccountId}/${uid}?folder=${encodeURIComponent(selectedFolder)}`,{method:"DELETE",credentials:"include"}); if(!r.ok) throw new Error("fail"); return r.json(); },
     onSuccess:()=>{ setSelectedEmail(null); qc.invalidateQueries({queryKey:["/api/mail/inbox",selectedAccountId,selectedFolder]}); toast({title:L?"تم الحذف":"Deleted"}); },
+  });
+
+  const createCustomerMailbox = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(isClient ? "/api/mail/customer-account" : "/api/mail/employee-account", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: customerMailName, password: customerMailPassword }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "تعذر إنشاء البريد");
+      return payload;
+    },
+    onSuccess: (payload) => {
+      qc.invalidateQueries({ queryKey: ["/api/mail/accounts"] });
+      setCustomerMailName("");
+      setCustomerMailPassword("");
+      toast({
+        title: L ? "تم إنشاء بريدك المؤسسي" : "Corporate mailbox created",
+        description: payload.email,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: L ? "تعذر إنشاء البريد" : "Could not create mailbox", description: error.message, variant: "destructive" });
+    },
   });
 
   function openEmail(msg: EmailMessage) {
@@ -223,14 +256,14 @@ export default function EmployeeMail() {
   const ChevronBack = L ? ChevronRight : ChevronLeft;
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-950 overflow-hidden" dir={dir}>
+    <div className="flex flex-col md:flex-row h-full min-h-0 bg-white dark:bg-gray-950 overflow-hidden" dir={dir}>
 
       {/* Outlook Modal */}
       {outlookAccount && <OutlookSetupModal account={outlookAccount} onClose={()=>setOutlookAccount(null)} L={L}/>}
 
       {/* ── Floating Compose ───────────────────────────────────────────────── */}
       {composing && (
-        <div className={`fixed z-40 shadow-2xl shadow-black/30 rounded-t-2xl border border-black/[0.1] dark:border-white/[0.1] overflow-hidden transition-all ${L?"left-4":"right-4"} bottom-0 ${composeMin?"w-72 h-12":"w-[520px] h-[480px]"} flex flex-col bg-white dark:bg-[#1a1a2e]`} dir={dir}>
+        <div className={`fixed z-40 shadow-2xl shadow-black/30 rounded-t-2xl border border-black/[0.1] dark:border-white/[0.1] overflow-hidden transition-all ${L?"left-2 sm:left-4":"right-2 sm:right-4"} bottom-0 ${composeMin?"w-72 h-12":"w-[calc(100vw-1rem)] sm:w-[520px] h-[min(480px,calc(100vh-1rem))]"} flex flex-col bg-white dark:bg-[#1a1a2e]`} dir={dir}>
           {/* Compose header */}
           <div className="flex items-center gap-2 px-4 h-12 bg-[#1a1a2e] dark:bg-[#0d0d1a] shrink-0 cursor-pointer" onClick={()=>setComposeMin(m=>!m)}>
             <span className="flex-1 text-[13px] font-semibold text-white truncate">{composeSubject||( L?"رسالة جديدة":"New Message")}</span>
@@ -293,15 +326,15 @@ export default function EmployeeMail() {
       )}
 
       {/* ── Left Rail: Accounts ─────────────────────────────────────────────── */}
-      <div className={`w-14 flex flex-col items-center py-3 gap-1.5 bg-[#0f1117] shrink-0 ${L?"border-l":"border-r"} border-white/[0.06]`}>
-        <img src={qiroxLogo} alt="Q" className="w-6 h-6 object-contain brightness-0 invert mb-2 shrink-0"/>
+      <div className={`w-full h-14 md:w-14 md:h-auto flex flex-row md:flex-col items-center px-2 md:px-0 py-2 md:py-3 gap-1.5 bg-[#0f1117] shrink-0 overflow-x-auto ${L?"md:border-l":"md:border-r"} border-b md:border-b-0 border-white/[0.06]`}>
+        <img src={qiroxLogo} alt="Q" className="w-6 h-6 object-contain brightness-0 invert mx-1 md:mb-2 shrink-0"/>
         {/* Compose */}
-        <button onClick={()=>openCompose()} title={L?"رسالة جديدة":"Compose"} className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-500 flex items-center justify-center mb-1 transition shadow-lg shadow-blue-900/30" data-testid="button-compose">
+        <button onClick={()=>openCompose()} title={L?"رسالة جديدة":"Compose"} className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-500 flex items-center justify-center md:mb-1 transition shadow-lg shadow-blue-900/30 shrink-0" data-testid="button-compose">
           <Pencil className="w-4 h-4 text-white"/>
         </button>
         {/* Account bubbles */}
         {acctLoading?<Loader2 className="w-4 h-4 animate-spin text-white/20 mt-2"/>:(accounts as MailAccount[]).map(a=>(
-          <div key={a.id} className="relative group">
+          <div key={a.id} className="relative group shrink-0">
             <button
               onClick={()=>{setSelectedAccountId(a.id);setSelectedEmail(null);setSelectedFolder("INBOX");}}
               title={a.displayName||a.emailAddress}
@@ -317,19 +350,19 @@ export default function EmployeeMail() {
       </div>
 
       {/* ── Folder Rail ────────────────────────────────────────────────────── */}
-      <div className={`w-44 flex flex-col bg-[#f8f9fc] dark:bg-[#13131f] shrink-0 ${L?"border-l":"border-r"} border-black/[0.06] dark:border-white/[0.05]`}>
-        <div className="px-3 pt-4 pb-2">
+      <div className={`w-full h-14 md:w-44 md:h-auto flex flex-col bg-[#f8f9fc] dark:bg-[#13131f] shrink-0 ${L?"md:border-l":"md:border-r"} border-b md:border-b-0 border-black/[0.06] dark:border-white/[0.05]`}>
+        <div className="hidden md:block px-3 pt-4 pb-2">
           {selectedAccount?<>
             <p className="text-[11px] font-black text-black/70 dark:text-white/70 truncate">{selectedAccount.displayName||selectedAccount.emailAddress.split("@")[0]}</p>
             <p className="text-[9px] text-black/35 dark:text-white/35 truncate font-mono" dir="ltr">{selectedAccount.emailAddress}</p>
           </>:<p className="text-[11px] text-black/30 dark:text-white/30">{L?"اختر حساباً":"Select account"}</p>}
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-3">
+        <div className="flex-1 min-h-0 overflow-x-auto md:overflow-y-auto px-2 pb-2 md:pb-3 flex md:block gap-1">
           {folders.map((f:string)=>{
             const Icon=FOLDER_ICONS[f]??Tag;
             const isActive=selectedFolder===f;
             return (
-              <button key={f} onClick={()=>{setSelectedFolder(f);setSelectedEmail(null);}} className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 transition text-[12px] ${isActive?"bg-blue-600 text-white font-semibold":"text-black/55 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"}`} data-testid={`button-folder-${f}`}>
+              <button key={f} onClick={()=>{setSelectedFolder(f);setSelectedEmail(null);}} className={`w-auto md:w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 transition text-[12px] shrink-0 ${isActive?"bg-blue-600 text-white font-semibold":"text-black/55 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"}`} data-testid={`button-folder-${f}`}>
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive?"text-white":"opacity-50"}`}/>
                 <span className="truncate flex-1 text-start">{folderLabel(f,L)}</span>
                 {f==="INBOX"&&unread>0&&<span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${isActive?"bg-white/20 text-white":"bg-blue-600 text-white"}`}>{unread}</span>}
@@ -340,7 +373,7 @@ export default function EmployeeMail() {
       </div>
 
       {/* ── Message List ───────────────────────────────────────────────────── */}
-      <div className={`w-[280px] shrink-0 flex flex-col bg-white dark:bg-[#16161e] ${L?"border-l":"border-r"} border-black/[0.06] dark:border-white/[0.05]`}>
+      <div className={`${selectedEmail?"hidden md:flex":"flex"} w-full md:w-[280px] flex-1 md:flex-none min-h-0 shrink-0 flex-col bg-white dark:bg-[#16161e] ${L?"md:border-l":"md:border-r"} border-b md:border-b-0 border-black/[0.06] dark:border-white/[0.05]`}>
         <div className="px-3 pt-3 pb-2">
           <div className="flex items-center gap-1 mb-2">
             <h2 className="flex-1 text-[13px] font-black text-black dark:text-white">{folderLabel(selectedFolder,L)}</h2>
@@ -384,7 +417,7 @@ export default function EmployeeMail() {
       </div>
 
       {/* ── Main Pane ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0 bg-[#f8f9fc] dark:bg-[#0d0d18]">
+      <main className={`${selectedEmail?"flex":"hidden md:flex"} flex-1 min-h-0 flex-col overflow-hidden min-w-0 bg-[#f8f9fc] dark:bg-[#0d0d18]`}>
         {selectedEmail ? (
           <div className="flex flex-col h-full">
             {/* Viewer toolbar */}
@@ -429,13 +462,47 @@ export default function EmployeeMail() {
             <div className="w-20 h-20 rounded-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 flex items-center justify-center">
               <Mail className="w-9 h-9 text-blue-400"/>
             </div>
-            <div className="text-center">
-              <p className="font-black text-[15px] text-black/20 dark:text-white/20 mb-1">{L?"اختر رسالة لعرضها":"Select a message to view"}</p>
-              <p className="text-sm text-black/15 dark:text-white/15">{L?"أو اكتب رسالة جديدة":"Or compose a new one"}</p>
-            </div>
-            <button onClick={()=>openCompose()} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#1a1a2e] hover:bg-[#252540] text-white text-sm font-bold shadow-lg transition">
-              <Pencil className="w-4 h-4"/>{L?"رسالة جديدة":"Compose"}
-            </button>
+             {showSelfServiceSetup ? (
+               <div className="w-full max-w-sm px-5">
+                 <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 flex items-center justify-center mx-auto mb-4">
+                   <Mail className="w-7 h-7 text-blue-400"/>
+                 </div>
+                 <div className="text-center mb-5">
+                   <p className="font-black text-[16px] text-black dark:text-white mb-1">{isClient ? (L ? "أنشئ بريدك المؤسسي" : "Create your corporate mailbox") : (L ? "أنشئ بريد الموظف" : "Create your employee mailbox")}</p>
+                   <p className="text-xs leading-relaxed text-black/45 dark:text-white/45">{isClient ? (L ? "متاح للعملاء المشتركين في خدمة البريد. اكتب اسم البريد وكلمة المرور فقط." : "Available to clients subscribed to the email service. Enter a mailbox name and password.") : (L ? "اكتب اسم البريد وكلمة المرور فقط وسيتم ربط الحساب بك تلقائياً." : "Enter a mailbox name and password and the account will be linked to you automatically.")}</p>
+                 </div>
+                 <div className="space-y-3">
+                   <div>
+                     <label className="block text-[11px] font-bold text-black/55 dark:text-white/55 mb-1.5">{L ? "اسم البريد" : "Mailbox name"}</label>
+                     <div className="flex items-center gap-2 h-11 px-3 rounded-xl border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#1a1a2e]">
+                       <input value={customerMailName} onChange={e => setCustomerMailName(e.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none" dir="ltr" placeholder="name" autoComplete="username" data-testid="input-customer-mail-name"/>
+                       <span className="text-[11px] text-black/35 dark:text-white/35 font-mono shrink-0">@qirox.online</span>
+                     </div>
+                   </div>
+                   <div>
+                     <label className="block text-[11px] font-bold text-black/55 dark:text-white/55 mb-1.5">{L ? "كلمة مرور البريد" : "Mailbox password"}</label>
+                     <div className="flex items-center gap-2 h-11 px-3 rounded-xl border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#1a1a2e]">
+                       <KeyRound className="w-4 h-4 text-black/25 dark:text-white/25 shrink-0"/>
+                       <input value={customerMailPassword} onChange={e => setCustomerMailPassword(e.target.value)} type="password" className="min-w-0 flex-1 bg-transparent text-sm outline-none" dir="ltr" placeholder={L ? "8 أحرف على الأقل" : "At least 8 characters"} autoComplete="new-password" data-testid="input-customer-mail-password"/>
+                     </div>
+                   </div>
+                   <button onClick={() => createCustomerMailbox.mutate()} disabled={!customerMailName.trim() || customerMailPassword.length < 8 || createCustomerMailbox.isPending} className="w-full h-11 rounded-xl bg-[#1a1a2e] hover:bg-[#252540] disabled:opacity-40 text-white text-sm font-bold flex items-center justify-center gap-2 transition" data-testid="button-create-customer-mail">
+                     {createCustomerMailbox.isPending ? <Loader2 className="w-4 h-4 animate-spin"/> : <Mail className="w-4 h-4"/>}
+                     {createCustomerMailbox.isPending ? (L ? "جارٍ الإنشاء..." : "Creating...") : (L ? "إنشاء البريد" : "Create mailbox")}
+                   </button>
+                 </div>
+               </div>
+             ) : (
+               <>
+                 <div className="text-center">
+                   <p className="font-black text-[15px] text-black/20 dark:text-white/20 mb-1">{L?"اختر رسالة لعرضها":"Select a message to view"}</p>
+                   <p className="text-sm text-black/15 dark:text-white/15">{L?"أو اكتب رسالة جديدة":"Or compose a new one"}</p>
+                 </div>
+                 <button onClick={()=>openCompose()} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#1a1a2e] hover:bg-[#252540] text-white text-sm font-bold shadow-lg transition">
+                   <Pencil className="w-4 h-4"/>{L?"رسالة جديدة":"Compose"}
+                 </button>
+               </>
+             )}
           </div>
         )}
       </main>

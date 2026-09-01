@@ -25,6 +25,7 @@
 - [Employee Profile Features](employee-profile-features.md) — Password change, Apple Wallet (.pkpass needs 3 Apple cert env vars), QR login card, 2FA link, log-revision-for-client endpoint + AdminModRequests UI.
 - [Employee QR login contract](employee-qr-login-contract.md) — Profile cards and Wallet passes use one protected canonical QR URL; public profile QR codes never authenticate.
 - [WhatsApp CRM](whatsapp-crm.md) — @whiskeysockets/baileys (free, no Chrome); SSE for QR+events; AI auto-reply with dialect matching; admin commands; /admin/whatsapp page.
+- [WhatsApp AI system integration](whatsapp-ai-system-integration.md) — WhatsApp AI must use the shared QIROX AI Hub/RAG path; deterministic handlers own client account, booking, and language-sensitive actions.
 - [QIROX AI Hub](qirox-ai-hub.md) — BM25 RAG (pure math, no deps); KnowledgeDoc+QiroxAIKey+QiroxAILog+QiroxAISettings models; /admin/qirox-ai page; public /api/qirox-ai/chat endpoint (Bearer token).
 - [OpenAI base URL](openai-base-url.md) — All AI calls route through server/lib/openai-client.ts singleton; set OPENAI_BASE_URL env to redirect to BazaarLink or any OpenAI-compatible provider.
 - [PDF Print Fix](pdf-print-fix.md) — PDF download uses browser window.print() (not server pdf-lib) — fixes reversed Arabic text; ContractPrint.tsx at /admin/contract-print/:id.

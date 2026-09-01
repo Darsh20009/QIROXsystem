@@ -22,6 +22,7 @@ import {
 } from "@/lib/github-visibility-state";
 import { ProjectIntegrationsPanel } from "@/components/ProjectIntegrationsPanel";
 import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
+import AdminProjectSubscriptionCell from "@/components/AdminProjectSubscriptionCell";
 
 interface Employee {
   id: string;
@@ -63,6 +64,9 @@ interface OrderData {
   targetAudience?: string;
   competitors?: string;
   sectorFeatures?: string[];
+  projectId?: string;
+  projectSubscription?: any;
+  projectSubscriptionRenewalRequest?: any;
   client?: {
     fullName?: string;
     username?: string;
@@ -121,6 +125,7 @@ export default function AdminOrders() {
   const L = lang === "ar";
   const { data: currentUser } = useQuery<any>({ queryKey: ["/api/user"] });
   const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
+  const canManageProjectSubscriptions = ["admin", "manager"].includes(currentUser?.role || "");
   const isDataEntry = currentUser?.role === "data_entry";
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
@@ -162,6 +167,7 @@ export default function AdminOrders() {
   const [projectFileUploading, setProjectFileUploading] = useState(false);
   const [newTeamMemberId, setNewTeamMemberId] = useState("");
   const [newTeamMemberRole, setNewTeamMemberRole] = useState("");
+  const [adjustingProjectId, setAdjustingProjectId] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -344,6 +350,32 @@ export default function AdminOrders() {
       toast({ title: L ? "تم تحديث الطلب بنجاح" : "Order updated successfully" });
     },
     onError: () => toast({ title: L ? "خطأ في تحديث الطلب" : "Error updating order", variant: "destructive" }),
+  });
+
+  const adjustProjectSubscriptionMutation = useMutation({
+    mutationFn: async ({ projectId, days }: { projectId: string; days: number }) => {
+      const res = await apiRequest("PATCH", `/api/admin/projects/${projectId}/subscription/adjust`, { days });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر تعديل مدة الاشتراك" : "Unable to adjust subscription"));
+      }
+      return res.json();
+    },
+    onMutate: (variables) => setAdjustingProjectId(variables.projectId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      toast({
+        title: variables.days > 0
+          ? (L ? `تمت زيادة الاشتراك ${variables.days} يوماً` : `Subscription extended by ${variables.days} days`)
+          : (L ? `تم تقليل الاشتراك ${Math.abs(variables.days)} يوماً` : `Subscription reduced by ${Math.abs(variables.days)} days`),
+      });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر تعديل مدة الاشتراك" : "Unable to adjust subscription"),
+      variant: "destructive",
+    }),
+    onSettled: () => setAdjustingProjectId(null),
   });
 
   const saveSpecsMutation = useMutation({
@@ -739,6 +771,7 @@ export default function AdminOrders() {
               <tr className="border-b border-black/[0.06] bg-black/[0.01]">
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "رقم المشروع" : "Project #"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "اسم المشروع" : "Project Name"}</th>
+                {canManageProjectSubscriptions && <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "اشتراك المشروع" : "Project Subscription"}</th>}
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المسؤول" : "Assignee"}</th>
                 {canSeeFinance && <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المبلغ" : "Amount"}</th>}
@@ -771,6 +804,21 @@ export default function AdminOrders() {
                         </p>
                       )}
                     </td>
+                    {canManageProjectSubscriptions && (
+                      <td className="p-4 align-top">
+                        <AdminProjectSubscriptionCell
+                          projectId={order.projectId}
+                          subscription={order.projectSubscription}
+                          lang={lang}
+                          adjustmentPending={adjustingProjectId === order.projectId}
+                          onAdjust={(days) => {
+                            if (order.projectId) {
+                              adjustProjectSubscriptionMutation.mutate({ projectId: order.projectId, days });
+                            }
+                          }}
+                        />
+                      </td>
+                    )}
                     <td className="p-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full border ${statusMap[order.status]?.color || "bg-black/[0.03] text-black/40 border-black/[0.06]"}`}>
                         {statusMap[order.status]?.label || order.status}
@@ -832,7 +880,7 @@ export default function AdminOrders() {
               })}
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-black/30">
+                   <td colSpan={canSeeFinance ? (canManageProjectSubscriptions ? 8 : 7) : (canManageProjectSubscriptions ? 7 : 6)} className="p-12 text-center text-black/30">
                     <FileText className="w-10 h-10 mx-auto mb-3 text-black/10" />
                     <p className="text-sm">{L ? "لا توجد مشاريع" : "No projects found"}</p>
                   </td>

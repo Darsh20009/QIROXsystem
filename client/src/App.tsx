@@ -381,6 +381,8 @@ function AdminRouter() {
         <Route path="/admin/shipping" component={AdminShipping} />
         <Route path="/admin/countries" component={AdminCountries} />
         <Route path="/admin/analytics" component={G_Analytics} />
+        {/* Keep the shorter navigation URL as a backwards-compatible alias. */}
+        <Route path="/admin/activity" component={G_ActivityLog} />
         <Route path="/admin/activity-log" component={G_ActivityLog} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
         <Route path="/admin/payroll" component={G_Payroll} />

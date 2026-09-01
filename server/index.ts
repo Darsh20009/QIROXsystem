@@ -1013,6 +1013,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   const { ensureNotificationTemplates, startNotificationWorker } = await import("./notifications/service");
   await ensureNotificationTemplates().catch(error => console.error("[Notifications] template bootstrap:", error?.message || error));
   startNotificationWorker();
+  const { startMailMonitor } = await import("./mail-monitor");
+  startMailMonitor();
   registerQMeetRoutes(app);
   startQMeetScheduler();
   await registerInstallmentRoutes(app);

@@ -32,7 +32,7 @@ const waChatSchema = new Schema({
 const waSettingsSchema = new Schema({
   adminNumbers:      { type: [String], default: [] },  // phones that can send commands
   aiEnabled:         { type: Boolean, default: true },
-  aiDelaySeconds:    { type: Number, default: 60 },
+  aiDelaySeconds:    { type: Number, default: 5 },
   systemPromptExtra: { type: String, default: "" },
   connectedPhone:    { type: String },
   savedMessages:     {

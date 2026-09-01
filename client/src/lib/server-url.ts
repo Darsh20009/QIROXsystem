@@ -43,6 +43,71 @@ export function apiUrl(path: string): string {
 }
 
 /**
+ * Native OAuth sessions are completed in SFSafariViewController/Chrome Custom
+ * Tabs, whose cookies are not available to the Capacitor WebView. Attach the
+ * one-time device bearer token to native API calls and route relative API
+ * URLs to the configured server.
+ *
+ * This is intentionally installed only in native builds. Browser requests
+ * continue using normal same-origin cookies and are not modified.
+ */
+export function installNativeAuthFetch(): void {
+  if (!isCapacitorNative() || typeof window === "undefined") return;
+
+  const marker = "__qiroxNativeAuthFetchInstalled";
+  if ((window as any)[marker]) return;
+  (window as any)[marker] = true;
+
+  const originalFetch = window.fetch.bind(window);
+  const serverBase = getServerUrl();
+  if (!serverBase) return;
+
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const inputUrl =
+      typeof input === "string"
+        ? new URL(input, window.location.href)
+        : input instanceof URL
+          ? new URL(input.href)
+          : new URL(input.url, window.location.href);
+    const serverOrigin = new URL(serverBase).origin;
+    const isRelativeApi =
+      inputUrl.origin === window.location.origin &&
+      (inputUrl.pathname === "/api" || inputUrl.pathname.startsWith("/api/"));
+    const targetsServer = inputUrl.origin === serverOrigin;
+
+    if (!isRelativeApi && !targetsServer) {
+      return originalFetch(input, init);
+    }
+
+    const targetUrl = isRelativeApi
+      ? `${serverBase}${inputUrl.pathname}${inputUrl.search}${inputUrl.hash}`
+      : inputUrl.href;
+    const token = (() => {
+      try {
+        return localStorage.getItem("qirox_device_token") || "";
+      } catch {
+        return "";
+      }
+    })();
+
+    const headers = new Headers(
+      input instanceof Request ? input.headers : undefined,
+    );
+    new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
+    if (token) headers.set("x-device-token", token);
+
+    const targetInput =
+      targetUrl !== inputUrl.href
+        ? input instanceof Request
+          ? new Request(targetUrl, input)
+          : targetUrl
+        : input;
+
+    return originalFetch(targetInput, { ...init, headers });
+  }) as typeof window.fetch;
+}
+
+/**
  * Opens a payment URL.
  * - In Native: uses @capacitor/browser (SFSafariViewController on iOS, Chrome Custom Tab on Android)
  * - In Browser: full-page redirect
