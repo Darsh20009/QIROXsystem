@@ -144,7 +144,7 @@ import {
   serializeProjectIntegration,
   projectIntegrationApiDocs,
 } from "./project-integrations";
-import { startProjectSubscription } from "./project-subscriptions";
+import { backfillLegacyProjectSubscriptions, startProjectSubscription } from "./project-subscriptions";
 
 // ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
 async function getPending2FA(tempToken: string) {
@@ -3584,6 +3584,21 @@ export async function registerRoutes(
       })));
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر تحميل طلبات التجديد" });
+    }
+  });
+
+  // Backfill subscriptions for projects closed before the close-transition
+  // activation was introduced. POST with { dryRun: true } to preview only.
+  app.post("/api/admin/project-subscriptions/backfill", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const result = await backfillLegacyProjectSubscriptions({
+        actorId: String((req.user as any)._id || (req.user as any).id || ""),
+        dryRun: req.body?.dryRun === true,
+      });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تنفيذ ترحيل اشتراكات المشاريع" });
     }
   });
 

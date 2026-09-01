@@ -1,4 +1,5 @@
 import { ProjectSubscriptionModel } from "./models/project-subscriptions";
+import crypto from "node:crypto";
 
 export const PROJECT_SUBSCRIPTION_PERIOD_DAYS: Record<string, number> = {
   monthly: 30,
@@ -97,6 +98,202 @@ export function getEffectiveProjectSubscription(subscription: any, renewalReques
   }, now);
 }
 
+export type LegacyProjectSubscriptionBackfillResult = {
+  runId: string;
+  dryRun: boolean;
+  startedAt: Date;
+  completedAt: Date;
+  scanned: number;
+  eligible: number;
+  created: number;
+  alreadyPresent: number;
+  skipped: number;
+  errors: Array<{ projectId: string; reason: string }>;
+  candidates: Array<{
+    projectId: string;
+    orderId: string;
+    clientId: string;
+    period: "monthly" | "6months" | "annual" | "lifetime";
+    startedAt: Date;
+    startedAtSource: "updatedAt" | "deliveredAt" | "createdAt" | "runAt";
+  }>;
+  skippedProjects: Array<{ projectId: string; reason: string }>;
+};
+
+function referenceId(value: any): string {
+  return String(value?._id || value?.id || value || "");
+}
+
+function historicalProjectStart(project: any, fallback: Date) {
+  for (const [field, source] of [
+    ["updatedAt", "updatedAt"],
+    ["deliveredAt", "deliveredAt"],
+    ["createdAt", "createdAt"],
+  ] as const) {
+    if (!project?.[field]) continue;
+    const date = new Date(project[field]);
+    if (!Number.isNaN(date.getTime())) return { date, source };
+  }
+  return { date: fallback, source: "runAt" as const };
+}
+
+/**
+ * Backfill project subscriptions for projects that were already closed before
+ * subscription activation was wired to the closed-status transition.
+ *
+ * This is deliberately an admin-invoked operation. It never updates User
+ * subscription fields and is safe to repeat because startProjectSubscription
+ * only inserts a record when the project has no subscription.
+ */
+export async function backfillLegacyProjectSubscriptions({
+  actorId,
+  dryRun = false,
+  now = new Date(),
+}: {
+  actorId?: string;
+  dryRun?: boolean;
+  now?: Date;
+} = {}): Promise<LegacyProjectSubscriptionBackfillResult> {
+  const runId = `project-subscription-backfill:${crypto.randomUUID()}`;
+  const startedAt = new Date(now);
+  const result: LegacyProjectSubscriptionBackfillResult = {
+    runId,
+    dryRun,
+    startedAt,
+    completedAt: startedAt,
+    scanned: 0,
+    eligible: 0,
+    created: 0,
+    alreadyPresent: 0,
+    skipped: 0,
+    errors: [],
+    candidates: [],
+    skippedProjects: [],
+  };
+
+  const { ProjectModel, OrderModel, UserModel, ActivityLogModel } = await import("./models");
+  const audit = async (action: string, entity: string, entityId: string, details: any) => {
+    try {
+      await ActivityLogModel.create({
+        userId: actorId || null,
+        action,
+        entity,
+        entityId,
+        details: { runId, ...details },
+      });
+    } catch (error: any) {
+      // Audit failure must be visible in the response without preventing the
+      // subscription write from completing.
+      result.errors.push({
+        projectId: entity === "project_subscription" ? entityId : "",
+        reason: `audit: ${error?.message || "تعذر تسجيل العملية"}`,
+      });
+    }
+  };
+
+  const projects = await ProjectModel.find({ status: "closed" })
+    .select("_id orderId clientId updatedAt deliveredAt createdAt")
+    .sort({ updatedAt: 1, _id: 1 })
+    .lean();
+  result.scanned = projects.length;
+
+  const projectIds = projects.map((project: any) => project._id).filter(Boolean);
+  const existingSubscriptions = await ProjectSubscriptionModel.find({
+    projectId: { $in: projectIds },
+  }).select("projectId").lean();
+  const existingProjectIds = new Set(existingSubscriptions.map((subscription: any) => referenceId(subscription.projectId)));
+
+  for (const project of projects as any[]) {
+    const projectId = referenceId(project._id);
+    if (!projectId) {
+      result.skipped++;
+      result.skippedProjects.push({ projectId: "", reason: "missing_project_id" });
+      continue;
+    }
+    if (existingProjectIds.has(projectId)) {
+      result.alreadyPresent++;
+      continue;
+    }
+
+    try {
+      const orderId = referenceId(project.orderId);
+      const order = orderId
+        ? await OrderModel.findById(orderId).select("userId planTier planPeriod planSegment businessName serviceType").lean()
+        : null;
+      const clientId = referenceId(project.clientId || order?.userId);
+      const client = clientId
+        ? await UserModel.findById(clientId).select("_id subscriptionPeriod subscriptionSegmentId").lean()
+        : null;
+      const period = normalizeProjectSubscriptionPeriod(order?.planPeriod || client?.subscriptionPeriod);
+
+      let reason = "";
+      if (!order) reason = "missing_order";
+      else if (!client) reason = "missing_client";
+      else if (!period) reason = "missing_or_unsupported_plan_period";
+      if (reason) {
+        result.skipped++;
+        result.skippedProjects.push({ projectId, reason });
+        continue;
+      }
+
+      const historicalStart = historicalProjectStart(project, startedAt);
+      const candidate = {
+        projectId,
+        orderId,
+        clientId,
+        period,
+        startedAt: historicalStart.date,
+        startedAtSource: historicalStart.source,
+      };
+      result.eligible++;
+      result.candidates.push(candidate);
+
+      if (dryRun) continue;
+
+      const activation = await startProjectSubscription({
+        projectId,
+        order,
+        client,
+        startedAt: historicalStart.date,
+      });
+      if (activation.created) {
+        result.created++;
+        existingProjectIds.add(projectId);
+        await audit("backfill_project_subscription", "project_subscription", projectId, {
+          outcome: "created",
+          source: "legacy_closed_project",
+          orderId,
+          clientId,
+          period,
+          startedAt: historicalStart.date,
+          startedAtSource: historicalStart.source,
+        });
+      } else {
+        // Another backfill or a close transition won the atomic upsert.
+        result.alreadyPresent++;
+      }
+    } catch (error: any) {
+      result.errors.push({ projectId, reason: error?.message || "تعذر تجهيز الاشتراك" });
+    }
+  }
+
+  result.completedAt = new Date();
+  await audit("backfill_project_subscriptions", "project_subscription_migration", runId, {
+    outcome: result.errors.length > 0 ? "completed_with_errors" : "completed",
+    dryRun,
+    scanned: result.scanned,
+    eligible: result.eligible,
+    created: result.created,
+    alreadyPresent: result.alreadyPresent,
+    skipped: result.skipped,
+    errorCount: result.errors.length,
+    candidateProjectIds: result.candidates.map(candidate => candidate.projectId),
+    skippedProjects: result.skippedProjects,
+    errors: result.errors,
+  });
+  return result;
+}
+
 export async function startProjectSubscription({
   projectId,
   order,
@@ -115,24 +312,38 @@ export async function startProjectSubscription({
   }
 
   const expiresAt = durationDays ? new Date(startedAt.getTime() + durationDays * 86400000) : null;
-  const result: any = await ProjectSubscriptionModel.updateOne(
-    { projectId },
-    {
-      $setOnInsert: {
-        projectId,
-        orderId: order?._id || order?.id,
-        clientId: order?.userId || client?._id || client?.id,
-        planTier: order?.planTier || "",
-        planSegment: order?.planSegment || client?.subscriptionSegmentId || "",
-        period,
-        durationDays,
-        startedAt,
-        expiresAt,
-        status: "active",
+  const orderId = order?._id || order?.id;
+  const clientId = order?.userId || client?._id || client?.id;
+  if (!orderId || !clientId) {
+    return { subscription: null, created: false };
+  }
+
+  let result: any;
+  try {
+    result = await ProjectSubscriptionModel.updateOne(
+      { projectId },
+      {
+        $setOnInsert: {
+          projectId,
+          orderId,
+          clientId,
+          planTier: order?.planTier || "",
+          planSegment: order?.planSegment || client?.subscriptionSegmentId || "",
+          period,
+          durationDays,
+          startedAt,
+          expiresAt,
+          status: "active",
+        },
       },
-    },
-    { upsert: true },
-  );
+      { upsert: true },
+    );
+  } catch (error: any) {
+    // A unique projectId index turns a concurrent upsert into a duplicate-key
+    // error for the loser. Treat that exactly like an existing subscription.
+    if (error?.code !== 11000) throw error;
+    result = { upsertedCount: 0 };
+  }
   const subscription = await ProjectSubscriptionModel.findOne({ projectId });
   return {
     subscription,

@@ -10,7 +10,12 @@ const projectSubscriptionSchema = new mongoose.Schema({
   period: { type: String, enum: ["monthly", "6months", "annual", "lifetime"], required: true },
   durationDays: { type: Number, default: null },
   startedAt: { type: Date, required: true },
-  expiresAt: { type: Date, required: true },
+  // Lifetime subscriptions intentionally have no expiry date.
+  expiresAt: {
+    type: Date,
+    required: function (this: any) { return this.period !== "lifetime"; },
+    default: null,
+  },
   status: { type: String, enum: ["active", "expired", "suspended"], default: "active" },
 }, { timestamps: true });
 
