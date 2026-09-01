@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import test from "node:test";
+import express, { type Express } from "express";
 import {
   getProjectSubscriptionDurationDays,
   getEffectiveProjectSubscription,
@@ -9,8 +11,93 @@ import {
   backfillLegacyProjectSubscriptions,
   startProjectSubscription,
 } from "./project-subscriptions";
+import { ActivityLogModel, NotificationModel, OrderModel, ProjectModel, ProjectSubscriptionRenewalRequestModel, PushSubscriptionModel, UserModel } from "./models";
 import { ProjectSubscriptionModel } from "./models/project-subscriptions";
-import { ActivityLogModel, OrderModel, ProjectModel, UserModel } from "./models";
+import { NotificationDeliveryModel } from "./models/notification-delivery";
+import { registerRoutes } from "./routes";
+import { storage } from "./storage";
+
+type HttpResponse = {
+  status: number;
+  body: any;
+};
+
+function queryChain<T>(value: T) {
+  const chain: any = {
+    populate: () => chain,
+    select: () => chain,
+    sort: () => chain,
+    lean: async () => value,
+    then: (resolve: (value: T) => unknown, reject: (reason: unknown) => unknown) =>
+      Promise.resolve(value).then(resolve, reject),
+  };
+  return chain;
+}
+
+function request(
+  server: Server,
+  role: string,
+  path: string,
+  options: { method?: string; body?: unknown } = {},
+): Promise<HttpResponse> {
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Test server is not listening");
+  const body = options.body === undefined ? undefined : JSON.stringify(options.body);
+  return new Promise((resolve, reject) => {
+    const req = httpRequest({
+      host: "127.0.0.1",
+      port: address.port,
+      method: options.method || "GET",
+      path,
+      headers: {
+        "x-test-role": role,
+        ...(body ? {
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(body),
+        } : {}),
+      },
+    }, (res) => {
+      let text = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => { text += chunk; });
+      res.on("end", () => {
+        let bodyValue: unknown = text;
+        try { bodyValue = text ? JSON.parse(text) : undefined; } catch { /* text response */ }
+        resolve({ status: res.statusCode || 0, body: bodyValue });
+      });
+    });
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function createRouteHarness(): Promise<Server> {
+  process.env.NODE_ENV = "test";
+  process.env.MONGODB_URI = "";
+  process.env.SESSION_SECRET = "project-subscription-http-test-session";
+
+  const app: Express = express();
+  app.use(express.json());
+  app.use((req: any, _res, next) => {
+    const role = String(req.headers["x-test-role"] || "");
+    if (role) {
+      req.user = {
+        id: `${role}-user`,
+        _id: `${role}-user`,
+        role,
+        username: `${role}-user`,
+        fullName: `${role} user`,
+      };
+    }
+    next();
+  });
+
+  const server = createServer(app);
+  await registerRoutes(server, app);
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  return server;
+}
 
 test("project subscription periods normalize to the expected duration", () => {
   assert.equal(normalizeProjectSubscriptionPeriod("monthly"), "monthly");
@@ -141,6 +228,130 @@ test("project subscription activation treats a concurrent duplicate-key upsert a
   } finally {
     (ProjectSubscriptionModel as any).updateOne = originalUpdateOne;
     (ProjectSubscriptionModel as any).findOne = originalFindOne;
+  }
+});
+
+test("closing a project over HTTP creates its subscription and exposes it to the client", async () => {
+  const projectId = "project-http-1";
+  const orderId = "order-http-1";
+  const clientId = "client-http-1";
+  const repositoryUrl = "https://github.com/qirox/http-project";
+  let projectStatus = "in_progress";
+  let subscription: any = null;
+  let subscriptionUpserts = 0;
+  const project = {
+    _id: projectId,
+    id: projectId,
+    orderId,
+    clientId,
+    name: "HTTP project",
+    status: projectStatus,
+    repoUrl: repositoryUrl,
+    githubRepoName: "http-project",
+    githubRepoOwner: "qirox",
+    githubProvisioningStatus: "ready",
+    githubDeployToken: "must-not-be-exposed",
+    toObject() {
+      return {
+        ...this,
+        status: projectStatus,
+        toObject: undefined,
+      };
+    },
+  };
+  const order = {
+    _id: orderId,
+    userId: clientId,
+    planPeriod: "annual",
+    planTier: "pro",
+    planSegment: "segment-http",
+    businessName: "HTTP project",
+  };
+  const client = {
+    _id: clientId,
+    fullName: "HTTP client",
+    username: "http-client",
+    subscriptionPeriod: "monthly",
+  };
+
+  const originals = {
+    projectFindById: ProjectModel.findById,
+    projectFindByIdAndUpdate: ProjectModel.findByIdAndUpdate,
+    orderFindById: OrderModel.findById,
+    userFindById: UserModel.findById,
+    userFind: UserModel.find,
+    subscriptionFindOne: ProjectSubscriptionModel.findOne,
+    subscriptionUpdateOne: ProjectSubscriptionModel.updateOne,
+    renewalFindOne: ProjectSubscriptionRenewalRequestModel.findOne,
+    notificationCreate: NotificationModel.create,
+    notificationDeliveryFindOne: NotificationDeliveryModel.findOne,
+    notificationDeliveryCreate: NotificationDeliveryModel.create,
+    pushSubscriptionFind: PushSubscriptionModel.find,
+  };
+
+  (ProjectModel as any).findById = () => queryChain(project);
+  (ProjectModel as any).findByIdAndUpdate = async (_id: string, updates: any) => {
+    projectStatus = updates.status;
+    return project;
+  };
+  (OrderModel as any).findById = async () => order;
+  (UserModel as any).findById = () => queryChain(client);
+  (UserModel as any).find = () => queryChain([]);
+  (ProjectSubscriptionModel as any).updateOne = async (_filter: any, update: any) => {
+    subscriptionUpserts++;
+    subscription = { _id: "subscription-http-1", ...update.$setOnInsert };
+    return { upsertedCount: 1 };
+  };
+  (ProjectSubscriptionModel as any).findOne = () => queryChain(subscription);
+  (ProjectSubscriptionRenewalRequestModel as any).findOne = () => queryChain(null);
+  (NotificationModel as any).create = async (entry: any) => entry;
+  (NotificationDeliveryModel as any).findOne = async () => null;
+  (NotificationDeliveryModel as any).create = async (entry: any) => ({
+    _id: `delivery-${entry.channel}`,
+    ...entry,
+  });
+  (PushSubscriptionModel as any).find = () => queryChain([]);
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+
+    const updateResponse = await request(server, "admin", `/api/projects/${projectId}`, {
+      method: "PATCH",
+      body: { status: "closed" },
+    });
+    assert.equal(updateResponse.status, 200, JSON.stringify(updateResponse.body));
+    assert.equal(updateResponse.body.status, "closed");
+    assert.equal(subscriptionUpserts, 1);
+    assert.equal(subscription.period, "annual");
+    assert.equal(subscription.durationDays, 365);
+    assert.equal(subscription.orderId, orderId);
+    assert.equal(subscription.clientId, clientId);
+
+    const clientResponse = await request(server, "client", `/api/projects/${projectId}`);
+    assert.equal(clientResponse.status, 200);
+    assert.equal(clientResponse.body.status, "closed");
+    assert.equal(clientResponse.body.repoUrl, repositoryUrl);
+    assert.equal(clientResponse.body.githubRepoName, "http-project");
+    assert.equal(clientResponse.body.subscription.period, "annual");
+    assert.equal(typeof clientResponse.body.subscription.remainingDays, "number");
+    assert.ok(clientResponse.body.subscription.remainingDays > 0);
+    assert.equal("githubDeployToken" in clientResponse.body, false);
+    assert.equal(JSON.stringify(clientResponse.body).includes("must-not-be-exposed"), false);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectModel as any).findById = originals.projectFindById;
+    (ProjectModel as any).findByIdAndUpdate = originals.projectFindByIdAndUpdate;
+    (OrderModel as any).findById = originals.orderFindById;
+    (UserModel as any).findById = originals.userFindById;
+    (UserModel as any).find = originals.userFind;
+    (ProjectSubscriptionModel as any).findOne = originals.subscriptionFindOne;
+    (ProjectSubscriptionModel as any).updateOne = originals.subscriptionUpdateOne;
+    (ProjectSubscriptionRenewalRequestModel as any).findOne = originals.renewalFindOne;
+    (NotificationModel as any).create = originals.notificationCreate;
+    (NotificationDeliveryModel as any).findOne = originals.notificationDeliveryFindOne;
+    (NotificationDeliveryModel as any).create = originals.notificationDeliveryCreate;
+    (PushSubscriptionModel as any).find = originals.pushSubscriptionFind;
   }
 });
 

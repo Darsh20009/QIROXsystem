@@ -3753,7 +3753,6 @@ export async function registerRoutes(
     const input = api.projects.update.input.parse(req.body);
     const oldProject = await storage.getProject(String(req.params.id));
     const project = await storage.updateProject(String(req.params.id), input);
-    res.json(project);
     // Send email to client if status or progress changed
     try {
       const statusChanged = input.status && oldProject?.status !== input.status;
@@ -3838,6 +3837,7 @@ export async function registerRoutes(
         }
       }
     } catch (e) { console.error("[Subscription] auto-start error:", e); }
+    res.json(project);
   });
 
   // === TASKS API ===

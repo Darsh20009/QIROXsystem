@@ -49,3 +49,4 @@
 - [HTTP route test sessions](http-route-test-sessions.md) — Mongo-backed route tests must isolate the session store or the test process can remain open after all assertions pass.
 - [Project integration secret policy](project-integration-secret-policy.md) — Environment Variables receives a placeholder only; raw integration secrets remain one-time and are never persisted in specs.
 - [GitHub repository provisioning](github-repository-provisioning.md) — One stable repo per project; managed/pinned identity plus lease fencing and versioned visibility prevent duplicate or stale writes.
+- [Project completion subscription flow](project-subscription-http-flow.md) — Close responses must wait for subscription activation, and project serialization must strip credential-like fields.

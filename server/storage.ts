@@ -17,6 +17,21 @@ import {
 } from "./models";
 import { getEffectiveProjectSubscription, serializeProjectSubscription, serializeProjectSubscriptionRenewalRequest } from "./project-subscriptions";
 
+const PROJECT_CREDENTIAL_FIELDS = [
+  "githubDeployToken",
+  "githubToken",
+  "githubAccessToken",
+  "githubCredential",
+  "accessToken",
+  "deployToken",
+] as const;
+
+function projectResponseValue(project: any): Record<string, any> {
+  const value = { ...(project.toObject ? project.toObject() : project) };
+  for (const field of PROJECT_CREDENTIAL_FIELDS) delete value[field];
+  return value;
+}
+
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -312,7 +327,7 @@ export class MongoStorage implements IStorage {
       if (!renewalRequestsByProject.has(key)) renewalRequestsByProject.set(key, serializeProjectSubscriptionRenewalRequest(request));
     }
     return projects.map(p => ({
-      ...p.toObject(),
+      ...projectResponseValue(p),
       id: p._id.toString(),
       subscription: getEffectiveProjectSubscription(
         subscriptionsByProject.get(String(p._id)) || null,
@@ -332,7 +347,7 @@ export class MongoStorage implements IStorage {
     const subscription = serializeProjectSubscription(subscriptionSource);
     const renewalRequest = serializeProjectSubscriptionRenewalRequest(renewalRequestSource);
     return {
-      ...project.toObject(),
+      ...projectResponseValue(project),
       id: project._id.toString(),
       subscription: getEffectiveProjectSubscription(subscription, renewalRequest),
       subscriptionRenewalRequest: renewalRequest,
