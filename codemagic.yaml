@@ -19,16 +19,38 @@ workflows:
       - name: Install dependencies and build web assets
         script: |
           set -e
+          # Replit's lockfile uses an internal package-firewall URL. Codemagic
+          # runs outside Replit, so normalize those URLs before npm ci.
+          node <<'NODE'
+          const fs = require('fs');
+          const lockPath = 'package-lock.json';
+          if (fs.existsSync(lockPath)) {
+            const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+            const internalPrefix = 'http://package-firewall.replit.local/npm/';
+            const publicPrefix = 'https://registry.npmjs.org/';
+            let changed = 0;
+            for (const entry of Object.values(lock.packages || {})) {
+              if (entry && typeof entry.resolved === 'string' && entry.resolved.startsWith(internalPrefix)) {
+                entry.resolved = publicPrefix + entry.resolved.slice(internalPrefix.length);
+                changed++;
+              }
+            }
+            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            console.log(`Normalized ${changed} external package URLs for Codemagic`);
+          }
+          NODE
           # Use the repository lockfile. The Codemagic image may provide
           # modern Yarn, where --ignore-scripts is not a supported option.
           install_deps() {
             for attempt in 1 2 3; do
               rm -rf node_modules
-              if npm ci --ignore-scripts --legacy-peer-deps; then
+              if npm ci --ignore-scripts --legacy-peer-deps \
+                && test -f node_modules/livekit-client/package.json \
+                && test -f node_modules/vite/package.json; then
                 echo "Dependencies installed successfully on attempt ${attempt}"
                 return 0
               fi
-              echo "Dependency install attempt ${attempt} failed; retrying..."
+              echo "Dependency install incomplete or failed on attempt ${attempt}; retrying..."
               sleep 5
             done
             echo "Dependencies could not be installed after 3 attempts"
@@ -108,16 +130,38 @@ workflows:
       - name: Install dependencies and build web assets
         script: |
           set -e
+          # Replit's lockfile uses an internal package-firewall URL. Codemagic
+          # runs outside Replit, so normalize those URLs before npm ci.
+          node <<'NODE'
+          const fs = require('fs');
+          const lockPath = 'package-lock.json';
+          if (fs.existsSync(lockPath)) {
+            const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+            const internalPrefix = 'http://package-firewall.replit.local/npm/';
+            const publicPrefix = 'https://registry.npmjs.org/';
+            let changed = 0;
+            for (const entry of Object.values(lock.packages || {})) {
+              if (entry && typeof entry.resolved === 'string' && entry.resolved.startsWith(internalPrefix)) {
+                entry.resolved = publicPrefix + entry.resolved.slice(internalPrefix.length);
+                changed++;
+              }
+            }
+            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            console.log(`Normalized ${changed} external package URLs for Codemagic`);
+          }
+          NODE
           # Use the repository lockfile. The Codemagic image may provide
           # modern Yarn, where --ignore-scripts is not a supported option.
           install_deps() {
             for attempt in 1 2 3; do
               rm -rf node_modules
-              if npm ci --ignore-scripts --legacy-peer-deps; then
+              if npm ci --ignore-scripts --legacy-peer-deps \
+                && test -f node_modules/livekit-client/package.json \
+                && test -f node_modules/vite/package.json; then
                 echo "Dependencies installed successfully on attempt ${attempt}"
                 return 0
               fi
-              echo "Dependency install attempt ${attempt} failed; retrying..."
+              echo "Dependency install incomplete or failed on attempt ${attempt}; retrying..."
               sleep 5
             done
             echo "Dependencies could not be installed after 3 attempts"
@@ -330,7 +374,28 @@ workflows:
       - name: Install dependencies and build
         script: |
           set -e
+          # Replit's lockfile uses an internal package-firewall URL. Codemagic
+          # runs outside Replit, so normalize those URLs before npm install.
+          node <<'NODE'
+          const fs = require('fs');
+          const lockPath = 'package-lock.json';
+          if (fs.existsSync(lockPath)) {
+            const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+            const internalPrefix = 'http://package-firewall.replit.local/npm/';
+            const publicPrefix = 'https://registry.npmjs.org/';
+            let changed = 0;
+            for (const entry of Object.values(lock.packages || {})) {
+              if (entry && typeof entry.resolved === 'string' && entry.resolved.startsWith(internalPrefix)) {
+                entry.resolved = publicPrefix + entry.resolved.slice(internalPrefix.length);
+                changed++;
+              }
+            }
+            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            console.log(`Normalized ${changed} external package URLs for Codemagic`);
+          }
+          NODE
           npm install --legacy-peer-deps --ignore-scripts
+          test -f node_modules/livekit-client/package.json
           npm install -g vite@7 @vitejs/plugin-react @tailwindcss/vite
           GLOBAL=$(npm root -g)
           mkdir -p node_modules/@vitejs node_modules/@tailwindcss
