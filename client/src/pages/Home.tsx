@@ -1819,13 +1819,8 @@ export default function Home() {
                       className="grid grid-cols-1 sm:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
                       style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.05)" }}
                     >
-                      {/* Logo frame uniform white bg, object-contain keeps any logo size consistent */}
-                      <div className="flex items-center justify-center bg-white dark:bg-white/[0.04] p-10 md:p-14 min-h-[220px] relative overflow-hidden">
-                        {/* Soft radial accent in partner's color */}
-                        <div
-                          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-                          style={{ background: `radial-gradient(circle at 60% 50%, ${activeP.color}, transparent 70%)` }}
-                        />
+                      {/* Transparent logo area: partner artwork stays clean without a tile background. */}
+                      <div className="flex items-center justify-center bg-transparent p-10 md:p-14 min-h-[220px] relative overflow-hidden">
                         <img
                           src={activeP.logo}
                           alt={ar ? activeP.nameAr : activeP.name}
@@ -1884,8 +1879,8 @@ export default function Home() {
                         onClick={() => { setActivePartnerIdx(i); setPartnerPaused(true); }}
                         className={`h-11 px-3 rounded-xl border transition-all duration-300 flex items-center justify-center overflow-hidden ${
                           i === (activePartnerIdx % partners.length)
-                            ? "border-black/15 dark:border-white/15 bg-white dark:bg-white/[0.05] shadow-sm scale-105"
-                            : "border-transparent bg-black/[0.02] dark:bg-white/[0.02] opacity-50 hover:opacity-80"
+                            ? "border-black/15 dark:border-white/15 bg-transparent shadow-sm scale-105"
+                            : "border-transparent bg-transparent opacity-50 hover:opacity-80"
                         }`}
                         title={ar ? sp.nameAr : sp.name}
                       >
