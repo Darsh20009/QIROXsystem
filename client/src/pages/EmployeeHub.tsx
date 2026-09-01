@@ -1,11 +1,13 @@
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
+import { lazy, Suspense } from "react";
 import EmployeeRoleDashboard from "./EmployeeRoleDashboard";
-import EmployeeProfile from "./EmployeeProfile";
 import EmployeeChangelog from "./EmployeeChangelog";
 import { motion } from "framer-motion";
 import { UserAvatar } from "@/components/UserAvatar";
+
+const LazyEmployeeProfile = lazy(() => import("./EmployeeProfile"));
 
 const ROLE_LABELS: Record<string, [string, string]> = {
   admin:         ["مدير النظام", "System Admin"],
@@ -83,7 +85,11 @@ export default function EmployeeHub() {
   return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
         {!isProfile && !isChangelog && <DashboardHeader />}
-        {isProfile   ? <EmployeeProfile />   :
+        {isProfile   ? (
+          <Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center text-black/35 dark:text-white/35">جاري تحميل الملف الشخصي...</div>}>
+            <LazyEmployeeProfile />
+          </Suspense>
+        )   :
          isChangelog ? <EmployeeChangelog /> :
                        <EmployeeRoleDashboard />}
       </div>

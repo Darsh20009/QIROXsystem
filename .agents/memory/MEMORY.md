@@ -42,6 +42,7 @@
 - [Data Entry access policy](data-entry-access-policy.md) — Data Entry is limited to operational content and profile data; never grant financial, deployment, credential, role, password, or deletion access.
 - [Executive identity SEO](executive-identity-seo.md) — Preserve canonical profile-image URLs when correcting identities so existing image-search links resolve to the right portrait.
 - [Lazy page cache recovery](lazy-page-cache-recovery.md) — PWA cache versions must advance with deployments so stale lazy-loaded chunks do not trigger the global maintenance fallback.
+- [Face API lazy loading](face-api-lazy-loading.md) — Keep face-api.js behind a route-level lazy import; its browser chunk can contain Node require calls and crash eager page imports.
 - [Managed provider capacity](managed-provider-capacity.md) — Railway/Render deployment is gated by verified capacity values and has a server-side kill switch; never assume public APIs expose billable usage.
 - [Mongoose pre-save hooks](mongoose-presave-hooks.md) — On the current Mongoose runtime, synchronous pre-save hooks must not call a `next` callback.
 - [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.
