@@ -50,6 +50,53 @@ export function serializeProjectSubscription(source: any, now = new Date()) {
   };
 }
 
+export function serializeProjectSubscriptionRenewalRequest(source: any) {
+  if (!source) return null;
+  const value = source.toObject ? source.toObject() : source;
+  const idOf = (ref: any) => ref?._id || ref?.id || ref;
+  return {
+    id: String(idOf(value._id || value.id)),
+    projectId: String(idOf(value.projectId)),
+    subscriptionId: String(idOf(value.subscriptionId)),
+    clientId: String(idOf(value.clientId)),
+    status: value.status,
+    requestedAt: value.requestedAt || null,
+    processedAt: value.processedAt || null,
+    processedBy: value.processedBy ? String(idOf(value.processedBy)) : null,
+    adminNote: value.adminNote || "",
+    renewalPeriod: value.renewalPeriod || null,
+    renewalStartedAt: value.renewalStartedAt || null,
+    renewalExpiresAt: value.renewalExpiresAt || null,
+  };
+}
+
+export function getRenewalSubscriptionDates(period: unknown, startedAt = new Date()) {
+  const normalized = normalizeProjectSubscriptionPeriod(period);
+  if (!normalized) return null;
+  const durationDays = getProjectSubscriptionDurationDays(normalized);
+  return {
+    period: normalized,
+    durationDays,
+    startedAt,
+    expiresAt: durationDays ? new Date(startedAt.getTime() + durationDays * 86400000) : null,
+  };
+}
+
+export function getEffectiveProjectSubscription(subscription: any, renewalRequest: any, now = new Date()) {
+  if (!subscription || renewalRequest?.status !== "approved" || !renewalRequest.renewalStartedAt || !renewalRequest.renewalPeriod) {
+    return subscription;
+  }
+
+  return serializeProjectSubscription({
+    ...subscription,
+    period: renewalRequest.renewalPeriod,
+    durationDays: getProjectSubscriptionDurationDays(renewalRequest.renewalPeriod),
+    startedAt: renewalRequest.renewalStartedAt,
+    expiresAt: renewalRequest.renewalExpiresAt,
+    status: "active",
+  }, now);
+}
+
 export async function startProjectSubscription({
   projectId,
   order,

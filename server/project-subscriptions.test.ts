@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   getProjectSubscriptionDurationDays,
+  getEffectiveProjectSubscription,
+  getRenewalSubscriptionDates,
   normalizeProjectSubscriptionPeriod,
   serializeProjectSubscription,
   startProjectSubscription,
@@ -36,6 +38,34 @@ test("subscription serialization calculates expiry and remaining days without mu
   assert.equal(subscription?.status, "expired");
   assert.equal(subscription?.remainingDays, 0);
   assert.equal(subscription?.percentRemaining, 0);
+});
+
+test("approved renewal becomes the displayed subscription without changing the original", () => {
+  const now = new Date("2026-08-31T00:00:00.000Z");
+  const original = serializeProjectSubscription({
+    _id: "sub-1",
+    projectId: "project-1",
+    orderId: "order-1",
+    clientId: "client-1",
+    period: "monthly",
+    durationDays: 30,
+    startedAt: "2026-07-01T00:00:00.000Z",
+    expiresAt: "2026-07-31T00:00:00.000Z",
+    status: "active",
+  }, now);
+  const renewal = getRenewalSubscriptionDates("annual", new Date("2026-08-31T00:00:00.000Z"));
+  const effective = getEffectiveProjectSubscription(original, {
+    status: "approved",
+    renewalPeriod: renewal?.period,
+    renewalStartedAt: renewal?.startedAt,
+    renewalExpiresAt: renewal?.expiresAt,
+  }, now);
+
+  assert.equal(original?.period, "monthly");
+  assert.equal(original?.expiresAt, "2026-07-31T00:00:00.000Z");
+  assert.equal(effective?.period, "annual");
+  assert.equal(effective?.status, "active");
+  assert.equal(effective?.remainingDays, 365);
 });
 
 test("project subscription activation uses set-on-insert and does not restart an existing record", async () => {

@@ -119,6 +119,22 @@ export default function ProjectDetails() {
   });
 
   const [renewingId, setRenewingId] = useState<string | null>(null);
+  const [projectRenewalPending, setProjectRenewalPending] = useState(false);
+  const requestProjectRenewalMutation = useMutation({
+    mutationFn: async () => {
+      setProjectRenewalPending(true);
+      return apiRequest("POST", `/api/projects/${project.id}/subscription/renewal-request`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setProjectRenewalPending(false);
+      toast({ title: L ? "تم إرسال طلب التجديد" : "Renewal request sent", description: L ? "سيراجع الفريق طلبك ويتواصل معك قريباً" : "The team will review your request and contact you soon" });
+    },
+    onError: (error: any) => {
+      setProjectRenewalPending(false);
+      toast({ title: L ? "تعذر إرسال طلب التجديد" : "Could not send renewal request", description: error?.message, variant: "destructive" });
+    },
+  });
   const requestRenewalMutation = useMutation({
     mutationFn: async (subId: string) => {
       setRenewingId(subId);
@@ -251,7 +267,12 @@ export default function ProjectDetails() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ProjectGitHubCard project={project} lang={lang} />
-        <ProjectSubscriptionCard project={project} lang={lang} />
+        <ProjectSubscriptionCard
+          project={project}
+          lang={lang}
+          onRequestRenewal={() => requestProjectRenewalMutation.mutate()}
+          renewalPending={projectRenewalPending}
+        />
       </div>
 
       <Tabs defaultValue={section} className="w-full" dir={dir}>

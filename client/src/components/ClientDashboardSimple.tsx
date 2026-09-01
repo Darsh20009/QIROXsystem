@@ -6,6 +6,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
 import SARIcon from "@/components/SARIcon";
 import {
   Clock, CheckCircle2, AlertCircle, Activity, Plus,
@@ -743,6 +744,7 @@ export default function ClientDashboardSimple({ user }: Props) {
   const [reviewModal, setReviewModal] = useState<{ orderId: string; serviceTitle: string } | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
+  const [renewingProjectId, setRenewingProjectId] = useState<string | null>(null);
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<any[]>({
     queryKey: ["/api/orders"],
@@ -769,6 +771,22 @@ export default function ClientDashboardSimple({ user }: Props) {
     onError: () => toast({ title: "فشل رفع السند، حاول مجدداً", variant: "destructive" }),
   });
 
+  const requestProjectRenewal = useMutation({
+    mutationFn: async (projectId: string) => {
+      setRenewingProjectId(projectId);
+      return apiRequest("POST", `/api/projects/${projectId}/subscription/renewal-request`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setRenewingProjectId(null);
+      toast({ title: "تم إرسال طلب التجديد", description: "سيراجع الفريق طلبك ويتواصل معك قريباً" });
+    },
+    onError: (error: any) => {
+      setRenewingProjectId(null);
+      toast({ title: "تعذر إرسال طلب التجديد", description: error?.message, variant: "destructive" });
+    },
+  });
+
   const submitReview = useMutation({
     mutationFn: () => apiRequest("POST", `/api/orders/${reviewModal?.orderId}/review`, {
       rating: reviewRating,
@@ -783,6 +801,9 @@ export default function ClientDashboardSimple({ user }: Props) {
   });
 
   const activeProjects = (projects as any[]).filter((p: any) => p.status !== "completed" && p.status !== "closed");
+  const dashboardProjects = (projects as any[]).filter((p: any) =>
+    p.status !== "completed" && p.status !== "closed" || p.subscription?.status === "expired",
+  );
   const walletBalance = walletData ? Math.max(0, (walletData.totalCredit || 0) - (walletData.totalDebit || 0)) : 0;
   const firstName = (user.fullName || user.username || "").split(" ")[0];
 
@@ -973,7 +994,7 @@ export default function ClientDashboardSimple({ user }: Props) {
               <motion.div key="projects" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {projectsLoading ? (
                   <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-                ) : activeProjects.length === 0 ? (
+                ) : dashboardProjects.length === 0 ? (
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-10 text-center">
                     <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <Package className="w-7 h-7 text-gray-300 dark:text-slate-600" />
@@ -992,7 +1013,7 @@ export default function ClientDashboardSimple({ user }: Props) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {activeProjects.map((project: any) => {
+                    {dashboardProjects.map((project: any) => {
                       const progress = Number(project.progress || 0);
                       const phaseLabel = getPhaseLabel(progress);
                       return (
@@ -1048,6 +1069,16 @@ export default function ClientDashboardSimple({ user }: Props) {
                                 <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">{project.adminNotes}</p>
                               </div>
                             )}
+
+                            <div className="mb-4">
+                              <ProjectSubscriptionCard
+                                project={project}
+                                lang="ar"
+                                compact
+                                onRequestRenewal={() => requestProjectRenewal.mutate(String(project.id || project._id))}
+                                renewalPending={renewingProjectId === String(project.id || project._id)}
+                              />
+                            </div>
 
                             {/* Delivery links */}
                             {project.liveUrl && (

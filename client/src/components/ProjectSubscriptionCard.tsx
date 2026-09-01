@@ -1,10 +1,13 @@
-import { CalendarClock, CheckCircle2, Clock3 } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clock3, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type ProjectSubscriptionCardProps = {
   project: any;
   lang: "ar" | "en";
   compact?: boolean;
+  onRequestRenewal?: () => void;
+  renewalPending?: boolean;
 };
 
 function getLiveSubscription(subscription: any, now: number) {
@@ -22,7 +25,7 @@ function getLiveSubscription(subscription: any, now: number) {
   return { ...subscription, status: expired ? "expired" : subscription.status, remainingDays, percentRemaining };
 }
 
-export default function ProjectSubscriptionCard({ project, lang, compact = false }: ProjectSubscriptionCardProps) {
+export default function ProjectSubscriptionCard({ project, lang, compact = false, onRequestRenewal, renewalPending = false }: ProjectSubscriptionCardProps) {
   const L = lang === "ar";
   const [now, setNow] = useState(() => Date.now());
   const subscription = useMemo(() => getLiveSubscription(project?.subscription, now), [project?.subscription, now]);
@@ -35,6 +38,7 @@ export default function ProjectSubscriptionCard({ project, lang, compact = false
   const status = subscription?.status || "not_started";
   const active = status === "active";
   const expired = status === "expired";
+  const renewalRequestPending = project?.subscriptionRenewalRequest?.status === "pending";
   const periodLabel = subscription?.period === "monthly"
     ? (L ? "شهري" : "Monthly")
     : subscription?.period === "6months"
@@ -72,6 +76,26 @@ export default function ProjectSubscriptionCard({ project, lang, compact = false
                 <p className="text-[10px] text-black/45 dark:text-white/45 mt-2">
                   {L ? "ينتهي في" : "Expires"}: {new Date(subscription.expiresAt).toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
                 </p>
+              )}
+              {expired && onRequestRenewal && (
+                renewalRequestPending ? (
+                  <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-black/55 dark:text-white/55" data-testid={`renewal-request-pending-${project?.id}`}>
+                    <Clock3 className="w-3.5 h-3.5" />
+                    {L ? "تم إرسال طلب التجديد — بانتظار مراجعة الفريق" : "Renewal request sent — waiting for the team"}
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={onRequestRenewal}
+                    disabled={renewalPending}
+                    className="mt-3 h-8 w-full rounded-xl bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80 text-xs font-bold gap-1.5"
+                    data-testid={`button-request-project-renewal-${project?.id}`}
+                  >
+                    {renewalPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    {L ? "طلب تجديد الاشتراك" : "Request Subscription Renewal"}
+                  </Button>
+                )
               )}
             </>
           ) : (

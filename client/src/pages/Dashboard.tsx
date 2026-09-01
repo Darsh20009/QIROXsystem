@@ -1923,6 +1923,23 @@ export default function Dashboard() {
   const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null); // Sheet state
   const [inlineProjectKeyId, setInlineProjectKeyId] = useState<string | null>(null); // Inline widget state
   const [showAllSectors, setShowAllSectors] = useState(false);
+  const [renewingProjectId, setRenewingProjectId] = useState<string | null>(null);
+
+  const requestProjectRenewalMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      setRenewingProjectId(projectId);
+      return apiRequest("POST", `/api/projects/${projectId}/subscription/renewal-request`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setRenewingProjectId(null);
+      toast({ title: L ? "تم إرسال طلب التجديد" : "Renewal request sent", description: L ? "سيراجع الفريق طلبك ويتواصل معك قريباً" : "The team will review your request and contact you soon" });
+    },
+    onError: (error: any) => {
+      setRenewingProjectId(null);
+      toast({ title: L ? "تعذر إرسال طلب التجديد" : "Could not send renewal request", description: error?.message, variant: "destructive" });
+    },
+  });
 
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, file }: { orderId: string; file: File }) => {
@@ -3021,7 +3038,13 @@ export default function Dashboard() {
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
                             <ProjectGitHubCard project={project} lang={lang} compact />
-                            <ProjectSubscriptionCard project={project} lang={lang} compact />
+                            <ProjectSubscriptionCard
+                              project={project}
+                              lang={lang}
+                              compact
+                              onRequestRenewal={() => requestProjectRenewalMutation.mutate(String(project.id))}
+                              renewalPending={renewingProjectId === String(project.id)}
+                            />
                           </div>
 
                           {/* Actions */}

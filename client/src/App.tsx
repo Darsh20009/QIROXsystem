@@ -72,6 +72,7 @@ const AdminNews = lazy(() => import("@/pages/AdminNews"));
 const AdminJobs = lazy(() => import("@/pages/AdminJobs"));
 const AdminBankSettings = lazy(() => import("@/pages/AdminBankSettings"));
 const AdminSubscriptionPlans = lazy(() => import("@/pages/AdminSubscriptionPlans"));
+const AdminProjectRenewals = lazy(() => import("@/pages/AdminProjectRenewals"));
 const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
 const AdminWhatsApp = lazy(() => import("@/pages/AdminWhatsApp"));
 const AdminQiroxAI  = lazy(() => import("@/pages/AdminQiroxAI"));
@@ -369,6 +370,7 @@ function AdminRouter() {
         <Route path="/admin/jobs" component={AdminJobs} />
         <Route path="/admin/bank-settings" component={G_BankSettings} />
         <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
+        <Route path="/admin/project-renewals" component={AdminProjectRenewals} />
         <Route path="/admin/mod-requests" component={AdminModRequests} />
         <Route path="/admin/whatsapp" component={() => <RoleGuard allowedRoles={[...ADMIN_MANAGER]}><AdminWhatsApp /></RoleGuard>} />
         <Route path="/admin/qirox-ai" component={() => <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminQiroxAI /></RoleGuard>} />
@@ -527,6 +529,7 @@ const ALL_PAGES = [
   { title: "عربات التسوق المتروكة", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
+  { title: "طلبات تجديد المشاريع", titleEn: "Project Renewal Requests", url: "/admin/project-renewals", group: "employee" },
   { title: "QIROX AI Hub", titleEn: "QIROX AI Hub", url: "/admin/qirox-ai", group: "employee" },
   { title: "واتساب CRM", titleEn: "WhatsApp CRM", url: "/admin/whatsapp", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },

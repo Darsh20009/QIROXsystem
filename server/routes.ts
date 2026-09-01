@@ -3511,6 +3511,132 @@ export async function registerRoutes(
     res.json(project);
   });
 
+  // A renewal request is intentionally a separate record from the original
+  // subscription. This keeps the original activation/audit history immutable.
+  app.post("/api/projects/:projectId/subscription/renewal-request", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectModel, ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel, NotificationModel, UserModel } = await import("./models");
+      const { serializeProjectSubscriptionRenewalRequest } = await import("./project-subscriptions");
+      const user = req.user as any;
+      const clientId = String(user._id || user.id);
+      const project = await ProjectModel.findById(req.params.projectId).lean();
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      if (String((project as any).clientId) !== clientId) return res.sendStatus(403);
+
+      const subscription = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId }).lean();
+      if (!subscription) return res.status(404).json({ error: "لا يوجد اشتراك لهذا المشروع" });
+      const now = new Date();
+      if (!subscription.expiresAt || new Date(subscription.expiresAt).getTime() > now.getTime()) {
+        return res.status(400).json({ error: "اشتراك المشروع لا يزال نشطاً" });
+      }
+
+      const latest = await ProjectSubscriptionRenewalRequestModel.findOne({ projectId: req.params.projectId }).sort({ createdAt: -1 }).lean();
+      if (latest?.status === "pending") {
+        return res.json({ request: serializeProjectSubscriptionRenewalRequest(latest), alreadyRequested: true });
+      }
+      if (latest?.status === "approved" && (!latest.renewalExpiresAt || new Date(latest.renewalExpiresAt).getTime() > now.getTime())) {
+        return res.status(400).json({ error: "يوجد اشتراك تجديد نشط لهذا المشروع" });
+      }
+
+      const requestRecord = await ProjectSubscriptionRenewalRequestModel.create({
+        projectId: req.params.projectId,
+        subscriptionId: subscription._id,
+        clientId: (project as any).clientId,
+      });
+      const managers = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
+      for (const manager of managers) {
+        await NotificationModel.create({
+          userId: manager._id,
+          type: "request",
+          title: "طلب تجديد اشتراك مشروع",
+          body: "طلب العميل تجديد اشتراك مشروع منتهي الصلاحية",
+          link: "/admin/project-renewals",
+        }).catch(() => {});
+      }
+      res.status(201).json({ request: serializeProjectSubscriptionRenewalRequest(requestRecord) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر إرسال طلب التجديد" });
+    }
+  });
+
+  app.get("/api/admin/project-subscription-renewals", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectSubscriptionRenewalRequestModel } = await import("./models");
+      const { serializeProjectSubscriptionRenewalRequest } = await import("./project-subscriptions");
+      const { status } = req.query;
+      const filter: any = {};
+      if (status && ["pending", "approved", "rejected"].includes(String(status))) filter.status = status;
+      const requests = await ProjectSubscriptionRenewalRequestModel.find(filter)
+        .populate("projectId", "status orderId")
+        .populate("clientId", "fullName username email")
+        .populate("subscriptionId", "period expiresAt")
+        .sort({ createdAt: -1 })
+        .limit(200)
+        .lean();
+      res.json(requests.map((request: any) => ({
+        ...serializeProjectSubscriptionRenewalRequest(request),
+        subscriptionId: String(request.subscriptionId?._id || request.subscriptionId),
+        subscription: request.subscriptionId,
+        project: request.projectId,
+        client: request.clientId,
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تحميل طلبات التجديد" });
+    }
+  });
+
+  app.patch("/api/admin/project-subscription-renewals/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectSubscriptionRenewalRequestModel, ProjectSubscriptionModel, NotificationModel } = await import("./models");
+      const { getRenewalSubscriptionDates, serializeProjectSubscriptionRenewalRequest } = await import("./project-subscriptions");
+      const { status, period, adminNote } = req.body || {};
+      if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "حالة معالجة غير صالحة" });
+
+      const requestRecord = await ProjectSubscriptionRenewalRequestModel.findOne({ _id: req.params.id, status: "pending" }).lean();
+      if (!requestRecord) return res.status(404).json({ error: "طلب التجديد غير موجود أو تمت معالجته" });
+      let renewalDates: ReturnType<typeof getRenewalSubscriptionDates> = null;
+      if (status === "approved") {
+        const originalSubscription = await ProjectSubscriptionModel.findById(requestRecord.subscriptionId).lean();
+        if (!originalSubscription) return res.status(404).json({ error: "الاشتراك الأصلي غير موجود" });
+        renewalDates = getRenewalSubscriptionDates(period || originalSubscription.period);
+        if (!renewalDates) return res.status(400).json({ error: "فترة التجديد غير صالحة" });
+      }
+
+      const processedBy = (req.user as any)._id || (req.user as any).id;
+      const update: any = {
+        status,
+        processedAt: new Date(),
+        processedBy,
+        adminNote: typeof adminNote === "string" ? adminNote.trim().slice(0, 1000) : "",
+      };
+      if (renewalDates) {
+        update.renewalPeriod = renewalDates.period;
+        update.renewalStartedAt = renewalDates.startedAt;
+        update.renewalExpiresAt = renewalDates.expiresAt;
+      }
+      const updated = await ProjectSubscriptionRenewalRequestModel.findOneAndUpdate(
+        { _id: req.params.id, status: "pending" },
+        { $set: update },
+        { new: true },
+      );
+      if (!updated) return res.status(409).json({ error: "تمت معالجة الطلب مسبقاً" });
+
+      await NotificationModel.create({
+        userId: requestRecord.clientId,
+        type: "subscription",
+        title: status === "approved" ? "تمت الموافقة على تجديد المشروع" : "تم رفض طلب تجديد المشروع",
+        body: status === "approved" ? "تم تفعيل فترة التجديد الجديدة لمشروعك" : "يمكنك التواصل مع الفريق لمعرفة تفاصيل القرار",
+        link: "/dashboard",
+      }).catch(() => {});
+      res.json({ request: serializeProjectSubscriptionRenewalRequest(updated) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر معالجة طلب التجديد" });
+    }
+  });
+
   app.patch(api.projects.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.projects.update.input.parse(req.body);
@@ -7424,15 +7550,21 @@ export async function registerRoutes(
   app.get("/api/admin/orders/:id/project", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     if ((req.user as any).role === "data_entry") return res.json(null);
-    const { ProjectModel, ProjectSubscriptionModel } = await import("./models");
-    const { serializeProjectSubscription } = await import("./project-subscriptions");
+    const { ProjectModel, ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel } = await import("./models");
+    const { getEffectiveProjectSubscription, serializeProjectSubscription, serializeProjectSubscriptionRenewalRequest } = await import("./project-subscriptions");
     const project = await (ProjectModel as any).findOne({ orderId: req.params.id }).lean();
     if (!project) return res.json(null);
-    const subscription = await ProjectSubscriptionModel.findOne({ projectId: project._id }).lean();
+    const [subscriptionSource, renewalRequestSource] = await Promise.all([
+      ProjectSubscriptionModel.findOne({ projectId: project._id }).lean(),
+      ProjectSubscriptionRenewalRequestModel.findOne({ projectId: project._id }).sort({ createdAt: -1 }).lean(),
+    ]);
+    const subscription = serializeProjectSubscription(subscriptionSource);
+    const renewalRequest = serializeProjectSubscriptionRenewalRequest(renewalRequestSource);
     res.json({
       ...project,
       id: String((project as any)._id),
-      subscription: serializeProjectSubscription(subscription),
+      subscription: getEffectiveProjectSubscription(subscription, renewalRequest),
+      subscriptionRenewalRequest: renewalRequest,
     });
   });
 

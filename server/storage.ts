@@ -15,7 +15,7 @@ import {
   NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel, ModificationRequestModel,
   QiroxProductModel, CartModel, OrderSpecsModel, ProjectSubscriptionModel
 } from "./models";
-import { serializeProjectSubscription } from "./project-subscriptions";
+import { getEffectiveProjectSubscription, serializeProjectSubscription, serializeProjectSubscriptionRenewalRequest } from "./project-subscriptions";
 
 export interface IStorage {
   // Users
@@ -299,25 +299,43 @@ export class MongoStorage implements IStorage {
     }
     const projects = await ProjectModel.find(query).populate("orderId", "serviceType sector businessName planTier notes totalAmount items planPeriod planSegment").populate("managerId", "username fullName").sort({ createdAt: -1 });
     const projectIds = projects.map(project => project._id);
-    const subscriptions = await ProjectSubscriptionModel.find({ projectId: { $in: projectIds } }).lean();
+    const [subscriptions, renewalRequests] = await Promise.all([
+      ProjectSubscriptionModel.find({ projectId: { $in: projectIds } }).lean(),
+      (await import("./models")).ProjectSubscriptionRenewalRequestModel.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 }).lean(),
+    ]);
     const subscriptionsByProject = new Map(
       subscriptions.map(subscription => [String(subscription.projectId), serializeProjectSubscription(subscription)]),
     );
+    const renewalRequestsByProject = new Map<string, any>();
+    for (const request of renewalRequests) {
+      const key = String(request.projectId);
+      if (!renewalRequestsByProject.has(key)) renewalRequestsByProject.set(key, serializeProjectSubscriptionRenewalRequest(request));
+    }
     return projects.map(p => ({
       ...p.toObject(),
       id: p._id.toString(),
-      subscription: subscriptionsByProject.get(String(p._id)) || null,
+      subscription: getEffectiveProjectSubscription(
+        subscriptionsByProject.get(String(p._id)) || null,
+        renewalRequestsByProject.get(String(p._id)) || null,
+      ),
+      subscriptionRenewalRequest: renewalRequestsByProject.get(String(p._id)) || null,
     })) as any;
   }
 
   async getProject(id: string): Promise<Project | undefined> {
     const project = await ProjectModel.findById(id).populate("orderId", "serviceType sector businessName planTier notes totalAmount items planPeriod planSegment").populate("managerId", "username fullName");
     if (!project) return undefined as any;
-    const subscription = await ProjectSubscriptionModel.findOne({ projectId: project._id }).lean();
+    const [subscriptionSource, renewalRequestSource] = await Promise.all([
+      ProjectSubscriptionModel.findOne({ projectId: project._id }).lean(),
+      (await import("./models")).ProjectSubscriptionRenewalRequestModel.findOne({ projectId: project._id }).sort({ createdAt: -1 }).lean(),
+    ]);
+    const subscription = serializeProjectSubscription(subscriptionSource);
+    const renewalRequest = serializeProjectSubscriptionRenewalRequest(renewalRequestSource);
     return {
       ...project.toObject(),
       id: project._id.toString(),
-      subscription: serializeProjectSubscription(subscription),
+      subscription: getEffectiveProjectSubscription(subscription, renewalRequest),
+      subscriptionRenewalRequest: renewalRequest,
     } as any;
   }
 

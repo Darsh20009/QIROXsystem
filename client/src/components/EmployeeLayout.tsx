@@ -45,6 +45,7 @@ const ALL_NAV: Record<string, NavItem> = {
   customers:         { id: "customers",         labelAr: "العملاء",              labelEn: "Clients",              icon: Users,           href: "/admin/customers",            group: "main" },
   new_order:         { id: "new_order",         labelAr: "عميل وطلب جديد",      labelEn: "New Order",            icon: PlusCircle,      href: "/employee/new-order",         group: "main" },
   subscriptions:     { id: "subscriptions",     labelAr: "الاشتراكات",           labelEn: "Subscriptions",        icon: Star,            href: "/employee/subscriptions",     group: "main" },
+  project_renewals:  { id: "project_renewals",  labelAr: "طلبات تجديد المشاريع", labelEn: "Project Renewals",      icon: RefreshCcw,      href: "/admin/project-renewals",       group: "main" },
   abandoned_carts:   { id: "abandoned_carts",   labelAr: "عربات مهجورة",        labelEn: "Abandoned Carts",      icon: ShoppingCart,    href: "/employee/abandoned-carts",   group: "main" },
   quotations:        { id: "quotations",        labelAr: "عروض الأسعار",         labelEn: "Quotations",           icon: FileCheck,       href: "/admin/quotations",           group: "main" },
   mod_requests:      { id: "mod_requests",      labelAr: "طلبات التعديل",       labelEn: "Mod Requests",         icon: Wrench,          href: "/admin/mod-requests",         group: "main" },
@@ -131,7 +132,7 @@ const ALL_NAV: Record<string, NavItem> = {
 
 // Mobile drawer shows a compact set — same as the original sidebar before the expansion
 const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
-  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "mail", "profile", "changelog"],
+  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "project_renewals", "mail", "profile", "changelog"],
   manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
   developer:     ["dashboard", "mod_requests", "orders", "whatsapp_crm", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
   designer:      ["dashboard", "mod_requests", "whatsapp_crm", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
@@ -149,7 +150,7 @@ const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
 const ROLE_ITEMS: Record<string, string[]> = {
   admin: [
     // Core operations
-    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions",
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions", "project_renewals",
     // Client services
     "quotations", "contracts", "consultations", "mod_requests", "cs_chat", "support_tickets", "contact_msgs", "sla",
     // Products & catalog
@@ -176,7 +177,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
   ],
   manager: [
     // Core operations
-    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions",
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions", "project_renewals",
     // Client services
     "quotations", "contracts", "consultations", "mod_requests", "cs_chat", "support_tickets", "contact_msgs", "sla",
     // Products & catalog
