@@ -1,5 +1,5 @@
-const CACHE_NAME = "qirox-v16";
-const RUNTIME_CACHE = "qirox-runtime-v16";
+const CACHE_NAME = "qirox-v17";
+const RUNTIME_CACHE = "qirox-runtime-v17";
 
 const STATIC_ASSETS = [
   "/",

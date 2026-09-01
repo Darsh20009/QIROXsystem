@@ -1038,32 +1038,52 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
                 يُرجى المحاولة مرة أخرى بعد لحظات، أو تابعنا عبر مواقع التواصل للاطلاع على آخر التحديثات.
               </p>
 
-              {/* ── Video section ── */}
+              {/* ── Lightweight system graphic ── */}
               <div style={{
                 width: "100%", maxWidth: 620, borderRadius: 18, overflow: "hidden",
                 border: "1px solid rgba(255,255,255,0.08)",
-                background: "#141418", position: "relative",
-                boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+                background: "linear-gradient(135deg, #15151c 0%, #101116 100%)", position: "relative",
+                boxShadow: "0 18px 48px rgba(0,0,0,0.35)",
               }}>
-                {/* Window chrome */}
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "10px 16px",
-                  borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)",
+                  padding: "18px 20px 20px", position: "relative",
                 }}>
-                  {["rgba(255,255,255,0.1)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0.06)"].map((c, i) => (
-                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
-                  ))}
-                  <span style={{ color: "rgba(255,255,255,0.18)", fontSize: "0.65rem", fontFamily: "monospace", marginRight: 6 }}>qirox.sa — تعرّف علينا</span>
-                </div>
-                {/* YouTube embed */}
-                <div style={{ position: "relative", paddingBottom: "52%", height: 0 }}>
-                  <iframe
-                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                    src="https://www.youtube.com/embed?listType=user_uploads&list=qiroxsa&rel=0&modestbranding=1&color=white"
-                    title="QIROX على يوتيوب"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.72)" strokeWidth="1.8">
+                          <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4" />
+                          <circle cx="12" cy="12" r="3.2" fill="rgba(255,255,255,0.18)" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div style={{ color: "rgba(255,255,255,0.76)", fontSize: "0.78rem", fontWeight: 800 }}>QIROX Systems</div>
+                        <div style={{ color: "rgba(255,255,255,0.28)", fontSize: "0.62rem", marginTop: 2 }}>نعيد ترتيب التجربة</div>
+                      </div>
+                    </div>
+                    <span style={{ color: "rgba(255,255,255,0.38)", fontSize: "0.6rem", fontFamily: "monospace", letterSpacing: "0.12em" }}>SYNCING</span>
+                  </div>
+                  <svg width="100%" viewBox="0 0 620 188" role="img" aria-label="رسم توضيحي لتحديث النظام" style={{ display: "block" }}>
+                    <defs>
+                      <linearGradient id="qirox-recovery-line" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.5)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M92 94H238M382 94H528" stroke="url(#qirox-recovery-line)" strokeWidth="2" />
+                    <path d="M165 52v84M455 52v84" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 7" />
+                    <rect x="30" y="58" width="124" height="72" rx="14" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.11)" />
+                    <rect x="248" y="34" width="124" height="120" rx="18" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.22)" />
+                    <rect x="466" y="58" width="124" height="72" rx="14" fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.11)" />
+                    <circle cx="92" cy="94" r="14" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.28)" />
+                    <circle cx="310" cy="94" r="26" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.48)" />
+                    <circle cx="528" cy="94" r="14" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.28)" />
+                    <path d="m302 94 6 6 12-14" fill="none" stroke="rgba(255,255,255,0.82)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    <text x="92" y="119" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="11" fontFamily="Arial">واجهة</text>
+                    <text x="310" y="137" textAnchor="middle" fill="rgba(255,255,255,0.72)" fontSize="12" fontFamily="Arial" fontWeight="700">QIROX</text>
+                    <text x="528" y="119" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="11" fontFamily="Arial">خدمات</text>
+                  </svg>
                 </div>
               </div>
 

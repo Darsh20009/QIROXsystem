@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLogin, useRegister, saveDeviceToken } from "@/hooks/use-auth";
+import { useLogin, useRegister, saveDeviceToken, getUserHomePath } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -783,8 +783,8 @@ export default function Login() {
       if (returnUrl) {
         sessionStorage.removeItem("returnAfterLogin");
         setLocation(returnUrl);
-      } else if (role && role !== "client") {
-        setLocation("/admin");
+       } else if (role && role !== "client") {
+         setLocation(getUserHomePath(role));
       } else {
         setLocation("/dashboard");
       }
@@ -867,7 +867,7 @@ export default function Login() {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       const ret = sessionStorage.getItem("returnAfterLogin");
       if (ret) { sessionStorage.removeItem("returnAfterLogin"); setLocation(ret); }
-      else setLocation(data.user?.role === "client" ? "/dashboard" : "/admin");
+       else setLocation(getUserHomePath(data.user?.role));
     } catch {
       toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
     } finally { setPhoneLoginPending(false); }
@@ -930,7 +930,7 @@ export default function Login() {
           const redirectTo = user.email ? "/verify-email?flow=register" : (() => {
             const r = sessionStorage.getItem("returnAfterLogin");
             if (r) { sessionStorage.removeItem("returnAfterLogin"); return r; }
-            return user.role === "client" ? "/dashboard" : "/admin";
+             return getUserHomePath(user.role);
           })();
 
           setLocation(redirectTo);

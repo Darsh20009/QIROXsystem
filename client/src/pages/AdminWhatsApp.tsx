@@ -126,21 +126,36 @@ export default function AdminWhatsApp() {
   // ── Data queries ────────────────────────────────────────────────────────
   const { data: chats = [], isLoading: chatsLoading } = useQuery<WAChat[]>({
     queryKey: ["/api/admin/whatsapp/chats"],
-    queryFn: () => fetch("/api/admin/whatsapp/chats", { credentials: "include" }).then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch("/api/admin/whatsapp/chats", { credentials: "include" });
+      const data = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(data?.error || "تعذر تحميل محادثات واتساب");
+      return Array.isArray(data) ? data : [];
+    },
     enabled: waStatus.status === "connected",
     refetchInterval: 5000,
   });
 
   const { data: messages = [], isLoading: msgsLoading } = useQuery<WAMessage[]>({
     queryKey: ["/api/admin/whatsapp/messages", selectedChatId],
-    queryFn: () => fetch(`/api/admin/whatsapp/chats/${encodeURIComponent(selectedChatId!)}/messages`, { credentials: "include" }).then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch(`/api/admin/whatsapp/chats/${encodeURIComponent(selectedChatId!)}/messages`, { credentials: "include" });
+      const data = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(data?.error || "تعذر تحميل الرسائل");
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!selectedChatId && waStatus.status === "connected",
     refetchInterval: 3000,
   });
 
   const { data: settingsData } = useQuery<WASettings>({
     queryKey: ["/api/admin/whatsapp/settings"],
-    queryFn: () => fetch("/api/admin/whatsapp/settings", { credentials: "include" }).then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch("/api/admin/whatsapp/settings", { credentials: "include" });
+      const data = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(data?.error || "تعذر تحميل إعدادات واتساب");
+      return data;
+    },
     onSuccess: (d) => setSettings(d || settings),
   } as any);
   useEffect(() => { if (settingsData) setSettings(settingsData); }, [settingsData]);

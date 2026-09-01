@@ -5,6 +5,12 @@ import { useLocation } from "wouter";
 
 const DEVICE_TOKEN_KEY = "qirox_device_token";
 
+export function getUserHomePath(role?: string): string {
+  if (role === "client") return "/dashboard";
+  if (role === "admin" || role === "manager") return "/admin";
+  return "/employee/role-dashboard";
+}
+
 export function getStoredDeviceToken(): string | null {
   try { return localStorage.getItem(DEVICE_TOKEN_KEY); } catch { return null; }
 }
@@ -61,16 +67,17 @@ export function useLogin() {
       if (user.needsVerification) return;
 
       queryClient.setQueryData([api.auth.user.path], user);
+      const homePath = getUserHomePath(user.role);
       if (user.role === 'client') {
         const returnUrl = sessionStorage.getItem("returnAfterLogin");
         if (returnUrl) {
           sessionStorage.removeItem("returnAfterLogin");
           setLocation(returnUrl);
         } else {
-          setLocation("/dashboard");
+          setLocation(homePath);
         }
       } else {
-        setLocation("/admin");
+        setLocation(homePath);
       }
     },
   });
