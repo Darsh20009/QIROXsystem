@@ -201,9 +201,20 @@ export default function MeetingRoom() {
   const isHost = !!(user && userId);
 
   // meeting data
-  const { data: meeting } = useQuery<any>({
+  const {
+    data: meeting,
+    isLoading: meetingLoading,
+    isError: meetingIsError,
+    error: meetingError,
+    refetch: refetchMeeting,
+  } = useQuery<any>({
     queryKey: ["/api/qmeet/room", roomId],
-    queryFn: () => fetch(`/api/qmeet/room/${roomId}`, { credentials: "include" }).then(r => r.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/qmeet/room/${roomId}`, { credentials: "include" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.message || "تعذر العثور على الاجتماع");
+      return body;
+    },
     enabled: !!roomId,
     retry: 2,
   });
@@ -1441,12 +1452,6 @@ export default function MeetingRoom() {
 
   const approveLobby = useCallback((reqUserId: string) => {
     sendWs({ type: "webrtc_approve_lobby", roomId, targetId: reqUserId });
-    fetch(`/api/qmeet/room/${roomId}/approve-join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ userId: reqUserId }),
-    }).catch(() => {});
     setLobbyRequests(prev => prev.filter(r => r.userId !== reqUserId));
   }, [roomId, sendWs]);
 
@@ -1691,6 +1696,44 @@ export default function MeetingRoom() {
 
   // ── PRE-JOIN SCREEN ────────────────────────────────────────────────────────
   if (!joined) {
+    if (meetingLoading) {
+      return (
+        <div className="min-h-screen bg-[#202124] flex items-center justify-center" dir={dir}>
+          <Loader2 className="w-7 h-7 text-white/50 animate-spin" />
+        </div>
+      );
+    }
+
+    if (meetingIsError || !meeting) {
+      return (
+        <div className="min-h-screen bg-[#202124] flex items-center justify-center px-4" dir={dir}>
+          <div className="w-full max-w-md rounded-2xl bg-[#2b2c2f] border border-white/10 p-7 text-center space-y-5">
+            <XCircle className="w-12 h-12 text-red-400 mx-auto" />
+            <div>
+              <h1 className="text-white text-xl font-bold">تعذر فتح الاجتماع</h1>
+              <p className="text-white/55 text-sm mt-2">
+                {(meetingError as Error)?.message || "رابط الاجتماع غير صحيح أو انتهت صلاحيته"}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => refetchMeeting()}
+                className="flex-1 rounded-xl bg-white/10 hover:bg-white/15 text-white py-3 text-sm font-medium"
+              >
+                إعادة المحاولة
+              </button>
+              <button
+                onClick={() => navigate("/meet/join")}
+                className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white py-3 text-sm font-medium"
+              >
+                الانضمام بكود
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const permissionDenied = mediaError?.includes("رُفض") || mediaError?.includes("غير مصرح");
     const noDevice = mediaError?.includes("لا توجد");
     const inUse = mediaError?.includes("مستخدمة");

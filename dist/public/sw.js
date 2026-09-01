@@ -1,5 +1,5 @@
-const CACHE_NAME = "qirox-v18";
-const RUNTIME_CACHE = "qirox-runtime-v18";
+const CACHE_NAME = "qirox-v19";
+const RUNTIME_CACHE = "qirox-runtime-v19";
 
 const STATIC_ASSETS = [
   "/",
@@ -134,18 +134,27 @@ self.addEventListener("fetch", (event) => {
   // ── Production built assets (/assets/*): cache-first ──
   if (url.pathname.startsWith("/assets/")) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req)
-          .then((res) => {
-            if (res && res.status === 200) {
-              const clone = res.clone();
-              caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
-            }
-            return res;
-          })
-          .catch(() => new Response("", { status: 504 }));
-      })
+      (async () => {
+        const cached = await caches.match(req);
+        try {
+          // Hashed bundles must be refreshed from the server first. This
+          // prevents an HTML SPA fallback from being served as JS/CSS after
+          // a restart while the application is still booting.
+          const fresh = await fetch(req, { cache: "no-store" });
+          const contentType = fresh.headers.get("content-type") || "";
+          const usable = fresh.ok && !contentType.includes("text/html");
+          if (usable) {
+            const clone = fresh.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
+            return fresh;
+          }
+          if (cached && !((cached.headers.get("content-type") || "").includes("text/html"))) return cached;
+          return fresh;
+        } catch {
+          if (cached && !((cached.headers.get("content-type") || "").includes("text/html"))) return cached;
+          return new Response("", { status: 504 });
+        }
+      })()
     );
     return;
   }
@@ -156,18 +165,23 @@ self.addEventListener("fetch", (event) => {
   );
   if (isStaticExt) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req)
-          .then((res) => {
-            if (res && res.status === 200) {
-              const clone = res.clone();
-              caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
-            }
-            return res;
-          })
-          .catch(() => new Response("", { status: 404 }));
-      })
+      (async () => {
+        const cached = await caches.match(req);
+        try {
+          const fresh = await fetch(req, { cache: "no-store" });
+          const contentType = fresh.headers.get("content-type") || "";
+          if (fresh.ok && !contentType.includes("text/html")) {
+            const clone = fresh.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
+            return fresh;
+          }
+          if (cached && !((cached.headers.get("content-type") || "").includes("text/html"))) return cached;
+          return fresh;
+        } catch {
+          if (cached && !((cached.headers.get("content-type") || "").includes("text/html"))) return cached;
+          return new Response("", { status: 404 });
+        }
+      })()
     );
     return;
   }

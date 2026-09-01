@@ -970,10 +970,21 @@ app.get("/api/public/feature-flags", async (_req, res) => {
 // window rather than an HTML 404.
 let applicationReady = false;
 const earlyFrontendIndex = path.resolve(process.cwd(), "dist/public/index.html");
+const earlyFrontendStatic = express.static(path.resolve(process.cwd(), "dist/public"), {
+  index: false,
+  fallthrough: true,
+});
 app.use((req, res, next) => {
   if (applicationReady) return next();
   if (req.path.startsWith("/api/")) {
     return res.status(503).json({ error: "server_starting", retryAfterSeconds: 2 });
+  }
+  // During the startup window, serve hashed JS/CSS and other static files
+  // before falling back to index.html. Returning HTML for an asset makes the
+  // browser reject the module/stylesheet with a MIME-type error and leaves
+  // the SPA blank after a restart.
+  if (path.extname(req.path)) {
+    return earlyFrontendStatic(req, res, next);
   }
   if (existsSync(earlyFrontendIndex)) {
     res.setHeader("Cache-Control", "no-cache, must-revalidate");

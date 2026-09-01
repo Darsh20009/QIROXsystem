@@ -155,7 +155,7 @@ export function startQMeetScheduler() {
               body: `الاجتماع يبدأ بعد دقيقتين — الكود: ${m.joinCode}`,
               icon: "/icon-192.png", badge: "/favicon-32.png",
               tag: `meet-reminder-${String(m._id)}`,
-              data: { url: `/meet/${m.meetingLink || String(m._id)}` },
+              data: { url: m.meetingLink || `/meet/join?code=${m.joinCode}` },
             }).catch(() => {});
           }
         }
@@ -391,7 +391,7 @@ export function registerQMeetRoutes(app: Express) {
               body: `انضم الآن! الكود: ${meeting.joinCode}`,
               icon: "/icon-192.png", badge: "/favicon-32.png",
               tag: `meet-live-${req.params.id}`,
-              data: { url: `/meet/${meeting.meetingLink || req.params.id}` },
+              data: { url: meeting.meetingLink || `/meet/join?code=${meeting.joinCode}` },
             }).catch(() => {});
           }
         }
@@ -843,7 +843,11 @@ export function registerQMeetRoutes(app: Express) {
       const guestId = req.query.guestId as string | undefined;
       if (guestId) {
         const joinRequests: any[] = meeting.joinRequests || [];
-        const req_ = joinRequests.find((r: any) => r.guestId && String(r.guestId) === guestId);
+        // Guest requests historically store the stable browser id in userId;
+        // accept guestId too for forward compatibility with older clients.
+        const req_ = joinRequests.find((r: any) =>
+          String(r.guestId || r.userId || "") === guestId
+        );
         if (!req_) return res.json({ status: "none" });
         return res.json({ status: req_.status, meetingLink: req_.status === "approved" ? meeting.meetingLink : null });
       }

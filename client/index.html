@@ -59,6 +59,34 @@
     <link rel="preload" as="image" href="/qirox-hero-new.png" fetchpriority="high" />
     <link rel="preload" as="image" href="/qirox-icon-nobg.png" fetchpriority="high" />
     <script>try{if(localStorage.getItem('qirox-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}</script>
+    <script>
+      // Recover once from the old startup-gate bug that cached index.html
+      // under hashed JS/CSS URLs. Do not clear healthy PWA caches.
+      (async function () {
+        try {
+          if (!window.caches || sessionStorage.getItem("qirox-asset-recovery-v1")) return;
+          const names = await caches.keys();
+          let hasInvalidAsset = false;
+          for (const name of names) {
+            if (!name.startsWith("qirox-runtime") && !name.startsWith("qirox-v")) continue;
+            const cache = await caches.open(name);
+            for (const request of await cache.keys()) {
+              if (!/\/assets\/[^?]+\.(?:js|css|mjs)(?:\?|$)/.test(new URL(request.url).pathname + new URL(request.url).search)) continue;
+              const response = await cache.match(request);
+              if ((response && response.headers.get("content-type") || "").includes("text/html")) {
+                hasInvalidAsset = true;
+                break;
+              }
+            }
+            if (hasInvalidAsset) break;
+          }
+          if (!hasInvalidAsset) return;
+          sessionStorage.setItem("qirox-asset-recovery-v1", "1");
+          await Promise.all(names.filter(name => name.startsWith("qirox-runtime") || name.startsWith("qirox-v")).map(name => caches.delete(name)));
+          window.location.reload();
+        } catch (_) {}
+      })();
+    </script>
 
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
