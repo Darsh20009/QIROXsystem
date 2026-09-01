@@ -23,7 +23,7 @@ import {
   Database, Activity, Smartphone, Cog, Link2, Phone as PhoneIcon,
   Gamepad2, SlidersHorizontal, ScrollText, Scale, PieChart,
   Store, Briefcase, FileSignature, Award, Package2, Boxes,
-  MessageCircle, Map, BarChart2, Bell as BellIcon, RefreshCcw,
+  MessageCircle, BarChart2, Bell as BellIcon, RefreshCcw,
   TrendingDown, AlertCircle, Building, Send, Globe2,
   ChevronDown,
 } from "lucide-react";
