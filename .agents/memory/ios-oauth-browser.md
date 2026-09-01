@@ -37,3 +37,10 @@ Capture the native-flow marker before calling `req.login`; Passport may regenera
 **Why:** Without capturing it before `req.login`, a successful native OAuth callback can fall back to `/login` instead of returning through the app's custom URL scheme.
 
 **How to apply:** Keep the provider callback's native state separate from the post-login session state, and use it for success and failure redirects after Passport finishes.
+
+## Native API authentication
+Native OAuth completes in an in-app browser whose cookies are not shared with the Capacitor WebView. The app must attach the stored device-token bearer to native `/api/*` requests, and relative API URLs must resolve to the configured server origin.
+
+**Why:** A successful OAuth callback can return to the app while `/api/user` and all subsequent authenticated requests still appear logged out if they rely only on the browser session cookie.
+
+**How to apply:** Keep device tokens hashed server-side, validate their fixed format and expiry before assigning `req.user`, and install the native-only fetch adapter before React queries start. Browser requests should remain same-origin cookie based.
