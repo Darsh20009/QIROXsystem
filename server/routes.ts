@@ -3586,19 +3586,43 @@ export async function registerRoutes(
         return res.status(400).json({ error: "اشتراك المشروع لا يزال نشطاً" });
       }
 
-      const latest = await ProjectSubscriptionRenewalRequestModel.findOne({ projectId: req.params.projectId }).sort({ createdAt: -1 }).lean();
-      if (latest?.status === "pending") {
-        return res.json({ request: serializeProjectSubscriptionRenewalRequest(latest), alreadyRequested: true });
+      const pendingRequest = await ProjectSubscriptionRenewalRequestModel.findOne({
+        projectId: req.params.projectId,
+        status: "pending",
+      }).lean();
+      if (pendingRequest) {
+        return res.json({ request: serializeProjectSubscriptionRenewalRequest(pendingRequest), alreadyRequested: true });
       }
+      const latest = await ProjectSubscriptionRenewalRequestModel.findOne({ projectId: req.params.projectId }).sort({ createdAt: -1 }).lean();
       if (latest?.status === "approved" && (!latest.renewalExpiresAt || new Date(latest.renewalExpiresAt).getTime() > now.getTime())) {
         return res.status(400).json({ error: "يوجد اشتراك تجديد نشط لهذا المشروع" });
       }
 
-      const requestRecord = await ProjectSubscriptionRenewalRequestModel.create({
-        projectId: req.params.projectId,
-        subscriptionId: subscription._id,
-        clientId: (project as any).clientId,
-      });
+      let requestRecord: any;
+      let created = false;
+      try {
+        requestRecord = await ProjectSubscriptionRenewalRequestModel.create({
+          projectId: req.params.projectId,
+          subscriptionId: subscription._id,
+          clientId: (project as any).clientId,
+        });
+        created = true;
+      } catch (error: any) {
+        // The partial unique index arbitrates concurrent submissions. The
+        // loser returns the winner's request rather than notifying managers
+        // or exposing a transient server error to the client.
+        if (error?.code !== 11000) throw error;
+        requestRecord = await ProjectSubscriptionRenewalRequestModel.findOne({
+          projectId: req.params.projectId,
+          status: "pending",
+        }).lean();
+        if (!requestRecord) {
+          return res.status(409).json({ error: "تعذر تثبيت طلب التجديد، يرجى المحاولة مرة أخرى" });
+        }
+      }
+      if (!created) {
+        return res.json({ request: serializeProjectSubscriptionRenewalRequest(requestRecord), alreadyRequested: true });
+      }
       const managers = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
       for (const manager of managers) {
         await NotificationModel.create({

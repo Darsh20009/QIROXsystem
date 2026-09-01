@@ -1,6 +1,7 @@
 import { connManager } from "./connection-manager";
 import { loadSystemSettings } from "./system-settings";
 import { ensureInvestorDistributionIndex } from "./services/investor-distribution";
+import { ensurePendingProjectSubscriptionRenewalIndex } from "./models/project-subscriptions";
 
 export async function connectToDatabase() {
   if (!process.env.MONGODB_URI) {
@@ -32,4 +33,6 @@ export async function connectToDatabase() {
 
   await ensureInvestorDistributionIndex();
   console.log("[DB] Investor distribution uniqueness index verified");
+  await ensurePendingProjectSubscriptionRenewalIndex();
+  console.log("[DB] Pending project renewal uniqueness index verified");
 }

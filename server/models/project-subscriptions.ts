@@ -26,6 +26,8 @@ export const ProjectSubscriptionModel =
   mongoose.models.ProjectSubscription ||
   mongoose.model("ProjectSubscription", projectSubscriptionSchema);
 
+const PENDING_RENEWAL_REQUEST_INDEX = "one_pending_renewal_request_per_project";
+
 const projectSubscriptionRenewalRequestSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
   subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "ProjectSubscription", required: true },
@@ -40,9 +42,46 @@ const projectSubscriptionRenewalRequestSchema = new mongoose.Schema({
   renewalExpiresAt: { type: Date, default: null },
 }, { timestamps: true });
 
+// A project may have historical rejected/approved requests, but only one
+// request waiting for review at a time. The unique partial index makes the
+// create operation safe when a client submits the request concurrently.
+projectSubscriptionRenewalRequestSchema.index(
+  { projectId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: "pending" },
+    name: PENDING_RENEWAL_REQUEST_INDEX,
+  },
+);
+
 projectSubscriptionRenewalRequestSchema.set("toJSON", { transform });
 projectSubscriptionRenewalRequestSchema.set("toObject", { transform });
 
 export const ProjectSubscriptionRenewalRequestModel =
   mongoose.models.ProjectSubscriptionRenewalRequest ||
   mongoose.model("ProjectSubscriptionRenewalRequest", projectSubscriptionRenewalRequestSchema);
+
+/**
+ * Production disables Mongoose autoIndex, so this constraint is established
+ * explicitly during database startup as well as declared on the schema.
+ */
+export async function ensurePendingProjectSubscriptionRenewalIndex(): Promise<void> {
+  const duplicateProjects = await ProjectSubscriptionRenewalRequestModel.aggregate([
+    { $match: { status: "pending" } },
+    { $group: { _id: "$projectId", count: { $sum: 1 } } },
+    { $match: { count: { $gt: 1 } } },
+    { $limit: 1 },
+  ]);
+  if (duplicateProjects.length) {
+    throw new Error(`تعذر تفعيل تجديد اشتراكات المشاريع: توجد طلبات معلقة مكررة للمشروع ${duplicateProjects[0]._id}`);
+  }
+
+  await ProjectSubscriptionRenewalRequestModel.collection.createIndex(
+    { projectId: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { status: "pending" },
+      name: PENDING_RENEWAL_REQUEST_INDEX,
+    },
+  );
+}

@@ -355,6 +355,252 @@ test("closing a project over HTTP creates its subscription and exposes it to the
   }
 });
 
+test("renewal request rejects a client who does not own the project", async () => {
+  const originalProjectFindById = ProjectModel.findById;
+  const project = {
+    _id: "renewal-ownership-project",
+    clientId: "project-owner",
+  };
+  (ProjectModel as any).findById = () => queryChain(project);
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+    const response = await request(server, "client", `/api/projects/${project._id}/subscription/renewal-request`, { method: "POST" });
+    assert.equal(response.status, 403);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectModel as any).findById = originalProjectFindById;
+  }
+});
+
+test("renewal request rejects an active project subscription before creating a request", async () => {
+  const originalProjectFindById = ProjectModel.findById;
+  const originalSubscriptionFindOne = ProjectSubscriptionModel.findOne;
+  const originalRenewalCreate = ProjectSubscriptionRenewalRequestModel.create;
+  const project = {
+    _id: "renewal-active-project",
+    clientId: "client-user",
+  };
+  const subscription = {
+    _id: "renewal-active-subscription",
+    expiresAt: new Date("2026-09-02T00:00:00.000Z"),
+  };
+  let creates = 0;
+  (ProjectModel as any).findById = () => queryChain(project);
+  (ProjectSubscriptionModel as any).findOne = () => queryChain(subscription);
+  (ProjectSubscriptionRenewalRequestModel as any).create = async () => {
+    creates++;
+    return null;
+  };
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+    const response = await request(server, "client", `/api/projects/${project._id}/subscription/renewal-request`, { method: "POST" });
+    assert.equal(response.status, 400);
+    assert.equal(creates, 0);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectModel as any).findById = originalProjectFindById;
+    (ProjectSubscriptionModel as any).findOne = originalSubscriptionFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).create = originalRenewalCreate;
+  }
+});
+
+test("repeated renewal request returns the existing pending request without another notification", async () => {
+  const originalProjectFindById = ProjectModel.findById;
+  const originalSubscriptionFindOne = ProjectSubscriptionModel.findOne;
+  const originalRenewalFindOne = ProjectSubscriptionRenewalRequestModel.findOne;
+  const originalRenewalCreate = ProjectSubscriptionRenewalRequestModel.create;
+  const originalUserFind = UserModel.find;
+  const originalNotificationCreate = NotificationModel.create;
+  const project = {
+    _id: "renewal-duplicate-project",
+    clientId: "client-user",
+  };
+  const subscription = {
+    _id: "renewal-duplicate-subscription",
+    expiresAt: new Date("2026-08-01T00:00:00.000Z"),
+  };
+  const pending = {
+    _id: "renewal-pending-1",
+    projectId: project._id,
+    subscriptionId: subscription._id,
+    clientId: project.clientId,
+    status: "pending",
+  };
+  let creates = 0;
+  let notifications = 0;
+  (ProjectModel as any).findById = () => queryChain(project);
+  (ProjectSubscriptionModel as any).findOne = () => queryChain(subscription);
+  (ProjectSubscriptionRenewalRequestModel as any).findOne = () => queryChain(pending);
+  (ProjectSubscriptionRenewalRequestModel as any).create = async () => {
+    creates++;
+    return pending;
+  };
+  (UserModel as any).find = () => queryChain([]);
+  (NotificationModel as any).create = async () => {
+    notifications++;
+    return {};
+  };
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+    const response = await request(server, "client", `/api/projects/${project._id}/subscription/renewal-request`, { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.alreadyRequested, true);
+    assert.equal(response.body.request.id, pending._id);
+    assert.equal(response.body.request.status, "pending");
+    assert.equal(creates, 0);
+    assert.equal(notifications, 0);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectModel as any).findById = originalProjectFindById;
+    (ProjectSubscriptionModel as any).findOne = originalSubscriptionFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).findOne = originalRenewalFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).create = originalRenewalCreate;
+    (UserModel as any).find = originalUserFind;
+    (NotificationModel as any).create = originalNotificationCreate;
+  }
+});
+
+test("concurrent renewal requests create one pending record and notify managers once", async () => {
+  const originalProjectFindById = ProjectModel.findById;
+  const originalSubscriptionFindOne = ProjectSubscriptionModel.findOne;
+  const originalRenewalFindOne = ProjectSubscriptionRenewalRequestModel.findOne;
+  const originalRenewalCreate = ProjectSubscriptionRenewalRequestModel.create;
+  const originalUserFind = UserModel.find;
+  const originalNotificationCreate = NotificationModel.create;
+  const project = {
+    _id: "renewal-concurrent-project",
+    clientId: "client-user",
+  };
+  const subscription = {
+    _id: "renewal-concurrent-subscription",
+    expiresAt: new Date("2026-08-01T00:00:00.000Z"),
+  };
+  let pending: any = null;
+  let creates = 0;
+  let notifications = 0;
+  let pendingChecks = 0;
+  let releasePendingChecks!: () => void;
+  const pendingChecksReady = new Promise<void>((resolve) => {
+    releasePendingChecks = resolve;
+  });
+  (ProjectModel as any).findById = () => queryChain(project);
+  (ProjectSubscriptionModel as any).findOne = () => queryChain(subscription);
+  (ProjectSubscriptionRenewalRequestModel as any).findOne = (filter: any) => {
+    if (filter.status === "pending") {
+      return {
+        lean: async () => {
+          pendingChecks++;
+          if (pendingChecks === 2) releasePendingChecks();
+          await pendingChecksReady;
+          return pendingChecks <= 2 ? null : pending;
+        },
+      };
+    }
+    return queryChain(null);
+  };
+  (ProjectSubscriptionRenewalRequestModel as any).create = async (entry: any) => {
+    creates++;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    if (pending) {
+      const error: any = new Error("duplicate pending renewal request");
+      error.code = 11000;
+      throw error;
+    }
+    pending = {
+      _id: "renewal-concurrent-1",
+      ...entry,
+      status: "pending",
+    };
+    return pending;
+  };
+  (UserModel as any).find = () => queryChain([{ _id: "manager-1" }]);
+  (NotificationModel as any).create = async () => {
+    notifications++;
+    return {};
+  };
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+    const path = `/api/projects/${project._id}/subscription/renewal-request`;
+    const responses = await Promise.all([
+      request(server, "client", path, { method: "POST" }),
+      request(server, "client", path, { method: "POST" }),
+    ]);
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 201]);
+    assert.equal(creates, 2);
+    assert.equal(notifications, 1);
+    assert.equal(responses[0].body.request.id, "renewal-concurrent-1");
+    assert.equal(responses[1].body.request.id, "renewal-concurrent-1");
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectModel as any).findById = originalProjectFindById;
+    (ProjectSubscriptionModel as any).findOne = originalSubscriptionFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).findOne = originalRenewalFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).create = originalRenewalCreate;
+    (UserModel as any).find = originalUserFind;
+    (NotificationModel as any).create = originalNotificationCreate;
+  }
+});
+
+test("concurrent admin approvals process a pending renewal only once", async () => {
+  const originalRenewalFindOne = ProjectSubscriptionRenewalRequestModel.findOne;
+  const originalRenewalFindOneAndUpdate = ProjectSubscriptionRenewalRequestModel.findOneAndUpdate;
+  const originalSubscriptionFindById = ProjectSubscriptionModel.findById;
+  const originalNotificationCreate = NotificationModel.create;
+  const requestRecord = {
+    _id: "renewal-approval-1",
+    projectId: "renewal-approval-project",
+    subscriptionId: "renewal-approval-subscription",
+    clientId: "client-approval",
+    status: "pending",
+  };
+  const originalSubscription = {
+    _id: requestRecord.subscriptionId,
+    period: "annual",
+  };
+  let status = "pending";
+  let notifications = 0;
+  (ProjectSubscriptionRenewalRequestModel as any).findOne = () =>
+    queryChain({ ...requestRecord, status });
+  (ProjectSubscriptionModel as any).findById = () => queryChain(originalSubscription);
+  (ProjectSubscriptionRenewalRequestModel as any).findOneAndUpdate = async (_filter: any, update: any) => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    if (status !== "pending") return null;
+    status = update.$set.status;
+    return { ...requestRecord, ...update.$set };
+  };
+  (NotificationModel as any).create = async () => {
+    notifications++;
+    return {};
+  };
+
+  let server: Server | undefined;
+  try {
+    server = await createRouteHarness();
+    const path = `/api/admin/project-subscription-renewals/${requestRecord._id}`;
+    const responses = await Promise.all([
+      request(server, "admin", path, { method: "PATCH", body: { status: "approved", period: "annual" } }),
+      request(server, "admin", path, { method: "PATCH", body: { status: "approved", period: "annual" } }),
+    ]);
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
+    assert.equal(status, "approved");
+    assert.equal(notifications, 1);
+  } finally {
+    if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+    (ProjectSubscriptionRenewalRequestModel as any).findOne = originalRenewalFindOne;
+    (ProjectSubscriptionRenewalRequestModel as any).findOneAndUpdate = originalRenewalFindOneAndUpdate;
+    (ProjectSubscriptionModel as any).findById = originalSubscriptionFindById;
+    (NotificationModel as any).create = originalNotificationCreate;
+  }
+});
+
 test("legacy backfill previews eligible closed projects without writing or changing user subscriptions", async () => {
   const originalProjectFind = ProjectModel.find;
   const originalSubscriptionFind = ProjectSubscriptionModel.find;

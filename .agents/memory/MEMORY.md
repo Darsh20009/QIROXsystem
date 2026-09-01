@@ -50,3 +50,4 @@
 - [Project integration secret policy](project-integration-secret-policy.md) — Environment Variables receives a placeholder only; raw integration secrets remain one-time and are never persisted in specs.
 - [GitHub repository provisioning](github-repository-provisioning.md) — One stable repo per project; managed/pinned identity plus lease fencing and versioned visibility prevent duplicate or stale writes.
 - [Project completion subscription flow](project-subscription-http-flow.md) — Close responses must wait for subscription activation, and project serialization must strip credential-like fields.
+- [Mongo uniqueness in production](mongo-uniqueness-production.md) — Schema uniqueness needs explicit startup index creation when production disables Mongoose autoIndex; routes must handle duplicate-key races.
