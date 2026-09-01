@@ -5,6 +5,8 @@ description: What a freshly imported/cloned QIROX repl needs before it can run o
 
 # QIROX environment setup
 
+- The HTTP listener starts before the full route/frontend bootstrap; a startup gate must serve the pre-built SPA and return retryable API responses during that window, otherwise preview navigation can show `Cannot GET /login`.
+
 - A freshly imported repl has empty `node_modules` in **both** the main app root and `artifacts/mockup-sandbox` — run `npm install` in each separately; they're independent package.json projects.
 - `MONGODB_URI` is required to boot (`server/db.ts` throws without it) and is not preset on import — request it via `requestSecrets` before attempting to run/verify anything.
 - The Sandbox supports Python projects and its command allowlist includes `python`/`python3`/`pip`. Use the full `python-3.12` Replit module, not `python-base-3.13`, because the base module omits the usable `pip` command needed to install project dependencies.

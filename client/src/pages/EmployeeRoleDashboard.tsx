@@ -722,10 +722,13 @@ function AdminManagerDashboard() {
   const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
   const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
   const { data: employees } = useQuery<any[]>({ queryKey: ["/api/admin/employees"] });
+  const orderList = Array.isArray(orders) ? orders : [];
+  const customerList = Array.isArray(customers) ? customers : [];
+  const employeeList = Array.isArray(employees) ? employees : [];
 
   const now = new Date();
-  const active = orders?.filter(o => !["completed", "cancelled", "rejected"].includes(o.status)).length || 0;
-  const thisMonth = orders?.filter((o: any) => {
+  const active = orderList.filter(o => !["completed", "cancelled", "rejected"].includes(o.status)).length;
+  const thisMonth = orderList.filter((o: any) => {
     const d = new Date(o.createdAt || o.appliedAt);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length || 0;
@@ -760,8 +763,8 @@ function AdminManagerDashboard() {
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={L ? "مشاريع نشطة"    : "Active Projects"} value={active}               icon={Activity}    delay={0.05} />
         <StatCard label={L ? "طلبات الشهر"    : "This Month"}      value={thisMonth}            icon={TrendingUp}  delay={0.07} />
-        <StatCard label={L ? "إجمالي العملاء" : "Total Clients"}   value={customers?.length || 0} icon={Users}     delay={0.09} />
-        <StatCard label={L ? "أعضاء الفريق"  : "Team Members"}    value={employees?.length || 0} icon={Building2} delay={0.11} />
+        <StatCard label={L ? "إجمالي العملاء" : "Total Clients"}   value={customerList.length}   icon={Users}     delay={0.09} />
+        <StatCard label={L ? "أعضاء الفريق"  : "Team Members"}    value={employeeList.length}   icon={Building2} delay={0.11} />
       </div>
 
       <QiAgentPromo L={L} />
@@ -789,7 +792,7 @@ function AdminManagerDashboard() {
           <Link href="/admin/orders"><Button variant="ghost" size="sm" className="text-xs gap-1 text-black/40 h-7">{L ? "الكل" : "All"} <ChevronRight className="w-3 h-3" /></Button></Link>
         </div>
         <div className="space-y-2">
-          {orders?.slice(0, 6).map((o: any) => (
+          {orderList.slice(0, 6).map((o: any) => (
             <div key={o._id || o.id} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-black dark:text-white">{o.projectType || o.sector || (L ? "مشروع" : "Project")}</p>
@@ -797,13 +800,76 @@ function AdminManagerDashboard() {
               </div>
               <Badge variant="outline" className="text-[10px] border-black/10 dark:border-white/10">{o.status}</Badge>
             </div>
-          )) || <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد مشاريع" : "No projects"}</p>}
+          ))}
+          {orderList.length === 0 && <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد مشاريع" : "No projects"}</p>}
         </div>
       </motion.div>
 
       <UpcomingMeetingsWidget />
       <QiroxPostsBanner />
       <MyToolsCard L={L} />
+    </div>
+  );
+}
+
+/* ─────────────────────── DATA ENTRY DASHBOARD ─────────────────────── */
+function DataEntryDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
+  const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
+  const orderList = Array.isArray(orders) ? orders : [];
+  const customerList = Array.isArray(customers) ? customers : [];
+  const pendingOrders = orderList.filter(order => !["completed", "cancelled", "rejected"].includes(order.status));
+
+  return (
+    <div className="space-y-5 p-5">
+      <RoleHero
+        icon={FileText}
+        titleAr="لوحة إدخال البيانات"
+        titleEn="Data Entry Dashboard"
+        subtitleAr="إدارة المشاريع والعملاء والبيانات التشغيلية"
+        subtitleEn="Manage projects, clients, and operational data"
+        gradient="bg-gradient-to-br from-slate-800 to-gray-950"
+        L={L}
+      />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label={L ? "مشاريع تحتاج متابعة" : "Projects to follow up"} value={pendingOrders.length} icon={Activity} delay={0.05} />
+        <StatCard label={L ? "إجمالي المشاريع" : "Total Projects"} value={orderList.length} icon={Package} delay={0.07} />
+        <StatCard label={L ? "العملاء" : "Clients"} value={customerList.length} icon={Users} delay={0.09} />
+        <StatCard label={L ? "المهام" : "Tasks"} value="—" icon={ClipboardList} delay={0.11} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <ActionCard icon={Package} label={L ? "المشاريع" : "Projects"} desc={L ? "عرض وتحديث بيانات المشاريع" : "View and update project data"} href="/admin/orders" accent="bg-blue-50 dark:bg-blue-900/20" />
+        <ActionCard icon={Users} label={L ? "العملاء" : "Clients"} desc={L ? "إدارة بيانات العملاء" : "Manage client records"} href="/admin/customers" accent="bg-emerald-50 dark:bg-emerald-900/20" />
+        <ActionCard icon={Building2} label={L ? "الشركاء" : "Partners"} desc={L ? "تحديث بيانات الشركاء" : "Update partner records"} href="/admin/partners" accent="bg-purple-50 dark:bg-purple-900/20" />
+        <ActionCard icon={ClipboardList} label={L ? "لوحة المهام" : "Task board"} desc={L ? "متابعة المهام المسندة" : "Follow assigned tasks"} href="/admin/kanban" accent="bg-amber-50 dark:bg-amber-900/20" />
+      </div>
+
+      <motion.div {...fade(0.2)}>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h2 className="text-[11px] font-black text-black/35 dark:text-white/30 uppercase tracking-wider flex items-center gap-2">
+            <Package className="w-3.5 h-3.5" />{L ? "آخر المشاريع" : "Recent Projects"}
+          </h2>
+          <Link href="/admin/orders"><Button variant="ghost" size="sm" className="text-xs gap-1 text-black/40 h-7">{L ? "الكل" : "All"} <ChevronRight className="w-3 h-3" /></Button></Link>
+        </div>
+        <div className="space-y-2">
+          {orderList.slice(0, 6).map((order: any) => (
+            <div key={order._id || order.id} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-black dark:text-white">{order.projectType || order.sector || (L ? "مشروع" : "Project")}</p>
+                <p className="text-[11px] text-black/35 dark:text-white/35">{order.clientName || ""}</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] border-black/10 dark:border-white/10">{order.status}</Badge>
+            </div>
+          ))}
+          {orderList.length === 0 && <p className="text-center text-black/30 dark:text-white/30 text-sm py-6">{L ? "لا توجد مشاريع" : "No projects"}</p>}
+        </div>
+      </motion.div>
+
+      <QiroxPostsBanner />
     </div>
   );
 }
@@ -833,6 +899,7 @@ export default function EmployeeRoleDashboard() {
     marketing:     <MarketingDashboard />,
     hr:            <HRDashboard />,
     content:       <ContentDashboard />,
+    data_entry:    <DataEntryDashboard />,
     admin:         <AdminManagerDashboard />,
     manager:       <AdminManagerDashboard />,
   };

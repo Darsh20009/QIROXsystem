@@ -962,6 +962,26 @@ app.get("/api/public/feature-flags", async (_req, res) => {
   res.json({ ok: true, flags });
 });
 
+// ── Startup gate ─────────────────────────────────────────────────────────────
+// The HTTP listener intentionally starts before MongoDB and route registration
+// so platform health checks can connect quickly. Until the full app is ready,
+// serve the pre-built SPA instead of Express' default "Cannot GET /route"
+// response. API callers get an explicit retryable response during this short
+// window rather than an HTML 404.
+let applicationReady = false;
+const earlyFrontendIndex = path.resolve(process.cwd(), "dist/public/index.html");
+app.use((req, res, next) => {
+  if (applicationReady) return next();
+  if (req.path.startsWith("/api/")) {
+    return res.status(503).json({ error: "server_starting", retryAfterSeconds: 2 });
+  }
+  if (existsSync(earlyFrontendIndex)) {
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    return res.sendFile(earlyFrontendIndex);
+  }
+  return next();
+});
+
 // ── Start HTTP server immediately (Render needs it responding fast) ──────────
 const port = parseInt(process.env.PORT || "5000", 10);
 httpServer.listen({ port, host: "0.0.0.0" }, () => {
@@ -1104,6 +1124,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
+  applicationReady = true;
+  console.log("[Startup] Application routes and frontend are ready");
 
   // Cron jobs
   const nodeCron = await import("node-cron");
