@@ -813,13 +813,21 @@ function AdminManagerDashboard() {
 }
 
 /* ─────────────────────── DATA ENTRY DASHBOARD ─────────────────────── */
+function normalizeListResponse(payload: any): any[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.orders)) return payload.orders;
+  if (Array.isArray(payload?.results)) return payload.results;
+  return [];
+}
+
 function DataEntryDashboard() {
   const { lang } = useI18n();
   const L = lang === "ar";
-  const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
-  const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
-  const orderList = Array.isArray(orders) ? orders : [];
-  const customerList = Array.isArray(customers) ? customers : [];
+  const { data: ordersPayload } = useQuery<any>({ queryKey: ["/api/admin/orders"] });
+  const { data: customersPayload } = useQuery<any>({ queryKey: ["/api/admin/customers"] });
+  const orderList = normalizeListResponse(ordersPayload);
+  const customerList = normalizeListResponse(customersPayload);
   const pendingOrders = orderList.filter(order => !["completed", "cancelled", "rejected"].includes(order.status));
 
   return (

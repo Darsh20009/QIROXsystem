@@ -1631,6 +1631,10 @@ export async function registerRoutes(
             },
             { upsert: true, new: true }
           );
+          await UM2.findByIdAndUpdate((user as any)._id || (user as any).id, {
+            $set: { workEmail: normalizedEmail },
+          });
+          (user as any).workEmail = normalizedEmail;
           console.log(`[Mail] Work email record saved: ${normalizedEmail} → user ${user.username}`);
         } catch (mailErr: any) {
           console.error("[Mail] Failed to create work email:", mailErr.message);

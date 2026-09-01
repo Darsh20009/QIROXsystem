@@ -56,6 +56,7 @@ export default function QMeetJoinByCode() {
   const [guestName, setGuestName] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   const autoLookupDoneRef = useRef(false);
+  const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Waiting room timer
   const [waitSeconds, setWaitSeconds] = useState(0);
@@ -117,6 +118,26 @@ export default function QMeetJoinByCode() {
   useEffect(() => {
     if (step !== "pending") return;
 
+    const checkStatus = async () => {
+      try {
+        const guestQuery = user ? "" : `?guestId=${encodeURIComponent(String(effectiveUserId))}`;
+        const res = await fetch(`/api/qmeet/by-code/${code}/my-status${guestQuery}`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === "approved" && data.meetingLink) {
+          setMeetingLink(data.meetingLink);
+          setStep("approved");
+        } else if (data.status === "rejected") {
+          setStep("rejected");
+        }
+      } catch {
+        // The WebSocket remains the primary channel; polling is only a
+        // recovery path for mobile networks and proxies.
+      }
+    };
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
@@ -138,7 +159,16 @@ export default function QMeetJoinByCode() {
       } catch {}
     };
 
-    return () => ws.close();
+    // Do not leave a guest waiting forever when the approval WebSocket is
+    // dropped or a proxy does not forward it.
+    checkStatus();
+    statusPollRef.current = setInterval(checkStatus, 3000);
+
+    return () => {
+      ws.close();
+      if (statusPollRef.current) clearInterval(statusPollRef.current);
+      statusPollRef.current = null;
+    };
   }, [step, effectiveUserId]);
 
   const handleCodeInput = (val: string) => {

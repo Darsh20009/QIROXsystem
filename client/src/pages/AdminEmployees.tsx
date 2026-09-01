@@ -365,7 +365,10 @@ export default function AdminEmployees() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<EmployeeForm> }) => {
-      const { salaryType, fixedSalary, hourlyRate, commissionRate, ...userFields } = data as any;
+      const { salaryType, fixedSalary, hourlyRate, commissionRate, workEmailAddress, createWorkEmail, ...userFields } = data as any;
+      if (workEmailAddress !== undefined) {
+        userFields.workEmail = String(workEmailAddress || "").trim().toLowerCase();
+      }
       const res = await apiRequest("PATCH", `/api/admin/users/${id}`, userFields);
       if (salaryType) await saveSalaryData(id, data as EmployeeForm);
       return res.json();
@@ -452,6 +455,8 @@ export default function AdminEmployees() {
       tiktok: (emp as any).tiktok || "", youtube: (emp as any).youtube || "",
       linktree: (emp as any).linktree || "",
       additionalRoles: (emp as any).additionalRoles || [],
+      createWorkEmail: false,
+      workEmailAddress: (emp as any).workEmail || "",
       allowedPages: (emp as any).allowedPages?.length ? (emp as any).allowedPages : null,
     });
     setShowForm(true);
@@ -616,55 +621,73 @@ export default function AdminEmployees() {
                   </div>
                 </div>
 
-                {/* Work Email Toggle — only shown when creating, not editing */}
-                {!editingId && (
+                {/* Work email: create it for a new employee, or link/update it while editing */}
+                {canManageStaff && (
                   <div className="mt-4 pt-4 border-t border-black/[0.06]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Mail className="w-3.5 h-3.5 text-black/30" />
-                        <span className="text-[11px] font-bold text-black/50">{L ? "إنشاء بريد عمل للموظف" : "Create work email for employee"}</span>
+                        <span className="text-[11px] font-bold text-black/50">
+                          {editingId
+                            ? (L ? "البريد المؤسسي للموظف" : "Employee work email")
+                            : (L ? "إنشاء بريد عمل للموظف" : "Create work email for employee")}
+                        </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setForm(f => ({
-                          ...f,
-                          createWorkEmail: !f.createWorkEmail,
-                          workEmailAddress: !f.createWorkEmail ? `${f.username}@qirox.online` : "",
-                        }))}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${form.createWorkEmail ? "bg-black" : "bg-black/20"}`}
-                        data-testid="toggle-create-work-email"
-                        aria-pressed={form.createWorkEmail}
-                      >
-                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${form.createWorkEmail ? (L ? "-translate-x-1.5" : "translate-x-4") : (L ? "-translate-x-4" : "translate-x-1")}`} />
-                      </button>
+                      {!editingId && (
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            createWorkEmail: !f.createWorkEmail,
+                            workEmailAddress: !f.createWorkEmail ? `${f.username}@qirox.online` : "",
+                          }))}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${form.createWorkEmail ? "bg-black" : "bg-black/20"}`}
+                          data-testid="toggle-create-work-email"
+                          aria-pressed={form.createWorkEmail}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${form.createWorkEmail ? (L ? "-translate-x-1.5" : "translate-x-4") : (L ? "-translate-x-4" : "translate-x-1")}`} />
+                        </button>
+                      )}
                     </div>
-                    {form.createWorkEmail && (
-                      <div className="mt-3">
-                        <Label className="text-[11px] text-black/40 mb-1.5 block">{L ? "عنوان البريد المؤسسي" : "Work Email Address"}</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            dir="ltr"
-                            value={form.workEmailAddress}
-                            onChange={e => setForm({ ...form, workEmailAddress: e.target.value })}
-                            placeholder="username@qirox.online"
-                            className="h-9 text-xs border-black/[0.08] flex-1"
-                            data-testid="input-work-email-address"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setForm(f => ({ ...f, workEmailAddress: `${f.username}@qirox.online` }))}
-                            className="h-9 px-3 text-[11px] font-bold border border-black/[0.08] rounded-lg hover:bg-black/[0.04] transition-colors whitespace-nowrap"
-                            data-testid="button-auto-suggest-email"
-                          >
-                            {L ? "تلقائي" : "Auto"}
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-black/30 mt-1.5 flex items-center gap-1">
-                          <Shield className="w-3 h-3" />
-                          {L ? "سيتم إنشاء الحساب في نظام البريد الداخلي تلقائياً باعتماد بيانات cPanel" : "Account will be created in the mail system using cPanel credentials"}
-                        </p>
+                    <div className="mt-3">
+                      <Label className="text-[11px] text-black/40 mb-1.5 block">
+                        {editingId
+                          ? (L ? "عنوان البريد المؤسسي (يمكن تركه فارغاً لإزالته)" : "Work email address (leave blank to remove)")
+                          : (L ? "عنوان البريد المؤسسي" : "Work Email Address")}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          dir="ltr"
+                          value={form.workEmailAddress}
+                          onChange={e => setForm(f => ({
+                            ...f,
+                            workEmailAddress: e.target.value,
+                            createWorkEmail: editingId ? f.createWorkEmail : Boolean(e.target.value.trim()),
+                          }))}
+                          placeholder="username@qirox.online"
+                          className="h-9 text-xs border-black/[0.08] flex-1"
+                          data-testid="input-work-email-address"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            createWorkEmail: true,
+                            workEmailAddress: `${f.username}@qirox.online`,
+                          }))}
+                          className="h-9 px-3 text-[11px] font-bold border border-black/[0.08] rounded-lg hover:bg-black/[0.04] transition-colors whitespace-nowrap"
+                          data-testid="button-auto-suggest-email"
+                        >
+                          {L ? "تلقائي" : "Auto"}
+                        </button>
                       </div>
-                    )}
+                      <p className="text-[10px] text-black/30 mt-1.5 flex items-center gap-1">
+                        <Shield className="w-3 h-3" />
+                        {editingId
+                          ? (L ? "سيتم حفظ البريد ضمن ملف الموظف ويمكن إدارته من حسابات البريد" : "Saved on the employee profile and can be managed from Email Accounts")
+                          : (L ? "عند تعبئة الخانة سيتم إنشاء الحساب تلقائياً في نظام البريد باعتماد بيانات cPanel" : "Filling this field creates the mailbox automatically using cPanel credentials")}
+                      </p>
+                    </div>
                   </div>
                 )}
 

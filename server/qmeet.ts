@@ -657,7 +657,7 @@ export function registerQMeetRoutes(app: Express) {
         body: `${userName} يطلب الانضمام إلى: ${meeting.title}`,
         icon: "/icon-192.png", badge: "/favicon-32.png",
         tag: `join-req-${String(meeting._id)}`,
-        data: { url: `/meet/${meeting.meetingLink || String(meeting._id)}` },
+        data: { url: meeting.meetingLink || `/meet/join?code=${meeting.joinCode}` },
       }).catch(() => {});
 
       res.json({ status: "pending" });
