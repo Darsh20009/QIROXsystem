@@ -810,21 +810,11 @@ export default function ClientDashboardSimple({ user }: Props) {
   const { state: journeyState, order: journeyOrder, project: journeyProject } = getJourneyState(orders as any[], projects as any[]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-[#f5f7f9] dark:bg-gray-950" dir="rtl">
 
       {/* ── Hero Banner — Video Background ── */}
-      <div className="bg-black relative overflow-hidden" style={{ minHeight: 220 }}>
-        {/* Brand video background */}
-        <video
-          autoPlay muted loop playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.35 }}
-          src="/qirox-brand.mp4"
-        />
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/60" />
-        <div className="absolute top-0 right-0 w-72 h-72 bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent z-10" />
+      <div className="bg-[#0d263d] relative overflow-hidden" style={{ minHeight: 220 }}>
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f5f7f9] dark:from-gray-950 to-transparent z-10" />
 
         <div className="max-w-2xl mx-auto px-4 pt-8 pb-16 relative z-10">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -838,12 +828,12 @@ export default function ClientDashboardSimple({ user }: Props) {
 
             <div className="flex items-center gap-3 flex-wrap">
               <Link href="/prices">
-                <Button size="sm" className="bg-white text-black hover:bg-white/90 rounded-full h-10 px-5 font-bold gap-2 shadow-xl border-0" data-testid="button-new-order">
+               <Button size="sm" className="bg-white text-[#0d263d] hover:bg-slate-100 rounded-xl h-10 px-5 font-bold gap-2 border-0" data-testid="button-new-order">
                   <Plus className="w-4 h-4" /> طلب جديد
                 </Button>
               </Link>
               <Link href="/cs-chat">
-                <Button size="sm" variant="outline" className="rounded-full h-10 px-4 border-white/30 text-white/80 bg-white/[0.1] hover:bg-white/[0.2] hover:text-white gap-2 backdrop-blur-sm">
+                 <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 border-white/30 text-white/80 bg-white/[0.08] hover:bg-white/[0.14] hover:text-white gap-2">
                   <MessageSquare className="w-3.5 h-3.5" /> تواصل معنا
                 </Button>
               </Link>
@@ -878,7 +868,7 @@ export default function ClientDashboardSimple({ user }: Props) {
 
           const statsItems = [
             { label: "طلباتي", value: (orders as any[]).length, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-500/10", icon: FileText },
-            { label: "مشاريع نشطة", value: activeProjects.length, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-500/10", icon: Activity },
+            { label: "مشاريع نشطة", value: activeProjects.length, color: "text-[#0d5575]", bg: "bg-[#e8f1f5] dark:bg-cyan-500/10", icon: Activity },
             { label: "رصيد المحفظة", value: walletBalance > 0 ? `${walletBalance.toLocaleString()} ر.س` : "0", color: "text-green-600", bg: "bg-green-50 dark:bg-green-500/10", icon: CreditCard },
           ];
 
@@ -927,9 +917,9 @@ export default function ClientDashboardSimple({ user }: Props) {
                       </div>
                       <p className="text-[10px] mt-1 text-gray-400 dark:text-slate-500">
                         {quotaLeft === 0
-                          ? "⚠️ استنفدت رصيد التعديلات — اطلب إضافة رصيد"
+                           ? "استنفدت رصيد التعديلات — اطلب إضافة رصيد"
                           : quotaLeft <= 2
-                          ? `⚠️ متبقي ${quotaLeft} تعديل فقط هذه الفترة`
+                           ? `متبقي ${quotaLeft} تعديل فقط هذه الفترة`
                           : `متبقي ${quotaLeft} تعديل من أصل ${quotaTotal} هذه الفترة`}
                       </p>
                     </div>
@@ -971,17 +961,17 @@ export default function ClientDashboardSimple({ user }: Props) {
 
         {/* ── Tabs: Projects / Orders ── */}
         <div className="mt-6">
-          <div className="flex bg-gray-100 dark:bg-white/[0.05] rounded-2xl p-1 mb-4">
+              <div className="flex bg-slate-100 dark:bg-white/[0.05] rounded-xl p-1 mb-4">
             <button
               onClick={() => setActiveTab("projects")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === "projects" ? "bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500"}`}
+               className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "projects" ? "bg-white dark:bg-gray-800 border border-slate-200 dark:border-white/10 text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500"}`}
               data-testid="tab-projects"
             >
               مشاريعي
             </button>
             <button
               onClick={() => setActiveTab("orders")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === "orders" ? "bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500"}`}
+               className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "orders" ? "bg-white dark:bg-gray-800 border border-slate-200 dark:border-white/10 text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500"}`}
               data-testid="tab-orders"
             >
               طلباتي ({(orders as any[]).length})
@@ -1221,7 +1211,7 @@ export default function ClientDashboardSimple({ user }: Props) {
         <div className="mt-6 grid grid-cols-2 gap-3">
           {[
             { label: "تواصل مع الدعم",  desc: "نرد خلال دقائق",   href: "/cs-chat",         icon: Headphones, color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-500/[0.08]",   border: "border-blue-100 dark:border-blue-500/20" },
-            { label: "طلب تعديل",        desc: "على مشروعك الحالي", href: "/support",          icon: RefreshCw,  color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-500/[0.08]", border: "border-violet-100 dark:border-violet-500/20" },
+             { label: "طلب تعديل",        desc: "على مشروعك الحالي", href: "/support",          icon: RefreshCw,  color: "text-[#0d5575]", bg: "bg-[#e8f1f5] dark:bg-cyan-500/[0.08]", border: "border-[#c9e1e9] dark:border-cyan-500/20" },
             { label: "فواتيري",          desc: "سجل المدفوعات",    href: "/client/invoices",  icon: FileText,   color: "text-gray-600",   bg: "bg-gray-50 dark:bg-white/[0.04]",        border: "border-gray-100 dark:border-white/[0.07]" },
             { label: "محفظتي",           desc: "رصيدي الحالي",     href: "/wallet",           icon: CreditCard, color: "text-green-600",  bg: "bg-green-50 dark:bg-green-500/[0.08]",   border: "border-green-100 dark:border-green-500/20" },
           ].map((link, i) => (

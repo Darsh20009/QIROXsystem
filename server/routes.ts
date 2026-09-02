@@ -2222,6 +2222,43 @@ export async function registerRoutes(
     res.json(sanitizeUser(req.user));
   });
 
+  // Apple requires account creation flows to provide account deletion in-app.
+  // Client accounts can remove themselves; staff and management accounts stay
+  // under the existing administrative account lifecycle.
+  app.delete("/api/account", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const currentUser = req.user as any;
+    if (currentUser.role !== "client") {
+      return res.status(403).json({ error: "حسابات الموظفين تُدار عبر الإدارة" });
+    }
+
+    const userId = String(currentUser._id || currentUser.id);
+    try {
+      const { UserModel, CsSessionModel, InboxMessageModel, NotificationModel, AttendanceModel, DeviceTokenModel, PushSubscriptionModel } = await import("./models");
+      const deleted = await UserModel.findByIdAndDelete(userId);
+      if (!deleted) return res.sendStatus(404);
+
+      await Promise.allSettled([
+        CsSessionModel.updateMany(
+          { $or: [{ clientId: userId }, { agentId: userId }], status: { $in: ["waiting", "active"] } },
+          { status: "closed", closedAt: new Date(), closedReason: "account_deleted" },
+        ),
+        InboxMessageModel.deleteMany({ $or: [{ fromUserId: userId }, { toUserId: userId }] }),
+        NotificationModel.deleteMany({ userId }),
+        AttendanceModel.deleteMany({ userId }),
+        DeviceTokenModel.deleteMany({ userId }),
+        PushSubscriptionModel.deleteMany({ userId }),
+      ]);
+
+      req.logout((logoutError) => {
+        if (logoutError) return next(logoutError);
+        req.session.destroy(() => res.json({ ok: true }));
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر حذف الحساب" });
+    }
+  });
+
   // Attendance API
   app.post("/api/attendance/check-in", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

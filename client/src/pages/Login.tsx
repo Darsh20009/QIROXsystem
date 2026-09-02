@@ -513,7 +513,10 @@ export default function Login() {
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
     if (isCapacitorNative()) {
-      openOAuthNative("/api/auth/google");
+      void openOAuthNative("/api/auth/google").catch(() => {
+        setGoogleLoading(false);
+        toast({ title: "تعذّر فتح تسجيل الدخول", description: "حاول مرة أخرى", variant: "destructive" });
+      });
     } else {
       window.location.href = "/api/auth/google";
     }
@@ -551,7 +554,10 @@ export default function Login() {
   const handleGithubLogin = () => {
     setGithubLoading(true);
     if (isCapacitorNative()) {
-      openOAuthNative("/api/auth/github");
+      void openOAuthNative("/api/auth/github").catch(() => {
+        setGithubLoading(false);
+        toast({ title: "تعذّر فتح تسجيل الدخول", description: "حاول مرة أخرى", variant: "destructive" });
+      });
     } else {
       window.location.href = "/api/auth/github";
     }
@@ -589,7 +595,10 @@ export default function Login() {
   const handleAppleLogin = () => {
     setAppleLoading(true);
     if (isCapacitorNative()) {
-      openOAuthNative("/api/auth/apple");
+      void openOAuthNative("/api/auth/apple").catch(() => {
+        setAppleLoading(false);
+        toast({ title: "تعذّر فتح تسجيل الدخول", description: "حاول مرة أخرى", variant: "destructive" });
+      });
     } else {
       window.location.href = "/api/auth/apple";
     }

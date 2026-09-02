@@ -73,6 +73,7 @@ export default function ClientProfile() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const { data: profile, isLoading } = useQuery<ProfileData>({
     queryKey: ["/api/profile/me"],
@@ -169,6 +170,29 @@ export default function ClientProfile() {
     } catch {
       toast({ title: "فشل الحفظ", variant: "destructive" });
     } finally { setSavingAvatar(false); }
+  };
+
+  const deleteAccount = async () => {
+    const confirmed = window.confirm(
+      L
+        ? "سيتم حذف حسابك نهائياً ولا يمكن التراجع عن ذلك. هل تريد المتابعة؟"
+        : "Your account will be permanently deleted and cannot be restored. Continue?",
+    );
+    if (!confirmed) return;
+
+    setDeletingAccount(true);
+    try {
+      const response = await apiRequest("DELETE", "/api/account");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "تعذر حذف الحساب");
+      }
+      qc.clear();
+      window.location.href = "/login";
+    } catch (error: any) {
+      setDeletingAccount(false);
+      toast({ title: error?.message || "تعذر حذف الحساب", variant: "destructive" });
+    }
   };
 
   const currentPhoto = photoPreview ?? profile?.profilePhotoUrl;
@@ -587,6 +611,30 @@ export default function ClientProfile() {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border border-red-200/80 dark:border-red-500/20 bg-red-50/50 dark:bg-red-950/10 rounded-2xl overflow-hidden">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-sm text-red-800 dark:text-red-300">حذف الحساب</h3>
+              <p className="text-xs text-red-700/70 dark:text-red-300/70 mt-1 leading-relaxed">
+                حذف الحساب نهائي ولا يمكن استرجاع بيانات الدخول بعد التأكيد.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={deleteAccount}
+              disabled={deletingAccount}
+              className="shrink-0 border-red-300 text-red-700 hover:bg-red-100 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
+              data-testid="button-delete-account"
+            >
+              {deletingAccount ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              حذف الحساب
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

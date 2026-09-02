@@ -318,10 +318,10 @@ const ROLE_SCOPE_COLORS: Record<string, { bg: string; text: string; border: stri
 
 function getTimeLabel(): string {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return "صباح الخير ☀️";
-  if (h >= 12 && h < 17) return "مساء الخير 🌤️";
-  if (h >= 17 && h < 21) return "مساء النور 🌆";
-  return "ليلة طيبة 🌙";
+  if (h >= 5 && h < 12) return "صباح الخير";
+  if (h >= 12 && h < 17) return "مساء الخير";
+  if (h >= 17 && h < 21) return "مساء النور";
+  return "ليلة طيبة";
 }
 
 /* ── Attendance Status Pill ──────────────────────────────────────── */
@@ -340,7 +340,7 @@ function AttendanceStatusPill() {
   if (!data) return null;
   const isClockedIn = data.clockedIn || data.isCheckedIn;
   return (
-    <div className="mx-2 mb-1 px-3 py-2 rounded-xl flex items-center gap-2 bg-black/[0.03] dark:bg-white/[0.04]">
+      <div className="mx-2 mb-1 px-3 py-2 rounded-xl flex items-center gap-2 bg-slate-100/80 dark:bg-white/[0.04]">
       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isClockedIn ? "bg-emerald-500 animate-pulse" : "bg-black/20 dark:bg-white/20"}`} />
       <span className="text-[11px] font-semibold text-black/50 dark:text-white/45 flex-1">
         {isClockedIn ? (L ? "حاضر" : "Clocked In") : (L ? "خارج" : "Clocked Out")}
@@ -390,12 +390,12 @@ function DailyHub({ onAiOpen, onItemClick, role }: { onAiOpen: () => void; onIte
   ];
 
   return (
-    <div className="px-3 py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+        <div className="px-3 py-3 border-b border-slate-200/80 dark:border-white/[0.06]">
       {/* Time + AI CTA */}
       <button
         onClick={() => { onAiOpen(); onItemClick?.(); }}
         data-testid="daily-hub-ai"
-        className="w-full rounded-xl bg-gradient-to-l from-black to-black/85 dark:from-white dark:to-white/85 p-2.5 flex items-center gap-2.5 hover:from-black/90 dark:hover:from-white/90 transition-all group mb-2.5 shadow-sm"
+        className="w-full rounded-xl bg-[#0d263d] p-2.5 flex items-center gap-2.5 hover:bg-[#123653] transition-colors group mb-2.5"
       >
         <div className="w-7 h-7 rounded-lg bg-white/15 dark:bg-black/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
           <img src="/qirox-icon-nobg.png" alt="Q" className="w-5 h-5 object-contain invert dark:invert-0" />
@@ -415,7 +415,7 @@ function DailyHub({ onAiOpen, onItemClick, role }: { onAiOpen: () => void; onIte
             data-testid={`daily-hub-${label}`}
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-xl bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center group-hover:scale-110 transition-transform">
+               <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center">
                 <Icon className={`w-3.5 h-3.5 ${color}`} />
               </div>
               {count != null && count > 0 && (
@@ -608,10 +608,10 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     return (
       <div className="flex flex-col h-full" dir="rtl">
         {/* Brand */}
-        <div className="px-4 pt-5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+        <div className="px-4 pt-5 pb-4 border-b border-slate-200/80 dark:border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-              <img src="/qirox-icon-nobg.png" alt="Q" className="w-5 h-5 object-contain dark:invert" />
+            <div className="w-9 h-9 bg-[#0d263d] rounded-xl flex items-center justify-center flex-shrink-0">
+              <img src="/qirox-icon-nobg.png" alt="Q" className="w-5 h-5 object-contain" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-black text-sm text-black dark:text-white leading-none tracking-tight">QIROX</p>
@@ -629,7 +629,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         </div>
 
         {/* Employee Identity */}
-        <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-white/[0.06]">
           <div className="flex items-center gap-2.5">
             <UserAvatar
               profilePhotoUrl={(user as any)?.profilePhotoUrl}
@@ -671,7 +671,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                     data-testid={`employee-workspace-${id}`}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 text-right ${
                       active
-                        ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                        ? "bg-[#0d263d] text-white shadow-sm"
                         : "text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"
                     }`}
                   >
@@ -712,7 +712,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                             data-testid={`employee-nav-${item.id}`}
                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all duration-150 text-right ${
                               active
-                                ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                                 ? "bg-[#0d263d] text-white shadow-sm"
                                 : "text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"
                             }`}
                           >
@@ -814,7 +814,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   return (
     <div className="min-h-screen bg-[#f6f6f6] dark:bg-gray-950 flex" dir="rtl">
       {/* ── Desktop Sidebar ── */}
-      <aside className="hidden md:flex w-60 flex-col fixed top-0 right-0 bottom-0 bg-white dark:bg-gray-900 border-l border-black/[0.06] dark:border-white/[0.06] z-40">
+      <aside className="hidden md:flex w-[272px] flex-col fixed top-0 right-0 bottom-0 bg-[#fbfcfd] dark:bg-gray-900 border-l border-slate-200/80 dark:border-white/[0.06] z-40">
         <SidebarContent />
       </aside>
 
@@ -837,7 +837,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
-              className="fixed top-0 right-0 bottom-0 w-64 bg-white dark:bg-gray-900 z-50 md:hidden shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-72 bg-[#fbfcfd] dark:bg-gray-900 z-50 md:hidden shadow-xl"
             >
               <SidebarContent onItemClick={() => setSidebarOpen(false)} isMobile />
             </motion.aside>
@@ -846,19 +846,19 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       </AnimatePresence>
 
       {/* ── Main Area ── */}
-      <div className="flex-1 md:mr-60 flex flex-col min-h-screen">
+      <div className="flex-1 md:mr-[272px] flex flex-col min-h-screen">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] sticky top-0 z-30 shadow-sm">
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#fbfcfd] dark:bg-gray-900 border-b border-slate-200/80 dark:border-white/[0.06] sticky top-0 z-30">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-              <img src="/qirox-icon-nobg.png" alt="Q" className="w-4 h-4 object-contain dark:invert" />
+            <div className="w-7 h-7 bg-[#0d263d] rounded-lg flex items-center justify-center">
+              <img src="/qirox-icon-nobg.png" alt="Q" className="w-4 h-4 object-contain" />
             </div>
             <span className="font-black text-sm text-black dark:text-white tracking-tight">QIROX Studio</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAiOpen(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-black dark:bg-white shadow-sm"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#0d263d]"
               data-testid="employee-ai-mobile-btn"
             >
               <Sparkles className="w-3.5 h-3.5 text-white dark:text-black" />
@@ -926,7 +926,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
       {/* ── Mobile Bottom Nav ── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-black/[0.06] dark:border-white/[0.06] shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.08)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#fbfcfd] dark:bg-gray-900 border-t border-slate-200/80 dark:border-white/[0.06]"
         dir="rtl"
       >
         <div className="flex items-stretch justify-around px-1 py-1.5">
