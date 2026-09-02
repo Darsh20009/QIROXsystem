@@ -4,7 +4,7 @@ description: How Google/Apple/GitHub OAuth works on Capacitor native to satisfy 
 ---
 
 ## Rule
-On Capacitor native (`isCapacitorNative() === true`), all OAuth flows use `@capacitor/browser` instead of `window.location.href`. This opens SFSafariViewController (iOS) / Chrome Custom Tabs (Android) — both are in-app and pass App Store review.
+On Capacitor native (`isCapacitorNative() === true`), all OAuth flows use `@capacitor/browser` instead of `window.location.href`. This opens SFSafariViewController (iOS) / Chrome Custom Tabs (Android) — both are in-app and pass App Store review. Detect native mode through the runtime global's `isNativePlatform()` function before the legacy flags.
 
 **Implementation in `client/src/pages/Login.tsx`:**
 ```typescript
@@ -29,7 +29,7 @@ const openOAuthNative = async (path: string) => {
 
 **Why:** Apple Guideline 4 rejects apps that open the system browser (Safari.app) for sign-in. SFSafariViewController is Apple's recommended in-app solution. `@capacitor/browser` wraps it automatically.
 
-**How to apply:** Any new OAuth provider added must also call `openOAuthNative(path)` on native, not `window.location.href`. The `handleGoogleLogin`, `handleAppleLogin`, `handleGithubLogin` functions in Login.tsx all follow this pattern.
+**How to apply:** Any new OAuth provider added must also call `openOAuthNative(path)` on native, not `window.location.href`. The `handleGoogleLogin`, `handleAppleLogin`, `handleGithubLogin` functions in Login.tsx all follow this pattern. Do not statically import `@capacitor/core` in the browser bundle; this project's build leaves Capacitor packages external and the native runtime supplies `window.Capacitor`.
 
 ## Session regeneration
 Capture the native-flow marker before calling `req.login`; Passport may regenerate the session during login and discard transient session fields. Pass the captured boolean into the final redirect helper.
