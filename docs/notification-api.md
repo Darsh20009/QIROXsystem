@@ -5,13 +5,14 @@
 ## القنوات
 
 - **البريد:** يستخدم إعدادات SMTP الموجودة مسبقاً، مع ثلاث محاولات محدودة لكل إرسال.
-- **WhatsApp Business Cloud API (الموصى به):** اضبط `WHATSAPP_PROVIDER=meta` ثم أضف هذه القيم في Secrets/Environment فقط:
+- **WhatsApp Web عبر Baileys (القناة التشغيلية الأساسية):** لا يحتاج إلى Meta أو رموز وصول؛ يجب ربط جلسة WhatsApp من لوحة إدارة WhatsApp، ويستخدمها QIROX تلقائياً لإرسال الإشعارات.
+- **WhatsApp Business Cloud API (اختياري فقط):** لا يُستخدم إلا عند ضبط `WHATSAPP_PROVIDER=meta` صراحةً ثم إضافة هذه القيم في Secrets/Environment فقط:
   - `WHATSAPP_META_ACCESS_TOKEN`
   - `WHATSAPP_META_PHONE_NUMBER_ID`
   - `WHATSAPP_META_API_VERSION` (اختياري؛ الافتراضي `v22.0`)
   - `WHATSAPP_META_TEMPLATE_LANGUAGE` (اختياري؛ الافتراضي `ar`)
 - **قوالب Meta المعتمدة:** لا يكفي وجود قالب داخل QIROX. عند اعتماد قالب داخل Meta، اربط اسمه بمتغير مثل `WHATSAPP_META_TEMPLATE_ORDER_STATUS`. المفاتيح الحالية هي: `WELCOME_EMPLOYEE` و`ORDER_STATUS` و`PROJECT_UPDATE` و`INVOICE_READY` و`QUOTATION_READY`.
-- **التوافق المؤقت:** عند عدم تهيئة Meta، يبقى Baileys/WhatsApp Web قناة التوافق الحالية. تظهر حالته في `/api/notifications/health`.
+- **الصحة:** تظهر حالة جلسة Baileys في `/api/notifications/health`. إذا لم تكن الجلسة مربوطة، يجب مسح QR من لوحة إدارة WhatsApp قبل الإرسال.
 
 تنبيه: Meta تقبل النص الحر فقط داخل نافذة خدمة العميل الخاصة بها. أما الرسائل الاستباقية فتحتاج قالباً معتمداً في Meta؛ أي رفض من Meta يبقى مسجلاً في سجل التسليم ويمكن إعادة محاولته بعد تصحيح الإعداد.
 

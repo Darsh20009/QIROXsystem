@@ -54,19 +54,20 @@ description: Free WhatsApp Web integration via @whiskeysockets/baileys — AI au
 - Significantly lighter on resources
 - Same QR-based auth flow as WhatsApp Web
 
-## Store WhatsApp Business boundary
-- Store-facing API traffic must use Meta WhatsApp Business Cloud only, with a
-  dedicated store-scoped key, durable idempotency claim, and atomic quota
-  reservation. It must never fall back to the Baileys CRM session.
+## Delivery provider decision
+- QIROX uses the persistent QR-connected Baileys/WhatsApp Web session for
+  operational, project, and store/system notifications.
+- Meta WhatsApp Business is not part of the QIROX operating model. It remains
+  an explicit opt-in compatibility path only when `WHATSAPP_PROVIDER=meta` is
+  deliberately configured.
 
-**Why:** The QR-connected session is an internal operational CRM identity,
-not an externally provisioned WhatsApp Business transport. Falling back would
-break store isolation and could send a customer's transactional traffic through
-the wrong account.
+**Why:** The QIROX WhatsApp system is the existing always-on WhatsApp Web
+connection. Requiring Meta credentials caused normal QIROX notifications to
+fail with an irrelevant configuration error.
 
-**How to apply:** Any new store/system WhatsApp endpoint belongs on the
-official delivery path, records a delivery result, and keeps retries tied to
-the original quota reservation and idempotency key.
+**How to apply:** Keep Baileys as the default in provider selection and
+deployment configuration. Only use Meta when an administrator intentionally
+selects it; never infer Meta from the presence of environment variables.
 
 ## Connection lifecycle
 1. POST /connect → `waModule.connect()` starts Baileys

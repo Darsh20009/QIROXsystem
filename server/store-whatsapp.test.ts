@@ -11,7 +11,7 @@ import { NotificationDeliveryModel } from "./models/notification-delivery";
 import { claimStoreWhatsAppRequest, reserveStoreWhatsAppQuota, reserveStoreWhatsAppRateLimit } from "./notifications/store-whatsapp";
 import { dispatchNotification } from "./notifications/service";
 
-test("store WhatsApp quota, idempotency, and Meta-only failure behavior", async () => {
+test("store WhatsApp quota, idempotency, and internal Baileys delivery behavior", async () => {
   assert.ok(process.env.MONGODB_URI, "MONGODB_URI is required for this integration check");
   await mongoose.connect(process.env.MONGODB_URI!);
   const keyId = new mongoose.Types.ObjectId();
@@ -21,6 +21,7 @@ test("store WhatsApp quota, idempotency, and Meta-only failure behavior", async 
   let deliveryId = "";
   const originalToken = process.env.WHATSAPP_META_ACCESS_TOKEN;
   const originalPhoneId = process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+  const originalProvider = process.env.WHATSAPP_PROVIDER;
 
   try {
     const key = await StoreWhatsAppApiKeyModel.create({
@@ -54,6 +55,7 @@ test("store WhatsApp quota, idempotency, and Meta-only failure behavior", async 
 
     delete process.env.WHATSAPP_META_ACCESS_TOKEN;
     delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
+    process.env.WHATSAPP_PROVIDER = "baileys";
     const failedDelivery = (await dispatchNotification({
       event: "store_whatsapp_test",
       idempotencyKey: `${marker}-delivery`,
@@ -65,12 +67,15 @@ test("store WhatsApp quota, idempotency, and Meta-only failure behavior", async 
       metadata: { storeWhatsApp: true, storeWhatsAppKeyId: String(keyId) },
     }))[0];
     deliveryId = failedDelivery.id;
-    assert.ok(["retrying", "failed"].includes(failedDelivery.status), "missing Meta configuration is recorded as a failed/retrying delivery");
+    assert.ok(["retrying", "failed"].includes(failedDelivery.status), "a disconnected Baileys session is recorded as a failed/retrying delivery");
+    assert.equal(failedDelivery.error?.includes("Meta WhatsApp Business غير مهيأ"), false, "internal WhatsApp must not require Meta configuration");
   } finally {
     if (originalToken === undefined) delete process.env.WHATSAPP_META_ACCESS_TOKEN;
     else process.env.WHATSAPP_META_ACCESS_TOKEN = originalToken;
     if (originalPhoneId === undefined) delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
     else process.env.WHATSAPP_META_PHONE_NUMBER_ID = originalPhoneId;
+    if (originalProvider === undefined) delete process.env.WHATSAPP_PROVIDER;
+    else process.env.WHATSAPP_PROVIDER = originalProvider;
     if (deliveryId) await NotificationDeliveryModel.deleteOne({ _id: deliveryId });
     await StoreWhatsAppRequestModel.deleteMany({ keyId });
     await StoreWhatsAppQuotaModel.deleteMany({ keyId });

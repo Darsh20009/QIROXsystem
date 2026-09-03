@@ -29,6 +29,8 @@ services:
         value: https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png
       - key: EMAIL_SITE_URL
         value: https://qiroxstudio.online
+      - key: WHATSAPP_PROVIDER
+        value: baileys
       # === SECRET ENV VARS (set manually in Render dashboard) ===
       - key: SMTP2GO_API_KEY
         sync: false

@@ -84,6 +84,7 @@ APPLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback"
 GOOGLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/google/callback"
 OPENAI_BASE_URL = "https://bazaarlink.ai/v1"
 APPLE_KEY_ID = "X2KTZG88K9"
+WHATSAPP_PROVIDER = "baileys"
 
 [agent]
 expertMode = true

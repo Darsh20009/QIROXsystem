@@ -209,16 +209,11 @@ async function sendWhatsAppThroughBaileys(delivery: any): Promise<{ provider: st
 
 async function sendWhatsApp(delivery: any): Promise<{ provider: string; messageId?: string }> {
   const provider = (process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase();
-  const metaConfigured = Boolean(process.env.WHATSAPP_META_ACCESS_TOKEN && process.env.WHATSAPP_META_PHONE_NUMBER_ID);
-  // Store API traffic is always official Business Cloud traffic. It must
-  // never fall through to the internal Baileys session.
-  if (delivery.metadata?.storeWhatsApp === true || delivery.metadata?.projectWhatsApp === true) {
-    if (!metaConfigured) {
-      throw new Error("Meta WhatsApp Business غير مهيأ: أضف WHATSAPP_META_ACCESS_TOKEN وWHATSAPP_META_PHONE_NUMBER_ID");
-    }
-    return sendWhatsAppThroughMeta(delivery);
-  }
-  if (provider === "meta" || (!provider && metaConfigured)) return sendWhatsAppThroughMeta(delivery);
+  // QIROX's operational WhatsApp connection is the persistent WhatsApp Web
+  // session handled by Baileys. Meta remains an explicit opt-in only, so the
+  // presence of unrelated Meta environment variables cannot reroute normal
+  // notifications or make them fail because Meta is not configured.
+  if (provider === "meta") return sendWhatsAppThroughMeta(delivery);
   if (provider === "baileys" || !provider) return sendWhatsAppThroughBaileys(delivery);
   throw new Error("WHATSAPP_PROVIDER غير مدعوم. استخدم meta أو baileys");
 }
@@ -381,7 +376,7 @@ export function startNotificationWorker(): void {
 export async function getNotificationHealth(): Promise<Record<string, unknown>> {
   const metaConfigured = Boolean(process.env.WHATSAPP_META_ACCESS_TOKEN && process.env.WHATSAPP_META_PHONE_NUMBER_ID);
   const requestedProvider = (process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase();
-  const activeProvider = requestedProvider || (metaConfigured ? "meta" : "baileys");
+  const activeProvider = requestedProvider || "baileys";
   let baileysStatus: unknown = undefined;
   if (activeProvider === "baileys") {
     const { waModule } = await import("../whatsapp-module");
