@@ -19,7 +19,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen, Trophy, ChevronDown
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen, Trophy, ChevronDown, Search, X
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -104,6 +104,7 @@ const WORKSPACE_LABELS: Record<string, { ar: string; en: string; descriptionAr: 
 export function AppSidebar() {
   const [location] = useLocation();
   const [allNavigationOpen, setAllNavigationOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
   const { data: user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -372,19 +373,24 @@ export function AppSidebar() {
     return false;
   });
 
+  const normalizedSidebarSearch = sidebarSearch.trim().toLocaleLowerCase();
+  const visibleMenuItems = normalizedSidebarSearch
+    ? menuItems.filter((item) => item.title.toLocaleLowerCase().includes(normalizedSidebarSearch) || item.url.toLocaleLowerCase().includes(normalizedSidebarSearch))
+    : menuItems;
+
   const workspaceItems = Object.entries(WORKSPACE_LABELS)
     .map(([id, meta]) => {
-      const item = meta.candidates.map(url => menuItems.find(candidate => candidate.url === url)).find(Boolean);
+      const item = meta.candidates.map(url => visibleMenuItems.find(candidate => candidate.url === url)).find(Boolean);
       return item ? { id, meta, item } : null;
     })
     .filter(Boolean) as { id: string; meta: typeof WORKSPACE_LABELS[string]; item: NavItem }[];
   const workspaceUrls = new Set(workspaceItems.map(({ item }) => item.url));
-  const currentPageIsInAllTools = menuItems.some(item => !workspaceUrls.has(item.url) && location.startsWith(item.url));
+  const currentPageIsInAllTools = visibleMenuItems.some(item => !workspaceUrls.has(item.url) && location.startsWith(item.url));
 
-  const employeeItems = menuItems.filter(i => i.group === "employee");
-  const adminItems = menuItems.filter(i => i.group === "admin");
-  const clientItems = menuItems.filter(i => i.group === "client" || i.group === "public");
-  const supplierItems = menuItems.filter(i => i.group === "supplier");
+  const employeeItems = visibleMenuItems.filter(i => i.group === "employee");
+  const adminItems = visibleMenuItems.filter(i => i.group === "admin");
+  const clientItems = visibleMenuItems.filter(i => i.group === "client" || i.group === "public");
+  const supplierItems = visibleMenuItems.filter(i => i.group === "supplier");
 
   const NEUTRAL = "text-black/40 dark:text-white/40";
   const SECTION_LABELS: Record<string, { ar: string; en: string; accent: string }> = {
@@ -483,8 +489,35 @@ export function AppSidebar() {
           </Link>
           {user && <NotificationBell />}
         </div>
+        <div className="relative w-full">
+          <Search className={`pointer-events-none absolute ${ar ? "right-3" : "left-3"} top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-black/30 dark:text-white/30`} />
+          <input
+            value={sidebarSearch}
+            onChange={(event) => setSidebarSearch(event.target.value)}
+            placeholder={ar ? "ابحث في القائمة..." : "Search menu..."}
+            aria-label={ar ? "البحث في القائمة" : "Search menu"}
+            dir={ar ? "rtl" : "ltr"}
+            className={`h-9 w-full rounded-xl border border-black/[0.07] bg-black/[0.025] text-xs text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/20 focus:bg-white dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-white/30 dark:focus:border-white/20 dark:focus:bg-white/[0.06] ${ar ? "pr-9 pl-8 text-right" : "pl-9 pr-8 text-left"}`}
+            data-testid="sidebar-search-input"
+          />
+          {sidebarSearch && (
+            <button
+              type="button"
+              onClick={() => setSidebarSearch("")}
+              aria-label={ar ? "مسح البحث" : "Clear search"}
+              className={`absolute ${ar ? "left-2" : "right-2"} top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-black/30 hover:bg-black/[0.06] hover:text-black/60 dark:text-white/30 dark:hover:bg-white/[0.08] dark:hover:text-white/70`}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </SidebarHeader>
       <SidebarContent>
+        {normalizedSidebarSearch && visibleMenuItems.length === 0 && (
+          <div className="px-4 py-8 text-center text-xs text-black/35 dark:text-white/35">
+            {ar ? "لا توجد صفحات مطابقة" : "No matching pages"}
+          </div>
+        )}
         {/* Compact workspace navigation. Detailed pages remain available under All tools. */}
         {user && user.role !== "client" && user.role !== "supplier" && workspaceItems.length > 0 && (
           <SidebarGroup>
@@ -535,7 +568,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {user && user.role !== "client" && user.role !== "supplier" && (allNavigationOpen || currentPageIsInAllTools) && (
+        {user && user.role !== "client" && user.role !== "supplier" && (allNavigationOpen || currentPageIsInAllTools || !!normalizedSidebarSearch) && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px]">
               {ar ? "كل الأدوات والصفحات" : "All tools & pages"}
