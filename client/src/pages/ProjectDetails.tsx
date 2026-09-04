@@ -278,6 +278,9 @@ export default function ProjectDetails() {
       <Tabs defaultValue={section} className="w-full" dir={dir}>
         <TabsList className="bg-white border p-1 h-auto flex-wrap justify-start gap-2 hidden md:flex">
           <TabsTrigger value="status" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "حالة المشروع" : "Project Status"}</TabsTrigger>
+          <TabsTrigger value="subscription" className="data-[state=active]:bg-primary data-[state=active]:text-white" data-testid="tab-project-subscription">
+            <RefreshCw className="w-3.5 h-3.5 ml-1" /> {L ? "تتبع الاشتراك" : "Subscription Tracking"}
+          </TabsTrigger>
           <TabsTrigger value="implementation" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "مراحل التنفيذ" : "Implementation"}</TabsTrigger>
           <TabsTrigger value="files" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "ملفات المشروع" : "Project Files"}</TabsTrigger>
           <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "روابط الأدوات" : "Tool Links"}</TabsTrigger>
@@ -332,6 +335,25 @@ export default function ProjectDetails() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="subscription">
+            <div className="max-w-2xl space-y-4">
+              <div>
+                <h2 className="text-lg font-black text-black dark:text-white">
+                  {L ? "تتبع اشتراك المشروع" : "Project Subscription Tracking"}
+                </h2>
+                <p className="text-xs text-black/45 dark:text-white/45 mt-1">
+                  {L ? "تابع حالة الاشتراك والمدة المتبقية وتاريخ التجديد من مكان واحد." : "Track subscription status, remaining time, and renewal from one place."}
+                </p>
+              </div>
+              <ProjectSubscriptionCard
+                project={project}
+                lang={lang}
+                onRequestRenewal={() => requestProjectRenewalMutation.mutate()}
+                renewalPending={projectRenewalPending}
+              />
             </div>
           </TabsContent>
 
