@@ -39,7 +39,7 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
-  deleteUser(id: string): Promise<void>;
+  deleteUser(id: string): Promise<boolean>;
 
   // Attendance
   getAttendance(userId: string): Promise<Attendance[]>;
@@ -217,8 +217,9 @@ export class MongoStorage implements IStorage {
     return { ...user.toObject(), id: user._id.toString() } as any;
   }
 
-  async deleteUser(id: string): Promise<void> {
-    await UserModel.findByIdAndDelete(id);
+  async deleteUser(id: string): Promise<boolean> {
+    const deleted = await UserModel.findByIdAndDelete(id).select("_id").lean();
+    return Boolean(deleted);
   }
 
   async getAttendance(userId: string): Promise<Attendance[]> {

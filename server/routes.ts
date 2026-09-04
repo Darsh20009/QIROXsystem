@@ -1822,7 +1822,12 @@ export async function registerRoutes(
     const allowedRoles = ["admin", "manager"];
     if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     try {
-      const targetUser = await storage.getUser(req.params.id);
+      const userId = String(req.params.id || "").trim();
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ error: "معرّف الموظف غير صالح" });
+      }
+
+      const targetUser = await storage.getUser(userId);
       if (!targetUser) return res.sendStatus(404);
       if (targetUser.role === "admin") {
         return res.status(400).json({ error: "لا يمكن حذف حساب المدير" });
@@ -1831,8 +1836,9 @@ export async function registerRoutes(
       if (callerRole !== "admin" && ["admin", "manager"].includes(targetUser.role)) {
         return res.status(403).json({ error: "لا يمكن للمدير حذف حسابات الإدارة" });
       }
-      const userId = req.params.id;
-      await storage.deleteUser(userId);
+      const deleted = await storage.deleteUser(userId);
+      if (!deleted) return res.sendStatus(404);
+      invalidateUserCache(userId);
 
       // ── Cascade cleanup: close all open CS sessions for this user ──────────
       const { CsSessionModel, InboxMessageModel, AttendanceModel, DeviceTokenModel } = await import("./models");
@@ -1848,7 +1854,7 @@ export async function registerRoutes(
         AttendanceModel.deleteMany({ userId }),
       ]);
 
-      res.sendStatus(204);
+      res.json({ ok: true, deletedUserId: userId });
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }

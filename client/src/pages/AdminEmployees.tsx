@@ -302,6 +302,13 @@ export default function AdminEmployees() {
 
   const { data: users, isLoading, isError, refetch } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
 
+  const getUserId = (user: User) => String((user as any).id || (user as any)._id || "");
+  const canDeleteUser = (user: User) =>
+    canManageStaff &&
+    user.role !== "admin" &&
+    ((currentUser as any)?.role === "admin" ||
+      ((currentUser as any)?.role === "manager" && user.role !== "manager"));
+
   const handleAvatarClick = (empId: string) => {
     avatarTargetId.current = empId;
     avatarFileInputRef.current?.click();
@@ -383,7 +390,10 @@ export default function AdminEmployees() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/users/${id}`),
-    onSuccess: () => {
+    onSuccess: (_response, deletedId) => {
+      queryClient.setQueryData<User[]>(["/api/admin/users"], (currentUsers) =>
+        currentUsers?.filter((user) => getUserId(user) !== deletedId),
+      );
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: L ? "تم حذف الموظف" : "Employee deleted" });
     },
@@ -463,7 +473,13 @@ export default function AdminEmployees() {
   };
 
   const handleDelete = (emp: User) => {
-    if (confirm(L ? `هل أنت متأكد من حذف ${emp.fullName}؟` : `Delete ${emp.fullName}?`)) deleteMutation.mutate(String(emp.id));
+    if (!canDeleteUser(emp)) return;
+    const id = getUserId(emp);
+    if (!id) {
+      toast({ title: L ? "تعذر تحديد الموظف" : "Employee ID is missing", variant: "destructive" });
+      return;
+    }
+    if (confirm(L ? `هل أنت متأكد من حذف ${emp.fullName}؟` : `Delete ${emp.fullName}?`)) deleteMutation.mutate(id);
   };
 
   const handleTwoFactorRecovery = (emp: User) => {
@@ -956,7 +972,7 @@ export default function AdminEmployees() {
                   <Button size="sm" variant="outline" className="flex-1 h-8 text-xs border-black/[0.08] gap-1" onClick={() => startEdit(emp)} data-testid={`button-edit-${emp.id}`}>
                     <Edit2 className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
                   </Button>
-                  {emp.role !== 'admin' && !isDataEntry && (
+                  {canDeleteUser(emp) && (
                     <>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
                         {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
@@ -1007,7 +1023,7 @@ export default function AdminEmployees() {
                   <Badge className={`text-[10px] border hidden md:flex ${roleColors[emp.role] || roleColors.client}`}>{roleLabels[emp.role] || emp.role}</Badge>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black/60" onClick={() => startEdit(emp)} data-testid={`button-edit-list-${emp.id}`}><Edit2 className="w-3.5 h-3.5" /></Button>
-                    {emp.role !== 'admin' && !isDataEntry && (
+                    {canDeleteUser(emp) && (
                       <>
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
                           {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
