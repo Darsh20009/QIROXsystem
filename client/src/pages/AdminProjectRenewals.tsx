@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock3, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, RefreshCw, Search, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
@@ -22,6 +22,7 @@ export default function AdminProjectRenewals() {
   const { toast } = useToast();
   const L = lang === "ar";
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [searchQuery, setSearchQuery] = useState("");
   const [periods, setPeriods] = useState<Record<string, string>>({});
 
   const { data: requests = [], isLoading } = useQuery<any[]>({
@@ -49,6 +50,27 @@ export default function AdminProjectRenewals() {
     approved: { label: L ? "تمت الموافقة" : "Approved", icon: CheckCircle2 },
     rejected: { label: L ? "مرفوض" : "Rejected", icon: XCircle },
   };
+
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const filteredRequests = requests.filter((request: any) => {
+    if (!normalizedSearch) return true;
+    const statusLabel = statusLabels[request.status]?.label || request.status || "";
+    const searchableText = [
+      request.client?.fullName,
+      request.client?.username,
+      request.client?.email,
+      request.project?.name,
+      request.project?.title,
+      request.project?.businessName,
+      request.project?.slug,
+      request.project?.id,
+      request.project?._id,
+      request.subscription?.period,
+      request.status,
+      statusLabel,
+    ].filter(Boolean).join(" ").toLocaleLowerCase();
+    return searchableText.includes(normalizedSearch);
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto" dir={dir}>
@@ -81,15 +103,42 @@ export default function AdminProjectRenewals() {
         })}
       </div>
 
+      <div className="relative">
+        <Search className={`pointer-events-none absolute ${L ? "right-3" : "left-3"} top-1/2 h-4 w-4 -translate-y-1/2 text-black/30 dark:text-white/30`} />
+        <input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder={L ? "ابحث باسم العميل أو المشروع أو البريد..." : "Search by client, project, or email..."}
+          aria-label={L ? "البحث في اشتراكات المشاريع" : "Search project subscriptions"}
+          dir={dir}
+          className={`h-10 w-full rounded-xl border border-black/[0.08] bg-white text-sm text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/20 dark:border-white/[0.1] dark:bg-gray-900 dark:text-white dark:placeholder:text-white/30 dark:focus:border-white/20 ${L ? "pr-10 pl-10 text-right" : "pl-10 pr-10 text-left"}`}
+          data-testid="project-subscriptions-search"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            aria-label={L ? "مسح البحث" : "Clear search"}
+            className={`absolute ${L ? "left-2" : "right-2"} top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-black/30 hover:bg-black/[0.05] hover:text-black/60 dark:text-white/30 dark:hover:bg-white/[0.08] dark:hover:text-white/70`}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/30 dark:text-white/30" /></div>
       ) : requests.length === 0 ? (
         <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-12 text-center text-sm text-black/35 dark:text-white/35">
           {L ? "لا توجد طلبات تجديد" : "No renewal requests"}
         </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-12 text-center text-sm text-black/35 dark:text-white/35">
+          {L ? "لا توجد اشتراكات مطابقة للبحث" : "No subscriptions match your search"}
+        </div>
       ) : (
         <div className="space-y-3">
-          {requests.map((request: any) => {
+          {filteredRequests.map((request: any) => {
             const requestId = request.id || request._id;
             const clientName = request.client?.fullName || request.client?.username || "—";
             const defaultPeriod = request.subscription?.period || "annual";
