@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle, LayoutGrid, List, GitBranch, ChevronDown, ChevronRight, Fingerprint, Crown, BadgeCheck, Code2, Palette, Headphones, Truck, BarChart3, CreditCard, ToggleLeft, ToggleRight } from "lucide-react";
 import { SiInstagram, SiX, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { Linkedin } from "lucide-react";
@@ -297,6 +301,7 @@ export default function AdminEmployees() {
   const [credResult, setCredResult] = useState<CredentialResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [uploadingAvatarId, setUploadingAvatarId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const avatarTargetId = useRef<string | null>(null);
 
@@ -395,6 +400,7 @@ export default function AdminEmployees() {
         currentUsers?.filter((user) => getUserId(user) !== deletedId),
       );
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setDeleteTarget(null);
       toast({ title: L ? "تم حذف الموظف" : "Employee deleted" });
     },
     onError: (err: any) => toast({ title: L ? "خطأ" : "Error", description: err.message, variant: "destructive" }),
@@ -479,7 +485,7 @@ export default function AdminEmployees() {
       toast({ title: L ? "تعذر تحديد الموظف" : "Employee ID is missing", variant: "destructive" });
       return;
     }
-    if (confirm(L ? `هل أنت متأكد من حذف ${emp.fullName}؟` : `Delete ${emp.fullName}?`)) deleteMutation.mutate(id);
+    setDeleteTarget(emp);
   };
 
   const handleTwoFactorRecovery = (emp: User) => {
@@ -1041,6 +1047,44 @@ export default function AdminEmployees() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent dir={dir}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{L ? "حذف الموظف" : "Delete Employee"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {L ? "هل أنت متأكد من حذف حساب" : "Are you sure you want to delete"}
+              {" "}
+              <span className="font-semibold text-foreground">{deleteTarget?.fullName}</span>
+              {L ? "؟" : "?"}
+              <br />
+              <span className="text-red-600 text-xs mt-1 inline-block">
+                {L ? "لا يمكن التراجع عن هذا الإجراء." : "This action cannot be undone."}
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel data-testid="button-cancel-delete-employee">
+              {L ? "إلغاء" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = deleteTarget ? getUserId(deleteTarget) : "";
+                if (id) deleteMutation.mutate(id);
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 text-white hover:bg-red-700"
+              data-testid="button-confirm-delete-employee"
+            >
+              {deleteMutation.isPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Trash2 className="w-4 h-4" />}
+              {L ? "حذف الموظف نهائياً" : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Credential Dialog */}
       <Dialog open={!!credResult} onOpenChange={() => { setCredResult(null); setShowPassword(false); }}>
