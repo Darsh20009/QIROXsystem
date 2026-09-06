@@ -23,6 +23,7 @@ import {
   githubFetch,
   githubRepositoryName,
   resolveGitHubToken,
+  seedGitHubProjectRepository,
   updateGitHubRepositoryVisibility,
 } from "./github-repositories";
 import { registerCustomerV2Routes } from "./routes/customer-v2";
