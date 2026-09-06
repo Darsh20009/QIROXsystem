@@ -11,7 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Play, Square, RotateCcw, Download, Eye, ArrowLeft,
   Terminal, PanelRightClose, PanelRightOpen, Hammer,
-  Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw
+  Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw,
+  FolderTree, Search, GitBranch, KeyRound, Rocket, Command,
+  MoreHorizontal, Check, Circle, ChevronDown
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { FileTree } from "./FileTree";
@@ -19,6 +21,7 @@ import { CodeEditor } from "./CodeEditor";
 import { AIPanel } from "./AIPanel";
 import { EnvVarsPanel } from "./EnvVarsPanel";
 import { GitHubPanel } from "./GitHubPanel";
+import { DeploymentPanel } from "./DeploymentPanel";
 
 interface OpenTab {
   path: string;
@@ -58,6 +61,14 @@ interface FileEntry {
 interface LogEntry {
   text: string;
   stream: string;
+}
+
+function flattenFiles(entries: FileEntry[], output: FileEntry[] = []) {
+  for (const entry of entries) {
+    if (entry.type === "file") output.push(entry);
+    if (entry.children) flattenFiles(entry.children, output);
+  }
+  return output;
 }
 
 interface StartResult {
@@ -126,9 +137,12 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const [tabs, setTabs] = useState<OpenTab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [rightPanelTab, setRightPanelTab] = useState("ai");
+  const [rightPanelTab, setRightPanelTab] = useState(adminOrderId ? "deploy" : "ai");
   const [logsOpen, setLogsOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [activityView, setActivityView] = useState<"files" | "search">("files");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [shellCommand, setShellCommand] = useState("");
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -182,6 +196,17 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   useEffect(() => {
     if (logsOpen) logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs, logsOpen]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
 
   const startMutation = useMutation({
     mutationFn: async (): Promise<StartResult> => {
@@ -413,143 +438,202 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background" dir={ar ? "rtl" : "ltr"}>
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-muted/30">
+    <div className="dark h-dvh min-h-[620px] flex flex-col overflow-hidden bg-[#0d1117] text-[#f0f6fc]" dir={ar ? "rtl" : "ltr"}>
+      <header className="z-20 flex h-12 shrink-0 items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-2 shadow-[0_1px_0_rgba(0,0,0,0.25)]">
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-8 w-8 shrink-0 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
           onClick={() => navigate("/employee/system-builder")}
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-semibold truncate">{project?.name}</span>
-
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-1">
-          {isRunning ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => stopMutation.mutate()}
-                disabled={isProcessing}
-                data-testid="button-stop"
-              >
-                <Square className="w-3.5 h-3.5 me-1" />
-                {ar ? "إيقاف" : "Stop"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => restartMutation.mutate()}
-                disabled={isProcessing}
-                data-testid="button-restart"
-              >
-                <RotateCcw className="w-3.5 h-3.5 me-1" />
-                {ar ? "إعادة" : "Restart"}
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => startMutation.mutate()}
-              disabled={isProcessing}
-              data-testid="button-start"
-            >
-              {startMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 me-1 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5 me-1" />
-              )}
-              {ar ? "تشغيل" : "Start"}
-            </Button>
-          )}
-
-          {showBuildButton && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => buildMutation.mutate()}
-              disabled={buildMutation.isPending}
-              data-testid="button-build"
-            >
-              {buildMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 me-1 animate-spin" />
-              ) : (
-                <Hammer className="w-3.5 h-3.5 me-1" />
-              )}
-              {ar ? "بناء" : "Build"}
-            </Button>
-          )}
-
-          <Button
-            variant={showPreview ? "default" : "outline"}
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => setShowPreview(!showPreview)}
-            data-testid="button-toggle-preview"
-          >
-            <Eye className="w-3.5 h-3.5 me-1" />
-            {ar ? "معاينة" : "Preview"}
-          </Button>
-
-          <Button
-            variant={logsOpen ? "default" : "outline"}
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => setLogsOpen(!logsOpen)}
-            data-testid="button-toggle-logs"
-          >
-            <Terminal className="w-3.5 h-3.5 me-1" />
-            {ar ? "السجلات" : "Logs"}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={handleDownload}
-            data-testid="button-download"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            data-testid="button-toggle-panel"
-          >
-            {rightPanelOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-          </Button>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-400 to-orange-600 text-[11px] font-black text-[#161b22]">
+          Q
         </div>
-      </div>
+        <div className="min-w-0 max-w-[260px]">
+          <div className="truncate text-xs font-semibold text-[#f0f6fc]">{project?.name}</div>
+          <div className="flex items-center gap-1 text-[10px] text-[#8b949e]">
+            <GitBranch className="h-3 w-3" />
+            <span dir="ltr">{project?.githubBranch || "main"}</span>
+            <span>·</span>
+            <span>{ar ? "Workspace" : "Workspace"}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="ms-2 hidden h-7 min-w-[180px] items-center gap-2 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 text-start text-[11px] text-[#8b949e] transition hover:border-[#8b949e] hover:text-white sm:flex"
+          onClick={() => setCommandPaletteOpen(true)}
+          data-testid="button-command-search"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1">{ar ? "بحث في المشروع أو تشغيل أمر" : "Search files or run a command"}</span>
+          <kbd className="rounded border border-[#30363d] px-1 text-[9px] text-[#6e7681]">⌘ K</kbd>
+        </button>
+        <div className="flex-1" />
+        <div className="hidden items-center gap-1.5 text-[10px] text-[#8b949e] md:flex">
+          <span className={`h-2 w-2 rounded-full ${isRunning ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-[#6e7681]"}`} />
+          {isRunning ? (ar ? "يعمل الآن" : "Running") : (ar ? "متوقف" : "Stopped")}
+        </div>
+        <Button
+          size="sm"
+          className="h-8 gap-1.5 bg-orange-500 px-3 text-xs font-semibold text-[#161b22] hover:bg-orange-400"
+          onClick={() => (isRunning ? stopMutation.mutate() : startMutation.mutate())}
+          disabled={isProcessing}
+          data-testid="button-primary-run"
+        >
+          {isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isRunning ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          <span className="hidden sm:inline">{isRunning ? (ar ? "إيقاف" : "Stop") : (ar ? "تشغيل" : "Run")}</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className={`h-8 gap-1.5 border-[#30363d] px-2.5 text-xs ${showPreview ? "bg-[#21262d] text-white" : "bg-transparent text-[#c9d1d9]"} hover:bg-[#21262d]`}
+          onClick={() => setShowPreview(!showPreview)}
+          data-testid="button-toggle-preview"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">{ar ? "معاينة" : "Preview"}</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 border-[#30363d] bg-transparent px-2.5 text-xs text-[#c9d1d9] hover:bg-[#21262d]"
+          onClick={() => { setRightPanelOpen(true); setRightPanelTab("deploy"); }}
+          data-testid="button-open-deploy"
+        >
+          <Rocket className="h-3.5 w-3.5 text-orange-400" />
+          <span className="hidden lg:inline">{ar ? "نشر" : "Deploy"}</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+          onClick={() => setRightPanelOpen(!rightPanelOpen)}
+          data-testid="button-toggle-panel"
+        >
+          {rightPanelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+          onClick={() => setCommandPaletteOpen(true)}
+          data-testid="button-workspace-menu"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </header>
 
-      <div className="flex-1 flex min-h-0">
-        <div style={{ width: leftPanel.size }} className="border-e border-border flex-shrink-0 overflow-hidden">
-          <FileTree
-            files={fileTree || []}
-            activeFile={activeTab}
-            onFileSelect={handleFileSelect}
-            onCreateFile={handleCreateFile}
-            onCreateFolder={handleCreateFolder}
-            onRename={handleRename}
-            onDelete={handleDelete}
-            isLoading={filesLoading}
-          />
+      <div className="relative flex min-h-0 flex-1 pb-6">
+        <nav className="flex w-12 shrink-0 flex-col items-center border-e border-[#30363d] bg-[#0d1117] py-2" aria-label={ar ? "أدوات المشروع" : "Project tools"}>
+          <button
+            type="button"
+            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "files" ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+            onClick={() => setActivityView("files")}
+            title={ar ? "المستكشف" : "Explorer"}
+            data-testid="button-activity-files"
+          >
+            <FolderTree className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "search" ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+            onClick={() => setActivityView("search")}
+            title={ar ? "بحث" : "Search"}
+            data-testid="button-activity-search"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-[#8b949e] transition hover:bg-[#161b22] hover:text-white"
+            onClick={() => { setRightPanelOpen(true); setRightPanelTab("github"); }}
+            title={ar ? "GitHub" : "Source control"}
+            data-testid="button-activity-git"
+          >
+            <GitBranch className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-[#8b949e] transition hover:bg-[#161b22] hover:text-white"
+            onClick={() => { setRightPanelOpen(true); setRightPanelTab("env"); }}
+            title={ar ? "أسرار المشروع" : "Project secrets"}
+            data-testid="button-activity-secrets"
+          >
+            <KeyRound className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-[#8b949e] transition hover:bg-[#161b22] hover:text-white"
+            onClick={() => { setRightPanelOpen(true); setRightPanelTab("deploy"); }}
+            title={ar ? "النشر" : "Deploy"}
+            data-testid="button-activity-deploy"
+          >
+            <Rocket className="h-5 w-5" />
+          </button>
+          <div className="mt-auto">
+            <button
+              type="button"
+              className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${logsOpen ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+              onClick={() => setLogsOpen(!logsOpen)}
+              title={ar ? "Terminal" : "Terminal"}
+              data-testid="button-activity-terminal"
+            >
+              <Terminal className="h-5 w-5" />
+            </button>
+          </div>
+        </nav>
+
+        <div style={{ width: leftPanel.size }} className="flex-shrink-0 overflow-hidden border-e border-[#30363d] bg-[#161b22]">
+          {activityView === "files" ? (
+            <FileTree
+              files={fileTree || []}
+              activeFile={activeTab}
+              onFileSelect={handleFileSelect}
+              onCreateFile={handleCreateFile}
+              onCreateFolder={handleCreateFolder}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              isLoading={filesLoading}
+            />
+          ) : (
+            <div className="flex h-full flex-col bg-[#161b22]">
+              <div className="border-b border-[#30363d] px-3 py-3">
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8b949e]">{ar ? "بحث" : "Search"}</div>
+                <Input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={ar ? "ابحث في أسماء الملفات" : "Search file names"}
+                  className="h-8 border-[#30363d] bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
+                  data-testid="input-workspace-search"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto p-2">
+                {flattenFiles(fileTree || [])
+                  .filter((entry) => !searchQuery || entry.path.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((entry) => (
+                    <button
+                      type="button"
+                      key={entry.path}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-start text-xs text-[#c9d1d9] hover:bg-[#21262d] hover:text-white"
+                      onClick={() => handleFileSelect(entry.path)}
+                      dir="ltr"
+                    >
+                      <Search className="h-3.5 w-3.5 text-[#6e7681]" />
+                      <span className="truncate">{entry.path}</span>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <ResizeHandle direction="horizontal" onMouseDown={leftPanel.onMouseDown} />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col bg-[#0d1117]">
           <div className="flex-1 flex min-h-0">
             <div className={`flex-1 min-w-0 ${showPreview ? "w-1/2" : ""}`}>
               <CodeEditor
@@ -563,16 +647,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
             </div>
 
             {showPreview && (
-              <div className="w-1/2 border-s border-border flex flex-col">
-                <div className="flex items-center gap-2 px-3 py-1 border-b border-border bg-muted/30">
-                  <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground flex-1 truncate font-mono">
+                <div className="flex w-1/2 flex-col border-s border-[#30363d] bg-white">
+                <div className="flex items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-3 py-2">
+                  <Eye className="h-3.5 w-3.5 text-[#8b949e]" />
+                  <span className="flex-1 truncate font-mono text-[10px] text-[#8b949e]">
                     /sandbox/{projectId}/preview/
                   </span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
                     onClick={() => {
                       const iframe = document.getElementById("sandbox-preview") as HTMLIFrameElement;
                       if (iframe) iframe.src = iframe.src;
@@ -584,7 +668,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
                     onClick={() => window.open(`/sandbox/${projectId}/preview/`, "_blank")}
                     data-testid="button-external-preview"
                   >
@@ -599,8 +683,8 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                     title="Preview"
                   />
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                    <Eye className="w-8 h-8 opacity-30" />
+                    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-[#f6f8fa] text-[#57606a]">
+                      <Eye className="h-8 w-8 opacity-30" />
                     <p className="text-sm">{ar ? "المشروع غير مشغّل" : "Project is not running"}</p>
                     <Button
                       size="sm"
@@ -620,13 +704,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           {logsOpen && (
             <>
               <ResizeHandle direction="vertical" onMouseDown={logsPanel.onMouseDown} />
-              <div style={{ height: logsPanel.size }} className="border-t border-border flex flex-col">
-                <div className="flex items-center justify-between px-3 py-1 bg-muted/30 border-b border-border">
-                  <span className="text-xs font-medium text-muted-foreground">{ar ? "السجلات" : "Logs"}</span>
+              <div style={{ height: logsPanel.size }} className="flex flex-col border-t border-[#30363d] bg-[#0d1117]">
+                <div className="flex items-center justify-between border-b border-[#30363d] bg-[#161b22] px-3 py-2">
+                  <span className="flex items-center gap-2 text-[11px] font-semibold text-[#c9d1d9]">
+                    <TerminalSquare className="h-3.5 w-3.5 text-orange-400" />
+                    {ar ? "Terminal" : "Terminal"}
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 text-xs"
+                    className="h-6 text-[10px] text-[#8b949e] hover:bg-[#21262d] hover:text-white"
                     onClick={() => setLogs([])}
                     data-testid="button-clear-logs"
                   >
@@ -634,18 +721,18 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   </Button>
                 </div>
                <form
-                 className="flex items-center gap-2 px-2 py-2 border-b border-border bg-background"
+                 className="flex items-center gap-2 border-b border-[#30363d] bg-[#0d1117] px-3 py-2"
                  onSubmit={(event) => {
                    event.preventDefault();
                    if (shellCommand.trim() && !shellMutation.isPending) shellMutation.mutate(shellCommand.trim());
                  }}
                >
                  <span className="font-mono text-xs text-green-500">$</span>
-                 <Input
+                   <Input
                    value={shellCommand}
                    onChange={(event) => setShellCommand(event.target.value)}
                    placeholder={ar ? "أمر آمن مثل npm install أو git status" : "Safe command, e.g. npm install or git status"}
-                   className="h-7 flex-1 font-mono text-xs"
+                     className="h-8 flex-1 border-[#30363d] bg-[#161b22] font-mono text-xs text-[#f0f6fc] placeholder:text-[#6e7681]"
                    dir="ltr"
                    disabled={shellMutation.isPending}
                    data-testid="input-sandbox-shell-command"
@@ -653,16 +740,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                  <Button
                    type="submit"
                    size="sm"
-                   className="h-7 text-xs"
+                     className="h-8 bg-orange-500 px-3 text-xs text-black hover:bg-orange-400"
                    disabled={!shellCommand.trim() || shellMutation.isPending}
                    data-testid="button-run-sandbox-shell-command"
                  >
                    {shellMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                  </Button>
                </form>
-                <div className="flex-1 overflow-y-auto p-2 font-mono text-xs bg-black/90 text-green-400">
+                 <div className="flex-1 overflow-y-auto bg-[#0d1117] p-3 font-mono text-xs text-[#7ee787]">
                   {logs.length === 0 ? (
-                    <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
+                    <span className="text-[#6e7681]">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
                   ) : (
                     logs.map((log, i) => (
                       <div
@@ -683,27 +770,27 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         {rightPanelOpen && (
           <>
             <ResizeHandle direction="horizontal" onMouseDown={rightPanel.onMouseDown} />
-            <div style={{ width: rightPanel.size }} className="border-s border-border flex-shrink-0 flex flex-col">
+            <div style={{ width: rightPanel.size }} className="flex flex-shrink-0 flex-col border-s border-[#30363d] bg-[#101318]">
               <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex flex-col h-full">
-                <TabsList className="w-full rounded-none border-b border-border bg-muted/30 h-auto p-0">
-                  <TabsTrigger value="ai" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-ai">
-                    <Sparkles className="w-3.5 h-3.5 me-1" />
+                <TabsList className="h-10 w-full rounded-none border-b border-[#30363d] bg-[#161b22] p-0">
+                  <TabsTrigger value="ai" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-ai">
+                    <Sparkles className="me-1 h-3.5 w-3.5" />
                     AI
                   </TabsTrigger>
-                  <TabsTrigger value="env" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-env">
-                    <Settings className="w-3.5 h-3.5 me-1" />
-                    {ar ? "بيئة" : "Env"}
+                  <TabsTrigger value="env" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-env">
+                    <KeyRound className="me-1 h-3.5 w-3.5" />
+                    {ar ? "أسرار" : "Secrets"}
                   </TabsTrigger>
-                  <TabsTrigger value="github" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-github">
-                    <SiGithub className="w-3.5 h-3.5 me-1" />
+                  <TabsTrigger value="github" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-github">
+                    <SiGithub className="me-1 h-3.5 w-3.5" />
                     Git
                   </TabsTrigger>
-                  <TabsTrigger value="deploy" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-deploy">
-                    <Upload className="w-3.5 h-3.5 me-1" />
+                  <TabsTrigger value="deploy" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-deploy">
+                    <Rocket className="me-1 h-3.5 w-3.5" />
                     {ar ? "نشر" : "Deploy"}
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="ai" className="flex-1 m-0 overflow-hidden">
+                <TabsContent value="ai" className="m-0 flex-1 overflow-hidden">
                   <AIPanel
                     projectId={projectId}
                     activeFile={activeTab}
@@ -711,61 +798,88 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                     onCreateFile={handleCreateFileFromAI}
                   />
                 </TabsContent>
-                <TabsContent value="env" className="flex-1 m-0 overflow-hidden">
+                <TabsContent value="env" className="m-0 flex-1 overflow-hidden">
                   <EnvVarsPanel projectId={projectId} />
                 </TabsContent>
-                <TabsContent value="github" className="flex-1 m-0 overflow-hidden">
-                   <GitHubPanel projectId={projectId} adminOrderId={adminOrderId} />
+                <TabsContent value="github" className="m-0 flex-1 overflow-hidden">
+                  <GitHubPanel projectId={projectId} adminOrderId={adminOrderId} />
                 </TabsContent>
-                <TabsContent value="deploy" className="flex-1 m-0 overflow-y-auto p-3">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Upload className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">{ar ? "النشر والتصدير" : "Deploy & Export"}</span>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      className="w-full text-xs"
-                      onClick={handleDownload}
-                      data-testid="button-download-zip"
-                    >
-                      <Download className="w-4 h-4 me-2" />
-                      {ar ? "تحميل ZIP" : "Download ZIP"}
-                    </Button>
-
-                    <div className="text-xs text-muted-foreground space-y-2 bg-muted/50 rounded p-3">
-                      <p className="font-medium">{ar ? "نشر الموقع:" : "Deploy your site:"}</p>
-                      <p>{ar ? "١. حمّل ملف ZIP الخاص بمشروعك" : "1. Download your project ZIP"}</p>
-                      <p>{ar ? "٢. ارفعه إلى إحدى منصات النشر:" : "2. Upload to a hosting platform:"}</p>
-                      <div className="flex flex-col gap-1">
-                        <a
-                          href="https://vercel.com/new"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
-                          data-testid="link-vercel"
-                        >
-                          Vercel <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <a
-                          href="https://app.netlify.com/drop"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
-                          data-testid="link-netlify"
-                        >
-                          Netlify <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
+                <TabsContent value="deploy" className="m-0 flex-1 overflow-hidden">
+                  <DeploymentPanel projectId={projectId} onDownload={handleDownload} />
                 </TabsContent>
               </Tabs>
             </div>
           </>
         )}
+
+        <div className="pointer-events-none absolute bottom-0 start-12 end-0 z-10 flex h-6 items-center justify-between border-t border-[#30363d] bg-[#161b22] px-3 text-[10px] text-[#8b949e]">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <Check className="h-3 w-3" />
+              {ar ? "تم الحفظ تلقائياً" : "Auto-saved"}
+            </span>
+            <span dir="ltr">{project?.runtime || "node"} · {project?.githubBranch || "main"}</span>
+          </div>
+          <div className="hidden items-center gap-3 sm:flex">
+            <span>{ar ? "الأوامر الآمنة مفعلة" : "Safe commands enabled"}</span>
+            <span>UTF-8</span>
+            <span>Ln 1, Col 1</span>
+          </div>
+        </div>
       </div>
+
+      {commandPaletteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[12vh] backdrop-blur-sm"
+          onMouseDown={() => setCommandPaletteOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={ar ? "أوامر المشروع" : "Workspace commands"}
+          >
+            <div className="flex items-center gap-3 border-b border-[#30363d] px-4 py-3">
+              <Command className="h-4 w-4 text-orange-400" />
+              <input
+                autoFocus
+                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6e7681]"
+                placeholder={ar ? "ابحث عن ملف أو إجراء..." : "Search files or actions..."}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setCommandPaletteOpen(false);
+                }}
+                data-testid="input-command-palette"
+              />
+              <kbd className="rounded border border-[#30363d] px-1.5 py-0.5 text-[10px] text-[#8b949e]">ESC</kbd>
+            </div>
+            <div className="space-y-1 p-2">
+              {[
+                { label: ar ? "تشغيل المشروع" : "Run project", icon: Play, action: () => { startMutation.mutate(); setCommandPaletteOpen(false); } },
+                { label: ar ? "فتح المعاينة" : "Open preview", icon: Eye, action: () => { setShowPreview(true); setCommandPaletteOpen(false); } },
+                { label: ar ? "فتح الأسرار" : "Open project secrets", icon: KeyRound, action: () => { setRightPanelOpen(true); setRightPanelTab("env"); setCommandPaletteOpen(false); } },
+                { label: ar ? "فتح النشر" : "Open deployment", icon: Rocket, action: () => { setRightPanelOpen(true); setRightPanelTab("deploy"); setCommandPaletteOpen(false); } },
+                { label: ar ? "فتح الطرفية" : "Open terminal", icon: Terminal, action: () => { setLogsOpen(true); setCommandPaletteOpen(false); } },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    type="button"
+                    key={item.label}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-xs text-[#c9d1d9] transition hover:bg-[#21262d] hover:text-white"
+                    onClick={item.action}
+                  >
+                    <Icon className="h-4 w-4 text-[#8b949e]" />
+                    <span className="flex-1">{item.label}</span>
+                    <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-[#6e7681]" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

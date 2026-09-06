@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Eye, EyeOff, Loader2, Settings, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Loader2, KeyRound, Pencil, Check, X, ShieldCheck } from "lucide-react";
 
 interface EnvVar {
   id: string;
@@ -102,14 +102,20 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full p-3 gap-3">
+    <div className="flex h-full flex-col gap-3 bg-[#101318] p-4 text-[#e6edf3]">
       <div className="flex items-center gap-2">
-        <Settings className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium">{ar ? "متغيرات البيئة" : "Environment Variables"}</span>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/15 text-orange-400">
+          <KeyRound className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold">{ar ? "أسرار المشروع" : "Project secrets"}</div>
+          <div className="text-[10px] text-[#8b949e]">{ar ? "قيم خاصة لا تظهر في الكود أو السجلات" : "Private values kept outside your source code"}</div>
+        </div>
       </div>
 
-      <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
-        {ar ? "التغييرات تسري عند إعادة تشغيل المشروع" : "Changes take effect on next project start"}
+      <div className="flex items-start gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/10 px-3 py-2 text-[10px] leading-4 text-emerald-200">
+        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>{ar ? "يتم حقن الأسرار عند التشغيل فقط ولا تُحفظ داخل ملفات المشروع." : "Secrets are injected at runtime and are never written into project files."}</span>
       </div>
 
       <div className="flex gap-2">
@@ -117,20 +123,20 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
           placeholder={ar ? "المفتاح" : "KEY"}
           value={newKey}
           onChange={(e) => setNewKey(e.target.value.toUpperCase())}
-          className="h-7 text-xs font-mono"
+          className="h-8 border-[#30363d] bg-[#0d1117] text-xs font-mono text-white placeholder:text-[#6e7681]"
           data-testid="input-env-key"
         />
         <Input
           placeholder={ar ? "القيمة" : "VALUE"}
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          className="h-7 text-xs"
+          className="h-8 border-[#30363d] bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
           type="password"
           data-testid="input-env-value"
         />
         <Button
           size="sm"
-          className="h-7 px-2"
+           className="h-8 bg-orange-500 px-3 text-black hover:bg-orange-400"
           onClick={() => addMutation.mutate()}
           disabled={!newKey.trim() || addMutation.isPending}
           data-testid="button-add-env"
@@ -152,7 +158,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
           envVars.map((v) => (
             <div
               key={v.id}
-              className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/30 text-xs"
+              className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-[#171b21] px-2.5 py-2 text-xs"
               data-testid={`env-var-${v.key}`}
             >
               <span className="font-mono font-medium min-w-0 truncate flex-shrink-0">{v.key}</span>
@@ -162,7 +168,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                   <Input
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="h-6 text-xs font-mono flex-1 min-w-0"
+                     className="h-7 min-w-0 flex-1 border-[#30363d] bg-[#0d1117] text-xs font-mono text-white"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveEdit(v.key);
@@ -171,7 +177,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     data-testid={`input-edit-env-${v.key}`}
                   />
                   <button
-                    className="p-0.5 hover:bg-accent rounded text-green-500"
+                     className="rounded p-0.5 text-emerald-400 hover:bg-[#21262d]"
                     onClick={() => saveEdit(v.key)}
                     disabled={updateMutation.isPending}
                     data-testid={`button-save-env-${v.key}`}
@@ -179,7 +185,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     <Check className="w-3 h-3" />
                   </button>
                   <button
-                    className="p-0.5 hover:bg-accent rounded"
+                     className="rounded p-0.5 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
                     onClick={cancelEdit}
                     data-testid={`button-cancel-env-${v.key}`}
                   >
@@ -192,7 +198,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     {visibleKeys.has(v.key) ? v.value : "••••••••"}
                   </span>
                   <button
-                    className="p-0.5 hover:bg-accent rounded"
+                     className="rounded p-0.5 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
                     onClick={() => startEdit(v)}
                     data-testid={`button-edit-env-${v.key}`}
                   >
@@ -202,7 +208,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     {visibleKeys.has(v.key) ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                   </button>
                   <button
-                    className="p-0.5 hover:bg-accent rounded text-destructive"
+                     className="rounded p-0.5 text-red-300 hover:bg-[#21262d]"
                     onClick={() => {
                       if (confirm(ar ? `حذف ${v.key}؟` : `Delete ${v.key}?`)) deleteMutation.mutate(v.key);
                     }}

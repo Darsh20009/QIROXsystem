@@ -661,6 +661,15 @@ export function registerDeploymentCloudRoutes(app: Express) {
         updateFields,
         { new: true }
       );
+      if (project?.provider === "vercel" && project.vercelProjectId && customDomain && VERCEL_TOKEN) {
+        try {
+          await vercelFetch(`/v10/projects/${project.vercelProjectId}/domains`, "POST", { name: String(customDomain).trim().toLowerCase() });
+        } catch (domainError: any) {
+          // Keep the saved domain visible so the user can fix DNS/provider
+          // verification without losing the requested value.
+          console.warn("[DeployCloud] custom domain is pending provider verification:", domainError?.message || domainError);
+        }
+      }
       await auditDeploymentAction(req, user, "update_deployment_project", project, { fieldsUpdated: Object.keys(req.body || {}).filter(key => key !== "githubToken" && key !== "envVars") });
       res.json(toPublicDeploymentProject(project));
     } catch (e: any) { res.status(500).json({ message: e.message }); }
@@ -1361,12 +1370,21 @@ export function registerSubdomainMiddleware(app: Express): void {
 
     // Check if this is a subdomain of deploymentDomain: slug.deployment.qiroxstudio.online
     let slug: string | null = null;
+    let hostProject: any = null;
     if (host.endsWith(`.${deploymentDomain}`)) {
       slug = host.slice(0, host.length - deploymentDomain.length - 1);
     } else if (host.endsWith(`.${mainDomain}`)) {
       // fallback: slug could be "slug.deployment" — skip non-cloud subdomains
       const prefix = host.slice(0, host.length - mainDomain.length - 1);
       if (!prefix.includes(".")) slug = prefix; // only bare subdomains
+    }
+
+    if (!slug) {
+      hostProject = await DeploymentProjectModel.findOne({
+        customDomain: host,
+        status: { $nin: ["suspended", "failed"] },
+      }).lean();
+      if (hostProject) slug = String(hostProject.slug);
     }
 
     if (!slug || slug === "www" || slug === "api" || slug === "mail" || slug === "smtp") return next();

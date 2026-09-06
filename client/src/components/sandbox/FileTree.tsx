@@ -78,8 +78,8 @@ function TreeNode({
   return (
     <div>
       <div
-        className={`flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer rounded-sm hover:bg-accent/50 transition-colors ${
-          isActive ? "bg-accent text-accent-foreground" : ""
+        className={`flex cursor-pointer items-center gap-1.5 rounded-sm px-2 py-1 text-sm text-[#c9d1d9] transition-colors hover:bg-[#21262d] hover:text-white ${
+          isActive ? "border-s-2 border-orange-400 bg-[#1f6feb]/20 text-white" : "border-s-2 border-transparent"
         }`}
         style={{ paddingInlineStart: `${depth * 14 + 8}px` }}
         onClick={() => {
@@ -204,12 +204,12 @@ export function FileTree({
   return (
     <div className="h-full flex flex-col text-sm">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <span className="text-xs font-medium uppercase text-muted-foreground">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8b949e]">
           {ar ? "الملفات" : "Files"}
         </span>
         <div className="flex gap-1">
           <button
-            className="p-1 hover:bg-accent rounded"
+             className="rounded p-1 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
             onClick={() => { setCreatingIn({ dir: "", type: "file" }); setNewItemName(""); }}
             title={ar ? "ملف جديد" : "New File"}
             data-testid="button-new-file"
@@ -217,7 +217,7 @@ export function FileTree({
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button
-            className="p-1 hover:bg-accent rounded"
+             className="rounded p-1 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
             onClick={() => { setCreatingIn({ dir: "", type: "folder" }); setNewItemName(""); }}
             title={ar ? "مجلد جديد" : "New Folder"}
             data-testid="button-new-folder"
@@ -253,7 +253,7 @@ export function FileTree({
                     if (e.key === "Escape") { setCreatingIn(null); setNewItemName(""); }
                   }}
                   onBlur={() => { setCreatingIn(null); setNewItemName(""); }}
-                  className="h-5 text-xs py-0 px-1"
+                   className="h-6 border-[#30363d] bg-[#0d1117] px-1 py-0 text-xs text-white"
                   placeholder={creatingIn.type === "file" ? "filename.ext" : "folder-name"}
                 />
               </div>
@@ -284,11 +284,11 @@ export function FileTree({
 
       {contextMenu && (
         <div
-          className="fixed z-50 bg-popover border border-border rounded-md shadow-md py-1 min-w-[160px]"
+           className="fixed z-50 min-w-[160px] rounded-md border border-[#30363d] bg-[#161b22] py-1 text-[#c9d1d9] shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent"
+             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-[#21262d]"
             onMouseDown={(e) => {
               e.preventDefault();
               const dir = getDir(contextMenu.path, contextMenu.type);
@@ -301,7 +301,7 @@ export function FileTree({
             {ar ? "ملف جديد" : "New File"}
           </button>
           <button
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent"
+             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-[#21262d]"
             onMouseDown={(e) => {
               e.preventDefault();
               const dir = getDir(contextMenu.path, contextMenu.type);
@@ -315,9 +315,9 @@ export function FileTree({
           </button>
           {contextMenu.type !== "root" && (
             <>
-              <div className="border-t border-border my-1" />
+               <div className="my-1 border-t border-[#30363d]" />
               <button
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent"
+                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-[#21262d]"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   startRename(contextMenu.path);
@@ -327,7 +327,7 @@ export function FileTree({
                 {ar ? "إعادة تسمية" : "Rename"}
               </button>
               <button
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-accent"
+                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-300 hover:bg-[#21262d]"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   if (confirm(ar ? "حذف هذا العنصر؟" : "Delete this item?")) {
