@@ -14,9 +14,10 @@ import { SiGithub } from "react-icons/si";
 
 interface GitHubPanelProps {
   projectId: string;
+  adminOrderId?: string;
 }
 
-export function GitHubPanel({ projectId }: GitHubPanelProps) {
+export function GitHubPanel({ projectId, adminOrderId }: GitHubPanelProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();
@@ -28,6 +29,42 @@ export function GitHubPanel({ projectId }: GitHubPanelProps) {
   const [pushRepo, setPushRepo] = useState("");
   const [pushBranch, setPushBranch] = useState("main");
   const [commitMsg, setCommitMsg] = useState("");
+
+  const { data: adminCode } = useQuery<any>({
+    queryKey: ["/api/admin/orders", adminOrderId, "github", "code"],
+    enabled: !!adminOrderId,
+    retry: false,
+  });
+
+  const adminSyncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/admin/orders/${adminOrderId}/github/code/workspace/sync`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders", adminOrderId, "github", "code"] });
+      toast({ title: ar ? "تمت مزامنة مساحة العمل" : "Workspace synced from GitHub" });
+    },
+    onError: (err: Error) => toast({ title: ar ? "فشل التزامن" : "Sync failed", description: err.message, variant: "destructive" }),
+  });
+
+  const adminPushMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/admin/orders/${adminOrderId}/github/code/workspace/push`, {
+        commitMessage: commitMsg || (ar ? "تحديث من بيئة تطوير QIROX" : "Update from QIROX Code Workspace"),
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setCommitMsg("");
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders", adminOrderId, "github", "code"] });
+      toast({
+        title: ar ? "تم رفع التعديلات إلى GitHub" : "Changes pushed to GitHub",
+        description: data?.backupBranch ? `${ar ? "نسخة حماية: " : "Safety backup: "}${data.backupBranch}` : undefined,
+      });
+    },
+    onError: (err: Error) => toast({ title: ar ? "فشل رفع التعديلات" : "Push failed", description: err.message, variant: "destructive" }),
+  });
 
   interface GitCommitInfo {
     hash: string;
@@ -87,6 +124,63 @@ export function GitHubPanel({ projectId }: GitHubPanelProps) {
       toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  if (adminOrderId) {
+    return (
+      <div className="flex flex-col h-full p-3 gap-4 overflow-y-auto">
+        <div className="flex items-center gap-2">
+          <SiGithub className="w-4 h-4" />
+          <span className="text-sm font-medium">{ar ? "GitHub للمشروع" : "Project GitHub"}</span>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+          <p className="text-xs font-medium truncate" dir="ltr">
+            {adminCode?.repository?.owner}/{adminCode?.repository?.name}
+          </p>
+          <p className="text-[10px] text-muted-foreground" dir="ltr">
+            {adminCode?.branch || "main"} · {adminCode?.head?.shortSha || "—"}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full text-xs"
+            onClick={() => {
+              const message = ar
+                ? "ستستبدل المزامنة الملفات المحلية بآخر نسخة من GitHub وقد تلغي تعديلات غير مرفوعة. هل تريد المتابعة؟"
+                : "Sync will replace local files with the latest GitHub version and may discard unpushed edits. Continue?";
+              if (window.confirm(message)) adminSyncMutation.mutate();
+            }}
+            disabled={adminSyncMutation.isPending}
+            data-testid="button-admin-workspace-sync"
+          >
+            {adminSyncMutation.isPending ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <GitBranch className="w-4 h-4 me-2" />}
+            {ar ? "مزامنة من GitHub" : "Sync from GitHub"}
+          </Button>
+          <Textarea
+            value={commitMsg}
+            onChange={(e) => setCommitMsg(e.target.value)}
+            placeholder={ar ? "رسالة التحديث (اختياري)" : "Update message (optional)"}
+            className="min-h-[58px] text-xs resize-none"
+            data-testid="input-admin-workspace-commit-message"
+          />
+          <Button
+            className="w-full text-xs"
+            onClick={() => adminPushMutation.mutate()}
+            disabled={adminPushMutation.isPending}
+            data-testid="button-admin-workspace-push"
+          >
+            {adminPushMutation.isPending ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Upload className="w-4 h-4 me-2" />}
+            {ar ? "رفع التعديلات وحفظ نسخة حماية" : "Push changes with safety backup"}
+          </Button>
+        </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-[10px] leading-5 text-emerald-800">
+          {ar
+            ? "كل رفع ينشئ نسخة حماية من آخر Commit قبل حفظ التعديلات. استخدم Shell للاستعراض والتشغيل، أو المحرر لتعديل الملفات."
+            : "Every push creates a backup ref from the last commit before saving changes. Use Shell to inspect/run commands, or the editor to modify files."}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full p-3 gap-4 overflow-y-auto">

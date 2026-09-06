@@ -6,6 +6,7 @@ import { pushToUser, broadcastSandboxLog } from "./ws";
 const ALLOWED_COMMANDS = [
   "node", "npm", "npx", "python", "python3", "pip", "pip3",
   "serve", "vite", "next", "nuxt", "tsx", "ts-node",
+  "git", "pwd", "ls", "find", "grep", "head", "tail", "cat",
 ];
 
 export function sanitizeCommand(cmd: string): string {

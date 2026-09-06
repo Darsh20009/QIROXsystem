@@ -15,6 +15,8 @@ const sandboxProjectSchema = new mongoose.Schema({
   buildCmd:    { type: String, default: "" },
   githubRepo:  { type: String, default: "" },
   githubBranch:{ type: String, default: "main" },
+  sourceProjectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null, index: true },
+  sourceOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null, index: true },
   lastStartedAt: { type: Date, default: null },
   lastStoppedAt: { type: Date, default: null },
   diskUsageMB: { type: Number, default: 0 },

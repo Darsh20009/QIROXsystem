@@ -56,3 +56,4 @@
 - [Mongo uniqueness in production](mongo-uniqueness-production.md) — Schema uniqueness needs explicit startup index creation when production disables Mongoose autoIndex; routes must handle duplicate-key races.
 - [Apple review demo account](apple-review-demo-account.md) — Re-test the submitted review credentials from a fresh session before every App Store resubmission; stale credentials cause Guideline 2.1 rejection.
 - [GitHub history recovery](github-history-recovery.md) — An overwritten empty root commit may still be recoverable from an unreachable commit SHA; preserve the current ref before restoring.
+- [Project code workspace](project-code-workspace.md) — Reuse the sandbox IDE/runner for linked order projects; never persist GitHub tokens in the workspace remote.

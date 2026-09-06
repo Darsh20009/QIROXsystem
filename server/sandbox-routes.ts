@@ -513,6 +513,44 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
   // ── Process Control ───────────────────────────────────────────────────────
 
+  app.post("/api/sandbox/projects/:id/command", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const command = String(req.body?.command || "").trim();
+      if (!command) return res.status(400).json({ error: "الأمر مطلوب" });
+      const { sanitizeCommand } = await import("./sandbox-runner");
+      const safeCommand = sanitizeCommand(command);
+      const { spawn } = await import("child_process");
+      const { getProjectDir } = await import("./sandbox-fs");
+      const { SandboxEnvVarModel } = await import("./models");
+      const { broadcastSandboxLog } = await import("./ws");
+      const env: Record<string, string> = { ...(process.env as Record<string, string>), PORT: String(ctx.project.port || "") };
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      for (const doc of envDocs as any[]) {
+        try { env[doc.key] = decrypt(doc.value, doc.iv); } catch {}
+      }
+      const child = spawn("/bin/sh", ["-c", safeCommand], {
+        cwd: getProjectDir(String(ctx.project._id)),
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      child.stdout?.on("data", (data: Buffer) => broadcastSandboxLog(String(ctx.project._id), "stdout", data.toString()));
+      child.stderr?.on("data", (data: Buffer) => broadcastSandboxLog(String(ctx.project._id), "stderr", data.toString()));
+      const timeout = setTimeout(() => {
+        try { child.kill("SIGTERM"); } catch {}
+        broadcastSandboxLog(String(ctx.project._id), "stderr", "\n⏱ انتهت مهلة الأمر (120 ثانية)\n");
+      }, 120000);
+      child.on("exit", (code) => {
+        clearTimeout(timeout);
+        broadcastSandboxLog(String(ctx.project._id), code === 0 ? "stdout" : "stderr", `\n⏹ انتهى الأمر (كود: ${code})\n`);
+      });
+      res.json({ success: true, command: safeCommand });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message || "الأمر غير مسموح" });
+    }
+  });
+
   app.post("/api/sandbox/projects/:id/start", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;

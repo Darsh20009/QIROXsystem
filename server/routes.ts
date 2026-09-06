@@ -5181,6 +5181,182 @@ export async function registerRoutes(
     }
   });
 
+  // ── Project Code Workspace: editor, shell, run and live preview ──
+  app.post("/api/admin/orders/:id/github/code/workspace", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel, SandboxProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(400).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+      const repoPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`;
+      const githubRepository = await githubFetch(repoPath, token);
+      const branch = String(req.body?.branch || githubRepository.default_branch || "main");
+      const workspaceName = String((project as any).name || (order as any).businessName || "QIROX Project").slice(0, 80);
+
+      const workspace = await SandboxProjectModel.findOneAndUpdate(
+        { sourceProjectId: project._id },
+        {
+          $set: {
+            githubRepo: String(githubRepository.html_url || repository.htmlUrl),
+            githubBranch: branch,
+          },
+          $setOnInsert: {
+            ownerId: (req.user as any)._id,
+            sourceProjectId: project._id,
+            sourceOrderId: order._id,
+            name: `${workspaceName} — Code Workspace`,
+            nameAr: `${workspaceName} — بيئة أكواد`,
+            description: "QIROX project code workspace",
+            template: "blank",
+            runtime: "node",
+            entryFile: "index.js",
+            installCmd: "npm install",
+            startCmd: "npm run dev -- --host 0.0.0.0 --port $PORT",
+            buildCmd: "npm run build",
+            status: "stopped",
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+      const workspaceId = String(workspace._id);
+      const { ensureProjectDir, getProjectDir } = await import("./sandbox-fs");
+      const workspaceDir = ensureProjectDir(workspaceId);
+      const gitDir = path.join(workspaceDir, ".git");
+      if (!fs.existsSync(gitDir)) {
+        const simpleGit = (await import("simple-git")).default;
+        const encodedToken = encodeURIComponent(token);
+        const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
+        await fs.promises.rm(workspaceDir, { recursive: true, force: true });
+        await fs.promises.mkdir(path.dirname(workspaceDir), { recursive: true });
+        await simpleGit().clone(remoteUrl, workspaceDir, ["--branch", branch, "--depth", "1"]);
+        await simpleGit(workspaceDir).remote(["set-url", "origin", String(githubRepository.html_url || repository.htmlUrl)]);
+      }
+      res.json({
+        success: true,
+        workspaceId,
+        workspaceUrl: `/employee/system-builder/${workspaceId}?orderId=${encodeURIComponent(req.params.id)}`,
+        repository: {
+          url: String(githubRepository.html_url || repository.htmlUrl),
+          branch,
+        },
+        directory: getProjectDir(workspaceId),
+      });
+    } catch (error: any) {
+      console.error("[ProjectCode] workspace error:", error?.message || error);
+      res.status(503).json({ error: error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية تجهيز بيئة الأكواد."
+        : "تعذر تجهيز بيئة تطوير المشروع." });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/github/code/workspace/sync", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel, SandboxProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      const workspace = project ? await SandboxProjectModel.findOne({ sourceProjectId: project._id }) : null;
+      if (!order || !project || !workspace) return res.status(404).json({ error: "بيئة الأكواد غير مجهزة بعد" });
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(400).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+      const githubRepository = await githubFetch(`/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`, token);
+      const branch = String((workspace as any).githubBranch || githubRepository.default_branch || "main");
+      const workspaceDir = (await import("./sandbox-fs")).getProjectDir(String(workspace._id));
+      const simpleGit = (await import("simple-git")).default;
+      const git = simpleGit(workspaceDir);
+      const encodedToken = encodeURIComponent(token);
+      const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
+      await git.fetch(remoteUrl, branch);
+      await git.reset(["--hard", "FETCH_HEAD"]);
+      await git.clean("f", ["-d"]);
+      res.json({ success: true, branch, syncedAt: new Date().toISOString() });
+    } catch (error: any) {
+      console.error("[ProjectCode] workspace sync error:", error?.message || error);
+      res.status(503).json({ error: "تعذر مزامنة بيئة الأكواد من GitHub" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/github/code/workspace/push", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel, SandboxProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      const workspace = project ? await SandboxProjectModel.findOne({ sourceProjectId: project._id }) : null;
+      if (!order || !project || !workspace) return res.status(404).json({ error: "بيئة الأكواد غير مجهزة بعد" });
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(400).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+
+      const workspaceDir = (await import("./sandbox-fs")).getProjectDir(String(workspace._id));
+      const simpleGit = (await import("simple-git")).default;
+      const git = simpleGit(workspaceDir);
+      const status = await git.status();
+      const changedPaths = [...(status.modified || []), ...(status.created || []), ...(status.deleted || [])];
+      const blocked = changedPaths.filter((filePath: string) => isProtectedProjectCodePath(filePath));
+      if (blocked.length) {
+        return res.status(400).json({ error: "تم منع الرفع لأن التغييرات تحتوي على أسرار أو شهادات.", blockedFiles: blocked.slice(0, 10) });
+      }
+      if (status.isClean) return res.status(400).json({ error: "لا توجد تغييرات لرفعها" });
+
+      const branch = String((workspace as any).githubBranch || "main");
+      const currentSha = (await git.revparse(["HEAD"])).trim();
+      const backupBranch = `qirox-backups/workspace-${new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "")}-${currentSha.slice(0, 10)}`;
+      const encodedToken = encodeURIComponent(token);
+      const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
+      await git.push(remoteUrl, `${currentSha}:refs/heads/${backupBranch}`);
+      await git.add(["-A"]);
+      const commit = await git.commit(String(req.body?.commitMessage || "Update project code from QIROX IDE").slice(0, 120));
+      await git.push(remoteUrl, branch);
+      res.json({ success: true, branch, backupBranch, commitSha: String(commit.commit || "").trim() });
+    } catch (error: any) {
+      console.error("[ProjectCode] workspace push error:", error?.message || error);
+      res.status(503).json({ error: error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية رفع التعديلات."
+        : "تعذر رفع تعديلات بيئة الأكواد إلى GitHub." });
+    }
+  });
+
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);

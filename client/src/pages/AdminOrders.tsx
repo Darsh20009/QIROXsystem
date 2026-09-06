@@ -933,6 +933,27 @@ export default function AdminOrders() {
     }),
   });
 
+  const openCodeWorkspaceMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder) throw new Error(L ? "لم يتم تحديد الطلب" : "No order selected");
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/github/code/workspace`, {
+        branch: githubCode?.branch || "main",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || (L ? "تعذر تجهيز بيئة التطوير" : "Unable to prepare code workspace"));
+      return body;
+    },
+    onSuccess: (data) => {
+      if (data?.workspaceUrl) {
+        window.location.assign(data.workspaceUrl);
+      }
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر تجهيز بيئة التطوير" : "Unable to prepare code workspace"),
+      variant: "destructive",
+    }),
+  });
+
   const openOrder = (order: OrderData) => {
     setSelectedOrder(order);
     setGithubRepositoryAction("move");
@@ -3015,7 +3036,19 @@ export default function AdminOrders() {
                                     )}
                                   </div>
 
-                                  <div className="grid grid-cols-3 gap-2">
+                                   <Button
+                                     type="button"
+                                     className="w-full h-10 mb-2 text-xs gap-2 bg-slate-900 text-white hover:bg-slate-800"
+                                     onClick={() => openCodeWorkspaceMutation.mutate()}
+                                     disabled={openCodeWorkspaceMutation.isPending}
+                                     data-testid="button-open-project-code-workspace"
+                                   >
+                                     {openCodeWorkspaceMutation.isPending
+                                       ? <Loader2 className="w-4 h-4 animate-spin" />
+                                       : <FolderOpen className="w-4 h-4" />}
+                                     {L ? "فتح بيئة التطوير: محرر + Shell + Preview" : "Open development workspace: Editor + Shell + Preview"}
+                                   </Button>
+                                   <div className="grid grid-cols-3 gap-2">
                                     <Button
                                       type="button"
                                       variant="outline"

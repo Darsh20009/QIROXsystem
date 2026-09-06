@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Play, Square, RotateCcw, Download, Eye, ArrowLeft,
@@ -27,6 +28,7 @@ interface OpenTab {
 
 interface SandboxIDEProps {
   projectId: string;
+  adminOrderId?: string;
 }
 
 interface SandboxProjectDetail {
@@ -114,7 +116,7 @@ function ResizeHandle({ direction, onMouseDown }: { direction: "horizontal" | "v
   );
 }
 
-export function SandboxIDE({ projectId }: SandboxIDEProps) {
+export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();
@@ -128,6 +130,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
   const [logsOpen, setLogsOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [shellCommand, setShellCommand] = useState("");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const wsRef = useRef<WebSocket | null>(null);
@@ -382,6 +385,21 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
     },
   });
 
+  const shellMutation = useMutation({
+    mutationFn: async (command: string) => {
+      const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/command`, { command });
+      return res.json();
+    },
+    onSuccess: () => {
+      setShellCommand("");
+      setLogsOpen(true);
+    },
+    onError: (err: Error) => {
+      setLogsOpen(true);
+      toast({ title: ar ? "خطأ في Shell" : "Shell error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const isRunning = project?.isRunning || project?.status === "running";
   const isProcessing = startMutation.isPending || stopMutation.isPending || restartMutation.isPending;
   const showBuildButton = project && BUILDABLE_TEMPLATES.includes(project.template);
@@ -615,6 +633,33 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
                     {ar ? "مسح" : "Clear"}
                   </Button>
                 </div>
+               <form
+                 className="flex items-center gap-2 px-2 py-2 border-b border-border bg-background"
+                 onSubmit={(event) => {
+                   event.preventDefault();
+                   if (shellCommand.trim() && !shellMutation.isPending) shellMutation.mutate(shellCommand.trim());
+                 }}
+               >
+                 <span className="font-mono text-xs text-green-500">$</span>
+                 <Input
+                   value={shellCommand}
+                   onChange={(event) => setShellCommand(event.target.value)}
+                   placeholder={ar ? "أمر آمن مثل npm install أو git status" : "Safe command, e.g. npm install or git status"}
+                   className="h-7 flex-1 font-mono text-xs"
+                   dir="ltr"
+                   disabled={shellMutation.isPending}
+                   data-testid="input-sandbox-shell-command"
+                 />
+                 <Button
+                   type="submit"
+                   size="sm"
+                   className="h-7 text-xs"
+                   disabled={!shellCommand.trim() || shellMutation.isPending}
+                   data-testid="button-run-sandbox-shell-command"
+                 >
+                   {shellMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                 </Button>
+               </form>
                 <div className="flex-1 overflow-y-auto p-2 font-mono text-xs bg-black/90 text-green-400">
                   {logs.length === 0 ? (
                     <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
@@ -670,7 +715,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
                   <EnvVarsPanel projectId={projectId} />
                 </TabsContent>
                 <TabsContent value="github" className="flex-1 m-0 overflow-hidden">
-                  <GitHubPanel projectId={projectId} />
+                   <GitHubPanel projectId={projectId} adminOrderId={adminOrderId} />
                 </TabsContent>
                 <TabsContent value="deploy" className="flex-1 m-0 overflow-y-auto p-3">
                   <div className="space-y-4">
