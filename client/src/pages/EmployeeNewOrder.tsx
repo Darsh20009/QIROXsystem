@@ -142,7 +142,7 @@ export default function EmployeeNewOrder() {
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [customItem, setCustomItem] = useState("");
-  const [selectedBilling, setSelectedBilling] = useState<string>("monthly");
+  const [selectedBilling, setSelectedBilling] = useState<string>("");
   const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
   const [discountValue, setDiscountValue] = useState("");
 
@@ -208,6 +208,10 @@ export default function EmployeeNewOrder() {
   }
 
   function selectPlan(plan: any) {
+    if (!selectedBilling) {
+      toast({ title: L ? "اختر مدة الاشتراك أولاً" : "Select the subscription period first", variant: "destructive" });
+      return;
+    }
     const price = getPlanPrice(plan) ?? 0;
     const planId = String(plan.id || plan._id);
     const id = `plan-${planId}-${selectedBilling}`;
@@ -646,7 +650,7 @@ export default function EmployeeNewOrder() {
                    <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-black/30" />
-                       <span className="text-sm font-bold text-black">{L ? "الباقات ومدة الاشتراك" : "Plans & subscription period"}</span>
+                       <span className="text-sm font-bold text-black">{L ? "الباقات ومدة الاشتراك *" : "Plans & subscription period *"}</span>
                     </div>
                     <div className="flex gap-1 bg-black/[0.04] rounded-lg p-1">
                        {Object.entries(BILLING_LABELS).map(([key, label]) => (
@@ -932,7 +936,7 @@ export default function EmployeeNewOrder() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setSelectedBilling(""); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
                     <Plus className="w-4 h-4" /> {L ? "مشروع جديد" : "New Project"}
                   </Button>
                   <Link href="/admin/orders">
