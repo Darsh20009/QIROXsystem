@@ -4015,7 +4015,7 @@ export async function registerRoutes(
   app.post("/api/admin/projects/:projectId/subscription/start", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const { ProjectModel, ProjectSubscriptionModel, OrderModel, UserModel } = await import("./models");
+      const { ProjectModel, ProjectSubscriptionModel, OrderModel, OrderSpecsModel, UserModel } = await import("./models");
       const project = await ProjectModel.findById(req.params.projectId).lean();
       if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
 
@@ -4049,8 +4049,84 @@ export async function registerRoutes(
         order = await OrderModel.findById(candidateOrderId).lean();
         if (order) break;
       }
-      const clientId = (project as any).clientId || (order as any)?.userId;
-      const client = clientId ? await UserModel.findById(clientId).lean() : null;
+      const clientIdCandidates = [
+        (project as any).clientId,
+        (order as any)?.userId,
+      ].filter((value, index, values) =>
+        value
+        && mongoose.Types.ObjectId.isValid(String(value))
+        && values.findIndex((candidate) => String(candidate) === String(value)) === index,
+      );
+      const clientId = clientIdCandidates[0] || (project as any).clientId || (order as any)?.userId;
+      let client: any = null;
+      for (const candidateClientId of clientIdCandidates) {
+        client = await UserModel.findById(candidateClientId).lean();
+        if (client) break;
+      }
+      let clientWasRecovered = false;
+      if (!client && order) {
+        const specs = await OrderSpecsModel.findOne({ orderId: (order as any)._id }).lean() as any;
+        const sourceEmail = String(
+          specs?.clientEmail
+            || (order as any).clientEmail
+            || (order as any).email
+            || "",
+        ).trim().toLowerCase();
+        const sourcePhone = String((order as any).phone || "").trim();
+        if (sourceEmail) {
+          client = await UserModel.findOne({ email: sourceEmail, role: "client" }).lean();
+        }
+        if (!client && sourcePhone) {
+          client = await UserModel.findOne({
+            role: "client",
+            $or: [{ phone: sourcePhone }, { whatsappNumber: sourcePhone }],
+          }).lean();
+        }
+        if (!client) {
+          const orderIdSuffix = String((order as any)._id).replace(/[^a-zA-Z0-9]/g, "").slice(-12).toLowerCase();
+          const fallbackEmail = `client-${orderIdSuffix}@qirox.local`;
+          const fallbackUsername = `client-${orderIdSuffix}`;
+          const emailOwner = sourceEmail ? await UserModel.findOne({ email: sourceEmail }).select("_id role").lean() : null;
+          const recoveryEmail = emailOwner && emailOwner.role !== "client" ? fallbackEmail : (sourceEmail || fallbackEmail);
+          const usernameOwner = await UserModel.findOne({ username: fallbackUsername }).select("_id role").lean();
+          const recoveryUsername = usernameOwner && usernameOwner.role !== "client"
+            ? `${fallbackUsername}-recovered`
+            : fallbackUsername;
+          const createdAt = (project as any).createdAt || (order as any).createdAt || new Date();
+          const generatedPassword = await hashPassword(crypto.randomBytes(24).toString("hex"));
+          try {
+            client = await UserModel.create({
+              username: recoveryUsername,
+              email: recoveryEmail,
+              password: generatedPassword,
+              fullName: String(
+                (order as any).businessName
+                  || specs?.projectName
+                  || `عميل مشروع ${orderIdSuffix}`,
+              ).trim(),
+              role: "client",
+              phone: sourcePhone,
+              whatsappNumber: sourcePhone,
+              organizationName: String((order as any).businessName || "").trim(),
+              emailVerified: false,
+              createdAt,
+              updatedAt: new Date(),
+            });
+            client = client.toObject ? client.toObject() : client;
+            clientWasRecovered = true;
+          } catch (createError: any) {
+            if (createError?.code !== 11000) throw createError;
+            client = await UserModel.findOne({
+              role: "client",
+              $or: [
+                ...(sourceEmail ? [{ email: sourceEmail }] : []),
+                { username: recoveryUsername },
+                ...(sourcePhone ? [{ phone: sourcePhone }, { whatsappNumber: sourcePhone }] : []),
+              ],
+            }).lean();
+          }
+        }
+      }
       if (!order || !client) {
         const missingFields = [];
         const solutions = [];
@@ -4093,12 +4169,23 @@ export async function registerRoutes(
       if (
         String((project as any).orderId || "") !== String((order as any)._id)
         || String((project as any).clientId || "") !== String((client as any)._id)
+        || String((order as any).userId || "") !== String((client as any)._id)
       ) {
-        await ProjectModel.updateOne(
-          { _id: project._id },
-          { $set: { orderId: (order as any)._id, clientId: (client as any)._id } },
-        );
+        await Promise.all([
+          ProjectModel.updateOne(
+            { _id: project._id },
+            { $set: { orderId: (order as any)._id, clientId: (client as any)._id } },
+          ),
+          OrderModel.updateOne(
+            { _id: (order as any)._id },
+            { $set: { userId: (client as any)._id } },
+          ),
+        ]);
       }
+      const resolvedClientId = (client as any)._id;
+      (project as any).orderId = (order as any)._id;
+      (project as any).clientId = resolvedClientId;
+      (order as any).userId = resolvedClientId;
 
       const period = normalizeProjectSubscriptionPeriod(req.body?.period || (order as any).planPeriod || (client as any).subscriptionPeriod);
       const durationDays = getProjectSubscriptionDurationDays(period);
@@ -4121,7 +4208,7 @@ export async function registerRoutes(
         subscription = await ProjectSubscriptionModel.create({
           projectId: req.params.projectId,
           orderId: (order as any)._id,
-          clientId,
+          clientId: resolvedClientId,
           planTier: (order as any).planTier || "",
           planSegment: (order as any).planSegment || (client as any).subscriptionSegmentId || "",
           period,
@@ -4148,7 +4235,14 @@ export async function registerRoutes(
         title: `اشتراك مشروع — ${(order as any).businessName || (order as any).serviceType || "QIROX"}`,
         notes: req.body?.notes,
       });
-      res.status(201).json({ subscription: serializeProjectSubscription(subscription), invoice });
+      res.status(201).json({
+        subscription: serializeProjectSubscription(subscription),
+        invoice,
+        clientRecovered: clientWasRecovered,
+        client: clientWasRecovered
+          ? { id: String((client as any)._id), fullName: (client as any).fullName, email: (client as any).email }
+          : undefined,
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر بدء اشتراك المشروع" });
     }

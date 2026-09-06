@@ -463,13 +463,18 @@ export default function AdminOrders() {
       }
       return res.json();
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       toast({
         title: variables.action === "start"
           ? (L ? "تم بدء اشتراك المشروع وإضافة الفاتورة" : "Project subscription started and invoice added")
           : (L ? "تم تجديد الاشتراك وإضافة الفاتورة" : "Subscription renewed and invoice added"),
+        description: data?.clientRecovered
+          ? (L
+            ? `تم تلقائياً إنشاء حساب العميل وربطه بالطلب والمشروع بنفس البيانات والتاريخ${data.client?.email ? ` (${data.client.email})` : ""}.`
+            : `The client account was automatically recovered and linked to the order and project using the original data and date${data.client?.email ? ` (${data.client.email})` : ""}.`)
+          : undefined,
       });
     },
     onError: (error: any) => {
