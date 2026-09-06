@@ -140,6 +140,7 @@ export default function EmployeeNewOrder() {
   const [notes, setNotes] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [customItem, setCustomItem] = useState("");
   const [selectedBilling, setSelectedBilling] = useState<string>("monthly");
   const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
@@ -176,18 +177,42 @@ export default function EmployeeNewOrder() {
     setSelectedItems(prev => [...prev, { id: Date.now().toString(), name: customItem, nameAr: customItem, type: "custom" }]);
     setCustomItem("");
   }
-  function removeItem(id: string) { setSelectedItems(prev => prev.filter(s => s.id !== id)); }
+  function removeItem(id: string) {
+    setSelectedItems(prev => prev.filter(s => s.id !== id));
+    if (id.startsWith("plan-")) setSelectedPlanId(null);
+  }
+
+  function changeBillingPeriod(period: string) {
+    setSelectedBilling(period);
+    if (!selectedPlanId) return;
+    const plan = pricingPlans.find((candidate: any) => String(candidate.id || candidate._id) === selectedPlanId);
+    if (!plan) return;
+    const priceKey = BILLING_PRICE_KEY[period];
+    const price = priceKey && plan[priceKey] != null ? Number(plan[priceKey]) : 0;
+    const planItem = {
+      id: `plan-${selectedPlanId}-${period}`,
+      name: `باقة ${plan.nameAr || plan.name} — ${BILLING_LABELS[period] || period}`,
+      nameAr: `باقة ${plan.nameAr || plan.name} — ${BILLING_LABELS[period] || period}`,
+      price,
+      type: "plan" as const,
+    };
+    setSelectedItems(prev => [...prev.filter(item => item.type !== "plan"), planItem]);
+    if (price > 0) setTotalAmount(String(price));
+  }
 
   function getPlanPrice(plan: any): number | null {
     const key = BILLING_PRICE_KEY[selectedBilling];
+    if (!key) return null;
     const val = plan[key];
     return (val !== undefined && val !== null) ? Number(val) : null;
   }
 
   function selectPlan(plan: any) {
     const price = getPlanPrice(plan) ?? 0;
-    const id = `plan-${plan.id || plan._id}-${selectedBilling}`;
+    const planId = String(plan.id || plan._id);
+    const id = `plan-${planId}-${selectedBilling}`;
     if (selectedItems.find(s => s.id === id)) { removeItem(id); return; }
+    setSelectedPlanId(planId);
     setSelectedItems(prev => prev.filter(s => !s.id.startsWith("plan-")));
     const name = `باقة ${plan.nameAr || plan.name} — ${BILLING_LABELS[selectedBilling] || selectedBilling}`;
     setSelectedItems(prev => [...prev.filter(s => !s.id.startsWith("plan-")), { id, name, nameAr: name, price, type: "plan" }]);
@@ -208,6 +233,10 @@ export default function EmployeeNewOrder() {
 
   function handleSubmit() {
     const items = selectedItems;
+    if (!selectedBilling) {
+      toast({ title: L ? "حدد مدة الاشتراك قبل إنشاء الطلب" : "Select a subscription period before creating the order", variant: "destructive" });
+      return;
+    }
     const base = totalAmount ? Number(totalAmount) : items.reduce((s, i) => s + (i.price || 0), 0);
     const discount = calcDiscount(base);
     const calculatedTotal = Math.max(0, base - discount);
@@ -216,10 +245,22 @@ export default function EmployeeNewOrder() {
       if (!fullName || !email || !username || !password) {
         toast({ title: L ? "أكمل بيانات العميل أولاً" : "Complete client info first", variant: "destructive" }); return;
       }
-      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, currency, organizationName, taxNumber, commercialRegistration, nationalAddress, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
+      const selectedPlan = pricingPlans.find((plan: any) => String(plan.id || plan._id) === selectedPlanId);
+      newClientMutation.mutate({
+        fullName, email, phone, username, password, businessType, country, currency,
+        organizationName, taxNumber, commercialRegistration, nationalAddress,
+        businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal,
+        services: items, planPeriod: selectedBilling,
+        planTier: selectedPlan?.tier || "", planSegment: selectedPlan?.segment || "",
+      });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
-      existingClientMutation.mutate({ clientId: selectedClient.id, currency, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer" });
+      const selectedPlan = pricingPlans.find((plan: any) => String(plan.id || plan._id) === selectedPlanId);
+      existingClientMutation.mutate({
+        clientId: selectedClient.id, currency, businessName, projectType, sector, idea, notes,
+        totalAmount: calculatedTotal, items, paymentMethod: "bank_transfer",
+        planPeriod: selectedBilling, planTier: selectedPlan?.tier || "", planSegment: selectedPlan?.segment || "",
+      });
     }
   }
 
@@ -602,14 +643,14 @@ export default function EmployeeNewOrder() {
               {/* ── Pricing Plans ── */}
               {pricingPlans.length > 0 && (
                 <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-2 mb-4">
+                   <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-black/30" />
-                      <span className="text-sm font-bold text-black">{L ? "الباقات المتاحة" : "Available Plans"}</span>
+                       <span className="text-sm font-bold text-black">{L ? "الباقات ومدة الاشتراك" : "Plans & subscription period"}</span>
                     </div>
                     <div className="flex gap-1 bg-black/[0.04] rounded-lg p-1">
-                      {Object.entries(BILLING_LABELS).map(([key, label]) => (
-                        <button key={key} onClick={() => setSelectedBilling(key)}
+                       {Object.entries(BILLING_LABELS).map(([key, label]) => (
+                         <button key={key} onClick={() => changeBillingPeriod(key)}
                           className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${selectedBilling === key ? "bg-black text-white" : "text-black/40 hover:text-black/70"}`}
                           data-testid={`billing-${key}`}>
                           {label}
@@ -859,7 +900,7 @@ export default function EmployeeNewOrder() {
               </div>
 
               {/* Submit */}
-              <Button onClick={handleSubmit} disabled={isPending} className="w-full bg-black hover:bg-black/80 text-white rounded-xl h-12 font-bold text-sm gap-2 shadow-lg" data-testid="button-submit-order">
+                   <Button onClick={handleSubmit} disabled={isPending} className="w-full bg-black hover:bg-black/80 text-white rounded-xl h-12 font-bold text-sm gap-2 shadow-lg" data-testid="button-submit-order">
                 {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> {L ? "جاري الإنشاء..." : "Creating..."}</> : <><CheckCircle2 className="w-4 h-4" /> {mode === "new" ? (L ? "إنشاء العميل والمشروع" : "Create Client & Project") : (L ? "إنشاء المشروع" : "Create Project")}</>}
               </Button>
             </motion.div>
@@ -891,7 +932,7 @@ export default function EmployeeNewOrder() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
                     <Plus className="w-4 h-4" /> {L ? "مشروع جديد" : "New Project"}
                   </Button>
                   <Link href="/admin/orders">

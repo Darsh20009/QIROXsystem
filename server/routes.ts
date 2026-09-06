@@ -10703,10 +10703,16 @@ export async function registerRoutes(
         organizationName, taxNumber, commercialRegistration, nationalAddress,
         // Order info
         projectType, sector, idea, services, totalAmount, notes,
+        planTier, planPeriod, planSegment,
       } = req.body;
 
       if (!fullName || !email || !username || !password) {
         return res.status(400).json({ error: "يجب إدخال الاسم الكامل والبريد والمستخدم وكلمة المرور" });
+      }
+      const validPlanPeriods = ["monthly", "sixmonth", "annual", "lifetime"];
+      const normalizedPlanPeriod = String(planPeriod || "").toLowerCase();
+      if (!validPlanPeriods.includes(normalizedPlanPeriod)) {
+        return res.status(400).json({ error: "يجب تحديد مدة الاشتراك للطلب" });
       }
 
       const normalizedEmail = String(email).toLowerCase().trim().trim();
@@ -10761,6 +10767,9 @@ export async function registerRoutes(
           businessName: req.body.businessName || fullName,
           notes: idea ? `الفكرة: ${idea}${notes ? `\n${notes}` : ""}` : (notes || ""),
           totalAmount: totalAmount || 0,
+          planTier: planTier || undefined,
+          planPeriod: normalizedPlanPeriod,
+          planSegment: planSegment || sector || "",
           status: "pending",
           paymentMethod: "bank_transfer",
           items: services || [],
@@ -10793,8 +10802,13 @@ export async function registerRoutes(
     if (actor.role === "client") return res.sendStatus(403);
     try {
       const { UserModel } = await import("./models");
-      const { clientId, projectType, sector, idea, notes, totalAmount, items, paymentMethod, businessName } = req.body;
+       const { clientId, projectType, sector, idea, notes, totalAmount, items, paymentMethod, businessName, planTier, planPeriod, planSegment } = req.body;
       if (!clientId) return res.status(400).json({ error: "يجب تحديد العميل" });
+       const validPlanPeriods = ["monthly", "sixmonth", "annual", "lifetime"];
+       const normalizedPlanPeriod = String(planPeriod || "").toLowerCase();
+       if (!validPlanPeriods.includes(normalizedPlanPeriod)) {
+         return res.status(400).json({ error: "يجب تحديد مدة الاشتراك للطلب" });
+       }
       const client = await UserModel.findById(clientId);
       if (!client || client.role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
       const serviceNames: string[] = (items || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
@@ -10806,6 +10820,9 @@ export async function registerRoutes(
         businessName: businessName || client.fullName || client.username,
         notes: [idea ? `الفكرة: ${idea}` : "", notes || ""].filter(Boolean).join("\n") || `طلب من قِبل ${actor.fullName || actor.username}`,
         totalAmount: totalAmount || 0,
+        planTier: planTier || undefined,
+        planPeriod: normalizedPlanPeriod,
+        planSegment: planSegment || sector || "",
         status: "pending",
         paymentMethod: paymentMethod || "bank_transfer",
         items: items || [],

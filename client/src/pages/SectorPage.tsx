@@ -311,8 +311,8 @@ function PartnerIframe({ url, name }: { url: string; name: string }) {
 const SECTOR_PRICES = {
   restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
   ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  education:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
-  healthcare: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
+  education:  { lite: { sm: 999,  yr: 1849, life: 9699  }, pro: { sm: 2099, yr: 3599, life: 17199 }, infinity: { sm: 4087, yr: 6787, life: 30787 } },
+  healthcare: { lite: { sm: 1248, yr: 1948, life: 8198  }, pro: { sm: 2238, yr: 3388, life: 13788 }, infinity: { sm: 3899, yr: 5999, life: 25299 } },
   corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
   ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
 } as const;
