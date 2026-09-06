@@ -49,6 +49,107 @@ function decrypt(encrypted: string, ivHex: string): string {
 }
 
 const SANDBOX_ALLOWED_ROLES = ["admin", "manager", "employee"];
+const LOCAL_SECRET_KEYS = new Set([
+  "SESSION_SECRET",
+  "COOKIE_SECRET",
+  "JWT_SECRET",
+  "APP_SECRET",
+  "ENCRYPTION_KEY",
+  "WEBHOOK_SIGNING_SECRET",
+  "CSRF_SECRET",
+]);
+const SECRET_SCAN_EXTENSIONS = new Set([
+  ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".json", ".env", ".example",
+  ".yaml", ".yml", ".toml", ".py", ".rb", ".go", ".rs", ".php", ".java",
+]);
+
+function secretSuggestionType(key: string): "local" | "external" | "config" {
+  const normalized = key.toUpperCase();
+  if (LOCAL_SECRET_KEYS.has(normalized)) return "local";
+  if (/(API|TOKEN|PASSWORD|PRIVATE|CLIENT_SECRET|ACCESS_KEY|SECRET|DATABASE_URL|MONGODB_URI|OAUTH)/.test(normalized)) return "external";
+  return "config";
+}
+
+async function inspectProjectEnvironment(projectId: string, existingKeys: Set<string>) {
+  const { getProjectDir } = await import("./sandbox-fs");
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const root = getProjectDir(projectId);
+  const detected = new Map<string, { key: string; type: "local" | "external" | "config"; files: string[] }>();
+  let filesRead = 0;
+  let bytesRead = 0;
+  const maxFiles = 180;
+  const maxBytes = 650_000;
+  const ignoredDirectories = new Set([".git", "node_modules", "dist", "build", ".next", ".cache"]);
+
+  const add = (key: string, filePath: string) => {
+    const normalized = String(key || "").trim().toUpperCase();
+    if (!/^[A-Z][A-Z0-9_]{2,63}$/.test(normalized)) return;
+    const previous = detected.get(normalized) || {
+      key: normalized,
+      type: secretSuggestionType(normalized),
+      files: [],
+    };
+    if (!previous.files.includes(filePath) && previous.files.length < 4) previous.files.push(filePath);
+    detected.set(normalized, previous);
+  };
+
+  const scanContent = (content: string, filePath: string) => {
+    const patterns = [
+      /process\.env\.([A-Z][A-Z0-9_]{2,63})/g,
+      /process\.env\[['"]([A-Z][A-Z0-9_]{2,63})['"]\]/g,
+      /import\.meta\.env\.([A-Z][A-Z0-9_]{2,63})/g,
+      /import\.meta\.env\[['"]([A-Z][A-Z0-9_]{2,63})['"]\]/g,
+      /os\.getenv\(\s*['"]([A-Z][A-Z0-9_]{2,63})['"]/g,
+      /System\.getenv\(\s*['"]([A-Z][A-Z0-9_]{2,63})['"]/g,
+    ];
+    for (const pattern of patterns) {
+      for (const match of content.matchAll(pattern)) add(match[1], filePath);
+    }
+    if (filePath.toLowerCase().includes(".env")) {
+      for (const line of content.split(/\r?\n/)) {
+        const match = line.match(/^\s*([A-Z][A-Z0-9_]{2,63})\s*=/);
+        if (match) add(match[1], filePath);
+      }
+    }
+  };
+
+  const walk = async (directory: string, relative = ""): Promise<void> => {
+    if (filesRead >= maxFiles || bytesRead >= maxBytes) return;
+    let entries: any[] = [];
+    try { entries = await fs.readdir(directory, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (filesRead >= maxFiles || bytesRead >= maxBytes) break;
+      if (entry.name.startsWith(".git") || ignoredDirectories.has(entry.name)) continue;
+      const absolute = path.join(directory, entry.name);
+      const relativePath = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        await walk(absolute, relativePath);
+        continue;
+      }
+      const extension = path.extname(entry.name).toLowerCase();
+      if (!SECRET_SCAN_EXTENSIONS.has(extension) && !entry.name.startsWith(".env")) continue;
+      try {
+        const stat = await fs.stat(absolute);
+        if (!stat.isFile() || stat.size > 120_000) continue;
+        const remaining = Math.max(0, maxBytes - bytesRead);
+        const content = (await fs.readFile(absolute, "utf8")).slice(0, remaining);
+        bytesRead += content.length;
+        filesRead++;
+        scanContent(content, relativePath);
+      } catch { /* a single unreadable file must not block the scan */ }
+    }
+  };
+
+  await walk(root);
+  return Array.from(detected.values())
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map(item => ({
+      ...item,
+      existing: existingKeys.has(item.key),
+      canGenerate: item.type === "local",
+    }));
+}
 
 function requireAuth(req: Request, res: Response): any {
   if (!req.isAuthenticated?.() || !(req as any).user) {
@@ -71,6 +172,19 @@ function requireAdmin(req: Request, res: Response): any {
     return null;
   }
   return user;
+}
+
+function normalizeLogoUrl(value: unknown): string {
+  const logoUrl = String(value || "").trim();
+  if (!logoUrl) return "";
+  if (logoUrl.startsWith("/")) return logoUrl.slice(0, 500);
+  try {
+    const parsed = new URL(logoUrl);
+    if (!["http:", "https:"].includes(parsed.protocol)) return "";
+    return logoUrl.slice(0, 500);
+  } catch {
+    return "";
+  }
 }
 
 async function requireProjectAccess(req: Request, res: Response): Promise<{ user: any; project: any } | null> {
@@ -343,11 +457,18 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const isAdmin = ["admin", "manager"].includes(ctx.user.role);
       const allowed = isAdmin
-        ? ["name", "nameAr", "description", "entryFile", "startCmd", "installCmd", "buildCmd", "runtime", "githubRepo", "githubBranch", "isPublic", "tags"]
+        ? ["name", "nameAr", "description", "entryFile", "startCmd", "installCmd", "buildCmd", "runtime", "githubRepo", "githubBranch", "isPublic", "tags", "logoUrl"]
         : ["name", "nameAr", "description", "entryFile", "runtime", "isPublic", "tags"];
       const updates: Record<string, any> = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
+      }
+      if (updates.logoUrl !== undefined) {
+        const normalizedLogoUrl = normalizeLogoUrl(updates.logoUrl);
+        if (String(updates.logoUrl || "").trim() && !normalizedLogoUrl) {
+          return res.status(400).json({ error: "رابط الشعار يجب أن يكون http أو https أو مساراً محلياً صالحاً" });
+        }
+        updates.logoUrl = normalizedLogoUrl;
       }
       const { SandboxProjectModel } = await import("./models");
       const updated = await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, updates, { new: true });
@@ -785,6 +906,49 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const { SandboxEnvVarModel } = await import("./models");
       await SandboxEnvVarModel.deleteOne({ projectId: ctx.project._id, key: req.params.key });
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/sandbox/projects/:id/env/inspect", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { SandboxEnvVarModel } = await import("./models");
+      const existing = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).select("key").lean();
+      const existingKeys = new Set((existing as any[]).map((item) => String(item.key || "").toUpperCase()));
+      const suggestions = await inspectProjectEnvironment(String(ctx.project._id), existingKeys);
+      res.json({
+        project: {
+          runtime: ctx.project.runtime,
+          template: ctx.project.template,
+          buildCmd: ctx.project.buildCmd,
+          startCmd: ctx.project.startCmd,
+        },
+        suggestions,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/env/generate", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const key = String(req.body?.key || "").trim().toUpperCase();
+      if (!LOCAL_SECRET_KEYS.has(key)) {
+        return res.status(400).json({ error: "لا يمكن توليد مفاتيح مزودي الخدمات تلقائياً. أدخلها من لوحة المزود." });
+      }
+      const { SandboxEnvVarModel } = await import("./models");
+      const { encrypted, iv } = encrypt(crypto.randomBytes(48).toString("base64url"));
+      await SandboxEnvVarModel.findOneAndUpdate(
+        { projectId: ctx.project._id, key },
+        { value: encrypted, iv },
+        { upsert: true, new: true },
+      );
+      res.json({ success: true, key });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

@@ -5,12 +5,20 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Eye, EyeOff, Loader2, KeyRound, Pencil, Check, X, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Loader2, KeyRound, Pencil, Check, X, ShieldCheck, ScanSearch, WandSparkles, LockKeyhole } from "lucide-react";
 
 interface EnvVar {
   id: string;
   key: string;
   value: string;
+}
+
+interface SecretSuggestion {
+  key: string;
+  type: "local" | "external" | "config";
+  files: string[];
+  existing: boolean;
+  canGenerate: boolean;
 }
 
 interface EnvVarsPanelProps {
@@ -27,9 +35,14 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const { data: envVars, isLoading } = useQuery<EnvVar[]>({
     queryKey: ["/api/sandbox/projects", projectId, "env"],
+  });
+  const { data: inspection, isFetching: isInspecting, refetch: inspectProject } = useQuery<{ suggestions: SecretSuggestion[] }>({
+    queryKey: ["/api/sandbox/projects", projectId, "env", "inspect"],
+    enabled: false,
   });
 
   const addMutation = useMutation({
@@ -77,6 +90,25 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
     },
   });
 
+  const generateMutation = useMutation({
+    mutationFn: async (key: string) => {
+      await apiRequest("POST", `/api/sandbox/projects/${projectId}/env/generate`, { key });
+    },
+    onSuccess: (_data, key) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "env"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "env", "inspect"] });
+      toast({ title: ar ? `تم توليد ${key}` : `${key} generated` });
+    },
+    onError: (err: Error) => toast({ title: ar ? "تعذر التوليد" : "Could not generate secret", description: err.message, variant: "destructive" }),
+  });
+
+  const addDetectedKey = (key: string) => {
+    setNewKey(key);
+    setNewValue("");
+    setShowSuggestions(false);
+    toast({ title: ar ? "تم تجهيز اسم المفتاح" : "Key name ready", description: ar ? "أدخل قيمة المزود في الحقل السري." : "Enter the provider value in the secret field." });
+  };
+
   const toggleVisible = (key: string) => {
     setVisibleKeys((prev) => {
       const next = new Set(prev);
@@ -102,9 +134,9 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
   };
 
   return (
-    <div className="flex h-full flex-col gap-3 bg-[#101318] p-4 text-[#e6edf3]">
+    <div className="flex h-full flex-col gap-3 bg-[#11182b] p-4 text-[#e6edf3]">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/15 text-orange-400">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
           <KeyRound className="h-4 w-4" />
         </div>
         <div>
@@ -118,25 +150,87 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
         <span>{ar ? "يتم حقن الأسرار عند التشغيل فقط ولا تُحفظ داخل ملفات المشروع." : "Secrets are injected at runtime and are never written into project files."}</span>
       </div>
 
+      <div className="rounded-lg border border-violet-400/15 bg-violet-400/[0.06] p-3">
+        <div className="flex items-start gap-2">
+          <ScanSearch className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold text-[#f0f6fc]">{ar ? "اكتشاف تجهيزات المشروع" : "Detect project requirements"}</div>
+            <p className="mt-1 text-[10px] leading-4 text-[#8b949e]">
+              {ar ? "يفحص أسماء المتغيرات فقط من الكود والإعدادات، بدون قراءة قيم الأسرار." : "Scan variable names from code and config without reading secret values."}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            className="h-7 shrink-0 px-2 text-[10px] text-violet-200 hover:bg-violet-400/10 hover:text-white"
+            onClick={() => { setShowSuggestions(true); inspectProject(); }}
+            disabled={isInspecting}
+            data-testid="button-scan-project-secrets"
+          >
+            {isInspecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="h-3.5 w-3.5" />}
+            <span className="ms-1">{ar ? "فحص" : "Scan"}</span>
+          </Button>
+        </div>
+        {showSuggestions && (
+          <div className="mt-3 space-y-1.5 border-t border-white/[0.07] pt-3">
+            {!inspection && isInspecting ? (
+              <div className="flex items-center gap-2 text-[10px] text-[#8b949e]"><Loader2 className="h-3 w-3 animate-spin" />{ar ? "يتم فحص المشروع..." : "Inspecting project..."}</div>
+            ) : inspection?.suggestions?.length ? (
+              inspection.suggestions.map((suggestion) => (
+                <div key={suggestion.key} className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-[#0d1117]/70 px-2 py-1.5">
+                  {suggestion.canGenerate ? <WandSparkles className="h-3 w-3 text-violet-300" /> : suggestion.type === "external" ? <LockKeyhole className="h-3 w-3 text-amber-300" /> : <KeyRound className="h-3 w-3 text-[#8b949e]" />}
+                  <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-[#c9d1d9]" dir="ltr">{suggestion.key}</span>
+                  {suggestion.existing ? (
+                    <span className="text-[9px] text-emerald-300">{ar ? "مضاف" : "Added"}</span>
+                  ) : suggestion.canGenerate ? (
+                    <Button
+                      variant="ghost"
+                      className="h-6 px-1.5 text-[9px] text-violet-200 hover:bg-violet-400/10"
+                      onClick={() => generateMutation.mutate(suggestion.key)}
+                      disabled={generateMutation.isPending}
+                      data-testid={`button-generate-secret-${suggestion.key}`}
+                    >
+                      {ar ? "توليد" : "Generate"}
+                    </Button>
+                  ) : suggestion.type === "external" ? (
+                    <Button
+                      variant="ghost"
+                      className="h-6 px-1.5 text-[9px] text-amber-200 hover:bg-amber-400/10"
+                      onClick={() => addDetectedKey(suggestion.key)}
+                      data-testid={`button-add-detected-secret-${suggestion.key}`}
+                    >
+                      {ar ? "إضافة" : "Add"}
+                    </Button>
+                  ) : (
+                    <span className="text-[9px] text-[#8b949e]">{ar ? "إعداد" : "Config"}</span>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-[10px] text-[#8b949e]">{ar ? "لم يتم العثور على متغيرات مطلوبة." : "No environment references found."}</div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-2">
         <Input
           placeholder={ar ? "المفتاح" : "KEY"}
           value={newKey}
           onChange={(e) => setNewKey(e.target.value.toUpperCase())}
-          className="h-8 border-[#30363d] bg-[#0d1117] text-xs font-mono text-white placeholder:text-[#6e7681]"
+          className="h-8 border-[#293653] bg-[#0b1020] text-xs font-mono text-white placeholder:text-[#6e7681]"
           data-testid="input-env-key"
         />
         <Input
           placeholder={ar ? "القيمة" : "VALUE"}
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          className="h-8 border-[#30363d] bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
+          className="h-8 border-[#293653] bg-[#0b1020] text-xs text-white placeholder:text-[#6e7681]"
           type="password"
           data-testid="input-env-value"
         />
         <Button
           size="sm"
-           className="h-8 bg-orange-500 px-3 text-black hover:bg-orange-400"
+           className="h-8 bg-violet-600 px-3 text-white hover:bg-violet-500"
           onClick={() => addMutation.mutate()}
           disabled={!newKey.trim() || addMutation.isPending}
           data-testid="button-add-env"
@@ -158,7 +252,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
           envVars.map((v) => (
             <div
               key={v.id}
-              className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-[#171b21] px-2.5 py-2 text-xs"
+              className="flex items-center gap-2 rounded-lg border border-[#293653] bg-[#18233f] px-2.5 py-2 text-xs"
               data-testid={`env-var-${v.key}`}
             >
               <span className="font-mono font-medium min-w-0 truncate flex-shrink-0">{v.key}</span>
@@ -168,7 +262,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                   <Input
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                     className="h-7 min-w-0 flex-1 border-[#30363d] bg-[#0d1117] text-xs font-mono text-white"
+                     className="h-7 min-w-0 flex-1 border-[#293653] bg-[#0b1020] text-xs font-mono text-white"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveEdit(v.key);

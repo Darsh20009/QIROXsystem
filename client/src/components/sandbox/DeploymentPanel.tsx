@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   CheckCircle2, CircleDot, ExternalLink, Globe2, Loader2,
   Rocket, Server, ShieldCheck, Sparkles, TerminalSquare, Wifi,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +22,7 @@ interface SandboxProject {
   githubBranch?: string;
   buildCmd?: string;
   startCmd?: string;
+  logoUrl?: string;
 }
 
 function parseRepo(value: string) {
@@ -46,6 +48,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [customDomain, setCustomDomain] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
   const { data: project } = useQuery<SandboxProject>({
     queryKey: ["/api/sandbox/projects", projectId],
@@ -90,6 +93,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
         startCommand: project?.startCmd || "npm start",
         outputDir: "dist",
         provider: config?.mode === "vercel" ? "vercel" : "simulation",
+        logoUrl: logoUrl.trim(),
         envVars: [],
       });
       if (!res.ok) {
@@ -103,6 +107,23 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
       toast({ title: ar ? "تم تجهيز مشروع النشر" : "Deployment project is ready" });
     },
     onError: (error: Error) => toast({ title: ar ? "تعذر تجهيز النشر" : "Deployment setup failed", description: error.message, variant: "destructive" }),
+  });
+
+  const logoMutation = useMutation({
+    mutationFn: async () => {
+      const nextLogo = logoUrl.trim();
+      await apiRequest("PATCH", `/api/sandbox/projects/${projectId}`, { logoUrl: nextLogo });
+      if (activeDeployment?.id) {
+        await apiRequest("PATCH", `/api/deploy/projects/${activeDeployment.id}/logo`, { logoUrl: nextLogo });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/deploy/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/deploy/projects", activeDeployment?.id] });
+      toast({ title: ar ? "تم تحديث هوية المشروع" : "Project identity updated" });
+    },
+    onError: (error: Error) => toast({ title: ar ? "تعذر تحديث الشعار" : "Could not update logo", description: error.message, variant: "destructive" }),
   });
 
   const deployMutation = useMutation({
@@ -148,11 +169,15 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
       : "";
   const latestRun = runs?.[0];
 
+  useEffect(() => {
+    if (project?.logoUrl && !logoUrl) setLogoUrl(project.logoUrl);
+  }, [project?.logoUrl, logoUrl]);
+
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#101318] text-[#e6edf3]">
+    <div className="flex h-full flex-col overflow-y-auto bg-[#11182b] text-[#e6edf3]">
       <div className="border-b border-white/[0.08] px-4 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/15 text-orange-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
             <Rocket className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -168,13 +193,49 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
       </div>
 
       <div className="space-y-4 p-4">
+        <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+              <ImageIcon className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <div className="text-xs font-semibold">{ar ? "هوية المشروع" : "Project identity"}</div>
+              <div className="text-[10px] text-[#8b949e]">{ar ? "يظهر خارجياً وفي صفحة المشروع المنشورة" : "Shown on external cards and the published project page"}</div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#0d1117]">
+              {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain" /> : <span className="text-sm font-bold text-violet-300">{(project?.name || "Q").charAt(0).toUpperCase()}</span>}
+            </div>
+            <Input
+              value={logoUrl}
+              onChange={(event) => setLogoUrl(event.target.value)}
+              placeholder="https://example.com/logo.png"
+              className="h-9 border-white/10 bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
+              dir="ltr"
+              data-testid="input-project-logo-url"
+            />
+            <Button
+              className="h-9 shrink-0 bg-violet-600 px-3 text-xs text-white hover:bg-violet-500"
+              onClick={() => logoMutation.mutate()}
+              disabled={logoMutation.isPending || !logoUrl.trim()}
+              data-testid="button-save-project-logo"
+            >
+              {logoMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (ar ? "حفظ" : "Save")}
+            </Button>
+          </div>
+          <p className="mt-2 text-[10px] leading-4 text-[#8b949e]">
+            {ar ? "استخدم رابط صورة HTTPS. لن يتم تغيير شعار QIROX العام، هذا الشعار خاص بهذا المشروع فقط." : "Use an HTTPS image URL. This changes only this project identity, not the global QIROX logo."}
+          </p>
+        </div>
+
         {!repo ? (
           <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-4 text-xs leading-5 text-amber-200">
             {ar ? "لا يوجد مستودع GitHub مرتبط بهذا الـWorkspace. اربط المستودع أولاً من تبويب Git." : "This workspace has no linked GitHub repository. Connect one from Git first."}
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-white/[0.09] bg-[#171b21] p-3">
+            <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
               <div className="mb-2 flex items-center gap-2 text-[11px] text-[#8b949e]">
                 <Server className="h-3.5 w-3.5" />
                 {ar ? "مصدر النشر" : "Deployment source"}
@@ -188,7 +249,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
             </div>
 
             {!activeDeployment ? (
-              <div className="rounded-xl border border-dashed border-white/15 bg-[#15191f] p-4">
+              <div className="rounded-xl border border-dashed border-violet-300/20 bg-[#18233f] p-4">
                 <div className="mb-3 flex items-start gap-3">
                   <Sparkles className="mt-0.5 h-4 w-4 text-orange-400" />
                   <div>
@@ -199,7 +260,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                   </div>
                 </div>
                 <Button
-                  className="h-9 w-full bg-orange-500 text-xs font-semibold text-black hover:bg-orange-400"
+                  className="h-9 w-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500"
                   onClick={() => createMutation.mutate()}
                   disabled={createMutation.isPending || projectsLoading}
                   data-testid="button-create-deployment"
@@ -210,7 +271,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
               </div>
             ) : (
               <>
-                <div className="rounded-xl border border-white/[0.09] bg-[#171b21] p-3">
+                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {status === "live" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <CircleDot className="h-4 w-4 text-orange-400" />}
@@ -228,7 +289,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                 </div>
 
                 <Button
-                  className="h-10 w-full bg-orange-500 text-xs font-semibold text-black hover:bg-orange-400"
+                  className="h-10 w-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500"
                   onClick={() => deployMutation.mutate()}
                   disabled={deployMutation.isPending || ["building", "deploying"].includes(status)}
                   data-testid="button-deploy-project"
@@ -237,7 +298,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                   {status === "live" ? (ar ? "نشر نسخة جديدة" : "Deploy new version") : (ar ? "نشر الآن" : "Deploy now")}
                 </Button>
 
-                <div className="rounded-xl border border-white/[0.09] bg-[#15191f] p-3">
+                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                     <Globe2 className="h-4 w-4 text-sky-400" />
                     {ar ? "النطاق الخاص" : "Custom domain"}
@@ -247,7 +308,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                       value={customDomain || activeDeployment.customDomain || ""}
                       onChange={(event) => setCustomDomain(event.target.value)}
                       placeholder="app.example.com"
-                      className="h-8 border-white/10 bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
+                      className="h-8 border-[#293653] bg-[#0b1020] text-xs text-white placeholder:text-[#6e7681]"
                       dir="ltr"
                       data-testid="input-custom-domain"
                     />
@@ -266,7 +327,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/[0.09] bg-[#15191f] p-3">
+                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
                     <TerminalSquare className="h-4 w-4 text-[#8b949e]" />
                     {ar ? "آخر عملية نشر" : "Latest deployment"}

@@ -57,3 +57,4 @@
 - [Apple review demo account](apple-review-demo-account.md) — Re-test the submitted review credentials from a fresh session before every App Store resubmission; stale credentials cause Guideline 2.1 rejection.
 - [GitHub history recovery](github-history-recovery.md) — An overwritten empty root commit may still be recoverable from an unreachable commit SHA; preserve the current ref before restoring.
 - [Project code workspace](project-code-workspace.md) — Reuse the sandbox IDE/runner for linked order projects; never persist GitHub tokens in the workspace remote.
+- [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.

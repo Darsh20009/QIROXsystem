@@ -23,6 +23,7 @@ const sandboxProjectSchema = new mongoose.Schema({
   maxDiskMB:   { type: Number, default: 100 },
   isPublic:    { type: Boolean, default: false },
   tags:        { type: [String], default: [] },
+  logoUrl:     { type: String, default: "" },
 }, { timestamps: true });
 sandboxProjectSchema.index({ ownerId: 1, createdAt: -1 });
 export const SandboxProjectModel = mongoose.models.SandboxProject || mongoose.model("SandboxProject", sandboxProjectSchema);

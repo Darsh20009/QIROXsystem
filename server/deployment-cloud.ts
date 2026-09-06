@@ -37,6 +37,18 @@ function canManageDeployment(user: any, project?: any): boolean {
   return ["admin", "manager"].includes(user.role) || !project || String(project.ownerId) === String(user._id);
 }
 
+function sanitizeLogoUrl(value: unknown): string {
+  const logoUrl = String(value || "").trim();
+  if (!logoUrl) return "";
+  if (logoUrl.startsWith("/")) return logoUrl.slice(0, 500);
+  try {
+    const parsed = new URL(logoUrl);
+    return ["http:", "https:"].includes(parsed.protocol) ? logoUrl.slice(0, 500) : "";
+  } catch {
+    return "";
+  }
+}
+
 function toPublicDeploymentProject(project: any) {
   if (!project) return project;
   const raw = typeof project.toObject === "function" ? project.toObject() : project;
@@ -128,7 +140,7 @@ function slugify(name: string): string {
 }
 
 function randomColor(): string {
-  const colors = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6"];
+  const colors = ["#6366f1", "#7c3aed", "#8b5cf6", "#2563eb", "#0ea5e9", "#0891b2", "#14b8a6"];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
@@ -571,7 +583,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
       const {
         name, description, githubOwner, githubRepo, githubBranch, githubToken,
         githubRepoId, buildCommand, startCommand, outputDir, nodeVersion,
-        envVars, plan, region, serviceType, provider, capacityLimitGb,
+        envVars, plan, region, serviceType, provider, capacityLimitGb, logoUrl,
       } = req.body;
 
       if (!name || !githubOwner || !githubRepo) {
@@ -625,6 +637,7 @@ export function registerDeploymentCloudRoutes(app: Express) {
         ownerId: String(user._id),
         ownerName: user.fullName || user.username,
         avatarColor: randomColor(),
+        logoUrl: sanitizeLogoUrl(logoUrl),
         status: "idle",
         provider: selectedProvider,
         capacityLimitGb: Number(capacityLimitGb) > 0 ? Number(capacityLimitGb) : 5,
@@ -647,9 +660,11 @@ export function registerDeploymentCloudRoutes(app: Express) {
       if (!canManageDeployment(user, existing)) return res.status(403).json({ message: "لا تملك صلاحية تعديل هذا المشروع" });
       const { name, description, githubBranch, buildCommand,
               startCommand, outputDir, nodeVersion, envVars, autoDeploy, plan, region, customDomain, logoUrl, documentation, capacityLimitGb } = req.body;
+      const safeLogoUrl = logoUrl === undefined ? undefined : sanitizeLogoUrl(logoUrl);
+      if (logoUrl && !safeLogoUrl) return res.status(400).json({ message: "رابط الشعار غير صالح" });
       const updateFields: any = {
         name, description, githubBranch, buildCommand,
-        startCommand, outputDir, nodeVersion, autoDeploy, plan, region, customDomain, logoUrl, documentation,
+        startCommand, outputDir, nodeVersion, autoDeploy, plan, region, customDomain, logoUrl: safeLogoUrl, documentation,
         ...(Array.isArray(envVars) ? { envVars: mergeEnvironmentVariables(existing.envVars || [], envVars) } : {}),
         ...(Number(capacityLimitGb) > 0 ? { capacityLimitGb: Number(capacityLimitGb) } : {}),
       };
@@ -1266,7 +1281,7 @@ function generateDeployPage(project: any): string {
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    :root{--bg:#06060f;--card:#0e0e1a;--card2:#13131f;--border:rgba(255,255,255,.07);--text:#f0f4ff;--muted:rgba(255,255,255,.38);--accent:${accentColor}}
+    :root{--bg:#0b1020;--card:#121a2e;--card2:#18233f;--border:rgba(148,163,184,.16);--text:#f0f4ff;--muted:rgba(226,232,240,.58);--accent:${accentColor}}
     body{background:var(--bg);color:var(--text);font-family:'Cairo',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
     body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,${accentColor}18,transparent 70%);pointer-events:none}
     body::after{content:'';position:fixed;bottom:-20%;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,${accentColor}0c,transparent 70%);pointer-events:none}

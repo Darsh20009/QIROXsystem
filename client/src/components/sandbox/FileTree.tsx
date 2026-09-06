@@ -202,14 +202,14 @@ export function FileTree({
   };
 
   return (
-    <div className="h-full flex flex-col text-sm">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+    <div className="flex h-full flex-col bg-[#121a2e] text-sm">
+      <div className="flex items-center justify-between border-b border-[#293653] px-3 py-2">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8b949e]">
           {ar ? "الملفات" : "Files"}
         </span>
         <div className="flex gap-1">
           <button
-             className="rounded p-1 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+             className="rounded p-1 text-[#8b949e] hover:bg-[#1b2741] hover:text-white"
             onClick={() => { setCreatingIn({ dir: "", type: "file" }); setNewItemName(""); }}
             title={ar ? "ملف جديد" : "New File"}
             data-testid="button-new-file"
@@ -217,7 +217,7 @@ export function FileTree({
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button
-             className="rounded p-1 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+             className="rounded p-1 text-[#8b949e] hover:bg-[#1b2741] hover:text-white"
             onClick={() => { setCreatingIn({ dir: "", type: "folder" }); setNewItemName(""); }}
             title={ar ? "مجلد جديد" : "New Folder"}
             data-testid="button-new-folder"
@@ -253,7 +253,7 @@ export function FileTree({
                     if (e.key === "Escape") { setCreatingIn(null); setNewItemName(""); }
                   }}
                   onBlur={() => { setCreatingIn(null); setNewItemName(""); }}
-                   className="h-6 border-[#30363d] bg-[#0d1117] px-1 py-0 text-xs text-white"
+                   className="h-6 border-[#293653] bg-[#0b1020] px-1 py-0 text-xs text-white"
                   placeholder={creatingIn.type === "file" ? "filename.ext" : "folder-name"}
                 />
               </div>

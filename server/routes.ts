@@ -5209,6 +5209,12 @@ export async function registerRoutes(
       const githubRepository = await githubFetch(repoPath, token);
       const branch = String(req.body?.branch || githubRepository.default_branch || "main");
       const workspaceName = String((project as any).name || (order as any).businessName || "QIROX Project").slice(0, 80);
+      const projectLogoUrl = String(
+        (project as any).logoUrl
+        || (specs as any)?.logoUrl
+        || (order as any).logoUrl
+        || "",
+      ).trim().slice(0, 500);
 
       const workspace = await SandboxProjectModel.findOneAndUpdate(
         { sourceProjectId: project._id },
@@ -5216,6 +5222,7 @@ export async function registerRoutes(
           $set: {
             githubRepo: String(githubRepository.html_url || repository.htmlUrl),
             githubBranch: branch,
+            ...(projectLogoUrl ? { logoUrl: projectLogoUrl } : {}),
           },
           $setOnInsert: {
             ownerId: (req.user as any)._id,

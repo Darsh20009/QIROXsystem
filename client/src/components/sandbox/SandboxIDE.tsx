@@ -438,18 +438,18 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   }
 
   return (
-    <div className="dark h-dvh min-h-[620px] flex flex-col overflow-hidden bg-[#0d1117] text-[#f0f6fc]" dir={ar ? "rtl" : "ltr"}>
-      <header className="z-20 flex h-12 shrink-0 items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-2 shadow-[0_1px_0_rgba(0,0,0,0.25)]">
+    <div className="dark h-dvh min-h-[620px] flex flex-col overflow-hidden bg-[#0b1020] text-[#f0f6fc]" dir={ar ? "rtl" : "ltr"}>
+      <header className="z-20 flex h-12 shrink-0 items-center gap-2 border-b border-[#293653] bg-[#121a2e] px-2 shadow-[0_1px_0_rgba(0,0,0,0.25)]">
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+          className="h-8 w-8 shrink-0 text-[#8b949e] hover:bg-[#1b2741] hover:text-white"
           onClick={() => navigate("/employee/system-builder")}
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-400 to-orange-600 text-[11px] font-black text-[#161b22]">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-400 to-blue-500 text-[11px] font-black text-white">
           Q
         </div>
         <div className="min-w-0 max-w-[260px]">
@@ -463,7 +463,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         </div>
         <button
           type="button"
-          className="ms-2 hidden h-7 min-w-[180px] items-center gap-2 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 text-start text-[11px] text-[#8b949e] transition hover:border-[#8b949e] hover:text-white sm:flex"
+          className="ms-2 hidden h-7 min-w-[180px] items-center gap-2 rounded-md border border-[#293653] bg-[#0b1020] px-2.5 text-start text-[11px] text-[#8b949e] transition hover:border-violet-400 hover:text-white sm:flex"
           onClick={() => setCommandPaletteOpen(true)}
           data-testid="button-command-search"
         >
@@ -478,7 +478,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         </div>
         <Button
           size="sm"
-          className="h-8 gap-1.5 bg-orange-500 px-3 text-xs font-semibold text-[#161b22] hover:bg-orange-400"
+          className="h-8 gap-1.5 bg-violet-600 px-3 text-xs font-semibold text-white hover:bg-violet-500"
           onClick={() => (isRunning ? stopMutation.mutate() : startMutation.mutate())}
           disabled={isProcessing}
           data-testid="button-primary-run"
@@ -489,7 +489,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         <Button
           variant="outline"
           size="sm"
-          className={`h-8 gap-1.5 border-[#30363d] px-2.5 text-xs ${showPreview ? "bg-[#21262d] text-white" : "bg-transparent text-[#c9d1d9]"} hover:bg-[#21262d]`}
+          className={`h-8 gap-1.5 border-[#293653] px-2.5 text-xs ${showPreview ? "bg-[#1b2741] text-white" : "bg-transparent text-[#c9d1d9]"} hover:bg-[#1b2741]`}
           onClick={() => setShowPreview(!showPreview)}
           data-testid="button-toggle-preview"
         >
@@ -499,11 +499,11 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 border-[#30363d] bg-transparent px-2.5 text-xs text-[#c9d1d9] hover:bg-[#21262d]"
+          className="h-8 gap-1.5 border-[#293653] bg-transparent px-2.5 text-xs text-[#c9d1d9] hover:bg-[#1b2741]"
           onClick={() => { setRightPanelOpen(true); setRightPanelTab("deploy"); }}
           data-testid="button-open-deploy"
         >
-          <Rocket className="h-3.5 w-3.5 text-orange-400" />
+          <Rocket className="h-3.5 w-3.5 text-violet-300" />
           <span className="hidden lg:inline">{ar ? "نشر" : "Deploy"}</span>
         </Button>
         <Button
@@ -527,10 +527,10 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
       </header>
 
       <div className="relative flex min-h-0 flex-1 pb-6">
-        <nav className="flex w-12 shrink-0 flex-col items-center border-e border-[#30363d] bg-[#0d1117] py-2" aria-label={ar ? "أدوات المشروع" : "Project tools"}>
+        <nav className="flex w-12 shrink-0 flex-col items-center border-e border-[#293653] bg-[#0b1020] py-2" aria-label={ar ? "أدوات المشروع" : "Project tools"}>
           <button
             type="button"
-            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "files" ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "files" ? "border-violet-400 bg-[#1b2741] text-white" : "border-transparent text-[#8b949e] hover:bg-[#121a2e] hover:text-white"}`}
             onClick={() => setActivityView("files")}
             title={ar ? "المستكشف" : "Explorer"}
             data-testid="button-activity-files"
@@ -539,7 +539,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           </button>
           <button
             type="button"
-            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "search" ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "search" ? "border-violet-400 bg-[#1b2741] text-white" : "border-transparent text-[#8b949e] hover:bg-[#121a2e] hover:text-white"}`}
             onClick={() => setActivityView("search")}
             title={ar ? "بحث" : "Search"}
             data-testid="button-activity-search"
@@ -548,7 +548,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           </button>
           <button
             type="button"
-            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-[#8b949e] transition hover:bg-[#161b22] hover:text-white"
+            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-[#8b949e] transition hover:bg-[#121a2e] hover:text-white"
             onClick={() => { setRightPanelOpen(true); setRightPanelTab("github"); }}
             title={ar ? "GitHub" : "Source control"}
             data-testid="button-activity-git"
@@ -576,7 +576,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           <div className="mt-auto">
             <button
               type="button"
-              className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${logsOpen ? "border-orange-400 bg-[#21262d] text-white" : "border-transparent text-[#8b949e] hover:bg-[#161b22] hover:text-white"}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${logsOpen ? "border-violet-400 bg-[#1b2741] text-white" : "border-transparent text-[#8b949e] hover:bg-[#121a2e] hover:text-white"}`}
               onClick={() => setLogsOpen(!logsOpen)}
               title={ar ? "Terminal" : "Terminal"}
               data-testid="button-activity-terminal"
@@ -586,7 +586,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           </div>
         </nav>
 
-        <div style={{ width: leftPanel.size }} className="flex-shrink-0 overflow-hidden border-e border-[#30363d] bg-[#161b22]">
+        <div style={{ width: leftPanel.size }} className="flex-shrink-0 overflow-hidden border-e border-[#293653] bg-[#121a2e]">
           {activityView === "files" ? (
             <FileTree
               files={fileTree || []}
@@ -599,8 +599,8 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
               isLoading={filesLoading}
             />
           ) : (
-            <div className="flex h-full flex-col bg-[#161b22]">
-              <div className="border-b border-[#30363d] px-3 py-3">
+            <div className="flex h-full flex-col bg-[#121a2e]">
+              <div className="border-b border-[#293653] px-3 py-3">
                 <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8b949e]">{ar ? "بحث" : "Search"}</div>
                 <Input
                   autoFocus
