@@ -209,10 +209,9 @@ async function sendWhatsAppThroughBaileys(delivery: any): Promise<{ provider: st
 
 async function sendWhatsApp(delivery: any): Promise<{ provider: string; messageId?: string }> {
   const provider = (process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase();
-  // QIROX's operational WhatsApp connection is the persistent WhatsApp Web
-  // session handled by Baileys. Meta remains an explicit opt-in only, so the
-  // presence of unrelated Meta environment variables cannot reroute normal
-  // notifications or make them fail because Meta is not configured.
+  // QIROX project notifications use the same persistent QR-connected CRM
+  // account as operational notifications. Meta is only used when explicitly
+  // selected for a separate compatibility setup.
   if (provider === "meta") return sendWhatsAppThroughMeta(delivery);
   if (provider === "baileys" || !provider) return sendWhatsAppThroughBaileys(delivery);
   throw new Error("WHATSAPP_PROVIDER غير مدعوم. استخدم meta أو baileys");

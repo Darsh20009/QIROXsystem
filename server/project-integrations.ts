@@ -104,8 +104,14 @@ export const projectIntegrationApiDocs = {
     {
       method: "POST",
       path: "/api/v1/projects/:projectId/whatsapp",
-      body: { recipient: { phone: "+966500000000", name: "اسم المستلم" }, message: "رسالة نصية" },
-      description: "إرسال رسالة WhatsApp Business عبر Meta. لا يستخدم جلسة CRM الداخلية.",
+      body: {
+        recipient: { phone: "+966500000000", name: "اسم المستلم" },
+        platformName: "اسم المنصة",
+        clientName: "اسم العميل",
+        code: "123456",
+        message: "رسالة نصية اختيارية",
+      },
+      description: "إرسال الرسالة من رقم QIROX المتصل بواتساب CRM عبر QR. لا يحتاج WhatsApp Business أو Meta.",
     },
     {
       method: "POST",

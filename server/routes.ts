@@ -6156,6 +6156,19 @@ export async function registerRoutes(
 
     if (channel === "whatsapp") {
       phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim()) as any;
+      const platformName = String(req.body?.platformName || req.body?.platform || "").trim().slice(0, 160);
+      const clientName = String(req.body?.clientName || recipient.name || "").trim().slice(0, 160);
+      const verificationCode = String(req.body?.verificationCode || req.body?.code || "").trim().slice(0, 200);
+      // Project systems may send structured verification data instead of
+      // assembling an Arabic message themselves. The final delivery still
+      // goes through the QIROX QR-connected CRM account.
+      if (!message && !req.body?.template && (platformName || clientName || verificationCode)) {
+        message = [
+          platformName ? `المنصة: ${platformName}` : "",
+          clientName ? `العميل: ${clientName}` : "",
+          verificationCode ? `رمز التحقق: ${verificationCode}` : "",
+        ].filter(Boolean).join("\n");
+      }
       const template = req.body?.template;
       if (template) {
         templateName = String(template.name || "").trim();
