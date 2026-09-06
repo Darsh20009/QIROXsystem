@@ -453,6 +453,34 @@ export default function AdminOrders() {
     onSettled: () => setAdjustingProjectId(null),
   });
 
+  const alignProjectSubscriptionMutation = useMutation({
+    mutationFn: async ({ projectId }: { projectId: string }) => {
+      const operationId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+      const res = await apiRequest("PATCH", `/api/admin/projects/${projectId}/subscription/align-start`, { operationId });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر تصحيح تاريخ بداية الاشتراك" : "Unable to align subscription start"));
+      }
+      return res.json();
+    },
+    onMutate: (variables) => setAdjustingProjectId(variables.projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      toast({
+        title: L ? "تم تصحيح بداية الاشتراك" : "Subscription start corrected",
+        description: L
+          ? "تمت إعادة حساب تاريخ الانتهاء من تاريخ بداية المشروع بدون إنشاء فاتورة جديدة."
+          : "The expiry was recalculated from the project start date without creating a new invoice.",
+      });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر تصحيح تاريخ بداية الاشتراك" : "Unable to align subscription start"),
+      variant: "destructive",
+    }),
+    onSettled: () => setAdjustingProjectId(null),
+  });
+
   const manageProjectSubscriptionMutation = useMutation({
     mutationFn: async ({ action, projectId, data }: { action: "start" | "renew"; projectId: string; data: Record<string, any> }) => {
       const operationId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
@@ -1706,6 +1734,21 @@ export default function AdminOrders() {
                                   </div>
                                   <DollarSign className="w-4 h-4 text-black/30 dark:text-white/30" />
                                 </div>
+                                {hasSubscription && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => alignProjectSubscriptionMutation.mutate({ projectId })}
+                                    disabled={adjustingProjectId === projectId}
+                                    className="mb-3 h-9 w-full rounded-xl text-xs font-bold gap-1.5"
+                                    data-testid="button-align-project-subscription-start"
+                                  >
+                                    {adjustingProjectId === projectId
+                                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      : <RefreshCw className="w-3.5 h-3.5" />}
+                                    {L ? "تصحيح البداية من تاريخ المشروع" : "Align start with project date"}
+                                  </Button>
+                                )}
                                 <AdminProjectSubscriptionCell
                                   projectId={projectId}
                                   subscription={subscription}

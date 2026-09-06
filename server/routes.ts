@@ -214,6 +214,29 @@ function resolveProjectSubscriptionStartDate(project: any, mode: unknown, custom
   return new Date();
 }
 
+function getHistoricalProjectStartDate(project: any, order: any, specs: any) {
+  const fromSpecs = specs?.startDate ? new Date(specs.startDate) : null;
+  if (validSubscriptionDate(fromSpecs)) return fromSpecs;
+
+  const fromProject = project?.startDate ? new Date(project.startDate) : null;
+  const projectCreatedAt = project?.createdAt ? new Date(project.createdAt) : null;
+  if (
+    validSubscriptionDate(fromProject)
+    && (
+      !validSubscriptionDate(projectCreatedAt)
+      || Math.abs(fromProject!.getTime() - projectCreatedAt!.getTime()) > 5 * 60 * 1000
+    )
+  ) {
+    return fromProject;
+  }
+
+  const fromOrder = order?.createdAt ? new Date(order.createdAt) : null;
+  if (validSubscriptionDate(fromOrder)) return fromOrder;
+  if (validSubscriptionDate(fromProject)) return fromProject;
+  if (validSubscriptionDate(projectCreatedAt)) return projectCreatedAt;
+  return null;
+}
+
 function validSubscriptionDate(value: Date | null) {
   return !!value && !Number.isNaN(value.getTime());
 }
@@ -1406,6 +1429,8 @@ export async function registerRoutes(
     try {
       let project = await ProjectModel.findOne({ orderId });
       let projectCreated = false;
+      const initialSpecs = await OrderSpecsModel.findOne({ orderId }).lean() as any;
+      const historicalStartDate = getHistoricalProjectStartDate(null, order, initialSpecs) || now;
       if (!project) {
         try {
           project = await ProjectModel.create({
@@ -1414,7 +1439,7 @@ export async function registerRoutes(
             clientId,
             status: "new",
             progress: 0,
-            startDate: now,
+            startDate: historicalStartDate,
           });
           projectCreated = true;
         } catch (error: any) {
@@ -4049,6 +4074,9 @@ export async function registerRoutes(
         order = await OrderModel.findById(candidateOrderId).lean();
         if (order) break;
       }
+      const projectSpecs = order
+        ? await OrderSpecsModel.findOne({ orderId: (order as any)._id }).lean() as any
+        : null;
       const clientIdCandidates = [
         (project as any).clientId,
         (order as any)?.userId,
@@ -4065,9 +4093,8 @@ export async function registerRoutes(
       }
       let clientWasRecovered = false;
       if (!client && order) {
-        const specs = await OrderSpecsModel.findOne({ orderId: (order as any)._id }).lean() as any;
         const sourceEmail = String(
-          specs?.clientEmail
+          projectSpecs?.clientEmail
             || (order as any).clientEmail
             || (order as any).email
             || "",
@@ -4101,7 +4128,7 @@ export async function registerRoutes(
               password: generatedPassword,
               fullName: String(
                 (order as any).businessName
-                  || specs?.projectName
+                  || projectSpecs?.projectName
                   || `عميل مشروع ${orderIdSuffix}`,
               ).trim(),
               role: "client",
@@ -4191,7 +4218,12 @@ export async function registerRoutes(
       const durationDays = getProjectSubscriptionDurationDays(period);
       if (!period || (period !== "lifetime" && !durationDays)) return res.status(400).json({ error: "فترة الاشتراك غير صالحة" });
 
-      const startDate = resolveProjectSubscriptionStartDate(project, req.body?.startMode, req.body?.startDate);
+      const historicalProjectStartDate = getHistoricalProjectStartDate(project, order, projectSpecs);
+      const startDate = resolveProjectSubscriptionStartDate(
+        { ...project, startDate: historicalProjectStartDate || (project as any).startDate },
+        req.body?.startMode,
+        req.body?.startDate,
+      );
       if (!validSubscriptionDate(startDate)) return res.status(400).json({ error: "تاريخ بداية الاشتراك غير صالح" });
       if (req.body?.startMode === "project_completion" && !(project as any).deliveredAt && (project as any).status !== "closed") {
         return res.status(400).json({ error: "لا يمكن البدء من تاريخ الإكمال قبل إغلاق المشروع" });
@@ -4254,7 +4286,7 @@ export async function registerRoutes(
   app.post("/api/admin/projects/:projectId/subscription/renew", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const { ProjectModel, ProjectSubscriptionModel, OrderModel, UserModel } = await import("./models");
+      const { ProjectModel, ProjectSubscriptionModel, OrderModel, OrderSpecsModel, UserModel } = await import("./models");
       const subscription = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
       if (!subscription) return res.status(404).json({ error: "لا يوجد اشتراك لهذا المشروع؛ ابدأ الاشتراك أولاً" });
 
@@ -4267,6 +4299,9 @@ export async function registerRoutes(
 
       const project = await ProjectModel.findById(req.params.projectId).lean();
       const order = project?.orderId ? await OrderModel.findById(project.orderId).lean() : null;
+      const projectSpecs = order
+        ? await OrderSpecsModel.findOne({ orderId: (order as any)._id }).lean() as any
+        : null;
       const clientId = (project as any)?.clientId || (order as any)?.userId || (subscription as any).clientId;
       const client = clientId ? await UserModel.findById(clientId).lean() : null;
       const period = normalizeProjectSubscriptionPeriod(req.body?.period || (subscription as any).period);
@@ -4278,7 +4313,12 @@ export async function registerRoutes(
         const expiry = (subscription as any).expiresAt ? new Date((subscription as any).expiresAt) : null;
         startDate = expiry && expiry > now ? expiry : now;
       } else {
-        startDate = resolveProjectSubscriptionStartDate(project, req.body.startMode, req.body.startDate);
+        const historicalProjectStartDate = getHistoricalProjectStartDate(project, order, projectSpecs);
+        startDate = resolveProjectSubscriptionStartDate(
+          { ...project, startDate: historicalProjectStartDate || (project as any)?.startDate },
+          req.body.startMode,
+          req.body.startDate,
+        );
       }
       if (!validSubscriptionDate(startDate)) return res.status(400).json({ error: "تاريخ بداية التجديد غير صالح" });
 
@@ -4370,6 +4410,68 @@ export async function registerRoutes(
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر تعديل مدة اشتراك المشروع" });
+    }
+  });
+
+  app.patch("/api/admin/projects/:projectId/subscription/align-start", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectModel, ProjectSubscriptionModel, OrderModel, OrderSpecsModel } = await import("./models");
+      const subscription = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
+      if (!subscription) return res.status(404).json({ error: "لا يوجد اشتراك لهذا المشروع" });
+
+      const project = await ProjectModel.findById(req.params.projectId).lean();
+      const order = project?.orderId ? await OrderModel.findById(project.orderId).lean() : null;
+      const specs = order
+        ? await OrderSpecsModel.findOne({ orderId: (order as any)._id }).lean() as any
+        : null;
+      const startDate = getHistoricalProjectStartDate(project, order, specs);
+      if (!validSubscriptionDate(startDate)) {
+        return res.status(400).json({ error: "لا يوجد تاريخ بداية صالح للمشروع يمكن التصحيح إليه" });
+      }
+
+      const operationId = String(req.body?.operationId || crypto.randomUUID()).slice(0, 120);
+      if ((subscription as any).lastActionId === operationId) {
+        return res.json({ subscription: serializeProjectSubscription(subscription), alreadyProcessed: true });
+      }
+
+      const durationDays = Number((subscription as any).durationDays || 0);
+      const expiresAt = durationDays > 0
+        ? new Date(startDate!.getTime() + durationDays * 86400000)
+        : null;
+      const status = expiresAt && expiresAt <= new Date() ? "expired" : "active";
+      const updated = await ProjectSubscriptionModel.findOneAndUpdate(
+        { _id: subscription._id, lastActionId: { $ne: operationId } },
+        {
+          $set: {
+            startedAt: startDate,
+            expiresAt,
+            status,
+            lastActionId: operationId,
+          },
+        },
+        { returnDocument: "after" },
+      );
+      if (!updated) {
+        const latest = await ProjectSubscriptionModel.findById(subscription._id);
+        if (latest && (latest as any).lastActionId === operationId) {
+          return res.json({ subscription: serializeProjectSubscription(latest), alreadyProcessed: true });
+        }
+        return res.status(409).json({ error: "تم تصحيح الاشتراك بطلب آخر، أعد تحميل الصفحة" });
+      }
+
+      if (project && String((project as any).startDate || "") !== String(startDate)) {
+        await ProjectModel.updateOne({ _id: project._id }, { $set: { startDate } });
+      }
+
+      res.json({
+        subscription: serializeProjectSubscription(updated),
+        corrected: true,
+        startedAt: startDate,
+        expiresAt,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تصحيح تاريخ بداية الاشتراك" });
     }
   });
 
