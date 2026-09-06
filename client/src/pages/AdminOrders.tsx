@@ -1405,9 +1405,33 @@ export default function AdminOrders() {
                           };
 
                           if (!projectId) {
+                            const orderApproved = selectedOrder.status === "approved" || selectedOrder.paymentStatus === "approved";
                             return (
-                              <div className="rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 text-sm text-black/50">
-                                {L ? "لم يتم تجهيز مشروع لهذا الطلب بعد، لذلك لا يوجد اشتراك لإدارته." : "This order has no provisioned project yet, so there is no subscription to manage."}
+                              <div className="rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 space-y-3">
+                                <div>
+                                  <p className="text-sm font-bold text-black dark:text-white">
+                                    {L ? "لا يوجد مشروع مرتبط بهذا الطلب بعد" : "No project is linked to this order yet"}
+                                  </p>
+                                  <p className="text-xs text-black/50 dark:text-white/50 mt-1">
+                                    {orderApproved
+                                      ? (L ? "جهّز المشروع أولاً حتى نتمكن من بدء الاشتراك وربطه بالفواتير." : "Provision the project first so the subscription can be started and linked to invoices.")
+                                      : (L ? "اعتمد الطلب أو إيصال الدفع أولاً، ثم جهّز المشروع لإدارة الاشتراك." : "Approve the order or payment receipt first, then provision the project to manage its subscription.")}
+                                  </p>
+                                </div>
+                                {orderApproved && (
+                                  <Button
+                                    type="button"
+                                    onClick={() => convertToProjectMutation.mutate(selectedOrder)}
+                                    disabled={convertToProjectMutation.isPending}
+                                    className="h-9 rounded-xl bg-black text-white hover:bg-black/80 text-xs font-bold gap-1.5"
+                                    data-testid="button-provision-project-for-subscription"
+                                  >
+                                    {convertToProjectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderPlus className="w-3.5 h-3.5" />}
+                                    {convertToProjectMutation.isPending
+                                      ? (L ? "جاري تجهيز المشروع..." : "Provisioning project...")
+                                      : (L ? "تجهيز المشروع الآن" : "Provision project now")}
+                                  </Button>
+                                )}
                               </div>
                             );
                           }
