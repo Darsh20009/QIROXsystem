@@ -188,6 +188,7 @@ export default function AdminOrders() {
   });
   const [newProjectFile, setNewProjectFile] = useState({ title: "", url: "", fileType: "custom" });
   const [projectFileUploading, setProjectFileUploading] = useState(false);
+  const projectCodeUploadRef = useRef<HTMLInputElement>(null);
   const [newTeamMemberId, setNewTeamMemberId] = useState("");
   const [newTeamMemberRole, setNewTeamMemberRole] = useState("");
   const [adjustingProjectId, setAdjustingProjectId] = useState<string | null>(null);
@@ -269,6 +270,20 @@ export default function AdminOrders() {
       if (!res.ok) throw new Error("تعذر تحميل حالة GitHub");
       return res.json();
     },
+  });
+
+  const { data: githubCode, isLoading: isLoadingGithubCode, isFetching: isFetchingGithubCode } = useQuery<any>({
+    queryKey: ['/api/admin/orders', selectedOrder?.id, 'github', 'code'],
+    enabled: !!selectedOrder?.id && !!orderProject?.id && ["admin", "manager"].includes(currentUser?.role || ""),
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/orders/${selectedOrder!.id}/github/code`, { credentials: "include" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر قراءة أكواد المشروع" : "Unable to read project code"));
+      }
+      return res.json();
+    },
+    retry: false,
   });
 
   const { data: projectMembers } = useQuery<any[]>({
@@ -827,6 +842,66 @@ export default function AdminOrders() {
       toast({ title: L ? "تم حذف الملف" : "File deleted" });
     },
     onError: () => toast({ title: L ? "فشل حذف الملف" : "Failed to delete file", variant: "destructive" }),
+  });
+
+  const uploadProjectCodeMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!selectedOrder) throw new Error(L ? "لم يتم تحديد الطلب" : "No order selected");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("commitMessage", L ? "تحديث أكواد المشروع من QIROX" : "Update project code from QIROX");
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/github/code/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || (L ? "فشل رفع أكواد المشروع" : "Project code upload failed"));
+      return body;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github', 'code'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
+      toast({
+        title: L ? "تم رفع الأكواد بأمان" : "Project code uploaded safely",
+        description: data?.backupBranch
+          ? (L ? `تم حفظ النسخة السابقة في ${data.backupBranch}` : `Previous version saved to ${data.backupBranch}`)
+          : undefined,
+      });
+      if (projectCodeUploadRef.current) projectCodeUploadRef.current.value = "";
+    },
+    onError: (error: any) => {
+      toast({
+        title: error?.message || (L ? "فشل رفع أكواد المشروع" : "Project code upload failed"),
+        variant: "destructive",
+      });
+      if (projectCodeUploadRef.current) projectCodeUploadRef.current.value = "";
+    },
+  });
+
+  const syncProjectCodeMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder) throw new Error(L ? "لم يتم تحديد الطلب" : "No order selected");
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/github/code/sync`, {
+        branch: githubCode?.branch || "main",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || (L ? "تعذرت مزامنة الأكواد" : "Project code sync failed"));
+      return body;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github', 'code'] });
+      toast({
+        title: L ? "تمت مزامنة الأكواد من GitHub" : "Project code synced from GitHub",
+        description: data?.backupBranch
+          ? (L ? `تم حفظ نقطة حماية: ${data.backupBranch}` : `Safety point saved: ${data.backupBranch}`)
+          : undefined,
+      });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذرت مزامنة الأكواد" : "Project code sync failed"),
+      variant: "destructive",
+    }),
   });
 
   const openOrder = (order: OrderData) => {
@@ -2791,6 +2866,162 @@ export default function AdminOrders() {
                         </div>
                       ) : (
                         <>
+                          {["admin", "manager"].includes(currentUser?.role || "") && (
+                            <div className="bg-white border border-black/[0.08] rounded-2xl p-4 space-y-4" data-testid="project-code-panel">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl bg-black/[0.04] flex items-center justify-center shrink-0">
+                                    <FolderOpen className="w-4 h-4 text-black/60" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-black dark:text-white">
+                                      {L ? "أكواد المشروع" : "Project Code"}
+                                    </p>
+                                    <p className="text-[10px] text-black/40 leading-5">
+                                      {L
+                                        ? "نسخة GitHub الحالية مع حماية تلقائية قبل أي رفع"
+                                        : "Current GitHub code with automatic protection before uploads"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${
+                                  githubCode?.repository?.status === "ready"
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-black/[0.04] text-black/50"
+                                }`}>
+                                  {isLoadingGithubCode
+                                    ? (L ? "جارٍ القراءة" : "Loading")
+                                    : githubCode?.repository?.status === "ready"
+                                      ? (L ? "متصل" : "Connected")
+                                      : (L ? "غير مهيأ" : "Not configured")}
+                                </span>
+                              </div>
+
+                              {githubCode?.repository?.status === "ready" ? (
+                                <>
+                                  <div className="rounded-xl border border-black/[0.06] bg-black/[0.015] p-3 space-y-2">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <a
+                                        href={githubCode.repository.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs font-semibold text-black/75 hover:underline truncate"
+                                        dir="ltr"
+                                      >
+                                        {githubCode.repository.owner}/{githubCode.repository.name}
+                                      </a>
+                                      <span className="text-[10px] text-black/40 shrink-0" dir="ltr">
+                                        {githubCode.branch || "main"}
+                                      </span>
+                                    </div>
+                                    {githubCode.head ? (
+                                      <div className="flex items-center gap-2 text-[10px] text-black/45 min-w-0">
+                                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                        <span className="truncate">{githubCode.head.message || (L ? "آخر نسخة محفوظة" : "Latest saved version")}</span>
+                                        <code className="text-[9px] text-black/35 shrink-0" dir="ltr">{githubCode.head.shortSha}</code>
+                                      </div>
+                                    ) : (
+                                      <p className="text-[10px] text-amber-700">{L ? "المستودع لا يحتوي على Commit بعد" : "The repository has no commit yet"}</p>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="h-9 text-[10px] gap-1 border-black/10"
+                                      onClick={() => syncProjectCodeMutation.mutate()}
+                                      disabled={isFetchingGithubCode || syncProjectCodeMutation.isPending}
+                                      data-testid="button-refresh-project-code"
+                                    >
+                                      {isFetchingGithubCode || syncProjectCodeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                      {L ? "مزامنة" : "Sync"}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="h-9 text-[10px] gap-1 border-black/10"
+                                      onClick={() => window.open(`/api/admin/orders/${selectedOrder.id}/github/code/download?branch=${encodeURIComponent(githubCode.branch || "main")}`, "_blank")}
+                                      data-testid="button-download-project-code"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                      {L ? "تنزيل ZIP" : "Download ZIP"}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      className="h-9 text-[10px] gap-1 bg-black text-white hover:bg-black/80"
+                                      onClick={() => projectCodeUploadRef.current?.click()}
+                                      disabled={uploadProjectCodeMutation.isPending}
+                                      data-testid="button-upload-project-code"
+                                    >
+                                      {uploadProjectCodeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                      {L ? "رفع ZIP" : "Upload ZIP"}
+                                    </Button>
+                                    <input
+                                      ref={projectCodeUploadRef}
+                                      type="file"
+                                      accept=".zip,application/zip"
+                                      className="hidden"
+                                      onChange={(event) => {
+                                        const file = event.target.files?.[0];
+                                        if (!file) return;
+                                        if (!file.name.toLowerCase().endsWith(".zip")) {
+                                          toast({ title: L ? "ارفع ملف ZIP فقط" : "Upload a ZIP file only", variant: "destructive" });
+                                          event.currentTarget.value = "";
+                                          return;
+                                        }
+                                        uploadProjectCodeMutation.mutate(file);
+                                      }}
+                                      data-testid="input-upload-project-code"
+                                    />
+                                  </div>
+
+                                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+                                    <div className="flex items-start gap-2">
+                                      <Shield className="w-3.5 h-3.5 text-emerald-700 mt-0.5 shrink-0" />
+                                      <p className="text-[10px] leading-5 text-emerald-800">
+                                        {L
+                                          ? "قبل كل رفع، يحفظ النظام النسخة الحالية في فرع احتياطي مستقل. لا يتم مسح main مباشرة، ولا تُقبل ملفات الأسرار والشهادات."
+                                          : "Before every upload, the current version is saved to an independent backup branch. main is never emptied directly, and secret/certificate files are rejected."}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-2">
+                                      {L ? "نسخ الحماية" : "Safety Backups"} ({(githubCode.backupBranches || []).length})
+                                    </p>
+                                    {(githubCode.backupBranches || []).length > 0 ? (
+                                      <div className="space-y-1.5">
+                                        {(githubCode.backupBranches || []).slice(0, 4).map((backup: any) => (
+                                          <a
+                                            key={backup.name}
+                                            href={`${githubCode.repository.url}/tree/${encodeURIComponent(backup.name)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center justify-between gap-2 rounded-lg border border-black/[0.05] px-3 py-2 text-[10px] text-black/55 hover:bg-black/[0.02]"
+                                            dir="ltr"
+                                          >
+                                            <span className="truncate">{backup.name}</span>
+                                            <ExternalLink className="w-3 h-3 shrink-0 text-black/30" />
+                                          </a>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-[10px] text-black/30">{L ? "سيظهر أول فرع حماية بعد أول رفع ZIP" : "The first backup branch appears after the first ZIP upload"}</p>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-[10px] leading-5 text-amber-800">
+                                  {L
+                                    ? "لا يوجد مستودع GitHub مرتبط بهذا المشروع. اربطه أولاً من إعدادات المشروع، ولن يتم إنشاء رابط جديد تلقائياً."
+                                    : "No GitHub repository is linked to this project. Connect one from project settings first; no new URL will be created automatically."}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Upload new file */}
                           <div>
                             <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">

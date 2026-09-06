@@ -16,6 +16,7 @@ import os from "os";
 import express from "express";
 import crypto from "crypto";
 import mongoose from "mongoose";
+import { Readable } from "stream";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
 import { registerMailRoutes } from "./domains/mail";
 import {
@@ -269,6 +270,33 @@ function parseGitHubRepositoryUrl(value: unknown) {
   } catch {
     return null;
   }
+}
+
+function projectGitHubRepository(project: any, specs: any, order: any) {
+  return parseGitHubRepositoryUrl(
+    project?.repoUrl
+      || project?.githubRepoUrl
+      || specs?.githubRepoUrl
+      || order?.githubRepoUrl,
+  ) || (
+    project?.githubRepoOwner && project?.githubRepoName
+      ? {
+          owner: String(project.githubRepoOwner),
+          name: String(project.githubRepoName),
+          htmlUrl: `https://github.com/${project.githubRepoOwner}/${project.githubRepoName}`,
+        }
+      : null
+  );
+}
+
+function isProtectedProjectCodePath(filePath: string) {
+  const normalized = filePath.replace(/\\/g, "/").replace(/^\.\/+/, "");
+  const base = normalized.split("/").pop() || normalized;
+  if (base === ".env" || (base.startsWith(".env.") && base !== ".env.example")) return true;
+  if (/\.(pem|key|p12|pfx|jks|keystore)$/i.test(base)) return true;
+  if (/^(credentials|service-account|firebase-adminsdk).*\.(json|ya?ml)$/i.test(base)) return true;
+  if (/(^|\/)(id_rsa|id_ed25519|.*\.secret)$/i.test(normalized)) return true;
+  return false;
 }
 
 async function createProjectSubscriptionInvoice({
@@ -4726,6 +4754,342 @@ export async function registerRoutes(
     ).lean();
     if (!project) return res.sendStatus(404);
     res.json({ success: true, projectFiles: (project as any).projectFiles });
+  });
+
+  // ── Project Code Safety: GitHub-backed code archive and protected ZIP upload ──
+  app.get("/api/admin/orders/:id/github/code", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) {
+        return res.json({
+          repository: { status: "not_configured" },
+          branch: "main",
+          head: null,
+          backupBranches: [],
+        });
+      }
+
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+
+      const repoPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`;
+      const githubRepository = await githubFetch(repoPath, token);
+      const branch = String(req.query.branch || githubRepository.default_branch || "main");
+      const ref = await githubFetch(`${repoPath}/git/ref/heads/${encodeURIComponent(branch)}`, token);
+      const sha = String(ref.object?.sha || "");
+      const commit = sha ? await githubFetch(`${repoPath}/commits/${encodeURIComponent(sha)}`, token) : null;
+      const branches = await githubFetch(`${repoPath}/branches?per_page=100`, token).catch(() => []);
+      const backupBranches = (Array.isArray(branches) ? branches : [])
+        .map((item: any) => ({
+          name: String(item.name || ""),
+          sha: String(item.commit?.sha || ""),
+          protected: Boolean(item.protected),
+        }))
+        .filter((item: any) => item.name.startsWith("qirox-backups/"))
+        .sort((a: any, b: any) => b.name.localeCompare(a.name))
+        .slice(0, 12);
+
+      res.json({
+        repository: {
+          status: "ready",
+          owner: String(githubRepository.owner?.login || repository.owner),
+          name: String(githubRepository.name || repository.name),
+          url: String(githubRepository.html_url || repository.htmlUrl),
+          visibility: githubRepository.private ? "private" : "public",
+        },
+        branch,
+        head: commit ? {
+          sha,
+          shortSha: sha.slice(0, 10),
+          message: String(commit.commit?.message || "").split("\n")[0],
+          date: commit.commit?.author?.date || commit.commit?.committer?.date || null,
+          author: commit.author?.login || commit.commit?.author?.name || "",
+        } : null,
+        backupBranches,
+      });
+    } catch (error: any) {
+      console.error("[ProjectCode] status error:", error?.message || error);
+      const message = error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية قراءة مستودع المشروع."
+        : "تعذر قراءة نسخة أكواد المشروع من GitHub.";
+      res.status(503).json({ error: message });
+    }
+  });
+
+  app.get("/api/admin/orders/:id/github/code/download", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(404).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+      const repoPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`;
+      const githubRepository = await githubFetch(repoPath, token);
+      const branch = String(req.query.branch || githubRepository.default_branch || "main");
+      const archiveUrl = `https://api.github.com${repoPath}/zipball/${encodeURIComponent(branch)}`;
+      let archiveResponse = await fetch(archiveUrl, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          Authorization: `Bearer ${token}`,
+        },
+        redirect: "manual",
+      });
+      const redirectLocation = archiveResponse.headers.get("location");
+      if (redirectLocation && archiveResponse.status >= 300 && archiveResponse.status < 400) {
+        archiveResponse = await fetch(redirectLocation);
+      }
+      if (!archiveResponse.ok || !archiveResponse.body) {
+        return res.status(503).json({ error: "تعذر تجهيز ZIP من GitHub" });
+      }
+      const filename = `${String(githubRepository.name || repository.name).replace(/[^a-zA-Z0-9._-]/g, "-")}-${branch.replace(/[^a-zA-Z0-9._-]/g, "-")}.zip`;
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      Readable.fromWeb(archiveResponse.body as any).pipe(res);
+    } catch (error: any) {
+      console.error("[ProjectCode] download error:", error?.message || error);
+      res.status(503).json({ error: "تعذر تنزيل أكواد المشروع من GitHub" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/github/code/sync", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(400).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+      const repoPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`;
+      const githubRepository = await githubFetch(repoPath, token);
+      const branch = String(req.body?.branch || githubRepository.default_branch || "main");
+      const ref = await githubFetch(`${repoPath}/git/ref/heads/${encodeURIComponent(branch)}`, token);
+      const sha = String(ref.object?.sha || "");
+      if (!sha) return res.status(503).json({ error: "لم يتم العثور على Commit صالح للمزامنة" });
+
+      const backupBranch = `qirox-backups/sync-${new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "")}-${sha.slice(0, 10)}`;
+      await githubFetch(`${repoPath}/git/refs`, token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: `refs/heads/${backupBranch}`, sha }),
+      });
+      res.json({
+        success: true,
+        syncedAt: new Date().toISOString(),
+        branch,
+        commitSha: sha,
+        backupBranch,
+      });
+    } catch (error: any) {
+      console.error("[ProjectCode] sync error:", error?.message || error);
+      const message = error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية مزامنة مستودع المشروع."
+        : "تعذر مزامنة أكواد المشروع من GitHub.";
+      res.status(503).json({ error: message });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/github/code/upload", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+
+    const upload = multer({
+      limits: { fileSize: 100 * 1024 * 1024 },
+      storage: multer.memoryStorage(),
+    }).single("file");
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        upload(req as any, res as any, (error: any) => error ? reject(error) : resolve());
+      });
+      const file = (req as any).file;
+      if (!file) return res.status(400).json({ error: "ملف ZIP مطلوب" });
+      if (file.mimetype !== "application/zip" && !String(file.originalname || "").toLowerCase().endsWith(".zip")) {
+        return res.status(400).json({ error: "ارفع ملف ZIP فقط" });
+      }
+
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const [order, specs, provisioning, project] = await Promise.all([
+        OrderModel.findById(req.params.id).lean(),
+        OrderSpecsModel.findOne({ orderId: req.params.id }).lean(),
+        OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean(),
+        ProjectModel.findOne({ orderId: req.params.id }).lean(),
+      ]);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+
+      const repository = projectGitHubRepository(project, specs, order);
+      if (!repository) return res.status(400).json({ error: "لا يوجد مستودع GitHub مرتبط بالمشروع" });
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String((provisioning as any)?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+
+      const unzipper = await import("unzipper");
+      const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "qirox-project-code-"));
+      const extractDir = path.join(tempRoot, "upload");
+      const repoDir = path.join(tempRoot, "repo");
+      const blockedPaths: string[] = [];
+      let fileCount = 0;
+      let totalSize = 0;
+      const maxFiles = 3000;
+      const maxTotalSize = 250 * 1024 * 1024;
+
+      try {
+        await fs.promises.mkdir(extractDir, { recursive: true });
+        const zip = Readable.from(file.buffer).pipe(unzipper.Parse());
+        for await (const entry of zip as any) {
+          const rawPath = String(entry.path || "").replace(/\\/g, "/");
+          const segments = rawPath.split("/").filter(Boolean);
+          const normalizedPath = segments.join("/");
+          if (!normalizedPath || normalizedPath.split("/").includes("..") || rawPath.startsWith("/")) {
+            entry.autodrain();
+            continue;
+          }
+          if (segments.includes(".git") || segments.includes("node_modules")) {
+            entry.autodrain();
+            continue;
+          }
+          if (isProtectedProjectCodePath(normalizedPath)) {
+            blockedPaths.push(normalizedPath);
+            entry.autodrain();
+            continue;
+          }
+          if (entry.type !== "File") {
+            entry.autodrain();
+            continue;
+          }
+          if (fileCount >= maxFiles) {
+            entry.autodrain();
+            continue;
+          }
+          const content = await entry.buffer();
+          totalSize += content.length;
+          if (totalSize > maxTotalSize) {
+            return res.status(400).json({ error: "حجم الأكواد بعد فك الضغط يتجاوز الحد المسموح (250MB)" });
+          }
+          const target = path.resolve(extractDir, normalizedPath);
+          if (!target.startsWith(`${path.resolve(extractDir)}${path.sep}`)) {
+            continue;
+          }
+          await fs.promises.mkdir(path.dirname(target), { recursive: true });
+          await fs.promises.writeFile(target, content);
+          fileCount += 1;
+        }
+
+        if (blockedPaths.length) {
+          return res.status(400).json({
+            error: "تم رفض الرفع لأن الملف يحتوي على أسرار أو شهادات لا يجوز حفظها في GitHub.",
+            blockedFiles: blockedPaths.slice(0, 10),
+          });
+        }
+        if (!fileCount) return res.status(400).json({ error: "ملف ZIP لا يحتوي على أكواد قابلة للرفع" });
+
+        const repoPath = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`;
+        const githubRepository = await githubFetch(repoPath, token);
+        const branch = String(req.body?.branch || githubRepository.default_branch || "main");
+        const encodedToken = encodeURIComponent(token);
+        const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
+        const simpleGit = (await import("simple-git")).default;
+        await simpleGit().clone(remoteUrl, repoDir, ["--branch", branch, "--depth", "1"]);
+        const git = simpleGit(repoDir);
+        const currentSha = (await git.revparse(["HEAD"])).trim();
+        const backupBranch = `qirox-backups/${new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "")}-${currentSha.slice(0, 10)}`;
+
+        // The backup ref is created before touching the working tree. If any
+        // later step fails, the original project remains available on main.
+        await git.push("origin", `${currentSha}:refs/heads/${backupBranch}`);
+
+        const currentEntries = await fs.promises.readdir(repoDir);
+        await Promise.all(
+          currentEntries
+            .filter((entry) => entry !== ".git")
+            .map((entry) => fs.promises.rm(path.join(repoDir, entry), { recursive: true, force: true })),
+        );
+        const extractedEntries = await fs.promises.readdir(extractDir);
+        await Promise.all(
+          extractedEntries.map((entry) =>
+            fs.promises.cp(path.join(extractDir, entry), path.join(repoDir, entry), { recursive: true, force: true }),
+          ),
+        );
+        await git.add(["-A"]);
+        const status = await git.status();
+        if (status.isClean()) {
+          return res.status(400).json({ error: "النسخة المرفوعة مطابقة للنسخة الحالية، لم يتم إنشاء تغيير" });
+        }
+        const commitMessage = String(req.body?.commitMessage || "Update project code from QIROX").slice(0, 120);
+        const commit = await git.commit(commitMessage);
+        await git.push("origin", branch);
+        res.json({
+          success: true,
+          branch,
+          backupBranch,
+          commitSha: String(commit.commit || "").trim(),
+          filesUploaded: fileCount,
+        });
+      } finally {
+        await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
+      }
+    } catch (error: any) {
+      console.error("[ProjectCode] upload error:", error?.message || error);
+      const message = error?.code === "LIMIT_FILE_SIZE"
+        ? "حجم ملف ZIP يتجاوز 100MB"
+        : error?.status === 401 || error?.status === 403
+          ? "اتصال GitHub لا يملك صلاحية الكتابة على مستودع المشروع."
+          : error?.message || "فشل رفع أكواد المشروع";
+      res.status(503).json({ error: message });
+    }
   });
 
   app.patch(api.tasks.update.path, async (req, res) => {
