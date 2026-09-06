@@ -507,7 +507,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const { listTree } = await import("./sandbox-fs");
       const subPath = (req.query.path as string) || "";
-      const depth = parseInt(req.query.depth as string) || 3;
+      const depth = parseInt(req.query.depth as string) || 10;
       res.json(listTree(String(ctx.project._id), subPath, depth));
     } catch (err: any) {
       res.status(500).json({ error: err.message });

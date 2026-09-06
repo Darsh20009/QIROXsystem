@@ -289,6 +289,20 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     [tabs, projectId, ar, toast]
   );
 
+  useEffect(() => {
+    if (!fileTree || tabs.length > 0 || activeTab) return;
+    const files = flattenFiles(fileTree);
+    if (!files.length) return;
+
+    const entryFile = project?.entryFile?.replace(/^\.?\//, "");
+    const preferred =
+      (entryFile && files.find((file) => file.path === entryFile)) ||
+      files.find((file) => /\.(tsx?|jsx?|vue|svelte|py|rb|go|rs|java|php|html|css|scss|json|md)$/i.test(file.path)) ||
+      files[0];
+
+    if (preferred) handleFileSelect(preferred.path);
+  }, [fileTree, project?.entryFile, tabs.length, activeTab, handleFileSelect]);
+
   const handleTabClose = (path: string) => {
     setTabs((prev) => prev.filter((t) => t.path !== path));
     if (activeTab === path) {
