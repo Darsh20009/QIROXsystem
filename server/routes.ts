@@ -4010,10 +4010,24 @@ export async function registerRoutes(
       const existing = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
       if (existing) return res.status(409).json({ error: "الاشتراك موجود مسبقاً؛ استخدم التجديد أو تعديل المدة" });
 
-      const order = project.orderId ? await OrderModel.findById(project.orderId).lean() : null;
+      // Legacy projects can have a missing/stale orderId or clientId even
+      // though the project was originally created from an order. Prefer the
+      // stored link, then fall back to the historical project id (the project
+      // was created with the order id as its _id), and repair the links.
+      const linkedOrderId = (project as any).orderId || (project as any)._id;
+      const order = linkedOrderId ? await OrderModel.findById(linkedOrderId).lean() : null;
       const clientId = (project as any).clientId || (order as any)?.userId;
       const client = clientId ? await UserModel.findById(clientId).lean() : null;
       if (!order || !client) return res.status(400).json({ error: "لا يمكن بدء الاشتراك قبل اكتمال بيانات الطلب والعميل" });
+      if (
+        !String((project as any).orderId || "") === String((order as any)._id)
+        || String((project as any).clientId || "") !== String((client as any)._id)
+      ) {
+        await ProjectModel.updateOne(
+          { _id: project._id },
+          { $set: { orderId: (order as any)._id, clientId: (client as any)._id } },
+        );
+      }
 
       const period = normalizeProjectSubscriptionPeriod(req.body?.period || (order as any).planPeriod || (client as any).subscriptionPeriod);
       const durationDays = getProjectSubscriptionDurationDays(period);
