@@ -107,6 +107,28 @@ function getRoleLabels(L: boolean): Record<string, string> { return {
 };
 }
 
+function getActionableError(error: any, L: boolean) {
+  const missingFields = Array.isArray(error?.missingFields) ? error.missingFields : [];
+  const solutions = Array.isArray(error?.solutions) ? error.solutions : [];
+  if (!missingFields.length && !solutions.length) {
+    return {
+      title: error?.message || (L ? "تعذر تنفيذ العملية" : "Unable to complete the action"),
+      description: undefined,
+    };
+  }
+  const missingText = missingFields
+    .map((field: any) => `${field.label}${field.detail ? `: ${field.detail}` : ""}`)
+    .join(" • ");
+  const solutionText = solutions.join(" • ");
+  return {
+    title: error?.message || (L ? "لا يمكن تنفيذ العملية بسبب بيانات ناقصة" : "The action needs more data"),
+    description: [
+      missingText ? `${L ? "الناقص" : "Missing"}: ${missingText}` : "",
+      solutionText ? `${L ? "الحل" : "Fix"}: ${solutionText}` : "",
+    ].filter(Boolean).join(" | "),
+  };
+}
+
 const EMPTY_SPECS = {
   projectName: "", clientEmail: "", totalBudget: "", paidAmount: "",
   projectStatus: "planning", techStack: "", database: "", hosting: "",
@@ -450,10 +472,14 @@ export default function AdminOrders() {
           : (L ? "تم تجديد الاشتراك وإضافة الفاتورة" : "Subscription renewed and invoice added"),
       });
     },
-    onError: (error: any) => toast({
-      title: error?.message || (L ? "تعذر تحديث الاشتراك" : "Unable to update subscription"),
-      variant: "destructive",
-    }),
+    onError: (error: any) => {
+      const actionable = getActionableError(error, L);
+      toast({
+        title: actionable.title,
+        description: actionable.description,
+        variant: "destructive",
+      });
+    },
   });
 
   const addProjectAddonMutation = useMutation({

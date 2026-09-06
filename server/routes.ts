@@ -4051,7 +4051,45 @@ export async function registerRoutes(
       }
       const clientId = (project as any).clientId || (order as any)?.userId;
       const client = clientId ? await UserModel.findById(clientId).lean() : null;
-      if (!order || !client) return res.status(400).json({ error: "لا يمكن بدء الاشتراك قبل اكتمال بيانات الطلب والعميل" });
+      if (!order || !client) {
+        const missingFields = [];
+        const solutions = [];
+        if (!order) {
+          missingFields.push({
+            key: "order",
+            label: "الطلب المرتبط بالمشروع",
+            detail: (project as any).orderId
+              ? "رابط الطلب الموجود في المشروع لا يشير إلى طلب موجود."
+              : "المشروع لا يحتوي على طلب مرتبط.",
+          });
+          solutions.push("افتح الطلب الأصلي واضغط «تجهيز المشروع الآن» لإنشاء الربط الصحيح.");
+        }
+        if (order && !(order as any).userId) {
+          missingFields.push({
+            key: "orderClient",
+            label: "العميل المرتبط بالطلب",
+            detail: "الطلب موجود لكنه لا يحتوي على حساب عميل.",
+          });
+          solutions.push("افتح بيانات الطلب واختر العميل أو أنشئ حساب العميل ثم أعد المحاولة.");
+        } else if (!client) {
+          missingFields.push({
+            key: "client",
+            label: "حساب العميل",
+            detail: clientId
+              ? "معرّف العميل محفوظ لكنه لا يشير إلى حساب موجود."
+              : "لا يوجد عميل مرتبط بالمشروع أو الطلب.",
+          });
+          solutions.push("اربط الطلب بحساب العميل الصحيح ثم أعد تحميل صفحة المشروع.");
+        }
+        return res.status(400).json({
+          error: "لا يمكن بدء الاشتراك: توجد بيانات ناقصة أو روابط غير صحيحة.",
+          code: "PROJECT_SUBSCRIPTION_DATA_INCOMPLETE",
+          missingFields,
+          solutions,
+          projectId: String((project as any)._id),
+          orderId: order ? String((order as any)._id) : null,
+        });
+      }
       if (
         String((project as any).orderId || "") !== String((order as any)._id)
         || String((project as any).clientId || "") !== String((client as any)._id)
