@@ -14216,7 +14216,7 @@ export async function registerRoutes(
       { nameAr: "استضافة Cloud (AWS/GCP)", name: "Cloud Hosting", descriptionAr: "استضافة على السحابة لضمان التوسّع والأداء العالي", category: "hosting", price: 2000, icon: "Cloud", sortOrder: 32, segments: [], plans: ["infinite"] },
       // ── التكاملات العامة
       { nameAr: "بوابة دفع إلكتروني (مدى / Apple Pay)", name: "Payment Gateway", descriptionAr: "ربط بوابة الدفع بمدى وApple Pay وبطاقات الائتمان", category: "integration", price: 800, icon: "CreditCard", sortOrder: 40, segments: [], plans: [] },
-      { nameAr: "تكامل واتساب (WhatsApp Business)", name: "WhatsApp Integration", descriptionAr: "إرسال إشعارات وتنبيهات للعملاء عبر واتساب بيزنس", category: "integration", price: 400, icon: "MessageCircle", sortOrder: 41, segments: [], plans: [] },
+      { nameAr: "تكامل واتساب سنوي (رسائل غير محدودة)", name: "Annual WhatsApp Integration (Unlimited Messages)", descriptionAr: "تكامل واتساب سنوي لإرسال عدد غير محدود من الرسائل للعملاء والإشعارات", category: "integration", price: 1499, icon: "MessageCircle", sortOrder: 41, segments: [], plans: [], billingType: "annual", compatiblePeriods: ["annual","lifetime"], quotaCount: -1, quotaLabel: "رسائل غير محدودة" },
       { nameAr: "تكامل زيد للدفع", name: "Zid Integration", descriptionAr: "ربط المتجر بمنصة زيد للمبيعات والمخزون", category: "integration", price: 600, icon: "Link", sortOrder: 42, segments: ["ecommerce","store","commerce"], plans: [] },
       { nameAr: "تكامل سلة", name: "Salla Integration", descriptionAr: "ربط المتجر بمنصة سلة للبيع الإلكتروني", category: "integration", price: 600, icon: "Link", sortOrder: 43, segments: ["ecommerce","store","commerce"], plans: [] },
       // ── التسويق والـ SEO
@@ -19458,11 +19458,11 @@ export async function seedDatabase() {
       {
         segment: "education",
         plans: [
-          { tier: "lite", monthly: 349, sixmo: 899, annual: 1749, lifetime: 9599, popular: false,
+          { tier: "lite", monthly: 449, sixmo: 999, annual: 1849, lifetime: 9699, popular: false,
             featuresAr: ["منصة تعليمية أساسية", "حتى 5 كورسات", "إدارة الطلاب", "اختبارات بسيطة", "شهادات إتمام", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 749, sixmo: 1699, annual: 3199, lifetime: 16799, popular: true,
+          { tier: "pro",     monthly: 1149, sixmo: 2099, annual: 3599, lifetime: 17199, popular: true,
             featuresAr: ["كل مزايا لايت", "كورسات غير محدودة", "فصول مباشرة Live", "نظام تقييم متقدم", "بوابة أولياء الأمور", "تقارير تفصيلية", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 1449, sixmo: 3099, annual: 5799, lifetime: 29799, popular: false,
+          { tier: "infinite", monthly: 2437, sixmo: 4087, annual: 6787, lifetime: 30787, popular: false,
             featuresAr: ["كل مزايا برو", "نظام إدارة شامل", "بوابة دفع إلكتروني", "نظام منح ومنح دراسية", "تكامل Zoom/Meet", "لوحة تحليلات تعليمية", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
@@ -19480,11 +19480,11 @@ export async function seedDatabase() {
       {
         segment: "realestate",
         plans: [
-          { tier: "lite", monthly: 229, sixmo: 649, annual: 1349, lifetime: 7599, popular: false,
+          { tier: "lite", monthly: 828, sixmo: 1248, annual: 1948, lifetime: 8198, popular: false,
             featuresAr: ["موقع عقاري احترافي", "قوائم العقارات", "بحث وفلترة", "نموذج تواصل", "خرائط تفاعلية", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 529, sixmo: 1249, annual: 2399, lifetime: 12799, popular: true,
+          { tier: "pro",     monthly: 1518, sixmo: 2238, annual: 3388, lifetime: 13788, popular: true,
             featuresAr: ["كل مزايا لايت", "إدارة العقارات غير محدودة", "جدولة المعاينات", "حاسبة التقسيط", "بوابة المالك", "تقارير السوق", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 1099, sixmo: 2399, annual: 4499, lifetime: 23799, popular: false,
+          { tier: "infinite", monthly: 2599, sixmo: 3899, annual: 5999, lifetime: 25299, popular: false,
             featuresAr: ["كل مزايا برو", "نظام إدارة عقاري", "نظام CRM عقاري", "تكامل موالشي/إيجار", "تحليلات السوق", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
@@ -19502,11 +19502,11 @@ export async function seedDatabase() {
       {
         segment: "beauty",
         plans: [
-          { tier: "lite", monthly: 99, sixmo: 399, annual: 899, lifetime: 5299, popular: false,
+          { tier: "lite", monthly: 698, sixmo: 998, annual: 1498, lifetime: 5898, popular: false,
             featuresAr: ["موقع صالون احترافي", "معرض الأعمال", "حجز مواعيد أونلاين", "قائمة الخدمات والأسعار", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهرين"] },
-          { tier: "pro",     monthly: 299, sixmo: 799, annual: 1699, lifetime: 9299, popular: true,
+          { tier: "pro",     monthly: 1288, sixmo: 1788, annual: 2688, lifetime: 10288, popular: true,
             featuresAr: ["كل مزايا لايت", "نظام حجز ذكي مع تذكيرات", "إدارة الفريق والمواعيد", "بوابة العميل", "برنامج ولاء ونقاط", "تقارير الإيرادات", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
-          { tier: "infinite", monthly: 749, sixmo: 1699, annual: 3299, lifetime: 17299, popular: false,
+          { tier: "infinite", monthly: 2249, sixmo: 3199, annual: 4799, lifetime: 18799, popular: false,
             featuresAr: ["كل مزايا برو", "نظام إدارة متكامل", "بوابة دفع إلكتروني", "نظام CRM للعملاء", "حملات تسويقية مدمجة", "تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
         ]
       },
@@ -19558,6 +19558,34 @@ export async function seedDatabase() {
     console.log(`${allPlans.length} segment-tier plans seeded (v6)`);
   }
 
+  // ── Targeted pricing migration ───────────────────────────────────────────
+  // Write final values rather than adding deltas, so restarts remain idempotent.
+  // Existing custom plans are left untouched.
+  try {
+    const { PricingPlanModel: PPM } = await import("./models");
+    const targetPrices: Record<string, {
+      monthlyPrice: number; sixMonthPrice: number; annualPrice: number; lifetimePrice: number;
+    }> = {
+      "education-lite":     { monthlyPrice: 449,  sixMonthPrice: 999,  annualPrice: 1849, lifetimePrice: 9699 },
+      "education-pro":      { monthlyPrice: 1149, sixMonthPrice: 2099, annualPrice: 3599, lifetimePrice: 17199 },
+      "education-infinite": { monthlyPrice: 2437, sixMonthPrice: 4087, annualPrice: 6787, lifetimePrice: 30787 },
+      "healthcare-lite":     { monthlyPrice: 828,  sixMonthPrice: 1248, annualPrice: 1948, lifetimePrice: 8198 },
+      "healthcare-pro":      { monthlyPrice: 1518, sixMonthPrice: 2238, annualPrice: 3388, lifetimePrice: 13788 },
+      "healthcare-infinite": { monthlyPrice: 2599, sixMonthPrice: 3899, annualPrice: 5999, lifetimePrice: 25299 },
+      "beauty-lite":         { monthlyPrice: 698,  sixMonthPrice: 998,  annualPrice: 1498, lifetimePrice: 5898 },
+      "beauty-pro":          { monthlyPrice: 1288, sixMonthPrice: 1788, annualPrice: 2688, lifetimePrice: 10288 },
+      "beauty-infinite":     { monthlyPrice: 2249, sixMonthPrice: 3199, annualPrice: 4799, lifetimePrice: 18799 },
+    };
+    for (const [slug, prices] of Object.entries(targetPrices)) {
+      await PPM.updateOne(
+        { slug },
+        { $set: { ...prices, price: prices.lifetimePrice } },
+      );
+    }
+  } catch (e) {
+    console.error("[Migration] Sector pricing update failed:", e);
+  }
+
   // ── Auto-seed Extra Addons ────────────────────────────────────────────────
   try {
     const { ExtraAddonModel: EAM } = await import("./models");
@@ -19572,7 +19600,7 @@ export async function seedDatabase() {
       { nameAr: "استضافة VPS مخصص", name: "VPS Hosting", descriptionAr: "سيرفر VPS مخصص بأداء عالي وموارد مضمونة", category: "hosting", price: 900, icon: "Server", sortOrder: 31, segments: [], plans: ["pro","infinite"] },
       { nameAr: "استضافة Cloud (AWS/GCP)", name: "Cloud Hosting", descriptionAr: "استضافة على السحابة لضمان التوسّع والأداء العالي", category: "hosting", price: 2000, icon: "Cloud", sortOrder: 32, segments: [], plans: ["infinite"] },
       { nameAr: "بوابة دفع إلكتروني (مدى / Apple Pay)", name: "Payment Gateway", descriptionAr: "ربط بوابة الدفع بمدى وApple Pay وبطاقات الائتمان", category: "integration", price: 800, icon: "CreditCard", sortOrder: 40, segments: [], plans: [] },
-      { nameAr: "تكامل واتساب (WhatsApp Business)", name: "WhatsApp Integration", descriptionAr: "إرسال إشعارات وتنبيهات للعملاء عبر واتساب بيزنس", category: "integration", price: 400, icon: "MessageCircle", sortOrder: 41, segments: [], plans: [] },
+      { nameAr: "تكامل واتساب سنوي (رسائل غير محدودة)", name: "Annual WhatsApp Integration (Unlimited Messages)", descriptionAr: "تكامل واتساب سنوي لإرسال عدد غير محدود من الرسائل للعملاء والإشعارات", category: "integration", price: 1499, icon: "MessageCircle", sortOrder: 41, segments: [], plans: [], billingType: "annual", compatiblePeriods: ["annual","lifetime"], quotaCount: -1, quotaLabel: "رسائل غير محدودة" },
       { nameAr: "تكامل زيد للدفع", name: "Zid Integration", descriptionAr: "ربط المتجر بمنصة زيد للمبيعات والمخزون", category: "integration", price: 600, icon: "Link", sortOrder: 42, segments: ["ecommerce","store","commerce"], plans: [] },
       { nameAr: "تكامل سلة", name: "Salla Integration", descriptionAr: "ربط المتجر بمنصة سلة للبيع الإلكتروني", category: "integration", price: 600, icon: "Link", sortOrder: 43, segments: ["ecommerce","store","commerce"], plans: [] },
       { nameAr: "بوابة Paymob للدفع الإلكتروني", name: "Paymob Payment Gateway", descriptionAr: "ربط بوابة Paymob — تدعم مدى، فيزا، ماستر، Apple Pay، وتحويل بنكي. مجانية مع برو والإنفينتي", category: "integration", price: 100, icon: "CreditCard", sortOrder: 44, segments: [], plans: [], billingType: "one_time", includedInPlans: ["pro","infinite"], freeQuotaForIncluded: 0 },
@@ -19595,6 +19623,43 @@ export async function seedDatabase() {
       const exists = await EAM.findOne({ nameAr: d.nameAr });
       if (!exists) { await EAM.create({ ...d, isActive: true, currency: "SAR" }); seedAdded++; }
     }
+
+    // Replace legacy external WhatsApp entries with one canonical annual,
+    // unlimited-message add-on. Keep internal WhatsApp/OTP/CRM code untouched.
+    const whatsappEntries = await EAM.find({
+      category: "integration",
+      $or: [
+        { nameAr: /واتساب/i },
+        { name: /whatsapp/i },
+      ],
+    }).sort({ createdAt: 1 });
+    const canonicalWhatsApp = whatsappEntries[0];
+    const whatsappDefinition = {
+      nameAr: "تكامل واتساب سنوي (رسائل غير محدودة)",
+      name: "Annual WhatsApp Integration (Unlimited Messages)",
+      descriptionAr: "تكامل واتساب سنوي لإرسال عدد غير محدود من الرسائل للعملاء والإشعارات",
+      category: "integration",
+      price: 1499,
+      icon: "MessageCircle",
+      sortOrder: 41,
+      segments: [],
+      plans: [],
+      billingType: "annual",
+      compatiblePeriods: ["annual", "lifetime"],
+      quotaCount: -1,
+      quotaLabel: "رسائل غير محدودة",
+      isActive: true,
+      currency: "SAR",
+    };
+    if (canonicalWhatsApp) {
+      await EAM.updateOne({ _id: canonicalWhatsApp._id }, { $set: whatsappDefinition });
+      const duplicateIds = whatsappEntries.slice(1).map((entry: any) => entry._id);
+      if (duplicateIds.length > 0) await EAM.deleteMany({ _id: { $in: duplicateIds } });
+    } else {
+      await EAM.create(whatsappDefinition);
+      seedAdded++;
+    }
+
     if (seedAdded > 0) console.log(`[Seed] Extra addons: ${seedAdded} added`);
   } catch (e) { console.error("[Seed] Extra addons error:", e); }
 }
