@@ -15,6 +15,12 @@ const projectSchema = new mongoose.Schema({
   githubVisibilityVersion: { type: Number, default: 0, select: false },
   githubProvisioningStatus: { type: String, enum: ["not_configured", "ready", "failed"], default: "not_configured" },
   githubProvisioningError: { type: String, default: "" },
+  githubMigrationHistory: [{
+    fromUrl: String,
+    toUrl: String,
+    migratedAt: Date,
+    migratedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  }],
   stagingUrl: String,
   productionUrl: String,
   deliveredAt: Date,

@@ -12,6 +12,7 @@ import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./payp
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import express from "express";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -226,6 +227,24 @@ function getAddonSubscriptionDates(billingType: unknown, startedAt: Date, explic
   if (type === "monthly") return { startedAt, expiresAt: new Date(startedAt.getTime() + 30 * 86400000) };
   if (type === "annual") return { startedAt, expiresAt: new Date(startedAt.getTime() + 365 * 86400000) };
   return { startedAt, expiresAt: null };
+}
+
+function parseGitHubRepositoryUrl(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw.startsWith("http") ? raw : `https://github.com/${raw}`);
+    if (!["github.com", "www.github.com"].includes(parsed.hostname.toLowerCase())) return null;
+    const parts = parsed.pathname.split("/").filter(Boolean).map((part) => part.replace(/\.git$/, ""));
+    if (parts.length < 2 || !parts[0] || !parts[1]) return null;
+    return {
+      owner: parts[0],
+      name: parts[1],
+      htmlUrl: `https://github.com/${parts[0]}/${parts[1]}`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function createProjectSubscriptionInvoice({
@@ -1430,27 +1449,64 @@ export async function registerRoutes(
           true,
           process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : pinnedActorId || undefined,
         );
+        const configuredRepository = parseGitHubRepositoryUrl(
+          project.repoUrl
+            || project.githubRepoUrl
+            || specs?.githubRepoUrl
+            || order.githubRepoUrl,
+        ) || (
+          project.githubRepoOwner && project.githubRepoName
+            ? {
+                owner: String(project.githubRepoOwner),
+                name: String(project.githubRepoName),
+                htmlUrl: `https://github.com/${project.githubRepoOwner}/${project.githubRepoName}`,
+              }
+            : null
+        );
         const existingRepositoryReady = Boolean(
-          project.githubRepoId
-          && project.githubRepoName
-          && project.githubRepoOwner
-          && project.repoUrl,
+          (project.githubRepoName && project.githubRepoOwner && (project.repoUrl || configuredRepository))
+          || configuredRepository,
         );
         if (existingRepositoryReady) {
-          if (project.githubVisibility !== desiredVisibility) {
+          const configuredOwner = project.githubRepoOwner || configuredRepository?.owner || "";
+          const configuredName = project.githubRepoName || configuredRepository?.name || "";
+          const configuredUrl = project.repoUrl || configuredRepository?.htmlUrl || "";
+          if (configuredRepository && (!project.githubRepoId || !project.githubRepoOwner || !project.githubRepoName)) {
+            if (pinnedActorId || process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+              const configuredFromGitHub = await githubFetch(
+                `/repos/${encodeURIComponent(configuredRepository.owner)}/${encodeURIComponent(configuredRepository.name)}`,
+                await getToken(),
+              );
+              repositoryMetadata = {
+                id: String(configuredFromGitHub.id || ""),
+                name: String(configuredFromGitHub.name || configuredRepository.name),
+                owner: String(configuredFromGitHub.owner?.login || configuredRepository.owner),
+                htmlUrl: String(configuredFromGitHub.html_url || configuredRepository.htmlUrl),
+                visibility: configuredFromGitHub.private ? "private" : "public",
+              };
+            } else {
+              repositoryMetadata = {
+                id: "",
+                name: configuredName,
+                owner: configuredOwner,
+                htmlUrl: configuredUrl,
+                visibility: project.githubVisibility || desiredVisibility,
+              };
+            }
+          } else if (project.githubVisibility !== desiredVisibility) {
             repositoryMetadata = await updateGitHubRepositoryVisibility(
               await getToken(),
-              project.githubRepoOwner,
-              project.githubRepoName,
+              configuredOwner,
+              configuredName,
               desiredVisibility,
             );
           } else {
             repositoryMetadata = {
-              id: String(project.githubRepoId),
-              name: project.githubRepoName,
-              owner: project.githubRepoOwner,
-              htmlUrl: project.repoUrl,
-              visibility: desiredVisibility,
+              id: String(project.githubRepoId || ""),
+              name: configuredName,
+              owner: configuredOwner,
+              htmlUrl: configuredUrl,
+              visibility: project.githubVisibility || desiredVisibility,
             };
           }
         } else {
@@ -3107,6 +3163,118 @@ export async function registerRoutes(
       res.json({ ok: true, visibility: repository?.visibility || visibility });
     } catch {
       res.status(500).json({ error: "تعذر حفظ إعدادات GitHub" });
+    }
+  });
+
+  // Explicit GitHub migration. Provisioning never calls this route automatically:
+  // it is only used when an admin intentionally chooses a new repository.
+  app.post("/api/admin/orders/:id/github/migrate", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id).lean();
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const project = await ProjectModel.findOne({ orderId: req.params.id });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+      const specs = await OrderSpecsModel.findOne({ orderId: req.params.id }).lean() as any;
+      const source = parseGitHubRepositoryUrl(
+        project.repoUrl
+          || project.githubRepoUrl
+          || specs?.githubRepoUrl
+          || order.githubRepoUrl,
+      );
+      const target = parseGitHubRepositoryUrl(req.body?.targetRepoUrl);
+      if (!source) return res.status(400).json({ error: "لا يوجد مستودع GitHub حالي صالح لهذا المشروع" });
+      if (!target) return res.status(400).json({ error: "رابط مستودع GitHub الجديد غير صالح" });
+      if (source.owner.toLowerCase() === target.owner.toLowerCase() && source.name.toLowerCase() === target.name.toLowerCase()) {
+        return res.status(400).json({ error: "المستودع الجديد هو نفس المستودع الحالي" });
+      }
+
+      const provisioning = await OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean() as any;
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String(provisioning?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+
+      const sourceRepository = await githubFetch(
+        `/repos/${encodeURIComponent(source.owner)}/${encodeURIComponent(source.name)}`,
+        token,
+      );
+      let targetRepository: any;
+      try {
+        targetRepository = await githubFetch(
+          `/repos/${encodeURIComponent(target.owner)}/${encodeURIComponent(target.name)}`,
+          token,
+        );
+      } catch (error: any) {
+        if (error?.status !== 404) throw error;
+        const account = await githubFetch("/user", token);
+        if (String(account.login || "").toLowerCase() !== target.owner.toLowerCase()) {
+          return res.status(400).json({ error: "لا يمكن إنشاء المستودع الجديد إلا داخل حساب GitHub المتصل" });
+        }
+        targetRepository = await ensureGitHubRepository({
+          token,
+          name: target.name,
+          description: `Migrated QIROX project: ${String((order as any).businessName || (order as any).serviceType || "Project").slice(0, 120)}`,
+          visibility: (project.githubVisibility || "private") as "public" | "private",
+        });
+      }
+
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "qirox-github-migration-"));
+      const encodedToken = encodeURIComponent(token);
+      const sourceRemote = `https://x-access-token:${encodedToken}@github.com/${source.owner}/${source.name}.git`;
+      const targetRemote = `https://x-access-token:${encodedToken}@github.com/${target.owner}/${target.name}.git`;
+      try {
+        const simpleGit = (await import("simple-git")).default;
+        await simpleGit().clone(sourceRemote, tempDir, ["--mirror"]);
+        const mirror = simpleGit(tempDir);
+        await mirror.push(["--mirror", targetRemote]);
+      } finally {
+        await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      }
+
+      const migratedAt = new Date();
+      const targetUrl = String(targetRepository.html_url || target.htmlUrl);
+      const targetOwner = String(targetRepository.owner?.login || target.owner);
+      const targetName = String(targetRepository.name || target.name);
+      const targetId = String(targetRepository.id || "");
+      const targetVisibility = targetRepository.private ? "private" : (project.githubVisibility || "private");
+      const migration = {
+        fromUrl: String(sourceRepository.html_url || source.htmlUrl),
+        toUrl: targetUrl,
+        migratedAt,
+        migratedBy: mongoose.Types.ObjectId.isValid(String((req.user as any)._id || ""))
+          ? (req.user as any)._id
+          : undefined,
+      };
+      await Promise.all([
+        ProjectModel.findByIdAndUpdate(project._id, {
+          $set: {
+            repoUrl: targetUrl,
+            githubRepoName: targetName,
+            githubRepoId: targetId,
+            githubRepoOwner: targetOwner,
+            githubVisibility: targetVisibility,
+            githubProvisioningStatus: "ready",
+            githubProvisioningError: "",
+          },
+          $push: { githubMigrationHistory: migration },
+        }),
+        OrderSpecsModel.findOneAndUpdate(
+          { orderId: req.params.id },
+          { $set: { githubRepoUrl: targetUrl, githubRepoName: targetName, githubRepoId: targetId, githubRepoOwner: targetOwner, githubVisibility: targetVisibility } },
+          { upsert: true, setDefaultsOnInsert: true },
+        ),
+      ]);
+      res.json({ ok: true, repository: { url: targetUrl, owner: targetOwner, name: targetName }, migratedAt });
+    } catch (error: any) {
+      console.error("[GitHubMigration]", error?.message || error);
+      const message = error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية قراءة أو كتابة المستودعين."
+        : "فشل نقل ملفات المشروع إلى مستودع GitHub الجديد. لم يتم تغيير رابط المشروع.";
+      res.status(503).json({ error: message });
     }
   });
 

@@ -140,6 +140,7 @@ export default function AdminOrders() {
   const [editPriority, setEditPriority] = useState("medium");
   const [githubVisibility, setGithubVisibility] = useState<"public" | "private">("private");
   const [githubVisibilityOrderId, setGithubVisibilityOrderId] = useState<string | null>(null);
+  const [githubMigrationTarget, setGithubMigrationTarget] = useState("");
   const [aiChecklist, setAiChecklist] = useState<{ name: string; tasks: string[] }[]>([]);
   const [aiChecklistLoading, setAiChecklistLoading] = useState(false);
   const [aiChecklistExpanded, setAiChecklistExpanded] = useState<Record<number, boolean>>({});
@@ -597,6 +598,33 @@ export default function AdminOrders() {
     onError: (error: any) => toast({
       title: L ? "تعذر حفظ رؤية المستودع" : "Could not save repository visibility",
       description: error?.message,
+      variant: "destructive",
+    }),
+  });
+
+  const githubMigrationMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder || !githubMigrationTarget.trim()) {
+        throw new Error(L ? "أدخل رابط مستودع GitHub الجديد" : "Enter the new GitHub repository URL");
+      }
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/github/migrate`, {
+        targetRepoUrl: githubMigrationTarget.trim(),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "فشل نقل ملفات المشروع" : "Project file migration failed"));
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setGithubMigrationTarget("");
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
+      toast({ title: L ? "تم نقل ملفات المشروع وتحديث المستودع" : "Project files migrated and repository updated" });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "فشل نقل ملفات المشروع" : "Project file migration failed"),
       variant: "destructive",
     }),
   });
@@ -2285,6 +2313,47 @@ export default function AdminOrders() {
                               <span className="truncate" dir="ltr">{githubSetup.repository.owner}/{githubSetup.repository.name}</span>
                               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                             </a>
+                          )}
+
+                          {githubSetup?.repository?.url && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 space-y-2">
+                              <div>
+                                <p className="text-xs font-bold text-amber-900">
+                                  {L ? "نقل المشروع إلى مستودع آخر" : "Move project to another repository"}
+                                </p>
+                                <p className="text-[10px] leading-5 text-amber-800/80 mt-1">
+                                  {L
+                                    ? "لن يتغير المستودع تلقائياً. عند تنفيذ النقل ينسخ النظام كل ملفات وفروع المشروع إلى المستودع الجديد أولاً، ثم يحدّث الرابط."
+                                    : "The repository will never change automatically. Migration copies all project files and branches first, then updates the project link."}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Input
+                                  value={githubMigrationTarget}
+                                  onChange={(event) => setGithubMigrationTarget(event.target.value)}
+                                  placeholder="https://github.com/owner/new-repository"
+                                  className="h-9 text-xs bg-white"
+                                  dir="ltr"
+                                  data-testid="input-github-migration-target"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="h-9 shrink-0 text-xs border-amber-300 text-amber-900 hover:bg-amber-100"
+                                  onClick={() => {
+                                    if (!window.confirm(L
+                                      ? "سيتم نسخ كل ملفات وفروع المستودع الحالي إلى المستودع الجديد. هل تريد المتابعة؟"
+                                      : "All files and branches will be copied to the new repository. Continue?")) return;
+                                    githubMigrationMutation.mutate();
+                                  }}
+                                  disabled={!githubMigrationTarget.trim() || githubMigrationMutation.isPending}
+                                  data-testid="button-migrate-github-repository"
+                                >
+                                  {githubMigrationMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                  {L ? "نقل الملفات" : "Migrate files"}
+                                </Button>
+                              </div>
+                            </div>
                           )}
 
                           <div>
