@@ -256,6 +256,11 @@ export async function seedGitHubProjectRepository(input: {
   const parentCommit = await githubFetch(`${repositoryPath}/git/commits/${encodeURIComponent(parentSha)}`, input.token);
   const baseTree = String(parentCommit.tree?.sha || "");
   if (!baseTree) throw githubRepositoryError("GitHub repository tree could not be read");
+  const currentTree = await githubFetch(`${repositoryPath}/git/trees/${encodeURIComponent(baseTree)}?recursive=1`, input.token);
+  const existingPaths = new Set((currentTree.tree || []).map((entry: any) => String(entry.path || "")));
+  if (existingPaths.has("src/project-config.js") && existingPaths.has("public/qirox-icon.png")) {
+    return { branch, commitSha: parentSha, files: [], alreadySeeded: true };
+  }
 
   const projectName = safeText(input.projectName, "QIROX Project");
   const businessName = safeText(input.businessName, "QIROX Client");

@@ -1522,6 +1522,28 @@ export async function registerRoutes(
             description: `QIROX project: ${String(projectName).slice(0, 120)}`,
             visibility: desiredVisibility,
           });
+          const isSystemGeneratedRepository = repositoryMetadata.created === true
+            || (
+              !project.repoUrl
+              && !project.githubRepoName
+              && repositoryMetadata.name === githubRepositoryName(projectName, orderId)
+            );
+          if (isSystemGeneratedRepository) {
+            await seedGitHubProjectRepository({
+              token: await getToken(),
+              repository: repositoryMetadata,
+              projectName,
+              businessName: order.businessName,
+              concept: specs?.projectConcept || order.notes || order.requiredFunctions,
+              audience: specs?.targetAudience || order.siteLanguage,
+              features: specs?.features || order.requiredFunctions,
+              techStack: specs?.techStack || order.requiredSystems,
+              framework: specs?.framework,
+              language: specs?.language,
+              requiredFunctions: order.requiredFunctions,
+              requiredSystems: order.requiredSystems,
+            });
+          }
         }
 
         const stillOwnsLease = await OrderProvisioningModel.findOneAndUpdate(
