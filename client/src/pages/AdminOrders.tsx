@@ -941,6 +941,11 @@ export default function AdminOrders() {
                   <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
                     {L ? "نظرة المشروع" : "Project Overview"}
                   </TabsTrigger>
+                  {canManageProjectSubscriptions && (
+                    <TabsTrigger value="subscription" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0" data-testid="tab-admin-project-subscription">
+                      <RefreshCw className="w-3 h-3" />{L ? "إدارة الاشتراك" : "Subscription Management"}
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4 flex-shrink-0">
                     {L ? "التجهيز والتكاملات" : "Setup & Integrations"}
                   </TabsTrigger>
@@ -1306,6 +1311,57 @@ export default function AdminOrders() {
                     </div>
                   </ScrollArea>
                 </TabsContent>
+
+                  <TabsContent value="subscription" className="flex-1 overflow-hidden mt-0">
+                    <ScrollArea className="h-full">
+                      <div className="px-6 py-5 space-y-5 max-w-3xl">
+                        <div>
+                          <h2 className="text-lg font-black text-black dark:text-white">
+                            {L ? "إدارة اشتراك المشروع" : "Project Subscription Management"}
+                          </h2>
+                          <p className="text-xs text-black/45 dark:text-white/45 mt-1">
+                            {L ? "راجع حالة الاشتراك وعدّل المدة المتبقية مباشرة من هنا." : "Review the subscription status and adjust the remaining duration here."}
+                          </p>
+                        </div>
+
+                        {(() => {
+                          const subscriptionProject = orderProject || {
+                            id: selectedOrder.projectId,
+                            subscription: selectedOrder.projectSubscription,
+                          };
+                          const projectId = subscriptionProject?.id || selectedOrder.projectId;
+                          const subscription = subscriptionProject?.subscription || selectedOrder.projectSubscription;
+
+                          if (!projectId) {
+                            return (
+                              <div className="rounded-2xl border border-black/[0.08] bg-black/[0.02] p-6 text-sm text-black/50">
+                                {L ? "لم يتم تجهيز مشروع لهذا الطلب بعد، لذلك لا يوجد اشتراك لإدارته." : "This order has no provisioned project yet, so there is no subscription to manage."}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                              <ProjectSubscriptionCard project={subscriptionProject} lang={lang} />
+                              <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-3">
+                                <div>
+                                  <p className="text-sm font-bold text-black">{L ? "تعديل المدة" : "Adjust duration"}</p>
+                                  <p className="text-[10px] text-black/40 mt-1">{L ? "أضف أو اطرح أياماً من الاشتراك الحالي." : "Add or subtract days from the current subscription."}</p>
+                                </div>
+                                <AdminProjectSubscriptionCell
+                                  projectId={projectId}
+                                  subscription={subscription}
+                                  lang={lang}
+                                  adjustmentPending={adjustingProjectId === projectId}
+                                  onAdjust={(days) => adjustProjectSubscriptionMutation.mutate({ projectId, days })}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
 
                 {/* Tab 2: Full Specs */}
                 <TabsContent value="specs" className="flex-1 overflow-hidden mt-0">
