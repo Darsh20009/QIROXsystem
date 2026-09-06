@@ -163,6 +163,7 @@ export default function AdminOrders() {
   const [githubVisibility, setGithubVisibility] = useState<"public" | "private">("private");
   const [githubVisibilityOrderId, setGithubVisibilityOrderId] = useState<string | null>(null);
   const [githubMigrationTarget, setGithubMigrationTarget] = useState("");
+  const [githubRepositoryAction, setGithubRepositoryAction] = useState<"move" | "import">("move");
   const [aiChecklist, setAiChecklist] = useState<{ name: string; tasks: string[] }[]>([]);
   const [aiChecklistLoading, setAiChecklistLoading] = useState(false);
   const [aiChecklistExpanded, setAiChecklistExpanded] = useState<Record<number, boolean>>({});
@@ -699,6 +700,34 @@ export default function AdminOrders() {
     },
     onError: (error: any) => toast({
       title: error?.message || (L ? "فشل نقل ملفات المشروع" : "Project file migration failed"),
+      variant: "destructive",
+    }),
+  });
+
+  const githubImportMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder || !githubMigrationTarget.trim()) {
+        throw new Error(L ? "أدخل رابط المستودع المراد استيراده" : "Enter the repository URL to import");
+      }
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/github/import`, {
+        sourceRepoUrl: githubMigrationTarget.trim(),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "فشل استيراد المستودع" : "Repository import failed"));
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setGithubMigrationTarget("");
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'github', 'code'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
+      toast({ title: L ? "تم استيراد المستودع وحفظه للمشروع" : "Repository imported and saved to the project" });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "فشل استيراد المستودع" : "Repository import failed"),
       variant: "destructive",
     }),
   });
@@ -2468,19 +2497,59 @@ export default function AdminOrders() {
                             <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 space-y-2">
                               <div>
                                 <p className="text-xs font-bold text-amber-900">
-                                  {L ? "نقل المشروع إلى مستودع آخر" : "Move project to another repository"}
+                                   {L ? "خيارات المستودع" : "Repository options"}
                                 </p>
                                 <p className="text-[10px] leading-5 text-amber-800/80 mt-1">
                                   {L
-                                    ? "لن يتغير المستودع تلقائياً. عند تنفيذ النقل ينسخ النظام كل ملفات وفروع المشروع إلى المستودع الجديد أولاً، ثم يحدّث الرابط."
-                                    : "The repository will never change automatically. Migration copies all project files and branches first, then updates the project link."}
+                                     ? "لن يتغير المستودع تلقائياً. اختر الإجراء المناسب، وسيتم حفظ الرابط الجديد للمشروع فقط بعد نجاح العملية."
+                                     : "The repository will never change automatically. Choose an action; the new project link is saved only after it succeeds."}
                                 </p>
                               </div>
+                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                 <button
+                                   type="button"
+                                   onClick={() => setGithubRepositoryAction("move")}
+                                   className={`text-right rounded-xl border p-3 transition-colors ${
+                                     githubRepositoryAction === "move"
+                                       ? "border-amber-500 bg-white shadow-sm"
+                                       : "border-amber-200/70 bg-white/50 hover:bg-white"
+                                   }`}
+                                   data-testid="button-select-move-repository"
+                                 >
+                                   <span className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                                     <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                                     {L ? "نقل المستودع وحفظ الجديد" : "Move repository and save new link"}
+                                   </span>
+                                   <span className="block text-[10px] leading-4 text-amber-800/70 mt-1">
+                                     {L ? "ينسخ الملفات والفروع ثم يحفظ الرابط الجديد للمشروع" : "Copies files and branches, then saves the new project link"}
+                                   </span>
+                                 </button>
+                                 <button
+                                   type="button"
+                                   onClick={() => setGithubRepositoryAction("import")}
+                                   className={`text-right rounded-xl border p-3 transition-colors ${
+                                     githubRepositoryAction === "import"
+                                       ? "border-amber-500 bg-white shadow-sm"
+                                       : "border-amber-200/70 bg-white/50 hover:bg-white"
+                                   }`}
+                                   data-testid="button-select-import-repository"
+                                 >
+                                   <span className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                                     <Link2 className="w-3.5 h-3.5 shrink-0" />
+                                     {L ? "استيراد مستودع موجود" : "Import existing repository"}
+                                   </span>
+                                   <span className="block text-[10px] leading-4 text-amber-800/70 mt-1">
+                                     {L ? "يربط المستودع بالمشروع بدون نسخ أو حذف الملفات" : "Links an existing repository without copying or deleting files"}
+                                   </span>
+                                 </button>
+                               </div>
                               <div className="flex gap-2">
                                 <Input
                                   value={githubMigrationTarget}
                                   onChange={(event) => setGithubMigrationTarget(event.target.value)}
-                                  placeholder="https://github.com/owner/new-repository"
+                                   placeholder={githubRepositoryAction === "move"
+                                     ? "https://github.com/owner/new-repository"
+                                     : "https://github.com/owner/existing-repository"}
                                   className="h-9 text-xs bg-white"
                                   dir="ltr"
                                   data-testid="input-github-migration-target"
@@ -2490,16 +2559,35 @@ export default function AdminOrders() {
                                   variant="outline"
                                   className="h-9 shrink-0 text-xs border-amber-300 text-amber-900 hover:bg-amber-100"
                                   onClick={() => {
-                                    if (!window.confirm(L
-                                      ? "سيتم نسخ كل ملفات وفروع المستودع الحالي إلى المستودع الجديد. هل تريد المتابعة؟"
-                                      : "All files and branches will be copied to the new repository. Continue?")) return;
-                                    githubMigrationMutation.mutate();
+                                     const message = githubRepositoryAction === "move"
+                                       ? (L
+                                         ? "سيتم نقل كل ملفات وفروع المستودع الحالي إلى المستودع الجديد، ثم حفظ الرابط الجديد للمشروع. هل تريد المتابعة؟"
+                                         : "All files and branches will be moved to the new repository, then the new project link will be saved. Continue?")
+                                       : (L
+                                         ? "سيتم ربط المشروع بالمستودع الموجود بدون نسخ أو حذف الملفات. هل تريد المتابعة؟"
+                                         : "The project will be linked to the existing repository without copying or deleting files. Continue?");
+                                     if (!window.confirm(message)) return;
+                                     if (githubRepositoryAction === "move") {
+                                       githubMigrationMutation.mutate();
+                                     } else {
+                                       githubImportMutation.mutate();
+                                     }
                                   }}
-                                  disabled={!githubMigrationTarget.trim() || githubMigrationMutation.isPending}
-                                  data-testid="button-migrate-github-repository"
+                                   disabled={
+                                     !githubMigrationTarget.trim()
+                                     || githubMigrationMutation.isPending
+                                     || githubImportMutation.isPending
+                                   }
+                                   data-testid={githubRepositoryAction === "move" ? "button-move-github-repository" : "button-import-github-repository"}
                                 >
-                                  {githubMigrationMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                                  {L ? "نقل الملفات" : "Migrate files"}
+                                   {githubMigrationMutation.isPending || githubImportMutation.isPending
+                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                     : githubRepositoryAction === "move"
+                                       ? <RefreshCw className="w-3.5 h-3.5" />
+                                       : <Link2 className="w-3.5 h-3.5" />}
+                                   {githubRepositoryAction === "move"
+                                     ? (L ? "نقل المستودع وحفظ الجديد" : "Move repository and save")
+                                     : (L ? "استيراد المستودع وحفظه" : "Import repository and save")}
                                 </Button>
                               </div>
                             </div>

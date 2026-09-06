@@ -3354,6 +3354,95 @@ export async function registerRoutes(
     }
   });
 
+  // Explicitly link an already-existing repository without copying or deleting
+  // any files. This is intentionally separate from migration.
+  app.post("/api/admin/orders/:id/github/import", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id).lean();
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const project = await ProjectModel.findOne({ orderId: req.params.id });
+      if (!project) return res.status(404).json({ error: "لا يوجد مشروع مرتبط بهذا الطلب" });
+      const specs = await OrderSpecsModel.findOne({ orderId: req.params.id }).lean() as any;
+      const current = projectGitHubRepository(project, specs, order);
+      const target = parseGitHubRepositoryUrl(req.body?.sourceRepoUrl);
+      if (!target) return res.status(400).json({ error: "رابط مستودع GitHub المراد استيراده غير صالح" });
+      if (current && current.owner.toLowerCase() === target.owner.toLowerCase() && current.name.toLowerCase() === target.name.toLowerCase()) {
+        return res.status(400).json({ error: "هذا المستودع مرتبط بالمشروع بالفعل" });
+      }
+
+      const provisioning = await OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean() as any;
+      const token = await resolveGitHubToken(
+        req,
+        true,
+        process.env.GITHUB_PERSONAL_ACCESS_TOKEN ? undefined : String(provisioning?.githubActorId || "") || undefined,
+      );
+      if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
+
+      const targetRepository = await githubFetch(
+        `/repos/${encodeURIComponent(target.owner)}/${encodeURIComponent(target.name)}`,
+        token,
+      );
+      const targetUrl = String(targetRepository.html_url || target.htmlUrl);
+      const targetOwner = String(targetRepository.owner?.login || target.owner);
+      const targetName = String(targetRepository.name || target.name);
+      const targetId = String(targetRepository.id || "");
+      const targetVisibility = targetRepository.private ? "private" : "public";
+      const importedAt = new Date();
+      const historyEntry = {
+        fromUrl: String(project.repoUrl || current?.htmlUrl || ""),
+        toUrl: targetUrl,
+        migratedAt: importedAt,
+        migratedBy: mongoose.Types.ObjectId.isValid(String((req.user as any)._id || ""))
+          ? (req.user as any)._id
+          : undefined,
+      };
+
+      await Promise.all([
+        ProjectModel.findByIdAndUpdate(project._id, {
+          $set: {
+            repoUrl: targetUrl,
+            githubRepoName: targetName,
+            githubRepoId: targetId,
+            githubRepoOwner: targetOwner,
+            githubVisibility: targetVisibility,
+            githubProvisioningStatus: "ready",
+            githubProvisioningError: "",
+          },
+          $push: { githubMigrationHistory: historyEntry },
+        }),
+        OrderSpecsModel.findOneAndUpdate(
+          { orderId: req.params.id },
+          {
+            $set: {
+              githubRepoUrl: targetUrl,
+              githubRepoName: targetName,
+              githubRepoId: targetId,
+              githubRepoOwner: targetOwner,
+              githubVisibility: targetVisibility,
+            },
+          },
+          { upsert: true, setDefaultsOnInsert: true },
+        ),
+      ]);
+      res.json({
+        ok: true,
+        imported: true,
+        repository: { url: targetUrl, owner: targetOwner, name: targetName },
+        importedAt,
+      });
+    } catch (error: any) {
+      console.error("[GitHubImport]", error?.message || error);
+      const message = error?.status === 401 || error?.status === 403
+        ? "اتصال GitHub لا يملك صلاحية قراءة المستودع المراد استيراده."
+        : error?.status === 404
+          ? "لم يتم العثور على المستودع أو لا يملك اتصال GitHub صلاحية الوصول إليه."
+          : "فشل استيراد المستودع. لم يتم تغيير رابط المشروع.";
+      res.status(503).json({ error: message });
+    }
+  });
+
   // ═══════════════════════════════════════════════
   // === ORDER EXPENSES & PROFIT TRACKING ===
   // ═══════════════════════════════════════════════
