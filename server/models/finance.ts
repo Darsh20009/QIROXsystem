@@ -3,6 +3,7 @@ import { transform } from "./utils";
 
 const invoiceSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
@@ -16,6 +17,9 @@ const invoiceSchema = new mongoose.Schema({
   dueDate: Date,
   paidAt: Date,
   notes: String,
+  // Links a manually-created project subscription start/renewal to one invoice.
+  // Sparse uniqueness makes retries idempotent without affecting legacy invoices.
+  subscriptionActionId: { type: String, default: null, unique: true, sparse: true, index: true },
   items: [{ name: String, qty: Number, unitPrice: Number, total: Number }],
   externalName: { type: String, default: "" },
   externalEmail: { type: String, default: "" },

@@ -384,7 +384,8 @@ test("renewal request rejects an active project subscription before creating a r
   };
   const subscription = {
     _id: "renewal-active-subscription",
-    expiresAt: new Date("2026-09-02T00:00:00.000Z"),
+    // Keep this fixture active regardless of the date on which the suite runs.
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   };
   let creates = 0;
   (ProjectModel as any).findById = () => queryChain(project);

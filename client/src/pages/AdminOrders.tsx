@@ -168,6 +168,15 @@ export default function AdminOrders() {
   const [newTeamMemberId, setNewTeamMemberId] = useState("");
   const [newTeamMemberRole, setNewTeamMemberRole] = useState("");
   const [adjustingProjectId, setAdjustingProjectId] = useState<string | null>(null);
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    period: "annual",
+    startMode: "project_completion",
+    startDate: "",
+    amount: "",
+    paymentStatus: "paid",
+    dueDate: "",
+    notes: "",
+  });
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -251,6 +260,22 @@ export default function AdminOrders() {
     setGithubVisibility(reset.visibility);
     setGithubVisibilityOrderId(reset.loadedOrderId);
   }, [selectedOrder?.id]);
+
+  useEffect(() => {
+    if (!selectedOrder?.id) return;
+    const existingPeriod = orderProject?.subscription?.period || (selectedOrder as any).planPeriod || "annual";
+    const projectIsComplete = orderProject?.status === "closed" || !!orderProject?.deliveredAt;
+    setSubscriptionForm((current) => ({
+      ...current,
+      period: ["monthly", "6months", "annual", "lifetime"].includes(existingPeriod) ? existingPeriod : "annual",
+      startMode: projectIsComplete ? "project_completion" : "project_start",
+      startDate: "",
+      amount: "",
+      paymentStatus: "paid",
+      dueDate: "",
+      notes: "",
+    }));
+  }, [selectedOrder?.id, orderProject?.subscription?.period, orderProject?.status, orderProject?.deliveredAt]);
 
   // Only initialize guide/delivery forms once per order (not on background refetches)
   useEffect(() => {
@@ -376,6 +401,31 @@ export default function AdminOrders() {
       variant: "destructive",
     }),
     onSettled: () => setAdjustingProjectId(null),
+  });
+
+  const manageProjectSubscriptionMutation = useMutation({
+    mutationFn: async ({ action, projectId, data }: { action: "start" | "renew"; projectId: string; data: Record<string, any> }) => {
+      const operationId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+      const res = await apiRequest("POST", `/api/admin/projects/${projectId}/subscription/${action}`, { ...data, operationId });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر تحديث الاشتراك" : "Unable to update subscription"));
+      }
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      toast({
+        title: variables.action === "start"
+          ? (L ? "تم بدء اشتراك المشروع وإضافة الفاتورة" : "Project subscription started and invoice added")
+          : (L ? "تم تجديد الاشتراك وإضافة الفاتورة" : "Subscription renewed and invoice added"),
+      });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر تحديث الاشتراك" : "Unable to update subscription"),
+      variant: "destructive",
+    }),
   });
 
   const saveSpecsMutation = useMutation({
@@ -1314,13 +1364,13 @@ export default function AdminOrders() {
 
                   <TabsContent value="subscription" className="flex-1 overflow-hidden mt-0">
                     <ScrollArea className="h-full">
-                      <div className="px-6 py-5 space-y-5 max-w-3xl">
+                      <div className="px-6 py-5 space-y-5 max-w-4xl">
                         <div>
                           <h2 className="text-lg font-black text-black dark:text-white">
                             {L ? "إدارة اشتراك المشروع" : "Project Subscription Management"}
                           </h2>
                           <p className="text-xs text-black/45 dark:text-white/45 mt-1">
-                            {L ? "راجع حالة الاشتراك وعدّل المدة المتبقية مباشرة من هنا." : "Review the subscription status and adjust the remaining duration here."}
+                            {L ? "ابدأ الاشتراك أو جدده أو عدّل أيامه. الفاتورة المدفوعة تدخل تلقائياً في الإيرادات والأرباح." : "Start, renew, or adjust the subscription. Paid invoices are included automatically in revenue and profit."}
                           </p>
                         </div>
 
@@ -1331,6 +1381,28 @@ export default function AdminOrders() {
                           };
                           const projectId = subscriptionProject?.id || selectedOrder.projectId;
                           const subscription = subscriptionProject?.subscription || selectedOrder.projectSubscription;
+                          const hasSubscription = !!subscription;
+                          const isBusy = manageProjectSubscriptionMutation.isPending;
+                          const updateSubscriptionForm = (updates: Record<string, string>) =>
+                            setSubscriptionForm((current) => ({ ...current, ...updates }));
+                          const submitSubscriptionAction = (action: "start" | "renew") => {
+                            if (!projectId) return;
+                            manageProjectSubscriptionMutation.mutate({
+                              action,
+                              projectId,
+                              data: {
+                                period: subscriptionForm.period,
+                                startMode: action === "renew" && subscriptionForm.startMode === "project_completion"
+                                  ? "after_expiry"
+                                  : subscriptionForm.startMode,
+                                startDate: subscriptionForm.startDate || undefined,
+                                amount: Number(subscriptionForm.amount || 0),
+                                paymentStatus: subscriptionForm.paymentStatus,
+                                dueDate: subscriptionForm.dueDate || undefined,
+                                notes: subscriptionForm.notes,
+                              },
+                            });
+                          };
 
                           if (!projectId) {
                             return (
@@ -1341,12 +1413,145 @@ export default function AdminOrders() {
                           }
 
                           return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                              <ProjectSubscriptionCard project={subscriptionProject} lang={lang} />
-                              <div className="rounded-2xl border border-black/[0.08] bg-white p-4 space-y-3">
-                                <div>
-                                  <p className="text-sm font-bold text-black">{L ? "تعديل المدة" : "Adjust duration"}</p>
-                                  <p className="text-[10px] text-black/40 mt-1">{L ? "أضف أو اطرح أياماً من الاشتراك الحالي." : "Add or subtract days from the current subscription."}</p>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                                <ProjectSubscriptionCard project={subscriptionProject} lang={lang} />
+
+                                <div className="rounded-2xl border border-black/[0.08] bg-white dark:bg-gray-900 p-4 space-y-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-bold text-black dark:text-white">
+                                        {hasSubscription ? (L ? "تجديد الاشتراك" : "Renew subscription") : (L ? "بدء الاشتراك" : "Start subscription")}
+                                      </p>
+                                      <p className="text-[10px] text-black/40 dark:text-white/40 mt-1">
+                                        {hasSubscription
+                                          ? (L ? "اختر الفترة وسيبدأ التجديد بعد نهاية المدة الحالية." : "Choose a period; renewal starts after the current term ends.")
+                                          : (L ? "حدد من أي تاريخ يبدأ عداد المشروع." : "Choose when the project countdown should start.")}
+                                      </p>
+                                    </div>
+                                    <FileText className="w-4 h-4 text-black/30 dark:text-white/30" />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "مدة الاشتراك" : "Subscription period"}</Label>
+                                      <select
+                                        value={subscriptionForm.period}
+                                        onChange={(event) => updateSubscriptionForm({ period: event.target.value })}
+                                        className="mt-1 h-9 w-full rounded-xl border border-black/[0.1] bg-white px-2 text-xs dark:border-white/[0.1] dark:bg-gray-900 dark:text-white"
+                                        data-testid="select-project-subscription-period"
+                                      >
+                                        <option value="monthly">{L ? "شهري — 30 يوم" : "Monthly — 30 days"}</option>
+                                        <option value="6months">{L ? "6 أشهر — 180 يوم" : "6 months — 180 days"}</option>
+                                        <option value="annual">{L ? "سنوي — 365 يوم" : "Annual — 365 days"}</option>
+                                        <option value="lifetime">{L ? "مدى الحياة" : "Lifetime"}</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "يبدأ من" : "Starts from"}</Label>
+                                      <select
+                                        value={subscriptionForm.startMode}
+                                        onChange={(event) => updateSubscriptionForm({ startMode: event.target.value })}
+                                        className="mt-1 h-9 w-full rounded-xl border border-black/[0.1] bg-white px-2 text-xs dark:border-white/[0.1] dark:bg-gray-900 dark:text-white"
+                                        data-testid="select-project-subscription-start-mode"
+                                      >
+                                        {hasSubscription ? (
+                                          <>
+                                            <option value="after_expiry">{L ? "بعد نهاية الاشتراك الحالي" : "After current expiry"}</option>
+                                            <option value="today">{L ? "من اليوم" : "From today"}</option>
+                                            <option value="custom">{L ? "تاريخ مخصص" : "Custom date"}</option>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <option value="project_completion">{L ? "عند اكتمال المشروع" : "When project is completed"}</option>
+                                            <option value="project_start">{L ? "من بداية المشروع" : "From project start"}</option>
+                                            <option value="today">{L ? "من اليوم" : "From today"}</option>
+                                            <option value="custom">{L ? "تاريخ مخصص" : "Custom date"}</option>
+                                          </>
+                                        )}
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  {subscriptionForm.startMode === "custom" && (
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "تاريخ البداية" : "Start date"}</Label>
+                                      <Input
+                                        type="date"
+                                        value={subscriptionForm.startDate}
+                                        onChange={(event) => updateSubscriptionForm({ startDate: event.target.value })}
+                                        className="mt-1 h-9 text-xs"
+                                        data-testid="input-project-subscription-start-date"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "المبلغ (ريال)" : "Amount (SAR)"}</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0"
+                                        value={subscriptionForm.amount}
+                                        onChange={(event) => updateSubscriptionForm({ amount: event.target.value })}
+                                        className="mt-1 h-9 text-xs"
+                                        data-testid="input-project-subscription-amount"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "حالة الفاتورة" : "Invoice status"}</Label>
+                                      <select
+                                        value={subscriptionForm.paymentStatus}
+                                        onChange={(event) => updateSubscriptionForm({ paymentStatus: event.target.value })}
+                                        className="mt-1 h-9 w-full rounded-xl border border-black/[0.1] bg-white px-2 text-xs dark:border-white/[0.1] dark:bg-gray-900 dark:text-white"
+                                        data-testid="select-project-subscription-payment-status"
+                                      >
+                                        <option value="paid">{L ? "مدفوعة — تدخل في الإيرادات" : "Paid — add to revenue"}</option>
+                                        <option value="unpaid">{L ? "غير مدفوعة — تظهر كمستحق" : "Unpaid — keep as receivable"}</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  {subscriptionForm.paymentStatus === "unpaid" && (
+                                    <div>
+                                      <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "تاريخ استحقاق الفاتورة" : "Invoice due date"}</Label>
+                                      <Input
+                                        type="date"
+                                        value={subscriptionForm.dueDate}
+                                        onChange={(event) => updateSubscriptionForm({ dueDate: event.target.value })}
+                                        className="mt-1 h-9 text-xs"
+                                        data-testid="input-project-subscription-due-date"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div className="flex gap-2 pt-1">
+                                    <Button
+                                      type="button"
+                                      onClick={() => submitSubscriptionAction(hasSubscription ? "renew" : "start")}
+                                      disabled={isBusy}
+                                      className="h-9 flex-1 rounded-xl bg-black text-white hover:bg-black/80 text-xs font-bold gap-1.5"
+                                      data-testid={hasSubscription ? "button-renew-project-subscription" : "button-start-project-subscription"}
+                                    >
+                                      {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                      {hasSubscription ? (L ? "تجديد وإصدار فاتورة" : "Renew & invoice") : (L ? "بدء وإصدار فاتورة" : "Start & invoice")}
+                                    </Button>
+                                  </div>
+                                  <p className="text-[10px] text-black/35 dark:text-white/35">
+                                    {L ? "المبلغ 0 يعني بدون فاتورة. عند اختيار مدفوعة تُحتسب مباشرة في تقرير الأرباح." : "Amount 0 skips invoice creation. Paid invoices are counted immediately in the profit report."}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="rounded-2xl border border-black/[0.08] bg-white dark:bg-gray-900 p-4">
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                  <div>
+                                    <p className="text-sm font-bold text-black dark:text-white">{L ? "اختصارات المدة" : "Duration shortcuts"}</p>
+                                    <p className="text-[10px] text-black/40 dark:text-white/40 mt-1">{L ? "تعديل سريع بدون إنشاء فاتورة." : "Quick adjustments without creating an invoice."}</p>
+                                  </div>
+                                  <DollarSign className="w-4 h-4 text-black/30 dark:text-white/30" />
                                 </div>
                                 <AdminProjectSubscriptionCell
                                   projectId={projectId}

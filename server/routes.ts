@@ -148,6 +148,9 @@ import {
 import {
   backfillLegacyProjectSubscriptions,
   getEffectiveProjectSubscription,
+  getProjectSubscriptionDurationDays,
+  getRenewalSubscriptionDates,
+  normalizeProjectSubscriptionPeriod,
   serializeProjectSubscription,
   serializeProjectSubscriptionRenewalRequest,
   startProjectSubscription,
@@ -190,6 +193,81 @@ async function attachAdminProjectSubscriptionSummaries(orders: any[], include: b
       ),
       projectSubscriptionRenewalRequest: renewalRequest,
     };
+  });
+}
+
+function resolveProjectSubscriptionStartDate(project: any, mode: unknown, customDate: unknown) {
+  const selectedMode = String(mode || "today");
+  if (selectedMode === "project_start") {
+    const value = project?.startDate || project?.createdAt;
+    return value ? new Date(value) : null;
+  }
+  if (selectedMode === "project_completion") {
+    const value = project?.deliveredAt || (project?.status === "closed" ? project?.updatedAt : null);
+    return value ? new Date(value) : null;
+  }
+  if (selectedMode === "custom") {
+    return customDate ? new Date(String(customDate)) : null;
+  }
+  return new Date();
+}
+
+function validSubscriptionDate(value: Date | null) {
+  return !!value && !Number.isNaN(value.getTime());
+}
+
+async function createProjectSubscriptionInvoice({
+  actionId,
+  project,
+  order,
+  client,
+  actorId,
+  amount,
+  paymentStatus,
+  dueDate,
+  title,
+  notes,
+}: {
+  actionId: string;
+  project: any;
+  order: any;
+  client: any;
+  actorId: string;
+  amount: number;
+  paymentStatus: "paid" | "unpaid";
+  dueDate?: unknown;
+  title: string;
+  notes?: string;
+}) {
+  if (amount <= 0) return null;
+  const { InvoiceModel } = await import("./models");
+  const existing = await InvoiceModel.findOne({ subscriptionActionId: actionId });
+  if (existing) return existing;
+
+  const invoiceNumber = `INV-SUB-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+  return InvoiceModel.create({
+    orderId: order?._id || order?.id || project?.orderId || null,
+    projectId: project?._id || project?.id,
+    userId: order?.userId || project?.clientId || client?._id || client?.id,
+    createdBy: actorId,
+    invoiceNumber,
+    title,
+    amount,
+    vatRate: 0,
+    vatAmount: 0,
+    totalAmount: amount,
+    status: paymentStatus,
+    paidAt: paymentStatus === "paid" ? new Date() : null,
+    dueDate: dueDate ? new Date(String(dueDate)) : null,
+    notes: notes || "",
+    subscriptionActionId: actionId,
+    items: [{ name: title, qty: 1, unitPrice: amount, total: amount }],
+    clientSnapshot: {
+      fullName: client?.fullName || client?.username || "",
+      email: client?.email || "",
+      phone: client?.phone || client?.whatsappNumber || "",
+      organizationName: client?.organizationName || "",
+    },
   });
 }
 
@@ -3725,6 +3803,173 @@ export async function registerRoutes(
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر تنفيذ ترحيل اشتراكات المشاريع" });
+    }
+  });
+
+  // Start a project subscription manually. This is intentionally separate from
+  // the automatic "closed project" activation so staff can correct legacy
+  // projects and choose the exact start date and billing state.
+  app.post("/api/admin/projects/:projectId/subscription/start", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectModel, ProjectSubscriptionModel, OrderModel, UserModel } = await import("./models");
+      const project = await ProjectModel.findById(req.params.projectId).lean();
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+
+      const operationId = String(req.body?.operationId || crypto.randomUUID()).slice(0, 120);
+      const previousAction = await ProjectSubscriptionModel.findOne({
+        projectId: req.params.projectId,
+        lastActionId: operationId,
+      });
+      if (previousAction) {
+        const { InvoiceModel } = await import("./models");
+        const invoice = await InvoiceModel.findOne({ subscriptionActionId: operationId }).lean();
+        return res.json({ subscription: serializeProjectSubscription(previousAction), invoice, alreadyProcessed: true });
+      }
+
+      const existing = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
+      if (existing) return res.status(409).json({ error: "الاشتراك موجود مسبقاً؛ استخدم التجديد أو تعديل المدة" });
+
+      const order = project.orderId ? await OrderModel.findById(project.orderId).lean() : null;
+      const clientId = (project as any).clientId || (order as any)?.userId;
+      const client = clientId ? await UserModel.findById(clientId).lean() : null;
+      if (!order || !client) return res.status(400).json({ error: "لا يمكن بدء الاشتراك قبل اكتمال بيانات الطلب والعميل" });
+
+      const period = normalizeProjectSubscriptionPeriod(req.body?.period || (order as any).planPeriod || (client as any).subscriptionPeriod);
+      const durationDays = getProjectSubscriptionDurationDays(period);
+      if (!period || (period !== "lifetime" && !durationDays)) return res.status(400).json({ error: "فترة الاشتراك غير صالحة" });
+
+      const startDate = resolveProjectSubscriptionStartDate(project, req.body?.startMode, req.body?.startDate);
+      if (!validSubscriptionDate(startDate)) return res.status(400).json({ error: "تاريخ بداية الاشتراك غير صالح" });
+      if (req.body?.startMode === "project_completion" && !(project as any).deliveredAt && (project as any).status !== "closed") {
+        return res.status(400).json({ error: "لا يمكن البدء من تاريخ الإكمال قبل إغلاق المشروع" });
+      }
+
+      const amount = Number(req.body?.amount || 0);
+      const paymentStatus = req.body?.paymentStatus === "unpaid" ? "unpaid" : "paid";
+      if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+        return res.status(400).json({ error: "قيمة الاشتراك غير صالحة" });
+      }
+
+      let subscription: any;
+      try {
+        subscription = await ProjectSubscriptionModel.create({
+          projectId: req.params.projectId,
+          orderId: (order as any)._id,
+          clientId,
+          planTier: (order as any).planTier || "",
+          planSegment: (order as any).planSegment || (client as any).subscriptionSegmentId || "",
+          period,
+          durationDays,
+          startedAt: startDate,
+          expiresAt: durationDays ? new Date(startDate!.getTime() + durationDays * 86400000) : null,
+          status: "active",
+          lastActionId: operationId,
+        });
+      } catch (error: any) {
+        if (error?.code === 11000) return res.status(409).json({ error: "تم بدء اشتراك المشروع مسبقاً" });
+        throw error;
+      }
+
+      const invoice = await createProjectSubscriptionInvoice({
+        actionId: operationId,
+        project,
+        order,
+        client,
+        actorId: String((req.user as any)._id || (req.user as any).id),
+        amount,
+        paymentStatus,
+        dueDate: req.body?.dueDate,
+        title: `اشتراك مشروع — ${(order as any).businessName || (order as any).serviceType || "QIROX"}`,
+        notes: req.body?.notes,
+      });
+      res.status(201).json({ subscription: serializeProjectSubscription(subscription), invoice });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر بدء اشتراك المشروع" });
+    }
+  });
+
+  // Renew a project subscription and optionally issue a paid/unpaid invoice.
+  // Paid invoices are included automatically in the finance revenue/profit
+  // summary because that summary is invoice-based.
+  app.post("/api/admin/projects/:projectId/subscription/renew", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectModel, ProjectSubscriptionModel, OrderModel, UserModel } = await import("./models");
+      const subscription = await ProjectSubscriptionModel.findOne({ projectId: req.params.projectId });
+      if (!subscription) return res.status(404).json({ error: "لا يوجد اشتراك لهذا المشروع؛ ابدأ الاشتراك أولاً" });
+
+      const operationId = String(req.body?.operationId || crypto.randomUUID()).slice(0, 120);
+      if ((subscription as any).lastActionId === operationId) {
+        const { InvoiceModel } = await import("./models");
+        const invoice = await InvoiceModel.findOne({ subscriptionActionId: operationId }).lean();
+        return res.json({ subscription: serializeProjectSubscription(subscription), invoice, alreadyProcessed: true });
+      }
+
+      const project = await ProjectModel.findById(req.params.projectId).lean();
+      const order = project?.orderId ? await OrderModel.findById(project.orderId).lean() : null;
+      const clientId = (project as any)?.clientId || (order as any)?.userId || (subscription as any).clientId;
+      const client = clientId ? await UserModel.findById(clientId).lean() : null;
+      const period = normalizeProjectSubscriptionPeriod(req.body?.period || (subscription as any).period);
+      if (!period) return res.status(400).json({ error: "فترة التجديد غير صالحة" });
+
+      const now = new Date();
+      let startDate: Date | null;
+      if (!req.body?.startMode || req.body.startMode === "after_expiry") {
+        const expiry = (subscription as any).expiresAt ? new Date((subscription as any).expiresAt) : null;
+        startDate = expiry && expiry > now ? expiry : now;
+      } else {
+        startDate = resolveProjectSubscriptionStartDate(project, req.body.startMode, req.body.startDate);
+      }
+      if (!validSubscriptionDate(startDate)) return res.status(400).json({ error: "تاريخ بداية التجديد غير صالح" });
+
+      const renewalDates = getRenewalSubscriptionDates(period, startDate!);
+      if (!renewalDates) return res.status(400).json({ error: "تعذر حساب تاريخ انتهاء التجديد" });
+      const amount = Number(req.body?.amount || 0);
+      const paymentStatus = req.body?.paymentStatus === "unpaid" ? "unpaid" : "paid";
+      if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+        return res.status(400).json({ error: "قيمة التجديد غير صالحة" });
+      }
+
+      const updated = await ProjectSubscriptionModel.findOneAndUpdate(
+        { _id: subscription._id, lastActionId: { $ne: operationId } },
+        {
+          $set: {
+            period: renewalDates.period,
+            durationDays: renewalDates.durationDays,
+            startedAt: renewalDates.startedAt,
+            expiresAt: renewalDates.expiresAt,
+            status: "active",
+            lastActionId: operationId,
+          },
+        },
+        { returnDocument: "after" },
+      );
+      if (!updated) {
+        const latest = await ProjectSubscriptionModel.findById(subscription._id);
+        if (latest && (latest as any).lastActionId === operationId) {
+          return res.json({ subscription: serializeProjectSubscription(latest), alreadyProcessed: true });
+        }
+        return res.status(409).json({ error: "تم تحديث الاشتراك بطلب آخر، أعد تحميل الصفحة" });
+      }
+
+      const invoice = project && client
+        ? await createProjectSubscriptionInvoice({
+            actionId: operationId,
+            project,
+            order,
+            client,
+            actorId: String((req.user as any)._id || (req.user as any).id),
+            amount,
+            paymentStatus,
+            dueDate: req.body?.dueDate,
+            title: `تجديد اشتراك مشروع — ${(order as any)?.businessName || (order as any)?.serviceType || "QIROX"}`,
+            notes: req.body?.notes,
+          })
+        : null;
+      res.json({ subscription: serializeProjectSubscription(updated), invoice });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تجديد اشتراك المشروع" });
     }
   });
 

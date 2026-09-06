@@ -17,6 +17,7 @@ const projectSubscriptionSchema = new mongoose.Schema({
     default: null,
   },
   status: { type: String, enum: ["active", "expired", "suspended"], default: "active" },
+  lastActionId: { type: String, default: null, index: true },
 }, { timestamps: true });
 
 projectSubscriptionSchema.set("toJSON", { transform });
