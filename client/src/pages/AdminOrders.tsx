@@ -935,6 +935,8 @@ export default function AdminOrders() {
 
   const openOrder = (order: OrderData) => {
     setSelectedOrder(order);
+    setGithubRepositoryAction("move");
+    setGithubMigrationTarget("");
     setActiveTab("details");
     setEditStatus(order.status);
     setEditAmount(order.totalAmount?.toString() || "");
