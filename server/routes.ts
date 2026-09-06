@@ -4014,13 +4014,23 @@ export async function registerRoutes(
       // though the project was originally created from an order. Prefer the
       // stored link, then fall back to the historical project id (the project
       // was created with the order id as its _id), and repair the links.
-      const linkedOrderId = (project as any).orderId || (project as any)._id;
-      const order = linkedOrderId ? await OrderModel.findById(linkedOrderId).lean() : null;
+      const candidateOrderIds = [
+        (project as any).orderId,
+        (project as any)._id,
+      ].filter((value, index, values) =>
+        value && mongoose.Types.ObjectId.isValid(String(value))
+          && values.findIndex((candidate) => String(candidate) === String(value)) === index,
+      );
+      let order: any = null;
+      for (const candidateOrderId of candidateOrderIds) {
+        order = await OrderModel.findById(candidateOrderId).lean();
+        if (order) break;
+      }
       const clientId = (project as any).clientId || (order as any)?.userId;
       const client = clientId ? await UserModel.findById(clientId).lean() : null;
       if (!order || !client) return res.status(400).json({ error: "لا يمكن بدء الاشتراك قبل اكتمال بيانات الطلب والعميل" });
       if (
-        !String((project as any).orderId || "") === String((order as any)._id)
+        String((project as any).orderId || "") !== String((order as any)._id)
         || String((project as any).clientId || "") !== String((client as any)._id)
       ) {
         await ProjectModel.updateOne(
