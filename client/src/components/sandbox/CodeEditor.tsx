@@ -3,6 +3,7 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { X, Circle, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 const EXT_LANG: Record<string, string> = {
   js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript",
@@ -34,6 +35,7 @@ interface CodeEditorProps {
 
 export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange, onSave }: CodeEditorProps) {
   const { lang } = useI18n();
+  const { theme } = useTheme();
   const ar = lang === "ar";
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const isExternalUpdate = useRef(false);
@@ -94,7 +96,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
               onClick={() => onTabSelect(tab.path)}
               data-testid={`tab-${tab.path}`}
             >
-              {tab.dirty && <Circle className="w-2 h-2 fill-orange-400 text-orange-400" />}
+              {tab.dirty && <Circle className="w-2 h-2 fill-foreground text-foreground" />}
               <span>{name}</span>
               <button
                 className="ms-1 p-0.5 rounded hover:bg-accent"
@@ -116,7 +118,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
             key={currentTab.path}
             defaultValue={currentTab.content}
             language={getLang(currentTab.path)}
-            theme="vs-dark"
+            theme={theme === "dark" ? "vs-dark" : "light"}
             onChange={handleChange}
             onMount={handleMount}
             options={{

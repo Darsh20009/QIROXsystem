@@ -174,49 +174,49 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
   }, [project?.logoUrl, logoUrl]);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#11182b] text-[#e6edf3]">
-      <div className="border-b border-white/[0.08] px-4 py-4">
+    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
+      <div className="border-b border-border px-4 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
             <Rocket className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold">{ar ? "النشر" : "Deploy"}</div>
-            <div className="truncate text-[11px] text-[#8b949e]">
+            <div className="truncate text-[11px] text-muted-foreground">
               {ar ? "انقل مشروعك إلى رابط حي" : "Ship your project to a live URL"}
             </div>
           </div>
-          <span className="ms-auto rounded-full border border-white/10 px-2 py-1 text-[10px] text-[#8b949e]">
+          <span className="ms-auto rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground">
             {config?.mode === "vercel" ? "Vercel" : "QIROX Cloud"}
           </span>
         </div>
       </div>
 
       <div className="space-y-4 p-4">
-        <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
+        <div className="rounded-xl border border-border bg-card p-3">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-foreground">
               <ImageIcon className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="text-xs font-semibold">{ar ? "هوية المشروع" : "Project identity"}</div>
-              <div className="text-[10px] text-[#8b949e]">{ar ? "يظهر خارجياً وفي صفحة المشروع المنشورة" : "Shown on external cards and the published project page"}</div>
+              <div className="text-[10px] text-muted-foreground">{ar ? "يظهر خارجياً وفي صفحة المشروع المنشورة" : "Shown on external cards and the published project page"}</div>
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-[#0d1117]">
-              {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain" /> : <span className="text-sm font-bold text-violet-300">{(project?.name || "Q").charAt(0).toUpperCase()}</span>}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
+              {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain" /> : <span className="text-sm font-bold text-foreground">{(project?.name || "Q").charAt(0).toUpperCase()}</span>}
             </div>
             <Input
               value={logoUrl}
               onChange={(event) => setLogoUrl(event.target.value)}
               placeholder="https://example.com/logo.png"
-              className="h-9 border-white/10 bg-[#0d1117] text-xs text-white placeholder:text-[#6e7681]"
+              className="h-9 border-border bg-background text-xs text-foreground placeholder:text-muted-foreground"
               dir="ltr"
               data-testid="input-project-logo-url"
             />
             <Button
-              className="h-9 shrink-0 bg-violet-600 px-3 text-xs text-white hover:bg-violet-500"
+              className="h-9 shrink-0 bg-foreground px-3 text-xs text-background hover:bg-foreground/80"
               onClick={() => logoMutation.mutate()}
               disabled={logoMutation.isPending || !logoUrl.trim()}
               data-testid="button-save-project-logo"
@@ -224,43 +224,43 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
               {logoMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (ar ? "حفظ" : "Save")}
             </Button>
           </div>
-          <p className="mt-2 text-[10px] leading-4 text-[#8b949e]">
+          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
             {ar ? "استخدم رابط صورة HTTPS. لن يتم تغيير شعار QIROX العام، هذا الشعار خاص بهذا المشروع فقط." : "Use an HTTPS image URL. This changes only this project identity, not the global QIROX logo."}
           </p>
         </div>
 
         {!repo ? (
-          <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-4 text-xs leading-5 text-amber-200">
+          <div className="rounded-xl border border-border bg-muted p-4 text-xs leading-5 text-foreground">
             {ar ? "لا يوجد مستودع GitHub مرتبط بهذا الـWorkspace. اربط المستودع أولاً من تبويب Git." : "This workspace has no linked GitHub repository. Connect one from Git first."}
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
-              <div className="mb-2 flex items-center gap-2 text-[11px] text-[#8b949e]">
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <Server className="h-3.5 w-3.5" />
                 {ar ? "مصدر النشر" : "Deployment source"}
               </div>
-              <div className="truncate font-mono text-xs text-[#f0f6fc]" dir="ltr">
+              <div className="truncate font-mono text-xs text-foreground" dir="ltr">
                 {repo.owner}/{repo.repo}
               </div>
-              <div className="mt-1 text-[10px] text-[#8b949e]" dir="ltr">
+              <div className="mt-1 text-[10px] text-muted-foreground" dir="ltr">
                 {project?.githubBranch || "main"}
               </div>
             </div>
 
             {!activeDeployment ? (
-              <div className="rounded-xl border border-dashed border-violet-300/20 bg-[#18233f] p-4">
+              <div className="rounded-xl border border-dashed border-border bg-card p-4">
                 <div className="mb-3 flex items-start gap-3">
-                  <Sparkles className="mt-0.5 h-4 w-4 text-orange-400" />
+                  <Sparkles className="mt-0.5 h-4 w-4 text-foreground" />
                   <div>
                     <div className="text-xs font-semibold">{ar ? "جهّز أول نشر" : "Prepare your first deployment"}</div>
-                    <p className="mt-1 text-[11px] leading-5 text-[#8b949e]">
+                    <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                       {ar ? "سيتم إنشاء مشروع نشر مرتبط بنفس مستودع GitHub، مع رابط QIROX Cloud تلقائياً." : "Create a deployment project linked to this GitHub repository with a QIROX Cloud URL."}
                     </p>
                   </div>
                 </div>
                 <Button
-                  className="h-9 w-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500"
+                  className="h-9 w-full bg-foreground text-xs font-semibold text-background hover:bg-foreground/80"
                   onClick={() => createMutation.mutate()}
                   disabled={createMutation.isPending || projectsLoading}
                   data-testid="button-create-deployment"
@@ -271,16 +271,16 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
               </div>
             ) : (
               <>
-                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
+                <div className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      {status === "live" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <CircleDot className="h-4 w-4 text-orange-400" />}
+                      {status === "live" ? <CheckCircle2 className="h-4 w-4 text-foreground" /> : <CircleDot className="h-4 w-4 text-muted-foreground" />}
                       <span className="text-xs font-semibold">{statusLabel(status, ar)}</span>
                     </div>
-                    <span className="text-[10px] text-[#8b949e]" dir="ltr">{activeDeployment.provider || "simulation"}</span>
+                    <span className="text-[10px] text-muted-foreground" dir="ltr">{activeDeployment.provider || "simulation"}</span>
                   </div>
                   {liveUrl && (
-                    <a href={liveUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-400/10 px-2.5 py-2 text-[11px] text-emerald-300 hover:bg-emerald-400/15" dir="ltr">
+                    <a href={liveUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 rounded-lg bg-muted px-2.5 py-2 text-[11px] text-foreground hover:bg-accent" dir="ltr">
                       <Globe2 className="h-3.5 w-3.5" />
                       <span className="truncate">{liveUrl.replace(/^https?:\/\//, "")}</span>
                       <ExternalLink className="ms-auto h-3 w-3 shrink-0" />
@@ -289,7 +289,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                 </div>
 
                 <Button
-                  className="h-10 w-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500"
+                  className="h-10 w-full bg-foreground text-xs font-semibold text-background hover:bg-foreground/80"
                   onClick={() => deployMutation.mutate()}
                   disabled={deployMutation.isPending || ["building", "deploying"].includes(status)}
                   data-testid="button-deploy-project"
@@ -298,9 +298,9 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                   {status === "live" ? (ar ? "نشر نسخة جديدة" : "Deploy new version") : (ar ? "نشر الآن" : "Deploy now")}
                 </Button>
 
-                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
+                <div className="rounded-xl border border-border bg-card p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                    <Globe2 className="h-4 w-4 text-sky-400" />
+                    <Globe2 className="h-4 w-4 text-foreground" />
                     {ar ? "النطاق الخاص" : "Custom domain"}
                   </div>
                   <div className="flex gap-2">
@@ -308,12 +308,12 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                       value={customDomain || activeDeployment.customDomain || ""}
                       onChange={(event) => setCustomDomain(event.target.value)}
                       placeholder="app.example.com"
-                      className="h-8 border-[#293653] bg-[#0b1020] text-xs text-white placeholder:text-[#6e7681]"
+                      className="h-8 border-border bg-background text-xs text-foreground placeholder:text-muted-foreground"
                       dir="ltr"
                       data-testid="input-custom-domain"
                     />
                     <Button
-                      className="h-8 shrink-0 bg-white/10 px-3 text-xs text-white hover:bg-white/15"
+                      className="h-8 shrink-0 bg-foreground px-3 text-xs text-background hover:bg-foreground/80"
                       onClick={() => domainMutation.mutate()}
                       disabled={!customDomain.trim() || domainMutation.isPending}
                       data-testid="button-save-custom-domain"
@@ -321,24 +321,24 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                       {domainMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (ar ? "ربط" : "Connect")}
                     </Button>
                   </div>
-                  <div className="mt-2 flex items-start gap-2 text-[10px] leading-4 text-[#8b949e]">
-                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                  <div className="mt-2 flex items-start gap-2 text-[10px] leading-4 text-muted-foreground">
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground" />
                     <span>{ar ? `أضف CNAME إلى ${activeDeployment.domain || "رابط QIROX Cloud"} ثم انتظر التحقق.` : `Add a CNAME pointing to ${activeDeployment.domain || "your QIROX Cloud URL"} and wait for verification.`}</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[#293653] bg-[#18233f] p-3">
+                <div className="rounded-xl border border-border bg-card p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">
-                    <TerminalSquare className="h-4 w-4 text-[#8b949e]" />
+                    <TerminalSquare className="h-4 w-4 text-muted-foreground" />
                     {ar ? "آخر عملية نشر" : "Latest deployment"}
                   </div>
                   {latestRun ? (
-                    <div className="space-y-1 text-[10px] text-[#8b949e]">
+                    <div className="space-y-1 text-[10px] text-muted-foreground">
                       <div className="flex justify-between gap-3"><span>{latestRun.commitMsg || "Manual deployment"}</span><span dir="ltr">{latestRun.status}</span></div>
                       <div dir="ltr">{latestRun.commitSha?.slice(0, 10) || "—"}</div>
                     </div>
                   ) : (
-                    <div className="text-[10px] text-[#8b949e]">{ar ? "لا توجد عمليات نشر بعد." : "No deployments yet."}</div>
+                    <div className="text-[10px] text-muted-foreground">{ar ? "لا توجد عمليات نشر بعد." : "No deployments yet."}</div>
                   )}
                 </div>
               </>
@@ -346,12 +346,12 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
           </>
         )}
 
-        <div className="flex items-center justify-between border-t border-white/[0.08] pt-3">
-          <div className="flex items-center gap-2 text-[10px] text-[#8b949e]">
-            <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+        <div className="flex items-center justify-between border-t border-border pt-3">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <Wifi className="h-3.5 w-3.5 text-foreground" />
             {ar ? "بيئة النشر متاحة" : "Deployment environment available"}
           </div>
-          <Button variant="ghost" className="h-7 px-2 text-[10px] text-[#8b949e] hover:bg-white/10 hover:text-white" onClick={onDownload} data-testid="button-download-deployment-zip">
+          <Button variant="ghost" className="h-7 px-2 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground" onClick={onDownload} data-testid="button-download-deployment-zip">
             {ar ? "تنزيل ZIP" : "Download ZIP"}
           </Button>
         </div>

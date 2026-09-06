@@ -134,34 +134,34 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
   };
 
   return (
-    <div className="flex h-full flex-col gap-3 bg-[#11182b] p-4 text-[#e6edf3]">
+    <div className="flex h-full flex-col gap-3 bg-background p-4 text-foreground">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
           <KeyRound className="h-4 w-4" />
         </div>
         <div>
           <div className="text-sm font-semibold">{ar ? "أسرار المشروع" : "Project secrets"}</div>
-          <div className="text-[10px] text-[#8b949e]">{ar ? "قيم خاصة لا تظهر في الكود أو السجلات" : "Private values kept outside your source code"}</div>
+          <div className="text-[10px] text-muted-foreground">{ar ? "قيم خاصة لا تظهر في الكود أو السجلات" : "Private values kept outside your source code"}</div>
         </div>
       </div>
 
-      <div className="flex items-start gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/10 px-3 py-2 text-[10px] leading-4 text-emerald-200">
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-[10px] leading-4 text-foreground">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>{ar ? "يتم حقن الأسرار عند التشغيل فقط ولا تُحفظ داخل ملفات المشروع." : "Secrets are injected at runtime and are never written into project files."}</span>
       </div>
 
-      <div className="rounded-lg border border-violet-400/15 bg-violet-400/[0.06] p-3">
+      <div className="rounded-lg border border-border bg-muted/50 p-3">
         <div className="flex items-start gap-2">
-          <ScanSearch className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+          <ScanSearch className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-[#f0f6fc]">{ar ? "اكتشاف تجهيزات المشروع" : "Detect project requirements"}</div>
-            <p className="mt-1 text-[10px] leading-4 text-[#8b949e]">
+            <div className="text-xs font-semibold text-foreground">{ar ? "اكتشاف تجهيزات المشروع" : "Detect project requirements"}</div>
+            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
               {ar ? "يفحص أسماء المتغيرات فقط من الكود والإعدادات، بدون قراءة قيم الأسرار." : "Scan variable names from code and config without reading secret values."}
             </p>
           </div>
           <Button
             variant="ghost"
-            className="h-7 shrink-0 px-2 text-[10px] text-violet-200 hover:bg-violet-400/10 hover:text-white"
+            className="h-7 shrink-0 px-2 text-[10px] text-foreground hover:bg-accent"
             onClick={() => { setShowSuggestions(true); inspectProject(); }}
             disabled={isInspecting}
             data-testid="button-scan-project-secrets"
@@ -173,18 +173,18 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
         {showSuggestions && (
           <div className="mt-3 space-y-1.5 border-t border-white/[0.07] pt-3">
             {!inspection && isInspecting ? (
-              <div className="flex items-center gap-2 text-[10px] text-[#8b949e]"><Loader2 className="h-3 w-3 animate-spin" />{ar ? "يتم فحص المشروع..." : "Inspecting project..."}</div>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{ar ? "يتم فحص المشروع..." : "Inspecting project..."}</div>
             ) : inspection?.suggestions?.length ? (
               inspection.suggestions.map((suggestion) => (
-                <div key={suggestion.key} className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-[#0d1117]/70 px-2 py-1.5">
-                  {suggestion.canGenerate ? <WandSparkles className="h-3 w-3 text-violet-300" /> : suggestion.type === "external" ? <LockKeyhole className="h-3 w-3 text-amber-300" /> : <KeyRound className="h-3 w-3 text-[#8b949e]" />}
-                  <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-[#c9d1d9]" dir="ltr">{suggestion.key}</span>
+                <div key={suggestion.key} className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
+                  {suggestion.canGenerate ? <WandSparkles className="h-3 w-3 text-foreground" /> : suggestion.type === "external" ? <LockKeyhole className="h-3 w-3 text-muted-foreground" /> : <KeyRound className="h-3 w-3 text-muted-foreground" />}
+                  <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-foreground" dir="ltr">{suggestion.key}</span>
                   {suggestion.existing ? (
-                    <span className="text-[9px] text-emerald-300">{ar ? "مضاف" : "Added"}</span>
+                    <span className="text-[9px] text-foreground">{ar ? "مضاف" : "Added"}</span>
                   ) : suggestion.canGenerate ? (
                     <Button
                       variant="ghost"
-                      className="h-6 px-1.5 text-[9px] text-violet-200 hover:bg-violet-400/10"
+                      className="h-6 px-1.5 text-[9px] text-foreground hover:bg-accent"
                       onClick={() => generateMutation.mutate(suggestion.key)}
                       disabled={generateMutation.isPending}
                       data-testid={`button-generate-secret-${suggestion.key}`}
@@ -194,19 +194,19 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                   ) : suggestion.type === "external" ? (
                     <Button
                       variant="ghost"
-                      className="h-6 px-1.5 text-[9px] text-amber-200 hover:bg-amber-400/10"
+                      className="h-6 px-1.5 text-[9px] text-foreground hover:bg-accent"
                       onClick={() => addDetectedKey(suggestion.key)}
                       data-testid={`button-add-detected-secret-${suggestion.key}`}
                     >
                       {ar ? "إضافة" : "Add"}
                     </Button>
                   ) : (
-                    <span className="text-[9px] text-[#8b949e]">{ar ? "إعداد" : "Config"}</span>
+                    <span className="text-[9px] text-muted-foreground">{ar ? "إعداد" : "Config"}</span>
                   )}
                 </div>
               ))
             ) : (
-              <div className="text-[10px] text-[#8b949e]">{ar ? "لم يتم العثور على متغيرات مطلوبة." : "No environment references found."}</div>
+              <div className="text-[10px] text-muted-foreground">{ar ? "لم يتم العثور على متغيرات مطلوبة." : "No environment references found."}</div>
             )}
           </div>
         )}
@@ -217,20 +217,20 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
           placeholder={ar ? "المفتاح" : "KEY"}
           value={newKey}
           onChange={(e) => setNewKey(e.target.value.toUpperCase())}
-          className="h-8 border-[#293653] bg-[#0b1020] text-xs font-mono text-white placeholder:text-[#6e7681]"
+          className="h-8 border-border bg-background text-xs font-mono text-foreground placeholder:text-muted-foreground"
           data-testid="input-env-key"
         />
         <Input
           placeholder={ar ? "القيمة" : "VALUE"}
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          className="h-8 border-[#293653] bg-[#0b1020] text-xs text-white placeholder:text-[#6e7681]"
+          className="h-8 border-border bg-background text-xs text-foreground placeholder:text-muted-foreground"
           type="password"
           data-testid="input-env-value"
         />
         <Button
           size="sm"
-           className="h-8 bg-violet-600 px-3 text-white hover:bg-violet-500"
+           className="h-8 bg-foreground px-3 text-background hover:bg-foreground/80"
           onClick={() => addMutation.mutate()}
           disabled={!newKey.trim() || addMutation.isPending}
           data-testid="button-add-env"
@@ -252,7 +252,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
           envVars.map((v) => (
             <div
               key={v.id}
-              className="flex items-center gap-2 rounded-lg border border-[#293653] bg-[#18233f] px-2.5 py-2 text-xs"
+              className="flex items-center gap-2 rounded-lg border border-border bg-muted px-2.5 py-2 text-xs"
               data-testid={`env-var-${v.key}`}
             >
               <span className="font-mono font-medium min-w-0 truncate flex-shrink-0">{v.key}</span>
@@ -262,7 +262,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                   <Input
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                     className="h-7 min-w-0 flex-1 border-[#293653] bg-[#0b1020] text-xs font-mono text-white"
+                     className="h-7 min-w-0 flex-1 border-border bg-background text-xs font-mono text-foreground"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveEdit(v.key);
@@ -271,7 +271,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     data-testid={`input-edit-env-${v.key}`}
                   />
                   <button
-                     className="rounded p-0.5 text-emerald-400 hover:bg-[#21262d]"
+                     className="rounded p-0.5 text-foreground hover:bg-accent"
                     onClick={() => saveEdit(v.key)}
                     disabled={updateMutation.isPending}
                     data-testid={`button-save-env-${v.key}`}
@@ -279,7 +279,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     <Check className="w-3 h-3" />
                   </button>
                   <button
-                     className="rounded p-0.5 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+                     className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={cancelEdit}
                     data-testid={`button-cancel-env-${v.key}`}
                   >
@@ -292,7 +292,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     {visibleKeys.has(v.key) ? v.value : "••••••••"}
                   </span>
                   <button
-                     className="rounded p-0.5 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+                     className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => startEdit(v)}
                     data-testid={`button-edit-env-${v.key}`}
                   >
@@ -302,7 +302,7 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                     {visibleKeys.has(v.key) ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                   </button>
                   <button
-                     className="rounded p-0.5 text-red-300 hover:bg-[#21262d]"
+                     className="rounded p-0.5 text-muted-foreground hover:bg-accent"
                     onClick={() => {
                       if (confirm(ar ? `حذف ${v.key}؟` : `Delete ${v.key}?`)) deleteMutation.mutate(v.key);
                     }}

@@ -647,7 +647,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
 
         <ResizeHandle direction="horizontal" onMouseDown={leftPanel.onMouseDown} />
 
-        <div className="flex min-w-0 flex-1 flex-col bg-[#0d1117]">
+        <div className="flex min-w-0 flex-1 flex-col bg-background">
           <div className="flex-1 flex min-h-0">
             <div className={`flex-1 min-w-0 ${showPreview ? "w-1/2" : ""}`}>
               <CodeEditor
@@ -661,16 +661,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
             </div>
 
             {showPreview && (
-                <div className="flex w-1/2 flex-col border-s border-[#30363d] bg-white">
-                <div className="flex items-center gap-2 border-b border-[#30363d] bg-[#161b22] px-3 py-2">
-                  <Eye className="h-3.5 w-3.5 text-[#8b949e]" />
-                  <span className="flex-1 truncate font-mono text-[10px] text-[#8b949e]">
+                <div className="flex w-1/2 flex-col border-s border-border bg-background">
+                <div className="flex items-center gap-2 border-b border-border bg-card px-3 py-2">
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground">
                     /sandbox/{projectId}/preview/
                   </span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+                    className="h-6 w-6 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => {
                       const iframe = document.getElementById("sandbox-preview") as HTMLIFrameElement;
                       if (iframe) iframe.src = iframe.src;
@@ -682,7 +682,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+                    className="h-6 w-6 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => window.open(`/sandbox/${projectId}/preview/`, "_blank")}
                     data-testid="button-external-preview"
                   >
@@ -697,7 +697,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                     title="Preview"
                   />
                 ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-[#f6f8fa] text-[#57606a]">
+                    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-muted text-muted-foreground">
                       <Eye className="h-8 w-8 opacity-30" />
                     <p className="text-sm">{ar ? "المشروع غير مشغّل" : "Project is not running"}</p>
                     <Button
@@ -718,16 +718,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           {logsOpen && (
             <>
               <ResizeHandle direction="vertical" onMouseDown={logsPanel.onMouseDown} />
-              <div style={{ height: logsPanel.size }} className="flex flex-col border-t border-[#30363d] bg-[#0d1117]">
-                <div className="flex items-center justify-between border-b border-[#30363d] bg-[#161b22] px-3 py-2">
-                  <span className="flex items-center gap-2 text-[11px] font-semibold text-[#c9d1d9]">
-                    <TerminalSquare className="h-3.5 w-3.5 text-orange-400" />
+              <div style={{ height: logsPanel.size }} className="flex flex-col border-t border-border bg-background">
+                <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
+                  <span className="flex items-center gap-2 text-[11px] font-semibold text-foreground">
+                    <TerminalSquare className="h-3.5 w-3.5 text-foreground" />
                     {ar ? "Terminal" : "Terminal"}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-[10px] text-[#8b949e] hover:bg-[#21262d] hover:text-white"
+                    className="h-6 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => setLogs([])}
                     data-testid="button-clear-logs"
                   >
@@ -735,18 +735,18 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   </Button>
                 </div>
                <form
-                 className="flex items-center gap-2 border-b border-[#30363d] bg-[#0d1117] px-3 py-2"
+                 className="flex items-center gap-2 border-b border-border bg-background px-3 py-2"
                  onSubmit={(event) => {
                    event.preventDefault();
                    if (shellCommand.trim() && !shellMutation.isPending) shellMutation.mutate(shellCommand.trim());
                  }}
                >
-                 <span className="font-mono text-xs text-green-500">$</span>
+                  <span className="font-mono text-xs text-foreground">$</span>
                    <Input
                    value={shellCommand}
                    onChange={(event) => setShellCommand(event.target.value)}
                    placeholder={ar ? "أمر آمن مثل npm install أو git status" : "Safe command, e.g. npm install or git status"}
-                     className="h-8 flex-1 border-[#30363d] bg-[#161b22] font-mono text-xs text-[#f0f6fc] placeholder:text-[#6e7681]"
+                      className="h-8 flex-1 border-border bg-card font-mono text-xs text-foreground placeholder:text-muted-foreground"
                    dir="ltr"
                    disabled={shellMutation.isPending}
                    data-testid="input-sandbox-shell-command"
@@ -754,21 +754,21 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                  <Button
                    type="submit"
                    size="sm"
-                     className="h-8 bg-orange-500 px-3 text-xs text-black hover:bg-orange-400"
+                      className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/80"
                    disabled={!shellCommand.trim() || shellMutation.isPending}
                    data-testid="button-run-sandbox-shell-command"
                  >
                    {shellMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                  </Button>
                </form>
-                 <div className="flex-1 overflow-y-auto bg-[#0d1117] p-3 font-mono text-xs text-[#7ee787]">
+                  <div className="flex-1 overflow-y-auto bg-background p-3 font-mono text-xs text-foreground">
                   {logs.length === 0 ? (
-                    <span className="text-[#6e7681]">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
+                    <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
                   ) : (
                     logs.map((log, i) => (
                       <div
                         key={i}
-                        className={log.stream === "stderr" ? "text-red-400" : "text-green-400"}
+                         className="text-foreground"
                       >
                         {log.text}
                       </div>
@@ -784,22 +784,22 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         {rightPanelOpen && (
           <>
             <ResizeHandle direction="horizontal" onMouseDown={rightPanel.onMouseDown} />
-            <div style={{ width: rightPanel.size }} className="flex flex-shrink-0 flex-col border-s border-[#30363d] bg-[#101318]">
+            <div style={{ width: rightPanel.size }} className="flex flex-shrink-0 flex-col border-s border-border bg-background">
               <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex flex-col h-full">
-                <TabsList className="h-10 w-full rounded-none border-b border-[#30363d] bg-[#161b22] p-0">
-                  <TabsTrigger value="ai" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-ai">
+                <TabsList className="h-10 w-full rounded-none border-b border-border bg-card p-0">
+                  <TabsTrigger value="ai" className="h-10 flex-1 rounded-none text-[10px] text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-foreground" data-testid="tab-trigger-ai">
                     <Sparkles className="me-1 h-3.5 w-3.5" />
                     AI
                   </TabsTrigger>
-                  <TabsTrigger value="env" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-env">
+                  <TabsTrigger value="env" className="h-10 flex-1 rounded-none text-[10px] text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-foreground" data-testid="tab-trigger-env">
                     <KeyRound className="me-1 h-3.5 w-3.5" />
                     {ar ? "أسرار" : "Secrets"}
                   </TabsTrigger>
-                  <TabsTrigger value="github" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-github">
+                  <TabsTrigger value="github" className="h-10 flex-1 rounded-none text-[10px] text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-foreground" data-testid="tab-trigger-github">
                     <SiGithub className="me-1 h-3.5 w-3.5" />
                     Git
                   </TabsTrigger>
-                  <TabsTrigger value="deploy" className="h-10 flex-1 rounded-none text-[10px] text-[#8b949e] data-[state=active]:bg-[#21262d] data-[state=active]:text-white" data-testid="tab-trigger-deploy">
+                  <TabsTrigger value="deploy" className="h-10 flex-1 rounded-none text-[10px] text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-foreground" data-testid="tab-trigger-deploy">
                     <Rocket className="me-1 h-3.5 w-3.5" />
                     {ar ? "نشر" : "Deploy"}
                   </TabsTrigger>
@@ -826,9 +826,9 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           </>
         )}
 
-        <div className="pointer-events-none absolute bottom-0 start-12 end-0 z-10 flex h-6 items-center justify-between border-t border-[#30363d] bg-[#161b22] px-3 text-[10px] text-[#8b949e]">
+        <div className="pointer-events-none absolute bottom-0 start-12 end-0 z-10 flex h-6 items-center justify-between border-t border-border bg-card px-3 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="flex items-center gap-1.5 text-foreground">
               <Check className="h-3 w-3" />
               {ar ? "تم الحفظ تلقائياً" : "Auto-saved"}
             </span>
@@ -848,17 +848,17 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           onMouseDown={() => setCommandPaletteOpen(false)}
         >
           <div
-            className="w-full max-w-xl overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl"
+            className="w-full max-w-xl overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
             onMouseDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label={ar ? "أوامر المشروع" : "Workspace commands"}
           >
-            <div className="flex items-center gap-3 border-b border-[#30363d] px-4 py-3">
-              <Command className="h-4 w-4 text-orange-400" />
+            <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+              <Command className="h-4 w-4 text-foreground" />
               <input
                 autoFocus
-                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6e7681]"
+                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 placeholder={ar ? "ابحث عن ملف أو إجراء..." : "Search files or actions..."}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 onKeyDown={(event) => {
@@ -866,7 +866,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                 }}
                 data-testid="input-command-palette"
               />
-              <kbd className="rounded border border-[#30363d] px-1.5 py-0.5 text-[10px] text-[#8b949e]">ESC</kbd>
+              <kbd className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">ESC</kbd>
             </div>
             <div className="space-y-1 p-2">
               {[
@@ -881,12 +881,12 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <button
                     type="button"
                     key={item.label}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-xs text-[#c9d1d9] transition hover:bg-[#21262d] hover:text-white"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-xs text-foreground transition hover:bg-accent"
                     onClick={item.action}
                   >
-                    <Icon className="h-4 w-4 text-[#8b949e]" />
+                    <Icon className="h-4 w-4 text-muted-foreground" />
                     <span className="flex-1">{item.label}</span>
-                    <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-[#6e7681]" />
+                    <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-muted-foreground" />
                   </button>
                 );
               })}
