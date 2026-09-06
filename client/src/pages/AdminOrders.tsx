@@ -177,6 +177,13 @@ export default function AdminOrders() {
     dueDate: "",
     notes: "",
   });
+  const [addonForm, setAddonForm] = useState({
+    addonId: "",
+    amount: "",
+    paymentStatus: "paid",
+    dueDate: "",
+    quotaTotal: "",
+  });
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -201,6 +208,26 @@ export default function AdminOrders() {
     queryFn: async () => {
       const res = await fetch(`/api/admin/orders/${selectedOrder!.id}/project`, { credentials: "include" });
       if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  const { data: projectAddonSubscriptions = [] } = useQuery<any[]>({
+    queryKey: ['/api/projects', orderProject?.id, 'addon-subscriptions'],
+    enabled: !!orderProject?.id,
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${orderProject!.id}/addon-subscriptions`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const { data: extraAddons = [] } = useQuery<any[]>({
+    queryKey: ["/api/extra-addons"],
+    enabled: !!selectedOrder?.id,
+    queryFn: async () => {
+      const res = await fetch("/api/extra-addons", { credentials: "include" });
+      if (!res.ok) return [];
       return res.json();
     },
   });
@@ -424,6 +451,49 @@ export default function AdminOrders() {
     },
     onError: (error: any) => toast({
       title: error?.message || (L ? "تعذر تحديث الاشتراك" : "Unable to update subscription"),
+      variant: "destructive",
+    }),
+  });
+
+  const addProjectAddonMutation = useMutation({
+    mutationFn: async ({ projectId, data }: { projectId: string; data: Record<string, any> }) => {
+      const operationId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+      const res = await apiRequest("POST", `/api/projects/${projectId}/addon-subscriptions`, { ...data, operationId });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر إضافة اشتراك الإضافة" : "Unable to add addon subscription"));
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', orderProject?.id, 'addon-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      setAddonForm({ addonId: "", amount: "", paymentStatus: "paid", dueDate: "", quotaTotal: "" });
+      toast({ title: L ? "تمت إضافة الإضافة وإصدار الفاتورة" : "Addon added and invoice issued" });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر إضافة اشتراك الإضافة" : "Unable to add addon subscription"),
+      variant: "destructive",
+    }),
+  });
+
+  const renewProjectAddonMutation = useMutation({
+    mutationFn: async ({ projectId, subId, data }: { projectId: string; subId: string; data?: Record<string, any> }) => {
+      const operationId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+      const res = await apiRequest("POST", `/api/admin/projects/${projectId}/addon-subscriptions/${subId}/renew`, { ...(data || {}), operationId });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || (L ? "تعذر تجديد اشتراك الإضافة" : "Unable to renew addon subscription"));
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', orderProject?.id, 'addon-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: L ? "تم تجديد الإضافة وإضافة الفاتورة" : "Addon renewed and invoice added" });
+    },
+    onError: (error: any) => toast({
+      title: error?.message || (L ? "تعذر تجديد اشتراك الإضافة" : "Unable to renew addon subscription"),
       variant: "destructive",
     }),
   });
@@ -1584,6 +1654,157 @@ export default function AdminOrders() {
                                   adjustmentPending={adjustingProjectId === projectId}
                                   onAdjust={(days) => adjustProjectSubscriptionMutation.mutate({ projectId, days })}
                                 />
+                              </div>
+
+                              <div className="rounded-2xl border border-black/[0.08] bg-white dark:bg-gray-900 p-4 space-y-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-bold text-black dark:text-white">{L ? "إضافات المشروع واشتراكاتها" : "Project add-ons & subscriptions"}</p>
+                                    <p className="text-[10px] text-black/40 dark:text-white/40 mt-1">
+                                      {L ? "كل إضافة لها اشتراك مستقل، مثل إضافة شهرية أو سنوية، وفاتورة منفصلة." : "Each add-on has its own term, such as monthly or annual, with a separate invoice."}
+                                    </p>
+                                  </div>
+                                  <Package className="w-4 h-4 text-black/30 dark:text-white/30" />
+                                </div>
+
+                                {extraAddons.length > 0 && (
+                                  <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02] p-3 space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "الإضافة" : "Add-on"}</Label>
+                                        <select
+                                          value={addonForm.addonId}
+                                          onChange={(event) => {
+                                            const addon = extraAddons.find((item: any) => String(item.id || item._id) === event.target.value);
+                                            setAddonForm(current => ({
+                                              ...current,
+                                              addonId: event.target.value,
+                                              amount: addon ? String(addon.price || 0) : current.amount,
+                                            }));
+                                          }}
+                                          className="mt-1 h-9 w-full rounded-xl border border-black/[0.1] bg-white px-2 text-xs dark:border-white/[0.1] dark:bg-gray-900 dark:text-white"
+                                          data-testid="select-project-addon"
+                                        >
+                                          <option value="">{L ? "اختر الإضافة" : "Select an add-on"}</option>
+                                          {extraAddons.filter((item: any) => item.isActive !== false).map((addon: any) => (
+                                            <option key={addon.id || addon._id} value={addon.id || addon._id}>
+                                              {L ? (addon.nameAr || addon.name) : (addon.name || addon.nameAr)} — {addon.billingType === "monthly" ? (L ? "شهري" : "Monthly") : addon.billingType === "annual" ? (L ? "سنوي" : "Annual") : addon.billingType === "lifetime" ? (L ? "مدى الحياة" : "Lifetime") : (L ? "مرة واحدة" : "One-time")}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "المبلغ (ريال)" : "Amount (SAR)"}</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          value={addonForm.amount}
+                                          onChange={(event) => setAddonForm(current => ({ ...current, amount: event.target.value }))}
+                                          className="mt-1 h-9 text-xs"
+                                          data-testid="input-project-addon-amount"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "حالة الفاتورة" : "Invoice status"}</Label>
+                                        <select
+                                          value={addonForm.paymentStatus}
+                                          onChange={(event) => setAddonForm(current => ({ ...current, paymentStatus: event.target.value }))}
+                                          className="mt-1 h-9 w-full rounded-xl border border-black/[0.1] bg-white px-2 text-xs dark:border-white/[0.1] dark:bg-gray-900 dark:text-white"
+                                          data-testid="select-project-addon-payment-status"
+                                        >
+                                          <option value="paid">{L ? "مدفوعة — تدخل في الإيرادات" : "Paid — add to revenue"}</option>
+                                          <option value="unpaid">{L ? "غير مدفوعة — مستحق" : "Unpaid — receivable"}</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-black/50 dark:text-white/50">{L ? "الحصة (اختياري)" : "Quota (optional)"}</Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          placeholder={L ? "تلقائياً من الإضافة" : "Use add-on default"}
+                                          value={addonForm.quotaTotal}
+                                          onChange={(event) => setAddonForm(current => ({ ...current, quotaTotal: event.target.value }))}
+                                          className="mt-1 h-9 text-xs"
+                                          data-testid="input-project-addon-quota"
+                                        />
+                                      </div>
+                                    </div>
+                                    {addonForm.paymentStatus === "unpaid" && (
+                                      <Input
+                                        type="date"
+                                        value={addonForm.dueDate}
+                                        onChange={(event) => setAddonForm(current => ({ ...current, dueDate: event.target.value }))}
+                                        className="h-9 text-xs"
+                                        data-testid="input-project-addon-due-date"
+                                      />
+                                    )}
+                                    <Button
+                                      type="button"
+                                      onClick={() => addProjectAddonMutation.mutate({
+                                        projectId,
+                                        data: {
+                                          addonId: addonForm.addonId,
+                                          amount: Number(addonForm.amount || 0),
+                                          paymentStatus: addonForm.paymentStatus,
+                                          dueDate: addonForm.dueDate || undefined,
+                                          quotaTotal: addonForm.quotaTotal === "" ? undefined : Number(addonForm.quotaTotal),
+                                        },
+                                      })}
+                                      disabled={!addonForm.addonId || addProjectAddonMutation.isPending}
+                                      className="h-9 w-full rounded-xl bg-black text-white hover:bg-black/80 text-xs font-bold gap-1.5"
+                                      data-testid="button-add-project-addon"
+                                    >
+                                      {addProjectAddonMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                                      {L ? "إضافة الاشتراك وإصدار الفاتورة" : "Add subscription & issue invoice"}
+                                    </Button>
+                                  </div>
+                                )}
+
+                                {projectAddonSubscriptions.length === 0 ? (
+                                  <p className="text-xs text-black/35 dark:text-white/35">
+                                    {L ? "لا توجد إضافات مفعلة لهذا المشروع." : "No add-on subscriptions are active for this project."}
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {projectAddonSubscriptions.map((addonSubscription: any) => {
+                                      const addonId = addonSubscription.id || addonSubscription._id;
+                                      const addonName = addonSubscription.addonNameAr || addonSubscription.addonId?.nameAr || addonSubscription.addonId?.name || "—";
+                                      const isExpired = addonSubscription.status === "expired" || (addonSubscription.expiresAt && new Date(addonSubscription.expiresAt).getTime() <= Date.now());
+                                      return (
+                                        <div key={addonId} className="flex items-center gap-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06] px-3 py-2.5">
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-black dark:text-white truncate">{addonName}</p>
+                                            <p className="text-[10px] text-black/40 dark:text-white/40">
+                                              {addonSubscription.billingType === "monthly" ? (L ? "شهري" : "Monthly") : addonSubscription.billingType === "annual" ? (L ? "سنوي" : "Annual") : addonSubscription.billingType === "lifetime" ? (L ? "مدى الحياة" : "Lifetime") : (L ? "مرة واحدة" : "One-time")}
+                                              {" · "}
+                                              {addonSubscription.expiresAt ? new Date(addonSubscription.expiresAt).toLocaleDateString(L ? "ar-SA" : "en-US") : (L ? "بدون انتهاء" : "No expiry")}
+                                            </p>
+                                          </div>
+                                          <span className={`text-[10px] font-bold ${isExpired ? "text-black/40" : "text-black dark:text-white"}`}>
+                                            {isExpired ? (L ? "منتهي" : "Expired") : (L ? "نشط" : "Active")}
+                                          </span>
+                                          {(isExpired || addonSubscription.status === "exhausted") && (
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              onClick={() => renewProjectAddonMutation.mutate({ projectId, subId: addonId })}
+                                              disabled={renewProjectAddonMutation.isPending}
+                                              className="h-8 rounded-lg bg-black text-white hover:bg-black/80 text-[10px] font-bold"
+                                              data-testid={`button-renew-project-addon-${addonId}`}
+                                            >
+                                              {renewProjectAddonMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                              {L ? "تجديد" : "Renew"}
+                                            </Button>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                <p className="text-[10px] text-black/35 dark:text-white/35">
+                                  {L ? "الإضافة الشهرية تنتهي بعد 30 يوماً من تاريخ التفعيل، والتجديد يصدر فاتورة جديدة." : "Monthly add-ons expire after 30 days, and renewal issues a new invoice."}
+                                </p>
                               </div>
                             </div>
                           );

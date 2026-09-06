@@ -158,15 +158,38 @@ const projectAddonSubscriptionSchema = new mongoose.Schema({
   clientId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   addonId:      { type: mongoose.Schema.Types.ObjectId, ref: "ExtraAddon", required: true },
   addonNameAr:  { type: String, default: "" },
+  price:        { type: Number, default: 0 },
   billingType:  { type: String, default: "one_time" },
   status:       { type: String, enum: ["active","expired","exhausted","cancelled"], default: "active" },
   quotaTotal:   { type: Number, default: 0 },
   quotaUsed:    { type: Number, default: 0 },
   expiresAt:    { type: Date, default: null },
   startedAt:    { type: Date, default: Date.now },
+  lastActionId: { type: String, default: null, index: true },
   lastNotifiedAt: { type: Date, default: null },
   renewalRequestedAt: { type: Date, default: null },
 }, { timestamps: true });
+projectAddonSubscriptionSchema.index(
+  { lastActionId: 1 },
+  { unique: true, sparse: true, name: "unique_project_addon_subscription_action" },
+);
 projectAddonSubscriptionSchema.set('toJSON', { transform });
 projectAddonSubscriptionSchema.set('toObject', { transform });
 export const ProjectAddonSubscriptionModel = mongoose.models.ProjectAddonSubscription || mongoose.model("ProjectAddonSubscription", projectAddonSubscriptionSchema);
+
+export async function ensureProjectAddonSubscriptionActionIndex(): Promise<void> {
+  const duplicates = await ProjectAddonSubscriptionModel.aggregate([
+    { $match: { lastActionId: { $type: "string" } } },
+    { $group: { _id: "$lastActionId", count: { $sum: 1 } } },
+    { $match: { count: { $gt: 1 } } },
+    { $limit: 1 },
+  ]);
+  if (duplicates.length) {
+    throw new Error(`تعذر تفعيل منع تكرار إضافات المشاريع: العملية ${duplicates[0]._id} مكررة`);
+  }
+
+  await ProjectAddonSubscriptionModel.collection.createIndex(
+    { lastActionId: 1 },
+    { unique: true, sparse: true, name: "unique_project_addon_subscription_action" },
+  );
+}

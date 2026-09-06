@@ -216,6 +216,18 @@ function validSubscriptionDate(value: Date | null) {
   return !!value && !Number.isNaN(value.getTime());
 }
 
+function getAddonSubscriptionDates(billingType: unknown, startedAt: Date, explicitExpiry?: unknown) {
+  const type = String(billingType || "one_time");
+  if (explicitExpiry !== undefined && explicitExpiry !== null && explicitExpiry !== "") {
+    const expiresAt = new Date(String(explicitExpiry));
+    if (!validSubscriptionDate(expiresAt)) return null;
+    return { startedAt, expiresAt };
+  }
+  if (type === "monthly") return { startedAt, expiresAt: new Date(startedAt.getTime() + 30 * 86400000) };
+  if (type === "annual") return { startedAt, expiresAt: new Date(startedAt.getTime() + 365 * 86400000) };
+  return { startedAt, expiresAt: null };
+}
+
 async function createProjectSubscriptionInvoice({
   actionId,
   project,
@@ -17258,22 +17270,148 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   app.post("/api/projects/:projectId/addon-subscriptions", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const { ProjectAddonSubscriptionModel, ExtraAddonModel, ProjectModel, NotificationModel } = await import("./models");
+      const { ProjectAddonSubscriptionModel, ExtraAddonModel, ProjectModel, OrderModel, UserModel, NotificationModel } = await import("./models");
       const { pushToUser } = await import("./ws");
       const project = await (ProjectModel as any).findById(req.params.projectId);
       if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
-      const { addonId, quotaTotal, expiresAt } = req.body;
+      const { addonId, quotaTotal, expiresAt, startDate, amount, paymentStatus, dueDate, notes } = req.body;
       const addon = await ExtraAddonModel.findById(addonId);
       if (!addon) return res.status(404).json({ error: "الإضافة غير موجودة" });
+      const operationId = String(req.body?.operationId || crypto.randomUUID()).slice(0, 120);
+      const actionId = `addon-${operationId}`;
+      const existing = await (ProjectAddonSubscriptionModel as any).findOne({ lastActionId: actionId });
+      if (existing) {
+        const { InvoiceModel } = await import("./models");
+        const invoice = await InvoiceModel.findOne({ subscriptionActionId: actionId }).lean();
+        return res.json({ subscription: existing, invoice, alreadyProcessed: true });
+      }
+
+      const startedAt = startDate ? new Date(String(startDate)) : new Date();
+      if (!validSubscriptionDate(startedAt)) return res.status(400).json({ error: "تاريخ بداية الإضافة غير صالح" });
+      const dates = getAddonSubscriptionDates(addon.billingType, startedAt, expiresAt);
+      if (!dates) return res.status(400).json({ error: "تاريخ انتهاء الإضافة غير صالح" });
+      const invoiceAmount = amount === undefined || amount === null || amount === ""
+        ? Number(addon.price || 0)
+        : Number(amount);
+      if (!Number.isFinite(invoiceAmount) || invoiceAmount < 0 || invoiceAmount > 100000000) {
+        return res.status(400).json({ error: "قيمة الإضافة غير صالحة" });
+      }
+
+      const [order, client] = await Promise.all([
+        project.orderId ? (OrderModel as any).findById(project.orderId).lean() : null,
+        (UserModel as any).findById(project.clientId).lean(),
+      ]);
       const sub = await (ProjectAddonSubscriptionModel as any).create({
-        projectId: req.params.projectId, clientId: project.clientId,
-        addonId, addonNameAr: addon.nameAr, billingType: addon.billingType,
-        quotaTotal: quotaTotal || addon.quotaCount || 0,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        projectId: req.params.projectId,
+        orderId: project.orderId || undefined,
+        clientId: project.clientId,
+        addonId,
+        addonNameAr: addon.nameAr,
+        price: invoiceAmount,
+        billingType: addon.billingType,
+        quotaTotal: quotaTotal === undefined ? (addon.quotaCount || 0) : Number(quotaTotal || 0),
+        expiresAt: dates.expiresAt,
+        startedAt: dates.startedAt,
+        lastActionId: actionId,
+      });
+      const invoice = await createProjectSubscriptionInvoice({
+        actionId,
+        project,
+        order,
+        client,
+        actorId: String((req.user as any)._id || (req.user as any).id),
+        amount: invoiceAmount,
+        paymentStatus: paymentStatus === "unpaid" ? "unpaid" : "paid",
+        dueDate,
+        title: `إضافة مشروع — ${addon.nameAr}`,
+        notes,
       });
       await NotificationModel.create({ userId: project.clientId, type: "feature", title: `تم تفعيل: ${addon.nameAr}`, body: "تم إضافة خدمة جديدة لمشروعك", link: `/projects/${req.params.projectId}` }).catch(() => {});
       pushToUser(String(project.clientId), { type: "notification", title: "خدمة جديدة", body: addon.nameAr });
-      res.status(201).json(sub);
+      res.status(201).json({ subscription: sub, invoice });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/projects/:projectId/addon-subscriptions/:subId/renew", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectAddonSubscriptionModel, ExtraAddonModel, ProjectModel, OrderModel, UserModel } = await import("./models");
+      const subscription = await (ProjectAddonSubscriptionModel as any).findOne({
+        _id: req.params.subId,
+        projectId: req.params.projectId,
+      });
+      if (!subscription) return res.status(404).json({ error: "اشتراك الإضافة غير موجود" });
+
+      const operationId = String(req.body?.operationId || crypto.randomUUID()).slice(0, 120);
+      const actionId = `addon-${operationId}`;
+      if (subscription.lastActionId === actionId) {
+        const { InvoiceModel } = await import("./models");
+        const invoice = await InvoiceModel.findOne({ subscriptionActionId: actionId }).lean();
+        return res.json({ subscription, invoice, alreadyProcessed: true });
+      }
+
+      const project = await (ProjectModel as any).findById(req.params.projectId).lean();
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const [addon, order, client] = await Promise.all([
+        (ExtraAddonModel as any).findById(subscription.addonId).lean(),
+        project.orderId ? (OrderModel as any).findById(project.orderId).lean() : null,
+        (UserModel as any).findById(subscription.clientId).lean(),
+      ]);
+      const billingType = req.body?.billingType || subscription.billingType || addon?.billingType || "one_time";
+      const now = new Date();
+      const currentExpiry = subscription.expiresAt ? new Date(subscription.expiresAt) : null;
+      const startedAt = req.body?.startDate
+        ? new Date(String(req.body.startDate))
+        : currentExpiry && currentExpiry > now ? currentExpiry : now;
+      if (!validSubscriptionDate(startedAt)) return res.status(400).json({ error: "تاريخ بداية التجديد غير صالح" });
+      const dates = getAddonSubscriptionDates(billingType, startedAt, req.body?.expiresAt);
+      if (!dates) return res.status(400).json({ error: "تاريخ انتهاء التجديد غير صالح" });
+      const invoiceAmount = req.body?.amount === undefined || req.body?.amount === null || req.body?.amount === ""
+        ? Number(subscription.price || addon?.price || 0)
+        : Number(req.body.amount);
+      if (!Number.isFinite(invoiceAmount) || invoiceAmount < 0 || invoiceAmount > 100000000) {
+        return res.status(400).json({ error: "قيمة تجديد الإضافة غير صالحة" });
+      }
+
+      const updated = await (ProjectAddonSubscriptionModel as any).findOneAndUpdate(
+        { _id: subscription._id, lastActionId: { $ne: actionId } },
+        {
+          $set: {
+            price: invoiceAmount,
+            billingType,
+            startedAt: dates.startedAt,
+            expiresAt: dates.expiresAt,
+            quotaUsed: 0,
+            status: "active",
+            lastActionId: actionId,
+            renewalRequestedAt: null,
+          },
+        },
+        { returnDocument: "after" },
+      );
+      if (!updated) {
+        const latest = await (ProjectAddonSubscriptionModel as any).findById(subscription._id);
+        if (latest?.lastActionId === actionId) {
+          const { InvoiceModel } = await import("./models");
+          const invoice = await InvoiceModel.findOne({ subscriptionActionId: actionId }).lean();
+          return res.json({ subscription: latest, invoice, alreadyProcessed: true });
+        }
+        return res.status(409).json({ error: "تم تحديث اشتراك الإضافة بطلب آخر، أعد تحميل الصفحة" });
+      }
+
+      const invoice = await createProjectSubscriptionInvoice({
+        actionId,
+        project,
+        order,
+        client,
+        actorId: String((req.user as any)._id || (req.user as any).id),
+        amount: invoiceAmount,
+        paymentStatus: req.body?.paymentStatus === "unpaid" ? "unpaid" : "paid",
+        dueDate: req.body?.dueDate,
+        title: `تجديد إضافة مشروع — ${subscription.addonNameAr || addon?.nameAr || "QIROX"}`,
+        notes: req.body?.notes,
+      });
+      res.json({ subscription: updated, invoice });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
