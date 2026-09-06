@@ -69,6 +69,11 @@ fail with an irrelevant configuration error.
 deployment configuration. Only use Meta when an administrator intentionally
 selects it; never infer Meta from the presence of environment variables.
 
+## Project integration verification
+- Project-integration delivery tests should stub the shared `waModule.sendNotification`
+  method and assert the Arabic structured payload, rather than mocking a Meta HTTP
+  request. This keeps tests aligned with the real QR-connected delivery path.
+
 ## Connection lifecycle
 1. POST /connect → `waModule.connect()` starts Baileys
 2. SSE streams QR → frontend shows QRCodeCanvas

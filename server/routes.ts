@@ -5998,7 +5998,7 @@ export async function registerRoutes(
         environment,
         label: String(req.body?.label || "").trim().slice(0, 120) || (
           type === "whatsapp"
-            ? "WhatsApp Business للمشروع"
+            ? "واتساب CRM للمشروع"
             : type === "email"
               ? "البريد الإلكتروني للمشروع"
               : "API الربط العام للمشروع"
@@ -6199,7 +6199,7 @@ export async function registerRoutes(
         recipient: channel === "email"
           ? { name: String(recipient.name || "").trim().slice(0, 160), email: recipient.email }
           : { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
-        subject: subject || "Project WhatsApp Business message",
+        subject: subject || "Project WhatsApp CRM message",
         message,
         channels: [channel],
         whatsappTemplate: templateName,

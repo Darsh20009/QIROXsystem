@@ -19,7 +19,7 @@ export function createProjectIntegrationSecret(type: ProjectIntegrationType) {
 }
 
 export function integrationTypeLabel(type: ProjectIntegrationType): string {
-  if (type === "whatsapp") return "WhatsApp Business";
+  if (type === "whatsapp") return "واتساب CRM";
   if (type === "email") return "Project Email";
   return "Project Integration API";
 }

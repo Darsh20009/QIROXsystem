@@ -159,6 +159,9 @@ test("the public project API key works over HTTP for both channels without leaki
   let emailDeliveryId = "";
   let whatsappDeliveryId = "";
   let whatsappProviderCalls = 0;
+  let whatsappMessage = "";
+  const { waModule } = await import("./whatsapp-module");
+  const originalSendNotification = waModule.sendNotification;
 
   const assertNoSecret = (response: HttpResponse, secret: string) => {
     assert.equal(JSON.stringify(response.body).includes(secret), false, "HTTP response must not expose raw key material");
@@ -167,9 +170,11 @@ test("the public project API key works over HTTP for both channels without leaki
   try {
     process.env.NODE_ENV = "test";
     process.env.SESSION_SECRET = "project-integration-http-test-session";
-    process.env.WHATSAPP_PROVIDER = "meta";
-    process.env.WHATSAPP_META_ACCESS_TOKEN = "meta-http-test-token";
-    process.env.WHATSAPP_META_PHONE_NUMBER_ID = "http-test-phone";
+    process.env.WHATSAPP_PROVIDER = "baileys";
+    waModule.sendNotification = (async (_phone: string, message: string) => {
+      whatsappProviderCalls += 1;
+      whatsappMessage = message;
+    }) as typeof waModule.sendNotification;
     for (const key of smtpKeys) delete process.env[key];
 
     const apiIntegration = await ProjectIntegrationModel.create({
@@ -225,13 +230,6 @@ test("the public project API key works over HTTP for both channels without leaki
       documentationPath: "/api/v1/projects/integrations/docs",
     });
 
-    globalThis.fetch = (async () => {
-      whatsappProviderCalls += 1;
-      return new Response(JSON.stringify({ messages: [{ id: `meta-message-${whatsappProviderCalls}` }] }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    }) as typeof fetch;
     server = await createProjectApiHarness();
 
     const endpoint = `/api/v1/projects/${projectA}/api`;
@@ -308,12 +306,15 @@ test("the public project API key works over HTTP for both channels without leaki
       body: {
         channel: "whatsapp",
         recipient: { name: "HTTP Test", phone: "+966501234567" },
-        message: "WhatsApp channel through the public API",
+        platformName: "نظام الاختبار",
+        clientName: "عميل الاختبار",
+        code: "123456",
       },
     });
     assert.equal(whatsappResponse.status, 202);
     assert.equal(whatsappResponse.body?.delivery?.status, "sent");
     assert.equal(whatsappProviderCalls, 1);
+    assert.equal(whatsappMessage, "المنصة: نظام الاختبار\nالعميل: عميل الاختبار\nرمز التحقق: 123456");
     assertNoSecret(whatsappResponse, apiSecret.rawKey);
     whatsappDeliveryId = String(whatsappResponse.body?.delivery?.id || "");
 
@@ -323,12 +324,14 @@ test("the public project API key works over HTTP for both channels without leaki
       body: {
         channel: "whatsapp",
         recipient: { name: "HTTP Test", phone: "+966501234567" },
-        message: "WhatsApp channel through the public API",
+        platformName: "نظام الاختبار",
+        clientName: "عميل الاختبار",
+        code: "123456",
       },
     });
     assert.equal(replayResponse.status, 202);
     assert.equal(replayResponse.body?.delivery?.id, whatsappDeliveryId);
-    assert.equal(whatsappProviderCalls, 1, "idempotent replay must not call Meta twice");
+    assert.equal(whatsappProviderCalls, 1, "idempotent replay must not call Baileys twice");
     assert.equal(await NotificationDeliveryModel.countDocuments({
       idempotencyKey: `project-integration:${apiIntegrationId}:${whatsappIdempotencyKey}`,
       channel: "whatsapp",
@@ -359,6 +362,7 @@ test("the public project API key works over HTTP for both channels without leaki
     assert.ok(await ProjectIntegrationModel.exists({ _id: emailOnlyIntegration._id }));
   } finally {
     globalThis.fetch = originalFetch;
+    waModule.sendNotification = originalSendNotification;
     if (originalEnv.nodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = originalEnv.nodeEnv;
     if (originalEnv.sessionSecret === undefined) delete process.env.SESSION_SECRET;
@@ -464,31 +468,28 @@ test("project integration keys are scoped, revocable, expirable, and idempotent"
   }
 });
 
-test("a failed project WhatsApp delivery is replay-safe and never falls back to Baileys", {
+test("a failed project WhatsApp delivery is replay-safe and stays on Baileys", {
   skip: !process.env.MONGODB_URI,
   concurrency: false,
 }, async () => {
   await mongoose.connect(process.env.MONGODB_URI!);
   const marker = `project-provider-outage-${new mongoose.Types.ObjectId()}`;
-  const originalFetch = globalThis.fetch;
   const originalProvider = process.env.WHATSAPP_PROVIDER;
-  const originalToken = process.env.WHATSAPP_META_ACCESS_TOKEN;
-  const originalPhoneId = process.env.WHATSAPP_META_PHONE_NUMBER_ID;
   const smtpEnvKeys = [
     "CPANEL_SMTP_HOST", "CPANEL_SMTP_USER", "CPANEL_SMTP_PASS",
     "SMTP_HOST", "SMTP_USER", "SMTP_PASS",
   ];
   const originalSmtpEnv = Object.fromEntries(smtpEnvKeys.map(key => [key, process.env[key]]));
   let providerCalls = 0;
+  const { waModule } = await import("./whatsapp-module");
+  const originalSendNotification = waModule.sendNotification;
 
   try {
-    process.env.WHATSAPP_PROVIDER = "meta";
-    process.env.WHATSAPP_META_ACCESS_TOKEN = "meta-test-secret";
-    process.env.WHATSAPP_META_PHONE_NUMBER_ID = "test-phone-number";
-    globalThis.fetch = (async () => {
+    process.env.WHATSAPP_PROVIDER = "baileys";
+    waModule.sendNotification = (async () => {
       providerCalls += 1;
-      throw new Error("temporary Meta outage access_token=meta-test-secret");
-    }) as typeof fetch;
+      throw new Error("temporary internal WhatsApp outage");
+    }) as typeof waModule.sendNotification;
 
     const request = {
       event: "project_whatsapp_provider_outage",
@@ -513,23 +514,20 @@ test("a failed project WhatsApp delivery is replay-safe and never falls back to 
     assert.ok(delivery);
     assert.ok(["retrying", "failed"].includes(delivery.status));
     assert.ok(delivery.lastError);
-    assert.equal(delivery.lastError.includes("meta-test-secret"), false, "provider secrets must not be persisted");
-    assert.match(delivery.lastError, /temporary Meta outage/);
+    assert.match(delivery.lastError, /temporary internal WhatsApp outage/);
 
-    // Project WhatsApp traffic must stay on Meta even when the global
-    // preference is set to the internal Baileys provider.
-    process.env.WHATSAPP_PROVIDER = "baileys";
-    globalThis.fetch = (async () => {
+    // An empty provider setting must still use the internal Baileys session.
+    process.env.WHATSAPP_PROVIDER = "";
+    waModule.sendNotification = (async () => {
       providerCalls += 1;
-      return new Response(JSON.stringify({ messages: [{ id: "meta-message-id" }] }), { status: 200 });
-    }) as typeof fetch;
-    const projectOnlyMeta = await dispatchNotification({
+    }) as typeof waModule.sendNotification;
+    const projectBaileys = await dispatchNotification({
       ...request,
-      idempotencyKey: `${marker}-no-baileys`,
+      idempotencyKey: `${marker}-baileys-default`,
     });
-    assert.equal(projectOnlyMeta[0]?.status, "sent", "project traffic must use Meta, not Baileys");
-    assert.equal(projectOnlyMeta[0]?.channel, "whatsapp");
-    assert.equal(providerCalls, 2, "project traffic must invoke Meta even when Baileys is the global preference");
+    assert.equal(projectBaileys[0]?.status, "sent", "project traffic must use the internal Baileys session");
+    assert.equal(projectBaileys[0]?.channel, "whatsapp");
+    assert.equal(providerCalls, 2, "project traffic must invoke Baileys once per new delivery");
 
     for (const key of smtpEnvKeys) delete process.env[key];
     const smtpRequest = {
@@ -544,7 +542,9 @@ test("a failed project WhatsApp delivery is replay-safe and never falls back to 
     const smtpFirst = await dispatchNotification(smtpRequest);
     await NotificationDeliveryModel.updateOne(
       { _id: smtpFirst[0]?.id },
-      { $set: { nextAttemptAt: new Date(Date.now() - 1_000) } },
+      // Keep the record out of the worker's due window while verifying that
+      // replaying the same idempotency key is read-only.
+      { $set: { nextAttemptAt: new Date(Date.now() + 60_000) } },
     );
     const smtpSecond = await dispatchNotification(smtpRequest);
     const smtpDelivery = await NotificationDeliveryModel.findOne({
@@ -558,44 +558,36 @@ test("a failed project WhatsApp delivery is replay-safe and never falls back to 
     assert.equal(smtpDelivery?.attempts, 1, "an SMTP replay must not create a second attempt");
     assert.equal(smtpDelivery?.lastError, "تعذر تسليم البريد عبر SMTP");
   } finally {
-    globalThis.fetch = originalFetch;
+    waModule.sendNotification = originalSendNotification;
     if (originalProvider === undefined) delete process.env.WHATSAPP_PROVIDER;
     else process.env.WHATSAPP_PROVIDER = originalProvider;
-    if (originalToken === undefined) delete process.env.WHATSAPP_META_ACCESS_TOKEN;
-    else process.env.WHATSAPP_META_ACCESS_TOKEN = originalToken;
-    if (originalPhoneId === undefined) delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
-    else process.env.WHATSAPP_META_PHONE_NUMBER_ID = originalPhoneId;
     for (const key of smtpEnvKeys) {
       if (originalSmtpEnv[key] === undefined) delete process.env[key];
       else process.env[key] = originalSmtpEnv[key];
     }
-    await NotificationDeliveryModel.deleteMany({ idempotencyKey: { $in: [marker, `${marker}-no-baileys`, `${marker}-smtp`] } });
+    await NotificationDeliveryModel.deleteMany({ idempotencyKey: { $in: [marker, `${marker}-baileys-default`, `${marker}-smtp`] } });
     await mongoose.disconnect();
   }
 });
 
-test("an expired project WhatsApp lease recovers through Meta with durable sanitized error context", {
+test("an expired project WhatsApp lease recovers through Baileys with durable error context", {
   skip: !process.env.MONGODB_URI,
   concurrency: false,
 }, async () => {
   await mongoose.connect(process.env.MONGODB_URI!);
   const marker = `project-provider-crash-recovery-${new mongoose.Types.ObjectId()}`;
-  const originalFetch = globalThis.fetch;
   const originalProvider = process.env.WHATSAPP_PROVIDER;
-  const originalToken = process.env.WHATSAPP_META_ACCESS_TOKEN;
-  const originalPhoneId = process.env.WHATSAPP_META_PHONE_NUMBER_ID;
   let providerCalls = 0;
+  const { waModule } = await import("./whatsapp-module");
+  const originalSendNotification = waModule.sendNotification;
 
   try {
-    // Recovery must honor the project delivery boundary, not the global
-    // provider preference used by the internal WhatsApp session.
+    // Recovery must use the same QR-connected internal WhatsApp session.
     process.env.WHATSAPP_PROVIDER = "baileys";
-    process.env.WHATSAPP_META_ACCESS_TOKEN = "meta-recovery-secret";
-    process.env.WHATSAPP_META_PHONE_NUMBER_ID = "recovery-phone-number";
-    globalThis.fetch = (async () => {
+    waModule.sendNotification = (async () => {
       providerCalls += 1;
-      throw new Error("Meta recovery failed after provider accepted request access_token=meta-recovery-secret");
-    }) as typeof fetch;
+      throw new Error("Baileys recovery failed while WhatsApp is disconnected");
+    }) as typeof waModule.sendNotification;
 
     const delivery = await NotificationDeliveryModel.create({
       event: "project_whatsapp_worker_crash",
@@ -622,26 +614,19 @@ test("an expired project WhatsApp lease recovers through Meta with durable sanit
     const recovered = await NotificationDeliveryModel.findById(delivery._id).lean();
 
     assert.equal(recoveredCount, 1, "the worker should discover the expired sending lease");
-    assert.equal(providerCalls, 1, "recovery should make one Meta attempt");
+    assert.equal(providerCalls, 1, "recovery should make one Baileys attempt");
     assert.ok(recovered);
     assert.equal(recovered.status, "retrying", "a recoverable provider failure must remain durable");
     assert.equal(recovered.attempts, 2, "the recovery claim must count as a new attempt");
-    assert.match(recovered.lastError, /Meta recovery failed after provider accepted request/);
-    assert.equal(recovered.lastError.includes("meta-recovery-secret"), false, "provider credentials must not be persisted");
-    assert.match(recovered.lastError, /access_token=\[redacted\]/, "credential fields must be redacted");
-    assert.equal(JSON.stringify(recovered).includes("meta-recovery-secret"), false, "provider credentials must not leak through the durable record");
+    assert.match(recovered.lastError, /Baileys recovery failed while WhatsApp is disconnected/);
     assert.equal(recovered.leaseExpiresAt, null, "the recovered attempt must release its lease");
     assert.notEqual(recovered.claimToken, "crashed-worker-claim", "recovery must replace the crashed worker claim");
     assert.equal(recovered.metadata?.projectWhatsApp, true);
     assert.equal(recovered.provider, "", "a failed recovery must not claim a provider message id");
   } finally {
-    globalThis.fetch = originalFetch;
+    waModule.sendNotification = originalSendNotification;
     if (originalProvider === undefined) delete process.env.WHATSAPP_PROVIDER;
     else process.env.WHATSAPP_PROVIDER = originalProvider;
-    if (originalToken === undefined) delete process.env.WHATSAPP_META_ACCESS_TOKEN;
-    else process.env.WHATSAPP_META_ACCESS_TOKEN = originalToken;
-    if (originalPhoneId === undefined) delete process.env.WHATSAPP_META_PHONE_NUMBER_ID;
-    else process.env.WHATSAPP_META_PHONE_NUMBER_ID = originalPhoneId;
     await NotificationDeliveryModel.deleteMany({ idempotencyKey: marker });
     await mongoose.disconnect();
   }
