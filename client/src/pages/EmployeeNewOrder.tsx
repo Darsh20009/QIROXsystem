@@ -647,21 +647,30 @@ export default function EmployeeNewOrder() {
               {/* ── Pricing Plans ── */}
               {pricingPlans.length > 0 && (
                 <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm">
-                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-black/30" />
-                       <span className="text-sm font-bold text-black">{L ? "الباقات ومدة الاشتراك *" : "Plans & subscription period *"}</span>
-                    </div>
-                    <div className="flex gap-1 bg-black/[0.04] rounded-lg p-1">
+                   <div className="flex items-center gap-2 mb-3">
+                     <Crown className="w-4 h-4 text-black/30" />
+                     <span className="text-sm font-bold text-black">{L ? "الباقات" : "Plans"}</span>
+                   </div>
+                   <div className="rounded-xl border border-black/[0.08] bg-black/[0.025] p-3 mb-4">
+                     <div className="flex items-center justify-between gap-2 mb-2">
+                       <span className="text-xs font-bold text-black">{L ? "اختر مدة الاشتراك *" : "Choose subscription period *"}</span>
+                       <span className={`text-[10px] font-semibold ${selectedBilling ? "text-black/45" : "text-red-500"}`}>
+                         {selectedBilling ? BILLING_LABELS[selectedBilling] : (L ? "مطلوب" : "Required")}
+                       </span>
+                     </div>
+                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                        {Object.entries(BILLING_LABELS).map(([key, label]) => (
-                         <button key={key} onClick={() => changeBillingPeriod(key)}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${selectedBilling === key ? "bg-black text-white" : "text-black/40 hover:text-black/70"}`}
-                          data-testid={`billing-${key}`}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                         <button
+                           type="button"
+                           key={key}
+                           onClick={() => changeBillingPeriod(key)}
+                           className={`min-h-10 rounded-lg border px-2 py-2 text-xs font-bold transition-all ${selectedBilling === key ? "border-black bg-black text-white" : "border-black/[0.1] bg-white text-black/55 hover:border-black/30 hover:text-black"}`}
+                           data-testid={`billing-${key}`}>
+                           {label}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {pricingPlans.map((plan: any) => {
                       const price = getPlanPrice(plan);
