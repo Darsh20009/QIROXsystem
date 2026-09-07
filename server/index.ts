@@ -367,6 +367,16 @@ wss.on("connection", (ws) => {
             }
             subscribeSandboxLogs(userId, String(msg.projectId));
             ws.send(JSON.stringify({ type: "sandbox_subscribed", projectId: msg.projectId }));
+             const { getProcessLogs } = await import("./sandbox-runner");
+             for (const log of getProcessLogs(String(msg.projectId))) {
+               ws.send(JSON.stringify({
+                 type: "sandbox-log",
+                 projectId: String(msg.projectId),
+                 stream: log.stream,
+                 text: log.text,
+                 ts: log.ts,
+               }));
+             }
           } catch {
             ws.send(JSON.stringify({ type: "sandbox_error", error: "خطأ في الاشتراك" }));
           }

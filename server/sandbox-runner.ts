@@ -206,6 +206,10 @@ export function getProcessInfo(projectId: string): { port: number; pid: number; 
   return { port: entry.port, pid: entry.process.pid || 0, startedAt: entry.startedAt, logs: entry.logs };
 }
 
+export function getProcessLogs(projectId: string): LogEntry[] {
+  return runningProcesses.get(projectId)?.logs.slice(-MAX_LOG_LINES) || [];
+}
+
 export function isRunning(projectId: string): boolean {
   return runningProcesses.has(projectId);
 }

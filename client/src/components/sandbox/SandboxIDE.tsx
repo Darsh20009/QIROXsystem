@@ -61,6 +61,7 @@ interface FileEntry {
 interface LogEntry {
   text: string;
   stream: string;
+  ts?: number;
 }
 
 function flattenFiles(entries: FileEntry[], output: FileEntry[] = []) {
@@ -162,6 +163,18 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     queryKey: ["/api/sandbox/projects", projectId, "files"],
   });
 
+  const { data: persistedLogs } = useQuery<{ logs: LogEntry[] }>({
+    queryKey: ["/api/sandbox/projects", projectId, "logs"],
+    enabled: logsOpen,
+    refetchInterval: logsOpen ? 2000 : false,
+  });
+
+  const { data: runtimeStatus } = useQuery<{ isRunning: boolean; port: number | null }>({
+    queryKey: ["/api/sandbox/projects", projectId, "status"],
+    enabled: Boolean(projectId),
+    refetchInterval: showPreview ? 3000 : false,
+  });
+
   useEffect(() => {
     if (!user?._id) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -178,7 +191,14 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         const data = JSON.parse(event.data);
         if (data.type === "sandbox-log" && data.projectId === projectId) {
           setLogs((prev) => {
-            const next = [...prev, { text: data.text, stream: data.stream }];
+            const next = [
+              ...prev,
+              {
+                text: data.text,
+                stream: data.stream,
+                ts: typeof data.ts === "number" ? data.ts : Date.now(),
+              },
+            ];
             return next.length > 500 ? next.slice(-500) : next;
           });
         }
@@ -196,6 +216,21 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   useEffect(() => {
     if (logsOpen) logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs, logsOpen]);
+
+  useEffect(() => {
+    if (!persistedLogs?.logs?.length) return;
+    setLogs((previous) => {
+      const merged = [...persistedLogs.logs, ...previous];
+      const unique = new Map<string, LogEntry>();
+      for (const entry of merged) {
+        const key = `${entry.ts || 0}:${entry.stream}:${entry.text}`;
+        unique.set(key, entry);
+      }
+      return Array.from(unique.values())
+        .sort((a, b) => (a.ts || 0) - (b.ts || 0))
+        .slice(-500);
+    });
+  }, [persistedLogs]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -220,6 +255,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
       setLogsOpen(true);
     },
     onError: (err: Error) => {
+      setLogsOpen(true);
       toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
     },
   });
@@ -439,7 +475,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     },
   });
 
-  const isRunning = project?.isRunning || project?.status === "running";
+  const isRunning = runtimeStatus?.isRunning ?? project?.isRunning ?? project?.status === "running";
   const isProcessing = startMutation.isPending || stopMutation.isPending || restartMutation.isPending;
   const showBuildButton = project && BUILDABLE_TEMPLATES.includes(project.template);
 
@@ -504,7 +540,11 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           variant="outline"
           size="sm"
            className={`h-8 gap-1.5 border-border px-2.5 text-xs ${showPreview ? "bg-accent text-foreground" : "bg-transparent text-foreground"} hover:bg-accent`}
-          onClick={() => setShowPreview(!showPreview)}
+           onClick={() => {
+             const next = !showPreview;
+             setShowPreview(next);
+             if (next && !isRunning && !isProcessing) startMutation.mutate();
+           }}
           data-testid="button-toggle-preview"
         >
           <Eye className="h-3.5 w-3.5" />

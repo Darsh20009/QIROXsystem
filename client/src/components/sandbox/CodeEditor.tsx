@@ -73,7 +73,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
 
   if (!tabs.length) {
     return (
-      <div className="h-full flex items-center justify-center bg-background">
+      <div dir="ltr" className="h-full flex items-center justify-center bg-background">
         <p className="text-muted-foreground text-sm">
           {ar ? "اختر ملفاً من القائمة" : "Select a file from the tree"}
         </p>
@@ -82,7 +82,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div dir="ltr" className="h-full min-w-0 flex flex-col bg-background" style={{ direction: "ltr" }}>
       <div className="flex overflow-x-auto border-b border-border bg-muted/30 scrollbar-none">
         {tabs.map((tab) => {
           const name = tab.path.split("/").pop() || tab.path;
@@ -112,7 +112,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
           );
         })}
       </div>
-      <div className="flex-1 min-h-0">
+      <div dir="ltr" className="flex-1 min-h-0 min-w-0" style={{ direction: "ltr" }}>
         {currentTab ? (
           <Editor
             key={currentTab.path}
