@@ -932,16 +932,54 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
         })();
       });
     } else {
-      // Second crash on the same route: show the fallback, but let a later
-      // navigation attempt recover again instead of locking the whole session.
+      // A second crash on the same route should never expose the maintenance
+      // screen. Return the user to the public landing page so a broken lazy
+      // route cannot make the whole application look offline.
       sessionStorage.removeItem(this.recoveryKey());
+      if (window.location.pathname !== "/") {
+        window.location.replace("/");
+      }
     }
   }
 
   render() {
     if (this.state.hasError) {
-      // First error: silently reloading — don't flash the error page
+      // First error: silently reloading — don't flash an error page.
       if (!this.state.retried) return null;
+      // If the retry also failed, keep a neutral loading shell while the
+      // recovery navigation above completes. Never render the old maintenance
+      // page here.
+      return (
+        <div
+          aria-busy="true"
+          aria-label="Loading"
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#fff",
+            color: "rgba(0,0,0,0.35)",
+          }}
+        >
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              border: "2px solid rgba(0,0,0,0.12)",
+              borderTopColor: "rgba(0,0,0,0.55)",
+              animation: "qirox-recovery-spin 0.8s linear infinite",
+            }}
+          />
+          <style>{`@keyframes qirox-recovery-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      );
+
+      /*
+       * Legacy maintenance fallback intentionally kept unreachable for now so
+       * the existing recovery markup can be removed safely in a later cleanup.
+       */
       return (
         <div dir="rtl" style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
