@@ -1,0 +1,243 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Bell, BellRing, Check, CheckCheck, Package, MessageSquare, FileText, Loader2, X, Trash2, Video, CreditCard, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
+import { useLocation } from "wouter";
+
+function NotifIcon({ type }: { type: string }) {
+  if (type === "order") return <Package className="w-3.5 h-3.5 text-blue-500" />;
+  if (type === "message") return <MessageSquare className="w-3.5 h-3.5 text-green-500" />;
+  if (type === "meeting") return <Video className="w-3.5 h-3.5 text-violet-500" />;
+  if (type === "payment") return <CreditCard className="w-3.5 h-3.5 text-emerald-500" />;
+  if (type === "alert") return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
+  return <FileText className="w-3.5 h-3.5 text-orange-500" />;
+}
+
+function timeAgo(date: string) {
+  const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (diff < 60) return "الآن";
+  if (diff < 3600) return `${Math.floor(diff / 60)} د`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} س`;
+  if (diff < 172800) return "أمس";
+  return new Date(date).toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
+}
+
+export function NotificationBell() {
+  const { dir } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
+
+  const { data: countData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notifications/unread-count"],
+    refetchInterval: 30000,
+  });
+
+  const { data: notifications = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/notifications"],
+    enabled: open,
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+  };
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("PATCH", `/api/notifications/${id}/read`, {}); },
+    onSuccess: invalidate,
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: async () => { await apiRequest("PATCH", "/api/notifications/read-all", {}); },
+    onSuccess: invalidate,
+  });
+
+  const deleteOneMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/notifications/${id}`); },
+    onSuccess: invalidate,
+  });
+
+  const clearReadMutation = useMutation({
+    mutationFn: async () => { await apiRequest("DELETE", "/api/notifications?onlyRead=true"); },
+    onSuccess: invalidate,
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: async () => { await apiRequest("DELETE", "/api/notifications"); },
+    onSuccess: invalidate,
+  });
+
+  const handleNotifClick = (n: any) => {
+    if (!n.read) markReadMutation.mutate(n.id);
+    setOpen(false);
+    if (!n.link) return;
+    // Use SPA navigation for internal links, window.open for external
+    if (n.link.startsWith("/")) {
+      navigate(n.link);
+    } else {
+      window.open(n.link, "_blank", "noopener");
+    }
+  };
+
+  const unread = countData?.count || 0;
+  const hasRead = notifications.some((n: any) => n.read);
+
+  return (
+    <div className="relative" dir={dir}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"
+        data-testid="button-notification-bell"
+        aria-label="الإشعارات"
+      >
+        {unread > 0
+          ? <BellRing className="w-4 h-4 text-gray-800 dark:text-white animate-[swing_0.5s_ease-in-out_infinite_alternate]" />
+          : <Bell className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        }
+        {unread > 0 && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-0.5 -left-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-md"
+            data-testid="notification-count"
+          >
+            {unread > 9 ? "9+" : unread}
+          </motion.span>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute left-0 top-10 w-80 bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-2xl shadow-xl dark:shadow-2xl overflow-hidden z-50"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.06]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-900 dark:text-white">الإشعارات</span>
+                  {unread > 0 && (
+                    <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full">
+                      {unread} جديد
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {unread > 0 && (
+                    <button
+                      onClick={() => markAllMutation.mutate()}
+                      disabled={markAllMutation.isPending}
+                      className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors flex items-center gap-1 disabled:opacity-50"
+                      data-testid="button-mark-all-read"
+                    >
+                      {markAllMutation.isPending
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <CheckCheck className="w-3 h-3" />
+                      }
+                      قراءة الكل
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={() => clearAllMutation.mutate()}
+                      disabled={clearAllMutation.isPending}
+                      className="text-[10px] text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1 disabled:opacity-50"
+                      title="حذف جميع الإشعارات"
+                      data-testid="button-clear-all-notifications"
+                    >
+                      {clearAllMutation.isPending
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Trash2 className="w-3 h-3" />
+                      }
+                      حذف الكل
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="max-h-[28rem] overflow-y-auto">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">جارٍ التحميل...</p>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Bell className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">لا توجد إشعارات</p>
+                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">ستظهر هنا عند وجود تحديثات</p>
+                  </div>
+                ) : (
+                  <div>
+                    {notifications.map((n: any) => (
+                      <motion.div
+                        key={n.id}
+                        layout
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className={`group flex items-start gap-3 px-4 py-3 border-b border-black/[0.03] dark:border-white/[0.04] transition-colors cursor-pointer ${
+                          !n.read
+                            ? "bg-violet-50/60 dark:bg-violet-900/10 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                        }`}
+                        onClick={() => handleNotifClick(n)}
+                        data-testid={`notification-${n.id}`}
+                      >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          !n.read ? "bg-violet-100 dark:bg-violet-900/30" : "bg-gray-100 dark:bg-gray-800"
+                        }`}>
+                          <NotifIcon type={n.type} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs leading-relaxed ${!n.read ? "font-bold text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`}>
+                            {n.title}
+                          </p>
+                          {n.body && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>}
+                          <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-1 flex items-center gap-1">
+                            <span>{timeAgo(n.createdAt)}</span>
+                            {n.link && <span className="text-violet-400 dark:text-violet-500">← اضغط للانتقال</span>}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                          {!n.read && <div className="w-1.5 h-1.5 bg-violet-500 rounded-full" />}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteOneMutation.mutate(n.id); }}
+                            disabled={deleteOneMutation.isPending}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-all"
+                            title="حذف الإشعار"
+                            data-testid={`button-delete-notification-${n.id}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              {notifications.length > 0 && (
+                <div className="px-4 py-2.5 border-t border-black/[0.05] dark:border-white/[0.06] bg-gray-50/50 dark:bg-gray-800/30">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
+                    {notifications.length} إشعار{notifications.length > 1 ? "ات" : ""}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

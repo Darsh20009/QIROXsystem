@@ -1,0 +1,88 @@
+{
+  "name": "qirox-studio-desktop",
+  "version": "1.0.0",
+  "description": "QIROX Studio — مصنع الأنظمة الرقمية (Desktop App)",
+  "main": "main.js",
+  "author": {
+    "name": "QIROX Studio",
+    "email": "admin@qiroxstudio.online",
+    "url": "https://qiroxstudio.online"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start":       "electron .",
+    "start:dev":   "QIROX_DEV_URL=http://localhost:5000 electron .",
+    "build:mac":   "electron-builder --mac   --publish never",
+    "build:win":   "electron-builder --win   --publish never",
+    "build:linux": "electron-builder --linux --publish never",
+    "build:all":   "electron-builder --mac --win --linux --publish never"
+  },
+  "build": {
+    "appId":       "online.qiroxstudio.desktop",
+    "productName": "QIROX Studio",
+    "copyright":   "Copyright © 2025 QIROX Studio",
+    "directories": {
+      "output":    "dist",
+      "buildResources": "icons"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "offline.html",
+      "icons/**"
+    ],
+    "mac": {
+      "category":         "public.app-category.business",
+      "icon":             "icons/icon.png",
+      "darkModeSupport":  true,
+      "hardenedRuntime":  true,
+      "gatekeeperAssess": false,
+      "entitlements":            "build/entitlements.mac.plist",
+      "entitlementsInherit":     "build/entitlements.mac.plist",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "dmg": {
+        "title":           "QIROX Studio ${version}",
+        "backgroundColor": "#111111",
+        "iconSize":        100,
+        "contents": [
+          { "x": 410, "y": 200, "type": "link",    "path": "/Applications" },
+          { "x": 130, "y": 200, "type": "file" }
+        ]
+      }
+    },
+    "win": {
+      "icon":               "icons/icon.png",
+      "target":             "nsis",
+      "requestedExecutionLevel": "asInvoker",
+      "publisherName":      "QIROX Studio"
+    },
+    "nsis": {
+      "oneClick":           false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName":       "QIROX Studio",
+      "installerIcon":      "icons/icon.png",
+      "uninstallerIcon":    "icons/icon.png"
+    },
+    "linux": {
+      "icon":     "icons/icon.png",
+      "target":   "AppImage",
+      "category": "Office"
+    },
+    "protocols": [
+      {
+        "name":    "QIROX Studio",
+        "schemes": ["qirox"]
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron":         "^28.3.0",
+    "electron-builder": "^24.13.3"
+  }
+}

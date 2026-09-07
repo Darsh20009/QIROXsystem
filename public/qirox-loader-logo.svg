@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" fill="none">
+  <!-- Q letter with circle -->
+  <circle cx="28" cy="32" r="18" stroke="currentColor" stroke-width="5" fill="none"/>
+  <line x1="40" y1="44" x2="52" y2="56" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <!-- I -->
+  <rect x="65" y="14" width="5" height="36" rx="2.5" fill="currentColor"/>
+  <!-- R -->
+  <rect x="80" y="14" width="5" height="36" rx="2.5" fill="currentColor"/>
+  <path d="M85 14 Q100 14 100 23 Q100 32 85 32" stroke="currentColor" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <line x1="87" y1="32" x2="100" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <!-- O -->
+  <ellipse cx="119" cy="32" rx="14" ry="18" stroke="currentColor" stroke-width="5" fill="none"/>
+  <!-- X -->
+  <line x1="140" y1="14" x2="162" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <line x1="162" y1="14" x2="140" y2="50" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <!-- Tagline -->
+  <text x="10" y="72" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="currentColor" opacity="0.6" letter-spacing="3">BUSINESS PLATFORM</text>
+</svg>

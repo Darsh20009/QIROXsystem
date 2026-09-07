@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QIROX Loader Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8f8fb;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; overflow: hidden; position: relative;
+  }
+
+  /* Dot grid */
+  .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, rgba(100,80,200,0.07) 1px, transparent 0);
+    background-size: 30px 30px;
+  }
+
+  /* SVG layer */
+  .svg-layer {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  /* Central content */
+  .center {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 36px;
+  }
+
+  /* Logo wrapper */
+  .logo-wrap {
+    position: relative;
+    animation: loader-logo-fade 2.8s ease-in-out infinite;
+  }
+  .logo-glow {
+    position: absolute; inset: -32px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.13) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .logo-img {
+    position: relative;
+    width: 160px; height: auto;
+    display: block; user-select: none;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+  }
+  .progress-track {
+    width: 140px; height: 2px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 9999px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 33%;
+    background: linear-gradient(to right, transparent, #8b5cf6, transparent);
+    border-radius: 9999px;
+    animation: sweep 1.8s ease-in-out infinite;
+  }
+  .brand-text {
+    font-size: 8px; font-weight: 800;
+    letter-spacing: 0.5em; text-transform: uppercase;
+    color: rgba(0,0,0,0.15); user-select: none;
+  }
+
+  /* Animated SVG elements */
+  .line-top {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw 3.2s ease-in-out infinite;
+  }
+  .line-mid {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw2 3.2s ease-in-out infinite;
+    animation-delay: 0.8s; opacity: 0;
+  }
+  .line-bot {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw 3.2s ease-in-out infinite;
+    animation-delay: 1.4s; opacity: 0;
+  }
+  .bar-rect { animation: bar-grow 2s ease-in-out infinite; }
+
+  @keyframes dash-draw {
+    0%   { stroke-dashoffset: 700; opacity: 0; }
+    10%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes dash-draw2 {
+    0%   { stroke-dashoffset: 700; opacity: 0; }
+    15%  { opacity: 0.6; }
+    85%  { opacity: 0.6; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes bar-grow {
+    0%,100% { transform: scaleY(0.3); opacity: 0.3; }
+    50%     { transform: scaleY(1); opacity: 1; }
+  }
+  @keyframes loader-logo-fade {
+    0%,100% { opacity: 0.88; transform: scale(1); }
+    50%     { opacity: 1; transform: scale(1.03); }
+  }
+  @keyframes sweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+</style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <svg class="svg-layer" viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lg-v" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#8b5cf6" stop-opacity="0"/>
+        <stop offset="40%"  stop-color="#8b5cf6" stop-opacity="0.7"/>
+        <stop offset="70%"  stop-color="#3b82f6" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lg-b" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#a78bfa" stop-opacity="0"/>
+        <stop offset="50%"  stop-color="#60a5fa" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lg-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%"   stop-color="#8b5cf6" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Top wave line -->
+    <path class="line-top"
+      d="M0,68 C40,50 80,82 120,58 C160,34 200,72 240,48 C280,24 320,56 360,36 C390,22 410,30 440,28"
+      fill="none" stroke="url(#lg-v)" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Middle wave line -->
+    <path class="line-mid"
+      d="M0,55 C35,72 70,38 110,60 C150,82 190,42 230,65 C270,88 310,44 350,62 C390,80 420,50 440,60"
+      fill="none" stroke="url(#lg-b)" stroke-width="1" stroke-linecap="round"/>
+
+    <!-- Bottom subtle line -->
+    <path class="line-bot"
+      d="M0,45 C50,60 90,30 140,50 C190,70 230,35 280,55 C320,72 360,40 400,58 C420,66 435,52 440,55"
+      fill="none" stroke="url(#lg-v)" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- Left bars -->
+    <rect class="bar-rect" x="14"  y="166" width="7" height="134" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:17px 300px; animation-delay:0s"/>
+    <rect class="bar-rect" x="26"  y="151" width="7" height="149" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:29px 300px; animation-delay:0.12s"/>
+    <rect class="bar-rect" x="38"  y="162" width="7" height="138" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:41px 300px; animation-delay:0.24s"/>
+    <rect class="bar-rect" x="50"  y="135" width="7" height="165" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:53px 300px; animation-delay:0.36s"/>
+    <rect class="bar-rect" x="62"  y="148" width="7" height="152" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:65px 300px; animation-delay:0.48s"/>
+    <rect class="bar-rect" x="74"  y="124" width="7" height="176" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:77px 300px; animation-delay:0.6s"/>
+    <rect class="bar-rect" x="86"  y="140" width="7" height="160" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:89px 300px; animation-delay:0.72s"/>
+
+    <!-- Right bars -->
+    <rect class="bar-rect" x="340" y="132" width="7" height="168" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:343px 300px; animation-delay:0.6s"/>
+    <rect class="bar-rect" x="352" y="114" width="7" height="186" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:355px 300px; animation-delay:0.72s"/>
+    <rect class="bar-rect" x="364" y="128" width="7" height="172" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:367px 300px; animation-delay:0.84s"/>
+    <rect class="bar-rect" x="376" y="109" width="7" height="191" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:379px 300px; animation-delay:0.96s"/>
+    <rect class="bar-rect" x="388" y="122" width="7" height="178" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:391px 300px; animation-delay:1.08s"/>
+    <rect class="bar-rect" x="400" y="100" width="7" height="200" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:403px 300px; animation-delay:1.2s"/>
+    <rect class="bar-rect" x="412" y="112" width="7" height="188" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:415px 300px; animation-delay:1.32s"/>
+  </svg>
+
+  <div class="center">
+    <div class="logo-wrap">
+      <div class="logo-glow"></div>
+      <img
+        class="logo-img"
+        src="/qirox-loader-logo.png"
+        alt="QIROX"
+      />
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+      <span class="brand-text">QIROX</span>
+    </div>
+  </div>
+</body>
+</html>

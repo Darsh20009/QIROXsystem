@@ -1,0 +1,100 @@
+modules = ["nodejs-20", "swift-5.8", "web", "python-3.12"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["imagemagick"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3002
+
+[[ports]]
+localPort = 6100
+externalPort = 4200
+
+[[ports]]
+localPort = 10000
+externalPort = 3001
+
+[[ports]]
+localPort = 23636
+externalPort = 3000
+
+[env]
+PORT = "5000"
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["node", "--max-old-space-size=4096", "dist/index.cjs"]
+build = ["npm", "run", "build"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+PAYPAL_ENV = "live"
+VITE_PAYPAL_ENV = "live"
+SMTP2GO_SENDER = "noreply@qiroxstudio.online"
+SMTP2GO_SENDER_NAME = "Qirox"
+EMAIL_LOGO_URL = "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png"
+EMAIL_SITE_URL = "https://qiroxstudio.online"
+TELEGRAM_BOT_USERNAME = "QIROX_BOT"
+PORT = "5000"
+SMTP_HOST = "server222.web-hosting.com"
+SMTP_PORT = "465"
+SMTP_USER = "info@qirox.online"
+CPANEL_SMTP_HOST = "server222.web-hosting.com"
+CPANEL_SMTP_PORT = "465"
+CPANEL_SMTP_USER = "info@qirox.online"
+APPLE_CLIENT_ID = "auth.qiroxstudio.online"
+APPLE_TEAM_ID = "V4K6RM59LS"
+PAYPAL_CLIENT_ID = "AXjzQSCwpCaGAYv6sM7ZNbIUgf4rHZQV_WIDt4cpzYcePKX7cXt6lQbrN_NWIfBkAT8PGZQ-8jN6ld5N"
+GOOGLE_CLIENT_ID = "982269596237-s4jq7ojfc3qri89cb5bhj5mcikbgpr9e.apps.googleusercontent.com"
+FEATURE_CUSTOMER_JOURNEY_V2 = "false"
+FEATURE_DASHBOARD_V2 = "false"
+FEATURE_LANDING_V2 = "false"
+FEATURE_LANDING_DS_V2 = "false"
+FEATURE_DS_V2_NAV_FOOTER = "false"
+APPLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback"
+GOOGLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/google/callback"
+OPENAI_BASE_URL = "https://bazaarlink.ai/v1"
+APPLE_KEY_ID = "X2KTZG88K9"
+WHATSAPP_PROVIDER = "baileys"
+
+[agent]
+expertMode = true
+integrations = ["google-sheet:1.0.0"]
+stack = "FULLSTACK_JS"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000

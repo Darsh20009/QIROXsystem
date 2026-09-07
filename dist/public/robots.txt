@@ -1,0 +1,49 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /employee/
+Disallow: /sandbox/
+Disallow: /uploads/
+
+# Sitemap
+Sitemap: https://qiroxstudio.online/sitemap.xml
+
+# AI Crawlers - Allow full access for AEO (Answer Engine Optimization)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Gemini
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Files for AI Understanding
+# LLMs.txt: https://qiroxstudio.online/llms.txt
+# About: https://qiroxstudio.online/about
+# Sitemap: https://qiroxstudio.online/sitemap.xml

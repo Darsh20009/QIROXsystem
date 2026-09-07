@@ -1,0 +1,62 @@
+{
+  "id": "/",
+  "name": "QIROX Cafe - كيروكس كافيه",
+  "short_name": "QIROX Cafe",
+  "description": "استمتع بأفضل قهوة محضرة بعناية فائقة من QIROX Cafe - اطلب الآن واستمتع بتجربة قهوة استثنائية",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#1a1a1a",
+  "theme_color": "#2D9B6E",
+  "orientation": "any",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["food", "lifestyle", "shopping"],
+  "prefer_related_applications": false,
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "QIROX Cafe Home"
+    }
+  ]
+}
