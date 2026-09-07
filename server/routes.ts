@@ -1378,6 +1378,13 @@ export async function registerRoutes(
     "clientBrief", "projectIdeas",
   ];
   const dataEntrySpecHiddenFields = [...DATA_ENTRY_SPEC_HIDDEN_FIELDS];
+  // Data Entry may handle connection/deployment setup only for an order
+  // explicitly assigned to them. Financial fields remain hidden even then.
+  const assignedDataEntrySpecFields = [
+    "databaseUri", "serverIp", "deploymentUsername", "deploymentPassword",
+    "variables", "customVars",
+  ];
+  const assignedDataEntrySpecFinancialFields = ["totalBudget", "paidAmount"];
   const redactOrderForDataEntry = (order: any) => {
     const safe = { ...(order?.toObject ? order.toObject() : order) };
     return redactFields(safe, dataEntryOrderHiddenFields);
@@ -9078,20 +9085,48 @@ export async function registerRoutes(
   app.get("/api/admin/orders/:id/specs", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const specs = await storage.getOrderSpecs(req.params.id);
-    res.json((req.user as any).role === "data_entry" ? redactSpecsForDataEntry(specs || {}) : (specs || {}));
+    const user = req.user as any;
+    if (user.role !== "data_entry") return res.json(specs || {});
+
+    const order = await storage.getOrderWithUser(req.params.id);
+    const assignedTo = (order as any)?.assignedTo;
+    const isAssignedToCurrentUser = String(assignedTo?._id || assignedTo || "") === String(user.id || user._id);
+    if (!isAssignedToCurrentUser) return res.json(redactSpecsForDataEntry(specs || {}));
+
+    // Assigned Data Entry can see the connection/deployment fields needed for
+    // their work, but never financial totals.
+    res.json(redactFields(
+      specs?.toObject ? specs.toObject() : (specs || {}),
+      assignedDataEntrySpecFinancialFields,
+    ));
   });
 
   app.put("/api/admin/orders/:id/specs", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const isDataEntry = (req.user as any).role === "data_entry";
+    const user = req.user as any;
+    const isDataEntry = user.role === "data_entry";
+    let isAssignedToCurrentUser = false;
+    if (isDataEntry) {
+      const order = await storage.getOrderWithUser(req.params.id);
+      const assignedTo = (order as any)?.assignedTo;
+      isAssignedToCurrentUser = String(assignedTo?._id || assignedTo || "") === String(user.id || user._id);
+    }
+    const allowedDataEntryFields = isAssignedToCurrentUser
+      ? [...dataEntrySpecFields, ...assignedDataEntrySpecFields]
+      : dataEntrySpecFields;
     const updates = isDataEntry
-      ? Object.fromEntries(dataEntrySpecFields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]))
+      ? Object.fromEntries(allowedDataEntryFields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]))
       : req.body;
     if (isDataEntry && Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
     }
     const specs = await storage.upsertOrderSpecs(req.params.id, updates);
-    res.json(isDataEntry ? redactSpecsForDataEntry(specs) : specs);
+    if (!isDataEntry) return res.json(specs);
+    if (!isAssignedToCurrentUser) return res.json(redactSpecsForDataEntry(specs));
+    res.json(redactFields(
+      specs?.toObject ? specs.toObject() : specs,
+      assignedDataEntrySpecFinancialFields,
+    ));
   });
 
   // Get project associated with an order (for admin usage guide management)

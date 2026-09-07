@@ -149,7 +149,12 @@ export default function AdminOrders() {
   const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
   const canManageProjectSubscriptions = ["admin", "manager"].includes(currentUser?.role || "");
   const isDataEntry = currentUser?.role === "data_entry";
-  const canEditProjectSecrets = !isDataEntry;
+  const selectedOrderAssignee = (selectedOrder as any)?.assignedTo;
+  const selectedOrderAssigneeId = selectedOrderAssignee?._id || selectedOrderAssignee?.id || selectedOrderAssignee;
+  const currentUserId = currentUser?.id || currentUser?._id;
+  const isAssignedDataEntry = isDataEntry
+    && String(selectedOrderAssigneeId || "") === String(currentUserId || "");
+  const canEditProjectSecrets = !isDataEntry || isAssignedDataEntry;
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
   const roleLabels = getRoleLabels(L);
@@ -2252,8 +2257,8 @@ export default function AdminOrders() {
                             ) : (
                               <div className="col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-800">
                                 {L
-                                  ? "بيانات الاتصال وكلمات المرور تُحفظ فقط من خلال المبرمج أو الإدارة لحماية أسرار المشروع."
-                                  : "Connection strings and passwords are managed by developers or managers to protect project secrets."}
+                                  ? "بيانات الاتصال وكلمات المرور تظهر فقط لموظف Data Entry المعيّن على الطلب أو للمبرمج والإدارة."
+                                  : "Connection strings and passwords are visible only to the assigned Data Entry employee, developers, and managers."}
                               </div>
                             )}
                           </div>
