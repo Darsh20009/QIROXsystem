@@ -8123,6 +8123,17 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/public/customer-count", async (_req, res) => {
+    try {
+      const { UserModel } = await import("./models");
+      const count = await UserModel.countDocuments({ role: "client" });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ count });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load customer count" });
+    }
+  });
+
   app.get("/api/admin/partners", async (req, res) => {
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "read")) {
       return res.sendStatus(403);

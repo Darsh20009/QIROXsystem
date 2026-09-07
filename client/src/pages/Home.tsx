@@ -1016,6 +1016,7 @@ export default function Home() {
 
 
   const { data: apiPartners = [], isLoading: partnersLoading } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+  const { data: customerCountData } = useQuery<{ count: number }>({ queryKey: ["/api/public/customer-count"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
   const { data: publicReviews = [] } = useQuery<any[]>({ queryKey: ["/api/reviews/public"] });
 
@@ -1788,7 +1789,7 @@ export default function Home() {
               {/* Left slot: progress dots + count */}
               <div className="text-left">
                 <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/25 dark:text-white/25">
-                  {SPOTLIGHT_PARTNERS.length} {ar ? "شريك موثوق" : "Trusted Partners"}
+                  {customerCountData ? customerCountData.count : "—"} {ar ? "عميل يثق بنا" : "Trusted Clients"}
                 </p>
                 <div className="mt-1.5 flex gap-1.5">
                   {SPOTLIGHT_PARTNERS.map((_, i) => (

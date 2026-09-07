@@ -1014,6 +1014,8 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                     type="button"
                     key={item.label}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-xs text-foreground transition hover:bg-accent"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onMouseDown={(event) => event.stopPropagation()}
                     onClick={item.action}
                   >
                     <Icon className="h-4 w-4 text-muted-foreground" />
