@@ -23,6 +23,7 @@ import { PageHintCard } from "@/components/PageHintCard";
 import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import QiroxLoadingScreen from "@/components/QiroxLoadingScreen";
 import PixelTracking from "@/components/PixelTracking";
 import RoleGuard from "@/components/RoleGuard";
 // Sprint 003 — feature-flag guard for Dashboard V2
@@ -284,7 +285,7 @@ const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", 
 
 function PublicRouter() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<QiroxLoadingScreen />}>
       <Switch>
         <Route path="/" component={HomeGate} />
         <Route path="/about" component={About} />
@@ -345,7 +346,7 @@ function PublicRouter() {
 
 function AdminRouter() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<QiroxLoadingScreen />}>
       <Switch>
         <Route path="/dashboard" component={G_Dashboard} />
         {/* Sprint 003 — Customer Journey V2 — gated behind FEATURE_DASHBOARD_V2 */}
@@ -949,32 +950,7 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
       // If the retry also failed, keep a neutral loading shell while the
       // recovery navigation above completes. Never render the old maintenance
       // page here.
-      return (
-        <div
-          aria-busy="true"
-          aria-label="Loading"
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#fff",
-            color: "rgba(0,0,0,0.35)",
-          }}
-        >
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              border: "2px solid rgba(0,0,0,0.12)",
-              borderTopColor: "rgba(0,0,0,0.55)",
-              animation: "qirox-recovery-spin 0.8s linear infinite",
-            }}
-          />
-          <style>{`@keyframes qirox-recovery-spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      );
+      return <QiroxLoadingScreen />;
 
       /*
        * Legacy maintenance fallback intentionally kept unreachable for now so
@@ -1321,7 +1297,7 @@ function AppInner() {
   if (location.startsWith("/meet/") || location === "/meet/join") {
     return (
       <PageErrorBoundary>
-        <Suspense fallback={null}>
+        <Suspense fallback={<QiroxLoadingScreen />}>
           <Switch>
             <Route path="/meet/join" component={QMeetJoinByCode} />
             <Route path="/meet/:roomId" component={MeetingRoom} />
@@ -1347,13 +1323,9 @@ function AppInner() {
     }
   }, [isPublicRoute, userLoading, user, location]);
 
-  // While auth is still resolving on private routes, show a blank screen
+  // While auth is still resolving on private routes, show the branded loader
   if (!isPublicRoute && userLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950">
-        <Loader2 className="w-5 h-5 animate-spin text-black/15 dark:text-white/15" />
-      </div>
-    );
+    return <QiroxLoadingScreen />;
   }
 
   if (!isPublicRoute && !userLoading && user === null) {
