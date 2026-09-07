@@ -315,19 +315,28 @@ function homeMYPrice(annual: number, years: number) {
 }
 function homeMYDiscount(years: number) { return Math.min((years - 1) * 5, 40); }
 
-const HOME_TIER_FEATURES: Record<HomePriceTier, string[]> = {
-  lite:     ["موقع احترافي متكامل", "لوحة تحكم سهلة", "نطاق + SSL مجاني", "دعم فني مستمر", "تقارير شهرية"],
-  pro:      ["كل ميزات لايت ✦", "تطبيق جوال iOS/Android", "بوابة دفع إلكترونية", "إشعارات فورية", "تقارير ذكاء اصطناعي"],
-  infinity: ["كل ميزات برو ✦✦", "تطوير مخصص بلا قيود", "خادم مستقل مخصص", "مساعد ذكاء اصطناعي", "دعم أولوية 24/7"],
+const HOME_TIER_FEATURES: Record<HomePriceTier, { ar: string[]; en: string[] }> = {
+  lite: {
+    ar: ["موقع احترافي متكامل", "لوحة تحكم سهلة", "نطاق + SSL مجاني", "دعم فني مستمر", "تقارير شهرية"],
+    en: ["Professional website", "Easy control panel", "Free domain + SSL", "Ongoing technical support", "Monthly reports"],
+  },
+  pro: {
+    ar: ["كل ميزات لايت ✦", "تطبيق جوال iOS/Android", "بوابة دفع إلكترونية", "إشعارات فورية", "تقارير ذكاء اصطناعي"],
+    en: ["Everything in Lite ✦", "iOS/Android mobile app", "Online payment gateway", "Instant notifications", "AI-powered reports"],
+  },
+  infinity: {
+    ar: ["كل ميزات برو ✦✦", "تطوير مخصص بلا قيود", "خادم مستقل مخصص", "مساعد ذكاء اصطناعي", "دعم أولوية 24/7"],
+    en: ["Everything in Pro ✦✦", "Unlimited custom development", "Dedicated server", "AI assistant", "Priority 24/7 support"],
+  },
 };
 
 const HOME_SECTORS_PRICING = [
-  { key: "restaurant" as HomePriceSector, icon: UtensilsCrossed, ar: "مطاعم و مقاهي",       color: "from-orange-500 to-amber-500" },
-  { key: "ecommerce"  as HomePriceSector, icon: ShoppingBag,     ar: "متاجر",               color: "from-blue-500 to-cyan-500" },
-  { key: "corporate"  as HomePriceSector, icon: Building2,       ar: "شركات و الوكالات",    color: "from-slate-600 to-zinc-700" },
-  { key: "healthcare" as HomePriceSector, icon: Heart,           ar: "الصحة و التجميل",     color: "from-rose-500 to-pink-600" },
-  { key: "ai"         as HomePriceSector, icon: Bot,             ar: "ذكاء الاصطناعي",      color: "from-violet-600 to-purple-700" },
-  { key: "education"  as HomePriceSector, icon: GraduationCap,   ar: "التعليم و المنصات",   color: "from-indigo-500 to-blue-600" },
+  { key: "restaurant" as HomePriceSector, icon: UtensilsCrossed, ar: "مطاعم و مقاهي",       en: "Restaurants & Cafés",  color: "from-orange-500 to-amber-500" },
+  { key: "ecommerce"  as HomePriceSector, icon: ShoppingBag,     ar: "متاجر",               en: "E-Commerce",           color: "from-blue-500 to-cyan-500" },
+  { key: "corporate"  as HomePriceSector, icon: Building2,       ar: "شركات ووكالات",        en: "Companies & Agencies", color: "from-slate-600 to-zinc-700" },
+  { key: "healthcare" as HomePriceSector, icon: Heart,           ar: "الصحة والتجميل",       en: "Health & Beauty",      color: "from-rose-500 to-pink-600" },
+  { key: "ai"         as HomePriceSector, icon: Bot,             ar: "الذكاء الاصطناعي",     en: "AI Solutions",         color: "from-violet-600 to-purple-700" },
+  { key: "education"  as HomePriceSector, icon: GraduationCap,   ar: "التعليم والمنصات",    en: "Education Platforms",  color: "from-indigo-500 to-blue-600" },
 ];
 
 const fade = (i = 0) => ({
@@ -1440,7 +1449,9 @@ export default function Home() {
 
             {/* ── Sector Tabs ── */}
             <motion.div {...fade(1)} className="mb-6">
-              <p className="text-center text-[10px] font-black tracking-widest uppercase text-black/25 dark:text-white/25 mb-3">اختر قطاعك</p>
+              <p className="text-center text-[10px] font-black tracking-widest uppercase text-black/25 dark:text-white/25 mb-3">
+                {ar ? "اختر قطاعك" : "Choose your sector"}
+              </p>
               <div className="flex flex-wrap justify-center gap-2">
                 {HOME_SECTORS_PRICING.map((s) => {
                   const Icon = s.icon;
@@ -1457,7 +1468,7 @@ export default function Home() {
                       data-testid={`button-pricing-sector-${s.key}`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      {s.ar}
+                      {ar ? s.ar : s.en}
                     </button>
                   );
                 })}
@@ -1467,11 +1478,11 @@ export default function Home() {
             {/* ── Period Switcher ── */}
             <motion.div {...fade(2)} className="flex flex-col items-center mb-8 gap-3">
               <div className="flex gap-1 p-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-xl">
-                {([ 
-                  { key: "sixmonth" as HomePricePeriod, ar: "6 أشهر",      icon: CalendarRange },
-                  { key: "annual"   as HomePricePeriod, ar: "سنة",          icon: CalendarDays  },
-                  { key: "multiyear"as HomePricePeriod, ar: "سنوات+",       icon: CalendarDays  },
-                  { key: "lifetime" as HomePricePeriod, ar: "مدى الحياة",   icon: Infinity      },
+                {([
+                  { key: "sixmonth" as HomePricePeriod, ar: "6 أشهر",    en: "6 months",  icon: CalendarRange },
+                  { key: "annual"   as HomePricePeriod, ar: "سنة",      en: "Annual",    icon: CalendarDays  },
+                  { key: "multiyear"as HomePricePeriod, ar: "سنوات+",   en: "Multi-year", icon: CalendarDays  },
+                  { key: "lifetime" as HomePricePeriod, ar: "مدى الحياة", en: "Lifetime", icon: Infinity      },
                 ] as const).map(({ key, ar: label, icon: Icon }) => (
                   <button
                     key={key}
@@ -1484,7 +1495,7 @@ export default function Home() {
                     data-testid={`button-pricing-period-${key}`}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    {label}
+                    {ar ? label : (key === "sixmonth" ? "6 months" : key === "annual" ? "Annual" : key === "multiyear" ? "Multi-year" : "Lifetime")}
                   </button>
                 ))}
               </div>
@@ -1496,11 +1507,13 @@ export default function Home() {
                     initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                     className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/20"
                   >
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">عدد السنوات:</span>
+                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">{ar ? "عدد السنوات:" : "Number of years:"}</span>
                     <button onClick={() => setPricingYears(y => Math.max(2, y - 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Minus className="w-3 h-3"/></button>
                     <span className="text-lg font-black text-blue-700 dark:text-blue-300 w-6 text-center">{pricingYears}</span>
                     <button onClick={() => setPricingYears(y => Math.min(10, y + 1))} className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition"><Plus className="w-3 h-3"/></button>
-                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400">خصم {homeMYDiscount(pricingYears)}%</span>
+                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400">
+                      {ar ? `خصم ${homeMYDiscount(pricingYears)}%` : `${homeMYDiscount(pricingYears)}% discount`}
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1511,15 +1524,23 @@ export default function Home() {
               {(["lite", "pro", "infinity"] as HomePriceTier[]).map((tier, i) => {
                 const prices = HOME_PRICES[pricingSector][tier];
                 let price = 0, periodLabel = "";
-                if (pricingPeriod === "sixmonth")  { price = prices.sm;                               periodLabel = "كل 6 أشهر"; }
-                else if (pricingPeriod === "annual")    { price = prices.yr;                               periodLabel = "سنوياً"; }
-                else if (pricingPeriod === "multiyear") { price = homeMYPrice(prices.yr, pricingYears);   periodLabel = `${pricingYears} سنوات`; }
-                else                                    { price = prices.life;                            periodLabel = "مدى الحياة"; }
+                if (pricingPeriod === "sixmonth")  { price = prices.sm;                               periodLabel = ar ? "كل 6 أشهر" : "Every 6 months"; }
+                else if (pricingPeriod === "annual")    { price = prices.yr;                               periodLabel = ar ? "سنوياً" : "Annually"; }
+                else if (pricingPeriod === "multiyear") { price = homeMYPrice(prices.yr, pricingYears);   periodLabel = ar ? `${pricingYears} سنوات` : `${pricingYears} years`; }
+                else                                    { price = prices.life;                            periodLabel = ar ? "مدى الحياة" : "Lifetime"; }
 
                 const isPro = tier === "pro";
                 const isInf = tier === "infinity";
-                const tierNames = { lite: "لايت", pro: "برو", infinity: "إنفينتي" };
-                const tierDescs = { lite: "الباقة الأساسية مثالية للانطلاق", pro: "الباقة الذكية الأكثر توازناً", infinity: "الباقة الشاملة بلا قيود" };
+                const tierNames = {
+                  lite: ar ? "لايت" : "Lite",
+                  pro: ar ? "برو" : "Pro",
+                  infinity: ar ? "إنفينتي" : "Infinite",
+                };
+                const tierDescs = {
+                  lite: ar ? "الباقة الأساسية مثالية للانطلاق" : "The essential plan for getting started",
+                  pro: ar ? "الباقة الذكية الأكثر توازناً" : "The smartest balance of features",
+                  infinity: ar ? "الباقة الشاملة بلا قيود" : "The complete plan without limits",
+                };
                 const TIcon = tier === "lite" ? Zap : tier === "pro" ? Star : Infinity;
 
                 const orderPeriodParam = pricingPeriod === "multiyear" ? `${pricingYears}y` : pricingPeriod;
@@ -1539,7 +1560,7 @@ export default function Home() {
                     {isPro && (
                       <div className="absolute -top-3.5 inset-x-0 flex justify-center">
                         <span className="flex items-center gap-1 text-[10px] font-black px-3 py-1 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30">
-                          <Crown className="w-3 h-3"/> الأكثر طلباً
+                          <Crown className="w-3 h-3"/> {ar ? "الأكثر طلباً" : "Most popular"}
                         </span>
                       </div>
                     )}
@@ -1569,7 +1590,7 @@ export default function Home() {
                     {/* Features */}
                     <div className={`flex-1 px-6 py-4 ${isInf ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
                       <ul className="space-y-2.5">
-                        {HOME_TIER_FEATURES[tier].map((f, fi) => (
+                        {(ar ? HOME_TIER_FEATURES[tier].ar : HOME_TIER_FEATURES[tier].en).map((f, fi) => (
                           <li key={fi} className="flex items-start gap-2.5 text-xs">
                             <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isInf ? "text-amber-400" : isPro ? "text-blue-300" : "text-emerald-500"}`}/>
                             <span className={isInf ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}>{f}</span>
@@ -1590,10 +1611,10 @@ export default function Home() {
                         data-testid={`button-order-${tier}`}
                       >
                         <Rocket className="w-4 h-4"/>
-                        أكمل الطلب الآن
+                        {ar ? "أكمل الطلب الآن" : "Complete your order"}
                       </button>
                       <p className={`text-[10px] text-center mt-2 ${isInf || isPro ? "text-white/30" : "text-gray-400/70"}`}>
-                        تحويل بنكي · تواصل واتساب
+                         {ar ? "تحويل بنكي · تواصل واتساب" : "Bank transfer · WhatsApp contact"}
                       </p>
                     </div>
                   </motion.div>
