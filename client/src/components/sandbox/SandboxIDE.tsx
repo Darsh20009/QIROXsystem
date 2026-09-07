@@ -786,7 +786,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
             <ResizeHandle direction="horizontal" onMouseDown={rightPanel.onMouseDown} />
             <div style={{ width: rightPanel.size }} className="flex flex-shrink-0 flex-col border-s border-border bg-background">
               <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex flex-col h-full">
-                <TabsList className="h-10 w-full rounded-none border-b border-border bg-card p-0">
+                <TabsList className="h-10 w-full rounded-none border-b border-border bg-background p-0">
                   <TabsTrigger value="ai" className="h-10 flex-1 rounded-none text-[10px] text-muted-foreground data-[state=active]:bg-accent data-[state=active]:text-foreground" data-testid="tab-trigger-ai">
                     <Sparkles className="me-1 h-3.5 w-3.5" />
                     AI
