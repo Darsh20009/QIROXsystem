@@ -670,7 +670,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const { spawn } = await import("child_process");
       const { getProjectDir } = await import("./sandbox-fs");
       const { SandboxEnvVarModel } = await import("./models");
-      const { broadcastSandboxLog } = await import("./ws");
+      const { recordSandboxLog } = await import("./sandbox-runner");
       const env: Record<string, string> = { ...(process.env as Record<string, string>), PORT: String(ctx.project.port || "") };
       const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
       for (const doc of envDocs as any[]) {
@@ -681,15 +681,15 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         env,
         stdio: ["ignore", "pipe", "pipe"],
       });
-      child.stdout?.on("data", (data: Buffer) => broadcastSandboxLog(String(ctx.project._id), "stdout", data.toString()));
-      child.stderr?.on("data", (data: Buffer) => broadcastSandboxLog(String(ctx.project._id), "stderr", data.toString()));
+      child.stdout?.on("data", (data: Buffer) => recordSandboxLog(String(ctx.user._id), String(ctx.project._id), "stdout", data.toString()));
+      child.stderr?.on("data", (data: Buffer) => recordSandboxLog(String(ctx.user._id), String(ctx.project._id), "stderr", data.toString()));
       const timeout = setTimeout(() => {
         try { child.kill("SIGTERM"); } catch {}
-        broadcastSandboxLog(String(ctx.project._id), "stderr", "\n⏱ انتهت مهلة الأمر (120 ثانية)\n");
+        recordSandboxLog(String(ctx.user._id), String(ctx.project._id), "stderr", "\n⏱ انتهت مهلة الأمر (120 ثانية)\n");
       }, 120000);
       child.on("exit", (code) => {
         clearTimeout(timeout);
-        broadcastSandboxLog(String(ctx.project._id), code === 0 ? "stdout" : "stderr", `\n⏹ انتهى الأمر (كود: ${code})\n`);
+        recordSandboxLog(String(ctx.user._id), String(ctx.project._id), code === 0 ? "stdout" : "stderr", `\n⏹ انتهى الأمر (كود: ${code})\n`);
       });
       res.json({ success: true, command: safeCommand });
     } catch (err: any) {
@@ -792,8 +792,8 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const { spawn } = await import("child_process");
       const { SandboxEnvVarModel } = await import("./models");
-      const { broadcastSandboxLog } = await import("./ws");
       const { sanitizeCommand } = await import("./sandbox-runner");
+      const { recordSandboxLog } = await import("./sandbox-runner");
       const pid = String(ctx.project._id);
       const projectDir = path.join(SANDBOX_ROOT, pid);
       const buildCmd = ctx.project.buildCmd;
@@ -818,7 +818,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         try { envVars[doc.key] = decrypt(doc.value, doc.iv); } catch {}
       }
 
-      broadcastSandboxLog(pid, "stdout", `Running build: ${safeBuildCmd}`);
+      recordSandboxLog(String(ctx.user._id), pid, "stdout", `Running build: ${safeBuildCmd}`);
 
       // Use spawn (not exec) so the command is not processed by /bin/sh.
       // We pass it as a shell command to match original behavior but with the validated string.
@@ -827,17 +827,17 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         env: envVars,
         timeout: 120000,
       });
-      buildProcess.stdout?.on("data", (d: Buffer) => broadcastSandboxLog(pid, "stdout", d.toString()));
-      buildProcess.stderr?.on("data", (d: Buffer) => broadcastSandboxLog(pid, "stderr", d.toString()));
+      buildProcess.stdout?.on("data", (d: Buffer) => recordSandboxLog(String(ctx.user._id), pid, "stdout", d.toString()));
+      buildProcess.stderr?.on("data", (d: Buffer) => recordSandboxLog(String(ctx.user._id), pid, "stderr", d.toString()));
       buildProcess.on("exit", (code) => {
         if (code === 0) {
-          broadcastSandboxLog(pid, "stdout", "Build completed successfully!");
+          recordSandboxLog(String(ctx.user._id), pid, "stdout", "Build completed successfully!");
         } else {
-          broadcastSandboxLog(pid, "stderr", `Build failed with exit code ${code}`);
+          recordSandboxLog(String(ctx.user._id), pid, "stderr", `Build failed with exit code ${code}`);
         }
       });
       buildProcess.on("error", (err) => {
-        broadcastSandboxLog(pid, "stderr", `Build error: ${err.message}`);
+        recordSandboxLog(String(ctx.user._id), pid, "stderr", `Build error: ${err.message}`);
       });
 
       res.json({ success: true, message: "Build started" });
@@ -860,7 +860,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       res.json({
         projectId: pid,
         isRunning: running,
-        port: running ? ctx.project.port : null,
+        port: running ? (proc?.port || ctx.project.port) : null,
         pid: proc?.pid || null,
         uptime: proc ? Date.now() - proc.startedAt : 0,
       });
@@ -873,11 +873,13 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const { getProcessInfo } = await import("./sandbox-runner");
-      const proc = getProcessInfo(String(ctx.project._id));
-      if (!proc) return res.json({ logs: [], message: "لا توجد عملية قيد التشغيل" });
+      const { getProcessInfo, getProcessLogs } = await import("./sandbox-runner");
+      const pid = String(ctx.project._id);
+      const proc = getProcessInfo(pid);
+      const logs = getProcessLogs(pid);
+      if (!proc) return res.json({ logs, message: "لا توجد عملية قيد التشغيل" });
       res.json({
-        logs: proc.logs || [],
+        logs,
         pid: proc.pid,
         startedAt: proc.startedAt,
       });

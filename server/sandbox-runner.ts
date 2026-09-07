@@ -41,6 +41,7 @@ interface RunningProcess {
 }
 
 const runningProcesses = new Map<string, RunningProcess>();
+const processLogHistory = new Map<string, LogEntry[]>();
 const PORT_MIN = 6100;
 const PORT_MAX = 6999;
 const usedPorts = new Set<number>();
@@ -61,6 +62,11 @@ function releasePort(port: number): void {
 
 function broadcastLog(ownerId: string, projectId: string, stream: "stdout" | "stderr", text: string): void {
   const entry: LogEntry = { stream, text, ts: Date.now() };
+  const history = processLogHistory.get(projectId) || [];
+  history.push(entry);
+  if (history.length > MAX_LOG_LINES) history.splice(0, history.length - MAX_LOG_LINES);
+  processLogHistory.set(projectId, history);
+
   const proc = runningProcesses.get(projectId);
   if (proc) {
     proc.logs.push(entry);
@@ -74,6 +80,15 @@ function broadcastLog(ownerId: string, projectId: string, stream: "stdout" | "st
     text,
     ts: entry.ts,
   });
+}
+
+export function recordSandboxLog(
+  ownerId: string,
+  projectId: string,
+  stream: "stdout" | "stderr",
+  text: string,
+): void {
+  broadcastLog(ownerId, projectId, stream, text);
 }
 
 export async function startProcess(
@@ -207,7 +222,7 @@ export function getProcessInfo(projectId: string): { port: number; pid: number; 
 }
 
 export function getProcessLogs(projectId: string): LogEntry[] {
-  return runningProcesses.get(projectId)?.logs.slice(-MAX_LOG_LINES) || [];
+  return (processLogHistory.get(projectId) || runningProcesses.get(projectId)?.logs || []).slice(-MAX_LOG_LINES);
 }
 
 export function isRunning(projectId: string): boolean {

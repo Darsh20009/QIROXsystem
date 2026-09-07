@@ -59,3 +59,4 @@
 - [GitHub history recovery](github-history-recovery.md) — An overwritten empty root commit may still be recoverable from an unreachable commit SHA; preserve the current ref before restoring.
 - [Project code workspace](project-code-workspace.md) — Reuse the sandbox IDE/runner for linked order projects; never persist GitHub tokens in the workspace remote.
 - [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.
+- [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.

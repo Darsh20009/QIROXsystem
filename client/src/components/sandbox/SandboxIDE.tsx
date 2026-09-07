@@ -13,7 +13,7 @@ import {
   Terminal, PanelRightClose, PanelRightOpen, Hammer,
   Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw,
   FolderTree, Search, GitBranch, KeyRound, Rocket, Command,
-  MoreHorizontal, Check, Circle, ChevronDown
+  MoreHorizontal, Check, Circle, ChevronDown, ScrollText
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { FileTree } from "./FileTree";
@@ -141,6 +141,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [rightPanelTab, setRightPanelTab] = useState(adminOrderId ? "deploy" : "ai");
   const [logsOpen, setLogsOpen] = useState(false);
+  const [logsPanelTab, setLogsPanelTab] = useState<"shell" | "logs">("shell");
   const [showPreview, setShowPreview] = useState(false);
   const [activityView, setActivityView] = useState<"files" | "search">("files");
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,7 +174,8 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const { data: runtimeStatus } = useQuery<{ isRunning: boolean; port: number | null }>({
     queryKey: ["/api/sandbox/projects", projectId, "status"],
     enabled: Boolean(projectId),
-    refetchInterval: showPreview ? 3000 : false,
+    refetchInterval: 2000,
+    staleTime: 0,
   });
 
   useEffect(() => {
@@ -248,6 +250,10 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     mutationFn: async (): Promise<StartResult> => {
       const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/start`, {});
       return res.json();
+    },
+    onMutate: () => {
+      setLogsPanelTab("logs");
+      setLogsOpen(true);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId] });
@@ -667,7 +673,10 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
             <button
               type="button"
                className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition md:w-full md:justify-start md:gap-2 md:px-2 ${logsOpen ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
-              onClick={() => setLogsOpen(!logsOpen)}
+               onClick={() => {
+                 setLogsPanelTab("shell");
+                 setLogsOpen(true);
+               }}
                title={ar ? "Shell والكونسول والسجلات" : "Shell & console logs"}
                aria-label={ar ? "Shell والكونسول والسجلات" : "Shell & console logs"}
               data-testid="button-activity-terminal"
@@ -675,6 +684,20 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
               <Terminal className="h-5 w-5" />
                <span className="hidden text-xs md:inline">{ar ? "Shell والكونسول" : "Shell & console"}</span>
             </button>
+             <button
+               type="button"
+               className={`mt-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition md:w-full md:justify-start md:gap-2 md:px-2 ${logsOpen && logsPanelTab === "logs" ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+               onClick={() => {
+                 setLogsPanelTab("logs");
+                 setLogsOpen(true);
+               }}
+               title={ar ? "سجلات التشغيل" : "Runtime logs"}
+               aria-label={ar ? "سجلات التشغيل" : "Runtime logs"}
+               data-testid="button-activity-logs"
+             >
+               <ScrollText className="h-5 w-5" />
+               <span className="hidden text-xs md:inline">{ar ? "السجلات" : "Logs"}</span>
+             </button>
           </div>
         </nav>
 
@@ -798,47 +821,74 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
               <ResizeHandle direction="vertical" onMouseDown={logsPanel.onMouseDown} />
               <div style={{ height: logsPanel.size }} className="flex flex-col border-t border-border bg-background">
                 <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
-                  <span className="flex items-center gap-2 text-[11px] font-semibold text-foreground">
-                    <TerminalSquare className="h-3.5 w-3.5 text-foreground" />
-                     {ar ? "Shell والكونسول" : "Shell & console"}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
-                    onClick={() => setLogs([])}
-                    data-testid="button-clear-logs"
-                  >
-                    {ar ? "مسح" : "Clear"}
-                  </Button>
+                   <div className="flex items-center gap-1">
+                     <button
+                       type="button"
+                       className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold ${logsPanelTab === "shell" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                       onClick={() => setLogsPanelTab("shell")}
+                     >
+                       <TerminalSquare className="h-3.5 w-3.5" />
+                       {ar ? "Shell" : "Shell"}
+                     </button>
+                     <button
+                       type="button"
+                       className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold ${logsPanelTab === "logs" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                       onClick={() => setLogsPanelTab("logs")}
+                     >
+                       <ScrollText className="h-3.5 w-3.5" />
+                       {ar ? "السجلات" : "Logs"}
+                     </button>
+                   </div>
+                   <div className="flex items-center gap-1">
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       className="h-6 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                       onClick={() => setLogs([])}
+                       data-testid="button-clear-logs"
+                     >
+                       {ar ? "مسح العرض" : "Clear view"}
+                     </Button>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       className="h-6 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                       onClick={() => setLogsOpen(false)}
+                       data-testid="button-close-logs"
+                     >
+                       {ar ? "إغلاق" : "Close"}
+                     </Button>
+                   </div>
                 </div>
-               <form
-                 className="flex items-center gap-2 border-b border-border bg-background px-3 py-2"
-                 onSubmit={(event) => {
-                   event.preventDefault();
-                   if (shellCommand.trim() && !shellMutation.isPending) shellMutation.mutate(shellCommand.trim());
-                 }}
-               >
-                  <span className="font-mono text-xs text-foreground">$</span>
-                   <Input
-                   value={shellCommand}
-                   onChange={(event) => setShellCommand(event.target.value)}
-                   placeholder={ar ? "أمر آمن مثل npm install أو git status" : "Safe command, e.g. npm install or git status"}
-                      className="h-8 flex-1 border-border bg-card font-mono text-xs text-foreground placeholder:text-muted-foreground"
-                   dir="ltr"
-                   disabled={shellMutation.isPending}
-                   data-testid="input-sandbox-shell-command"
-                 />
-                 <Button
-                   type="submit"
-                   size="sm"
-                      className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/80"
-                   disabled={!shellCommand.trim() || shellMutation.isPending}
-                   data-testid="button-run-sandbox-shell-command"
-                 >
-                   {shellMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                 </Button>
-               </form>
+                {logsPanelTab === "shell" && (
+                  <form
+                    className="flex items-center gap-2 border-b border-border bg-background px-3 py-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (shellCommand.trim() && !shellMutation.isPending) shellMutation.mutate(shellCommand.trim());
+                    }}
+                  >
+                     <span className="font-mono text-xs text-foreground">$</span>
+                      <Input
+                      value={shellCommand}
+                      onChange={(event) => setShellCommand(event.target.value)}
+                      placeholder={ar ? "أمر آمن مثل npm install أو git status" : "Safe command, e.g. npm install or git status"}
+                         className="h-8 flex-1 border-border bg-card font-mono text-xs text-foreground placeholder:text-muted-foreground"
+                      dir="ltr"
+                      disabled={shellMutation.isPending}
+                      data-testid="input-sandbox-shell-command"
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                         className="h-8 bg-foreground px-3 text-xs text-background hover:bg-foreground/80"
+                      disabled={!shellCommand.trim() || shellMutation.isPending}
+                      data-testid="button-run-sandbox-shell-command"
+                    >
+                      {shellMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                    </Button>
+                  </form>
+                )}
                   <div className="flex-1 overflow-y-auto bg-background p-3 font-mono text-xs text-foreground">
                   {logs.length === 0 ? (
                     <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
@@ -949,10 +999,14 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
             <div className="space-y-1 p-2">
               {[
                 { label: ar ? "تشغيل المشروع" : "Run project", icon: Play, action: () => { startMutation.mutate(); setCommandPaletteOpen(false); } },
+                { label: ar ? "إعادة تشغيل المشروع" : "Restart project", icon: RotateCcw, action: () => { restartMutation.mutate(); setCommandPaletteOpen(false); } },
+                { label: ar ? "بناء المشروع" : "Build project", icon: Hammer, action: () => { buildMutation.mutate(); setCommandPaletteOpen(false); } },
+                { label: ar ? "تحميل ملفات المشروع" : "Download project", icon: Download, action: () => { handleDownload(); setCommandPaletteOpen(false); } },
                 { label: ar ? "فتح المعاينة" : "Open preview", icon: Eye, action: () => { setShowPreview(true); setCommandPaletteOpen(false); } },
                 { label: ar ? "فتح الأسرار" : "Open project secrets", icon: KeyRound, action: () => { setRightPanelOpen(true); setRightPanelTab("env"); setCommandPaletteOpen(false); } },
                 { label: ar ? "فتح النشر" : "Open deployment", icon: Rocket, action: () => { setRightPanelOpen(true); setRightPanelTab("deploy"); setCommandPaletteOpen(false); } },
-                 { label: ar ? "فتح Shell والكونسول" : "Open Shell & console", icon: Terminal, action: () => { setLogsOpen(true); setCommandPaletteOpen(false); } },
+                 { label: ar ? "فتح Shell والكونسول" : "Open Shell & console", icon: Terminal, action: () => { setLogsPanelTab("shell"); setLogsOpen(true); setCommandPaletteOpen(false); } },
+                 { label: ar ? "فتح السجلات" : "Open logs", icon: ScrollText, action: () => { setLogsPanelTab("logs"); setLogsOpen(true); setCommandPaletteOpen(false); } },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
