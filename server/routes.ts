@@ -2797,16 +2797,28 @@ export async function registerRoutes(
     const search = (req.query.search as string || "").trim();
     const statusFilter = req.query.status as string;
     const filter: any = {};
-    // Regular employees only see orders assigned to them
+    // Regular employees only see orders assigned to them. assignedTo is kept
+    // as the legacy primary assignee; assignedToIds is the complete list.
     const fullAccessRoles = ["admin", "manager", "owner", "accountant", "sales_manager", "data_entry"];
     if (!fullAccessRoles.includes(currentRole)) {
-      filter.assignedTo = currentUserId;
+      filter.$or = [{ assignedTo: currentUserId }, { assignedToIds: currentUserId }];
     }
     if (search) filter.$or = [
       { businessName: { $regex: search, $options: 'i' } },
       { serviceType: { $regex: search, $options: 'i' } },
       { planTier: { $regex: search, $options: 'i' } },
     ];
+    if (search && !fullAccessRoles.includes(currentRole)) {
+      filter.$and = [
+        { $or: [{ assignedTo: currentUserId }, { assignedToIds: currentUserId }] },
+        { $or: [
+          { businessName: { $regex: search, $options: 'i' } },
+          { serviceType: { $regex: search, $options: 'i' } },
+          { planTier: { $regex: search, $options: 'i' } },
+        ] },
+      ];
+      delete filter.$or;
+    }
     if (statusFilter && statusFilter !== 'all') filter.status = statusFilter;
     if (page > 0) {
       const total = await OrderModel.countDocuments(filter);
@@ -2852,6 +2864,16 @@ export async function registerRoutes(
       : req.body;
     if (isDataEntry && Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
+    }
+    if (!isDataEntry && req.body.assignedToIds !== undefined) {
+      const rawIds = Array.isArray(req.body.assignedToIds) ? req.body.assignedToIds : [];
+      const assignedToIds = [...new Set(
+        rawIds
+          .map((id: unknown) => String(id || "").trim())
+          .filter((id: string) => mongoose.Types.ObjectId.isValid(id)),
+      )];
+      updates.assignedToIds = assignedToIds;
+      updates.assignedTo = assignedToIds[0] || null;
     }
     if (updates.status === "approved" && !["admin", "manager"].includes((req.user as any).role)) {
       return res.status(403).json({ error: "اعتماد الطلبات متاح للإدارة فقط" });
@@ -9090,7 +9112,12 @@ export async function registerRoutes(
 
     const order = await storage.getOrderWithUser(req.params.id);
     const assignedTo = (order as any)?.assignedTo;
-    const isAssignedToCurrentUser = String(assignedTo?._id || assignedTo || "") === String(user.id || user._id);
+    const assignedToIds = Array.isArray((order as any)?.assignedToIds) ? (order as any).assignedToIds : [];
+    const currentUserId = String(user.id || user._id);
+    const isAssignedToCurrentUser = [
+      assignedTo?._id || assignedTo || "",
+      ...assignedToIds.map((id: any) => id?._id || id),
+    ].some((id: any) => String(id) === currentUserId);
     if (!isAssignedToCurrentUser) return res.json(redactSpecsForDataEntry(specs || {}));
 
     // Assigned Data Entry can see the connection/deployment fields needed for
@@ -9109,7 +9136,12 @@ export async function registerRoutes(
     if (isDataEntry) {
       const order = await storage.getOrderWithUser(req.params.id);
       const assignedTo = (order as any)?.assignedTo;
-      isAssignedToCurrentUser = String(assignedTo?._id || assignedTo || "") === String(user.id || user._id);
+      const assignedToIds = Array.isArray((order as any)?.assignedToIds) ? (order as any).assignedToIds : [];
+      const currentUserId = String(user.id || user._id);
+      isAssignedToCurrentUser = [
+        assignedTo?._id || assignedTo || "",
+        ...assignedToIds.map((id: any) => id?._id || id),
+      ].some((id: any) => String(id) === currentUserId);
     }
     const allowedDataEntryFields = isAssignedToCurrentUser
       ? [...dataEntrySpecFields, ...assignedDataEntrySpecFields]

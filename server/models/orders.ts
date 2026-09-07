@@ -59,7 +59,10 @@ const orderSchema = new mongoose.Schema({
     confirmedAt: Date,
     confirmedBy: String,
   },
+  // Keep assignedTo as the primary/legacy assignee for backwards
+  // compatibility. assignedToIds contains the complete assignment list.
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  assignedToIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   adminNotes: String,
   internalNotes: { type: String, default: "" },
   orderNumber: { type: String, sparse: true },

@@ -51,6 +51,7 @@ interface OrderData {
   orderNumber?: string;
   createdAt?: string;
   assignedTo?: string;
+  assignedToIds?: string[];
   adminNotes?: string;
   requiredFunctions?: string;
   whatsappIntegration?: boolean;
@@ -79,6 +80,12 @@ interface OrderData {
     address?: string;
     city?: string;
   };
+}
+
+function getOrderAssigneeIds(order: Pick<OrderData, "assignedTo" | "assignedToIds"> | any): string[] {
+  const legacy = order?.assignedTo?._id || order?.assignedTo?.id || order?.assignedTo;
+  const ids = Array.isArray(order?.assignedToIds) ? order.assignedToIds : [];
+  return [...new Set([legacy, ...ids].filter(Boolean).map(String))];
 }
 
 function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
@@ -149,12 +156,6 @@ export default function AdminOrders() {
   const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
   const canManageProjectSubscriptions = ["admin", "manager"].includes(currentUser?.role || "");
   const isDataEntry = currentUser?.role === "data_entry";
-  const selectedOrderAssignee = (selectedOrder as any)?.assignedTo;
-  const selectedOrderAssigneeId = selectedOrderAssignee?._id || selectedOrderAssignee?.id || selectedOrderAssignee;
-  const currentUserId = currentUser?.id || currentUser?._id;
-  const isAssignedDataEntry = isDataEntry
-    && String(selectedOrderAssigneeId || "") === String(currentUserId || "");
-  const canEditProjectSecrets = !isDataEntry || isAssignedDataEntry;
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
   const roleLabels = getRoleLabels(L);
@@ -162,7 +163,8 @@ export default function AdminOrders() {
   const [activeTab, setActiveTab] = useState("details");
   const [editStatus, setEditStatus] = useState("");
   const [editAmount, setEditAmount] = useState("");
-  const [editAssignedTo, setEditAssignedTo] = useState("");
+  const [editAssignedToIds, setEditAssignedToIds] = useState<string[]>([]);
+  const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [editProgress, setEditProgress] = useState(0);
   const [editPriority, setEditPriority] = useState("medium");
@@ -208,6 +210,11 @@ export default function AdminOrders() {
     dueDate: "",
     notes: "",
   });
+  const currentUserId = currentUser?.id || currentUser?._id;
+  const selectedOrderAssigneeIds = getOrderAssigneeIds(selectedOrder);
+  const isAssignedDataEntry = isDataEntry
+    && selectedOrderAssigneeIds.includes(String(currentUserId || ""));
+  const canEditProjectSecrets = !isDataEntry || isAssignedDataEntry;
   const [addonForm, setAddonForm] = useState({
     addonId: "",
     amount: "",
@@ -815,8 +822,8 @@ export default function AdminOrders() {
     const updates: Record<string, any> = {};
     if (editStatus) updates.status = editStatus;
     if (editAmount) updates.totalAmount = Number(editAmount);
-    if (editAssignedTo && editAssignedTo !== "none") updates.assignedTo = editAssignedTo;
-    else if (editAssignedTo === "none") updates.assignedTo = null;
+    updates.assignedToIds = editAssignedToIds;
+    updates.assignedTo = editAssignedToIds[0] || null;
     if (editAdminNotes !== undefined) updates.adminNotes = editAdminNotes;
     if (editProgress !== undefined) updates.progress = editProgress;
     if (editPriority) updates.priority = editPriority;
@@ -967,7 +974,8 @@ export default function AdminOrders() {
     setActiveTab("details");
     setEditStatus(order.status);
     setEditAmount(order.totalAmount?.toString() || "");
-    setEditAssignedTo(order.assignedTo || "none");
+    setEditAssignedToIds(getOrderAssigneeIds(order));
+    setAssigneeMenuOpen(false);
     setEditAdminNotes(order.adminNotes || "");
     setEditProgress((order as any).progress || 0);
     setEditPriority((order as any).priority || "medium");
@@ -982,10 +990,10 @@ export default function AdminOrders() {
     });
   };
 
-  const getAssigneeName = (assignedTo?: string) => {
-    if (!assignedTo || !employees) return null;
-    const emp = employees.find(e => e.id === assignedTo);
-    return emp ? emp.fullName : null;
+  const getAssigneeNames = (order: OrderData) => {
+    if (!employees) return [];
+    const ids = getOrderAssigneeIds(order);
+    return employees.filter(e => ids.includes(String(e.id))).map(e => e.fullName);
   };
 
   const myId = currentUser?.id || currentUser?._id;
@@ -1003,10 +1011,10 @@ export default function AdminOrders() {
       if (created > new Date(filterDateTo + "T23:59:59")) return false;
     }
     if (filterAssignee !== "all") {
-      if (filterAssignee === "unassigned") { if (o.assignedTo) return false; }
-      else if (o.assignedTo !== filterAssignee) return false;
+      if (filterAssignee === "unassigned") { if (getOrderAssigneeIds(o).length) return false; }
+      else if (!getOrderAssigneeIds(o).includes(filterAssignee)) return false;
     }
-    if (isLimitedRole) return o.assignedTo === myId || o.assignedTo === String(myId);
+    if (isLimitedRole) return getOrderAssigneeIds(o).includes(String(myId));
     return true;
   }) || [];
 
@@ -1121,7 +1129,7 @@ export default function AdminOrders() {
             </thead>
             <tbody>
               {filteredOrders.map((order) => {
-                const assigneeName = getAssigneeName(order.assignedTo);
+                const assigneeNames = getAssigneeNames(order);
                 return (
                   <tr key={order.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-order-${order.id}`}>
                     <td className="p-4">
@@ -1165,12 +1173,15 @@ export default function AdminOrders() {
                       </span>
                     </td>
                     <td className="p-4">
-                      {assigneeName ? (
-                        <div className="flex items-center gap-1.5">
+                      {assigneeNames.length ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-[9px] font-bold">{assigneeName.charAt(0)}</span>
+                            <span className="text-white text-[9px] font-bold">{assigneeNames[0].charAt(0)}</span>
                           </div>
-                          <span className="text-xs text-black/60 font-medium">{assigneeName}</span>
+                          <span className="text-xs text-black/60 font-medium">
+                            {assigneeNames.slice(0, 2).join("، ")}
+                            {assigneeNames.length > 2 ? ` +${assigneeNames.length - 2}` : ""}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-xs text-black/20 italic">{L ? "غير معين" : "Unassigned"}</span>
@@ -2432,19 +2443,47 @@ export default function AdminOrders() {
                         <label className="block text-xs font-medium text-black/50 mb-1.5 flex items-center gap-1.5">
                           <UserCheck className="w-3.5 h-3.5" />{L ? "تعيين لموظف" : "Assign to Employee"}
                         </label>
-                        <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
-                          <SelectTrigger className="h-10" data-testid="select-assign-employee">
-                            <SelectValue placeholder={L ? "اختر موظفاً..." : "Choose an employee..."} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{L ? "غير معين" : "Unassigned"}</SelectItem>
-                            {employees?.map(emp => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.fullName} — {roleLabels[emp.role] || emp.role}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            className="h-10 w-full rounded-md border border-black/10 bg-white px-3 text-right text-sm flex items-center justify-between gap-2"
+                            onClick={() => setAssigneeMenuOpen(open => !open)}
+                            data-testid="select-assign-employee"
+                          >
+                            <span className="truncate">
+                              {editAssignedToIds.length
+                                ? employees?.filter(emp => editAssignedToIds.includes(emp.id)).map(emp => emp.fullName).join("، ")
+                                : (L ? "غير معين" : "Unassigned")}
+                            </span>
+                            <ChevronDown className="w-4 h-4 shrink-0 text-black/40" />
+                          </button>
+                          {assigneeMenuOpen && (
+                            <div className="absolute right-0 left-0 top-11 z-50 rounded-md border border-black/10 bg-white p-2 shadow-lg max-h-56 overflow-y-auto">
+                              <button
+                                type="button"
+                                className="w-full rounded px-2 py-1.5 text-right text-xs text-black/50 hover:bg-black/[0.04]"
+                                onClick={() => setEditAssignedToIds([])}
+                              >
+                                {L ? "إلغاء تعيين الكل" : "Unassign all"}
+                              </button>
+                              {employees?.map(emp => {
+                                const checked = editAssignedToIds.includes(emp.id);
+                                return (
+                                  <label key={emp.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-xs hover:bg-black/[0.04]">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => setEditAssignedToIds(current => checked
+                                        ? current.filter(id => id !== emp.id)
+                                        : [...current, emp.id])}
+                                    />
+                                    <span>{emp.fullName} — {roleLabels[emp.role] || emp.role}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div>
