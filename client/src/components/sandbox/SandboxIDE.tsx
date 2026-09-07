@@ -13,7 +13,7 @@ import {
   Terminal, PanelRightClose, PanelRightOpen, Hammer,
   Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw,
   FolderTree, Search, GitBranch, KeyRound, Rocket, Command,
-  MoreHorizontal, Check, Circle, ChevronDown, ScrollText
+  MoreHorizontal, Check, Circle, ChevronDown, ScrollText, TerminalSquare
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { FileTree } from "./FileTree";
