@@ -548,7 +548,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           data-testid="button-toggle-preview"
         >
           <Eye className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">{ar ? "معاينة" : "Preview"}</span>
+           <span className="hidden md:inline">{ar ? "معاينة" : "Preview"}</span>
         </Button>
         <Button
           variant="outline"
@@ -558,7 +558,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           data-testid="button-open-deploy"
         >
           <Rocket className="h-3.5 w-3.5 text-foreground" />
-          <span className="hidden lg:inline">{ar ? "نشر" : "Deploy"}</span>
+           <span className="hidden md:inline">{ar ? "نشر" : "Deploy"}</span>
         </Button>
         <Button
           variant="ghost"
@@ -581,61 +581,90 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
       </header>
 
       <div className="relative flex min-h-0 flex-1 pb-6">
-        <nav className="flex w-12 shrink-0 flex-col items-center border-e border-border bg-background py-2" aria-label={ar ? "أدوات المشروع" : "Project tools"}>
+         <nav className="flex w-12 shrink-0 flex-col items-center border-e border-border bg-background py-2 md:w-40 md:items-stretch md:px-2" aria-label={ar ? "أدوات المشروع" : "Project tools"}>
+           <div className="mb-2 hidden px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:block">
+             {ar ? "أدوات المشروع" : "Project tools"}
+           </div>
           <button
             type="button"
-            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "files" ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+             className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition md:w-full md:justify-start md:gap-2 md:px-2 ${activityView === "files" ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
             onClick={() => setActivityView("files")}
             title={ar ? "المستكشف" : "Explorer"}
+             aria-label={ar ? "المستكشف" : "Explorer"}
             data-testid="button-activity-files"
           >
             <FolderTree className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">{ar ? "الملفات" : "Files"}</span>
           </button>
           <button
             type="button"
-            className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${activityView === "search" ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+             className={`mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition md:w-full md:justify-start md:gap-2 md:px-2 ${activityView === "search" ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
             onClick={() => setActivityView("search")}
             title={ar ? "بحث" : "Search"}
+             aria-label={ar ? "بحث" : "Search"}
             data-testid="button-activity-search"
           >
             <Search className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">{ar ? "بحث" : "Search"}</span>
           </button>
+           <button
+             type="button"
+             className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground md:w-full md:justify-start md:gap-2 md:px-2"
+             onClick={() => {
+               setShowPreview(true);
+               if (!isRunning && !isProcessing) startMutation.mutate();
+             }}
+             title={ar ? "المعاينة" : "Preview"}
+             aria-label={ar ? "المعاينة" : "Preview"}
+             data-testid="button-activity-preview"
+           >
+             <Eye className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">{ar ? "المعاينة" : "Preview"}</span>
+           </button>
           <button
             type="button"
-            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground"
+             className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground md:w-full md:justify-start md:gap-2 md:px-2"
             onClick={() => { setRightPanelOpen(true); setRightPanelTab("github"); }}
             title={ar ? "GitHub" : "Source control"}
+             aria-label={ar ? "GitHub" : "Source control"}
             data-testid="button-activity-git"
           >
             <GitBranch className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">Git</span>
           </button>
           <button
             type="button"
-            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground"
+             className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground md:w-full md:justify-start md:gap-2 md:px-2"
             onClick={() => { setRightPanelOpen(true); setRightPanelTab("env"); }}
             title={ar ? "أسرار المشروع" : "Project secrets"}
+             aria-label={ar ? "أسرار المشروع" : "Project secrets"}
             data-testid="button-activity-secrets"
           >
             <KeyRound className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">{ar ? "الأسرار" : "Secrets"}</span>
           </button>
           <button
             type="button"
-            className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground"
+             className="mb-1 flex h-10 w-10 items-center justify-center rounded-md border-s-2 border-transparent text-muted-foreground transition hover:bg-accent hover:text-foreground md:w-full md:justify-start md:gap-2 md:px-2"
             onClick={() => { setRightPanelOpen(true); setRightPanelTab("deploy"); }}
             title={ar ? "النشر" : "Deploy"}
+             aria-label={ar ? "النشر" : "Deploy"}
             data-testid="button-activity-deploy"
           >
             <Rocket className="h-5 w-5" />
+             <span className="hidden text-xs md:inline">{ar ? "النشر والدومين" : "Deploy & domain"}</span>
           </button>
           <div className="mt-auto">
             <button
               type="button"
-              className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition ${logsOpen ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+               className={`flex h-10 w-10 items-center justify-center rounded-md border-s-2 transition md:w-full md:justify-start md:gap-2 md:px-2 ${logsOpen ? "border-foreground bg-accent text-foreground" : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               onClick={() => setLogsOpen(!logsOpen)}
-              title={ar ? "Terminal" : "Terminal"}
+               title={ar ? "Shell والكونسول والسجلات" : "Shell & console logs"}
+               aria-label={ar ? "Shell والكونسول والسجلات" : "Shell & console logs"}
               data-testid="button-activity-terminal"
             >
               <Terminal className="h-5 w-5" />
+               <span className="hidden text-xs md:inline">{ar ? "Shell والكونسول" : "Shell & console"}</span>
             </button>
           </div>
         </nav>
@@ -762,7 +791,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                 <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
                   <span className="flex items-center gap-2 text-[11px] font-semibold text-foreground">
                     <TerminalSquare className="h-3.5 w-3.5 text-foreground" />
-                    {ar ? "Terminal" : "Terminal"}
+                     {ar ? "Shell والكونسول" : "Shell & console"}
                   </span>
                   <Button
                     variant="ghost"
@@ -914,7 +943,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                 { label: ar ? "فتح المعاينة" : "Open preview", icon: Eye, action: () => { setShowPreview(true); setCommandPaletteOpen(false); } },
                 { label: ar ? "فتح الأسرار" : "Open project secrets", icon: KeyRound, action: () => { setRightPanelOpen(true); setRightPanelTab("env"); setCommandPaletteOpen(false); } },
                 { label: ar ? "فتح النشر" : "Open deployment", icon: Rocket, action: () => { setRightPanelOpen(true); setRightPanelTab("deploy"); setCommandPaletteOpen(false); } },
-                { label: ar ? "فتح الطرفية" : "Open terminal", icon: Terminal, action: () => { setLogsOpen(true); setCommandPaletteOpen(false); } },
+                 { label: ar ? "فتح Shell والكونسول" : "Open Shell & console", icon: Terminal, action: () => { setLogsOpen(true); setCommandPaletteOpen(false); } },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
