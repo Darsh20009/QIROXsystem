@@ -851,7 +851,7 @@ export default function AdminProjectData() {
 
   const role = (user as any)?.role;
   const username = (user as any)?.username;
-  if (!["admin", "employee", "manager", "developer", "designer", "support", "accountant", "sales", "sales_manager"].includes(role) && username !== "qadmin") {
+  if (!["admin", "employee", "manager", "developer", "designer", "data_entry", "support", "accountant", "sales", "sales_manager"].includes(role) && username !== "qadmin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950" dir={dir}>
         <div className="text-center">

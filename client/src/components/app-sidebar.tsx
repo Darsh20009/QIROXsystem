@@ -157,7 +157,7 @@ export function AppSidebar() {
 
     // Employee — work (كل الموظفين يرون مشاريعهم)
     { title: ar ? "المشاريع" : "Projects", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
-    { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work", allowedRoles: TECH_ROLES },
+    { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work", allowedRoles: [...TECH_ROLES, "data_entry"] },
     { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work", allowedRoles: TECH_ROLES },
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work", allowedRoles: [...TECH_ROLES, "sales_manager", "sales"] },
 

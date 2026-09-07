@@ -149,6 +149,7 @@ export default function AdminOrders() {
   const canSeeFinance = ["admin", "manager", "owner", "accountant"].includes(currentUser?.role || "");
   const canManageProjectSubscriptions = ["admin", "manager"].includes(currentUser?.role || "");
   const isDataEntry = currentUser?.role === "data_entry";
+  const canEditProjectSecrets = !isDataEntry;
   const statusMap = getStatusMap(L);
   const paymentMethods = getPaymentMethods(L);
   const roleLabels = getRoleLabels(L);
@@ -2221,30 +2222,40 @@ export default function AdminOrders() {
                                 onChange={e => setSpecsForm(f => ({ ...f, customDomain: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-domain" />
                             </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "اسم المستخدم للنشر" : "Deployment Username"}</label>
-                              <Input value={specsForm.deploymentUsername}
-                                onChange={e => setSpecsForm(f => ({ ...f, deploymentUsername: e.target.value }))}
-                                className="text-sm" data-testid="input-specs-deploy-user" />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "كلمة مرور النشر" : "Deployment Password"}</label>
-                              <Input type="password" value={specsForm.deploymentPassword}
-                                onChange={e => setSpecsForm(f => ({ ...f, deploymentPassword: e.target.value }))}
-                                className="text-sm" data-testid="input-specs-deploy-pass" />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Database URI / Connection String</label>
-                              <Input placeholder="mongodb+srv://..." value={specsForm.databaseUri}
-                                onChange={e => setSpecsForm(f => ({ ...f, databaseUri: e.target.value }))}
-                                className="text-sm font-mono" data-testid="input-specs-db-uri" />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Environment Variables</label>
-                              <Textarea placeholder="NODE_ENV=production&#10;DATABASE_URL=..." value={specsForm.variables}
-                                onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
-                                className="text-sm font-mono h-20 resize-none" data-testid="input-specs-env" />
-                            </div>
+                            {canEditProjectSecrets ? (
+                              <>
+                                <div>
+                                  <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "اسم المستخدم للنشر" : "Deployment Username"}</label>
+                                  <Input value={specsForm.deploymentUsername}
+                                    onChange={e => setSpecsForm(f => ({ ...f, deploymentUsername: e.target.value }))}
+                                    className="text-sm" data-testid="input-specs-deploy-user" />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "كلمة مرور النشر" : "Deployment Password"}</label>
+                                  <Input type="password" value={specsForm.deploymentPassword}
+                                    onChange={e => setSpecsForm(f => ({ ...f, deploymentPassword: e.target.value }))}
+                                    className="text-sm" data-testid="input-specs-deploy-pass" />
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-[10px] font-bold text-black/50 mb-1 block">Database URI / Connection String</label>
+                                  <Input placeholder="mongodb+srv://..." value={specsForm.databaseUri}
+                                    onChange={e => setSpecsForm(f => ({ ...f, databaseUri: e.target.value }))}
+                                    className="text-sm font-mono" data-testid="input-specs-db-uri" />
+                                </div>
+                                <div className="col-span-2">
+                                  <label className="text-[10px] font-bold text-black/50 mb-1 block">Environment Variables</label>
+                                  <Textarea placeholder="NODE_ENV=production&#10;DATABASE_URL=..." value={specsForm.variables}
+                                    onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
+                                    className="text-sm font-mono h-20 resize-none" data-testid="input-specs-env" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-800">
+                                {L
+                                  ? "بيانات الاتصال وكلمات المرور تُحفظ فقط من خلال المبرمج أو الإدارة لحماية أسرار المشروع."
+                                  : "Connection strings and passwords are managed by developers or managers to protect project secrets."}
+                              </div>
+                            )}
                           </div>
                         </div>
 

@@ -201,7 +201,24 @@ async function requireProjectAccess(req: Request, res: Response): Promise<{ user
   const project = await SandboxProjectModel.findById(projectId);
   if (!project) { res.status(404).json({ error: "المشروع غير موجود" }); return null; }
   const isAdmin = ["admin", "manager"].includes(user.role);
-  if (String(project.ownerId) !== String(user._id) && !isAdmin) {
+  const isOwner = String(project.ownerId) === String(user._id || user.id);
+  let isProjectDeveloper = false;
+
+  // A workspace created from a client project belongs to the workspace owner,
+  // but its assigned developers/designers must be able to work in it too.
+  // Membership is checked against the source Project, not against a client-
+  // supplied workspace id, so access cannot be granted by guessing an id.
+  if (!isOwner && !isAdmin && ["developer", "designer"].includes(user.role) && project.sourceProjectId) {
+    const { ProjectMemberModel, ProjectModel } = await import("./models");
+    const userId = String(user._id || user.id);
+    const [membership, managedProject] = await Promise.all([
+      ProjectMemberModel.exists({ projectId: project.sourceProjectId, userId }),
+      ProjectModel.exists({ _id: project.sourceProjectId, managerId: userId }),
+    ]);
+    isProjectDeveloper = Boolean(membership || managedProject);
+  }
+
+  if (!isOwner && !isAdmin && !isProjectDeveloper) {
     res.status(403).json({ error: "غير مصرّح بالوصول لهذا المشروع" });
     return null;
   }
@@ -365,10 +382,31 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     const user = requireAuth(req, res);
     if (!user) return;
     try {
-      const { SandboxProjectModel } = await import("./models");
+      const { SandboxProjectModel, ProjectMemberModel, ProjectModel } = await import("./models");
       const { isRunning } = await import("./sandbox-runner");
       const isAdmin = ["admin", "manager"].includes(user.role);
-      const query: any = isAdmin ? {} : { ownerId: user._id || user.id };
+      let query: any;
+      if (isAdmin) {
+        query = {};
+      } else if (["developer", "designer"].includes(user.role)) {
+        const userId = String(user._id || user.id);
+        const [memberships, managedProjects] = await Promise.all([
+          ProjectMemberModel.find({ userId }).select("projectId").lean(),
+          ProjectModel.find({ managerId: userId }).select("_id").lean(),
+        ]);
+        const sourceProjectIds = [
+          ...memberships.map((entry: any) => entry.projectId),
+          ...managedProjects.map((entry: any) => entry._id),
+        ];
+        query = {
+          $or: [
+            { ownerId: user._id || user.id },
+            { sourceProjectId: { $in: sourceProjectIds } },
+          ],
+        };
+      } else {
+        query = { ownerId: user._id || user.id };
+      }
       const projects = await SandboxProjectModel.find(query).sort({ updatedAt: -1 }).lean();
       const result = projects.map((p: any) => ({
         ...p,
