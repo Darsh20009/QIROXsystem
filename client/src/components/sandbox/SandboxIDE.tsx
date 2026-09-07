@@ -48,6 +48,7 @@ interface SandboxProjectDetail {
   startCmd?: string;
   installCmd?: string;
   buildCmd?: string;
+  logoUrl?: string;
 }
 
 interface FileEntry {
@@ -499,8 +500,16 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-foreground text-[11px] font-black text-background">
-          Q
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground text-[11px] font-black text-background">
+          {project?.logoUrl ? (
+            <img
+              src={project.logoUrl}
+              alt={project.name || "Project logo"}
+              className="h-full w-full object-contain bg-background"
+            />
+          ) : (
+            "Q"
+          )}
         </div>
         <div className="min-w-0 max-w-[260px]">
           <div className="truncate text-xs font-semibold text-foreground">{project?.name}</div>

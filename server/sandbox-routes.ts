@@ -187,6 +187,11 @@ function normalizeLogoUrl(value: unknown): string {
   }
 }
 
+function parseGithubRepo(value: unknown): { owner: string; repo: string } | null {
+  const match = String(value || "").trim().match(/github\.com[/:]([^/]+)\/([^/#]+?)(?:\.git)?$/i);
+  return match ? { owner: match[1], repo: match[2] } : null;
+}
+
 async function requireProjectAccess(req: Request, res: Response): Promise<{ user: any; project: any } | null> {
   const user = requireAuth(req, res);
   if (!user) return null;
@@ -472,6 +477,26 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       }
       const { SandboxProjectModel } = await import("./models");
       const updated = await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, updates, { new: true });
+
+      // Keep the public deployment record in sync with the Workspace identity.
+      // The client updates both records when the deployment panel is open, but
+      // this server-side sync also covers existing deployment projects and
+      // edits made from another Workspace surface.
+      if (updates.logoUrl !== undefined && updated?.githubRepo) {
+        const repo = parseGithubRepo(updated.githubRepo);
+        if (repo) {
+          const { DeploymentProjectModel } = await import("./models");
+          await DeploymentProjectModel.updateMany(
+            {
+              ownerId: String(updated.ownerId),
+              githubOwner: repo.owner,
+              githubRepo: repo.repo,
+            },
+            { $set: { logoUrl: updates.logoUrl } },
+          );
+        }
+      }
+
       res.json({ ...updated?.toJSON(), id: String(updated?._id) });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
