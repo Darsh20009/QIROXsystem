@@ -116,9 +116,10 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
         {currentTab ? (
           <Editor
             key={currentTab.path}
+            height="100%"
             defaultValue={currentTab.content}
             language={getLang(currentTab.path)}
-            theme={theme === "dark" ? "vs-dark" : "light"}
+            theme={theme === "dark" ? "vs-dark" : "vs"}
             onChange={handleChange}
             onMount={handleMount}
             options={{
@@ -129,6 +130,7 @@ export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange,
               wordWrap: "on",
               tabSize: 2,
               automaticLayout: true,
+              stickyScroll: { enabled: false },
               padding: { top: 8 },
             }}
             loading={
