@@ -16,6 +16,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { DocumentAiComposer } from "@/components/DocumentAiComposer";
 import { useUser } from "@/hooks/use-auth";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 interface Invoice {
   id: string;
@@ -814,7 +815,13 @@ export default function AdminInvoices() {
                             <Copy className="w-3 h-3" />
                           </button>
                           <button
-                            onClick={() => window.open(`/api/invoices/${inv.id}/pdf`, "_blank")}
+                             onClick={() => downloadAuthenticatedFile(
+                               `/api/invoices/${inv.id}/pdf`,
+                               `invoice-${inv.invoiceNumber}.pdf`,
+                             ).catch(() => toast({
+                               title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+                               variant: "destructive",
+                             }))}
                             className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
                             title={L ? "تحميل PDF" : "Download PDF"}
                             data-testid={`button-print-${inv.id}`}

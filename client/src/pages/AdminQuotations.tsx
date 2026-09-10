@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 interface Client { id: string; fullName: string; email: string; username: string; }
 interface QuotationItem { name: string; description?: string; qty: number; unitPrice: number; total: number; }
@@ -472,14 +473,19 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
           >
             <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
           </a>
-          <a
-            href={`/api/quotations/${quotation.id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => downloadAuthenticatedFile(
+              `/api/quotations/${quotation.id}/pdf`,
+              `quotation-${quotation.quotationNumber}.pdf`,
+            ).catch(() => toast({
+              title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+              variant: "destructive",
+            }))}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
             <FileText className="w-3 h-3" /> PDF
-          </a>
+          </button>
         </div>
       </div>
 
@@ -718,7 +724,13 @@ export default function AdminQuotations() {
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
-                      onClick={() => window.open(`/api/quotations/${q.id}/pdf`, "_blank")}
+                      onClick={() => downloadAuthenticatedFile(
+                        `/api/quotations/${q.id}/pdf`,
+                        `quotation-${q.quotationNumber}.pdf`,
+                      ).catch(() => toast({
+                        title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+                        variant: "destructive",
+                      }))}
                       data-testid={`button-print-quotation-${q.id}`}>
                       <FileText className="w-3 h-3" /> PDF
                     </Button>
