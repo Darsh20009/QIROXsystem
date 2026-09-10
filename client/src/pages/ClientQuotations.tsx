@@ -144,7 +144,7 @@ export default function ClientQuotations() {
                   <div className="flex items-center gap-2 justify-end flex-wrap">
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1.5 border-black/[0.12]"
-                      onClick={() => window.open(`/client/quotation-print/${q.id}`, "_blank", "noopener")}
+                      onClick={() => setLocation(`/client/quotation-print/${q.id}`)}
                       data-testid={`button-print-${q.id}`}>
                       <Download className="w-3 h-3" /> {L ? "تحميل PDF" : "Download PDF"}
                     </Button>

@@ -290,6 +290,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const [form, setForm] = useState({
     title: quotation.title || "",
@@ -498,17 +499,16 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
           <Mail className="w-3.5 h-3.5" /> {L ? "إعادة إرسال" : "Resend Email"}
         </button>
         <div className="grid grid-cols-2 gap-1">
-          <a
-            href={`/admin/quotation-print/${quotation.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => setLocation(`/admin/quotation-print/${quotation.id}`)}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
             <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
-          </a>
+          </button>
           <button
             type="button"
-            onClick={() => window.open(`/admin/quotation-print/${quotation.id}`, "_blank", "noopener")}
+            onClick={() => setLocation(`/admin/quotation-print/${quotation.id}`)}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
             <FileText className="w-3 h-3" /> PDF
@@ -751,7 +751,7 @@ export default function AdminQuotations() {
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
-                      onClick={() => window.open(`/admin/quotation-print/${q.id}`, "_blank", "noopener")}
+                      onClick={() => setLocation(`/admin/quotation-print/${q.id}`)}
                       data-testid={`button-print-quotation-${q.id}`}>
                       <FileText className="w-3 h-3" /> PDF
                     </Button>
