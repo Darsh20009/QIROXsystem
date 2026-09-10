@@ -13,6 +13,7 @@ import {
 import { SiTelegram, SiWhatsapp } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import SARIcon from "@/components/SARIcon";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -433,12 +434,12 @@ export default function Customers() {
                         const credit = bal > 0 ? bal : 0;
                         if (outstanding > 0) return (
                           <span className="text-xs font-bold text-red-600 dark:text-red-400">
-                            -{outstanding.toLocaleString()} ر.س
+                            -{outstanding.toLocaleString()} <SARIcon size={11} className="opacity-80" />
                           </span>
                         );
                         if (credit > 0) return (
                           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            +{credit.toLocaleString()} ر.س
+                            +{credit.toLocaleString()} <SARIcon size={11} className="opacity-80" />
                           </span>
                         );
                         return <span className="text-xs text-foreground/30">—</span>;

@@ -632,7 +632,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
             </div>
             {!currency.isSaudi && (
               <p className={`text-[10px] mt-0.5 font-bold ${isPro ? "text-blue-200/50" : isInfinity ? "text-amber-300/40" : "text-gray-400/70"}`}>
-                ≈ {fmt(price)} ر.س
+                ≈ {fmt(price)} <SARIcon size={10} className="opacity-70" />
               </p>
             )}
             <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>

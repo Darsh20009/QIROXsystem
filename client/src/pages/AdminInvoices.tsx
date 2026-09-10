@@ -480,8 +480,8 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
                     <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
-                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1 flex items-center gap-1">
+                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} <SARIcon size={11} />
                     </p>
                   )}
                   <div className="flex gap-2">

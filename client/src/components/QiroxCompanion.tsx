@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { QiroxIcon } from "@/components/qirox-brand";
+import SARIcon from "@/components/SARIcon";
 import {
   Sparkles, X, Send, Loader2, Minimize2, ArrowUpRight,
   ExternalLink, Eye, QrCode, Globe, CheckCircle2,
@@ -130,7 +131,7 @@ function AnalyticsCard({ data, L }: { data: any; L: boolean }) {
     { label: L ? "العملاء" : "Clients", value: data.totalClients, color: "text-blue-600" },
     { label: L ? "الطلبات" : "Orders", value: data.totalOrders, color: "text-purple-600" },
     { label: L ? "نشطة" : "Active", value: data.activeOrders, color: "text-emerald-600" },
-    { label: L ? "الإيرادات" : "Revenue", value: `${(data.monthRevenue || 0).toLocaleString("ar")} ر.س`, color: "text-amber-600" },
+    { label: L ? "الإيرادات" : "Revenue", value: (data.monthRevenue || 0).toLocaleString("ar"), color: "text-amber-600", currency: true },
   ];
   return (
     <div className="rounded-xl border border-black/10 overflow-hidden bg-white">
@@ -184,7 +185,7 @@ function WalletCard({ data, L }: { data: any; L: boolean }) {
         <span className="text-[10px] font-bold text-black/60">{L ? "محفظة Qirox Pay" : "Qirox Pay Wallet"}</span>
       </div>
       <div className="px-3 py-3 text-center border-b border-black/5">
-        <p className="text-2xl font-black text-black">{(data.balance || 0).toLocaleString("ar-SA")} <span className="text-sm font-medium text-black/50">ر.س</span></p>
+        <p className="text-2xl font-black text-black flex items-center gap-1">{(data.balance || 0).toLocaleString("ar-SA")} <SARIcon size={15} className="opacity-60" /></p>
         <p className="text-[10px] text-black/50 mt-0.5">{data.name}</p>
       </div>
       {data.recent?.length > 0 && (
