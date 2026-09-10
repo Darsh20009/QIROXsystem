@@ -45,6 +45,17 @@ function isBadArabicReply(reply: string, userMessage: string): boolean {
   return frenchMarkers.test(reply) || (arabicChars < 8 && latinChars > 12);
 }
 
+function phoneDigits(value: unknown): string {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function samePhoneNumber(left: string, right: string): boolean {
+  const a = phoneDigits(left);
+  const b = phoneDigits(right);
+  if (a.length < 9 || b.length < 9) return false;
+  return a === b || a.endsWith(b) || b.endsWith(a);
+}
+
 // ── Singleton module ──────────────────────────────────────────────────────────
 class WhatsAppModule extends EventEmitter {
   private sock: any = null;
@@ -467,6 +478,41 @@ class WhatsAppModule extends EventEmitter {
         { whatsappNumber: { $regex: last9 } },
       ],
     }).select("fullName username role email phone whatsappNumber _id").lean() : null;
+
+    // WhatsApp login approvals must be handled before admin, employee, client,
+    // or AI routing. This keeps a reply such as "1" from being interpreted as
+    // a normal chat command while a login challenge is active.
+    if (resolvedPhone) {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const normalizedReply = cleanText(body).toLocaleLowerCase("ar-SA");
+      const isApprove = ["1", "قبول", "موافقة", "approve", "approved"].includes(normalizedReply);
+      const isDeny = ["2", "رفض", "deny", "denied", "reject", "no"].includes(normalizedReply);
+      if (isApprove || isDeny) {
+        const incomingDigits = phoneDigits(resolvedPhone);
+        const incomingLast9 = incomingDigits.slice(-9);
+        const challenge: any = await WhatsAppLoginChallengeModel.findOneAndUpdate(
+          {
+            phoneDigits: { $regex: `${incomingLast9}$` },
+            status: "pending",
+            usedAt: null,
+            expiresAt: { $gt: new Date() },
+            $expr: { $lt: ["$attempts", "$maxAttempts"] },
+          },
+          { $inc: { attempts: 1 }, $set: { status: isApprove ? "approved" : "denied" } },
+          { new: true, sort: { createdAt: -1 } },
+        ).lean();
+        if (challenge) {
+          await this.sendText(
+            chatId,
+            isApprove
+              ? "تمت الموافقة على طلب تسجيل الدخول إلى QIROX. يمكنك العودة إلى صفحة الدخول."
+              : "تم رفض طلب تسجيل الدخول إلى QIROX. لن يتم فتح الجلسة.",
+            false,
+          );
+          return;
+        }
+      }
+    }
 
     // ── Admin WA command check (by saved admin numbers) ────────────────────
     const adminNums: string[] = settings.adminNumbers || [];

@@ -61,6 +61,13 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
 });
+const whatsappLoginStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "طلبات متابعة كثيرة جداً، حاول بعد قليل" },
+});
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
@@ -19559,6 +19566,129 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         });
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── WhatsApp login approval ─────────────────────────────────────────────
+  // This is intentionally separate from the legacy numeric OTP flow: the
+  // approval is a short-lived, one-use challenge answered from the linked
+  // WhatsApp account with 1/قبول/approve or 2/رفض/deny.
+  app.post("/api/auth/whatsapp-login/start", otpLimiter, async (req, res) => {
+    try {
+      const rawPhone = String(req.body?.phone || "").trim();
+      if (!rawPhone) return res.status(400).json({ error: "رقم واتساب مطلوب" });
+      const normPhone = normalisePhone(rawPhone);
+      const digits = normPhone.replace(/\D/g, "");
+      if (digits.length < 9) return res.status(400).json({ error: "رقم واتساب غير صالح" });
+
+      const { UserModel, WhatsAppLoginChallengeModel } = await import("./models");
+      const last9 = digits.slice(-9);
+      const user: any = await (UserModel as any).findOne({
+        $or: [
+          { phone: normPhone },
+          { whatsappNumber: normPhone },
+          { phone: { $regex: last9 } },
+          { whatsappNumber: { $regex: last9 } },
+        ],
+      }).select("_id fullName username phone whatsappNumber").lean();
+      if (!user) {
+        return res.status(404).json({ error: "رقم واتساب غير مرتبط بحساب QIROX", notRegistered: true });
+      }
+
+      await (WhatsAppLoginChallengeModel as any).updateMany(
+        { userId: user._id, status: "pending", usedAt: null },
+        { $set: { expiresAt: new Date() } },
+      );
+
+      const challengeId = crypto.randomBytes(24).toString("hex");
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await (WhatsAppLoginChallengeModel as any).create({
+        challengeId,
+        userId: user._id,
+        phoneDigits: digits,
+        status: "pending",
+        attempts: 0,
+        maxAttempts: 5,
+        expiresAt,
+      });
+
+      const { waModule } = await import("./whatsapp-module");
+      const name = user.fullName || user.username || "مستخدم";
+      const message =
+        `مرحباً ${name}،\n\n` +
+        `هناك محاولة لتسجيل الدخول إلى حسابك في QIROX.\n` +
+        `إذا كنت أنت، أرسل رقم 1 أو اكتب: قبول / approve\n` +
+        `لرفض الطلب، أرسل رقم 2 أو اكتب: رفض / deny\n\n` +
+        `صلاحية الطلب 10 دقائق. إذا لم تكن أنت، أرسل 2 ولا تشارك هذا الطلب مع أي شخص.\n\n` +
+        `Hello ${name},\n` +
+        `A QIROX login request was started for your account.\n` +
+        `Reply 1, قبول, or approve to allow it.\n` +
+        `Reply 2, رفض, or deny to reject it.\n` +
+        `This request expires in 10 minutes.`;
+      try {
+        await waModule.sendText(`${digits}@s.whatsapp.net`, message, false);
+      } catch (sendError: any) {
+        await (WhatsAppLoginChallengeModel as any).deleteOne({ challengeId });
+        return res.status(503).json({ error: "واتساب غير متصل حالياً. حاول مرة أخرى بعد قليل." });
+      }
+
+      res.json({ challengeId, expiresAt: expiresAt.toISOString(), phone: normPhone });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر إنشاء طلب دخول واتساب" });
+    }
+  });
+
+  app.get("/api/auth/whatsapp-login/status/:challengeId", whatsappLoginStatusLimiter, async (req, res) => {
+    try {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب الدخول غير موجود" });
+      if (challenge.expiresAt <= new Date()) {
+        await (WhatsAppLoginChallengeModel as any).deleteOne({ _id: challenge._id });
+        return res.status(410).json({ error: "انتهت صلاحية طلب الدخول" });
+      }
+      res.json({
+        status: challenge.usedAt ? "used" : challenge.status,
+        expiresAt: challenge.expiresAt.toISOString(),
+        attemptsLeft: Math.max(0, challenge.maxAttempts - challenge.attempts),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب الدخول" });
+    }
+  });
+
+  app.post("/api/auth/whatsapp-login/complete", otpLimiter, async (req, res, next) => {
+    try {
+      const challengeId = String(req.body?.challengeId || "");
+      if (!challengeId) return res.status(400).json({ error: "بيانات طلب الدخول ناقصة" });
+      const { WhatsAppLoginChallengeModel, UserModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOneAndUpdate(
+        {
+          challengeId,
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        },
+        { $set: { usedAt: new Date() } },
+        { new: true },
+      );
+      if (!challenge) return res.status(409).json({ error: "لم تتم الموافقة أو تم استخدام طلب الدخول" });
+
+      const user = await (UserModel as any).findById(challenge.userId);
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const deviceToken = await issueDeviceToken(String(user._id), req.headers["user-agent"] || "");
+      req.logIn(user, (loginErr: any) => {
+        if (loginErr) return next(loginErr);
+        res.json({
+          ...sanitizeUser(user),
+          deviceToken,
+          redirectPath: dashboardForUser(user),
+        });
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر إكمال تسجيل الدخول" });
+    }
   });
 
   // ─── T002: Reviews & Ratings ──────────────────────────────────────────────────

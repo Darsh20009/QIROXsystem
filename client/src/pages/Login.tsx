@@ -321,6 +321,11 @@ export default function Login() {
   const [phoneLoginPending, setPhoneLoginPending] = useState(false);
   const [phoneLoginExpiry, setPhoneLoginExpiry] = useState<Date | null>(null);
   const [phoneLoginSecsLeft, setPhoneLoginSecsLeft] = useState(900);
+  const [whatsappLoginOpen, setWhatsappLoginOpen] = useState(false);
+  const [whatsappLoginPhone, setWhatsappLoginPhone] = useState("");
+  const [whatsappLoginChallengeId, setWhatsappLoginChallengeId] = useState<string | null>(null);
+  const [whatsappLoginStatus, setWhatsappLoginStatus] = useState<"idle" | "sending" | "waiting" | "approved" | "denied" | "expired">("idle");
+  const [whatsappLoginExpiry, setWhatsappLoginExpiry] = useState<Date | null>(null);
 
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
@@ -905,6 +910,88 @@ export default function Login() {
       toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
     } finally { setPhoneLoginPending(false); }
   };
+
+  const toggleWhatsappLogin = () => {
+    setPhoneLoginOpen(false);
+    setWhatsappLoginOpen(open => !open);
+    setWhatsappLoginStatus("idle");
+    setWhatsappLoginChallengeId(null);
+    setWhatsappLoginExpiry(null);
+  };
+
+  const handleStartWhatsappLogin = async () => {
+    if (whatsappLoginPhone.replace(/\D/g, "").length < 9) {
+      toast({ title: "أدخل رقم واتساب صحيحاً مع رمز الدولة", variant: "destructive" });
+      return;
+    }
+    setWhatsappLoginStatus("sending");
+    try {
+      const response = await fetch("/api/auth/whatsapp-login/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: whatsappLoginPhone }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast({ title: data.error || "تعذر إرسال طلب الموافقة", variant: "destructive" });
+        setWhatsappLoginStatus("idle");
+        return;
+      }
+      setWhatsappLoginChallengeId(data.challengeId);
+      setWhatsappLoginExpiry(new Date(data.expiresAt));
+      setWhatsappLoginStatus("waiting");
+    } catch {
+      setWhatsappLoginStatus("idle");
+      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
+    }
+  };
+
+  useEffect(() => {
+    if (whatsappLoginStatus !== "waiting" || !whatsappLoginChallengeId) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/auth/whatsapp-login/status/${whatsappLoginChallengeId}`, { credentials: "include" });
+        if (cancelled) return;
+        if (response.status === 410 || response.status === 404) {
+          setWhatsappLoginStatus("expired");
+          return;
+        }
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.status === "approved") {
+          setWhatsappLoginStatus("approved");
+          const complete = await fetch("/api/auth/whatsapp-login/complete", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ challengeId: whatsappLoginChallengeId }),
+          });
+          const completed = await complete.json().catch(() => ({}));
+          if (!complete.ok) {
+            setWhatsappLoginStatus("waiting");
+            toast({ title: completed.error || "تعذر إكمال تسجيل الدخول", variant: "destructive" });
+            return;
+          }
+          if (completed.deviceToken) saveDeviceToken(completed.deviceToken);
+          const user = await confirmAuthenticatedSession();
+          queryClient.setQueryData(["/api/user"], user);
+          const returnUrl = sessionStorage.getItem("returnAfterLogin");
+          if (returnUrl) {
+            sessionStorage.removeItem("returnAfterLogin");
+            setLocation(returnUrl);
+          } else {
+            setLocation(completed.redirectPath || getUserHomePath(user?.role));
+          }
+        } else if (data.status === "denied" || data.status === "used") {
+          setWhatsappLoginStatus("denied");
+        }
+      } catch {}
+    };
+    poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [whatsappLoginStatus, whatsappLoginChallengeId]);
 
   const registerSchema = z.object({
     username: z.string().min(3, "اسم المستخدم 3 أحرف على الأقل"),
@@ -1830,6 +1917,33 @@ export default function Login() {
                   </div>
                 </motion.button>
               )}
+              {!isRegister && (
+                <motion.button
+                  type="button"
+                  onClick={toggleWhatsappLogin}
+                  data-testid="btn-whatsapp-login"
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
+                    whatsappLoginOpen
+                      ? "border-emerald-500 bg-[#128c4a]"
+                      : "border-emerald-200 bg-white"
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${whatsappLoginOpen ? "border-white/20" : "border-emerald-100"}`}>
+                    <MessageSquare className={`w-5 h-5 ${whatsappLoginOpen ? "text-white" : "text-emerald-600"}`} />
+                  </div>
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
+                    <p className={`font-bold text-[14px] leading-snug ${whatsappLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بواتساب</p>
+                    <p className={`text-[10.5px] font-medium mt-0.5 ${whatsappLoginOpen ? "text-white/70" : "text-emerald-600/70"}`}>
+                      {whatsappLoginOpen ? "اضغط للإلغاء والعودة" : "وافق من رسالة واتساب · بدون كلمة مرور"}
+                    </p>
+                  </div>
+                  <div className="px-4">
+                    {whatsappLoginOpen ? <X className="w-4 h-4 text-white/70" /> : <ChevronLeft className="w-4 h-4 text-gray-300" />}
+                  </div>
+                </motion.button>
+              )}
 
               {!phoneLoginOpen && (
                 <div className="flex items-center gap-3 mt-4">
@@ -1892,6 +2006,33 @@ export default function Login() {
                   </div>
                 </motion.button>
               )}
+              {!isRegister && (
+                <motion.button
+                  type="button"
+                  onClick={toggleWhatsappLogin}
+                  data-testid="btn-whatsapp-login-alt"
+                  whileHover={{ scale: 1.005 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
+                    whatsappLoginOpen
+                      ? "border-emerald-500 bg-[#128c4a]"
+                      : "border-emerald-200 bg-white"
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${whatsappLoginOpen ? "border-white/20" : "border-emerald-100"}`}>
+                    <MessageSquare className={`w-5 h-5 ${whatsappLoginOpen ? "text-white" : "text-emerald-600"}`} />
+                  </div>
+                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
+                    <p className={`font-bold text-[14px] leading-snug ${whatsappLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بواتساب</p>
+                    <p className={`text-[10.5px] font-medium mt-0.5 ${whatsappLoginOpen ? "text-white/70" : "text-emerald-600/70"}`}>
+                      {whatsappLoginOpen ? "اضغط للإلغاء والعودة" : "وافق من رسالة واتساب · بدون كلمة مرور"}
+                    </p>
+                  </div>
+                  <div className="px-4">
+                    {whatsappLoginOpen ? <X className="w-4 h-4 text-white/70" /> : <ChevronLeft className="w-4 h-4 text-gray-300" />}
+                  </div>
+                </motion.button>
+              )}
 
               {!phoneLoginOpen && (
                 <div className="flex items-center gap-3 mt-4">
@@ -1906,7 +2047,7 @@ export default function Login() {
           <QrLoginScanner open={qrScannerOpen} onClose={() => setQrScannerOpen(false)} />
 
           {/* Form OR Phone Panel */}
-          {!phoneLoginOpen ? (
+          {!phoneLoginOpen && !whatsappLoginOpen ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -2200,6 +2341,79 @@ export default function Login() {
               )}
             </form>
           </Form>
+          ) : whatsappLoginOpen ? (
+          /* ── WhatsApp approval panel ── */
+          <div className="space-y-4">
+            <button type="button"
+              onClick={toggleWhatsappLogin}
+              className="flex items-center gap-1.5 text-xs text-black/40 hover:text-black/70 transition-colors -mb-1">
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>العودة لتسجيل الدخول بكلمة المرور</span>
+            </button>
+
+            {whatsappLoginStatus === "idle" || whatsappLoginStatus === "sending" ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-black/50 mb-2">رقم واتساب مع رمز الدولة</p>
+                  <CountryPhoneInput value={whatsappLoginPhone} onChange={setWhatsappLoginPhone} placeholder="5XXXXXXXX" />
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-700 leading-relaxed">
+                    سنرسل رسالة إلى واتساب. أرسل <strong>1</strong> أو «قبول» أو <span dir="ltr">approve</span> للموافقة، أو <strong>2</strong> أو «رفض» أو <span dir="ltr">deny</span> للرفض.
+                  </p>
+                </div>
+                <Button type="button" onClick={handleStartWhatsappLogin}
+                  disabled={whatsappLoginStatus === "sending" || whatsappLoginPhone.replace(/\D/g, "").length < 9}
+                  className="w-full h-12 bg-[#128c4a] hover:bg-[#0d743d] text-white rounded-xl font-bold text-sm gap-2"
+                  data-testid="btn-start-whatsapp-login">
+                  {whatsappLoginStatus === "sending"
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <><MessageSquare className="w-4 h-4" /> إرسال طلب الموافقة</>}
+                </Button>
+              </div>
+            ) : whatsappLoginStatus === "waiting" || whatsappLoginStatus === "approved" ? (
+              <div className="text-center space-y-4 py-2">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100">
+                  {whatsappLoginStatus === "approved"
+                    ? <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                    : <MessageSquare className="w-8 h-8 text-emerald-600" />}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-black/80">
+                    {whatsappLoginStatus === "approved" ? "تمت الموافقة، جارٍ تسجيل الدخول..." : "تحقق من رسالة واتساب"}
+                  </p>
+                  <p className="text-xs text-black/45 leading-relaxed mt-2">
+                    أرسل من نفس الرقم: <strong>1</strong> أو «قبول» أو <span dir="ltr">approve</span> للموافقة.
+                  </p>
+                  {whatsappLoginExpiry && (
+                    <p className="text-[11px] text-black/30 mt-2">
+                      صلاحية الطلب حتى {whatsappLoginExpiry.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  )}
+                </div>
+                <Loader2 className="w-5 h-5 animate-spin mx-auto text-black/30" />
+                <button type="button"
+                  onClick={() => { setWhatsappLoginStatus("idle"); setWhatsappLoginChallengeId(null); }}
+                  className="text-xs text-black/35 hover:text-black/60 underline">
+                  استخدام رقم آخر
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-4 space-y-3">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-black/[0.05]">
+                  {whatsappLoginStatus === "denied" ? <X className="w-6 h-6 text-black/60" /> : <RefreshCw className="w-6 h-6 text-black/50" />}
+                </div>
+                <p className="text-sm text-black/70">
+                  {whatsappLoginStatus === "denied" ? "تم رفض طلب تسجيل الدخول" : "انتهت صلاحية طلب الدخول"}
+                </p>
+                <button type="button" onClick={() => { setWhatsappLoginStatus("idle"); setWhatsappLoginChallengeId(null); }}
+                  className="text-xs text-black/40 hover:text-black/70 underline">
+                  المحاولة مجدداً
+                </button>
+              </div>
+            )}
+          </div>
           ) : (
           /* ── Phone OTP Panel ── */
           <div className="space-y-4">
