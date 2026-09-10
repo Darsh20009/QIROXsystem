@@ -113,7 +113,13 @@ export default function QuotationPrint() {
       <style>{`
         @page { margin: 12mm; size: A4; }
         @media print {
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          html, body, #root {
+            background: white !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+          body { margin: 0 !important; padding: 0 !important; }
           /* Hide ALL UI chrome */
           nav, aside, header, footer,
           [data-sidebar], [data-sidebar="sidebar"],
@@ -121,9 +127,27 @@ export default function QuotationPrint() {
           [role="dialog"]:not(.print-keep),
           .no-print { display: none !important; }
           /* Force print content to full width */
-          main, #main-content { padding: 0 !important; margin: 0 !important; }
-          .no-print-bg { background: white !important; padding: 0 !important; }
+          main, #main-content {
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print-bg {
+            display: block !important;
+            background: white !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
           .print-card {
+            display: block !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
             box-shadow: none !important;
             border-radius: 0 !important;
             max-width: 100% !important;
@@ -131,7 +155,17 @@ export default function QuotationPrint() {
             width: 100% !important;
           }
           .print-card, .print-card * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          table, tr, .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
+          .print-items { overflow: visible !important; }
+          table { break-inside: auto !important; page-break-inside: auto !important; }
+          thead { display: table-header-group !important; }
+          tbody { display: table-row-group !important; }
+          tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+          .print-avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
+          p, td, span {
+            max-height: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+          }
           h1, h2, h3 { page-break-after: avoid; }
         }
       `}</style>
@@ -211,7 +245,7 @@ export default function QuotationPrint() {
       </div>
 
       {/* Document Area */}
-      <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-2 sm:px-4 no-print-bg">
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-2 sm:px-4 no-print-bg" data-print-document>
         <div
           ref={printCardRef}
           className="print-card bg-white w-full max-w-[800px] mx-auto shadow-lg rounded-2xl overflow-hidden"
@@ -277,7 +311,7 @@ export default function QuotationPrint() {
 
           {/* Items Table */}
           {quotation.items?.length > 0 && (
-            <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-auto">
+            <div className="print-items px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-auto">
                <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">{label("تفاصيل البنود", "Line items")}</p>
               <table className="w-full text-sm border-collapse">
                 <thead>
@@ -351,7 +385,7 @@ export default function QuotationPrint() {
                 </div>
               )}
                {quotation.paymentTerms && (
-                 <div className="bg-black/[0.02] rounded-xl p-4 print-avoid-break">
+                 <div className="bg-black/[0.02] rounded-xl p-4">
                    <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("شروط الدفع", "Payment terms")}</p>
                    <p className="text-sm text-black/60 leading-relaxed whitespace-pre-wrap">{quotation.paymentTerms}</p>
                  </div>

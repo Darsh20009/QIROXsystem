@@ -71,8 +71,33 @@ async function sendWithRetry(send: () => Promise<boolean>, context: string): Pro
 export async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const cfg = getEmailCfg();
   if (!cfg.smtpHost || !cfg.smtpUser || !cfg.smtpPass) {
-    console.warn("[Email] No email provider configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
-    return false;
+    try {
+      const { MailAccountModel } = await import("./models");
+      const account = await MailAccountModel.findOne({
+        emailAddress: "support@qirox.online",
+      }).lean() as any;
+      if (!account?.smtpHost || !account?.emailAddress || !account?.password) {
+        console.warn("[Email] No SMTP environment config or usable QIROX mail account");
+        return false;
+      }
+      const accountCfg = {
+        ...cfg,
+        smtpHost: account.smtpHost,
+        smtpPort: account.smtpPort || 465,
+        smtpUser: account.emailAddress,
+        smtpPass: account.password,
+        smtpSecure: (account.smtpPort || 465) !== 587,
+        senderName: account.displayName || "QIROX Studio",
+      };
+      console.log(`[Email] Sending via saved QIROX account (${account.emailAddress}) to ${to}`);
+      return sendWithRetry(
+        () => sendViaSmtp(accountCfg, to, toName, subject, htmlBody, textBody, attachments),
+        `send via saved QIROX account to ${to}`,
+      );
+    } catch (err) {
+      console.error("[Email] Saved QIROX account lookup failed:", (err as any)?.message || err);
+      return false;
+    }
   }
   console.log(`[Email] Sending via cPanel SMTP (${cfg.smtpHost}) to ${to}`);
   return sendWithRetry(
@@ -85,13 +110,13 @@ export async function sendEmail(to: string, toName: string, subject: string, htm
  * Send email from a specific cPanel account (e.g. hr@qirox.online, marketing@qirox.online).
  * Looks up credentials from MailAccountModel in MongoDB. Falls back to default sendEmail if not found.
  */
-export async function sendEmailAs(fromEmail: string, to: string, toName: string, subject: string, htmlBody: string, textBody?: string): Promise<boolean> {
+export async function sendEmailAs(fromEmail: string, to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
   try {
     const { MailAccountModel } = await import("./models");
     const account = await MailAccountModel.findOne({ emailAddress: fromEmail }).lean() as any;
     if (!account) {
       console.warn(`[Email] sendEmailAs: account not found for ${fromEmail}, falling back to default`);
-      return sendEmail(to, toName, subject, htmlBody, textBody);
+      return sendEmail(to, toName, subject, htmlBody, textBody, attachments);
     }
     const cfg = getEmailCfg();
     const customCfg = {
@@ -105,12 +130,12 @@ export async function sendEmailAs(fromEmail: string, to: string, toName: string,
     };
     console.log(`[Email] Sending as ${fromEmail} via cPanel SMTP to ${to}`);
     return await sendWithRetry(
-      () => sendViaSmtp(customCfg, to, toName, subject, htmlBody, textBody),
+      () => sendViaSmtp(customCfg, to, toName, subject, htmlBody, textBody, attachments),
       `send as ${fromEmail} to ${to}`,
     );
   } catch (err) {
     console.error(`[Email] sendEmailAs(${fromEmail}) error:`, err);
-    return sendEmail(to, toName, subject, htmlBody, textBody);
+    return sendEmail(to, toName, subject, htmlBody, textBody, attachments);
   }
 }
 

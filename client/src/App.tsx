@@ -1254,6 +1254,10 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 function AppInner() {
   const [location, navigate] = useLocation();
   const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location === "/employee/qi-agent" || location === "/employee/studio" || location === "/admin/studio" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const hideCompanion = location === "/employee/mail"
+    || location === "/admin/mail-accounts"
+    || location === "/admin/email-marketing"
+    || location === "/admin/email-guide";
   const { data: user, isLoading: userLoading } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
@@ -1427,7 +1431,7 @@ function AppInner() {
             <MobileBottomNav />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
-            <QiroxCompanion />
+            {!hideCompanion && <QiroxCompanion />}
             <Toaster />
           </div>
         </div>
