@@ -9,6 +9,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
+import SARIcon from "@/components/SARIcon";
 
 import type { Partner } from "@shared/schema";
 const qiroxLogo = "/qirox-icon-nobg.png";
@@ -1582,7 +1583,9 @@ export default function Home() {
                         <motion.div key={`${tier}-${pricingSector}-${pricingPeriod}-${pricingYears}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
                           <div className="flex items-baseline gap-2">
                             <span className={`text-4xl font-black tracking-tight ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{currency.format(price)}</span>
-                            <span className={`text-sm font-bold ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+                            <span className={`text-sm font-bold inline-flex items-center ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>
+                              {currency.isSaudi ? <SARIcon size={15} /> : currency.symbol}
+                            </span>
                           </div>
                           <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInf ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>{periodLabel}</p>
                         </motion.div>

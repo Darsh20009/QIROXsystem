@@ -10,6 +10,7 @@ import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrency } from "@/hooks/use-currency";
+import SARIcon from "@/components/SARIcon";
 import {
   Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
   UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
@@ -625,7 +626,9 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{currency.format(price)}</span>
-              <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+              <span className={`text-sm font-bold inline-flex items-center ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>
+                {currency.isSaudi ? <SARIcon size={15} /> : currency.symbol}
+              </span>
             </div>
             {!currency.isSaudi && (
               <p className={`text-[10px] mt-0.5 font-bold ${isPro ? "text-blue-200/50" : isInfinity ? "text-amber-300/40" : "text-gray-400/70"}`}>
@@ -643,12 +646,15 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
               }`}>
                 <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>≈</span>
                 <span className={`text-sm font-black ${st.textColor}`}>{currency.format(monthlyEquiv)}</span>
-                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>{currency.symbol} / شهر</span>
+                <span className={`text-[11px] font-bold inline-flex items-center gap-1 ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>
+                  {currency.isSaudi ? <SARIcon size={11} /> : currency.symbol} / شهر
+                </span>
               </div>
             )}
             {period === "sixmonth" && (
               <p className={`text-[10px] mt-1.5 ${isPro || isInfinity ? "text-white/35" : "text-gray-400/80"}`}>
-                يساوي <span className="line-through">{currency.format(prices.sm * 2)}</span> {currency.symbol} سنوياً
+                يساوي <span className="line-through">{currency.format(prices.sm * 2)}</span>{" "}
+                {currency.isSaudi ? <SARIcon size={11} className="opacity-70" /> : currency.symbol} سنوياً
               </p>
             )}
           </motion.div>
