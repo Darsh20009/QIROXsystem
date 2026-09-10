@@ -128,7 +128,13 @@ const ALL_NAV: Record<string, NavItem> = {
   profile:           { id: "profile",           labelAr: "ملفي الشخصي",         labelEn: "My Profile",           icon: User2,           href: "/employee/profile",           group: "personal" },
   changelog:         { id: "changelog",         labelAr: "التحديثات",            labelEn: "Updates",              icon: BookOpen,        href: "/employee/changelog",         group: "personal" },
   my_finance:        { id: "my_finance",        labelAr: "حقي المالي",           labelEn: "My Financials",        icon: Banknote,        href: "/employee/my-finance",        group: "personal" },
+  security_2fa:      { id: "security_2fa",      labelAr: "الأمان والتحقق الثنائي", labelEn: "Security & 2FA",       icon: ShieldCheck,     href: "/security/2fa",                 group: "personal" },
 };
+
+// Every employee must be able to manage their own second factor, regardless
+// of the operational pages assigned to their role.
+const ensureSecurityNav = (ids: string[]) =>
+  ids.includes("security_2fa") ? ids : [...ids, "security_2fa"];
 
 // Mobile drawer shows a compact set — same as the original sidebar before the expansion
 const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
@@ -217,7 +223,7 @@ export function getAllowedEmployeeNavItems(role: string, allowedPages?: string[]
   const ids = allowedPages && allowedPages.length > 0
     ? allowedPages
     : (ROLE_ITEMS[role] || DEFAULT_ITEMS);
-  return [ALL_NAV.workspace, ...ids.map(id => ALL_NAV[id]).filter(Boolean)];
+  return [ALL_NAV.workspace, ...ensureSecurityNav(ids).map(id => ALL_NAV[id]).filter(Boolean)];
 }
 
 const WORKSPACE_META: Record<string, { labelAr: string; labelEn: string; descriptionAr: string; descriptionEn: string; icon: React.ElementType; candidates: string[] }> = {
@@ -590,7 +596,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
     const ids = (customPages && customPages.length > 0) ? customPages : (MOBILE_ROLE_ITEMS[role] || ROLE_ITEMS[role] || DEFAULT_ITEMS);
-    return ids.map(id => ALL_NAV[id]).filter(Boolean);
+    return ensureSecurityNav(ids).map(id => ALL_NAV[id]).filter(Boolean);
   }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope]);
 
   const mobileGrouped = useMemo(() => {
