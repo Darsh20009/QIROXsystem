@@ -3,8 +3,8 @@ name: WhatsApp login separation
 description: Boundary between standalone WhatsApp login and multi-factor authentication
 ---
 
-Standalone WhatsApp login must remain a separate passwordless login flow and must not be offered as a method in the account's 2FA settings or post-password 2FA challenge.
+WhatsApp must be available only as a second factor after password or OAuth login; standalone passwordless WhatsApp login is disabled.
 
-**Why:** The product distinguishes entering through WhatsApp with approval from adding a second factor to an existing password or OAuth login. Combining them makes the login UI and security model ambiguous.
+**Why:** The product requires WhatsApp verification to strengthen an existing login, not replace the password or OAuth step.
 
-**How to apply:** Keep the WhatsApp login button and its challenge flow in the login page. For 2FA, expose only authenticator app, email code, recovery phrase, and push approval; do not reintroduce WhatsApp as a `methods` value or 2FA setup option.
+**How to apply:** Do not render standalone WhatsApp or phone-OTP login controls, and reject their legacy endpoints. Expose WhatsApp only as a `methods` value when the user has enabled it and has a verified number; keep the other 2FA methods available.
