@@ -11039,7 +11039,7 @@ export async function registerRoutes(
     const { QuotationModel } = await import("./models");
     const user = req.user as any;
     const quotation = await QuotationModel.findById(req.params.id)
-      .populate("userId", "username fullName email phone country");
+      .populate("userId", "username fullName email phone country address city taxNumber organizationName commercialRegistration nationalAddress");
     if (!quotation) return res.sendStatus(404);
     if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
     res.json(quotation);
@@ -11050,13 +11050,16 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const { userId, externalName, externalEmail, externalCompany, title, items, vatRate, validUntil, notes, termsAndConditions } = req.body;
+    const { userId, externalName, externalEmail, externalCompany, title, items, vatRate, discountPercent, validUntil, notes, paymentTerms, language, termsAndConditions } = req.body;
     if (!userId && !externalEmail) return res.status(400).json({ error: "يجب تحديد العميل أو إدخال بريد إلكتروني خارجي" });
     const itemList = Array.isArray(items) ? items : [];
     const amount = itemList.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
-    const vat = (Number(vatRate) ?? 15) / 100;
-    const vatAmount = Math.round(amount * vat * 100) / 100;
-    const totalAmount = Math.round((amount + vatAmount) * 100) / 100;
+    const safeDiscountPercent = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+    const discountAmount = Math.round(amount * safeDiscountPercent) / 100;
+    const taxableAmount = amount - discountAmount;
+    const vat = (Number(vatRate) || 0) / 100;
+    const vatAmount = Math.round(taxableAmount * vat * 100) / 100;
+    const totalAmount = Math.round((taxableAmount + vatAmount) * 100) / 100;
     const quotationNumber = await generateQuotationNumber();
     const quotation = await QuotationModel.create({
       quotationNumber,
@@ -11065,8 +11068,10 @@ export async function registerRoutes(
       externalEmail: externalEmail || "",
       externalCompany: externalCompany || "",
       title: title || "", items: itemList,
-      amount, vatRate: Number(vatRate) ?? 15, vatAmount, totalAmount,
-      validUntil: validUntil || null, notes: notes || "", termsAndConditions: termsAndConditions || "",
+      amount, discountPercent: safeDiscountPercent, discountAmount,
+      vatRate: Number(vatRate) || 0, vatAmount, totalAmount,
+      validUntil: validUntil || null, notes: notes || "", paymentTerms: paymentTerms || "",
+      language: language === "en" ? "en" : "ar", termsAndConditions: termsAndConditions || "",
       status: "draft", createdBy: user.id,
     });
     res.json(quotation);
@@ -11077,10 +11082,12 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const { items, vatRate, status, title, notes, termsAndConditions, validUntil, userId } = req.body;
+    const { items, vatRate, discountPercent, status, title, notes, paymentTerms, language, termsAndConditions, validUntil, userId } = req.body;
     const updates: any = {};
     if (title !== undefined) updates.title = title;
     if (notes !== undefined) updates.notes = notes;
+    if (paymentTerms !== undefined) updates.paymentTerms = paymentTerms;
+    if (language !== undefined) updates.language = language === "en" ? "en" : "ar";
     if (termsAndConditions !== undefined) updates.termsAndConditions = termsAndConditions;
     if (validUntil !== undefined) updates.validUntil = validUntil || null;
     if (userId !== undefined) updates.userId = userId;
@@ -11088,10 +11095,13 @@ export async function registerRoutes(
     if (Array.isArray(items)) {
       updates.items = items;
       updates.amount = items.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
-      const vat = ((Number(vatRate) ?? 15) || 15) / 100;
-      updates.vatRate = Number(vatRate) ?? 15;
-      updates.vatAmount = Math.round(updates.amount * vat * 100) / 100;
-      updates.totalAmount = Math.round((updates.amount + updates.vatAmount) * 100) / 100;
+      updates.discountPercent = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+      updates.discountAmount = Math.round(updates.amount * updates.discountPercent) / 100;
+      const taxableAmount = updates.amount - updates.discountAmount;
+      const vat = (Number(vatRate) || 0) / 100;
+      updates.vatRate = Number(vatRate) || 0;
+      updates.vatAmount = Math.round(taxableAmount * vat * 100) / 100;
+      updates.totalAmount = Math.round((taxableAmount + updates.vatAmount) * 100) / 100;
     }
     const quotation = await QuotationModel.findByIdAndUpdate(req.params.id, { $set: updates }, { returnDocument: "after", new: true });
     if (!quotation) return res.sendStatus(404);

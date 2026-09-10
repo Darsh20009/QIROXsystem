@@ -18,7 +18,7 @@ const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }>
 };
 
 export default function QuotationPrint() {
-  const { dir } = useI18n();
+  useI18n();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -100,6 +100,9 @@ export default function QuotationPrint() {
   const clientPhone = client?.phone || "";
   const clientCountry = client?.country || "";
   const clientCompany = quotation.externalCompany || "";
+  const documentLanguage = quotation.language === "en" ? "en" : "ar";
+  const D = documentLanguage === "ar";
+  const label = (ar: string, en: string) => D ? ar : en;
 
   const st = STATUS_LABELS[quotation.status] || { label: quotation.status, bg: "#f3f4f6", text: "#6b7280" };
   const isExternal = !!quotation.externalEmail && !client;
@@ -213,7 +216,7 @@ export default function QuotationPrint() {
           ref={printCardRef}
           className="print-card bg-white w-full max-w-[800px] mx-auto shadow-lg rounded-2xl overflow-hidden"
           style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
-          dir={dir}
+            dir={D ? "rtl" : "ltr"}
         >
           {/* Header */}
           <div className="bg-black px-5 sm:px-10 py-6 sm:py-8 flex items-start justify-between">
@@ -222,14 +225,14 @@ export default function QuotationPrint() {
               <p className="text-white/40 text-xs">qiroxstudio.online</p>
             </div>
             <div className="text-left">
-              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">عرض سعر</p>
+               <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">{label("عرض سعر", "QUOTATION")}</p>
               <p className="text-white font-black text-2xl font-mono tracking-tight">{quotation.quotationNumber}</p>
               <p className="text-white/50 text-xs mt-1">
                 {new Date(quotation.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
               </p>
               {quotation.validUntil && (
                 <p className="text-black/70 dark:text-white/70 text-xs mt-0.5">
-                  صالح حتى: {new Date(quotation.validUntil).toLocaleDateString("ar-SA")}
+                   {label("صالح حتى", "Valid until")}: {new Date(quotation.validUntil).toLocaleDateString(D ? "ar-SA" : "en-US")}
                 </p>
               )}
               <span
@@ -244,13 +247,13 @@ export default function QuotationPrint() {
           {/* Client Info */}
           <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             <div>
-              <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم من</p>
+               <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("مُقدَّم من", "Prepared by")}</p>
               <p className="font-black text-black text-sm">QIROX Studio</p>
               <p className="text-xs text-black/40 mt-0.5">info@qiroxstudio.online</p>
               <p className="text-xs text-black/40">qiroxstudio.online</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم إلى</p>
+               <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("مُقدَّم إلى", "Prepared for")}</p>
               <p className="font-black text-black text-sm">{clientName}</p>
               {clientCompany && <p className="text-xs text-black/60 font-medium mt-0.5">{clientCompany}</p>}
               {clientEmail && <p className="text-xs text-black/40 mt-0.5">{clientEmail}</p>}
@@ -267,7 +270,7 @@ export default function QuotationPrint() {
           {/* Subject */}
           {quotation.title && (
             <div className="px-5 sm:px-10 py-4 border-b border-black/[0.07] bg-black/[0.01]">
-              <span className="text-[10px] font-bold text-black/30 uppercase tracking-wider ml-3">الموضوع</span>
+               <span className="text-[10px] font-bold text-black/30 uppercase tracking-wider ml-3">{label("الموضوع", "Subject")}</span>
               <span className="font-bold text-black text-sm">{quotation.title}</span>
             </div>
           )}
@@ -275,14 +278,14 @@ export default function QuotationPrint() {
           {/* Items Table */}
           {quotation.items?.length > 0 && (
             <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-auto">
-              <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">تفاصيل البنود</p>
+               <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">{label("تفاصيل البنود", "Line items")}</p>
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-black text-white">
-                    <th className="text-right px-4 py-2.5 font-bold text-xs rounded-r-lg">البند</th>
-                    <th className="text-center px-4 py-2.5 font-bold text-xs w-20">الكمية</th>
-                    <th className="text-center px-4 py-2.5 font-bold text-xs w-28">سعر الوحدة</th>
-                    <th className="text-left px-4 py-2.5 font-bold text-xs w-28 rounded-l-lg">المجموع</th>
+                     <th className="text-start px-4 py-2.5 font-bold text-xs">{label("البند", "Item")}</th>
+                     <th className="text-center px-4 py-2.5 font-bold text-xs w-20">{label("الكمية", "Qty")}</th>
+                     <th className="text-center px-4 py-2.5 font-bold text-xs w-28">{label("سعر الوحدة", "Unit price")}</th>
+                     <th className="text-end px-4 py-2.5 font-bold text-xs w-28">{label("المجموع", "Total")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -310,21 +313,27 @@ export default function QuotationPrint() {
               <div className="mt-5 flex justify-end">
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between text-sm text-black/50 pb-2 border-b border-black/[0.07]">
-                    <span>المجموع الفرعي</span>
+                     <span>{label("المجموع الفرعي", "Subtotal")}</span>
                     <span className="font-bold text-black/70 font-mono">
                       {quotation.amount?.toLocaleString("ar-SA")} ر.س
                     </span>
                   </div>
+                   {quotation.discountAmount > 0 && (
+                     <div className="flex justify-between text-sm text-emerald-700">
+                       <span>{label("الخصم", "Discount")} ({quotation.discountPercent || 0}%)</span>
+                       <span className="font-bold font-mono">- {quotation.discountAmount?.toLocaleString(D ? "ar-SA" : "en-US")} ر.س</span>
+                     </div>
+                   )}
                   {quotation.vatRate > 0 && (
                     <div className="flex justify-between text-sm text-black/50">
-                      <span>ضريبة القيمة المضافة ({quotation.vatRate}%)</span>
+                       <span>{label("ضريبة القيمة المضافة", "VAT")} ({quotation.vatRate}%)</span>
                       <span className="font-bold text-black/70 font-mono">
                         {quotation.vatAmount?.toLocaleString("ar-SA")} ر.س
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-base bg-black text-white px-4 py-3 rounded-xl font-black mt-2">
-                    <span>الإجمالي</span>
+                     <span>{label("الإجمالي", "Total")}</span>
                     <span className="font-mono">{quotation.totalAmount?.toLocaleString("ar-SA")} ر.س</span>
                   </div>
                 </div>
@@ -333,18 +342,24 @@ export default function QuotationPrint() {
           )}
 
           {/* Notes / Terms */}
-          {(quotation.notes || quotation.termsAndConditions) && (
+           {(quotation.notes || quotation.paymentTerms || quotation.termsAndConditions) && (
             <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] grid grid-cols-1 sm:grid-cols-2 gap-6">
               {quotation.notes && (
                 <div className="bg-black/[0.02] rounded-xl p-4">
-                  <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">ملاحظات</p>
+                   <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("ملاحظات", "Notes")}</p>
                   <p className="text-sm text-black/60 leading-relaxed">{quotation.notes}</p>
                 </div>
               )}
+               {quotation.paymentTerms && (
+                 <div className="bg-black/[0.02] rounded-xl p-4 print-avoid-break">
+                   <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("شروط الدفع", "Payment terms")}</p>
+                   <p className="text-sm text-black/60 leading-relaxed whitespace-pre-wrap">{quotation.paymentTerms}</p>
+                 </div>
+               )}
               {quotation.termsAndConditions && (
                 <div className="bg-black/[0.02] rounded-xl p-4">
-                  <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">الشروط والأحكام</p>
-                  <p className="text-sm text-black/60 leading-relaxed">{quotation.termsAndConditions}</p>
+                   <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">{label("الشروط والأحكام", "Terms & conditions")}</p>
+                   <p className="text-sm text-black/60 leading-relaxed whitespace-pre-wrap">{quotation.termsAndConditions}</p>
                 </div>
               )}
             </div>

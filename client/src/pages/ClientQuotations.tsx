@@ -7,7 +7,6 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   sent: { label: "بانتظار ردك", color: "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white" },
@@ -145,13 +144,7 @@ export default function ClientQuotations() {
                   <div className="flex items-center gap-2 justify-end flex-wrap">
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1.5 border-black/[0.12]"
-                      onClick={() => downloadAuthenticatedFile(
-                        `/api/quotations/${q.id}/pdf`,
-                        `quotation-${q.quotationNumber || q.id}.pdf`,
-                      ).catch(() => toast({
-                        title: L ? "تعذّر تحميل PDF" : "PDF download failed",
-                        variant: "destructive",
-                      }))}
+                      onClick={() => window.open(`/client/quotation-print/${q.id}`, "_blank", "noopener")}
                       data-testid={`button-print-${q.id}`}>
                       <Download className="w-3 h-3" /> {L ? "تحميل PDF" : "Download PDF"}
                     </Button>

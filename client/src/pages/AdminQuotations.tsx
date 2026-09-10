@@ -15,7 +15,6 @@ import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
-import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 interface Client { id: string; fullName: string; email: string; username: string; }
 interface QuotationItem { name: string; description?: string; qty: number; unitPrice: number; total: number; }
@@ -26,6 +25,7 @@ interface Quotation {
   orderId?: string;
   title: string; items: QuotationItem[];
   amount: number; vatRate: number; vatAmount: number; totalAmount: number;
+  discountPercent?: number; discountAmount?: number; paymentTerms?: string; language?: "ar" | "en";
   validUntil?: string; status: "draft" | "sent" | "accepted" | "rejected" | "expired";
   notes?: string; termsAndConditions?: string; createdAt: string;
 }
@@ -58,7 +58,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     userId: "", title: "", vatRate: "15", validUntil: "", notes: "", termsAndConditions: "",
     externalName: "", externalEmail: "", externalCompany: "",
-    discountPercent: "0", paymentTerms: "",
+    discountPercent: "0", paymentTerms: "", language: L ? "ar" : "en",
     items: [] as QuotationItem[],
     newName: "", newDesc: "", newQty: "1", newPrice: "",
   });
@@ -91,6 +91,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
         title: form.title, items: form.items, vatRate: Number(form.vatRate),
         validUntil: form.validUntil || undefined,
         notes: form.notes, termsAndConditions: form.termsAndConditions,
+        discountPercent: Number(form.discountPercent), paymentTerms: form.paymentTerms, language: form.language,
       };
       if (clientMode === "registered") {
         body.userId = form.userId;
@@ -196,11 +197,20 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
             className="h-9 text-sm border-black/[0.10]" dir="ltr" data-testid="input-quotation-valid-until" />
         </div>
       </div>
-      <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+       <div>
         <Label className="text-xs text-black/50 mb-1 block">{L ? "شروط الدفع" : "Payment Terms"}</Label>
         <Input value={form.paymentTerms} onChange={e => setForm(p => ({ ...p, paymentTerms: e.target.value }))}
           placeholder={L ? "مثال: 50% مقدماً، 50% عند التسليم" : "e.g. 50% upfront, 50% on delivery"}
           className="h-9 text-sm border-black/[0.10]" data-testid="input-quotation-payment-terms" />
+       </div>
+       <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة المستند" : "Document Language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="ar">العربية</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+        </Select>
+       </div>
       </div>
 
       <div>
@@ -287,6 +297,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
     validUntil: quotation.validUntil ? new Date(quotation.validUntil).toISOString().split("T")[0] : "",
     notes: quotation.notes || "",
     termsAndConditions: quotation.termsAndConditions || "",
+    discountPercent: String(quotation.discountPercent || 0),
+    paymentTerms: quotation.paymentTerms || "",
+    language: quotation.language || "ar",
     items: (quotation.items || []) as QuotationItem[],
     newName: "", newDesc: "", newQty: "1", newPrice: "",
   });
@@ -327,8 +340,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
   };
 
   const subtotal = form.items.reduce((s, i) => s + i.total, 0);
-  const vatAmt = Math.round(subtotal * (Number(form.vatRate) / 100) * 100) / 100;
-  const total = subtotal + vatAmt;
+  const discountAmt = Math.round(subtotal * (Number(form.discountPercent || 0) / 100) * 100) / 100;
+  const vatAmt = Math.round((subtotal - discountAmt) * (Number(form.vatRate) / 100) * 100) / 100;
+  const total = subtotal - discountAmt + vatAmt;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -336,6 +350,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         title: form.title, items: form.items, vatRate: Number(form.vatRate),
         validUntil: form.validUntil || undefined,
         notes: form.notes, termsAndConditions: form.termsAndConditions,
+        discountPercent: Number(form.discountPercent), paymentTerms: form.paymentTerms, language: form.language,
       });
       return r.json();
     },
@@ -353,14 +368,31 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         <Label className="text-xs text-black/50 mb-1 block">{L ? "عنوان العرض" : "Title"}</Label>
         <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <Label className="text-xs text-black/50 mb-1 block">{L ? "ضريبة القيمة المضافة %" : "VAT Rate %"}</Label>
           <Input type="number" value={form.vatRate} onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
         </div>
         <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "الخصم %" : "Discount %"}</Label>
+          <Input type="number" min="0" max="100" value={form.discountPercent} onChange={e => setForm(p => ({ ...p, discountPercent: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+        <div>
           <Label className="text-xs text-black/50 mb-1 block">{L ? "صالح حتى" : "Valid Until"}</Label>
           <Input type="date" value={form.validUntil} onChange={e => setForm(p => ({ ...p, validUntil: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "شروط الدفع" : "Payment Terms"}</Label>
+          <Input value={form.paymentTerms} onChange={e => setForm(p => ({ ...p, paymentTerms: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
+        </div>
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة المستند" : "Document Language"}</Label>
+          <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="ar">العربية</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -418,6 +450,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
             {/* Totals */}
             <div className="text-xs text-black/50 space-y-0.5 px-3 pt-2 border-t border-black/[0.06]">
               <div className="flex justify-between"><span>{L ? "المجموع الفرعي" : "Subtotal"}</span><span className="font-bold">{subtotal.toLocaleString()}</span></div>
+              {discountAmt > 0 && <div className="flex justify-between text-emerald-600"><span>{L ? `خصم (${form.discountPercent}%)` : `Discount (${form.discountPercent}%)`}</span><span className="font-bold">-{discountAmt.toLocaleString()}</span></div>}
               <div className="flex justify-between"><span>{L ? `ضريبة (${form.vatRate}%)` : `VAT (${form.vatRate}%)`}</span><span className="font-bold">{vatAmt.toLocaleString()}</span></div>
               <div className="flex justify-between text-black font-black text-sm border-t border-black/[0.10] pt-1.5 mt-1">
                 <span>{L ? "الإجمالي" : "Total"}</span>
@@ -475,13 +508,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
           </a>
           <button
             type="button"
-            onClick={() => downloadAuthenticatedFile(
-              `/api/quotations/${quotation.id}/pdf`,
-              `quotation-${quotation.quotationNumber}.pdf`,
-            ).catch(() => toast({
-              title: L ? "تعذّر تحميل PDF" : "PDF download failed",
-              variant: "destructive",
-            }))}
+            onClick={() => window.open(`/admin/quotation-print/${quotation.id}`, "_blank", "noopener")}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
             <FileText className="w-3 h-3" /> PDF
@@ -724,13 +751,7 @@ export default function AdminQuotations() {
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
-                      onClick={() => downloadAuthenticatedFile(
-                        `/api/quotations/${q.id}/pdf`,
-                        `quotation-${q.quotationNumber}.pdf`,
-                      ).catch(() => toast({
-                        title: L ? "تعذّر تحميل PDF" : "PDF download failed",
-                        variant: "destructive",
-                      }))}
+                      onClick={() => window.open(`/admin/quotation-print/${q.id}`, "_blank", "noopener")}
                       data-testid={`button-print-quotation-${q.id}`}>
                       <FileText className="w-3 h-3" /> PDF
                     </Button>
