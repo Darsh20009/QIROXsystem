@@ -629,6 +629,28 @@ export default function Login() {
   const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
   const [isSendingWhatsappOtp, setIsSendingWhatsappOtp] = useState(false);
 
+  const confirmAuthenticatedSession = useCallback(async () => {
+    let lastError = "تعذر تثبيت جلسة الدخول. حاول مرة أخرى";
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (attempt > 0) {
+        await new Promise(resolve => window.setTimeout(resolve, 250 * attempt));
+      }
+      try {
+        const response = await fetch("/api/user", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (response.ok) return await response.json();
+        lastError = response.status === 401
+          ? "لم يتم تثبيت جلسة الدخول بعد"
+          : "تعذر التحقق من جلسة الدخول";
+      } catch {
+        lastError = "تعذر الاتصال بالخادم لتثبيت جلسة الدخول";
+      }
+    }
+    throw new Error(lastError);
+  }, []);
+
   const [twoFAExpiresAt, setTwoFAExpiresAt] = useState<number | null>(null);
   const [twoFASecondsLeft, setTwoFASecondsLeft] = useState(600);
   const [totpSecondsLeft, setTotpSecondsLeft] = useState(30);
@@ -673,9 +695,9 @@ export default function Login() {
             body: JSON.stringify({ challengeId: pushChallengeId, tempToken: twoFA?.tempToken }),
           });
           if (!r2.ok) { const err = await r2.json().catch(() => ({})); setTwoFAError(err.error || "فشل إكمال تسجيل الدخول"); return; }
-          const user = await r2.json();
+          await r2.json();
+          const user = await confirmAuthenticatedSession();
           queryClient.setQueryData(["/api/user"], user);
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
           setTwoFA(null);
           const redirectPath = typeof user.redirectPath === "string" && user.redirectPath.startsWith("/")
             ? user.redirectPath
@@ -1405,16 +1427,16 @@ export default function Login() {
                     const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
                     const data = await r.json().catch(() => ({}));
                     if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
+                    const authenticatedUser = await confirmAuthenticatedSession();
                     setTwoFA(null);
                     if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {
                       setVerifyStep({ email: data.email, name: data.fullName || data.username || "" });
                     } else {
-                      queryClient.setQueryData(["/api/user"], data);
-                      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                      queryClient.setQueryData(["/api/user"], authenticatedUser);
                       const redirectPath = typeof data.redirectPath === "string" && data.redirectPath.startsWith("/")
                         ? data.redirectPath
-                        : data.role === "client" ? "/dashboard" : "/employee/role-dashboard";
-                      if (data.role === "client") {
+                        : authenticatedUser.role === "client" ? "/dashboard" : "/employee/role-dashboard";
+                      if (authenticatedUser.role === "client") {
                         const returnUrl = sessionStorage.getItem("returnAfterLogin");
                         if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
                         else setLocation(redirectPath);

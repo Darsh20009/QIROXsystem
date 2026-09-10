@@ -27,7 +27,7 @@ export function useUser() {
   return useQuery({
     queryKey: [api.auth.user.path],
     queryFn: async () => {
-      const res = await fetch(api.auth.user.path);
+      const res = await fetch(api.auth.user.path, { credentials: "include" });
       if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch user");
       return await res.json();
@@ -49,6 +49,7 @@ export function useLogin() {
         method: api.auth.login.method,
         headers,
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -90,6 +91,7 @@ export function useRegister() {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
+        credentials: "include",
       });
 
       if (!res.ok) {
