@@ -1130,7 +1130,7 @@ export default function Home() {
               {/* ── Hero image column ── */}
               <motion.div {...fade(0)} className="flex items-end justify-center order-2 mx-0 overflow-visible">
                 <img
-                  src="/qirox-hero-new.png"
+                  src="/qirox-hero-new.webp"
                   alt="QIROX"
                   className="w-full max-w-[520px] sm:max-w-[640px] lg:max-w-none lg:w-full select-none pointer-events-none block"
                   draggable={false}
@@ -1418,7 +1418,9 @@ export default function Home() {
                 {/* ambient glow behind the devices */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-radial from-black/[0.04] via-transparent to-transparent dark:from-white/[0.04]" />
                 <img
-                  src="/demo-devices.png"
+                  src="/demo-devices.webp"
+                  loading="lazy"
+                  decoding="async"
                   alt="QIROX Demo"
                   className="w-full max-w-xl object-contain relative"
                   style={{
@@ -1426,7 +1428,6 @@ export default function Home() {
                     maskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
                     WebkitMaskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
                   }}
-                  loading="lazy"
                 />
               </motion.div>
             </div>
@@ -1967,11 +1968,12 @@ export default function Home() {
                 className="flex items-center justify-end relative"
               >
                 <img
-                  src="/qirox-hero-cube.png"
+                  src="/qirox-hero-cube.webp"
+                  loading="lazy"
+                  decoding="async"
                   alt="QIROX"
                   className="w-auto max-h-[200px] md:max-h-[220px] select-none pointer-events-none drop-shadow-2xl"
                   draggable={false}
-                  loading="lazy"
                 />
               </motion.div>
 

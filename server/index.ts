@@ -1132,6 +1132,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
           res.setHeader("Cache-Control", "no-cache, must-revalidate");
         } else if (filePath.includes("/assets/")) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else {
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
         }
       },
     }));
