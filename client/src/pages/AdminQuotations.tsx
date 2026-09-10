@@ -415,8 +415,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
                     <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="col-span-2 h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
-                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1 flex items-center gap-1">
+                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()}
+                      <SARIcon size={11} className="opacity-80" />
                     </p>
                   )}
                   <div className="flex gap-2">
@@ -434,7 +435,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-black font-semibold">{item.name}</span>
                     {item.description && <span className="text-[10px] text-black/40 mr-2">{item.description}</span>}
-                    <span className="text-[10px] text-black/40 mr-2 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span>
+                    <span className="text-[10px] text-black/40 mr-2 font-mono inline-flex items-center gap-1">
+                      × {item.qty} × {item.unitPrice.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
