@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
+import { printDocument } from "@/lib/print-document";
 
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "", notes: "" };
 
@@ -19,14 +20,12 @@ export default function InvoicePrint() {
   const [showBankInfo, setShowBankInfo] = useState(true);
   const isClientView = location.startsWith("/client/");
 
-  const handleDownloadPDF = () => {
-    // Use browser print-to-PDF — Arabic RTL renders correctly in browser
-    const noprint = document.querySelectorAll(".no-print");
-    noprint.forEach(el => (el as HTMLElement).style.display = "none");
-    window.print();
-    setTimeout(() => {
-      noprint.forEach(el => (el as HTMLElement).style.display = "");
-    }, 1000);
+  const handlePrint = async () => {
+    try {
+      await printDocument({ title: `فاتورة-${invoice?.invoiceNumber || "QIROX"}` });
+    } catch {
+      toast({ title: "تعذّرت تهيئة الفاتورة للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
   };
 
   const { data: invoice, isLoading } = useQuery({
@@ -82,16 +81,18 @@ export default function InvoicePrint() {
           body { background: white !important; }
           main, #main-content { padding: 0 !important; margin: 0 !important; }
           .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; }
+          .print-page, .print-page * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          table, tr, .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
         }
       `}</style>
 
       {/* Controls - hidden on print */}
-      <div className="no-print bg-white border-b border-black/[0.07] px-6 py-3 flex items-center justify-between sticky top-0 z-10" dir={dir}>
+      <div className="no-print bg-white border-b border-black/[0.07] px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-10" dir={dir}>
         <button onClick={() => setLocation(isClientView ? "/client/invoices" : "/admin/invoices")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
           <ArrowRight className="w-4 h-4" />
           {isClientView ? "رجوع لفواتيري" : "رجوع للفواتير"}
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
           <Button
             onClick={() => sendEmailMutation.mutate()}
             disabled={sendEmailMutation.isPending}
@@ -114,12 +115,7 @@ export default function InvoicePrint() {
             {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
           </Button>
           <Button
-            onClick={() => {
-              const title = document.title;
-              document.title = `فاتورة-${invoice?.invoiceNumber || "QIROX"}`;
-              window.print();
-              setTimeout(() => { document.title = title; }, 1000);
-            }}
+            onClick={handlePrint}
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1.5 border-black/[0.12]"
@@ -129,26 +125,26 @@ export default function InvoicePrint() {
             طباعة
           </Button>
           <Button
-            onClick={handleDownloadPDF}
+            onClick={handlePrint}
             size="sm"
             className="bg-black text-white h-8 text-xs gap-1.5"
             data-testid="button-download-pdf-invoice"
           >
             <Download className="w-3 h-3" />
-            تحميل PDF
+            حفظ PDF
           </Button>
         </div>
       </div>
 
       {/* Invoice Paper */}
-      <div className="min-h-screen bg-gray-50 flex justify-center py-8 px-4 no-print-bg">
+      <div className="min-h-screen bg-gray-50 flex justify-center py-4 sm:py-8 px-2 sm:px-4 no-print-bg">
         <div
           className="print-page bg-white w-full max-w-[800px] shadow-lg rounded-xl overflow-hidden"
           style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
           dir={dir}
         >
           {/* Header */}
-          <div className="bg-black px-10 py-8 flex items-center justify-between">
+          <div className="bg-black px-5 sm:px-10 py-6 sm:py-8 flex items-center justify-between">
             <div>
               <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain opacity-90" />
               <p className="text-white/40 text-xs mt-1">qiroxstudio.online</p>
@@ -166,7 +162,7 @@ export default function InvoicePrint() {
           </div>
 
           {/* Meta bar */}
-          <div className="bg-black/[0.03] border-b border-black/[0.06] px-10 py-4 flex justify-between text-xs text-black/50">
+          <div className="bg-black/[0.03] border-b border-black/[0.06] px-5 sm:px-10 py-4 flex flex-wrap gap-3 justify-between text-xs text-black/50">
             <div>
               <span className="text-black/30">تاريخ الإصدار: </span>
               <span className="font-medium text-black/70">{new Date(invoice.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}</span>
@@ -185,9 +181,9 @@ export default function InvoicePrint() {
             )}
           </div>
 
-          <div className="px-10 py-8">
+          <div className="px-5 sm:px-10 py-6 sm:py-8">
             {/* Client / From info */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8">
               <div>
                 <p className="text-xs font-bold text-black/30 uppercase tracking-wider mb-2">من</p>
                 <p className="font-black text-black text-base">QIROX Studio</p>
@@ -260,7 +256,7 @@ export default function InvoicePrint() {
 
             {/* Bank info — toggleable */}
             {showBankInfo && (
-              <div className="border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4 mb-6">
+              <div className="print-avoid-break border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4 mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Building2 className="w-3.5 h-3.5 text-black dark:text-white" />
                   <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>

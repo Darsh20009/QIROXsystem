@@ -234,6 +234,22 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+
+  useEffect(() => {
+    const normalized = value.trim();
+    if (!normalized) {
+      setPhoneNumber("");
+      return;
+    }
+    const country = [...COUNTRIES]
+      .sort((a, b) => b.dial.length - a.dial.length)
+      .find(c => normalized.startsWith(c.dial));
+    if (country) {
+      setSelected(country);
+      setPhoneNumber(normalized.slice(country.dial.length).replace(/\D/g, ""));
+    }
+  }, [value]);
 
   useEffect(() => {
     if (detected) return;
@@ -245,16 +261,23 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
     }).catch(() => setDetected(true));
   }, []);
 
-  // Position the fixed portal dropdown relative to the trigger (fixed = viewport coords, no scroll offset)
+  // Keep the desktop menu attached to its trigger. Mobile uses a stable bottom sheet
+  // so opening the keyboard cannot move the menu off-screen.
   useLayoutEffect(() => {
-    if (!open || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setDropPos({
-      top: rect.bottom + 6,
-      left: rect.left,
-      width: rect.width,
-    });
-  }, [open]);
+    if (!open || !containerRef.current || isMobile) return;
+    const updatePosition = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDropPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, isMobile]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -263,17 +286,14 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
       const inPortal = dropdownPortalRef.current?.contains(target);
       if (!inContainer && !inPortal) setOpen(false);
     };
-    const handleScroll = () => setOpen(false);
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
     };
   }, []);
 
   useEffect(() => {
-    if (open && searchRef.current) {
+    if (open && searchRef.current && !isMobile) {
       setTimeout(() => searchRef.current?.focus(), 50);
     } else {
       setSearch("");
@@ -304,11 +324,13 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
       className="bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
       style={{
         position: "fixed",
-        top: dropPos.top,
-        left: dropPos.left,
-        width: dropPos.width,
+        top: isMobile ? "auto" : dropPos.top,
+        bottom: isMobile ? "max(12px, env(safe-area-inset-bottom))" : "auto",
+        left: isMobile ? "12px" : dropPos.left,
+        right: isMobile ? "12px" : "auto",
+        width: isMobile ? "auto" : dropPos.width,
         zIndex: 99999,
-        maxHeight: "240px",
+        maxHeight: isMobile ? "min(70dvh, 520px)" : "240px",
         display: "flex",
         flexDirection: "column",
       }}
@@ -359,7 +381,7 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
         <button
           type="button"
           onClick={() => setOpen(v => !v)}
-          className="flex items-center gap-1.5 px-3 border-r border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors min-w-[90px] shrink-0 rounded-l-xl"
+          className="flex items-center justify-center gap-1.5 px-3 border-r border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors min-w-[96px] shrink-0 rounded-l-xl"
           data-testid="btn-country-dial"
         >
           <span className="text-lg leading-none">{selected.flag}</span>
@@ -372,7 +394,7 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
           value={phoneNumber}
           onChange={handlePhoneChange}
           placeholder={activePlaceholder}
-          className="flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
           data-testid="input-phone-number"
           dir="ltr"
         />

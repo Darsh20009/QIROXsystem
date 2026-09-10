@@ -20,7 +20,6 @@ import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
 const qiroxLogoPath = "/qirox-icon-nobg.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
-import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 import { isCapacitorNative, getServerUrl } from "@/lib/server-url";
@@ -72,16 +71,6 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
       {/* Subtle top-right light bloom */}
       <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 65%)" }} />
-
-      {/* Subtle grid */}
-      <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{
-        backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-      }} />
-
-      {/* Left accent stripe */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px]"
-        style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.18) 60%, transparent 100%)" }} />
 
       {/* ── Top brand bar ── */}
       <div className="relative z-10 px-10 pt-10 pb-0 flex items-center justify-between">
@@ -985,7 +974,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white" dir={dir}>
-      <PageGraphics variant="auth" />
       {/* Left decorative panel — hidden on mobile */}
       <AuthPremiumPanel isRegister={isRegister} isEmployeeRegister={isEmployeeRegister}
         googleEnabled={googleEnabled} githubEnabled={githubEnabled} appleEnabled={appleEnabled}
@@ -997,60 +985,6 @@ export default function Login() {
       {/* Right form area */}
       <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-20 sm:px-6 sm:py-8 md:px-10 md:py-8 xl:px-6 xl:py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
 
-        {/* ── Decorative background layer ── */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none md:max-xl:opacity-40">
-          {/* Dot grid */}
-          <div className="absolute inset-0 opacity-[0.5]" style={{
-            backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1.2px, transparent 1.2px)",
-            backgroundSize: "26px 26px",
-          }} />
-
-          {/* Large circle rings — top-left corner */}
-          <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full border border-black/[0.05]" />
-          <div className="absolute -top-28 -left-28 w-[420px] h-[420px] rounded-full border border-black/[0.04]" />
-          <div className="absolute -top-14 -left-14 w-[300px] h-[300px] rounded-full border border-black/[0.03]" />
-
-          {/* Large circle rings — bottom-right corner */}
-          <div className="absolute -bottom-40 -right-40 w-[480px] h-[480px] rounded-full border border-black/[0.04]" />
-          <div className="absolute -bottom-24 -right-24 w-[340px] h-[340px] rounded-full border border-black/[0.03]" />
-
-          {/* Hexagon — top right */}
-          <svg className="absolute top-10 right-10 opacity-[0.045]" width="140" height="140" viewBox="0 0 140 140">
-            <polygon points="70,6 126,37 126,103 70,134 14,103 14,37" fill="none" stroke="black" strokeWidth="1.5"/>
-            <polygon points="70,24 110,46 110,94 70,116 30,94 30,46" fill="none" stroke="black" strokeWidth="0.8"/>
-          </svg>
-
-          {/* Hexagon — bottom left */}
-          <svg className="absolute bottom-16 left-6 opacity-[0.035]" width="100" height="100" viewBox="0 0 100 100">
-            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="black" strokeWidth="1.5"/>
-          </svg>
-
-          {/* Diamond/square rotated — mid left */}
-          <svg className="absolute top-1/2 -translate-y-1/2 -left-10 opacity-[0.03]" width="180" height="180" viewBox="0 0 180 180">
-            <rect x="15" y="15" width="150" height="150" rx="8" fill="none" stroke="black" strokeWidth="1.5" transform="rotate(45 90 90)"/>
-            <rect x="35" y="35" width="110" height="110" rx="6" fill="none" stroke="black" strokeWidth="0.8" transform="rotate(45 90 90)"/>
-          </svg>
-
-          {/* Accent line — top */}
-          <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent" />
-
-          {/* QIROX large watermark letter */}
-          <div className="absolute bottom-8 right-8 text-[180px] font-black text-black/[0.018] leading-none font-heading tracking-tight select-none">
-            Q
-          </div>
-
-          {/* Small floating accent dots */}
-          <div className="absolute top-1/3 right-[15%] w-2 h-2 rounded-full bg-black/[0.06]" />
-          <div className="absolute top-1/3 right-[18%] w-1 h-1 rounded-full bg-black/[0.04]" />
-          <div className="absolute top-[40%] left-[12%] w-1.5 h-1.5 rounded-full bg-black/[0.05]" />
-          <div className="absolute bottom-1/3 left-[18%] w-2 h-2 rounded-full bg-black/[0.04]" />
-
-          {/* Diagonal accent lines */}
-          <svg className="absolute inset-0 w-full h-full opacity-[0.025]" preserveAspectRatio="none">
-            <line x1="0" y1="0" x2="30%" y2="60%" stroke="black" strokeWidth="0.8"/>
-            <line x1="100%" y1="100%" x2="70%" y2="40%" stroke="black" strokeWidth="0.8"/>
-          </svg>
-        </div>
         {/* Mobile logo */}
         <div className="lg:hidden md:max-xl:hidden mb-8 text-center">
           <Link href="/">

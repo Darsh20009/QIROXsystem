@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
+import { printDocument } from "@/lib/print-document";
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:    { label: "مسودة",              bg: "#f3f4f6", text: "#6b7280" },
@@ -73,18 +74,12 @@ export default function QuotationPrint() {
     onError: (err: any) => toast({ title: err?.message || "فشل التحويل", variant: "destructive" }),
   });
 
-  const handleDownloadPDF = () => {
-    // Use browser print-to-PDF — Arabic RTL renders correctly in browser
-    const noprint = document.querySelectorAll(".no-print");
-    noprint.forEach(el => (el as HTMLElement).style.display = "none");
-    window.print();
-    setTimeout(() => {
-      noprint.forEach(el => (el as HTMLElement).style.display = "");
-    }, 1000);
-  };
-
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      await printDocument({ title: `عرض-سعر-${quotation?.quotationNumber || "QIROX"}` });
+    } catch {
+      toast({ title: "تعذّر تهيئة عرض السعر للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
   };
 
   if (isLoading) return (
@@ -113,7 +108,6 @@ export default function QuotationPrint() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
         @page { margin: 12mm; size: A4; }
         @media print {
           body { background: white !important; margin: 0 !important; padding: 0 !important; }
@@ -133,13 +127,14 @@ export default function QuotationPrint() {
             margin: 0 !important;
             width: 100% !important;
           }
-          table { page-break-inside: avoid; }
+          .print-card, .print-card * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          table, tr, .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
           h1, h2, h3 { page-break-after: avoid; }
         }
       `}</style>
 
       {/* Controls – hidden on print */}
-      <div className="no-print bg-white border-b border-black/[0.07] px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div className="no-print bg-white border-b border-black/[0.07] px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-10">
         <button
           onClick={() => window.history.back()}
           className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors"
@@ -147,7 +142,7 @@ export default function QuotationPrint() {
           <ArrowRight className="w-4 h-4" />
           رجوع
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {isAdmin && (
             <Button
               variant="outline"
@@ -201,19 +196,19 @@ export default function QuotationPrint() {
             {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
           </Button>
           <Button
-            onClick={handleDownloadPDF}
+            onClick={handlePrint}
             size="sm"
             className="bg-black text-white h-8 gap-1.5 text-xs"
             data-testid="button-download-pdf"
           >
             <Download className="w-3 h-3" />
-            تحميل PDF
+            حفظ PDF
           </Button>
         </div>
       </div>
 
       {/* Document Area */}
-      <div className="min-h-screen bg-gray-50 py-8 px-4 no-print-bg">
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-2 sm:px-4 no-print-bg">
         <div
           ref={printCardRef}
           className="print-card bg-white w-full max-w-[800px] mx-auto shadow-lg rounded-2xl overflow-hidden"
@@ -221,7 +216,7 @@ export default function QuotationPrint() {
           dir={dir}
         >
           {/* Header */}
-          <div className="bg-black px-10 py-8 flex items-start justify-between">
+          <div className="bg-black px-5 sm:px-10 py-6 sm:py-8 flex items-start justify-between">
             <div>
               <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 opacity-90" />
               <p className="text-white/40 text-xs">qiroxstudio.online</p>
@@ -247,7 +242,7 @@ export default function QuotationPrint() {
           </div>
 
           {/* Client Info */}
-          <div className="px-10 py-6 border-b border-black/[0.07] grid grid-cols-2 gap-8">
+          <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             <div>
               <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم من</p>
               <p className="font-black text-black text-sm">QIROX Studio</p>
@@ -271,7 +266,7 @@ export default function QuotationPrint() {
 
           {/* Subject */}
           {quotation.title && (
-            <div className="px-10 py-4 border-b border-black/[0.07] bg-black/[0.01]">
+            <div className="px-5 sm:px-10 py-4 border-b border-black/[0.07] bg-black/[0.01]">
               <span className="text-[10px] font-bold text-black/30 uppercase tracking-wider ml-3">الموضوع</span>
               <span className="font-bold text-black text-sm">{quotation.title}</span>
             </div>
@@ -279,7 +274,7 @@ export default function QuotationPrint() {
 
           {/* Items Table */}
           {quotation.items?.length > 0 && (
-            <div className="px-10 py-6 border-b border-black/[0.07]">
+            <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-auto">
               <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">تفاصيل البنود</p>
               <table className="w-full text-sm border-collapse">
                 <thead>
@@ -339,7 +334,7 @@ export default function QuotationPrint() {
 
           {/* Notes / Terms */}
           {(quotation.notes || quotation.termsAndConditions) && (
-            <div className="px-10 py-6 border-b border-black/[0.07] grid grid-cols-2 gap-6">
+            <div className="px-5 sm:px-10 py-6 border-b border-black/[0.07] grid grid-cols-1 sm:grid-cols-2 gap-6">
               {quotation.notes && (
                 <div className="bg-black/[0.02] rounded-xl p-4">
                   <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">ملاحظات</p>
@@ -357,7 +352,7 @@ export default function QuotationPrint() {
 
           {/* Bank Transfer Info — toggleable */}
           {showBankInfo && (
-            <div className="px-10 py-5 border-t border-black/[0.06]">
+            <div className="print-avoid-break px-5 sm:px-10 py-5 border-t border-black/[0.06]">
               <div className="border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Building2 className="w-3.5 h-3.5 text-black dark:text-white" />
@@ -392,7 +387,7 @@ export default function QuotationPrint() {
           )}
 
           {/* Footer */}
-          <div className="px-10 py-5 bg-black/[0.02] border-t border-black/[0.06] flex items-center justify-between">
+          <div className="px-5 sm:px-10 py-5 bg-black/[0.02] border-t border-black/[0.06] flex items-center justify-between">
             <p className="text-xs text-black/30">شكراً لتعاملكم مع QIROX Studio</p>
             <p className="text-xs text-black/20 font-mono" dir="ltr">{quotation.quotationNumber}</p>
           </div>
