@@ -222,9 +222,11 @@ interface CountryPhoneInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  id?: string;
+  autoFocus?: boolean;
 }
 
-export function CountryPhoneInput({ value, onChange, placeholder, className }: CountryPhoneInputProps) {
+export function CountryPhoneInput({ value, onChange, placeholder, className, id, autoFocus }: CountryPhoneInputProps) {
   const [selected, setSelected] = useState<CountryData>(COUNTRIES[0]);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -307,13 +309,13 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
   const handleSelect = (country: CountryData) => {
     setSelected(country);
     setOpen(false);
-    onChange(`${country.dial}${phoneNumber}`);
+    onChange(`${country.dial}${phoneNumber.replace(/^0+/, "")}`);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const num = e.target.value.replace(/[^0-9]/g, "");
     setPhoneNumber(num);
-    onChange(`${selected.dial}${num}`);
+    onChange(`${selected.dial}${num.replace(/^0+/, "")}`);
   };
 
   const activePlaceholder = placeholder || selected.placeholder;
@@ -390,10 +392,13 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
         </button>
 
         <input
+          id={id}
           type="tel"
           value={phoneNumber}
           onChange={handlePhoneChange}
           placeholder={activePlaceholder}
+          autoFocus={autoFocus}
+          aria-label="رقم الجوال"
           className="min-w-0 flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
           data-testid="input-phone-number"
           dir="ltr"

@@ -966,7 +966,7 @@ export default function Login() {
 
   const sendPhoneLoginOtp = async () => {
     const digits = phoneLoginNumber.replace(/\D/g, "");
-    if (digits.length < 9) { setPhoneLoginError("أدخل رقم جوال صحيحاً"); return; }
+    if (digits.length < 8) { setPhoneLoginError("أدخل رقم جوال صحيحاً"); return; }
     setIsSendingPhoneOtp(true);
     setPhoneLoginError("");
     try {
@@ -1928,18 +1928,21 @@ export default function Login() {
               </div>
               {phoneLoginStep === "phone" ? (
                 <>
-                  <div className="relative">
-                    <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
-                    <Input
+                  <div className="space-y-2">
+                    <label htmlFor="input-phone-login" className="text-xs font-semibold text-black/50">
+                      {ar ? "رقم الجوال" : "Mobile number"}
+                    </label>
+                    <CountryPhoneInput
+                      id="input-phone-login"
                       value={phoneLoginNumber}
-                      onChange={e => setPhoneLoginNumber(e.target.value.replace(/[^\d+\s-]/g, ""))}
-                      placeholder="+966 5XXXXXXXX"
-                      className={`${inputBase} pr-10`}
-                      autoComplete="tel"
-                      inputMode="tel"
+                      onChange={setPhoneLoginNumber}
+                      placeholder="5XXXXXXXX"
+                      className="w-full"
                       autoFocus
-                      data-testid="input-phone-login"
                     />
+                    <p className="text-[10px] text-black/35">
+                      {ar ? "اختر الدولة ثم اكتب الرقم بدون كود الدولة" : "Choose a country, then enter the number without its country code"}
+                    </p>
                   </div>
                   <Button type="button" onClick={sendPhoneLoginOtp} disabled={isSendingPhoneOtp} className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold">
                     {isSendingPhoneOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageSquare className="w-4 h-4 ml-2" />{ar ? "إرسال رمز واتساب" : "Send WhatsApp code"}</>}
