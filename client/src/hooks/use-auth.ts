@@ -66,6 +66,7 @@ export function useLogin() {
       if (user.requires2FA) return;
       if (user.needsDeviceVerification) return;
       if (user.needsVerification) return;
+      if (user.deviceToken) saveDeviceToken(user.deviceToken);
 
       queryClient.setQueryData([api.auth.user.path], user);
       const homePath = getUserHomePath(user.role);
@@ -132,6 +133,7 @@ export function useLogout() {
       });
     },
     onSuccess: () => {
+      clearDeviceToken();
       queryClient.setQueryData([api.auth.user.path], null);
       setLocation("/");
     },

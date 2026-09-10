@@ -545,6 +545,14 @@ export async function registerRoutes(
     if (user.role === "client") return "/dashboard";
     return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
   };
+  const issueDeviceToken = async (userId: string, userAgent = "") => {
+    const { DeviceTokenModel } = await import("./models");
+    const plainToken = crypto.randomBytes(48).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(plainToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await DeviceTokenModel.create({ userId, tokenHash, userAgent, expiresAt });
+    return plainToken;
+  };
   // Native OAuth is opened in Capacitor Browser (SFSafariViewController on
   // iOS). Keep the provider callback on the server, then hand the short-lived
   // result back to the app through its registered qirox:// URL scheme.
@@ -2171,7 +2179,12 @@ export async function registerRoutes(
           }
           req.login(user, (loginErr: any) => {
             if (loginErr) return next(loginErr);
-            res.status(200).json(sanitizeUser(user));
+            issueDeviceToken(
+              String(user._id || user.id),
+              String(req.headers["user-agent"] || ""),
+            )
+              .then(deviceToken => res.status(200).json({ ...sanitizeUser(user), deviceToken }))
+              .catch(next);
           });
         } catch (e: any) {
           console.error("[2FA-check] Error during 2FA check:", e.message);
@@ -2261,10 +2274,20 @@ export async function registerRoutes(
       if (!consumed) return res.status(409).json({ error: "تم استخدام جلسة التحقق بالفعل. أعد تسجيل الدخول." });
       const safeUser = await UserModel.findById(session.userId);
       if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
+      const deviceToken = await issueDeviceToken(
+        String(safeUser._id || safeUser.id),
+        String(req.headers["user-agent"] || ""),
+      );
       req.login(safeUser, (loginErr: any) => {
-        if (loginErr) return next(loginErr);
         deletePending2FA(tempToken).catch(() => {});
-        res.status(200).json({ ...sanitizeUser(safeUser), redirectPath: consumed.redirectPath || dashboardForUser(safeUser) });
+        if (loginErr) {
+          console.error("[2FA] Passport session failed; continuing with device token:", loginErr.message);
+        }
+        res.status(200).json({
+          ...sanitizeUser(safeUser),
+          deviceToken,
+          redirectPath: consumed.redirectPath || dashboardForUser(safeUser),
+        });
       });
     } catch {
       res.status(500).json({ error: "تعذر إكمال التحقق الثنائي حالياً" });
@@ -12716,14 +12739,23 @@ export async function registerRoutes(
       }
       // Build a plain user object with id set so Passport's serializeUser works
       const user = { ...userDoc.toObject(), id: userDoc._id.toString() };
+      const deviceToken = await issueDeviceToken(
+        String(userDoc._id),
+        String(req.headers["user-agent"] || ""),
+      );
+      const dash = userDoc.role === "admin" ? "/admin" : "/employee/role-dashboard";
       // Log in the user via Passport
       req.login(user, (err) => {
         if (err) {
           console.error("[QR Login] req.login error:", err);
-          void auditQrLogin(req, "qr_login_failed", { userId: String(userDoc._id), token, reason: "session_error", role: userDoc.role });
-          return res.redirect("/login?qr=error");
+          void auditQrLogin(req, "qr_login_succeeded", {
+            userId: String(userDoc._id),
+            token,
+            reason: "device_token_fallback",
+            role: userDoc.role,
+          });
+          return res.redirect(`/login?deviceToken=${encodeURIComponent(deviceToken)}&next=${encodeURIComponent(dash)}`);
         }
-        const dash = userDoc.role === "admin" ? "/admin" : "/employee";
         // Save session before redirect to ensure cookie is set
         req.session.save((saveErr) => {
           if (saveErr) {
@@ -12732,7 +12764,7 @@ export async function registerRoutes(
           } else {
             void auditQrLogin(req, "qr_login_succeeded", { userId: String(userDoc._id), token, role: userDoc.role });
           }
-          return res.redirect(dash);
+          return res.redirect(`/login?deviceToken=${encodeURIComponent(deviceToken)}&next=${encodeURIComponent(dash)}`);
         });
       });
     } catch (err) {

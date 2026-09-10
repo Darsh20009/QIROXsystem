@@ -1,10 +1,10 @@
 ---
-name: 2FA session confirmation
-description: Prevents successful two-factor verification from being followed immediately by an unauthenticated dashboard.
+name: Auth device-token fallback
+description: Keeps password, two-factor, and employee QR login working when embedded browsers do not persist Passport cookies.
 ---
 
-After password plus 2FA succeeds, confirm the new authenticated session with a credentialed `/api/user` request before redirecting or invalidating the user query. Retry briefly because cookie propagation through the preview/proxy can lag behind the verification response.
+After password, 2FA, or employee QR authentication succeeds, issue the existing trusted device token as a fallback to the Passport cookie. Browser and native API requests should attach this token automatically, while normal cookie sessions remain enabled.
 
-**Why:** Successful `/api/login` and `/api/auth/verify-2fa` responses were immediately followed by `401` responses from `/api/user` and dashboard APIs even though the Passport session had been persisted correctly in MongoDB.
+**Why:** Successful login and 2FA responses were repeatedly followed by `401` responses from `/api/user`, even after retries and despite the Passport session being present in MongoDB. The same cookie dependency broke employee QR login.
 
-**How to apply:** Any password, OAuth, push-approval, or recovery flow that completes 2FA must wait for session confirmation before loading authenticated pages. Do not trigger an immediate user-query invalidation after setting authenticated user data.
+**How to apply:** Every successful login method must persist the returned device token before requesting authenticated data or redirecting. Keep raw tokens client-side only; persist only token hashes server-side, and clear the token on logout.

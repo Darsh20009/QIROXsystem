@@ -60,4 +60,4 @@
 - [Project code workspace](project-code-workspace.md) — Reuse the sandbox IDE/runner for linked order projects; never persist GitHub tokens in the workspace remote.
 - [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
-- [2FA session confirmation](two-factor-session-confirmation.md) — Confirm the new session through /api/user before redirecting after 2FA; immediate dashboard requests can race cookie propagation.
+- [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.

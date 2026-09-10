@@ -353,6 +353,18 @@ export default function Login() {
     }, 200);
   }, []);
 
+  // Password and employee-QR login can use a trusted device token when an
+  // embedded browser refuses to persist the regular session cookie.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const deviceToken = params.get("deviceToken");
+    if (!deviceToken) return;
+    const nextPath = params.get("next") || "/employee/role-dashboard";
+    saveDeviceToken(deviceToken);
+    window.history.replaceState({}, "", window.location.pathname);
+    window.location.href = nextPath.startsWith("/") ? nextPath : "/employee/role-dashboard";
+  }, []);
+
   // Phone OTP login countdown timer
   useEffect(() => {
     if (!phoneLoginExpiry || phoneLoginStep !== "otp") return;
@@ -695,7 +707,8 @@ export default function Login() {
             body: JSON.stringify({ challengeId: pushChallengeId, tempToken: twoFA?.tempToken }),
           });
           if (!r2.ok) { const err = await r2.json().catch(() => ({})); setTwoFAError(err.error || "فشل إكمال تسجيل الدخول"); return; }
-          await r2.json();
+          const completedLogin = await r2.json();
+          if (completedLogin.deviceToken) saveDeviceToken(completedLogin.deviceToken);
           const user = await confirmAuthenticatedSession();
           queryClient.setQueryData(["/api/user"], user);
           setTwoFA(null);
@@ -1427,6 +1440,7 @@ export default function Login() {
                     const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
                     const data = await r.json().catch(() => ({}));
                     if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
+                    if (data.deviceToken) saveDeviceToken(data.deviceToken);
                     const authenticatedUser = await confirmAuthenticatedSession();
                     setTwoFA(null);
                     if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {

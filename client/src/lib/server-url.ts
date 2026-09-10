@@ -58,19 +58,20 @@ export function apiUrl(path: string): string {
  * one-time device bearer token to native API calls and route relative API
  * URLs to the configured server.
  *
- * This is intentionally installed only in native builds. Browser requests
- * continue using normal same-origin cookies and are not modified.
+ * Native requests are routed to the configured server. Browser requests stay
+ * same-origin, but may also carry the device token when cookie persistence is
+ * blocked by an embedded browser or privacy settings.
  */
 export function installNativeAuthFetch(): void {
-  if (!isCapacitorNative() || typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-  const marker = "__qiroxNativeAuthFetchInstalled";
+  const marker = "__qiroxAuthFetchInstalled";
   if ((window as any)[marker]) return;
   (window as any)[marker] = true;
 
   const originalFetch = window.fetch.bind(window);
+  const native = isCapacitorNative();
   const serverBase = getServerUrl();
-  if (!serverBase) return;
 
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const inputUrl =
@@ -79,7 +80,7 @@ export function installNativeAuthFetch(): void {
         : input instanceof URL
           ? new URL(input.href)
           : new URL(input.url, window.location.href);
-    const serverOrigin = new URL(serverBase).origin;
+    const serverOrigin = serverBase ? new URL(serverBase).origin : window.location.origin;
     const isRelativeApi =
       inputUrl.origin === window.location.origin &&
       (inputUrl.pathname === "/api" || inputUrl.pathname.startsWith("/api/"));
@@ -89,7 +90,7 @@ export function installNativeAuthFetch(): void {
       return originalFetch(input, init);
     }
 
-    const targetUrl = isRelativeApi
+    const targetUrl = native && isRelativeApi
       ? `${serverBase}${inputUrl.pathname}${inputUrl.search}${inputUrl.hash}`
       : inputUrl.href;
     const token = (() => {
