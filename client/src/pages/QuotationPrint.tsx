@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 const qiroxLogoPath = "/qirox-logo-nobg.png";
+import SARIcon from "@/components/SARIcon";
 import { useI18n } from "@/lib/i18n";
 import { printDocument } from "@/lib/print-document";
 
@@ -107,6 +108,12 @@ export default function QuotationPrint() {
   const st = STATUS_LABELS[quotation.status] || { label: quotation.status, bg: "#f3f4f6", text: "#6b7280" };
   const isExternal = !!quotation.externalEmail && !client;
   const canConvert = isAdmin && quotation.status === "accepted" && client && !quotation.orderId;
+  const quotationSubtotal = Number(quotation.amount) || (quotation.items || []).reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0);
+  const quotationDiscountPercent = Number(quotation.discountPercent) || 0;
+  const quotationDiscountAmount = Number(quotation.discountAmount) > 0
+    ? Number(quotation.discountAmount)
+    : Math.round(quotationSubtotal * quotationDiscountPercent) / 100;
+  const hasQuotationDiscount = quotationDiscountPercent > 0 || quotationDiscountAmount > 0;
 
   return (
     <>
@@ -155,8 +162,9 @@ export default function QuotationPrint() {
             width: 100% !important;
           }
           .print-card, .print-card * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .print-items { overflow: visible !important; }
+          .print-items { overflow-x: visible !important; overflow-y: visible !important; }
           table { break-inside: auto !important; page-break-inside: auto !important; }
+          th, td { min-width: 0 !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
           thead { display: table-header-group !important; }
           tbody { display: table-row-group !important; }
           tr { break-inside: avoid !important; page-break-inside: avoid !important; }
@@ -311,9 +319,9 @@ export default function QuotationPrint() {
 
           {/* Items Table */}
           {quotation.items?.length > 0 && (
-            <div className="print-items px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-auto">
+            <div className="print-items px-5 sm:px-10 py-6 border-b border-black/[0.07] overflow-x-visible">
                <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">{label("تفاصيل البنود", "Line items")}</p>
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full table-fixed text-sm border-collapse">
                 <thead>
                   <tr className="bg-black text-white">
                      <th className="text-start px-4 py-2.5 font-bold text-xs">{label("البند", "Item")}</th>
@@ -325,18 +333,24 @@ export default function QuotationPrint() {
                 <tbody>
                   {quotation.items.map((item: any, i: number) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-black/[0.02]"}>
-                      <td className="px-4 py-3 text-black/80 font-medium">
+                      <td className="px-4 py-3 text-black/80 font-medium break-words [overflow-wrap:anywhere]">
                         {item.name}
                         {item.description && (
-                          <span className="block text-xs text-black/35 mt-0.5">{item.description}</span>
+                          <span className="block text-xs text-black/35 mt-0.5 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.description}</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center text-black/50">{item.qty}</td>
                       <td className="px-4 py-3 text-center text-black/50 font-mono">
-                        {item.unitPrice?.toLocaleString("ar-SA")}
+                        <span className="inline-flex items-center justify-center gap-1" dir="ltr">
+                          {item.unitPrice?.toLocaleString(D ? "ar-SA" : "en-US")}
+                          <SARIcon size={11} className="opacity-70" />
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-left font-bold text-black/70 font-mono">
-                        {item.total?.toLocaleString("ar-SA")}
+                        <span className="inline-flex items-center justify-end gap-1" dir="ltr">
+                          {item.total?.toLocaleString(D ? "ar-SA" : "en-US")}
+                          <SARIcon size={11} className="opacity-80" />
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -349,26 +363,38 @@ export default function QuotationPrint() {
                   <div className="flex justify-between text-sm text-black/50 pb-2 border-b border-black/[0.07]">
                      <span>{label("المجموع الفرعي", "Subtotal")}</span>
                     <span className="font-bold text-black/70 font-mono">
-                      {quotation.amount?.toLocaleString("ar-SA")} ر.س
+                       <span className="inline-flex items-center gap-1" dir="ltr">
+                         {quotationSubtotal.toLocaleString(D ? "ar-SA" : "en-US")}
+                         <SARIcon size={12} className="opacity-80" />
+                       </span>
                     </span>
                   </div>
-                   {quotation.discountAmount > 0 && (
+                    {hasQuotationDiscount && (
                      <div className="flex justify-between text-sm text-emerald-700">
-                       <span>{label("الخصم", "Discount")} ({quotation.discountPercent || 0}%)</span>
-                       <span className="font-bold font-mono">- {quotation.discountAmount?.toLocaleString(D ? "ar-SA" : "en-US")} ر.س</span>
+                        <span>{label("الخصم", "Discount")} ({quotationDiscountPercent}%)</span>
+                        <span className="font-bold font-mono inline-flex items-center gap-1" dir="ltr">
+                           - {quotationDiscountAmount.toLocaleString(D ? "ar-SA" : "en-US")}
+                          <SARIcon size={12} className="opacity-80" />
+                        </span>
                      </div>
                    )}
                   {quotation.vatRate > 0 && (
                     <div className="flex justify-between text-sm text-black/50">
                        <span>{label("ضريبة القيمة المضافة", "VAT")} ({quotation.vatRate}%)</span>
                       <span className="font-bold text-black/70 font-mono">
-                        {quotation.vatAmount?.toLocaleString("ar-SA")} ر.س
+                        <span className="inline-flex items-center gap-1" dir="ltr">
+                          {quotation.vatAmount?.toLocaleString(D ? "ar-SA" : "en-US")}
+                          <SARIcon size={12} className="opacity-80" />
+                        </span>
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-base bg-black text-white px-4 py-3 rounded-xl font-black mt-2">
                      <span>{label("الإجمالي", "Total")}</span>
-                    <span className="font-mono">{quotation.totalAmount?.toLocaleString("ar-SA")} ر.س</span>
+                    <span className="font-mono inline-flex items-center gap-1" dir="ltr">
+                      {quotation.totalAmount?.toLocaleString(D ? "ar-SA" : "en-US")}
+                      <SARIcon size={14} className="text-white" />
+                    </span>
                   </div>
                 </div>
               </div>

@@ -11103,8 +11103,30 @@ export async function registerRoutes(
       updates.vatAmount = Math.round(taxableAmount * vat * 100) / 100;
       updates.totalAmount = Math.round((taxableAmount + updates.vatAmount) * 100) / 100;
     }
+    const currentQuotation = await QuotationModel.findById(req.params.id);
+    if (!currentQuotation) return res.sendStatus(404);
+    const recalculatesTotals = Array.isArray(items) || discountPercent !== undefined || vatRate !== undefined;
+    if (recalculatesTotals) {
+      const nextAmount = Array.isArray(items)
+        ? items.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0)
+        : Number((currentQuotation as any).amount) || 0;
+      const nextDiscountPercent = discountPercent !== undefined
+        ? Math.min(100, Math.max(0, Number(discountPercent) || 0))
+        : Number((currentQuotation as any).discountPercent) || 0;
+      const nextDiscountAmount = Math.round(nextAmount * nextDiscountPercent) / 100;
+      const nextVatRate = vatRate !== undefined
+        ? Number(vatRate) || 0
+        : Number((currentQuotation as any).vatRate) || 0;
+      const nextTaxableAmount = nextAmount - nextDiscountAmount;
+      const nextVatAmount = Math.round(nextTaxableAmount * (nextVatRate / 100) * 100) / 100;
+      updates.amount = nextAmount;
+      updates.discountPercent = nextDiscountPercent;
+      updates.discountAmount = nextDiscountAmount;
+      updates.vatRate = nextVatRate;
+      updates.vatAmount = nextVatAmount;
+      updates.totalAmount = Math.round((nextTaxableAmount + nextVatAmount) * 100) / 100;
+    }
     const quotation = await QuotationModel.findByIdAndUpdate(req.params.id, { $set: updates }, { returnDocument: "after", new: true });
-    if (!quotation) return res.sendStatus(404);
     res.json(quotation);
   });
 

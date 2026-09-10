@@ -5,24 +5,24 @@ interface SARIconProps {
 
 export default function SARIcon({ className = "", size = 14 }: SARIconProps) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
+    <span
       aria-label="ريال سعودي"
+      role="img"
       className={`inline-block flex-shrink-0 fill-current ${className}`}
-      style={{ width: size, height: size, verticalAlign: "middle" }}
-    >
-      {/* Saudi Riyal symbol — simplified geometric mark */}
-      <text
-        x="12"
-        y="17"
-        textAnchor="middle"
-        fontSize="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="bold"
-      >
-        ﷼
-      </text>
-    </svg>
+      style={{
+        width: size,
+        height: size,
+        verticalAlign: "middle",
+        backgroundColor: "currentColor",
+        WebkitMaskImage: 'url("/sar.png")',
+        maskImage: 'url("/sar.png")',
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+      }}
+    />
   );
 }
