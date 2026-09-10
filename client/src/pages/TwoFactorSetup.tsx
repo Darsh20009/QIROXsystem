@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap, Bell, MessageCircle } from "lucide-react";
+import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap, Bell } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { useI18n } from "@/lib/i18n";
 
-type Status = { enabled: boolean; totp: boolean; emailOtp: boolean; passphrase: boolean; pushApproval: boolean; whatsappOtp: boolean; phoneVerified: boolean; hasWhatsAppNumber: boolean; hasPushSubscriptions: boolean };
+type Status = { enabled: boolean; totp: boolean; emailOtp: boolean; passphrase: boolean; pushApproval: boolean; hasPushSubscriptions: boolean };
 
 export default function TwoFactorSetup() {
   const { toast } = useToast();
@@ -104,29 +104,17 @@ export default function TwoFactorSetup() {
     onSuccess: () => { setDisabling(null); invalidate(); toast({ title: L ? "تم إلغاء تأكيد الإشعارات" : "Push approval disabled" }); },
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
-  const whatsappEnableMutation = useMutation({
-    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/whatsapp-otp/enable"); return await res.json(); },
-    onSuccess: () => { invalidate(); toast({ title: L ? "تم تفعيل التحقق عبر واتساب" : "WhatsApp verification enabled" }); },
-    onError: (e: any) => toast({ title: L ? "تعذر التفعيل" : "Unable to enable", description: e.message, variant: "destructive" }),
-  });
-  const whatsappDisableMutation = useMutation({
-    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/whatsapp-otp/disable"); return await res.json(); },
-    onSuccess: () => { setDisabling(null); invalidate(); toast({ title: L ? "تم إلغاء التحقق عبر واتساب" : "WhatsApp verification disabled" }); },
-    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
-  });
-
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
   }
 
-  const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase || status?.pushApproval || status?.whatsappOtp;
+  const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase || status?.pushApproval;
 
   const methods = [
     { id: "totp", label: L ? "تطبيق المصادقة" : "Authenticator App", desc: L ? "Qirox Authenticator أو Google Authenticator" : "Qirox Authenticator or Google Authenticator", icon: Smartphone, enabled: status?.totp },
     { id: "email", label: L ? "رمز عبر البريد" : "Email Code", desc: L ? "إرسال رمز تحقق لبريدك عند الدخول" : "A verification code is sent to your email at login", icon: Mail, enabled: status?.emailOtp },
     { id: "passphrase", label: L ? "كلمة الاسترداد" : "Recovery Phrase", desc: L ? "كلمة سرية تستخدمها كخيار بديل" : "A secret phrase used as a backup option", icon: Lock, enabled: status?.passphrase },
     { id: "push", label: L ? "تأكيد عبر الإشعارات" : "Push Approval", desc: L ? "يُرسَل إشعار لجهازك عند محاولة تسجيل الدخول — تؤكد أو ترفض من الجهاز" : "A notification is sent to your device when someone logs in — approve or deny from the device", icon: Bell, enabled: status?.pushApproval },
-    { id: "whatsapp", label: L ? "رمز عبر واتساب" : "WhatsApp Code", desc: L ? "رمز تسجيل الدخول يُرسل إلى رقمك الموثّق" : "A login code is sent to your verified phone number", icon: MessageCircle, enabled: status?.whatsappOtp },
   ];
 
   return (
@@ -149,7 +137,7 @@ export default function TwoFactorSetup() {
           <p className="font-bold text-sm text-black dark:text-white">{anyEnabled ? (L ? "مفعّل" : "Enabled") : (L ? "غير مفعّل" : "Not Enabled")}</p>
           <p className="text-xs text-black/50 dark:text-white/45">
             {anyEnabled
-                ? `${[status?.totp && (L ? "تطبيق المصادقة" : "Authenticator"), status?.emailOtp && (L ? "البريد" : "Email"), status?.passphrase && (L ? "كلمة الاسترداد" : "Recovery Phrase"), status?.pushApproval && (L ? "تأكيد الإشعارات" : "Push Approval"), status?.whatsappOtp && (L ? "واتساب" : "WhatsApp")].filter(Boolean).join(" · ")}`
+                ? `${[status?.totp && (L ? "تطبيق المصادقة" : "Authenticator"), status?.emailOtp && (L ? "البريد" : "Email"), status?.passphrase && (L ? "كلمة الاسترداد" : "Recovery Phrase"), status?.pushApproval && (L ? "تأكيد الإشعارات" : "Push Approval")].filter(Boolean).join(" · ")}`
               : (L ? "يُنصح بتفعيل طريقة واحدة على الأقل لحماية حسابك" : "Enable at least one method to protect your account")}
           </p>
         </div>
@@ -202,10 +190,9 @@ export default function TwoFactorSetup() {
                     if (m.id === "totp") totpSetupMutation.mutate();
                     else if (m.id === "email") emailSetupMutation.mutate();
                     else if (m.id === "push") pushEnableMutation.mutate();
-                    else if (m.id === "whatsapp") whatsappEnableMutation.mutate();
                     else setPassphraseStep("setup");
                   }}
-                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending || whatsappEnableMutation.isPending || (m.id === "whatsapp" && (!status?.phoneVerified || !status?.hasWhatsAppNumber))}
+                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending}
                   className="shrink-0 text-xs"
                   data-testid={`button-enable-${m.id}`}
                 >
@@ -231,12 +218,6 @@ export default function TwoFactorSetup() {
                 {L ? "فعّل إشعارات المتصفح أولاً حتى تتمكن من استخدام هذه الطريقة" : "Enable browser notifications first to use this method"}
               </p>
             )}
-            {m.id === "whatsapp" && !m.enabled && (!status?.phoneVerified || !status?.hasWhatsAppNumber) && (
-              <p className="text-[10px] text-black/50 dark:text-white/50 mt-2">
-                {L ? "وثّق رقم جوالك أولاً لتفعيل هذه الطريقة." : "Verify your phone number first to enable this method."}
-              </p>
-            )}
-
             <AnimatePresence>
               {disabling === m.id && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -250,10 +231,9 @@ export default function TwoFactorSetup() {
                           if (m.id === "totp") totpDisableMutation.mutate();
                           else if (m.id === "email") emailDisableMutation.mutate();
                           else if (m.id === "push") pushDisableMutation.mutate();
-                          else if (m.id === "whatsapp") whatsappDisableMutation.mutate();
                           else passphraseDisableMutation.mutate();
                         }}
-                        disabled={totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending || pushDisableMutation.isPending || whatsappDisableMutation.isPending}
+                        disabled={totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending || pushDisableMutation.isPending}
                         data-testid={`button-confirm-disable-${m.id}`}
                       >
                         {(totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending || pushDisableMutation.isPending)

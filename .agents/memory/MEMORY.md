@@ -5,6 +5,7 @@
 - [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
 - [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
 - [WhatsApp staff access](whatsapp-staff-access.md) — API linking remains admin/manager-only; staff use the operational CRM without QR or connection settings.
+- [WhatsApp login separation](whatsapp-login-separation.md) — Standalone WhatsApp login is not a second-factor method; 2FA uses authenticator, email, recovery phrase, or push approval.
 - [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.
 - [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.
 - [QIROX Studio AI](qirox-studio-ai.md) — Smart provider: OPENAI_API_KEY→GPT-4o (vision on, no Chinese), MOONSHOT_API_KEY→Kimi (vision off). Video gen via /api/ai/video-proxy. Images use Arabic→English translation + flux+enhance. Anti-Chinese rule in ALL system prompts.
