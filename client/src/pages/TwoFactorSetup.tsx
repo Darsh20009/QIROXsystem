@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap, Bell, MessageCircle } from "lucide-react";
@@ -32,6 +32,8 @@ export default function TwoFactorSetup() {
   const [showPassphrase, setShowPassphrase] = useState(false);
 
   const [disabling, setDisabling] = useState<string | null>(null);
+  const [whatsappSetupChallengeId, setWhatsappSetupChallengeId] = useState<string | null>(null);
+  const [whatsappSetupStatus, setWhatsappSetupStatus] = useState<"idle" | "waiting" | "approved" | "denied" | "expired">("idle");
 
   const { data: status, isLoading } = useQuery<Status>({
     queryKey: ["/api/totp/status"],
@@ -105,15 +107,43 @@ export default function TwoFactorSetup() {
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
   const whatsappEnableMutation = useMutation({
-    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/whatsapp-otp/enable"); return await res.json(); },
-    onSuccess: () => { invalidate(); toast({ title: L ? "تم تفعيل التحقق عبر واتساب" : "WhatsApp verification enabled" }); },
-    onError: (e: any) => toast({ title: L ? "تعذر التفعيل" : "Unable to enable", description: e.message, variant: "destructive" }),
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/whatsapp-approval/start"); return await res.json(); },
+    onSuccess: (data: any) => { setWhatsappSetupChallengeId(data.challengeId); setWhatsappSetupStatus("waiting"); },
+    onError: (e: any) => toast({ title: L ? "تعذر إرسال طلب الموافقة" : "Unable to send approval", description: e.message, variant: "destructive" }),
+  });
+  const whatsappCompleteMutation = useMutation({
+    mutationFn: async (challengeId: string) => { const res = await apiRequest("POST", "/api/2fa/whatsapp-approval/complete", { challengeId }); return await res.json(); },
+    onSuccess: () => { setWhatsappSetupChallengeId(null); setWhatsappSetupStatus("idle"); invalidate(); toast({ title: L ? "تم تفعيل التحقق عبر واتساب" : "WhatsApp verification enabled" }); },
+    onError: (e: any) => { setWhatsappSetupStatus("denied"); toast({ title: L ? "تعذر إكمال التفعيل" : "Unable to complete activation", description: e.message, variant: "destructive" }); },
   });
   const whatsappDisableMutation = useMutation({
     mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/whatsapp-otp/disable"); return await res.json(); },
     onSuccess: () => { setDisabling(null); invalidate(); toast({ title: L ? "تم إلغاء التحقق عبر واتساب" : "WhatsApp verification disabled" }); },
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
+
+  useEffect(() => {
+    if (whatsappSetupStatus !== "waiting" || !whatsappSetupChallengeId) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/2fa/whatsapp-approval/status/${whatsappSetupChallengeId}`, { credentials: "include" });
+        if (cancelled) return;
+        if (res.status === 410 || res.status === 404) { setWhatsappSetupStatus("expired"); return; }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === "approved") {
+          setWhatsappSetupStatus("approved");
+          whatsappCompleteMutation.mutate(whatsappSetupChallengeId);
+        } else if (data.status === "denied") {
+          setWhatsappSetupStatus("denied");
+        }
+      } catch {}
+    };
+    poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [whatsappSetupStatus, whatsappSetupChallengeId]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
@@ -126,7 +156,7 @@ export default function TwoFactorSetup() {
     { id: "email", label: L ? "رمز عبر البريد" : "Email Code", desc: L ? "إرسال رمز تحقق لبريدك عند الدخول" : "A verification code is sent to your email at login", icon: Mail, enabled: status?.emailOtp },
     { id: "passphrase", label: L ? "كلمة الاسترداد" : "Recovery Phrase", desc: L ? "كلمة سرية تستخدمها كخيار بديل" : "A secret phrase used as a backup option", icon: Lock, enabled: status?.passphrase },
     { id: "push", label: L ? "تأكيد عبر الإشعارات" : "Push Approval", desc: L ? "يُرسَل إشعار لجهازك عند محاولة تسجيل الدخول — تؤكد أو ترفض من الجهاز" : "A notification is sent to your device when someone logs in — approve or deny from the device", icon: Bell, enabled: status?.pushApproval },
-    { id: "whatsapp", label: L ? "رمز عبر واتساب" : "WhatsApp Code", desc: L ? "رمز التحقق يُرسل إلى رقمك الموثّق عند تسجيل الدخول" : "A verification code is sent to your verified WhatsApp number at login", icon: MessageCircle, enabled: status?.whatsappOtp },
+    { id: "whatsapp", label: L ? "موافقة عبر واتساب" : "WhatsApp Approval", desc: L ? "يصل طلب موافقة إلى رقمك الموثّق عند تسجيل الدخول" : "An approval request is sent to your verified number at login", icon: MessageCircle, enabled: status?.whatsappOtp },
   ];
 
   return (
@@ -205,11 +235,11 @@ export default function TwoFactorSetup() {
                     else if (m.id === "whatsapp") whatsappEnableMutation.mutate();
                     else setPassphraseStep("setup");
                   }}
-                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending || whatsappEnableMutation.isPending || (m.id === "whatsapp" && (!status?.phoneVerified || !status?.hasWhatsAppNumber))}
+                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending || whatsappEnableMutation.isPending || whatsappCompleteMutation.isPending || (m.id === "whatsapp" && (whatsappSetupStatus === "waiting" || !status?.phoneVerified || !status?.hasWhatsAppNumber))}
                   className="shrink-0 text-xs"
                   data-testid={`button-enable-${m.id}`}
                 >
-                  {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending) || (m.id === "push" && pushEnableMutation.isPending)
+                    {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending) || (m.id === "push" && pushEnableMutation.isPending) || (m.id === "whatsapp" && (whatsappEnableMutation.isPending || whatsappCompleteMutation.isPending))
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : L ? "تفعيل" : "Enable"}
                 </Button>
@@ -235,6 +265,17 @@ export default function TwoFactorSetup() {
               <p className="text-[10px] text-black/50 dark:text-white/50 mt-2">
                 {L ? "وثّق رقم جوالك أولاً لتفعيل هذه الطريقة." : "Verify your phone number first to enable this method."}
               </p>
+            )}
+            {m.id === "whatsapp" && !m.enabled && whatsappSetupStatus === "waiting" && (
+              <p className="text-[10px] text-emerald-600 mt-2">
+                {L ? "تم إرسال الطلب إلى رقمك. أرسل 1 أو اكتب قبول في واتساب لإكمال التفعيل." : "The request was sent. Reply 1 or approve in WhatsApp to finish activation."}
+              </p>
+            )}
+            {m.id === "whatsapp" && !m.enabled && whatsappSetupStatus === "denied" && (
+              <p className="text-[10px] text-red-600 mt-2">{L ? "تم رفض طلب التفعيل." : "The activation request was denied."}</p>
+            )}
+            {m.id === "whatsapp" && !m.enabled && whatsappSetupStatus === "expired" && (
+              <p className="text-[10px] text-red-600 mt-2">{L ? "انتهت صلاحية الطلب. اضغط تفعيل لإرسال طلب جديد." : "The request expired. Enable it again to send a new request."}</p>
             )}
             <AnimatePresence>
               {disabling === m.id && (

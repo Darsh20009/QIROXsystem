@@ -69,6 +69,8 @@ const whatsappLoginChallengeSchema = new mongoose.Schema({
   challengeId: { type: String, required: true, unique: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   phoneDigits: { type: String, required: true, index: true },
+  tempToken: { type: String, default: "", index: true },
+  purpose: { type: String, enum: ["login", "2fa", "setup"], default: "login", index: true },
   status: { type: String, enum: ["pending", "approved", "denied"], default: "pending" },
   attempts: { type: Number, default: 0 },
   maxAttempts: { type: Number, default: 5 },

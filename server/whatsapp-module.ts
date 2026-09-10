@@ -490,7 +490,7 @@ class WhatsAppModule extends EventEmitter {
       if (isApprove || isDeny) {
         const incomingDigits = phoneDigits(resolvedPhone);
         const incomingLast9 = incomingDigits.slice(-9);
-        const challenge: any = await WhatsAppLoginChallengeModel.findOneAndUpdate(
+      const challenge: any = await WhatsAppLoginChallengeModel.findOneAndUpdate(
           {
             phoneDigits: { $regex: `${incomingLast9}$` },
             status: "pending",
@@ -501,12 +501,19 @@ class WhatsAppModule extends EventEmitter {
           { $inc: { attempts: 1 }, $set: { status: isApprove ? "approved" : "denied" } },
           { new: true, sort: { createdAt: -1 } },
         ).lean();
-        if (challenge) {
+      if (challenge) {
+        const approvalMessage = challenge.purpose === "setup"
+          ? "تمت الموافقة على تفعيل التحقق الثنائي عبر واتساب في QIROX."
+          : challenge.purpose === "2fa"
+            ? "تمت الموافقة على طلب التحقق الثنائي في QIROX."
+            : "تمت الموافقة على طلب تسجيل الدخول إلى QIROX. يمكنك العودة إلى صفحة الدخول.";
           await this.sendText(
             chatId,
-            isApprove
-              ? "تمت الموافقة على طلب تسجيل الدخول إلى QIROX. يمكنك العودة إلى صفحة الدخول."
-              : "تم رفض طلب تسجيل الدخول إلى QIROX. لن يتم فتح الجلسة.",
+          isApprove
+            ? approvalMessage
+            : challenge.purpose === "setup"
+              ? "تم رفض طلب تفعيل التحقق الثنائي عبر واتساب."
+              : "تم رفض طلب التحقق في QIROX. لن يتم فتح الجلسة.",
             false,
           );
           return;

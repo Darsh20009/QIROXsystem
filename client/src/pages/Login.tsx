@@ -394,7 +394,8 @@ export default function Login() {
         setTwoFAPassphrase("");
         setTwoFAError("");
         setEmailOtpSent(false);
-             setWhatsappOtpSent(false);
+         setWhatsappApprovalChallengeId(null);
+         setWhatsappApprovalStatus("idle");
         setTwoFAExpiresAt(Number(data.expiresAt) || Date.now() + 10 * 60 * 1000);
         setTwoFASecondsLeft(Math.max(0, Math.floor(((Number(data.expiresAt) || Date.now()) - Date.now()) / 1000)));
         window.history.replaceState({}, "", window.location.pathname);
@@ -621,8 +622,19 @@ export default function Login() {
   const [is2FAResending, setIs2FAResending] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
-  const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
-  const [isSendingWhatsappOtp, setIsSendingWhatsappOtp] = useState(false);
+  const [whatsappApprovalChallengeId, setWhatsappApprovalChallengeId] = useState<string | null>(null);
+  const [whatsappApprovalStatus, setWhatsappApprovalStatus] = useState<"idle" | "waiting" | "approved" | "denied" | "expired">("idle");
+  const [isRequestingWhatsappApproval, setIsRequestingWhatsappApproval] = useState(false);
+
+  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
+  const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp">("phone");
+  const [phoneLoginNumber, setPhoneLoginNumber] = useState("");
+  const [phoneLoginOtp, setPhoneLoginOtp] = useState("");
+  const [phoneLoginToken, setPhoneLoginToken] = useState("");
+  const [phoneLoginSecondsLeft, setPhoneLoginSecondsLeft] = useState(0);
+  const [phoneLoginError, setPhoneLoginError] = useState("");
+  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
+  const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
 
   const confirmAuthenticatedSession = useCallback(async () => {
     let lastError = "تعذر تثبيت جلسة الدخول. حاول مرة أخرى";
@@ -664,6 +676,64 @@ export default function Login() {
     }, 1000);
     return () => clearInterval(interval);
   }, [twoFA, twoFAExpiresAt]);
+
+  useEffect(() => {
+    if (whatsappApprovalStatus !== "waiting" || !whatsappApprovalChallengeId || !twoFA?.tempToken) return;
+    let cancelled = false;
+    const finishApprovedLogin = async () => {
+      try {
+        const response = await fetch("/api/auth/verify-2fa", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tempToken: twoFA.tempToken, method: "whatsapp", challengeId: whatsappApprovalChallengeId }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setTwoFAError(data.error || "تعذر إكمال التحقق عبر واتساب");
+          setWhatsappApprovalStatus("denied");
+          return;
+        }
+        if (data.deviceToken) saveDeviceToken(data.deviceToken);
+        const user = await confirmAuthenticatedSession();
+        queryClient.setQueryData(["/api/user"], user);
+        setTwoFA(null);
+        setWhatsappApprovalChallengeId(null);
+        const redirectPath = typeof user.redirectPath === "string" && user.redirectPath.startsWith("/")
+          ? user.redirectPath
+          : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
+        if (user.role === "client") {
+          const returnUrl = sessionStorage.getItem("returnAfterLogin");
+          if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+          else setLocation(redirectPath);
+        } else {
+          setLocation(redirectPath);
+        }
+      } catch {
+        setTwoFAError("تعذر الاتصال بالخادم لإكمال الدخول");
+        setWhatsappApprovalStatus("denied");
+      }
+    };
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/auth/2fa/whatsapp/status/${whatsappApprovalChallengeId}?tempToken=${encodeURIComponent(twoFA.tempToken)}`, { credentials: "include" });
+        if (cancelled) return;
+        if (response.status === 410 || response.status === 404) { setWhatsappApprovalStatus("expired"); return; }
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.status === "approved") {
+          setWhatsappApprovalStatus("approved");
+          await finishApprovedLogin();
+        } else if (data.status === "denied") {
+          setWhatsappApprovalStatus("denied");
+          setTwoFAError("تم رفض طلب تسجيل الدخول من واتساب");
+        }
+      } catch {}
+    };
+    poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [whatsappApprovalStatus, whatsappApprovalChallengeId, twoFA?.tempToken]);
 
   // Push Approval states
   const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
@@ -864,6 +934,93 @@ export default function Login() {
     },
   });
 
+  const beginTwoFA = (user: any) => {
+    setTwoFA({ tempToken: user.tempToken, methods: user.methods });
+    setTwoFAMethod(user.methods[0]);
+    setTwoFACode("");
+    setTwoFAPassphrase("");
+    setTwoFAError("");
+    setEmailOtpSent(false);
+    setWhatsappApprovalChallengeId(null);
+    setWhatsappApprovalStatus("idle");
+    const expiresAt = Number(user.expiresAt) || Date.now() + 10 * 60 * 1000;
+    setTwoFAExpiresAt(expiresAt);
+    setTwoFASecondsLeft(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
+    const epoch = Math.floor(Date.now() / 1000);
+    setTotpSecondsLeft(30 - (epoch % 30));
+  };
+
+  useEffect(() => {
+    if (!phoneLoginOpen || phoneLoginStep !== "otp" || !phoneLoginToken) return;
+    const interval = window.setInterval(() => {
+      setPhoneLoginSecondsLeft(value => {
+        if (value <= 1) {
+          window.clearInterval(interval);
+          return 0;
+        }
+        return value - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [phoneLoginOpen, phoneLoginStep, phoneLoginToken]);
+
+  const sendPhoneLoginOtp = async () => {
+    const digits = phoneLoginNumber.replace(/\D/g, "");
+    if (digits.length < 9) { setPhoneLoginError("أدخل رقم جوال صحيحاً"); return; }
+    setIsSendingPhoneOtp(true);
+    setPhoneLoginError("");
+    try {
+      const response = await fetch("/api/auth/phone-otp/send", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneLoginNumber, method: "whatsapp" }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setPhoneLoginError(data.error || "تعذر إرسال رمز التحقق"); return; }
+      setPhoneLoginToken(data.token);
+      setPhoneLoginStep("otp");
+      setPhoneLoginSecondsLeft(Math.max(1, Math.floor((Number(data.expiresAt) - Date.now()) / 1000)));
+      toast({ title: "تم إرسال رمز التحقق", description: "تحقق من رسالة واتساب على الرقم المدخل" });
+    } catch {
+      setPhoneLoginError("تعذر الاتصال بالخادم");
+    } finally {
+      setIsSendingPhoneOtp(false);
+    }
+  };
+
+  const verifyPhoneLoginOtp = async () => {
+    if (phoneLoginOtp.replace(/\D/g, "").length !== 6) { setPhoneLoginError("أدخل الرمز المكوّن من 6 أرقام"); return; }
+    setIsVerifyingPhoneOtp(true);
+    setPhoneLoginError("");
+    try {
+      const response = await fetch("/api/auth/phone-otp/verify", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: phoneLoginToken, otp: phoneLoginOtp }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setPhoneLoginError(data.error || "الرمز غير صحيح أو منتهي الصلاحية"); return; }
+      if (data.deviceToken) saveDeviceToken(data.deviceToken);
+      if (data.requires2FA) {
+        setPhoneLoginOpen(false);
+        beginTwoFA(data);
+        return;
+      }
+      const user = await confirmAuthenticatedSession();
+      queryClient.setQueryData(["/api/user"], user);
+      setPhoneLoginOpen(false);
+      const returnUrl = sessionStorage.getItem("returnAfterLogin");
+      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+      else setLocation(user.role === "client" ? "/dashboard" : getUserHomePath(user.role));
+    } catch {
+      setPhoneLoginError("تعذر الاتصال بالخادم");
+    } finally {
+      setIsVerifyingPhoneOtp(false);
+    }
+  };
+
   const onSubmit = (data: any) => {
     if (isRegister) {
       const { confirmPassword, whatsappNumber, ...rest } = data;
@@ -894,17 +1051,7 @@ export default function Login() {
       login(data, {
         onSuccess: (user: any) => {
           if (user.requires2FA) {
-            setTwoFA({ tempToken: user.tempToken, methods: user.methods });
-            setTwoFAMethod(user.methods[0]);
-            setTwoFACode("");
-            setTwoFAPassphrase("");
-            setTwoFAError("");
-            setEmailOtpSent(false);
-            const expiresAt = Number(user.expiresAt) || Date.now() + 10 * 60 * 1000;
-            setTwoFAExpiresAt(expiresAt);
-            setTwoFASecondsLeft(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
-            const epoch = Math.floor(Date.now() / 1000);
-            setTotpSecondsLeft(30 - (epoch % 30));
+            beginTwoFA(user);
             return;
           }
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
@@ -1069,7 +1216,10 @@ export default function Login() {
                     onClick={() => {
                       setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError("");
                       if (m !== "email") setEmailOtpSent(false);
-                       if (m !== "whatsapp") setWhatsappOtpSent(false);
+                       if (m !== "whatsapp") {
+                         setWhatsappApprovalChallengeId(null);
+                         setWhatsappApprovalStatus("idle");
+                       }
                       if (m !== "push") { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }
                     }}
                     className={`py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all text-center leading-tight ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
@@ -1174,63 +1324,39 @@ export default function Login() {
               </div>
             )}
 
-            {twoFAMethod === "whatsapp" && !whatsappOtpSent && (
+             {twoFAMethod === "whatsapp" && (
               <div className="space-y-4 text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-black/[0.05] mx-auto">
                   <MessageSquare className="w-6 h-6 text-black/50" />
                 </div>
-                <p className="text-sm text-black/60">سيتم إرسال رمز التحقق إلى رقم واتساب المسجّل في حسابك</p>
+                 <p className="text-sm text-black/60">سيتم إرسال طلب موافقة إلى رقم واتساب الموثّق في حسابك. افتح واتساب وأرسل 1 أو اكتب «قبول».</p>
                 <Button
                   onClick={async () => {
-                    setIsSendingWhatsappOtp(true);
+                     setIsRequestingWhatsappApproval(true);
                     setTwoFAError("");
                     try {
-                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
-                      if (r.ok) { setWhatsappOtpSent(true); toast({ title: "تم إرسال الرمز عبر واتساب", description: "تحقق من رسائل واتساب وأدخل الرمز هنا" }); }
-                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إرسال رمز واتساب"); }
+                       const r = await fetch("/api/auth/2fa/whatsapp/request", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                       const data = await r.json().catch(() => ({}));
+                       if (r.ok) {
+                         setWhatsappApprovalChallengeId(data.challengeId);
+                         setWhatsappApprovalStatus("waiting");
+                         toast({ title: "تم إرسال طلب الموافقة", description: "بانتظار موافقتك من واتساب" });
+                       }
+                       else { setTwoFAError(data.error || "فشل إرسال طلب الموافقة عبر واتساب"); }
                     } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
-                    setIsSendingWhatsappOtp(false);
+                     setIsRequestingWhatsappApproval(false);
                   }}
-                  disabled={isSendingWhatsappOtp}
+                   disabled={isRequestingWhatsappApproval || whatsappApprovalStatus === "waiting"}
                   className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
-                  data-testid="button-send-2fa-whatsapp"
+                   data-testid="button-request-2fa-whatsapp"
                 >
-                  {isSendingWhatsappOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                    <><MessageSquare className="w-4 h-4 ml-2" />إرسال رمز واتساب</>
+                   {isRequestingWhatsappApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                     <><MessageSquare className="w-4 h-4 ml-2" />{whatsappApprovalStatus === "waiting" ? "بانتظار موافقة واتساب..." : "إرسال طلب الموافقة"}</>
                   )}
                 </Button>
-              </div>
-            )}
-
-            {twoFAMethod === "whatsapp" && whatsappOtpSent && (
-              <div className="space-y-3">
-                <p className="text-sm text-black/60">أدخل الرمز المرسل إلى واتساب:</p>
-                <Input
-                  value={twoFACode}
-                  onChange={e => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="000000"
-                  className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
-                  maxLength={6}
-                  inputMode="numeric"
-                  autoFocus
-                  data-testid="input-2fa-whatsapp"
-                />
-                <button
-                  onClick={async () => {
-                    setIs2FAResending(true);
-                    try {
-                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
-                      if (r.ok) { toast({ title: "تم إعادة إرسال الرمز عبر واتساب" }); setTwoFACode(""); }
-                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إعادة الإرسال"); }
-                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
-                    setIs2FAResending(false);
-                  }}
-                  disabled={is2FAResending}
-                  className="text-xs text-black/40 hover:text-black/70 transition-colors underline"
-                  data-testid="button-resend-2fa-whatsapp"
-                >
-                  {is2FAResending ? "جارٍ الإرسال..." : "إعادة إرسال الرمز"}
-                </button>
+                 {whatsappApprovalStatus === "waiting" && <p className="text-xs text-emerald-600">الطلب قيد الانتظار. سيتم الدخول تلقائياً بعد الموافقة.</p>}
+                 {whatsappApprovalStatus === "denied" && <p className="text-xs text-red-600">تم رفض الطلب. يمكنك إرسال طلب جديد.</p>}
+                 {whatsappApprovalStatus === "expired" && <p className="text-xs text-red-600">انتهت صلاحية الطلب. أرسل طلباً جديداً.</p>}
               </div>
             )}
 
@@ -1350,7 +1476,7 @@ export default function Login() {
               </motion.div>
             )}
 
-            {twoFAMethod !== "push" && (
+             {twoFAMethod !== "push" && twoFAMethod !== "whatsapp" && (
               <Button
                 onClick={async () => {
                   const codeVal = twoFAMethod === "passphrase" ? twoFAPassphrase : twoFACode;
@@ -1380,7 +1506,7 @@ export default function Login() {
                   } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                   setIs2FAVerifying(false);
                 }}
-                disabled={is2FAVerifying || ((twoFAMethod === "email" || twoFAMethod === "whatsapp") && !(twoFAMethod === "email" ? emailOtpSent : whatsappOtpSent)) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+                disabled={is2FAVerifying || ((twoFAMethod === "email") && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
                 className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
                 data-testid="button-verify-2fa"
               >
@@ -1391,7 +1517,7 @@ export default function Login() {
             )}
 
             <div className="text-center mt-4">
-              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setWhatsappOtpSent(false); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+               <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setWhatsappApprovalChallengeId(null); setWhatsappApprovalStatus("idle"); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
                 العودة لتسجيل الدخول
               </button>
             </div>
@@ -1720,6 +1846,24 @@ export default function Login() {
                 </button>
               )}
 
+              {!isRegister && (
+                <button
+                  type="button"
+                  onClick={() => { setPhoneLoginOpen(true); setPhoneLoginStep("phone"); setPhoneLoginError(""); }}
+                  className="mt-3 w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                  data-testid="button-open-phone-login"
+                >
+                  <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/[0.06] flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-black/60" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-black font-bold text-[13px] leading-snug">{ar ? "الدخول برقم الجوال" : "Sign in with mobile"}</p>
+                    <p className="text-black/45 text-[10.5px] font-medium mt-0.5">{ar ? "أرسلنا رمز تحقق إلى واتساب" : "Receive a verification code on WhatsApp"}</p>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+                </button>
+              )}
+
               <div className="flex items-center gap-3 mt-4">
                 <div className="flex-1 h-px bg-black/[0.07]" />
                 <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
@@ -1751,12 +1895,84 @@ export default function Login() {
                 </div>
                 <QrCode className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
               </button>
+              <button
+                type="button"
+                onClick={() => { setPhoneLoginOpen(true); setPhoneLoginStep("phone"); setPhoneLoginError(""); }}
+                className="mt-3 w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                data-testid="button-open-phone-login-alt"
+              >
+                <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/[0.06] flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-black/60" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-black font-bold text-[13px] leading-snug">{ar ? "الدخول برقم الجوال" : "Sign in with mobile"}</p>
+                  <p className="text-black/45 text-[10.5px] font-medium mt-0.5">{ar ? "أرسلنا رمز تحقق إلى واتساب" : "Receive a verification code on WhatsApp"}</p>
+                </div>
+                <ChevronLeft className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+              </button>
             </div>
           )}
 
           <QrLoginScanner open={qrScannerOpen} onClose={() => setQrScannerOpen(false)} />
 
-          {/* Password form */}
+          {!isRegister && phoneLoginOpen ? (
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-5 space-y-4" data-testid="phone-login-panel">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-black">{ar ? "الدخول برقم الجوال" : "Mobile sign in"}</h2>
+                  <p className="text-xs text-black/40 mt-1">{ar ? "سيصل رمز التحقق إلى واتساب" : "A verification code will be sent to WhatsApp"}</p>
+                </div>
+                <button type="button" onClick={() => setPhoneLoginOpen(false)} className="text-xs text-black/40 hover:text-black underline">
+                  {ar ? "رجوع" : "Back"}
+                </button>
+              </div>
+              {phoneLoginStep === "phone" ? (
+                <>
+                  <div className="relative">
+                    <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
+                    <Input
+                      value={phoneLoginNumber}
+                      onChange={e => setPhoneLoginNumber(e.target.value.replace(/[^\d+\s-]/g, ""))}
+                      placeholder="+966 5XXXXXXXX"
+                      className={`${inputBase} pr-10`}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      autoFocus
+                      data-testid="input-phone-login"
+                    />
+                  </div>
+                  <Button type="button" onClick={sendPhoneLoginOtp} disabled={isSendingPhoneOtp} className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold">
+                    {isSendingPhoneOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageSquare className="w-4 h-4 ml-2" />{ar ? "إرسال رمز واتساب" : "Send WhatsApp code"}</>}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-black/60">{ar ? "أدخل الرمز المرسل إلى واتساب:" : "Enter the code sent to WhatsApp:"}</p>
+                  <Input
+                    value={phoneLoginOtp}
+                    onChange={e => setPhoneLoginOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
+                    maxLength={6}
+                    inputMode="numeric"
+                    autoFocus
+                    data-testid="input-phone-login-otp"
+                  />
+                  <div className="flex items-center justify-between text-xs text-black/40">
+                    <button type="button" onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginOtp(""); }} className="underline hover:text-black">
+                      {ar ? "تغيير الرقم" : "Change number"}
+                    </button>
+                    <span>{phoneLoginSecondsLeft > 0 ? `${Math.floor(phoneLoginSecondsLeft / 60)}:${String(phoneLoginSecondsLeft % 60).padStart(2, "0")}` : (ar ? "انتهت الصلاحية" : "Expired")}</span>
+                  </div>
+                  <Button type="button" onClick={verifyPhoneLoginOtp} disabled={isVerifyingPhoneOtp || phoneLoginSecondsLeft <= 0} className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold">
+                    {isVerifyingPhoneOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{ar ? "تحقق ودخول" : "Verify and sign in"}<ChevronLeft className="w-4 h-4 mr-2" /></>}
+                  </Button>
+                </>
+              )}
+              {phoneLoginError && <p className="text-xs text-red-600 text-center" role="alert">{phoneLoginError}</p>}
+            </div>
+          ) : (
+          /* Password form */
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -2050,6 +2266,7 @@ export default function Login() {
               )}
             </form>
           </Form>
+          )}
 
 
           {/* Switch auth mode */}

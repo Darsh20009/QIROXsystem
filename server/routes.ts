@@ -735,6 +735,41 @@ export async function registerRoutes(
     await waModule.sendOTP(phone.e164, code, user.fullName || user.username || "");
     return { expiresAt: expiresAt.getTime() };
   };
+  const createWhatsAppApprovalChallenge = async (user: any, purpose: "2fa" | "setup", tempToken = "") => {
+    const phone = normalizePhone(user.whatsappNumber || user.phone);
+    if (!phone.valid) throw new Error("رقم واتساب غير متوفر أو غير صالح");
+    const { WhatsAppLoginChallengeModel } = await import("./models");
+    const phoneDigits = phone.e164.replace(/\D/g, "");
+    await (WhatsAppLoginChallengeModel as any).updateMany(
+      { userId: user._id || user.id, status: "pending", usedAt: null },
+      { $set: { expiresAt: new Date() } },
+    );
+    const challengeId = crypto.randomBytes(24).toString("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await (WhatsAppLoginChallengeModel as any).create({
+      challengeId,
+      userId: user._id || user.id,
+      phoneDigits,
+      tempToken,
+      purpose,
+      status: "pending",
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+    });
+    const name = user.fullName || user.username || "مستخدم";
+    const message = purpose === "setup"
+      ? `مرحباً ${name}،\n\nطلب تفعيل التحقق الثنائي عبر واتساب في حسابك على QIROX.\nإذا كنت أنت، أرسل 1 أو اكتب: قبول / approve.\nلرفض الطلب، أرسل 2 أو اكتب: رفض / deny.\nصلاحية الطلب 10 دقائق.`
+      : `مرحباً ${name}،\n\nهناك محاولة دخول إلى حسابك في QIROX وتحتاج موافقتك عبر التحقق الثنائي.\nإذا كنت أنت، أرسل 1 أو اكتب: قبول / approve.\nلرفض الطلب، أرسل 2 أو اكتب: رفض / deny.\nصلاحية الطلب 10 دقائق.`;
+    try {
+      const { waModule } = await import("./whatsapp-module");
+      await waModule.sendText(`${phoneDigits}@s.whatsapp.net`, message, false);
+    } catch {
+      await (WhatsAppLoginChallengeModel as any).deleteOne({ challengeId });
+      throw new Error("واتساب غير متصل حالياً. حاول مرة أخرى بعد قليل.");
+    }
+    return { challengeId, expiresAt: expiresAt.getTime() };
+  };
 
   // ─── Health endpoint ────────────────────────────────────────────────────────
   app.get("/api/health", async (_req, res) => {
@@ -2202,11 +2237,26 @@ export async function registerRoutes(
 
   app.post("/api/auth/verify-2fa", loginLimiter, async (req, res, next) => {
     try {
-      const { tempToken, method, code } = req.body;
+      const { tempToken, method, code, challengeId } = req.body;
       if (!tempToken || !method) return res.status(400).json({ error: "بيانات ناقصة" });
       const session = await getPending2FA(tempToken);
       if (!session) return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" });
       if (!session.methods.includes(method)) return res.status(400).json({ error: "طريقة التحقق غير متوفرة" });
+      let whatsappApprovalChallenge: any = null;
+      if (method === "whatsapp") {
+        if (!challengeId) return res.status(400).json({ error: "ابدأ طلب الموافقة عبر واتساب أولاً" });
+        const { WhatsAppLoginChallengeModel } = await import("./models");
+        whatsappApprovalChallenge = await (WhatsAppLoginChallengeModel as any).findOne({
+          challengeId: String(challengeId),
+          tempToken: String(tempToken),
+          userId: session.userId,
+          purpose: "2fa",
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        });
+        if (!whatsappApprovalChallenge) return res.status(400).json({ error: "لم تتم الموافقة على طلب واتساب بعد" });
+      }
       const challenge = await consumePending2FAAttempt(tempToken);
       if (!challenge) {
         const { UserModel } = await import("./models");
@@ -2246,21 +2296,7 @@ export async function registerRoutes(
         ).select("+codeHash");
         verified = Boolean(usedOtp);
       } else if (method === "whatsapp") {
-        if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
-        const codeHash = crypto.createHash("sha256").update(`${tempToken}:${String(code).trim()}`).digest("hex");
-        const usedOtp = await OtpModel.findOneAndUpdate(
-          {
-            email: dbUser.email,
-            type: "2fa_whatsapp",
-            challengeToken: tempToken,
-            codeHash,
-            used: false,
-            expiresAt: { $gt: new Date() },
-          },
-          { $set: { used: true, usedAt: new Date() } },
-          { new: true },
-        ).select("+codeHash");
-        verified = Boolean(usedOtp);
+        verified = Boolean(whatsappApprovalChallenge);
       } else if (method === "passphrase") {
         if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
         const bcrypt = await import("bcryptjs");
@@ -2278,6 +2314,9 @@ export async function registerRoutes(
 
       const consumed = await consumePending2FA(tempToken);
       if (!consumed) return res.status(409).json({ error: "تم استخدام جلسة التحقق بالفعل. أعد تسجيل الدخول." });
+      if (whatsappApprovalChallenge) {
+        await whatsappApprovalChallenge.updateOne({ $set: { usedAt: new Date() } });
+      }
       const safeUser = await UserModel.findById(session.userId);
       if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
       const deviceToken = await issueDeviceToken(
@@ -2316,19 +2355,104 @@ export async function registerRoutes(
   });
 
   app.post("/api/auth/resend-2fa-whatsapp", otpLimiter, async (req, res) => {
+    return res.status(410).json({ error: "تحقق واتساب يعمل بالموافقة فقط" });
+  });
+
+  app.post("/api/auth/2fa/whatsapp/request", otpLimiter, async (req, res) => {
     try {
-      const { tempToken } = req.body;
+      const { tempToken } = req.body || {};
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
-      const session = await getPending2FA(tempToken);
-      if (!session || !session.methods.includes("whatsapp")) return res.status(400).json({ error: "الجلسة غير صالحة" });
-      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول." });
+      const session = await getPending2FA(String(tempToken));
+      if (!session || !session.methods.includes("whatsapp")) return res.status(400).json({ error: "جلسة التحقق غير صالحة" });
+      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق" });
       const { UserModel } = await import("./models");
-      const user = await UserModel.findById(session.userId).select("email fullName username phone whatsappNumber");
-      if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
-      const delivery = await send2FAWhatsAppCode(tempToken, user);
-      res.json({ ok: true, expiresAt: delivery.expiresAt });
+      const user = await UserModel.findById(session.userId).select("fullName username phone whatsappNumber phoneVerified whatsappOtpEnabled");
+      if (!user || !user.phoneVerified || !user.whatsappOtpEnabled) return res.status(400).json({ error: "طريقة واتساب غير مفعلة لهذا الحساب" });
+      const challenge = await createWhatsAppApprovalChallenge(user, "2fa", String(tempToken));
+      res.json({ ok: true, ...challenge });
     } catch (err: any) {
-      res.status(503).json({ error: err.message || "تعذر إرسال رمز واتساب" });
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب الموافقة عبر واتساب" });
+    }
+  });
+
+  app.get("/api/auth/2fa/whatsapp/status/:challengeId", otpLimiter, async (req, res) => {
+    try {
+      const tempToken = String(req.query.tempToken || "");
+      if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+        tempToken,
+        purpose: "2fa",
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب الموافقة غير موجود" });
+      if (challenge.expiresAt <= new Date()) return res.status(410).json({ error: "انتهت صلاحية طلب الموافقة" });
+      res.json({
+        status: challenge.usedAt ? "used" : challenge.status,
+        expiresAt: challenge.expiresAt.getTime(),
+        attemptsLeft: Math.max(0, challenge.maxAttempts - challenge.attempts),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب الموافقة" });
+    }
+  });
+
+  app.post("/api/2fa/whatsapp-approval/start", otpLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const me = req.user as any;
+      const user = await UserModel.findById(me._id || me.id).select("fullName username phone whatsappNumber phoneVerified");
+      if (!user?.phoneVerified || !normalizePhone(user.whatsappNumber || user.phone).valid) {
+        return res.status(400).json({ error: "وثّق رقم واتساب أولاً قبل تفعيل هذه الطريقة" });
+      }
+      const challenge = await createWhatsAppApprovalChallenge(user, "setup");
+      res.json({ ok: true, ...challenge });
+    } catch (err: any) {
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب تفعيل واتساب" });
+    }
+  });
+
+  app.get("/api/2fa/whatsapp-approval/status/:challengeId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const me = req.user as any;
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+        userId: me._id || me.id,
+        purpose: "setup",
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب التفعيل غير موجود" });
+      if (challenge.expiresAt <= new Date()) return res.status(410).json({ error: "انتهت صلاحية طلب التفعيل" });
+      res.json({ status: challenge.usedAt ? "used" : challenge.status, expiresAt: challenge.expiresAt.getTime() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب التفعيل" });
+    }
+  });
+
+  app.post("/api/2fa/whatsapp-approval/complete", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { WhatsAppLoginChallengeModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOneAndUpdate(
+        {
+          challengeId: String(req.body?.challengeId || ""),
+          userId: me._id || me.id,
+          purpose: "setup",
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        },
+        { $set: { usedAt: new Date() } },
+        { new: true },
+      );
+      if (!challenge) return res.status(409).json({ error: "لم تتم الموافقة على طلب التفعيل بعد" });
+      await UserModel.findByIdAndUpdate(me._id || me.id, { whatsappOtpEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تفعيل التحقق عبر واتساب" });
     }
   });
 
@@ -18047,14 +18171,14 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { UserModel } = await import("./models");
       const user = req.user as any;
-      const dbUser = await UserModel.findById(user._id || user.id).select("phone whatsappNumber phoneVerified");
+      const dbUser = await UserModel.findById(user._id || user.id).select("fullName username phone whatsappNumber phoneVerified");
       if (!dbUser?.phoneVerified || !normalizePhone(dbUser.whatsappNumber || dbUser.phone).valid) {
         return res.status(400).json({ error: "وثّق رقم جوالك أولاً قبل تفعيل التحقق عبر واتساب" });
       }
-      await UserModel.findByIdAndUpdate(user._id || user.id, { whatsappOtpEnabled: true });
-      res.json({ ok: true });
-    } catch {
-      res.status(500).json({ error: "تعذر تفعيل التحقق عبر واتساب" });
+      const challenge = await createWhatsAppApprovalChallenge(dbUser, "setup");
+      res.json({ ok: true, ...challenge });
+    } catch (err: any) {
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب تفعيل واتساب" });
     }
   });
 
@@ -19482,7 +19606,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // POST /api/auth/phone-otp/send — generate login OTP sent to phone (no auth required)
   app.post("/api/auth/phone-otp/send", otpLimiter, async (req, res) => {
-    return res.status(410).json({ error: "الدخول عبر واتساب متاح كتحقق ثنائي فقط" });
     try {
       const { phone, method } = req.body;
       if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
@@ -19533,20 +19656,19 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
           ).catch(() => {});
         }
       }
-      return res.json({ sent: true, expiresAt, phone: normPhone });
+      return res.json({ sent: true, token, expiresAt: expiresAt.getTime() });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // POST /api/auth/phone-otp/verify — verify login OTP and create session
   app.post("/api/auth/phone-otp/verify", otpLimiter, async (req, res) => {
-    return res.status(410).json({ error: "الدخول عبر واتساب متاح كتحقق ثنائي فقط" });
     try {
-      const { phone, otp } = req.body;
-      if (!phone || !otp) return res.status(400).json({ error: "phone و otp مطلوبان" });
-      const normPhone = normalisePhone(String(phone).trim());
+      const { phone, token, otp } = req.body;
+      if ((!phone && !token) || !otp) return res.status(400).json({ error: "بيانات التحقق ناقصة" });
+      const normPhone = phone ? normalisePhone(String(phone).trim()) : "";
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
       const record = await (PhoneVerifyOtpModel as any).findOne({
-        phone: normPhone,
+        ...(token ? { token: String(token) } : { phone: normPhone }),
         otp: String(otp).trim(),
         verified: false,
         purpose: "login",
@@ -19557,13 +19679,20 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       await record.save();
       const dbUser = await (UserModel as any).findById(record.userId);
       if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const { user: authUser, methods } = await getEnabled2FAMethods(String(dbUser._id));
+      if (authUser && methods.length > 0) {
+        const challenge = await create2FAChallenge(authUser, methods, "password");
+        return res.json({ requires2FA: true, methods, ...challenge });
+      }
       return new Promise<void>((resolve) => {
         req.logIn(dbUser, (err) => {
           if (err) { res.status(500).json({ error: "خطأ في تسجيل الدخول" }); return resolve(); }
           const u = dbUser.toObject();
           delete u.password;
-          res.json({ success: true, user: u });
-          resolve();
+          issueDeviceToken(String(dbUser._id || dbUser.id), String(req.headers["user-agent"] || ""))
+            .then(deviceToken => { res.json({ success: true, user: u, deviceToken }); })
+            .catch(() => { res.json({ success: true, user: u }); })
+            .finally(() => resolve());
         });
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
