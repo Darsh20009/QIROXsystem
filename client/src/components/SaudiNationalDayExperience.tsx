@@ -21,7 +21,7 @@ function isInternalPath(path: string) {
 }
 
 export function SaudiNationalDayExperience() {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [splashOpen, setSplashOpen] = useState(false);
   const { data: settings } = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 30_000 });
@@ -66,21 +66,27 @@ export function SaudiNationalDayExperience() {
             <button type="button" className="national-day-splash-close" onClick={dismissSplash} aria-label="إغلاق">
               <X aria-hidden="true" />
             </button>
-            <div className="national-day-splash-flag">
-              <img src={NATIONAL_DAY_CAMPAIGN.flagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
+            <div className="national-day-splash-visual">
+              <span className="national-day-splash-stamp">السعودية<br />في القلب</span>
+              <div className="national-day-splash-flag">
+                <img src={NATIONAL_DAY_CAMPAIGN.flagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
+              </div>
+              <span className="national-day-splash-year">احتفال وطني</span>
             </div>
-            <span className="national-day-splash-kicker">اليوم الوطني السعودي</span>
-            <h2>{NATIONAL_DAY_CAMPAIGN.message}</h2>
-            <p>{NATIONAL_DAY_CAMPAIGN.subtitle}</p>
-            <div className="national-day-splash-offer">
-              <strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong>
-              <span>خصم على جميع الباقات<br /><small>بمناسبة اليوم الوطني</small></span>
-            </div>
-            <div className="national-day-splash-actions">
-              <Link href="/prices" className="national-day-splash-cta" onClick={dismissSplash}>
-                اكتشف الباقات <ChevronLeft aria-hidden="true" />
-              </Link>
-              <button type="button" className="national-day-splash-skip" onClick={dismissSplash}>متابعة للموقع</button>
+            <div className="national-day-splash-content">
+              <span className="national-day-splash-kicker">احتفالًا باليوم الوطني السعودي</span>
+              <h2>دام عزك<br /><em>يا وطن</em></h2>
+              <p>نحتفل معك بعز الوطن بعرض خاص على جميع الباقات.</p>
+              <div className="national-day-splash-offer">
+                <div><small>خصم اليوم الوطني</small><strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong></div>
+                <span>على جميع<br />الباقات</span>
+              </div>
+              <div className="national-day-splash-actions">
+                <Link href="/prices" className="national-day-splash-cta" onClick={dismissSplash}>
+                  اكتشف الباقات <ChevronLeft aria-hidden="true" />
+                </Link>
+                <button type="button" className="national-day-splash-skip" onClick={dismissSplash}>متابعة للموقع</button>
+              </div>
             </div>
           </div>
         </div>
@@ -100,16 +106,19 @@ export function SaudiNationalDayExperience() {
         </button>
       ) : (
         <div className="national-day-badge" aria-label="شارة اليوم الوطني السعودي">
-          <div className="national-day-badge-flag">
-            <img src={NATIONAL_DAY_CAMPAIGN.flagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
-          </div>
           <div className="national-day-badge-copy">
-            <span className="national-day-badge-kicker">اليوم الوطني السعودي</span>
-            <strong>{NATIONAL_DAY_CAMPAIGN.message}</strong>
-            <span className="national-day-badge-offer">خصم {NATIONAL_DAY_CAMPAIGN.discountPercent}% · بمناسبة اليوم الوطني</span>
+            <span className="national-day-badge-kicker">احتفالًا باليوم الوطني</span>
+            <strong>دام عزك يا وطن</strong>
             <Link href="/prices" className="national-day-badge-link">
               اكتشف الباقات <ChevronLeft aria-hidden="true" />
             </Link>
+          </div>
+          <div className="national-day-badge-discount">
+            <span>خصم</span>
+            <strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong>
+          </div>
+          <div className="national-day-badge-flag">
+            <img src={NATIONAL_DAY_CAMPAIGN.compactFlagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
           </div>
           <button
             type="button"
