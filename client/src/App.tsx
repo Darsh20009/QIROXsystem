@@ -18,6 +18,7 @@ import EmployeeLayout from "@/components/EmployeeLayout";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
+import SaudiNationalDayExperience from "@/components/SaudiNationalDayExperience";
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
 import QiroxCompanion from "@/components/QiroxCompanion";
@@ -1451,6 +1452,7 @@ function App() {
             <AntiDevTools />
             <OfflineBanner />
             <PixelTracking />
+            <SaudiNationalDayExperience />
             <AppInner />
           </I18nProvider>
         </ThemeProvider>

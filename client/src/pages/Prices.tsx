@@ -12,6 +12,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useCurrency } from "@/hooks/use-currency";
 import SARIcon from "@/components/SARIcon";
 import {
+  NATIONAL_DAY_CAMPAIGN,
+  NATIONAL_DAY_PLAN_PRICES,
+  applyNationalDayDiscount,
+} from "@shared/national-day";
+import {
   Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
   UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
   Smartphone, Shield, BarChart3, Bell, Layers, Rocket, MessageSquare,
@@ -31,20 +36,7 @@ import { Input } from "@/components/ui/input";
 /* These prices match the original prices used in the employee/admin system
    (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
    with sm (6-month), yr (annual) and life (lifetime) prices. */
-const PRICES = {
-  restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
-  ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  education:  { lite: { sm: 999,  yr: 1849, life: 9699  }, pro: { sm: 2099, yr: 3599, life: 17199 }, infinity: { sm: 4087, yr: 6787, life: 30787 } },
-  healthcare: { lite: { sm: 1248, yr: 1948, life: 8198  }, pro: { sm: 2238, yr: 3388, life: 13788 }, infinity: { sm: 3899, yr: 5999, life: 25299 } },
-  realestate: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
-  fitness:    { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  beauty:     { lite: { sm: 998,  yr: 1498, life: 5898  }, pro: { sm: 1788, yr: 2688, life: 10288 }, infinity: { sm: 3199, yr: 4799, life: 18799 } },
-  events:     { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  marketing:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
-  ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
-  other:      { lite: { sm: 0,    yr: 0,    life: 0     }, pro: { sm: 0,    yr: 0,    life: 0     }, infinity: { sm: 0,    yr: 0,    life: 0     } },
-} as const;
+const PRICES = NATIONAL_DAY_PLAN_PRICES;
 type SectorKey = keyof typeof PRICES;
 function multiYearPrice(annual: number, years: number) {
   let total = 0;
@@ -547,6 +539,8 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
     sublabel = disc > 0 ? `خصم ${disc}% على السنوات الإضافية` : "";
   }
   else { price = prices.life; label = "مدى الحياة"; sublabel = "دفعة واحدة للأبد"; }
+  const originalPrice = price;
+  price = applyNationalDayDiscount(price);
 
   // Monthly equivalent + savings
   const monthlyEquiv =
@@ -624,6 +618,12 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         )}
         <AnimatePresence mode="wait">
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
+            {NATIONAL_DAY_CAMPAIGN.enabled && originalPrice > price && (
+              <div className={`mb-2 flex items-center gap-2 text-[10px] font-black ${isPro ? "text-emerald-200" : isInfinity ? "text-amber-300" : "text-emerald-700 dark:text-emerald-300"}`}>
+                <span className="line-through opacity-50">{currency.format(originalPrice)}</span>
+                <span>خصم {NATIONAL_DAY_CAMPAIGN.discountPercent}%</span>
+              </div>
+            )}
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{currency.format(price)}</span>
               <span className={`text-sm font-bold inline-flex items-center ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>

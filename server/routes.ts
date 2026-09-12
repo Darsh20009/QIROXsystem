@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
+import { getNationalDayPrice, NATIONAL_DAY_CAMPAIGN } from "@shared/national-day";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import multer from "multer";
 import path from "path";
@@ -3926,6 +3927,36 @@ export async function registerRoutes(
       }
     }
 
+    // ── National Day package pricing ───────────────────────────────
+    // The package price is derived from the shared catalog on the server.
+    // Client-provided values are retained only for non-package add-ons/devices.
+    const requestedItems = Array.isArray(req.body.items) ? req.body.items : [];
+    const hasPricedPackage = Boolean(
+      req.body.planTier && req.body.planPeriod && req.body.planSegment &&
+      requestedItems.length > 0,
+    );
+    let promotionItems = requestedItems;
+    let campaignPlanPrice = 0;
+    if (hasPricedPackage) {
+      campaignPlanPrice = getNationalDayPrice(
+        String(req.body.planTier),
+        String(req.body.planPeriod),
+        String(req.body.planSegment),
+      );
+      if (campaignPlanPrice > 0) {
+        promotionItems = requestedItems.map((item: any, index: number) =>
+          index === 0 ? { ...item, price: campaignPlanPrice, qty: Number(item.qty) || 1 } : item,
+        );
+        serverTotal = parseFloat((
+          campaignPlanPrice +
+          promotionItems.slice(1).reduce(
+            (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
+            0,
+          )
+        ).toFixed(2));
+      }
+    }
+
     // ── Wallet validation BEFORE creating order ───────────────────
     const orderTotal = serverTotal ?? parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
     let walletAmountUsed = Number(req.body.walletAmountUsed || 0);
@@ -3974,6 +4005,13 @@ export async function registerRoutes(
     for (const key of ALLOWED_ORDER_FIELDS) {
       if (key in req.body) safeBody[key] = req.body[key];
     }
+    if (promotionItems !== requestedItems) safeBody.items = promotionItems;
+    if (campaignPlanPrice > 0) {
+      safeBody.totalAmount = orderTotal;
+      if (NATIONAL_DAY_CAMPAIGN.enabled) {
+        safeBody.notes = `${String(safeBody.notes || "")}${safeBody.notes ? " | " : ""}خصم اليوم الوطني ${NATIONAL_DAY_CAMPAIGN.discountPercent}%`;
+      }
+    }
 
     // Reject wallet/mixed orders if walletAmountUsed is missing or zero
     if (safeBody.paymentMethod === "wallet" && (Number(safeBody.walletAmountUsed || 0) <= 0)) {
@@ -4009,7 +4047,7 @@ export async function registerRoutes(
         await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
       }
     }
-    const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
+    const items: string[] = (promotionItems || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
       const { NotificationModel } = await import("./models");
@@ -4017,13 +4055,13 @@ export async function registerRoutes(
     }
     const _clientName = (user as any).fullName || (user as any).username;
     const _clientEmail = (user as any).email || "";
-    sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
-    sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+    sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
+    sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
     // Notify all managers + sales staff from DB
     UserModel.find({ role: { $in: ["admin", "manager", "supervisor"] }, email: { $exists: true, $ne: "" } }).select("email fullName").lean().then((staffList: any[]) => {
       for (const s of staffList) {
         if (s.email && s.email !== "info@qiroxstudio.online" && s.email !== "qiroxsystem@gmail.com") {
-          sendAdminNewOrderEmail(s.email, _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+          sendAdminNewOrderEmail(s.email, _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
         }
       }
     }).catch(console.error);
@@ -4034,7 +4072,7 @@ export async function registerRoutes(
       orderId: String(order.id),
       details: [
         ["الخدمات", items.slice(0, 3).join("، ") || "—"],
-        ...(req.body.totalAmount ? [["المبلغ", `${Number(req.body.totalAmount).toLocaleString("ar-SA")} ر.س`] as [string,string]] : []),
+        ...(orderTotal ? [["المبلغ", `${Number(orderTotal).toLocaleString("ar-SA")} ر.س`] as [string,string]] : []),
       ],
       waMessage: `مرحباً ${_clientName} 👋\nتم استلام طلبك على QIROX Studio بنجاح ✅\nرقم الطلب: #${String(order.id).slice(-8).toUpperCase()}\nسيتواصل معك فريقنا قريباً لاستكمال التفاصيل.`,
     }).catch(console.error);
