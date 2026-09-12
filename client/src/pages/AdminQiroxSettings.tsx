@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2, Radar, FileText
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2, Radar, FileText, Flag, MonitorPlay
 } from "lucide-react";
 import { SiWhatsapp, SiGoogleplay, SiApple, SiLinktree } from "react-icons/si";
 
@@ -29,6 +29,7 @@ type Settings = {
   systemValuation: number; currency: string;
   profitDistribution: { roleType: string; percentage: number; label: string }[];
   metaPixelId: string; tiktokPixelId: string; snapPixelId: string; ga4Id: string; gtmId: string;
+  nationalDayEnabled: boolean; nationalDaySplashEnabled: boolean;
   termsAndConditions: string;
   quotationTerms: string;
 };
@@ -44,6 +45,7 @@ const EMPTY: Settings = {
   systemValuation: 0, currency: "SAR",
   profitDistribution: [],
   metaPixelId: "", tiktokPixelId: "", snapPixelId: "", ga4Id: "", gtmId: "",
+  nationalDayEnabled: true, nationalDaySplashEnabled: true,
   termsAndConditions: "",
   quotationTerms: "",
 };
@@ -503,6 +505,44 @@ export default function AdminQiroxSettings() {
           {/* System Section */}
           {section === "system" && (
             <div className="space-y-4">
+              <div className="border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-6 space-y-5 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/40 dark:to-gray-900">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-600/20">
+                    <Flag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                      {L ? "حملة اليوم الوطني السعودي" : "Saudi National Day Campaign"}
+                    </h3>
+                    <p className="text-xs text-emerald-800/60 dark:text-emerald-200/60 mt-1">
+                      {L ? "تحكم كامل في الشارة الخضراء والخصم وشاشة البداية. عند الإيقاف يعود النظام للأسعار والتجربة الأصلية." : "Control the green badge, discount, and splash screen. Turning it off restores the original prices and experience."}
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-4 cursor-pointer select-none">
+                  <div
+                    onClick={() => set("nationalDayEnabled", !form.nationalDayEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${form.nationalDayEnabled ? "bg-emerald-600" : "bg-black/15 dark:bg-white/15"}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${form.nationalDayEnabled ? "right-1" : "left-1"}`} />
+                  </div>
+                  <span className={`font-bold text-sm ${form.nationalDayEnabled ? "text-emerald-700 dark:text-emerald-300" : "text-black/50 dark:text-white/40"}`}>
+                    {form.nationalDayEnabled ? (L ? "الحملة مفعّلة — الخصم والشارة ظاهران" : "Campaign ON — discount and badge are visible") : (L ? "الحملة متوقفة — الأسعار الأصلية" : "Campaign OFF — original prices restored")}
+                  </span>
+                </label>
+                <label className={`flex items-center gap-4 select-none ${form.nationalDayEnabled ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}>
+                  <div
+                    onClick={() => form.nationalDayEnabled && set("nationalDaySplashEnabled", !form.nationalDaySplashEnabled)}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${form.nationalDaySplashEnabled && form.nationalDayEnabled ? "bg-emerald-600" : "bg-black/15 dark:bg-white/15"}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${form.nationalDaySplashEnabled && form.nationalDayEnabled ? "right-1" : "left-1"}`} />
+                  </div>
+                  <span className="flex items-center gap-2 text-sm text-black/60 dark:text-white/60">
+                    <MonitorPlay className="w-4 h-4" />
+                    {form.nationalDaySplashEnabled ? (L ? "شاشة البداية الوطنية مفعّلة" : "National Day splash enabled") : (L ? "شاشة البداية الوطنية متوقفة" : "National Day splash disabled")}
+                  </span>
+                </label>
+              </div>
               <div className="border border-red-200/60 dark:border-red-800/30 rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
                 <h3 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                   <Settings2 className="w-4 h-4" /> {L ? "وضع الصيانة" : "Maintenance Mode"}

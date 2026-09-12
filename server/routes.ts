@@ -3912,7 +3912,9 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     // ── Server-side totalAmount validation from cart ─────────────
-    const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
+    const { CartModel, UserModel, WalletTransactionModel, QiroxSystemSettingsModel } = await import("./models");
+    const nationalDaySettings = await QiroxSystemSettingsModel.findOne({ key: "main" }).select("nationalDayEnabled").lean() as any;
+    const nationalDayEnabled = nationalDaySettings?.nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled;
     const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
     let serverTotal: number | null = null;
     if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
@@ -3942,6 +3944,8 @@ export async function registerRoutes(
         String(req.body.planTier),
         String(req.body.planPeriod),
         String(req.body.planSegment),
+        undefined,
+        nationalDayEnabled,
       );
       if (campaignPlanPrice > 0) {
         promotionItems = requestedItems.map((item: any, index: number) =>
@@ -4008,7 +4012,7 @@ export async function registerRoutes(
     if (promotionItems !== requestedItems) safeBody.items = promotionItems;
     if (campaignPlanPrice > 0) {
       safeBody.totalAmount = orderTotal;
-      if (NATIONAL_DAY_CAMPAIGN.enabled) {
+      if (nationalDayEnabled) {
         safeBody.notes = `${String(safeBody.notes || "")}${safeBody.notes ? " | " : ""}خصم اليوم الوطني ${NATIONAL_DAY_CAMPAIGN.discountPercent}%`;
       }
     }
@@ -16904,8 +16908,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { QiroxSystemSettingsModel } = await import("./models");
       let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
       if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
-      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn } = settings as any;
-      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn, nationalDayEnabled, nationalDaySplashEnabled } = settings as any;
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn, nationalDayEnabled: nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled, nationalDaySplashEnabled: nationalDaySplashEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled });
     } catch { res.json({}); }
   });
 

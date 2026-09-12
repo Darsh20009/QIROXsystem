@@ -62,11 +62,11 @@ export function getNationalDayBasePrice(
   return 0;
 }
 
-export function applyNationalDayDiscount(amount: number) {
-  if (!NATIONAL_DAY_CAMPAIGN.enabled) return Math.round(amount);
+export function applyNationalDayDiscount(amount: number, enabled = NATIONAL_DAY_CAMPAIGN.enabled) {
+  if (!enabled) return Math.round(amount);
   return Math.round(Math.max(0, amount) * (1 - NATIONAL_DAY_CAMPAIGN.discountRate));
 }
 
-export function getNationalDayPrice(tier: string, period: string, segment: string, years?: number) {
-  return applyNationalDayDiscount(getNationalDayBasePrice(tier, period, segment, years));
+export function getNationalDayPrice(tier: string, period: string, segment: string, years?: number, enabled = NATIONAL_DAY_CAMPAIGN.enabled) {
+  return applyNationalDayDiscount(getNationalDayBasePrice(tier, period, segment, years), enabled);
 }

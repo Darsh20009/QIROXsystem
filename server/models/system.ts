@@ -133,6 +133,8 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   ga4Id:              { type: String, default: "" },
   gtmId:              { type: String, default: "" },
   welcomeVideoUrl:    { type: String, default: "" },
+  nationalDayEnabled:       { type: Boolean, default: true },
+  nationalDaySplashEnabled: { type: Boolean, default: true },
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
 qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });

@@ -297,6 +297,7 @@ export default function OrderFlow() {
   }, [sectorTemplates]);
   const { data: bankSettings }        = useQuery<typeof DEFAULT_BANK>({ queryKey: ["/api/bank-settings"] });
   const { data: settings }            = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 60_000 });
+  const nationalDayEnabled = settings?.nationalDayEnabled ?? true;
   const bank = bankSettings || DEFAULT_BANK;
   const { data: walletData }          = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
     queryKey: ["/api/wallet"], enabled: !!user,
@@ -400,7 +401,7 @@ export default function OrderFlow() {
     setUploadedFiles(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
 
   const calculatedPlanPrice = planFromUrl && periodFromUrl && segmentFromUrl
-    ? getNationalDayPrice(planFromUrl, periodFromUrl, segmentFromUrl)
+    ? getNationalDayPrice(planFromUrl, periodFromUrl, segmentFromUrl, undefined, nationalDayEnabled)
     : 0;
   const planPrice    = calculatedPlanPrice || priceFromUrl || 0;
   const addonsTotal  = selectedAddons.reduce((sum, id) => sum + (extraAddons.find((a: any) => a.id === id)?.price || 0), 0);

@@ -465,6 +465,341 @@
   }
 }
 
+/* National Day badge and first-visit splash. The campaign stays compact so it
+   announces the offer without covering the page's primary content. */
+.national-day-experience {
+  top: 50%;
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: auto;
+  width: min(18.5rem, calc(100vw - 1.5rem));
+  transform: translateY(-50%);
+}
+
+.national-day-badge {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+  overflow: hidden;
+  min-height: 5.25rem;
+  padding: 0.55rem 0.6rem 0.55rem 0.7rem;
+  color: #f5faf7;
+  background:
+    radial-gradient(circle at 16% 20%, rgba(100, 214, 141, .25), transparent 34%),
+    linear-gradient(135deg, #073b25 0%, #0d6139 62%, #06331f 100%);
+  border: 1px solid rgba(164, 236, 188, .34);
+  border-left: 0;
+  border-radius: 0 1.1rem 1.1rem 0;
+  box-shadow: 0 18px 42px rgba(3, 26, 15, .25);
+  animation: national-day-enter 520ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.national-day-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.13) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: national-day-sheen 7s ease-in-out 1.4s infinite;
+}
+
+.national-day-badge-flag {
+  position: relative;
+  z-index: 1;
+  width: 4.7rem;
+  flex: 0 0 4.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.national-day-badge-flag img {
+  width: 6.7rem;
+  height: 6.7rem;
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 9px rgba(0,0,0,.25));
+  animation: national-day-flag-wave 5.8s ease-in-out infinite;
+}
+
+.national-day-badge-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  direction: rtl;
+}
+
+.national-day-badge-kicker {
+  color: rgba(231, 250, 237, .72);
+  font-size: 0.55rem;
+  font-weight: 700;
+}
+
+.national-day-badge-copy strong {
+  margin-top: 0.1rem;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.national-day-badge-offer {
+  margin-top: 0.2rem;
+  color: #d7f5df;
+  font-size: 0.59rem;
+  font-weight: 800;
+}
+
+.national-day-badge-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  width: fit-content;
+  margin-top: 0.35rem;
+  padding: 0.22rem 0.48rem;
+  color: #064326;
+  background: #e7f7eb;
+  border-radius: 0.45rem;
+  font-size: 0.57rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.national-day-badge-link svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.national-day-badge .national-day-minimize {
+  position: relative;
+  z-index: 2;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  margin: 0;
+}
+
+.national-day-collapsed {
+  margin: 0;
+  border-left: 0;
+  border-right: 1px solid rgba(158, 213, 178, .34);
+  border-radius: 0 0.85rem 0.85rem 0;
+}
+
+.national-day-collapsed span {
+  white-space: nowrap;
+}
+
+.national-day-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.national-day-splash-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(1, 16, 10, .78);
+  backdrop-filter: blur(8px);
+  animation: national-day-splash-fade 260ms ease-out both;
+}
+
+.national-day-splash-card {
+  position: relative;
+  z-index: 1;
+  width: min(25rem, 100%);
+  overflow: hidden;
+  padding: 1.35rem;
+  text-align: center;
+  color: #f4fff7;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(65, 180, 105, .4), transparent 45%),
+    linear-gradient(145deg, #062b1b, #0a5533 62%, #042116);
+  border: 1px solid rgba(188, 239, 202, .32);
+  border-radius: 1.75rem;
+  box-shadow: 0 30px 90px rgba(0,0,0,.4);
+  animation: national-day-splash-enter 420ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.national-day-splash-close {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  color: rgba(241, 255, 245, .75);
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.national-day-splash-close svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.national-day-splash-flag {
+  height: 8.5rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.national-day-splash-flag img {
+  width: 12rem;
+  height: 12rem;
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 14px rgba(0,0,0,.24));
+  animation: national-day-flag-wave 5.8s ease-in-out infinite;
+}
+
+.national-day-splash-kicker {
+  display: inline-block;
+  color: #b4e9c4;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.national-day-splash-card h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 950;
+}
+
+.national-day-splash-card > p {
+  margin: 0.35rem 0 1rem;
+  color: rgba(228, 247, 234, .72);
+  font-size: 0.76rem;
+}
+
+.national-day-splash-offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 auto 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 24, 13, .3);
+  border: 1px solid rgba(196, 239, 207, .16);
+  border-radius: 1rem;
+}
+
+.national-day-splash-offer strong {
+  color: #d9f7e1;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.national-day-splash-offer span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.national-day-splash-offer small {
+  color: rgba(228, 247, 234, .62);
+  font-size: 0.64rem;
+}
+
+.national-day-splash-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.national-day-splash-cta,
+.national-day-splash-skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 2.45rem;
+  border-radius: 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.national-day-splash-cta {
+  color: #064326;
+  background: #e7f7eb;
+  text-decoration: none;
+}
+
+.national-day-splash-cta svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.national-day-splash-skip {
+  color: rgba(235, 255, 240, .68);
+  background: transparent;
+  border: 0;
+}
+
+@keyframes national-day-splash-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes national-day-splash-enter {
+  from { opacity: 0; transform: translateY(1rem) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .national-day-experience {
+    top: auto;
+    bottom: calc(4.9rem + env(safe-area-inset-bottom, 0px));
+    width: min(17rem, calc(100vw - 1.1rem));
+  }
+
+  .national-day-badge {
+    min-height: 4.7rem;
+    gap: 0.35rem;
+    padding: 0.45rem 0.45rem 0.45rem 0.55rem;
+  }
+
+  .national-day-badge-flag {
+    width: 4rem;
+    flex-basis: 4rem;
+  }
+
+  .national-day-badge-flag img {
+    width: 5.6rem;
+    height: 5.6rem;
+  }
+
+  .national-day-badge-copy strong { font-size: 0.76rem; }
+  .national-day-badge-offer { font-size: 0.53rem; }
+  .national-day-badge-link { font-size: 0.52rem; }
+  .national-day-splash-card { padding: 1.1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .national-day-badge,
+  .national-day-badge::after,
+  .national-day-badge-flag img,
+  .national-day-splash-backdrop,
+  .national-day-splash-card,
+  .national-day-splash-flag img {
+    animation: none;
+  }
+}
+
 @layer utilities {
   .safe-top {
     padding-top: env(safe-area-inset-top);

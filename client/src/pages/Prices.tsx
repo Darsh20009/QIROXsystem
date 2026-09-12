@@ -519,6 +519,7 @@ const TIER_STYLES: Record<Tier, { bg: string; border: string; headerBg: string; 
 
 function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   tier: Tier; period: Period; years: number; sector: SectorKey;
+  nationalDayEnabled: boolean;
   onCustom: ()=>void; onOrder: (info: { tier: Tier; period: Period; years: number; sector: string; price: number; label: string })=>void;
 }) {
   const st = TIER_STYLES[tier];
@@ -540,7 +541,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
   }
   else { price = prices.life; label = "مدى الحياة"; sublabel = "دفعة واحدة للأبد"; }
   const originalPrice = price;
-  price = applyNationalDayDiscount(price);
+  price = applyNationalDayDiscount(price, nationalDayEnabled);
 
   // Monthly equivalent + savings
   const monthlyEquiv =
@@ -618,7 +619,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         )}
         <AnimatePresence mode="wait">
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
-            {NATIONAL_DAY_CAMPAIGN.enabled && originalPrice > price && (
+            {nationalDayEnabled && originalPrice > price && (
               <div className={`mb-2 flex items-center gap-2 text-[10px] font-black ${isPro ? "text-emerald-200" : isInfinity ? "text-amber-300" : "text-emerald-700 dark:text-emerald-300"}`}>
                 <span className="line-through opacity-50">{currency.format(originalPrice)}</span>
                 <span>خصم {NATIONAL_DAY_CAMPAIGN.discountPercent}%</span>
@@ -1401,9 +1402,9 @@ export default function Prices() {
 
               {/* Plan cards 3 col grid, equal heights */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-                <PlanCard tier="lite"     period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
-                <PlanCard tier="pro"      period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
-                <PlanCard tier="infinity" period={period} years={years} sector={sector as SectorKey} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                <PlanCard tier="lite"     period={period} years={years} sector={sector as SectorKey} nationalDayEnabled={settings?.nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                <PlanCard tier="pro"      period={period} years={years} sector={sector as SectorKey} nationalDayEnabled={settings?.nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
+                <PlanCard tier="infinity" period={period} years={years} sector={sector as SectorKey} nationalDayEnabled={settings?.nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled} onCustom={() => openCustom(sector, SECTORS_DATA.find(s=>s.key===sector)?.ar||sector)} onOrder={startOrder}/>
               </div>
 
               {/* Custom banner below main cards */}
