@@ -185,7 +185,7 @@
   position: fixed;
   z-index: 75;
   top: 34vh;
-  right: max(0.75rem, env(safe-area-inset-right));
+  left: max(0.75rem, env(safe-area-inset-left));
   width: min(18rem, calc(100vw - 1.5rem));
   pointer-events: none;
   font-family: var(--font-body);
@@ -206,8 +206,8 @@
   color: #f5faf7;
   background: linear-gradient(135deg, rgba(11, 47, 31, 0.98), rgba(17, 68, 43, 0.96));
   border: 1px solid rgba(158, 213, 178, 0.32);
-  border-right: 0;
-  border-radius: 1rem 0 0 1rem;
+  border-left: 0;
+  border-radius: 0 1rem 1rem 0;
   box-shadow: 0 16px 40px rgba(3, 26, 15, 0.2);
   animation: national-day-enter 520ms cubic-bezier(.22, 1, .36, 1) both;
 }
@@ -223,19 +223,19 @@
 }
 
 .national-day-flag-wrap {
-  width: 4.7rem;
-  height: 5.7rem;
-  flex: 0 0 4.7rem;
+  width: 5.6rem;
+  height: 5.45rem;
+  flex: 0 0 5.6rem;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: -0.85rem;
+  margin-right: -0.45rem;
 }
 
 .national-day-flag-wrap img {
-  width: 7.1rem;
-  height: 7.1rem;
+  width: 6.1rem;
+  height: 6.1rem;
   max-width: none;
   object-fit: contain;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .2));
@@ -312,6 +312,7 @@
 }
 
 .national-day-offer-title,
+.national-day-offer-occasion,
 .national-day-offer-detail {
   margin: 0;
 }
@@ -319,6 +320,13 @@
 .national-day-offer-title {
   font-size: 0.68rem;
   font-weight: 800;
+}
+
+.national-day-offer-occasion {
+  margin-top: 0.08rem;
+  color: rgba(229, 246, 235, .82);
+  font-size: 0.56rem;
+  font-weight: 700;
 }
 
 .national-day-offer-detail {
@@ -366,13 +374,13 @@
   align-items: center;
   gap: 0.42rem;
   width: max-content;
-  margin-left: auto;
+  margin-right: auto;
   padding: 0.35rem 0.45rem 0.35rem 0.6rem;
   color: #effaf1;
   background: rgba(11, 47, 31, .96);
   border: 1px solid rgba(158, 213, 178, .34);
-  border-right: 0;
-  border-radius: 0.85rem 0 0 0.85rem;
+  border-left: 0;
+  border-radius: 0 0.85rem 0.85rem 0;
   box-shadow: 0 12px 28px rgba(3, 26, 15, .18);
   cursor: pointer;
   animation: national-day-enter 420ms cubic-bezier(.22, 1, .36, 1) both;
@@ -416,7 +424,7 @@
 @media (max-width: 640px) {
   .national-day-experience {
     top: auto;
-    right: max(0.55rem, env(safe-area-inset-right));
+    left: max(0.55rem, env(safe-area-inset-left));
     bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
     width: min(15.5rem, calc(100vw - 1.1rem));
   }
@@ -427,20 +435,21 @@
   }
 
   .national-day-flag-wrap {
-    width: 3.5rem;
+    width: 4.1rem;
     height: 4.8rem;
-    flex-basis: 3.5rem;
-    margin-right: -0.55rem;
+    flex-basis: 4.1rem;
+    margin-right: -0.35rem;
   }
 
   .national-day-flag-wrap img {
-    width: 5.8rem;
-    height: 5.8rem;
+    width: 5.35rem;
+    height: 5.35rem;
   }
 
   .national-day-message { font-size: 0.72rem; }
   .national-day-subtitle { font-size: 0.51rem; }
   .national-day-offer-title { font-size: 0.61rem; }
+  .national-day-offer-occasion { font-size: 0.49rem; }
   .national-day-offer-detail { font-size: 0.51rem; }
   .national-day-offer strong { font-size: 1.05rem; }
   .national-day-cta { font-size: 0.57rem; }

@@ -63,8 +63,9 @@ export function SaudiNationalDayExperience() {
             </div>
             <p className="national-day-subtitle">{NATIONAL_DAY_CAMPAIGN.subtitle}</p>
             <div className="national-day-offer">
-              <div>
+              <div className="national-day-offer-copy">
                 <p className="national-day-offer-title">{NATIONAL_DAY_CAMPAIGN.title}</p>
+                <p className="national-day-offer-occasion">بمناسبة اليوم الوطني</p>
                 <p className="national-day-offer-detail">{NATIONAL_DAY_CAMPAIGN.offer}</p>
               </div>
               <strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong>
