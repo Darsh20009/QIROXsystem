@@ -62,3 +62,4 @@
 - [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
 - [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.
+- [National Day campaign visual direction](national-day-campaign-visual.md) — Prefer a light editorial layout with restrained green accents; avoid dark floating promo cards and oversized centered splash cards.
