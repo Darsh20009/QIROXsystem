@@ -60,69 +60,62 @@ export function SaudiNationalDayExperience() {
   return (
     <>
       {splashOpen && (
-        <div className="national-day-splash" role="dialog" aria-modal="true" aria-label="احتفال اليوم الوطني السعودي" dir="rtl">
-          <div className="national-day-splash-backdrop" onClick={dismissSplash} />
-          <div className="national-day-splash-card">
-            <button type="button" className="national-day-splash-close" onClick={dismissSplash} aria-label="إغلاق">
+        <div className="qdx-overlay" role="dialog" aria-modal="true" aria-label="احتفال اليوم الوطني السعودي" dir="rtl">
+          <div className="qdx-backdrop" onClick={dismissSplash} />
+          <div className="qdx-modal">
+            <button type="button" className="qdx-close" onClick={dismissSplash} aria-label="إغلاق">
               <X aria-hidden="true" />
             </button>
-            <div className="national-day-splash-visual">
-              <span className="national-day-splash-stamp">السعودية<br />في القلب</span>
-              <div className="national-day-splash-flag">
+            <div className="qdx-media">
+              <div className="qdx-media-image">
                 <img src={NATIONAL_DAY_CAMPAIGN.flagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
               </div>
-              <span className="national-day-splash-year">احتفال وطني</span>
+              <span className="qdx-media-label">اليوم الوطني السعودي</span>
             </div>
-            <div className="national-day-splash-content">
-              <span className="national-day-splash-kicker">احتفالًا باليوم الوطني السعودي</span>
+            <div className="qdx-modal-body">
+              <div className="qdx-eyebrow"><span /> عرض خاص بمناسبة اليوم الوطني</div>
               <h2>دام عزك<br /><em>يا وطن</em></h2>
-              <p>نحتفل معك بعز الوطن بعرض خاص على جميع الباقات.</p>
-              <div className="national-day-splash-offer">
-                <div><small>خصم اليوم الوطني</small><strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong></div>
-                <span>على جميع<br />الباقات</span>
+              <p>{NATIONAL_DAY_CAMPAIGN.subtitle}</p>
+              <div className="qdx-offer">
+                <strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong>
+                <span>خصم على<br />جميع الباقات</span>
               </div>
-              <div className="national-day-splash-actions">
-                <Link href="/prices" className="national-day-splash-cta" onClick={dismissSplash}>
-                  اكتشف الباقات <ChevronLeft aria-hidden="true" />
-                </Link>
-                <button type="button" className="national-day-splash-skip" onClick={dismissSplash}>متابعة للموقع</button>
-              </div>
+              <Link href="/prices" className="qdx-primary" onClick={dismissSplash}>
+                اكتشف الباقات <ChevronLeft aria-hidden="true" />
+              </Link>
+              <button type="button" className="qdx-secondary" onClick={dismissSplash}>متابعة للموقع</button>
             </div>
           </div>
         </div>
       )}
-      <aside className={`national-day-experience ${collapsed ? "is-collapsed" : ""}`} dir="rtl">
+      <aside className={`qdx-root ${collapsed ? "is-collapsed" : ""}`} dir="rtl">
       {collapsed ? (
         <button
           type="button"
-          className="national-day-collapsed"
+          className="qdx-collapsed"
           onClick={toggleCollapsed}
           aria-label="إظهار عرض اليوم الوطني"
           aria-expanded={false}
         >
           <img src={NATIONAL_DAY_CAMPAIGN.compactFlagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
-          <span>اليوم الوطني · {NATIONAL_DAY_CAMPAIGN.discountPercent}%</span>
+          <span>اليوم الوطني · خصم {NATIONAL_DAY_CAMPAIGN.discountPercent}%</span>
           <Plus aria-hidden="true" />
         </button>
       ) : (
-        <div className="national-day-badge" aria-label="شارة اليوم الوطني السعودي">
-          <div className="national-day-badge-copy">
-            <span className="national-day-badge-kicker">احتفالًا باليوم الوطني</span>
-            <strong>دام عزك يا وطن</strong>
-            <Link href="/prices" className="national-day-badge-link">
-              اكتشف الباقات <ChevronLeft aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="national-day-badge-discount">
-            <span>خصم</span>
-            <strong>{NATIONAL_DAY_CAMPAIGN.discountPercent}%</strong>
-          </div>
-          <div className="national-day-badge-flag">
+        <div className="qdx-ribbon" aria-label="شارة اليوم الوطني السعودي">
+          <div className="qdx-ribbon-mark">
             <img src={NATIONAL_DAY_CAMPAIGN.compactFlagSrc} alt={NATIONAL_DAY_CAMPAIGN.flagAlt} />
           </div>
+          <div className="qdx-ribbon-copy">
+            <span>اليوم الوطني السعودي</span>
+            <strong>خصم {NATIONAL_DAY_CAMPAIGN.discountPercent}% على الباقات</strong>
+          </div>
+          <Link href="/prices" className="qdx-ribbon-link">
+            اكتشف <ChevronLeft aria-hidden="true" />
+          </Link>
           <button
             type="button"
-            className="national-day-minimize"
+            className="qdx-ribbon-close"
             onClick={toggleCollapsed}
             aria-label="تصغير شارة اليوم الوطني"
             aria-expanded={true}
