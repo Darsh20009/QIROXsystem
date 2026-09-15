@@ -8,7 +8,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
-import { getNationalDayPrice, NATIONAL_DAY_CAMPAIGN } from "@shared/national-day";
+import { getPlanPrice } from "@shared/plan-prices";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import multer from "multer";
 import path from "path";
@@ -3912,9 +3912,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     // ── Server-side totalAmount validation from cart ─────────────
-    const { CartModel, UserModel, WalletTransactionModel, QiroxSystemSettingsModel } = await import("./models");
-    const nationalDaySettings = await QiroxSystemSettingsModel.findOne({ key: "main" }).select("nationalDayEnabled").lean() as any;
-    const nationalDayEnabled = nationalDaySettings?.nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled;
+    const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
     const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
     let serverTotal: number | null = null;
     if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
@@ -3929,7 +3927,7 @@ export async function registerRoutes(
       }
     }
 
-    // ── National Day package pricing ───────────────────────────────
+    // ── Server-side package pricing ────────────────────────────────
     // The package price is derived from the shared catalog on the server.
     // Client-provided values are retained only for non-package add-ons/devices.
     const requestedItems = Array.isArray(req.body.items) ? req.body.items : [];
@@ -3937,23 +3935,22 @@ export async function registerRoutes(
       req.body.planTier && req.body.planPeriod && req.body.planSegment &&
       requestedItems.length > 0,
     );
-    let promotionItems = requestedItems;
-    let campaignPlanPrice = 0;
+    let pricedItems = requestedItems;
+    let planPrice = 0;
     if (hasPricedPackage) {
-      campaignPlanPrice = getNationalDayPrice(
+      planPrice = getPlanPrice(
         String(req.body.planTier),
         String(req.body.planPeriod),
         String(req.body.planSegment),
         undefined,
-        nationalDayEnabled,
       );
-      if (campaignPlanPrice > 0) {
-        promotionItems = requestedItems.map((item: any, index: number) =>
-          index === 0 ? { ...item, price: campaignPlanPrice, qty: Number(item.qty) || 1 } : item,
+      if (planPrice > 0) {
+        pricedItems = requestedItems.map((item: any, index: number) =>
+          index === 0 ? { ...item, price: planPrice, qty: Number(item.qty) || 1 } : item,
         );
         serverTotal = parseFloat((
-          campaignPlanPrice +
-          promotionItems.slice(1).reduce(
+          planPrice +
+          pricedItems.slice(1).reduce(
             (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
             0,
           )
@@ -4009,12 +4006,9 @@ export async function registerRoutes(
     for (const key of ALLOWED_ORDER_FIELDS) {
       if (key in req.body) safeBody[key] = req.body[key];
     }
-    if (promotionItems !== requestedItems) safeBody.items = promotionItems;
-    if (campaignPlanPrice > 0) {
+    if (pricedItems !== requestedItems) safeBody.items = pricedItems;
+    if (planPrice > 0) {
       safeBody.totalAmount = orderTotal;
-      if (nationalDayEnabled) {
-        safeBody.notes = `${String(safeBody.notes || "")}${safeBody.notes ? " | " : ""}خصم اليوم الوطني ${NATIONAL_DAY_CAMPAIGN.discountPercent}%`;
-      }
     }
 
     // Reject wallet/mixed orders if walletAmountUsed is missing or zero
@@ -4051,7 +4045,7 @@ export async function registerRoutes(
         await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
       }
     }
-    const items: string[] = (promotionItems || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
+    const items: string[] = (pricedItems || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
       const { NotificationModel } = await import("./models");
@@ -16908,8 +16902,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { QiroxSystemSettingsModel } = await import("./models");
       let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
       if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
-      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn, nationalDayEnabled, nationalDaySplashEnabled } = settings as any;
-      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn, nationalDayEnabled: nationalDayEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled, nationalDaySplashEnabled: nationalDaySplashEnabled ?? NATIONAL_DAY_CAMPAIGN.enabled });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn } = settings as any;
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn });
     } catch { res.json({}); }
   });
 

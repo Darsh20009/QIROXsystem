@@ -28,7 +28,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { SiWhatsapp } from "react-icons/si";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { getNationalDayPrice } from "@shared/national-day";
 
 const DEFAULT_BANK = { bankName: "بنك الراجحي", beneficiaryName: "QIROX Studio", iban: "SA0380205098017222121010", notes: "" };
 
@@ -297,7 +296,6 @@ export default function OrderFlow() {
   }, [sectorTemplates]);
   const { data: bankSettings }        = useQuery<typeof DEFAULT_BANK>({ queryKey: ["/api/bank-settings"] });
   const { data: settings }            = useQuery<any>({ queryKey: ["/api/public/settings"], staleTime: 60_000 });
-  const nationalDayEnabled = settings?.nationalDayEnabled ?? true;
   const bank = bankSettings || DEFAULT_BANK;
   const { data: walletData }          = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
     queryKey: ["/api/wallet"], enabled: !!user,
@@ -400,10 +398,7 @@ export default function OrderFlow() {
   const handleFileRemove = (field: string, index: number) =>
     setUploadedFiles(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
 
-  const calculatedPlanPrice = planFromUrl && periodFromUrl && segmentFromUrl
-    ? getNationalDayPrice(planFromUrl, periodFromUrl, segmentFromUrl, undefined, nationalDayEnabled)
-    : 0;
-  const planPrice    = calculatedPlanPrice || priceFromUrl || 0;
+  const planPrice    = priceFromUrl || 0;
   const addonsTotal  = selectedAddons.reduce((sum, id) => sum + (extraAddons.find((a: any) => a.id === id)?.price || 0), 0);
   const devicesTotal = Object.entries(deviceCart).reduce((sum, [pid, qty]) => sum + ((products.find((p: any) => p.id === pid)?.price || 0) * qty), 0);
   const bundlesTotal = Object.entries(deviceBundles).reduce((sum, [pid, bidx]) => {
