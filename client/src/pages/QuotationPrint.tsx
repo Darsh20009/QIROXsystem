@@ -90,8 +90,12 @@ export default function QuotationPrint() {
         `/api/quotations/${params.id}/pdf`,
         `quotation-${quotation?.quotationNumber || params.id}.pdf`,
       );
-    } catch {
-      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: "تعذّر تحميل ملف PDF",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 

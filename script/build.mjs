@@ -1,4 +1,4 @@
-import { rm } from "fs/promises";
+import { rm, mkdir, copyFile } from "fs/promises";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
 
@@ -40,6 +40,19 @@ async function buildAll() {
 
   console.log("building client...");
   execSync(`${viteBin} build`, { stdio: "inherit" });
+
+  // The PDF renderer runs on the server and does not read Vite's source tree
+  // at runtime. Keep the Arabic font beside the built frontend as well so the
+  // prebuilt production bundle can resolve it from dist/public.
+  const arabicFontSource = "public/fonts/arabic.ttf";
+  const arabicFontTarget = "dist/public/fonts/arabic.ttf";
+  if (existsSync(arabicFontSource)) {
+    await mkdir("dist/public/fonts", { recursive: true });
+    await copyFile(arabicFontSource, arabicFontTarget);
+    console.log(`copied ${arabicFontSource} -> ${arabicFontTarget}`);
+  } else {
+    throw new Error(`Missing required PDF font: ${arabicFontSource}`);
+  }
 
   console.log("building server (fully bundled — no external deps)...");
 

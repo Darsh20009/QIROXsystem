@@ -35,8 +35,12 @@ export default function InvoicePrint() {
         `/api/invoices/${params.id}/pdf`,
         `invoice-${invoice?.invoiceNumber || params.id}.pdf`,
       );
-    } catch {
-      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: "تعذّر تحميل ملف PDF",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 

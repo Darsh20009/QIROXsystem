@@ -87,17 +87,53 @@ export interface ReceiptData {
   accountNumber?: string;
 }
 
-function loadArabicFont(): Buffer | null {
+function loadArabicFont(): { bytes: Buffer; filePath: string } | null {
+  const candidates = [
+    path.resolve(process.cwd(), "public/fonts/arabic.ttf"),
+    path.resolve(process.cwd(), "client/public/fonts/arabic.ttf"),
+    path.resolve(process.cwd(), "dist/public/fonts/arabic.ttf"),
+    path.resolve(__dirname, "../public/fonts/arabic.ttf"),
+    path.resolve(__dirname, "public/fonts/arabic.ttf"),
+    path.resolve(__dirname, "fonts/arabic.ttf"),
+  ];
+
+  for (const filePath of candidates) {
+    try {
+      if (!fs.existsSync(filePath)) continue;
+      const bytes = fs.readFileSync(filePath);
+      if (!bytes.length) {
+        console.error("[PDF] Arabic font file is empty:", filePath);
+        continue;
+      }
+      console.info("[PDF] Arabic font loaded:", filePath, `${bytes.length} bytes`);
+      return { bytes, filePath };
+    } catch (err: any) {
+      console.error("[PDF] Arabic font read failed:", filePath, err?.message || err);
+    }
+  }
+
+  console.error("[PDF] Arabic font not found. Checked:", candidates.join(", "));
+  return null;
+}
+
+async function embedArabicFont(pdfDoc: PDFDocument, documentType: string): Promise<any> {
+  const loaded = loadArabicFont();
+  if (!loaded) {
+    throw new Error(`[PDF] Arabic font unavailable for ${documentType}`);
+  }
+
   try {
-    const candidates = [
-      path.resolve(process.cwd(), "public/fonts/arabic.ttf"),
-      path.resolve(process.cwd(), "client/public/fonts/arabic.ttf"),
-      path.resolve(process.cwd(), "dist/public/fonts/arabic.ttf"),
-      path.resolve(__dirname, "../public/fonts/arabic.ttf"),
-    ];
-    for (const p of candidates) if (fs.existsSync(p)) return fs.readFileSync(p);
-    return null;
-  } catch { return null; }
+    const font = await pdfDoc.embedFont(loaded.bytes);
+    console.info(`[PDF] Arabic font embedded for ${documentType}:`, loaded.filePath);
+    return font;
+  } catch (err: any) {
+    console.error(
+      `[PDF] Arabic font embed failed for ${documentType}:`,
+      loaded.filePath,
+      err?.message || err,
+    );
+    throw new Error(`[PDF] Arabic font embed failed for ${documentType}: ${err?.message || err}`);
+  }
 }
 
 function loadLogo(): Buffer | null {
@@ -158,7 +194,10 @@ function drawTermsLink(
   arabicFont: any,
   color: any,
 ) {
-  const isArabic = hasArabic(label) && arabicFont;
+  const isArabic = hasArabic(label);
+  if (isArabic && !arabicFont) {
+    throw new Error("[PDF] Cannot draw Arabic terms link without an Arabic font");
+  }
   const visual = isArabic ? prepareArabic(label) : label;
   const textWidth = (isArabic ? arabicFont : font).widthOfTextAtSize(visual, size);
   if (isArabic) {
@@ -278,7 +317,10 @@ function wrapPdfText(
   if (!normalized) return [];
 
   const measure = (value: string) => {
-    if (hasArabic(value) && arabicFont) {
+    if (hasArabic(value)) {
+      if (!arabicFont) {
+        throw new Error("[PDF] Cannot measure Arabic text without an Arabic font");
+      }
       return arabicFont.widthOfTextAtSize(prepareArabic(value), size);
     }
     return latinFont.widthOfTextAtSize(value, size);
@@ -318,12 +360,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   pdfDoc.registerFontkit(fontkit);
 
   /* fonts */
-  const arabicFontBytes = loadArabicFont();
-  let arabicFont: any = null;
-  if (arabicFontBytes) {
-    try { arabicFont = await pdfDoc.embedFont(arabicFontBytes); }
-    catch (err: any) { console.error("[PDF] Arabic font embed failed:", err?.message); }
-  }
+  const arabicFont = await embedArabicFont(pdfDoc, "quotation");
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
@@ -370,7 +407,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     txt: string, rightX: number, y: number, size: number,
     color = BLACK
   ) => {
-    if (!txt || !arabicFont) return;
+    if (!txt) return;
+    if (!arabicFont) throw new Error("[PDF] Cannot draw Arabic text without an Arabic font");
     const visual = prepareArabic(txt);
     try {
       const tw = arabicFont.widthOfTextAtSize(visual, size);
@@ -592,9 +630,9 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   drawL("qiroxstudio.online", width / 2 - 40,  footerY + 6, 8, GRAY, latinReg);
   drawL("© 2026",             width - 70,      footerY + 6, 8, GRAY, latinReg);
    const quotationTermsLabel = q.language === "en" ? "Terms & Conditions" : "الشروط والأحكام";
-   const quotationTermsWidth = (q.language === "en" || !arabicFont)
-     ? latinReg.widthOfTextAtSize(quotationTermsLabel, 7)
-     : arabicFont.widthOfTextAtSize(prepareArabic(quotationTermsLabel), 7);
+    const quotationTermsWidth = hasArabic(quotationTermsLabel)
+      ? arabicFont.widthOfTextAtSize(prepareArabic(quotationTermsLabel), 7)
+      : latinReg.widthOfTextAtSize(quotationTermsLabel, 7);
    drawTermsLink(
      pdfDoc,
      page,
@@ -618,11 +656,7 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
-  const arabicFontBytes = loadArabicFont();
-  let arabicFont: any = null;
-  if (arabicFontBytes) {
-    try { arabicFont = await pdfDoc.embedFont(arabicFontBytes); } catch {}
-  }
+  const arabicFont = await embedArabicFont(pdfDoc, "invoice");
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
@@ -652,7 +686,8 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     if (!t) return; try { page.drawText(t, { x, y, size: s, color: c, font: f }); } catch {}
   };
   const drawAR = (t: string, rightX: number, y: number, s: number, c = BLACK) => {
-    if (!t || !arabicFont) return;
+    if (!t) return;
+    if (!arabicFont) throw new Error("[PDF] Cannot draw Arabic text without an Arabic font");
     const visual = prepareArabic(t);
     try { const tw = arabicFont.widthOfTextAtSize(visual, s); page.drawText(visual, { x: rightX - tw, y, size: s, color: c, font: arabicFont }); } catch {}
   };
@@ -816,9 +851,9 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   drawL("qiroxstudio.online", width / 2 - 40, footerY + 6, 8, GRAY, latinReg);
   drawL("© 2026", width - 70, footerY + 6, 8, GRAY, latinReg);
    const invoiceTermsLabel = inv.language === "en" ? "Terms & Conditions" : "الشروط والأحكام";
-   const invoiceTermsWidth = (inv.language === "en" || !arabicFont)
-     ? latinReg.widthOfTextAtSize(invoiceTermsLabel, 7)
-     : arabicFont.widthOfTextAtSize(prepareArabic(invoiceTermsLabel), 7);
+    const invoiceTermsWidth = hasArabic(invoiceTermsLabel)
+      ? arabicFont.widthOfTextAtSize(prepareArabic(invoiceTermsLabel), 7)
+      : latinReg.widthOfTextAtSize(invoiceTermsLabel, 7);
    drawTermsLink(
      pdfDoc,
      page,
@@ -842,11 +877,7 @@ export async function generateReceiptPdf(receipt: ReceiptData): Promise<Uint8Arr
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
-  const arabicFontBytes = loadArabicFont();
-  let arabicFont: any = null;
-  if (arabicFontBytes) {
-    try { arabicFont = await pdfDoc.embedFont(arabicFontBytes); } catch {}
-  }
+  const arabicFont = await embedArabicFont(pdfDoc, "receipt");
   const latinBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const latinReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const logoBytes = loadLogo();
@@ -868,7 +899,8 @@ export async function generateReceiptPdf(receipt: ReceiptData): Promise<Uint8Arr
     try { page.drawText(text, { x, y, size, color, font }); } catch {}
   };
   const drawAR = (text: string, rightX: number, y: number, size: number, color = BLACK) => {
-    if (!text || !arabicFont) return;
+    if (!text) return;
+    if (!arabicFont) throw new Error("[PDF] Cannot draw Arabic text without an Arabic font");
     try {
       const visual = prepareArabic(text);
       const textWidth = arabicFont.widthOfTextAtSize(visual, size);
