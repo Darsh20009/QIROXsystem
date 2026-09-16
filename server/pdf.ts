@@ -1,5 +1,6 @@
 import { PDFDocument, PDFString, PDFName, rgb, StandardFonts } from "pdf-lib";
 import { createRequire } from "module";
+import { fileURLToPath } from "url";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -7,6 +8,7 @@ import * as path from "path";
    import.meta.url is shimmed at bundle time (see script/build.ts banner). */
 const _require = createRequire(import.meta.url);
 const fontkit  = _require("@pdf-lib/fontkit");
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
 export interface QuotationData {
   quotationNumber: string;
@@ -92,9 +94,9 @@ function loadArabicFont(): { bytes: Buffer; filePath: string } | null {
     path.resolve(process.cwd(), "public/fonts/arabic.ttf"),
     path.resolve(process.cwd(), "client/public/fonts/arabic.ttf"),
     path.resolve(process.cwd(), "dist/public/fonts/arabic.ttf"),
-    path.resolve(__dirname, "../public/fonts/arabic.ttf"),
-    path.resolve(__dirname, "public/fonts/arabic.ttf"),
-    path.resolve(__dirname, "fonts/arabic.ttf"),
+    path.resolve(moduleDir, "../public/fonts/arabic.ttf"),
+    path.resolve(moduleDir, "public/fonts/arabic.ttf"),
+    path.resolve(moduleDir, "fonts/arabic.ttf"),
   ];
 
   for (const filePath of candidates) {
