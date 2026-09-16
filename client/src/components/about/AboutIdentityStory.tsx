@@ -443,35 +443,33 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                   itemScope
                   itemType="https://schema.org/Person"
                 >
-                  <div className="flex flex-col gap-7 sm:flex-row sm:items-start">
-                    <div className="relative shrink-0">
-                      <div className="absolute -inset-2 rounded-[1.5rem] border border-emerald-300/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  <div className="relative min-h-[310px]">
+                    <div className="absolute end-0 top-0 z-10">
+                      <div className="absolute -inset-2 rounded-full border border-emerald-300/20 opacity-0 transition-all duration-500 group-hover:inset-[-6px] group-hover:opacity-100" />
                       <img
                         src={person.image}
                         alt={person.alt}
                         title={`${person.name} — ${person.role} في كيروكس`}
-                        className="relative h-52 w-full rounded-[1.25rem] object-cover object-top grayscale-[20%] transition-all duration-500 group-hover:grayscale-0 sm:h-56 sm:w-44"
+                        className="relative h-24 w-24 rounded-full border-2 border-white/20 object-cover object-top grayscale-[15%] shadow-[0_14px_35px_-14px_rgba(16,185,129,0.7)] transition-all duration-500 group-hover:scale-105 group-hover:grayscale-0 md:h-28 md:w-28"
                         loading="lazy"
                         itemProp="image"
                       />
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <div className="mb-5">
-                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300/80">{person.roleEn}</p>
-                        <h3 className="text-2xl font-black" itemProp="name">{person.name}</h3>
-                        <p className="mt-1 text-sm text-white/40">{person.latin}</p>
-                        <meta itemProp="jobTitle" content={`${person.role} | ${person.roleEn}`} />
-                      </div>
-                      <div className="relative flex-1 rounded-2xl border border-white/10 bg-black/20 p-5">
-                        <Quote className="absolute -top-3 -end-2 h-8 w-8 rotate-180 fill-emerald-300/10 text-emerald-300/70" />
-                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">{person.label}</p>
-                        <TypewriterMessage text={person.message} />
-                      </div>
-                      <Link href={person.href} className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-white/45 transition-colors hover:text-emerald-300">
-                        {isArabic ? "اكتشف قصة القائد" : "Explore profile"}
-                        <ArrowUpLeft className="h-3.5 w-3.5" />
-                      </Link>
+                    <div className="pe-28 md:pe-36">
+                      <p className="mb-2 pt-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300/80">{person.roleEn}</p>
+                      <h3 className="text-xl font-black leading-8 md:text-2xl" itemProp="name">{person.name}</h3>
+                      <p className="mt-1 text-sm text-white/40">{person.latin}</p>
+                      <meta itemProp="jobTitle" content={`${person.role} | ${person.roleEn}`} />
                     </div>
+                    <div className="relative mt-10 rounded-2xl border border-white/10 bg-black/20 p-5">
+                      <Quote className="absolute -top-3 -end-2 h-8 w-8 rotate-180 fill-emerald-300/10 text-emerald-300/70" />
+                      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">{person.label}</p>
+                      <TypewriterMessage text={person.message} />
+                    </div>
+                    <Link href={person.href} className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-white/45 transition-colors hover:text-emerald-300">
+                      {isArabic ? "اكتشف قصة القائد" : "Explore profile"}
+                      <ArrowUpLeft className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 </motion.article>
               ))}
