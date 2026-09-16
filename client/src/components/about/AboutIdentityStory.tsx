@@ -179,23 +179,54 @@ function TypewriterMessage({ text }: { text: string }) {
   );
 }
 
+function MeaningTypewriter({ text }: { text: string }) {
+  const [visibleText, setVisibleText] = useState("");
+
+  useEffect(() => {
+    setVisibleText("");
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index += 1;
+      setVisibleText(text.slice(0, index));
+      if (index >= text.length) window.clearInterval(timer);
+    }, 34);
+
+    return () => window.clearInterval(timer);
+  }, [text]);
+
+  return (
+    <span>
+      {visibleText}
+      <span className="mx-1 inline-block h-5 w-px translate-y-1 bg-emerald-500 animate-pulse" aria-hidden="true" />
+    </span>
+  );
+}
+
 export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
   const isArabic = lang === "ar";
+  const [activeMeaningIndex, setActiveMeaningIndex] = useState(0);
+  const activeMeaning = qiroxMeaning[activeMeaningIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveMeaningIndex((current) => (current + 1) % qiroxMeaning.length);
+    }, 3600);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className="relative overflow-hidden bg-white dark:bg-[#070b12]">
       {/* The idea behind QIROX */}
-      <section className="relative border-b border-black/[0.06] bg-[#f7f9fb] py-24 dark:border-white/[0.07] dark:bg-[#0b1119] md:py-32">
-        <div className="pointer-events-none absolute -top-40 start-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full border border-slate-900/[0.06] dark:border-white/[0.05]" />
-        <div className="pointer-events-none absolute -top-24 start-1/2 h-[20rem] w-[20rem] -translate-x-1/2 rounded-full border border-emerald-700/[0.10] dark:border-emerald-300/[0.08]" />
+      <section className="relative border-b border-black/[0.08] bg-[#f4f5f5] py-24 dark:border-white/[0.08] dark:bg-[#0b1119] md:py-32">
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             <div className="mb-16 max-w-3xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white/50">
+              <div className="mb-5 inline-flex items-center gap-2 border-s border-emerald-600 ps-3 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-white/50">
                 <CircleDot className="h-3.5 w-3.5 text-emerald-600" />
                 {isArabic ? "لماذا اسم كيروكس؟" : "Why QIROX?"}
               </div>
-              <h2 className="mb-6 text-4xl font-black leading-tight tracking-tight text-slate-950 dark:text-white md:text-6xl">
+              <h2 className="mb-6 text-4xl font-black leading-[1.18] tracking-tight text-slate-950 dark:text-white md:text-6xl">
                 {isArabic ? (
                   <>
                     الاسم ليس اختصاراً فقط.
@@ -215,42 +246,70 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
               </p>
             </div>
 
-            <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <motion.div
-                aria-hidden="true"
-                className="pointer-events-none absolute start-[8%] end-[8%] top-[4.7rem] hidden h-px origin-left bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent lg:block"
-                initial={{ scaleX: 0, opacity: 0 }}
-                whileInView={{ scaleX: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.2, delay: 0.35, ease: "easeOut" }}
-              />
-              {qiroxMeaning.map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.letter}
-                    initial={{ opacity: 0, y: 18 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.55, delay: index * 0.07 }}
-                    whileHover={{ y: -4 }}
-                    className="group relative min-h-[205px] overflow-hidden rounded-2xl border border-slate-900/[0.08] bg-white p-5 shadow-[0_16px_50px_-30px_rgba(15,23,42,0.35)] transition-[border-color,box-shadow] duration-500 hover:border-emerald-700/30 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,0.4)] dark:border-white/[0.08] dark:bg-white/[0.04]"
-                  >
-                    <div className="absolute -end-10 -top-10 h-28 w-28 rounded-full bg-emerald-500/[0.07] transition-transform duration-500 group-hover:scale-150" />
-                    <div className="relative flex items-start justify-between">
-                      <span className="text-5xl font-black tracking-[-0.08em] text-slate-950 transition-colors duration-500 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{item.letter}</span>
-                      <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-600/20 bg-emerald-500/[0.06]">
-                        <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+            <div className="border-y border-slate-900/10 py-8 dark:border-white/10" dir="ltr">
+              <div className="relative grid grid-cols-5">
+                <div className="pointer-events-none absolute start-[10%] end-[10%] top-[2.15rem] h-px bg-slate-900/15 dark:bg-white/15" />
+                {qiroxMeaning.map((item, index) => {
+                  const Icon = item.icon;
+                  const isActive = index === activeMeaningIndex;
+                  return (
+                    <motion.div
+                      key={item.letter}
+                      initial={{ opacity: 0, y: 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.2 }}
+                      transition={{ duration: 0.45, delay: index * 0.07 }}
+                      className="relative flex min-w-0 flex-col items-center"
+                    >
+                      <motion.div
+                        animate={{
+                          scale: isActive ? 1.1 : 1,
+                        }}
+                        transition={{ duration: 0.35 }}
+                        className={`relative z-10 flex h-[4.3rem] w-[4.3rem] items-center justify-center rounded-full border bg-[#f4f5f5] font-mono text-3xl font-bold shadow-[0_0_0_8px_#f4f5f5] transition-colors duration-300 dark:bg-[#0b1119] dark:shadow-[0_0_0_8px_#0b1119] sm:h-[4.8rem] sm:w-[4.8rem] sm:text-4xl ${isActive ? "border-emerald-500 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300" : "border-slate-900/15 text-slate-950 dark:border-white/20 dark:text-white"}`}
+                      >
+                        {item.letter}
+                        <motion.span
+                          animate={{ opacity: isActive ? 1 : 0, scale: isActive ? 1 : 0.5 }}
+                          transition={{ duration: 0.25 }}
+                          className="absolute -bottom-1 h-2 w-2 rounded-full bg-emerald-500"
+                          aria-hidden="true"
+                        />
+                      </motion.div>
+                      <span className={`mt-4 text-center text-[9px] font-bold uppercase tracking-[0.12em] transition-colors sm:text-[10px] ${isActive ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400 dark:text-white/35"}`}>
+                        {item.word}
                       </span>
-                    </div>
-                    <div className="relative mt-5">
-                      <p className="mb-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500 dark:bg-white/[0.07] dark:text-white/45">{item.word}</p>
-                      <h3 className="mb-2 text-lg font-black text-slate-900 dark:text-white">{item.ar}</h3>
-                      <p className="text-xs leading-6 text-slate-500 dark:text-white/50">{item.description}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                      <span className={`mt-1 text-center text-xs font-bold transition-colors sm:text-sm ${isActive ? "text-slate-950 dark:text-white" : "text-slate-400 dark:text-white/35"}`}>
+                        {item.ar}
+                      </span>
+                      <motion.div
+                        animate={{ opacity: isActive ? 1 : 0 }}
+                        className="mt-3 h-0.5 w-8 bg-emerald-500"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">{item.description}</span>
+                      <Icon className="sr-only" aria-hidden="true" />
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <motion.div
+                key={activeMeaning.letter}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="mx-auto mt-10 max-w-xl border-s-2 border-emerald-500/60 ps-5 text-start"
+                role="status"
+                aria-live="polite"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                  {activeMeaning.letter} / {activeMeaning.word}
+                </p>
+                <p className="mt-3 text-base font-bold leading-8 text-slate-700 dark:text-white/80">
+                  <MeaningTypewriter text={activeMeaning.description} />
+                </p>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -412,8 +471,6 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
 
       {/* Leadership */}
       <section className="relative overflow-hidden bg-[#071018] py-24 text-white md:py-32">
-        <div className="pointer-events-none absolute end-[12%] top-16 h-64 w-64 rounded-full border border-emerald-300/10 [animation:spin_24s_linear_infinite]" />
-        <div className="pointer-events-none absolute end-[15%] top-24 h-48 w-48 rounded-full border border-dashed border-sky-300/10 [animation:spin_18s_linear_infinite_reverse]" />
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -439,18 +496,18 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{ duration: 0.65, delay: index * 0.1 }}
-                  className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 backdrop-blur-sm md:p-7"
+                  className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-5 transition-colors duration-300 hover:border-white/20 md:p-7"
                   itemScope
                   itemType="https://schema.org/Person"
                 >
                   <div className="relative min-h-[310px]">
                     <div className="absolute end-0 top-0 z-10">
-                      <div className="absolute -inset-2 rounded-full border border-emerald-300/20 opacity-0 transition-all duration-500 group-hover:inset-[-6px] group-hover:opacity-100" />
+                      <div className="absolute -inset-1 rounded-full border border-emerald-300/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                       <img
                         src={person.image}
                         alt={person.alt}
                         title={`${person.name} — ${person.role} في كيروكس`}
-                        className="relative h-24 w-24 rounded-full border-2 border-white/20 object-cover object-top grayscale-[15%] shadow-[0_14px_35px_-14px_rgba(16,185,129,0.7)] transition-all duration-500 group-hover:scale-105 group-hover:grayscale-0 md:h-28 md:w-28"
+                        className="relative h-20 w-20 rounded-full border border-white/25 object-cover object-top grayscale-[10%] transition-[filter,border-color] duration-300 group-hover:border-emerald-300/60 group-hover:grayscale-0 md:h-24 md:w-24"
                         loading="lazy"
                         itemProp="image"
                       />
@@ -461,8 +518,8 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                       <p className="mt-1 text-sm text-white/40">{person.latin}</p>
                       <meta itemProp="jobTitle" content={`${person.role} | ${person.roleEn}`} />
                     </div>
-                    <div className="relative mt-10 rounded-2xl border border-white/10 bg-black/20 p-5">
-                      <Quote className="absolute -top-3 -end-2 h-8 w-8 rotate-180 fill-emerald-300/10 text-emerald-300/70" />
+                    <div className="relative mt-10 rounded-lg border-s-2 border-emerald-300/40 bg-black/20 p-5">
+                      <Quote className="absolute -top-3 -end-2 h-7 w-7 rotate-180 fill-emerald-300/10 text-emerald-300/70" />
                       <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">{person.label}</p>
                       <TypewriterMessage text={person.message} />
                     </div>
