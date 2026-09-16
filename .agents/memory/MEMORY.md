@@ -14,7 +14,7 @@
 - [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.
 - [Vite SIGBUS crash](vite-sigbus-crash.md) — serve pre-built dist/public instead of launching Vite (SIGBUS crash in this env).
 - [esbuild ALWAYS_EXTERNAL](esbuild-always-external.md) — ESM-only packages need ALWAYS_EXTERNAL + new Function('m','return import(m)') trick; passkit/baileys/transformers all fixed.
-- [dist/index.cjs git exclusion](dist-index-cjs-gitignore.md) — dist/index.cjs excluded from git (.gitignore) — bundled server bakes in env secrets which GitHub push protection blocks.
+- [dist/index.cjs deployment bundle](dist-index-cjs-gitignore.md) — dist/index.cjs is intentionally tracked because Render deploys the pre-built server bundle; keep credentials out of the build environment.
 - [attached_assets git exclusion](attached-assets-gitignore.md) — attached_assets/ excluded from git — Replit stores uploaded files there (screenshots, env var dumps with secrets) which trigger GitHub push protection.
 - [Group chat audio/image fixes](group-chat-media.md) — .webm MIME was video/webm (wrong), fixed to audio/webm; uploads get Cache-Control 7d; notification link → /groups/:id; GroupVoicePlayer has async play() + error handling.
 - [QMeet LiveKit SFU](qmeet-livekit-sfu.md) — P2P mesh → LiveKit SFU for 100+ participants; hybrid: LiveKit for media, WS for chat/reactions/polls; JWT built with Node.js crypto (no SDK); 3 env vars activate it.
