@@ -69,7 +69,8 @@ export function getOpenAIClient(): OpenAI {
         provider = "custom-provider";
       }
     }
-    console.log(`[ExternalAI] Provider: ${provider} | model:${getExternalAIModel()}`);
+    // Do not log provider configuration: even metadata can reveal which
+    // external integrations are enabled in a production environment.
   }
   return _client;
 }

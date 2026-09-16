@@ -8,6 +8,7 @@
     "build": "node script/build.mjs",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "security:check": "node scripts/security-check.mjs",
     "db:push": "drizzle-kit push",
     "seed": "npx tsx scripts/seed.ts",
     "check-env": "npx tsx scripts/check-env.ts",

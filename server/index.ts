@@ -22,6 +22,7 @@ import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterested
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
+import { createHash } from "crypto";
 import { mkdirSync, existsSync } from "fs";
 import path from "path";
 // ── Sprint 002: Infrastructure layer (additive — zero downtime) ───────────────
@@ -152,6 +153,50 @@ app.use((req, res, next) => {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
   next();
+});
+
+// ── Secret/probe path guard ───────────────────────────────────────────────────
+// Do not expose decoy credentials or fake admin surfaces. Common secret and
+// infrastructure probes terminate in the same generic 404 while a privacy-safe
+// fingerprint is recorded for operational alerting.
+const sensitiveProbePatterns: Array<[string, RegExp]> = [
+  ["dotfile", /^\/(?:\.env(?:\.[^/]+)?|\.git(?:\/|$)|\.svn(?:\/|$)|\.hg(?:\/|$))/i],
+  ["admin-tool", /^\/(?:wp-admin|wp-login\.php|phpmyadmin|pma|adminer)(?:\/|$)/i],
+  ["diagnostic", /^\/(?:server-status|server-info|actuator|debug|trace)(?:\/|$)/i],
+  ["backup", /\/(?:backup|backups|dump|database|db|credentials|secrets|private|keys)(?:\.(?:zip|tar|gz|sql|json)|\/|$)/i],
+  ["config-file", /\/(?:composer\.(?:json|lock)|package-lock\.json|yarn\.lock|config\.json|\.npmrc)$/i],
+];
+const probeLogBuckets = new Map<string, { startedAt: number; count: number }>();
+const probeBucketMs = 60_000;
+
+app.use((req, res, next) => {
+  let probePath = req.path;
+  try {
+    probePath = decodeURIComponent(probePath);
+  } catch {
+    // An invalid encoded path is itself not useful to route; leave it to the
+    // normal Express error path instead of trying to normalize it.
+  }
+  const match = sensitiveProbePatterns.find(([, pattern]) => pattern.test(probePath));
+  if (!match) return next();
+
+  const [category] = match;
+  const fingerprint = createHash("sha256")
+    .update(`${req.ip}|${category}`)
+    .digest("hex")
+    .slice(0, 16);
+  const now = Date.now();
+  const bucket = probeLogBuckets.get(fingerprint);
+  if (!bucket || now - bucket.startedAt >= probeBucketMs) {
+    probeLogBuckets.set(fingerprint, { startedAt: now, count: 1 });
+    console.warn(`[SecurityProbe] blocked category=${category} fingerprint=${fingerprint}`);
+  } else {
+    bucket.count += 1;
+    if (bucket.count === 10) {
+      console.warn(`[SecurityProbe] repeated category=${category} fingerprint=${fingerprint} count=10+`);
+    }
+  }
+  return res.status(404).json({ error: "Not found" });
 });
 
 // ── Cafe Site Proxy (strips X-Frame-Options so pages can be embedded) ─────────

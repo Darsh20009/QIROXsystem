@@ -1242,7 +1242,7 @@ ${logText}
     });
   });
 
-  console.log(`[DeploymentCloud] Routes registered | Mode: ${VERCEL_TOKEN ? "Vercel (real)" : "Simulation"}`);
+  console.log("[DeploymentCloud] Routes registered");
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -65,7 +65,7 @@ async function getTransporter() {
   console.log("   SMTP_PORT:", smtpPort);
   console.log("   SMTP_USER:", smtpUser ? "✅" : "❌");
   console.log("   SMTP_PASS:", smtpPass ? "✅" : "❌");
-  console.log("   SMTP2GO_API_KEY:", smtp2goApiKey ? "✅ (will use HTTP API)" : "❌");
+  console.log("   SMTP2GO HTTP transport:", smtp2goApiKey ? "✅ configured" : "❌");
 
   if (!smtpUser || !smtpPass) {
     console.warn("⚠️ SMTP credentials not configured. Email via SMTP disabled.");
