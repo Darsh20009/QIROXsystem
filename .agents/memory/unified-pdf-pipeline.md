@@ -20,3 +20,9 @@ Server PDF modules run under ESM during the development workflow, so path resolu
 **Why:** The first production-font fix passed a direct CJS-style probe but failed in the actual `tsx server/index.ts` workflow because `__dirname` is undefined there.
 
 **How to apply:** Use `fileURLToPath(import.meta.url)` for module-relative assets and test the renderer through the same workflow mode used by the app.
+
+Arabic PDF text should be reshaped but not manually reversed; reversing the shaped presentation-form string makes otherwise valid Arabic render backwards.
+
+**Why:** The PDF renderer and Amiri presentation forms already produced correct visual RTL order after shaping, while the extra character and word reversal made labels unreadable.
+
+**How to apply:** Keep `arabic-reshaper.convertArabic()` as the single Arabic transformation, and verify a rendered PDF visually with labels, client names, notes, and mixed numeric text.

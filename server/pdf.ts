@@ -272,39 +272,21 @@ let _arabicReshaper: any = null;
 try { _arabicReshaper = _require("arabic-reshaper"); } catch { /* optional */ }
 
 /**
- * Prepare Arabic text for LTR drawing in pdf-lib.
- * Steps:
- *  1. arabic-reshaper → converts logical Arabic chars to Unicode presentation
- *     forms (FBxx range) with correct initial/medial/final/isolated glyphs.
- *  2. Each word's characters are reversed so LTR drawing yields RTL visual order.
- *  3. Word order is reversed so the first Arabic word ends up on the right.
+ * Prepare Arabic text for pdf-lib.
  *
- * With this pipeline a font that contains Arabic Presentation Forms renders
- * correctly without needing a bidi library.
+ * arabic-reshaper converts logical Arabic characters to Unicode presentation
+ * forms (FBxx range) with the correct initial/medial/final/isolated glyphs.
+ * Do not reverse the shaped string: the PDF renderer handles the resulting
+ * presentation-form order, and reversing it produces text such as
+ * "رعس ضرع" instead of "عرض سعر".
  */
 function prepareArabic(text: string): string {
   try {
-    const shaped: string = _arabicReshaper
+    return _arabicReshaper
       ? _arabicReshaper.convertArabic(text)
       : text;
-    return shaped
-      .split(/\s+/)
-      .map((w: string) => {
-        // Keep Latin words, numbers, and identifiers in their natural order.
-        // Reversing every character corrupts values such as IBANs and dates.
-        const parts = w.match(/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+|[A-Za-z0-9@._:/%+#(),-]+|./g) || [w];
-        return parts
-          .reverse()
-          .map((part) => /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(part)
-            ? [...part].reverse().join("")
-            : part)
-          .join("");
-      })
-      .reverse()
-      .join(" ");
   } catch {
-    // fallback: word-order reversal only
-    return text.split(" ").reverse().join(" ");
+    return text;
   }
 }
 
@@ -403,7 +385,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   /**
    * Draw Arabic text, right-aligned so its RIGHT EDGE touches rightX.
-   * Word order is reversed for visual RTL; fontkit GSUB shapes letters.
+   * The reshaper supplies presentation forms before pdf-lib draws the text.
    */
   const drawAR = (
     txt: string, rightX: number, y: number, size: number,
