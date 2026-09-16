@@ -179,6 +179,49 @@ function TypewriterMessage({ text }: { text: string }) {
   );
 }
 
+const typewriterPhrases = {
+  ar: ["نبني ما تحتاجه الأعمال لتكبر.", "نحوّل التعقيد إلى وضوح.", "بعد التسليم تبدأ القصة."],
+  en: ["We build what businesses need to grow.", "We turn complexity into clarity.", "The story starts after delivery."],
+};
+
+function TypewriterHeadline({ isArabic }: { isArabic: boolean }) {
+  const phrases = isArabic ? typewriterPhrases.ar : typewriterPhrases.en;
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [visibleText, setVisibleText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const phrase = phrases[phraseIndex];
+    const isComplete = visibleText === phrase;
+    const isEmpty = visibleText.length === 0;
+    const timer = window.setTimeout(
+      () => {
+        if (!isDeleting && !isComplete) {
+          setVisibleText(phrase.slice(0, visibleText.length + 1));
+        } else if (!isDeleting && isComplete) {
+          setIsDeleting(true);
+        } else if (isDeleting && !isEmpty) {
+          setVisibleText(phrase.slice(0, visibleText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setPhraseIndex((current) => (current + 1) % phrases.length);
+        }
+      },
+      isComplete ? 1700 : isDeleting ? 30 : 58,
+    );
+
+    return () => window.clearTimeout(timer);
+  }, [isArabic, isDeleting, phraseIndex, phrases, visibleText]);
+
+  return (
+    <div className="mt-9 flex min-h-10 items-center gap-3 text-sm font-bold text-emerald-300/90 md:text-base" role="status" aria-live="polite">
+      <span className="h-px w-8 bg-emerald-300/50" aria-hidden="true" />
+      <span>{visibleText}</span>
+      <span className="inline-block h-5 w-px bg-emerald-300 animate-pulse" aria-hidden="true" />
+    </div>
+  );
+}
+
 export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
   const isArabic = lang === "ar";
 
@@ -213,9 +256,18 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                   ? "QIROX هو الاختصار الذي يجمع طريقة كيروكس في بناء البنية التحتية الرقمية للأعمال: جودة، ابتكار، موثوقية، تحسين، وتجربة لا تُنسى."
                   : "QIROX brings together the way we build digital business infrastructure: quality, innovation, reliability, optimization, and an experience people remember."}
               </p>
+              <TypewriterHeadline isArabic={isArabic} />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute start-[8%] end-[8%] top-[4.7rem] hidden h-px origin-left bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent lg:block"
+                initial={{ scaleX: 0, opacity: 0 }}
+                whileInView={{ scaleX: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, delay: 0.35, ease: "easeOut" }}
+              />
               {qiroxMeaning.map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -225,17 +277,20 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.2 }}
                     transition={{ duration: 0.55, delay: index * 0.07 }}
-                    className="group relative min-h-[245px] overflow-hidden rounded-[1.75rem] border border-slate-900/[0.08] bg-white p-6 shadow-[0_16px_50px_-30px_rgba(15,23,42,0.35)] transition-all duration-500 hover:-translate-y-1 hover:border-emerald-700/30 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,0.4)] dark:border-white/[0.08] dark:bg-white/[0.04]"
+                    whileHover={{ y: -8, rotate: index % 2 === 0 ? -1 : 1 }}
+                    className="group relative min-h-[220px] overflow-hidden rounded-[1.75rem] border border-slate-900/[0.08] bg-white p-6 shadow-[0_16px_50px_-30px_rgba(15,23,42,0.35)] transition-[border-color,box-shadow] duration-500 hover:border-emerald-700/30 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,0.4)] dark:border-white/[0.08] dark:bg-white/[0.04]"
                   >
                     <div className="absolute -end-10 -top-10 h-28 w-28 rounded-full bg-emerald-500/[0.07] transition-transform duration-500 group-hover:scale-150" />
                     <div className="relative flex items-start justify-between">
-                      <span className="text-6xl font-black tracking-[-0.08em] text-slate-950 dark:text-white">{item.letter}</span>
-                      <Icon className="mt-2 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                      <span className="text-6xl font-black tracking-[-0.08em] text-slate-950 transition-transform duration-500 group-hover:translate-x-1 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{item.letter}</span>
+                      <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-600/20 bg-emerald-500/[0.06]">
+                        <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                      </span>
                     </div>
                     <div className="relative mt-8">
-                      <p className="mb-1 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:text-white/35">{item.word}</p>
+                      <p className="mb-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500 dark:bg-white/[0.07] dark:text-white/45">{item.word}</p>
                       <h3 className="mb-3 text-xl font-black text-slate-900 dark:text-white">{item.ar}</h3>
-                      <p className="text-sm leading-7 text-slate-500 dark:text-white/50">{item.description}</p>
+                      <p className="line-clamp-2 text-sm leading-7 text-slate-500 dark:text-white/50">{item.description}</p>
                     </div>
                   </motion.div>
                 );
@@ -281,13 +336,19 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
               <motion.article
                 initial={{ opacity: 0, x: 18 }}
                 whileInView={{ opacity: 1, x: 0 }}
+                whileHover={{ y: -8 }}
                 viewport={{ once: true }}
-                className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 backdrop-blur-sm"
+                transition={{ duration: 0.55, ease: "easeOut" }}
+                className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 backdrop-blur-sm"
               >
-                <Eye className="mb-8 h-7 w-7 text-emerald-300" />
+                <div className="pointer-events-none absolute -end-10 -top-10 h-32 w-32 rounded-full bg-emerald-300/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
+                <div className="relative mb-8 flex items-center justify-between">
+                  <Eye className="h-7 w-7 text-emerald-300" />
+                  <span className="font-mono text-xs text-white/25">01</span>
+                </div>
                 <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-emerald-300/80">{isArabic ? "الرؤية" : "Vision"}</p>
                 <h3 className="mb-4 text-2xl font-black">{isArabic ? "الذراع التقني الأول للأعمال" : "The first technical partner for business"}</h3>
-                <p className="text-sm leading-8 text-white/55">
+                <p className="relative text-sm leading-8 text-white/55">
                   {isArabic
                     ? "أن نصبح المنظومة التقنية الأكثر تأثيراً في تمكين الشركات ورواد الأعمال من بناء أعمال أكثر كفاءة واستدامة، انطلاقاً من المملكة إلى العالم."
                     : "To become the most impactful technology ecosystem enabling companies and entrepreneurs to build efficient, sustainable businesses from Saudi Arabia to the world."}
@@ -296,13 +357,19 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
               <motion.article
                 initial={{ opacity: 0, x: -18 }}
                 whileInView={{ opacity: 1, x: 0 }}
+                whileHover={{ y: -8 }}
                 viewport={{ once: true }}
-                className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 backdrop-blur-sm"
+                transition={{ duration: 0.55, ease: "easeOut" }}
+                className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 backdrop-blur-sm"
               >
-                <Target className="mb-8 h-7 w-7 text-sky-300" />
+                <div className="pointer-events-none absolute -start-10 -bottom-10 h-32 w-32 rounded-full bg-sky-300/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
+                <div className="relative mb-8 flex items-center justify-between">
+                  <Target className="h-7 w-7 text-sky-300" />
+                  <span className="font-mono text-xs text-white/25">02</span>
+                </div>
                 <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-sky-300/80">{isArabic ? "الرسالة" : "Mission"}</p>
                 <h3 className="mb-4 text-2xl font-black">{isArabic ? "من الفكرة إلى واقع قابل للنمو" : "From idea to scalable reality"}</h3>
-                <p className="text-sm leading-8 text-white/55">
+                <p className="relative text-sm leading-8 text-white/55">
                   {isArabic
                     ? "تمكين المؤسسات ورواد الأعمال عبر حلول تقنية متكاملة تعتمد على الأتمتة والذكاء الاصطناعي، مع شراكة تمتد من الفكرة إلى التشغيل والتوسع."
                     : "We empower organizations and entrepreneurs with integrated solutions powered by automation and AI, partnering from first idea through operation and scale."}
@@ -370,6 +437,7 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.2 }}
                     transition={{ duration: 0.5, delay: index * 0.06 }}
+                    whileHover={{ y: -6 }}
                     className="group relative overflow-hidden rounded-[1.5rem] border border-slate-900/[0.08] bg-[#f7f9fb] p-6 dark:border-white/[0.08] dark:bg-white/[0.04]"
                   >
                     <div className="mb-10 flex items-center justify-between">
@@ -479,12 +547,16 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.15 }}
                     transition={{ duration: 0.5, delay: index * 0.04 }}
+                    whileHover={{ y: -6, rotate: index % 2 === 0 ? -0.5 : 0.5 }}
                     className="rounded-[1.5rem] border border-slate-900/[0.08] bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-700/25 hover:shadow-xl hover:shadow-emerald-950/[0.06] dark:border-white/[0.08] dark:bg-white/[0.04]"
                   >
-                    <Icon className="mb-7 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                    <div className="mb-7 flex items-center justify-between">
+                      <Icon className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                      <span className="font-mono text-[10px] text-slate-300 dark:text-white/20">0{index + 1}</span>
+                    </div>
                     <h3 className="mb-1 text-lg font-black text-slate-900 dark:text-white">{value.title}</h3>
                     <p className="mb-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-white/30">{value.english}</p>
-                    <p className="text-sm leading-7 text-slate-500 dark:text-white/50">{value.description}</p>
+                    <p className="line-clamp-3 text-sm leading-7 text-slate-500 dark:text-white/50">{value.description}</p>
                   </motion.article>
                 );
               })}
