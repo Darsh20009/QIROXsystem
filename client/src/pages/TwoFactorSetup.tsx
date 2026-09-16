@@ -150,6 +150,7 @@ export default function TwoFactorSetup() {
   }
 
   const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase || status?.pushApproval || status?.whatsappOtp;
+  const whatsappNeedsVerification = !status?.phoneVerified || !status?.hasWhatsAppNumber;
 
   const methods = [
     { id: "totp", label: L ? "تطبيق المصادقة" : "Authenticator App", desc: L ? "Qirox Authenticator أو Google Authenticator" : "Qirox Authenticator or Google Authenticator", icon: Smartphone, enabled: status?.totp },
@@ -232,16 +233,19 @@ export default function TwoFactorSetup() {
                     if (m.id === "totp") totpSetupMutation.mutate();
                     else if (m.id === "email") emailSetupMutation.mutate();
                     else if (m.id === "push") pushEnableMutation.mutate();
-                    else if (m.id === "whatsapp") whatsappEnableMutation.mutate();
+                     else if (m.id === "whatsapp" && whatsappNeedsVerification) window.location.href = "/phone-verify?flow=2fa&returnTo=%2Fsecurity%2F2fa";
+                     else if (m.id === "whatsapp") whatsappEnableMutation.mutate();
                     else setPassphraseStep("setup");
                   }}
-                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending || whatsappEnableMutation.isPending || whatsappCompleteMutation.isPending || (m.id === "whatsapp" && (whatsappSetupStatus === "waiting" || !status?.phoneVerified || !status?.hasWhatsAppNumber))}
+                   disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending || whatsappEnableMutation.isPending || whatsappCompleteMutation.isPending || (m.id === "whatsapp" && whatsappSetupStatus === "waiting")}
                   className="shrink-0 text-xs"
                   data-testid={`button-enable-${m.id}`}
                 >
                     {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending) || (m.id === "push" && pushEnableMutation.isPending) || (m.id === "whatsapp" && (whatsappEnableMutation.isPending || whatsappCompleteMutation.isPending))
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : L ? "تفعيل" : "Enable"}
+                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                     : m.id === "whatsapp" && whatsappNeedsVerification
+                       ? L ? "توثيق رقم الجوال" : "Verify phone"
+                       : L ? "تفعيل" : "Enable"}
                 </Button>
               )}
               {m.enabled && disabling !== m.id && (
@@ -263,7 +267,7 @@ export default function TwoFactorSetup() {
             )}
             {m.id === "whatsapp" && !m.enabled && (!status?.phoneVerified || !status?.hasWhatsAppNumber) && (
               <p className="text-[10px] text-black/50 dark:text-white/50 mt-2">
-                {L ? "وثّق رقم جوالك أولاً لتفعيل هذه الطريقة." : "Verify your phone number first to enable this method."}
+                 {L ? "اضغط «توثيق رقم الجوال» لإرسال رمز إلى رقمك، ثم أدخل الرمز لتفعيل واتساب." : "Verify your phone first: we will send a code to your number, then you can enable WhatsApp."}
               </p>
             )}
             {m.id === "whatsapp" && !m.enabled && whatsappSetupStatus === "waiting" && (

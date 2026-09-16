@@ -62,3 +62,4 @@
 - [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
 - [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.
+- [Phone verification and native push](phone-verification-native-push.md) — WhatsApp OTP must be sent directly; iOS push needs synced plugins, early token listeners, and APNs entitlements.

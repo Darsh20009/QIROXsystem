@@ -642,6 +642,65 @@ export async function registerRoutes(
       console.error("[AuthSecurity] could not record alert:", error?.message || error);
     }
   };
+  const describeLoginDevice = (userAgent: string) => {
+    const ua = String(userAgent || "");
+    const device = /iPad|Tablet/i.test(ua) ? "جهاز لوحي" : /Mobile|Android|iPhone/i.test(ua) ? "هاتف" : "حاسوب";
+    const platform = /iPhone|iPad|iPod/i.test(ua)
+      ? "iOS"
+      : /Android/i.test(ua)
+        ? "Android"
+        : /Windows/i.test(ua)
+          ? "Windows"
+          : /Mac OS X/i.test(ua)
+            ? "macOS"
+            : /Linux/i.test(ua)
+              ? "Linux"
+              : "غير معروف";
+    const browser = /Edg\//i.test(ua)
+      ? "Microsoft Edge"
+      : /Firefox\//i.test(ua)
+        ? "Firefox"
+        : /Chrome\//i.test(ua)
+          ? "Google Chrome"
+          : /Safari\//i.test(ua)
+            ? "Safari"
+            : "متصفح غير معروف";
+    return { device, platform, browser, userAgent: ua.slice(0, 180) || "غير متوفر" };
+  };
+  const notifyEmployeeLogin = async (user: any, req: any, method: string) => {
+    if (!user || user.role === "client") return;
+    const phone = normalizePhone(user.whatsappNumber || user.phone);
+    if (!phone.valid) return;
+    const details = describeLoginDevice(String(req.headers?.["user-agent"] || ""));
+    const loginTime = new Date().toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" });
+    await dispatchNotification({
+      event: "employee_login",
+      idempotencyKey: `employee-login:${String(user._id || user.id)}:${Date.now()}:${crypto.randomBytes(8).toString("hex")}`,
+      recipient: {
+        userId: String(user._id || user.id),
+        name: user.fullName || user.username,
+        phone: phone.e164,
+      },
+      subject: "تسجيل دخول جديد إلى QIROX",
+      message: [
+        "🔐 تم تسجيل دخول جديد إلى حسابك في QIROX",
+        "",
+        `الطريقة: ${method}`,
+        `الجهاز: ${details.device}`,
+        `النظام: ${details.platform}`,
+        `المتصفح: ${details.browser}`,
+        `الوقت: ${loginTime}`,
+        `عنوان الاتصال: ${String(req.ip || "غير متوفر").slice(0, 80)}`,
+        "",
+        "إذا لم تكن أنت، غيّر كلمة المرور وتواصل مع الإدارة فوراً.",
+      ].join("\n"),
+      actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/security/2fa`,
+      channels: ["whatsapp"],
+      whatsappTemplate: "employee_login_alert",
+      metadata: { method, device: details.device, platform: details.platform, browser: details.browser },
+      sensitive: true,
+    });
+  };
   const getEnabled2FAMethods = async (userId: string) => {
     const { UserModel, PushSubscriptionModel } = await import("./models");
     const user = await UserModel.findById(userId)
@@ -914,6 +973,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "Google").catch(error =>
+            console.error("[WhatsApp] Google login alert:", error?.message || error),
+          );
           const redirectPath = dashboardForUser(user);
           // Pass device token via /login?googleToken=... so client can store it, then navigates
           res.redirect(nativeOAuthRedirect(req, `/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`, nativeOAuth));
@@ -1019,6 +1081,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "GitHub").catch(error =>
+            console.error("[WhatsApp] GitHub login alert:", error?.message || error),
+          );
           const MGMT_ROLES = ["admin", "manager"];
           const redirectPath = user.role === "client"
             ? "/dashboard"
@@ -1147,6 +1212,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "Apple").catch(error =>
+            console.error("[WhatsApp] Apple login alert:", error?.message || error),
+          );
           const MGMT_ROLES = ["admin", "manager"];
           const redirectPath = user.role === "client"
             ? "/dashboard"
@@ -2272,7 +2340,12 @@ export async function registerRoutes(
               String(user._id || user.id),
               String(req.headers["user-agent"] || ""),
             )
-              .then(deviceToken => res.status(200).json({ ...sanitizeUser(user), deviceToken }))
+               .then(deviceToken => {
+                 void notifyEmployeeLogin(user, req, "كلمة المرور").catch(error =>
+                   console.error("[WhatsApp] employee login alert:", error?.message || error),
+                 );
+                 return res.status(200).json({ ...sanitizeUser(user), deviceToken });
+               })
               .catch(next);
           });
         } catch (e: any) {
@@ -2381,6 +2454,9 @@ export async function registerRoutes(
           deviceToken,
           redirectPath: consumed.redirectPath || dashboardForUser(safeUser),
         });
+        void notifyEmployeeLogin(safeUser, req, "التحقق الثنائي").catch(error =>
+          console.error("[WhatsApp] employee 2FA login alert:", error?.message || error),
+        );
       });
     } catch {
       res.status(500).json({ error: "تعذر إكمال التحقق الثنائي حالياً" });
@@ -14043,7 +14119,7 @@ export async function registerRoutes(
       const userId = user._id || user.id;
       await NativePushTokenModel.findOneAndUpdate(
         { token },
-        { userId, token, platform, bundleId: "sa.qirox.studio" },
+        { userId, token, platform, bundleId: process.env.APNS_BUNDLE_ID || "qiroxstudio.online" },
         { upsert: true, new: true }
       );
       res.json({ ok: true });
@@ -19485,32 +19561,20 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         })();
         return res.json({ method: "call", expiresAt, phone: normPhone });
       } else if (method === "whatsapp") {
-        const clientName = dbUser?.fullName || dbUser?.username || "عميل";
-        const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
-        const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
-        const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
-        const { sendEmail, baseTemplate } = await import("./email");
-        // Only notify the internal admin — OTP is NOT sent to the client's email.
-        // The employee will forward it to the client via WhatsApp manually.
-        const adminHtml = baseTemplate(
-          `<div style="text-align:center;margin-bottom:12px;">
-            <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال</span>
-          </div>
-          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;">
-            <tr><td style="padding:6px 0;color:#666;width:120px;">العميل</td><td style="padding:6px 0;font-weight:600;">${clientName}</td></tr>
-            <tr><td style="padding:6px 0;color:#666;">الجوال</td><td style="padding:6px 0;font-weight:600;direction:ltr;">${normPhone}</td></tr>
-            <tr><td style="padding:6px 0;color:#666;">رمز OTP</td><td style="padding:6px 0;"><strong style="font-size:22px;letter-spacing:4px;color:#1a1a1a;">${otp}</strong></td></tr>
-            <tr><td style="padding:6px 0;color:#666;">صالح حتى</td><td style="padding:6px 0;color:#888;">${expiresAt.toLocaleString("ar-SA")}</td></tr>
-          </table>
-          <div style="text-align:center;margin:20px 0 8px;">
-            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;">📲 أرسل الرمز للعميل عبر واتساب</a>
-          </div>
-          <p style="font-size:11px;color:#aaa;text-align:center;margin-top:12px;">تم إرسال الرمز للعميل على بريده الإلكتروني أيضاً.</p>`
-        );
-        sendEmail("youssefd.business@gmail.com", "Youssef",
-          `📱 توثيق جوال — ${clientName} (${normPhone})`,
-          adminHtml
-        ).catch(() => {});
+        const { waModule } = await import("./whatsapp-module");
+        const phoneDigits = normPhone.replace(/\D/g, "");
+        try {
+          await waModule.sendText(
+            `${phoneDigits}@s.whatsapp.net`,
+            `رمز توثيق رقم جوالك في QIROX هو: ${otp}\nصالح لمدة 15 دقيقة.\nلا تشارك هذا الرمز مع أي شخص.`,
+            false,
+          );
+        } catch {
+          await (PhoneVerifyOtpModel as any).deleteOne({ token, verified: false });
+          return res.status(503).json({
+            error: "واتساب غير متصل حالياً. افتح ربط واتساب من لوحة الإدارة ثم أعد المحاولة.",
+          });
+        }
         return res.json({ method: "whatsapp", expiresAt, phone: normPhone, sent: true });
       }
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -19534,7 +19598,11 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       record.verified = true;
       await record.save();
-      await (UserModel as any).findByIdAndUpdate(me._id || me.id, { phone: record.phone, phoneVerified: true });
+      await (UserModel as any).findByIdAndUpdate(me._id || me.id, {
+        phone: record.phone,
+        whatsappNumber: record.phone,
+        phoneVerified: true,
+      });
       res.json({ success: true, phone: record.phone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });

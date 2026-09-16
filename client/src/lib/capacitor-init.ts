@@ -36,8 +36,6 @@ async function initPushNotifications() {
       return;
     }
 
-    await PushNotifications.register();
-
     await PushNotifications.addListener("registration", async (token) => {
       console.log("[CAP] Push token:", token.value);
       const platform = (window as any).Capacitor?.getPlatform?.() === "android" ? "android" : "ios";
@@ -62,6 +60,10 @@ async function initPushNotifications() {
         }
       }
     });
+
+    // Register only after listeners are attached; otherwise iOS can emit the
+    // token before the app has a chance to persist it.
+    await PushNotifications.register();
   } catch (err) {
     console.warn("[CAP] Push notifications init error:", err);
   }
