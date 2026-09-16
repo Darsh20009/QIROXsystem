@@ -337,6 +337,43 @@ export async function dispatchNotification(request: NotificationRequest): Promis
   return results;
 }
 
+export async function notifyTaskAssignment(params: {
+  taskId: string;
+  taskType: string;
+  recipient: {
+    userId: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  title: string;
+  context?: string;
+  priority?: string;
+  deadline?: string | Date | null;
+  actionUrl?: string;
+}): Promise<DeliveryResult[]> {
+  const deadlineText = params.deadline
+    ? new Date(params.deadline).toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })
+    : "";
+  const details = [
+    params.context ? `المشروع/القسم: ${params.context}` : "",
+    params.priority ? `الأولوية: ${params.priority}` : "",
+    deadlineText ? `الموعد: ${deadlineText}` : "",
+  ].filter(Boolean).join("\n");
+
+  return dispatchNotification({
+    event: "task_assigned",
+    idempotencyKey: `task-assigned:${params.taskType}:${params.taskId}:${params.recipient.userId}`,
+    recipient: params.recipient,
+    subject: `مهمة جديدة: ${params.title}`,
+    message: `✅ تم تعيين مهمة جديدة لك في QIROX\n\nالمهمة: ${params.title}${details ? `\n${details}` : ""}\n\nافتح قائمة مهامك لمراجعة التفاصيل.`,
+    actionUrl: params.actionUrl || `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee/checklist`,
+    channels: ["whatsapp"],
+    whatsappTemplate: "task_assigned",
+    metadata: { taskId: params.taskId, taskType: params.taskType },
+  });
+}
+
 export async function retryNotificationDelivery(id: string): Promise<DeliveryResult | null> {
   const delivery = await NotificationDeliveryModel.findOneAndUpdate(
     { _id: id, status: { $in: ["failed", "retrying"] } },

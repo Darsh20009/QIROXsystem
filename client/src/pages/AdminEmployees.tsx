@@ -306,6 +306,7 @@ export default function AdminEmployees() {
   const avatarTargetId = useRef<string | null>(null);
 
   const { data: users, isLoading, isError, refetch } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
+  const canSyncWhatsappPhones = ["admin", "manager"].includes(String((currentUser as any)?.role || ""));
 
   const getUserId = (user: User) => String((user as any).id || (user as any)._id || "");
   const canDeleteUser = (user: User) =>
@@ -391,6 +392,27 @@ export default function AdminEmployees() {
       resetForm();
     },
     onError: (err: any) => toast({ title: L ? "خطأ" : "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const syncWhatsappPhonesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/users/sync-whatsapp-phones", {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: L ? "تمت مزامنة أرقام واتساب" : "WhatsApp numbers synced",
+        description: L
+          ? `تم اعتماد ${data.updated || 0} رقم. الأرقام غير الصالحة: ${data.skipped || 0}.`
+          : `${data.updated || 0} numbers verified. Invalid numbers skipped: ${data.skipped || 0}.`,
+      });
+    },
+    onError: (err: any) => toast({
+      title: L ? "تعذرت مزامنة الأرقام" : "Could not sync phone numbers",
+      description: err.message,
+      variant: "destructive",
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -549,14 +571,34 @@ export default function AdminEmployees() {
           </h1>
           <p className="text-xs text-black/30 mt-1">{employees.length} {L ? "موظف" : "employees"} · {clients.length} {L ? "عميل" : "clients"}</p>
         </div>
-        {canManageStaff && <Button
-          className="bg-black text-white hover:bg-black/80 text-xs h-9 px-5"
-          onClick={() => { resetForm(); setShowForm(true); }}
-          data-testid="button-add-employee"
-        >
-          <UserPlus className="w-4 h-4 ml-1.5" />
-          {L ? "إضافة موظف" : "Add Employee"}
-        </Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {canSyncWhatsappPhones && <Button
+            variant="outline"
+            className="text-xs h-9 px-4"
+            onClick={() => {
+              if (window.confirm(L
+                ? "سيتم اعتماد الأرقام الصالحة الموجودة للموظفين كأرقام واتساب موثقة. هل تريد المتابعة؟"
+                : "This will mark existing valid employee phone numbers as verified WhatsApp numbers. Continue?")) {
+                syncWhatsappPhonesMutation.mutate();
+              }
+            }}
+            disabled={syncWhatsappPhonesMutation.isPending}
+            data-testid="button-sync-whatsapp-phones"
+          >
+            {syncWhatsappPhonesMutation.isPending
+              ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" />
+              : <Shield className="w-4 h-4 ml-1.5" />}
+            {L ? "اعتماد أرقام واتساب" : "Verify WhatsApp numbers"}
+          </Button>}
+          {canManageStaff && <Button
+            className="bg-black text-white hover:bg-black/80 text-xs h-9 px-5"
+            onClick={() => { resetForm(); setShowForm(true); }}
+            data-testid="button-add-employee"
+          >
+            <UserPlus className="w-4 h-4 ml-1.5" />
+            {L ? "إضافة موظف" : "Add Employee"}
+          </Button>}
+        </div>
       </div>
 
       <AnimatePresence>

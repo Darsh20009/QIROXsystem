@@ -133,7 +133,7 @@ import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOt
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
-import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
+import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, notifyTaskAssignment, retryNotificationDelivery } from "./notifications/service";
 import { normalizePhone } from "./notifications/phone";
 import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
@@ -1825,6 +1825,36 @@ export async function registerRoutes(
     res.json(serializeUsers(users));
   });
 
+  app.post("/api/admin/users/sync-whatsapp-phones", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { UserModel } = await import("./models");
+      const users = await (UserModel as any).find({
+        role: { $ne: "client" },
+        phone: { $type: "string", $ne: "" },
+      }).select("_id phone");
+      let updated = 0;
+      let skipped = 0;
+      for (const user of users) {
+        const normalized = normalizePhone(String(user.phone || ""));
+        if (!normalized.valid) {
+          skipped += 1;
+          continue;
+        }
+        const result = await (UserModel as any).updateOne(
+          { _id: user._id },
+          { $set: { phone: normalized.e164, whatsappNumber: normalized.e164, phoneVerified: true } },
+        );
+        updated += result.modifiedCount || 0;
+      }
+      res.json({ ok: true, scanned: users.length, updated, skipped });
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   const allowedRoles = [...staffRoles, "client"];
 
   app.post("/api/admin/users", async (req, res) => {
@@ -1863,6 +1893,17 @@ export async function registerRoutes(
         role,
         phone: normPhone || undefined,
       });
+      // Numbers entered by an administrator are trusted for staff operations.
+      // Keep phone and WhatsApp fields in sync so WhatsApp delivery and 2FA
+      // are available immediately instead of waiting for self-verification.
+      await UM2.findByIdAndUpdate((user as any)._id || (user as any).id, {
+        $set: {
+          whatsappNumber: normPhone || "",
+          phoneVerified: Boolean(normPhone),
+        },
+      });
+      (user as any).whatsappNumber = normPhone || "";
+      (user as any).phoneVerified = Boolean(normPhone);
       dispatchNotification({
         event: "employee_welcome",
         idempotencyKey: `employee-welcome:${(user as any).id || (user as any)._id}`,
@@ -2049,6 +2090,12 @@ export async function registerRoutes(
         const mongoose = await import("mongoose");
         const dupPhone = await UM3.findOne({ phone: sanitized.phone, _id: { $ne: new mongoose.Types.ObjectId(req.params.id) } });
         if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
+        sanitized.whatsappNumber = sanitized.phone;
+        sanitized.phoneVerified = true;
+      } else if (req.body.phone !== undefined && !String(req.body.phone || "").trim()) {
+        sanitized.whatsappNumber = "";
+        sanitized.phoneVerified = false;
+        sanitized.whatsappOtpEnabled = false;
       }
       if (sanitized.email) {
         const { UserModel: UM4 } = await import("./models");
@@ -4968,7 +5015,7 @@ export async function registerRoutes(
     try {
       if ((task as any).assignedTo) {
         const { UserModel, ProjectModel } = await import("./models");
-        const assignee = await UserModel.findById((task as any).assignedTo).select("email fullName username");
+        const assignee = await UserModel.findById((task as any).assignedTo).select("email fullName username phone whatsappNumber");
         const project = await ProjectModel?.findById(req.params.projectId).select("name");
         if (assignee?.email) {
           sendTaskAssignedEmail(
@@ -4980,6 +5027,21 @@ export async function registerRoutes(
             (task as any).deadline
           ).catch(console.error);
         }
+        await notifyTaskAssignment({
+          taskId: String((task as any)._id || (task as any).id),
+          taskType: "project",
+          recipient: {
+            userId: String((assignee as any)?._id || (task as any).assignedTo),
+            name: assignee?.fullName || assignee?.username,
+            email: assignee?.email,
+            phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+          },
+          title: (task as any).title || "مهمة جديدة",
+          context: project?.name || "المشروع",
+          priority: (task as any).priority || "medium",
+          deadline: (task as any).deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee/checklist`,
+        }).catch(error => console.error("[WhatsApp] project task assignment:", error?.message || error));
       }
     } catch (e) { console.error("[Email] task assigned email error:", e); }
   });
@@ -5595,7 +5657,7 @@ export async function registerRoutes(
       const { UserModel, ProjectModel } = await import("./models");
       const { NotificationModel } = await import("./models");
       if (input.assignedTo && (!oldTask || (oldTask as any).assignedTo?.toString() !== input.assignedTo)) {
-        const assignee = await UserModel.findById(input.assignedTo).select("email fullName username");
+        const assignee = await UserModel.findById(input.assignedTo).select("email fullName username phone whatsappNumber");
         const project = await ProjectModel?.findById((task as any).projectId).select("name");
         if (assignee?.email) {
           sendTaskAssignedEmail(
@@ -5607,6 +5669,21 @@ export async function registerRoutes(
             (task as any).deadline
           ).catch(console.error);
         }
+        await notifyTaskAssignment({
+          taskId: String((task as any)._id || (task as any).id),
+          taskType: "project",
+          recipient: {
+            userId: String((assignee as any)?._id || input.assignedTo),
+            name: assignee?.fullName || assignee?.username,
+            email: assignee?.email,
+            phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+          },
+          title: (task as any).title || "مهمة جديدة",
+          context: project?.name || "المشروع",
+          priority: (task as any).priority || "medium",
+          deadline: (task as any).deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee/checklist`,
+        }).catch(error => console.error("[WhatsApp] project task assignment:", error?.message || error));
         const taskTitle = (task as any).title || "مهمة جديدة";
         await NotificationModel.create({ userId: input.assignedTo, type: 'task', title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, link: `/projects/${(task as any).projectId}`, icon: '✅' }).catch(() => {});
         pushNotification(String(input.assignedTo), { title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, icon: '✅', link: `/projects/${(task as any).projectId}` });
@@ -14048,7 +14125,7 @@ export async function registerRoutes(
       // Notify primary assignee
       if (assignedTo) {
         try {
-          const assignee = await (UserModel as any).findById(assignedTo).select("email fullName username");
+          const assignee = await (UserModel as any).findById(assignedTo).select("email fullName username phone whatsappNumber");
           if (assignee?.email) {
             const { sendTaskAssignedEmail } = await import("./email");
             await sendTaskAssignedEmail(
@@ -14060,12 +14137,26 @@ export async function registerRoutes(
               dueDate
             );
           }
+          await notifyTaskAssignment({
+            taskId: String(item._id),
+            taskType: "checklist",
+            recipient: {
+              userId: String((assignee as any)?._id || assignedTo),
+              name: assignee?.fullName || assignee?.username,
+              email: assignee?.email,
+              phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+            },
+            title,
+            context: category || "عام",
+            priority: priority || "medium",
+            deadline: dueDate,
+          }).catch(error => console.error("[WhatsApp] checklist assignment:", error?.message || error));
         } catch (e) { console.error("[Email] checklist assign error:", e); }
       }
       // Notify extra assignees
       for (const coId of extraAssignees) {
         try {
-          const coAssignee = await (UserModel as any).findById(coId).select("email fullName username");
+          const coAssignee = await (UserModel as any).findById(coId).select("email fullName username phone whatsappNumber");
           if (coAssignee?.email) {
             const { sendTaskAssignedEmail } = await import("./email");
             await sendTaskAssignedEmail(
@@ -14077,6 +14168,20 @@ export async function registerRoutes(
               dueDate
             );
           }
+          await notifyTaskAssignment({
+            taskId: String(item._id),
+            taskType: "checklist",
+            recipient: {
+              userId: String((coAssignee as any)?._id || coId),
+              name: coAssignee?.fullName || coAssignee?.username,
+              email: coAssignee?.email,
+              phone: (coAssignee as any)?.whatsappNumber || (coAssignee as any)?.phone,
+            },
+            title,
+            context: category || "عام",
+            priority: priority || "medium",
+            deadline: dueDate,
+          }).catch(error => console.error("[WhatsApp] checklist co-assignment:", error?.message || error));
         } catch (e) { console.error("[Email] checklist co-assign error:", e); }
       }
       const populated = await (ChecklistItemModel as any).findById(item._id)
@@ -19006,7 +19111,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         plan: plan || {},
       });
       const populated = await (KanbanTaskModel as any).findById(task._id)
-        .populate("assignedTo", "fullName username")
+        .populate("assignedTo", "fullName username email phone whatsappNumber")
         .populate("createdBy", "fullName username")
         .lean();
       // Notify assignee
@@ -19028,6 +19133,22 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
             title: `✅ مهمة جديدة: ${title.trim()}`,
             body: `عيّنها لك ${creatorName}`,
           });
+          const assignedUser = populated?.assignedTo as any;
+          await notifyTaskAssignment({
+            taskId: String(task._id),
+            taskType: "kanban",
+            recipient: {
+              userId: String(assignedUser?._id || assignedTo),
+              name: assignedUser?.fullName || assignedUser?.username,
+              email: assignedUser?.email,
+              phone: assignedUser?.whatsappNumber || assignedUser?.phone,
+            },
+            title: title.trim(),
+            context: "لوحة المهام",
+            priority: priority || "medium",
+            deadline,
+            actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/admin/kanban`,
+          }).catch(error => console.error("[WhatsApp] kanban assignment:", error?.message || error));
         } catch (e) { console.error("[KanbanTask] notify error:", e); }
       }
       res.status(201).json(populated);
@@ -19083,6 +19204,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "update")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
+      const previous = await (KanbanTaskModel as any).findById(req.params.id).lean();
       const { title, description, priority, assignedTo, deadline, plan, devPlan, projectName } = req.body;
       const update: any = {};
       if (title !== undefined) update.title = title.trim();
@@ -19095,11 +19217,29 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (projectName !== undefined) update.projectName = projectName;
       if (!update.title && title !== undefined && !update.title.trim()) return res.status(400).json({ error: "العنوان مطلوب" });
       const task = await (KanbanTaskModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true })
-        .populate("assignedTo", "fullName username")
+        .populate("assignedTo", "fullName username email phone whatsappNumber")
         .populate("createdBy", "fullName username")
         .lean();
       if (!task) return res.status(404).json({ error: "المهمة غير موجودة" });
       res.json((req.user as any).role === "data_entry" ? redactDataEntryTask(task) : task);
+      if (assignedTo && String(previous?.assignedTo || "") !== String(assignedTo)) {
+        const assignedUser = task.assignedTo as any;
+        await notifyTaskAssignment({
+          taskId: String(task._id),
+          taskType: "kanban",
+          recipient: {
+            userId: String(assignedUser?._id || assignedTo),
+            name: assignedUser?.fullName || assignedUser?.username,
+            email: assignedUser?.email,
+            phone: assignedUser?.whatsappNumber || assignedUser?.phone,
+          },
+          title: task.title || "مهمة جديدة",
+          context: "لوحة المهام",
+          priority: task.priority || "medium",
+          deadline: task.deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/admin/kanban`,
+        }).catch(error => console.error("[WhatsApp] kanban reassignment:", error?.message || error));
+      }
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
