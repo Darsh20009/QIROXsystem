@@ -921,13 +921,17 @@ app.use((req, res, next) => {
 function gracefulShutdown(signal: string) {
   console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
   import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
-  httpServer.close(() => {
-    console.log("[Shutdown] HTTP server closed");
-    mongoose.connection.close().then(() => {
-      console.log("[Shutdown] MongoDB connections closed");
-      cache.destroy();
-      process.exit(0);
-    }).catch(() => process.exit(1));
+  import("./whatsapp-module").then(async ({ waModule }) => {
+    await waModule.shutdown(false);
+  }).catch(() => {}).finally(() => {
+    httpServer.close(() => {
+      console.log("[Shutdown] HTTP server closed");
+      mongoose.connection.close().then(() => {
+        console.log("[Shutdown] MongoDB connections closed");
+        cache.destroy();
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
   });
   setTimeout(() => {
     console.error("[Shutdown] Forced shutdown after timeout");

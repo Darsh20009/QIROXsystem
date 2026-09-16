@@ -48,6 +48,16 @@ export const WAMessageModel  = mongoose.models.WAMessage  || mongoose.model("WAM
 export const WAChatModel     = mongoose.models.WAChat     || mongoose.model("WAChat",     waChatSchema);
 export const WASettingsModel = mongoose.models.WASettings || mongoose.model("WASettings", waSettingsSchema);
 
+// Baileys creates several auth files. Keep one encrypted snapshot in MongoDB so
+// a new deployment can restore the session instead of requiring a new QR scan.
+const waAuthStateSchema = new Schema({
+  name: { type: String, required: true, unique: true, default: "default" },
+  payload: { type: String, required: true },
+}, { timestamps: true });
+
+export const WAAuthStateModel =
+  mongoose.models.WAAuthState || mongoose.model("WAAuthState", waAuthStateSchema);
+
 // Store keys are intentionally separate from the general client API keys.
 // A store key can only send WhatsApp messages for one store.
 const storeWhatsAppApiKeySchema = new Schema({

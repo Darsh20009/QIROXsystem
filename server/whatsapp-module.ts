@@ -7,6 +7,7 @@
  */
 
 import { EventEmitter } from "events";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -69,6 +70,8 @@ class WhatsAppModule extends EventEmitter {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private disconnectAlertSent = false; // send email only once per outage
+  private authSaveQueue: Promise<void> = Promise.resolve();
+  private stopping = false;
 
   // LID → real phone number mapping (WhatsApp new Linked Device ID system)
   private lidToPhone = new Map<string, string>(); // e.g. "179289265815634@lid" → "966532441566"
@@ -144,6 +147,7 @@ class WhatsAppModule extends EventEmitter {
   async autoConnect() {
     const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
     const credsFile = path.join(AUTH_DIR, "creds.json");
+    await this.restoreAuthState(AUTH_DIR);
     if (!fs.existsSync(credsFile)) {
       console.log("[WA] No saved session found — skipping auto-connect. Scan QR from admin panel.");
       return;
@@ -165,6 +169,7 @@ class WhatsAppModule extends EventEmitter {
   async connect() {
     // Prevent concurrent connect calls
     if (this.sock) await this.shutdown(false);
+    this.stopping = false;
 
     // Clear any pending reconnect timer
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
@@ -182,8 +187,12 @@ class WhatsAppModule extends EventEmitter {
 
       const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
       if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true });
+      await this.restoreAuthState(AUTH_DIR);
 
       const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+      // Persist an existing local session as well, so a deployment that still
+      // has the auth directory seeds the durable MongoDB copy immediately.
+      await this.persistAuthState(AUTH_DIR);
 
       // Fetch latest WA version with a safe fallback — external HTTP, can fail
       let version: number[];
@@ -216,7 +225,11 @@ class WhatsAppModule extends EventEmitter {
         getMessage: async () => undefined,
       });
 
-      this.sock.ev.on("creds.update", saveCreds);
+      this.sock.ev.on("creds.update", () => {
+        this.queueAuthPersistence(saveCreds, AUTH_DIR).catch((err) => {
+          console.error("[WA] Failed to persist auth state:", err?.message || err);
+        });
+      });
 
       this.sock.ev.on("connection.update", (update: any) => {
         const { connection, lastDisconnect, qr } = update;
@@ -246,12 +259,12 @@ class WhatsAppModule extends EventEmitter {
           this.connectedPhone = null;
           this.sendSSE({ type: "status", ...this.getStatus() });
 
-          if (loggedOut) {
+          if (loggedOut && !this.stopping) {
             // Logged out — clear auth, stop reconnecting
             this.reconnectAttempts = 0;
             const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
             try { if (fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch {}
-          } else {
+           } else if (!this.stopping) {
             // Unlimited retries with exponential backoff (max 60s between attempts)
             this.reconnectAttempts++;
             const delay = Math.min(5000 * Math.min(this.reconnectAttempts, 12), 60_000);
@@ -311,6 +324,7 @@ class WhatsAppModule extends EventEmitter {
   }
 
   async shutdown(clearAuth = true) {
+    this.stopping = true;
     // Cancel pending reconnect timer — prevents ghost reconnects after manual disconnect
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
     this.reconnectAttempts = 0;
@@ -335,6 +349,102 @@ class WhatsAppModule extends EventEmitter {
     if (clearAuth) {
       const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
       if (fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+      await this.clearPersistedAuthState();
+    }
+    // Let the final credentials update finish before the process exits. This
+    // is intentionally after close and never deletes the Mongo snapshot.
+    await this.authSaveQueue.catch(() => {});
+  }
+
+  private authEncryptionKey(): Buffer | null {
+    const secret = process.env.WA_AUTH_ENCRYPTION_KEY || process.env.SESSION_SECRET;
+    if (!secret) return null;
+    return crypto.createHash("sha256").update(secret).digest();
+  }
+
+  private encryptAuthPayload(payload: string): string | null {
+    const key = this.authEncryptionKey();
+    if (!key) return null;
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+    const encrypted = Buffer.concat([cipher.update(payload, "utf8"), cipher.final()]);
+    return [iv.toString("base64"), cipher.getAuthTag().toString("base64"), encrypted.toString("base64")].join(".");
+  }
+
+  private decryptAuthPayload(value: string): string | null {
+    try {
+      const key = this.authEncryptionKey();
+      if (!key) return null;
+      const [ivRaw, tagRaw, encryptedRaw] = value.split(".");
+      if (!ivRaw || !tagRaw || !encryptedRaw) return null;
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivRaw, "base64"));
+      decipher.setAuthTag(Buffer.from(tagRaw, "base64"));
+      return Buffer.concat([
+        decipher.update(Buffer.from(encryptedRaw, "base64")),
+        decipher.final(),
+      ]).toString("utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  private async persistAuthState(authDir: string) {
+    const encryptedPayload = this.encryptAuthPayload(JSON.stringify(
+      Object.fromEntries(
+        fs.readdirSync(authDir)
+          .filter((name) => name.endsWith(".json"))
+          .map((name) => [name, fs.readFileSync(path.join(authDir, name), "utf8")]),
+      ),
+    ));
+    if (!encryptedPayload) {
+      console.warn("[WA] Auth persistence skipped: WA_AUTH_ENCRYPTION_KEY or SESSION_SECRET is missing");
+      return;
+    }
+    const { WAAuthStateModel } = await import("./models/whatsapp");
+    await WAAuthStateModel.findOneAndUpdate(
+      { name: "default" },
+      { $set: { payload: encryptedPayload } },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
+  }
+
+  private queueAuthPersistence(saveCreds: () => Promise<void>, authDir: string) {
+    this.authSaveQueue = this.authSaveQueue.catch(() => {}).then(async () => {
+      await saveCreds();
+      await this.persistAuthState(authDir);
+    });
+    return this.authSaveQueue;
+  }
+
+  private async clearPersistedAuthState() {
+    try {
+      const { WAAuthStateModel } = await import("./models/whatsapp");
+      await WAAuthStateModel.deleteOne({ name: "default" });
+    } catch (err: any) {
+      console.error("[WA] Failed to clear persisted auth state:", err?.message || err);
+    }
+  }
+
+  private async restoreAuthState(authDir: string) {
+    if (fs.existsSync(path.join(authDir, "creds.json"))) return;
+    try {
+      const { WAAuthStateModel } = await import("./models/whatsapp");
+      const saved: any = await WAAuthStateModel.findOne({ name: "default" }).lean();
+      if (!saved?.payload) return;
+      const decrypted = this.decryptAuthPayload(saved.payload);
+      if (!decrypted) {
+        console.warn("[WA] Saved auth state could not be decrypted with the current key");
+        return;
+      }
+      const files = JSON.parse(decrypted) as Record<string, string>;
+      fs.mkdirSync(authDir, { recursive: true });
+      for (const [name, contents] of Object.entries(files)) {
+        if (!name.endsWith(".json") || typeof contents !== "string") continue;
+        fs.writeFileSync(path.join(authDir, name), contents, "utf8");
+      }
+      console.log("[WA] Restored saved session from encrypted MongoDB state");
+    } catch (err: any) {
+      console.error("[WA] Failed to restore saved session:", err?.message || err);
     }
   }
 

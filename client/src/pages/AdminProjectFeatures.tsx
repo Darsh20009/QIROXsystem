@@ -64,10 +64,12 @@ export default function AdminProjectFeatures() {
   });
 
   const { data: projects = [] } = useQuery<any[]>({
-    queryKey: ["/api/projects"],
+    queryKey: ["/api/admin/projects"],
     queryFn: async () => {
-      const r = await fetch("/api/projects", { credentials: "include" });
-      return r.json();
+      const r = await fetch("/api/admin/projects", { credentials: "include" });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -75,7 +77,9 @@ export default function AdminProjectFeatures() {
     queryKey: ["/api/employees"],
     queryFn: async () => {
       const r = await fetch("/api/employees", { credentials: "include" });
-      return r.json();
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -84,7 +88,9 @@ export default function AdminProjectFeatures() {
     queryFn: async () => {
       if (!selectedProjectId) return [];
       const r = await fetch(`/api/projects/${selectedProjectId}/features`, { credentials: "include" });
-      return r.json();
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!selectedProjectId,
   });
@@ -260,7 +266,7 @@ export default function AdminProjectFeatures() {
                         if (!r.ok) throw new Error(data.error || "فشل الحذف");
                         toast({ title: data.message || "تم حذف المشروع" });
                         if (selectedProjectId === pid) setSelectedProjectId(null);
-                        queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                         queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
                       } catch (err: any) {
                         toast({ title: "فشل حذف المشروع", description: err.message, variant: "destructive" });
                       }

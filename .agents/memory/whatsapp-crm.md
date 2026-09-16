@@ -13,7 +13,7 @@ description: Free WhatsApp Web integration via @whiskeysockets/baileys — AI au
 
 ### Server files
 - `server/whatsapp-module.ts` — singleton `waModule` (EventEmitter). Manages connection, SSE clients, message persistence, AI timer, admin commands.
-- `server/models/whatsapp.ts` — three Mongoose models: `WAMessageModel`, `WAChatModel`, `WASettingsModel`
+- `server/models/whatsapp.ts` — Mongoose models for messages, chats, settings, and the encrypted durable auth snapshot.
 - Routes added to end of `server/routes.ts` (before `registerPwaRoutes`):
   - `GET /api/admin/whatsapp/events` — SSE stream (status + message + chat_update events)
   - `GET /api/admin/whatsapp/status`
@@ -30,7 +30,7 @@ description: Free WhatsApp Web integration via @whiskeysockets/baileys — AI au
 - Nav entry: "واتساب CRM" in employee group
 
 ## Key behaviors
-- Auth state saved to `.whatsapp-auth/` directory (persists across restarts via `useMultiFileAuthState`)
+- Auth state is used locally through `.whatsapp-auth/`, and an encrypted snapshot is stored in MongoDB using `WA_AUTH_ENCRYPTION_KEY` or `SESSION_SECRET`; a fresh deployment restores it before auto-connect.
 - QR code streamed via SSE; frontend renders it with `QRCodeCanvas` from `qrcode.react` (already installed)
 - After any incoming message: wait `aiDelaySeconds` (default 60s), then AI replies unless human replied first
 - Manual reply from admin panel sets human override for 30 min (suppresses AI)
@@ -79,4 +79,9 @@ selects it; never infer Meta from the presence of environment variables.
 2. SSE streams QR → frontend shows QRCodeCanvas
 3. Admin scans with phone → `connection === 'open'` → status = connected
 4. Auto-reconnect on disconnect (except loggedOut/401)
-5. POST /disconnect → `waModule.shutdown(true)` → clears `.whatsapp-auth/`
+5. SIGTERM/SIGINT → `waModule.shutdown(false)` → closes the socket and keeps encrypted auth for the next deployment
+6. POST /disconnect → `waModule.shutdown(true)` → clears local and encrypted auth intentionally
+
+**Why:** Deployment restarts must not look like a manual logout, and local deployment files are not a reliable long-term session store.
+
+**How to apply:** Keep the auth encryption secret stable across deployments. Never clear the persisted snapshot during graceful shutdown; only the explicit disconnect route may clear it.

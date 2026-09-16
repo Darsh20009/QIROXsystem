@@ -4376,6 +4376,19 @@ export async function registerRoutes(
     res.json(projects);
   });
 
+  // Management screens need the complete project list. The general
+  // /api/projects endpoint intentionally filters projects for employees.
+  app.get("/api/admin/projects", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (role === "client" || role === "data_entry") return res.sendStatus(403);
+    try {
+      res.json(await storage.getProjects());
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   app.post("/api/admin/projects", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const role = (req.user as any).role;
