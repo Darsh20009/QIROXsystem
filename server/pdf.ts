@@ -196,14 +196,70 @@ function prepareArabic(text: string): string {
       ? _arabicReshaper.convertArabic(text)
       : text;
     return shaped
-      .split(" ")
-      .map((w: string) => [...w].reverse().join(""))
+      .split(/\s+/)
+      .map((w: string) => {
+        // Keep Latin words, numbers, and identifiers in their natural order.
+        // Reversing every character corrupts values such as IBANs and dates.
+        const parts = w.match(/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+|[A-Za-z0-9@._:/%+#(),-]+|./g) || [w];
+        return parts
+          .reverse()
+          .map((part) => /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(part)
+            ? [...part].reverse().join("")
+            : part)
+          .join("");
+      })
       .reverse()
       .join(" ");
   } catch {
     // fallback: word-order reversal only
     return text.split(" ").reverse().join(" ");
   }
+}
+
+function wrapPdfText(
+  text: string,
+  maxWidth: number,
+  size: number,
+  latinFont: any,
+  arabicFont: any,
+): string[] {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+
+  const measure = (value: string) => {
+    if (hasArabic(value) && arabicFont) {
+      return arabicFont.widthOfTextAtSize(prepareArabic(value), size);
+    }
+    return latinFont.widthOfTextAtSize(value, size);
+  };
+
+  const lines: string[] = [];
+  let current = "";
+  for (const word of normalized.split(" ")) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (!current || measure(candidate) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+    lines.push(current);
+    current = word;
+    if (measure(current) <= maxWidth) continue;
+
+    // Break a single long identifier or unspaced Arabic string safely.
+    let part = "";
+    for (const char of [...current]) {
+      const next = part + char;
+      if (part && measure(next) > maxWidth) {
+        lines.push(part);
+        part = char;
+      } else {
+        part = next;
+      }
+    }
+    current = part;
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array> {
@@ -239,7 +295,10 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const latinBold = helveticaBold;
   const latinReg  = helvetica;
   const labels = PDF_LABELS[q.language === "en" ? "en" : "ar"];
-  const locale = q.language === "en" ? "en-SA" : "ar-SA";
+  // Keep numeric values in Latin digits. The Arabic font can render Arabic
+  // labels, but Helvetica and mixed RTL text do not handle Arabic-Indic
+  // digits consistently.
+  const locale = "en-SA";
 
   /* ── Drawing helpers ── */
 
@@ -282,6 +341,19 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     if (!txt) return;
     if (hasArabic(txt)) drawAR(txt, rightX, y, size, color);
     else drawL(txt, leftX, y, size, color, latinFont);
+  };
+
+  const drawSmartWrapped = (
+    txt: string,
+    leftX: number, rightX: number, y: number,
+    size: number, color = BLACK, latinFont = latinReg,
+    lineHeight = size * 1.35,
+  ) => {
+    const lines = wrapPdfText(txt, rightX - leftX, size, latinFont, arabicFont);
+    lines.forEach((line, index) =>
+      drawSmart(line, leftX, rightX, y - index * lineHeight, size, color, latinFont)
+    );
+    return lines.length;
   };
 
   const drawRect = (x: number, y: number, w: number, h: number, color = LGRAY) =>
@@ -378,14 +450,16 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   curY -= 26;
 
   /* Data rows */
-  items.forEach((item, idx) => {
-    const rowH  = 22;
+   items.forEach((item, idx) => {
     const rowBg = idx % 2 === 0 ? WHITE : rgb(0.97, 0.97, 0.97);
-    drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
 
     const name = item.name || "—";
-    const nameDisplay = name.length > 45 ? name.substring(0, 45) + "…" : name;
-    drawSmart(nameDisplay, cols[0] + 6, cols[1] - 6, curY - 12, 8, DGRAY);
+     const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont);
+     const rowH = Math.max(22, Math.min(nameLines.length, 3) * 10 + 8);
+     drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
+     nameLines.slice(0, 3).forEach((line, lineIndex) => {
+       drawSmart(line, cols[0] + 6, cols[1] - 6, curY - 12 - lineIndex * 10, 8, DGRAY);
+     });
     drawL(String(item.qty),                       cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.total || 0).toLocaleString("en-SA"),     cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
@@ -427,26 +501,37 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   if (q.notes) {
     curY -= 10;
     const notesBoxW = tableW * 0.8;
-    drawRect(tableX, curY - 36, notesBoxW, 44, rgb(0.97, 0.97, 0.97));
+     const noteLines = wrapPdfText(q.notes, notesBoxW - 16, 8, latinReg, arabicFont);
+     const notesBoxH = 32 + Math.max(1, noteLines.length) * 11;
+     drawRect(tableX, curY - notesBoxH + 8, notesBoxW, notesBoxH, rgb(0.97, 0.97, 0.97));
      drawSmart(labels.notes, tableX + 8, tableX + notesBoxW - 8, curY - 10, 7, GRAY, latinReg);
-    const noteText = q.notes.length > 120 ? q.notes.substring(0, 120) + "…" : q.notes;
-    drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
-    curY -= 54;
+     noteLines.forEach((line, index) => {
+       drawSmart(line, tableX + 8, tableX + notesBoxW - 8, curY - 24 - index * 11, 8, DGRAY);
+     });
+     curY -= notesBoxH + 10;
   }
    if (q.paymentTerms || q.termsAndConditions) {
      curY -= 8;
      const text = [q.paymentTerms && `${labels.paymentTerms} ${q.paymentTerms}`, q.termsAndConditions && `${labels.terms} ${q.termsAndConditions}`]
        .filter(Boolean).join(" | ");
-     drawSmart(text.slice(0, 280), tableX, tableX + tableW, curY - 10, 7, GRAY);
-     curY -= 20;
+     const termLines = wrapPdfText(text, tableW, 7, latinReg, arabicFont);
+     termLines.forEach((line, index) => {
+       drawSmart(line, tableX, tableX + tableW, curY - 10 - index * 10, 7, GRAY);
+     });
+     curY -= 20 + Math.max(0, termLines.length - 1) * 10;
    }
    if (q.bankName || q.beneficiaryName || q.iban || q.accountNumber) {
      curY -= 8;
-     drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
+     const bankText = [q.bankName, q.beneficiaryName, q.iban && `IBAN: ${q.iban}`, q.accountNumber && `Account: ${q.accountNumber}`]
+       .filter(Boolean).join(" · ");
+     const bankLines = wrapPdfText(bankText, tableW - 16, 7, latinReg, arabicFont);
+     const bankBoxH = 38 + Math.max(1, bankLines.length) * 10;
+     drawRect(tableX, curY - bankBoxH + 8, tableW, bankBoxH, rgb(0.97, 0.97, 0.97));
      drawSmart(labels.bankDetails, tableX + 8, tableX + tableW - 8, curY - 12, 7, GRAY, latinBold);
-     drawSmart([q.bankName, q.beneficiaryName, q.iban && `IBAN: ${q.iban}`, q.accountNumber && `Account: ${q.accountNumber}`]
-       .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
-     curY -= 60;
+     bankLines.forEach((line, index) => {
+       drawSmart(line, tableX + 8, tableX + tableW - 8, curY - 28 - index * 10, 7, DGRAY);
+     });
+     curY -= bankBoxH + 10;
    }
 
   /* ── Footer ── */
@@ -493,7 +578,9 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   const latinBold = helveticaBold;
   const latinReg  = helvetica;
   const labels = PDF_LABELS[inv.language === "en" ? "en" : "ar"];
-  const locale = inv.language === "en" ? "en-SA" : "ar-SA";
+  // Keep numeric values in Latin digits; Arabic labels are rendered by the
+  // embedded Arabic font while dates and amounts remain stable in mixed text.
+  const locale = "en-SA";
 
   const drawL = (t: string, x: number, y: number, s: number, c = BLACK, f = latinReg) => {
     if (!t) return; try { page.drawText(t, { x, y, size: s, color: c, font: f }); } catch {}
@@ -506,6 +593,16 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   const drawSmart = (t: string, leftX: number, rightX: number, y: number, s: number, c = BLACK, lf = latinReg) => {
     if (!t) return;
     if (hasArabic(t)) drawAR(t, rightX, y, s, c); else drawL(t, leftX, y, s, c, lf);
+  };
+  const drawSmartWrapped = (
+    t: string, leftX: number, rightX: number, y: number, s: number,
+    c = BLACK, lf = latinReg, lineHeight = s * 1.35,
+  ) => {
+    const lines = wrapPdfText(t, rightX - leftX, s, lf, arabicFont);
+    lines.forEach((line, index) =>
+      drawSmart(line, leftX, rightX, y - index * lineHeight, s, c, lf)
+    );
+    return lines.length;
   };
   const drawRect = (x: number, y: number, w: number, h: number, c = LGRAY) =>
     page.drawRectangle({ x, y, width: w, height: h, color: c });
@@ -583,12 +680,14 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   curY -= 26;
 
   items.forEach((item, idx) => {
-    const rowH = 22;
     const rowBg = idx % 2 === 0 ? WHITE : rgb(0.97, 0.97, 0.97);
-    drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
     const name = item.name || "—";
-    const nameDisplay = name.length > 45 ? name.substring(0, 45) + "…" : name;
-    drawSmart(nameDisplay, cols[0] + 6, cols[1] - 6, curY - 12, 8, DGRAY);
+     const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont);
+     const rowH = Math.max(22, Math.min(nameLines.length, 3) * 10 + 8);
+     drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
+     nameLines.slice(0, 3).forEach((line, lineIndex) => {
+       drawSmart(line, cols[0] + 6, cols[1] - 6, curY - 12 - lineIndex * 10, 8, DGRAY);
+     });
     drawL(String(item.qty), cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.total || 0).toLocaleString("en-SA"), cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
@@ -621,19 +720,27 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   if (inv.notes) {
     curY -= 10;
     const notesBoxW = tableW * 0.8;
-    drawRect(tableX, curY - 36, notesBoxW, 44, rgb(0.97, 0.97, 0.97));
+     const noteLines = wrapPdfText(inv.notes, notesBoxW - 16, 8, latinReg, arabicFont);
+     const notesBoxH = 32 + Math.max(1, Math.min(noteLines.length, 8)) * 11;
+     drawRect(tableX, curY - notesBoxH + 8, notesBoxW, notesBoxH, rgb(0.97, 0.97, 0.97));
      drawSmart(labels.notes, tableX + 8, tableX + notesBoxW - 8, curY - 10, 7, GRAY, latinReg);
-    const noteText = inv.notes.length > 120 ? inv.notes.substring(0, 120) + "…" : inv.notes;
-    drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
-    curY -= 54;
+     noteLines.slice(0, 8).forEach((line, index) => {
+       drawSmart(line, tableX + 8, tableX + notesBoxW - 8, curY - 24 - index * 11, 8, DGRAY);
+     });
+     curY -= notesBoxH + 10;
   }
    if (inv.bankName || inv.beneficiaryName || inv.iban || inv.accountNumber) {
      curY -= 8;
-     drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
+     const bankText = [inv.bankName, inv.beneficiaryName, inv.iban && `IBAN: ${inv.iban}`, inv.accountNumber && `Account: ${inv.accountNumber}`]
+       .filter(Boolean).join(" · ");
+     const bankLines = wrapPdfText(bankText, tableW - 16, 7, latinReg, arabicFont);
+     const bankBoxH = 38 + Math.max(1, Math.min(bankLines.length, 8)) * 10;
+     drawRect(tableX, curY - bankBoxH + 8, tableW, bankBoxH, rgb(0.97, 0.97, 0.97));
      drawSmart(labels.bankDetails, tableX + 8, tableX + tableW - 8, curY - 12, 7, GRAY, latinBold);
-     drawSmart([inv.bankName, inv.beneficiaryName, inv.iban && `IBAN: ${inv.iban}`, inv.accountNumber && `Account: ${inv.accountNumber}`]
-       .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
-     curY -= 60;
+     bankLines.slice(0, 8).forEach((line, index) => {
+       drawSmart(line, tableX + 8, tableX + tableW - 8, curY - 28 - index * 10, 7, DGRAY);
+     });
+     curY -= bankBoxH + 10;
    }
 
   /* Footer */
