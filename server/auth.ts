@@ -9,6 +9,7 @@ import { storage } from "./storage";
 import { User } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
+let sessionMiddlewareForWebSocket: any = null;
 
 const PUBLIC_ROUTE_PREFIXES = [
   "/api/public/",
@@ -113,6 +114,7 @@ export function setupAuth(app: Express) {
   }
 
   const sessionMiddleware = session(sessionSettings);
+  sessionMiddlewareForWebSocket = sessionMiddleware;
 
   app.use(sessionMiddleware);
   app.use(passport.initialize());
@@ -185,4 +187,54 @@ export function setupAuth(app: Express) {
   });
 
   return { hashPassword, comparePasswords };
+}
+
+/**
+ * Authenticate a WebSocket upgrade with the same Mongo-backed session used by
+ * HTTP requests. Browsers cannot attach arbitrary headers to a WebSocket
+ * constructor, so the session cookie is the primary path; a device token is
+ * accepted through the negotiated subprotocol for native clients.
+ */
+export async function authenticateWebSocketRequest(req: any): Promise<User | null> {
+  const sessionUserId = await new Promise<string | null>((resolve, reject) => {
+    if (!sessionMiddlewareForWebSocket) return resolve(null);
+
+    const response: any = {
+      _header: true,
+      getHeader: () => undefined,
+      setHeader: () => response,
+      removeHeader: () => response,
+      write: () => true,
+      _write: () => true,
+      _implicitHeader: () => undefined,
+      end: () => true,
+    };
+
+    sessionMiddlewareForWebSocket(req, response, (error?: unknown) => {
+      if (error) return reject(error);
+      resolve(req.session?.passport?.user ? String(req.session.passport.user) : null);
+    });
+  });
+
+  if (sessionUserId) {
+    const user = await storage.getUser(sessionUserId);
+    if (user) return user;
+  }
+
+  const offeredProtocols = String(req.headers?.["sec-websocket-protocol"] || "")
+    .split(",")
+    .map((value: string) => value.trim())
+    .filter(Boolean);
+  const deviceToken = offeredProtocols.find((value: string) => /^[a-f0-9]{96}$/i.test(value));
+  if (!deviceToken) return null;
+
+  const { DeviceTokenModel } = await import("./models/auth");
+  const tokenHash = createHash("sha256").update(deviceToken).digest("hex");
+  const device = await DeviceTokenModel.findOne({
+    tokenHash,
+    expiresAt: { $gt: new Date() },
+  }).lean();
+  if (!device) return null;
+
+  return storage.getUser(String(device.userId));
 }

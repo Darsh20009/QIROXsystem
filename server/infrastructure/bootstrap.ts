@@ -22,7 +22,7 @@ import { createLogger }      from "./logger-impl";
 import { FeatureFlagEngine, FeatureFlag } from "./feature-flags";
 import { QiroxEventBus }     from "./event-bus";
 import { createHealthRouter } from "./health";
-import { LogLevel, parseLoglevel } from "../logger/levels";
+import { LogLevel, parseLoglevel } from "./logger/levels";
 
 // ── Bootstrap state ───────────────────────────────────────────────────────────
 

@@ -477,10 +477,34 @@ const upload = multer({
       cb(null, `${name}${ext}`);
     },
   }),
-  limits: { fileSize: 20 * 1024 * 1024 },
+   limits: {
+     fileSize: 20 * 1024 * 1024,
+     files: 10,
+     parts: 12,
+     fields: 4,
+     fieldSize: 64 * 1024,
+   },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav|webm|ogg|oga|weba|m4a|aac|opus)$/i;
-    if (allowed.test(path.extname(file.originalname))) {
+     const ext = path.extname(file.originalname).toLowerCase();
+     const allowedByMime: Record<string, string[]> = {
+       ".jpg": ["image/jpeg"], ".jpeg": ["image/jpeg"], ".png": ["image/png"],
+       ".gif": ["image/gif"], ".webp": ["image/webp"], ".pdf": ["application/pdf"],
+       ".doc": ["application/msword", "application/octet-stream"],
+       ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/octet-stream"],
+       ".xls": ["application/vnd.ms-excel", "application/octet-stream"],
+       ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream"],
+       ".ppt": ["application/vnd.ms-powerpoint", "application/octet-stream"],
+       ".pptx": ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/octet-stream"],
+       ".zip": ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+       ".rar": ["application/vnd.rar", "application/x-rar-compressed", "application/octet-stream"],
+       ".mp4": ["video/mp4"], ".mov": ["video/quicktime"], ".avi": ["video/x-msvideo"],
+       ".mp3": ["audio/mpeg"], ".wav": ["audio/wav", "audio/x-wav"],
+       ".webm": ["audio/webm", "video/webm"], ".ogg": ["audio/ogg", "video/ogg"],
+       ".oga": ["audio/ogg"], ".weba": ["audio/webm"], ".m4a": ["audio/mp4"],
+       ".aac": ["audio/aac"], ".opus": ["audio/ogg", "audio/opus"],
+     };
+     const allowedMimes = allowedByMime[ext];
+     if (allowedMimes?.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
       cb(new Error("نوع الملف غير مسموح به"));
@@ -497,10 +521,32 @@ const uploadLarge = multer({
       cb(null, `${name}${ext}`);
     },
   }),
-  limits: { fileSize: 500 * 1024 * 1024 },
+   limits: {
+     fileSize: 500 * 1024 * 1024,
+     files: 1,
+     parts: 8,
+     fields: 3,
+     fieldSize: 64 * 1024,
+   },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|webm|mkv|mp3|wav|ogg|m4a|jpg|jpeg|png|gif|webp)$/i;
-    if (allowed.test(path.extname(file.originalname))) {
+     const ext = path.extname(file.originalname).toLowerCase();
+     const allowedByMime: Record<string, string[]> = {
+       ".pdf": ["application/pdf"], ".doc": ["application/msword", "application/octet-stream"],
+       ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/octet-stream"],
+       ".xls": ["application/vnd.ms-excel", "application/octet-stream"],
+       ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream"],
+       ".ppt": ["application/vnd.ms-powerpoint", "application/octet-stream"],
+       ".pptx": ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/octet-stream"],
+       ".zip": ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+       ".rar": ["application/vnd.rar", "application/x-rar-compressed", "application/octet-stream"],
+       ".mp4": ["video/mp4"], ".mov": ["video/quicktime"], ".avi": ["video/x-msvideo"],
+       ".webm": ["audio/webm", "video/webm"], ".mkv": ["video/x-matroska"],
+       ".mp3": ["audio/mpeg"], ".wav": ["audio/wav", "audio/x-wav"],
+       ".ogg": ["audio/ogg", "video/ogg"], ".m4a": ["audio/mp4"],
+       ".jpg": ["image/jpeg"], ".jpeg": ["image/jpeg"], ".png": ["image/png"],
+       ".gif": ["image/gif"], ".webp": ["image/webp"],
+     };
+     if (allowedByMime[ext]?.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
       cb(new Error("نوع الملف غير مسموح به"));
@@ -1247,6 +1293,12 @@ export async function registerRoutes(
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();
+      if (ext === ".svg") {
+        // SVG is retained for brand/source fidelity but must not be rendered as
+        // same-origin active content when the original is opened directly.
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader("Content-Disposition", "attachment");
+      }
       // Audio MIME types — critical: .webm defaults to video/webm in most mime dbs
       // which causes browsers to refuse <audio> playback
       if      (ext === ".webm")  res.setHeader("Content-Type", "audio/webm; codecs=opus");

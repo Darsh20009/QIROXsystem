@@ -3,6 +3,7 @@ import compression from "compression";
 import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
 import rateLimit from "express-rate-limit";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
+import { authenticateWebSocketRequest } from "./auth";
 import { registerAiRoutes } from "./ai";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -65,6 +66,7 @@ try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 
 const app = express();
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
 // Gzip/Brotli compression — reduces response size by 60-80%, dramatically speeds up all API and static responses
 app.use(compression({
@@ -92,7 +94,9 @@ declare module "http" {
 
 app.use(
   express.json({
-    limit: "50mb",
+    // JSON endpoints should never be the path for large binary payloads.
+    // Multipart uploads have their own explicit limits below.
+    limit: "5mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -104,14 +108,42 @@ app.use(express.urlencoded({ extended: false }));
 // ── Security Headers ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  // Allow iframe embedding (e.g., Replit canvas preview)
-  res.removeHeader("X-Frame-Options");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
+  // The two remote proxy surfaces intentionally need to be frameable. The
+  // application itself is frameable only by the same site and Replit preview
+  // hosts, which preserves the preview while reducing clickjacking exposure.
+  const isEmbeddedProxy = req.path.startsWith("/cafe-proxy") || req.path.startsWith("/ecommerce-proxy");
+  if (!isEmbeddedProxy) {
+    const externalScriptSources = process.env.NODE_ENV === "production"
+      ? "'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com"
+      : "'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.paypalobjects.com";
+    res.setHeader("Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-src 'self' https://*.replit.dev https://*.replit.app https://*.repl.co https://www.paypal.com https://www.paypalobjects.com",
+        "frame-ancestors 'self' https://*.replit.dev https://*.replit.app https://*.repl.co",
+        "form-action 'self' https://www.paypal.com",
+        "connect-src 'self' https: wss:",
+        "img-src 'self' data: blob: https:",
+        "font-src 'self' data: https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        `script-src ${externalScriptSources}`,
+        "media-src 'self' blob: https:",
+        "worker-src 'self' blob:",
+        "manifest-src 'self'",
+      ].join("; ")
+    );
+  } else {
+    res.removeHeader("Content-Security-Policy");
+    res.removeHeader("X-Frame-Options");
+  }
+  res.setHeader("X-XSS-Protection", "0");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
   // Allow camera, microphone, and screen capture globally (required for WebRTC meeting rooms)
   // The app is a SPA — client-side routing means the initial document policy applies everywhere
-  res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
+  res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()");
 
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("X-DNS-Prefetch-Control", "off");
@@ -259,6 +291,27 @@ const globalApiLimiter = rateLimit({
 });
 app.use(globalApiLimiter);
 
+// Same-site Origin check for browser state-changing API requests. Native
+// clients and server-to-server webhooks normally omit Origin and continue
+// through their existing authentication/signature checks.
+app.use((req, res, next) => {
+  const isMutation = !["GET", "HEAD", "OPTIONS"].includes(req.method);
+  if (!isMutation || !req.path.startsWith("/api/") || !req.headers.origin) return next();
+
+  const origin = String(req.headers.origin).replace(/\/+$/, "");
+  const host = String(req.headers.host || "").replace(/\/+$/, "");
+  const expectedOrigin = `${req.secure ? "https" : "http"}://${host}`;
+  const canonicalOrigins = new Set([
+    expectedOrigin,
+    "https://qiroxstudio.online",
+    "https://www.qiroxstudio.online",
+  ]);
+  if (!canonicalOrigins.has(origin)) {
+    return res.status(403).json({ error: "طلب من مصدر غير مصرح به" });
+  }
+  next();
+});
+
 // ── Anti-scraping / bot detection ─────────────────────────────────────────────
 const suspiciousPatterns = [
   /sqlmap/i, /nikto/i, /nmap/i, /masscan/i, /havij/i,
@@ -315,20 +368,35 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({
+  noServer: true,
+  maxPayload: 64 * 1024,
+  perMessageDeflate: false,
+  handleProtocols: (protocols) => protocols.has("qirox-auth") ? "qirox-auth" : false,
+});
 
-wss.on("connection", (ws) => {
-  let userId: string | null = null;
+wss.on("connection", (ws, _request, authenticatedUser: any) => {
+  let userId: string | null = authenticatedUser?.id ? String(authenticatedUser.id) : null;
   let currentRoomId: string | null = null;
+
+  if (!userId) {
+    ws.close(1008, "Authentication required");
+    return;
+  }
+  registerSocket(userId, ws);
+  ws.send(JSON.stringify({ type: "online_users", users: getOnlineUsers() }));
 
   ws.on("message", (data) => {
     try {
       const msg = JSON.parse(data.toString());
 
-      if (msg.type === "auth" && msg.userId) {
-        userId = String(msg.userId);
-        registerSocket(userId, ws);
-        ws.send(JSON.stringify({ type: "online_users", users: getOnlineUsers() }));
+      if (msg.type === "auth") {
+        // Kept as a compatibility handshake for existing clients. The identity
+        // is established from the authenticated session/device token above;
+        // never trust a userId supplied by the browser.
+        if (msg.userId && String(msg.userId) !== userId) {
+          ws.close(1008, "Invalid identity");
+        }
         return;
       }
 
@@ -883,10 +951,33 @@ wss.on("connection", (ws) => {
 });
 
 httpServer.on("upgrade", (req, socket, head) => {
-  if (req.url === "/ws") {
-    wss.handleUpgrade(req, socket as any, head, (ws) => {
-      wss.emit("connection", ws, req);
-    });
+  const upgradeUrl = new URL(req.url || "/", "http://localhost");
+  if (upgradeUrl.pathname === "/ws") {
+    const protocols = String(req.headers["sec-websocket-protocol"] || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!protocols.includes("qirox-auth")) {
+      socket.write("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    authenticateWebSocketRequest(req)
+      .then((user) => {
+        if (!user) {
+          socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+        wss.handleUpgrade(req, socket as any, head, (ws) => {
+          wss.emit("connection", ws, req, user);
+        });
+      })
+      .catch(() => {
+        socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+        socket.destroy();
+      });
   }
   // /vite-hmr is handled by Vite middleware, do not destroy
 });
@@ -894,21 +985,15 @@ httpServer.on("upgrade", (req, socket, head) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+      // Keep dynamic IDs, emails, tokens, and phone numbers out of request
+      // logs. The first three path segments retain enough operational context
+      // to identify the endpoint without logging user-controlled identifiers.
+      const safePath = path.split("/").slice(0, 4).join("/") || "/";
+      let logLine = `${req.method} ${safePath} ${res.statusCode} in ${duration}ms`;
       if (logLine.length > 200) logLine = logLine.slice(0, 200) + "…";
       log(logLine);
     }

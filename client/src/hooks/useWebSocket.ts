@@ -3,6 +3,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useLocation } from "wouter";
+import { getStoredDeviceToken } from "@/hooks/use-auth";
 
 function playQiroxSound() {
   try {
@@ -43,7 +44,11 @@ export function useWebSocket(userId: string | undefined) {
     if (!userId || destroyed.current) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const deviceToken = getStoredDeviceToken();
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/ws`,
+      deviceToken ? ["qirox-auth", deviceToken] : ["qirox-auth"],
+    );
     wsRef.current = ws;
 
     ws.onopen = () => {

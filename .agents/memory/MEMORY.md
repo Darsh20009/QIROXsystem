@@ -65,3 +65,4 @@
 - [Phone verification and native push](phone-verification-native-push.md) — WhatsApp OTP must be sent directly; iOS push needs synced plugins, early token listeners, and APNs entitlements.
 - [Unified PDF pipeline](unified-pdf-pipeline.md) — invoices, quotations, and receipt vouchers share one server-side PDF path for downloads and email attachments.
 - [Partner URL hygiene](partner-url-hygiene.md) — partner website data feeds UI, SEO/AEO, and AI; reject malformed hostnames consistently before publishing or prompting.
+- [WebSocket identity](websocket-identity.md) — authenticate upgrades from the session/device token; never trust a client-supplied userId handshake.
