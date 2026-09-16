@@ -257,16 +257,23 @@ ${feedback ? `نتيجة المحاولة السابقة — أصلحها ولا
 auto-run: ${options.autoRun !== false ? "true" : "false"}`;
     emit(options, "stdout", `\n🤖 محاولة الوكيل ${iteration}/${maxIterations}\n`);
 
-    const completion = await client.chat.completions.create({
-      model: options.model || model,
-      messages: [
-        { role: "system", content: buildSystemPrompt(context) },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.15,
-      max_tokens: 12_000,
-    });
-    const plan = parsePlan(completion.choices[0]?.message?.content || "{}");
+    let plan: AgentPlan;
+    try {
+      const completion = await client.chat.completions.create({
+        model: options.model || model,
+        messages: [
+          { role: "system", content: buildSystemPrompt(context) },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.15,
+        max_tokens: 12_000,
+      });
+      plan = parsePlan(completion.choices[0]?.message?.content || "{}");
+    } catch (error: any) {
+      feedback = `تعذر الحصول على خطة صالحة من الوكيل: ${error.message || String(error)}`;
+      emit(options, "stderr", `\n❌ ${feedback}\n`);
+      continue;
+    }
     summary = String(plan.summary || summary || "تم تحليل المشروع");
 
     const patches = Array.isArray(plan.patches) ? plan.patches.slice(0, MAX_PATCH_FILES).map(validatePatch) : [];
@@ -278,10 +285,25 @@ auto-run: ${options.autoRun !== false ? "true" : "false"}`;
 
     const config = validateConfig(plan.config);
     projectConfig = config || projectConfig;
-    const commands = Array.isArray(plan.commands)
-      ? plan.commands.slice(0, MAX_COMMANDS).map(validateAgentCommand)
-      : [];
+    const commands: string[] = [];
+    try {
+      for (const command of Array.isArray(plan.commands) ? plan.commands.slice(0, MAX_COMMANDS) : []) {
+        commands.push(validateAgentCommand(command));
+      }
+    } catch (error: any) {
+      feedback = `الخطة تحتوي أمراً غير صالح: ${error.message || String(error)}`;
+      emit(options, "stderr", `\n❌ ${feedback}\n`);
+      continue;
+    }
     if (!commands.length && config?.buildCmd) commands.push(config.buildCmd);
+    if (!commands.length) {
+      try {
+        const packageJson = JSON.parse(readFile(options.projectId, "package.json"));
+        if (packageJson?.scripts?.build) commands.push("npm run build");
+      } catch {
+        // Projects without package.json or a build script can still be run.
+      }
+    }
 
     feedback = "";
     for (const command of commands) {

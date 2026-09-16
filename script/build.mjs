@@ -1,6 +1,7 @@
-import { rm, mkdir, copyFile } from "fs/promises";
+import { rm, mkdir, copyFile, cp } from "fs/promises";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
+import path from "path";
 
 // Only truly un-bundleable packages stay external:
 // - bufferutil / utf-8-validate: optional native bindings for ws (safe to skip)
@@ -19,7 +20,12 @@ const ALWAYS_EXTERNAL = [
 ];
 
 async function buildAll() {
-  await rm("dist", { recursive: true, force: true });
+  const distDir = path.resolve(process.cwd(), "dist");
+  const stagingDir = path.join(distDir, ".build-staging");
+  const stagingPublicDir = path.join(stagingDir, "public");
+  const livePublicDir = path.join(distDir, "public");
+  await rm(stagingDir, { recursive: true, force: true });
+  await mkdir(stagingPublicDir, { recursive: true });
 
   // ── esbuild binary check ──────────────────────────────────────────────────
   // When npm runs with --ignore-scripts (needed to prevent the npm v10
@@ -39,15 +45,15 @@ async function buildAll() {
   }
 
   console.log("building client...");
-  execSync(`${viteBin} build`, { stdio: "inherit" });
+  execSync(`${viteBin} build --outDir ${JSON.stringify(stagingPublicDir)}`, { stdio: "inherit" });
 
   // The PDF renderer runs on the server and does not read Vite's source tree
   // at runtime. Keep the Arabic font beside the built frontend as well so the
   // prebuilt production bundle can resolve it from dist/public.
   const arabicFontSource = "public/fonts/arabic.ttf";
-  const arabicFontTarget = "dist/public/fonts/arabic.ttf";
+  const arabicFontTarget = path.join(stagingPublicDir, "fonts/arabic.ttf");
   if (existsSync(arabicFontSource)) {
-    await mkdir("dist/public/fonts", { recursive: true });
+    await mkdir(path.dirname(arabicFontTarget), { recursive: true });
     await copyFile(arabicFontSource, arabicFontTarget);
     console.log(`copied ${arabicFontSource} -> ${arabicFontTarget}`);
   } else {
@@ -69,7 +75,7 @@ async function buildAll() {
     platform: "node",
     bundle: true,
     format: "cjs",
-    outfile: "dist/index.cjs",
+    outfile: path.join(stagingDir, "index.cjs"),
     define: {
       "process.env.NODE_ENV": '"production"',
       "import.meta": "__importMeta",
@@ -81,6 +87,19 @@ async function buildAll() {
     external: ALWAYS_EXTERNAL,
     logLevel: "info",
   });
+
+  // Keep the currently served frontend available during a rebuild. Copy all
+  // new assets first, then replace index.html last so it never references a
+  // file that has not been published yet.
+  await mkdir(livePublicDir, { recursive: true });
+  await cp(stagingPublicDir, livePublicDir, {
+    recursive: true,
+    force: true,
+    filter: (source) => path.basename(source) !== "index.html",
+  });
+  await copyFile(path.join(stagingPublicDir, "index.html"), path.join(livePublicDir, "index.html"));
+  await copyFile(path.join(stagingDir, "index.cjs"), path.join(distDir, "index.cjs"));
+  await rm(stagingDir, { recursive: true, force: true });
 
   console.log("✅ Build complete — dist/index.cjs is fully self-contained.");
 }

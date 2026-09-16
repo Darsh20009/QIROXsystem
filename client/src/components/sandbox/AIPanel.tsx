@@ -11,8 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 interface AIPanelProps {
   projectId: string;
   activeFile: string | null;
+  selectedElement?: SelectedElement | null;
   onApplyToEditor: (code: string) => void;
   onCreateFile: (path: string, content: string) => void;
+}
+
+export interface SelectedElement {
+  tagName: string;
+  selector: string;
+  text: string;
+  className: string;
+  ariaLabel: string;
 }
 
 interface AIResult {
@@ -54,7 +63,7 @@ function TypingAnimation({ text }: { text: string }) {
   return <>{displayed}<span className="animate-pulse">▌</span></>;
 }
 
-export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }: AIPanelProps) {
+export function AIPanel({ projectId, activeFile, selectedElement, onApplyToEditor, onCreateFile }: AIPanelProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();
@@ -71,6 +80,7 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
        const res = await apiRequest("POST", endpoint, {
         prompt,
         targetFile: activeFile || undefined,
+         selectedElement: selectedElement || undefined,
          mode: mode === "agent" ? undefined : mode,
          autoRun: mode === "agent",
       });
@@ -137,6 +147,13 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
         className="min-h-[80px] text-xs resize-none"
         data-testid="input-ai-prompt"
       />
+      {selectedElement && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-2 text-[10px] leading-4 text-foreground">
+          <div className="mb-0.5 font-semibold">{ar ? "العنصر المحدد من المعاينة" : "Selected preview element"}</div>
+          <div className="truncate font-mono" dir="ltr">{selectedElement.selector}</div>
+          {selectedElement.text && <div className="mt-0.5 truncate text-muted-foreground">“{selectedElement.text}”</div>}
+        </div>
+      )}
 
       <Button
         size="sm"

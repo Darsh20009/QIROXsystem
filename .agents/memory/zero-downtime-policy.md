@@ -33,3 +33,11 @@ Every migration must include: Purpose, Risk, Rollback Strategy, Verification Che
 **Why:** The platform is in production use. Breaking changes cause real user impact. All development must be safe-to-deploy at any point.
 
 **How to apply:** Before writing any code that touches existing APIs, routes, DB schemas, or UI pages — ask: "Is this additive? Does the old path still work?" If not, restructure as a V2 or flag-gated addition.
+
+## Build Artifact Publishing
+
+Frontend and server bundles must be built in a staging directory and copied over the live `dist` artifacts only after the build succeeds. Publish assets before `index.html`, because the index references fingerprinted files and must never point to files that are not present.
+
+**Why:** Removing `dist` at the beginning of a build created a live window where Express returned `ENOENT` for the frontend.
+
+**How to apply:** Keep the current `dist/public` available during builds, publish new assets first, publish `index.html` last, and clean staging only after the live copy is complete.

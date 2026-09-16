@@ -1111,6 +1111,18 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const prompt = String(req.body?.prompt || "").trim();
       if (!prompt) return res.status(400).json({ error: "وصف المهمة مطلوب" });
+      const selectedElement = req.body?.selectedElement;
+      const selectionContext = selectedElement && typeof selectedElement === "object"
+        ? `\n\nالعنصر المحدد من المعاينة:
+${JSON.stringify({
+  tagName: String(selectedElement.tagName || "").slice(0, 40),
+  selector: String(selectedElement.selector || "").slice(0, 500),
+  text: String(selectedElement.text || "").slice(0, 500),
+  className: String(selectedElement.className || "").slice(0, 500),
+  ariaLabel: String(selectedElement.ariaLabel || "").slice(0, 200),
+}, null, 2)}
+استخدم هذا الوصف لتحديد ملف المصدر المناسب، ولا تكتفِ بتعديل HTML الناتج داخل المعاينة.`
+        : "";
 
       const { SandboxEnvVarModel, SandboxProjectModel } = await import("./models");
       const { getProcessLogs, isRunning, startProcess } = await import("./sandbox-runner");
@@ -1123,7 +1135,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       const result = await runSandboxAgent({
         projectId: pid,
-        prompt,
+        prompt: `${prompt}${selectionContext}`,
         maxIterations: Number(req.body?.maxIterations) || 4,
         autoRun: req.body?.autoRun !== false,
         env,
