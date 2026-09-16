@@ -248,7 +248,7 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                           scale: isActive ? 1.1 : 1,
                         }}
                         transition={{ duration: 0.35 }}
-                        className={`relative z-10 flex h-[4.3rem] w-[4.3rem] items-center justify-center rounded-full border bg-[#f4f5f5] font-mono text-3xl font-bold shadow-[0_0_0_8px_#f4f5f5] transition-colors duration-300 dark:bg-[#0b1119] dark:shadow-[0_0_0_8px_#0b1119] sm:h-[4.8rem] sm:w-[4.8rem] sm:text-4xl ${isActive ? "border-emerald-500 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300" : "border-slate-900/15 text-slate-950 dark:border-white/20 dark:text-white"}`}
+                        className={`relative z-10 flex h-[4.3rem] w-[4.3rem] items-center justify-center rounded-full border bg-[#f4f5f5] font-mono text-3xl font-bold shadow-[0_0_0_8px_#f4f5f5] transition-colors duration-300 dark:bg-[#0b1119] dark:shadow-[0_0_0_8px_#0b1119] sm:h-[4.8rem] sm:w-[4.8rem] sm:text-4xl ${isActive ? "border-emerald-500 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300" : "border-[#aeb4ba]/35 text-[#aeb4ba] dark:border-[#aeb4ba]/35 dark:text-[#aeb4ba]"}`}
                       >
                         {item.letter === "Q" ? (
                           <img src="/qirox-icon.png" alt="QIROX" className="h-9 w-9 object-contain sm:h-10 sm:w-10" />
