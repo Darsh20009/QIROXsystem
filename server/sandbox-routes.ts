@@ -3,6 +3,8 @@ import type { Server as HttpServer } from "http";
 import crypto from "crypto";
 import path from "path";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { runSandboxAgent } from "./sandbox-agent";
+import { recordSandboxLog } from "./sandbox-runner";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
 if (!ENC_KEY_RAW) {
@@ -1102,6 +1104,64 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
   });
 
   // ── AI Code Generation ────────────────────────────────────────────────────
+
+  app.post("/api/sandbox/:id/ai/agent", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const prompt = String(req.body?.prompt || "").trim();
+      if (!prompt) return res.status(400).json({ error: "وصف المهمة مطلوب" });
+
+      const { SandboxEnvVarModel, SandboxProjectModel } = await import("./models");
+      const { getProcessLogs, isRunning, startProcess } = await import("./sandbox-runner");
+      const pid = String(ctx.project._id);
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      const env: Record<string, string> = {};
+      for (const doc of envDocs as any[]) {
+        try { env[doc.key] = decrypt(doc.value, doc.iv); } catch {}
+      }
+
+      const result = await runSandboxAgent({
+        projectId: pid,
+        prompt,
+        maxIterations: Number(req.body?.maxIterations) || 4,
+        autoRun: req.body?.autoRun !== false,
+        env,
+        log: (entry) => {
+          recordSandboxLog(String(ctx.user._id), pid, entry.stream, entry.text);
+        },
+        startProject: async (startCmd) => {
+          const command = startCmd || ctx.project.startCmd;
+          if (!command) return { running: false, output: "لا يوجد أمر تشغيل للمشروع" };
+          try {
+            const started = await startProcess(pid, String(ctx.user._id), {
+              startCmd: command,
+              env,
+              runtime: ctx.project.runtime,
+            });
+            await new Promise((resolve) => setTimeout(resolve, 1800));
+            const running = isRunning(pid);
+            const output = getProcessLogs(pid).slice(-30).map((entry) => entry.text).join("");
+            await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, {
+              status: running ? "running" : "error",
+              port: running ? started.port : null,
+              lastStartedAt: running ? new Date() : undefined,
+            });
+            return { running, port: running ? started.port : undefined, output };
+          } catch (error: any) {
+            return { running: false, output: error.message || String(error) };
+          }
+        },
+      });
+
+      if (result.projectConfig && Object.keys(result.projectConfig).length) {
+        await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, result.projectConfig);
+      }
+      res.json({ mode: "agent", agent: result });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تشغيل الوكيل" });
+    }
+  });
 
   app.post("/api/sandbox/:id/ai/generate", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);

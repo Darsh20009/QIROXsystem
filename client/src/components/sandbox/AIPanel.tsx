@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, Copy, FilePlus, FileEdit } from "lucide-react";
+import { Loader2, Sparkles, Copy, FilePlus, FileEdit, Bot, CheckCircle2, XCircle, TerminalSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AIPanelProps {
@@ -21,6 +21,16 @@ interface AIResult {
   filesCreated?: number;
   mode?: string;
   tokens?: number;
+  agent?: {
+    success: boolean;
+    summary: string;
+    iterations: number;
+    filesChanged: string[];
+    commandsRun: string[];
+    verification: Array<{ command: string; ok: boolean; output: string }>;
+    runtime?: { running: boolean; port?: number; output?: string };
+    error?: string;
+  };
 }
 
 function TypingAnimation({ text }: { text: string }) {
@@ -49,16 +59,20 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
   const ar = lang === "ar";
   const { toast } = useToast();
   const [prompt, setPrompt] = useState("");
-  const [mode, setMode] = useState("create");
+  const [mode, setMode] = useState("agent");
   const [result, setResult] = useState<AIResult | null>(null);
   const [animating, setAnimating] = useState(false);
 
   const generateMutation = useMutation({
     mutationFn: async (): Promise<AIResult> => {
-      const res = await apiRequest("POST", `/api/sandbox/${projectId}/ai/generate`, {
+       const endpoint = mode === "agent"
+         ? `/api/sandbox/${projectId}/ai/agent`
+         : `/api/sandbox/${projectId}/ai/generate`;
+       const res = await apiRequest("POST", endpoint, {
         prompt,
         targetFile: activeFile || undefined,
-        mode,
+         mode: mode === "agent" ? undefined : mode,
+         autoRun: mode === "agent",
       });
       return res.json();
     },
@@ -66,7 +80,14 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
       setResult(data);
       setAnimating(true);
       setTimeout(() => setAnimating(false), (data.code?.length || data.explanation?.length || 100) * 8 + 500);
-      if (data.mode === "full-project" && data.filesCreated) {
+       if (data.mode === "agent" && data.agent) {
+         toast({
+           title: data.agent.success
+             ? (ar ? "اكتمل عمل الوكيل وتم التحقق" : "Agent completed and verified")
+             : (ar ? "الوكيل يحتاج تدخلاً" : "Agent needs attention"),
+           variant: data.agent.success ? "default" : "destructive",
+         });
+       } else if (data.mode === "full-project" && data.filesCreated) {
         toast({ title: ar ? `تم إنشاء ${data.filesCreated} ملف` : `Created ${data.filesCreated} files` });
       }
     },
@@ -87,6 +108,9 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="agent">
+            {ar ? "QIROX Agent — تعديل وتشغيل وإصلاح" : "QIROX Agent — edit, run & fix"}
+          </SelectItem>
           <SelectItem value="create">{ar ? "إنشاء ملف" : "Generate File"}</SelectItem>
           <SelectItem value="edit">{ar ? "تعديل الملف الحالي" : "Edit Current File"}</SelectItem>
           <SelectItem value="explain">{ar ? "شرح الكود" : "Explain Code"}</SelectItem>
@@ -104,7 +128,9 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder={
-          mode === "full-project"
+           mode === "agent"
+             ? (ar ? "صف النتيجة المطلوبة، وسيعدّل الوكيل المشروع ويشغله ويصلح الأخطاء..." : "Describe the outcome. The agent will edit, run, verify, and fix the project...")
+           : mode === "full-project"
             ? (ar ? "صف المشروع الذي تريد إنشاءه..." : "Describe the project you want to build...")
             : (ar ? "اكتب الأمر هنا..." : "Type your prompt here...")
         }
@@ -137,9 +163,35 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
         </div>
       )}
 
-      {result && !generateMutation.isPending && (
+       {result && !generateMutation.isPending && (
         <div className="flex-1 overflow-y-auto border border-border rounded bg-muted/20">
-          {result.explanation ? (
+           {result.agent ? (
+             <div className="space-y-3 p-3 text-xs">
+               <div className="flex items-center gap-2 font-semibold">
+                 <Bot className="h-4 w-4" />
+                 <span>{ar ? "تقرير QIROX Agent" : "QIROX Agent report"}</span>
+                 {result.agent.success ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+               </div>
+               <p className="whitespace-pre-wrap leading-5">{result.agent.summary}</p>
+               <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
+                 <span>{ar ? "المحاولات" : "Iterations"}: {result.agent.iterations}</span>
+                 <span>{ar ? "الملفات المعدلة" : "Files changed"}: {result.agent.filesChanged.length}</span>
+               </div>
+               {!!result.agent.commandsRun.length && (
+                 <div className="rounded border border-border bg-background p-2">
+                   <div className="mb-1 flex items-center gap-1 font-semibold"><TerminalSquare className="h-3 w-3" />{ar ? "أوامر التحقق" : "Verification commands"}</div>
+                   {result.agent.verification.map((item, index) => (
+                     <div key={`${item.command}-${index}`} className="flex items-center gap-1 font-mono text-[10px]">
+                       {item.ok ? <CheckCircle2 className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-500" />}
+                       <span className="truncate">{item.command}</span>
+                     </div>
+                   ))}
+                 </div>
+               )}
+               {result.agent.error && <pre className="whitespace-pre-wrap rounded border border-red-500/30 bg-red-500/5 p-2 text-[10px] text-red-500">{result.agent.error}</pre>}
+               {result.agent.runtime?.running && <div className="text-green-500">{ar ? `المشروع يعمل على المنفذ ${result.agent.runtime.port || ""}` : `Project running on port ${result.agent.runtime.port || ""}`}</div>}
+             </div>
+           ) : result.explanation ? (
             <div className="p-3 text-xs whitespace-pre-wrap">
               {animating ? <TypingAnimation text={result.explanation} /> : result.explanation}
             </div>

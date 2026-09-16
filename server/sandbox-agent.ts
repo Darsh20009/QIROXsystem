@@ -36,6 +36,7 @@ export interface SandboxAgentResult {
   commandsRun: string[];
   verification: Array<{ command: string; ok: boolean; output: string }>;
   runtime?: { running: boolean; port?: number; output?: string };
+  projectConfig?: AgentPlan["config"];
   error?: string;
 }
 
@@ -90,7 +91,12 @@ function buildProjectContext(projectId: string): string {
       const content = readFile(projectId, filePath);
       const remaining = MAX_CONTEXT_BYTES - bytes;
       if (remaining <= 0) break;
-      const clipped = content.slice(0, Math.min(remaining, 24_000));
+      const clipped = content
+        .slice(0, Math.min(remaining, 24_000))
+        .replace(
+          /((?:api[_-]?key|secret|password|token|private[_-]?key|mongodb[_-]?uri)\s*[:=]\s*["']?)[^"'`\s,}]+/gi,
+          "$1[REDACTED]",
+        );
       bytes += clipped.length;
       sections.push(`FILE: ${filePath}\n${clipped}`);
     } catch {
@@ -239,6 +245,7 @@ export async function runSandboxAgent(options: AgentOptions): Promise<SandboxAge
   let feedback = "";
   let summary = "";
   let runtime: SandboxAgentResult["runtime"];
+  let projectConfig: AgentPlan["config"];
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     const context = buildProjectContext(options.projectId);
@@ -270,6 +277,7 @@ auto-run: ${options.autoRun !== false ? "true" : "false"}`;
     if (patches.length) emit(options, "stdout", `✅ تم تطبيق ${patches.length} تعديل ملف\n`);
 
     const config = validateConfig(plan.config);
+    projectConfig = config || projectConfig;
     const commands = Array.isArray(plan.commands)
       ? plan.commands.slice(0, MAX_COMMANDS).map(validateAgentCommand)
       : [];
@@ -307,6 +315,7 @@ auto-run: ${options.autoRun !== false ? "true" : "false"}`;
         commandsRun,
         verification,
         runtime,
+        projectConfig,
       };
     }
   }
@@ -319,6 +328,7 @@ auto-run: ${options.autoRun !== false ? "true" : "false"}`;
     commandsRun,
     verification,
     runtime,
+    projectConfig,
     error: feedback || "انتهت محاولات الوكيل قبل نجاح التحقق",
   };
 }
