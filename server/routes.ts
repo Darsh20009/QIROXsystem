@@ -595,6 +595,20 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  // Client accounts must not reach staff/admin API namespaces, regardless of
+  // what the browser renders or which URL is entered manually. Keep this
+  // middleware limited to client exclusion so existing staff-role-specific
+  // checks on individual endpoints remain authoritative.
+  app.use(
+    ["/api/admin", "/api/employee", "/api/supplier", "/api/sales", "/api/investor"],
+    (req, res, next) => {
+      if (!req.isAuthenticated()) return res.sendStatus(401);
+      if ((req.user as any)?.role === "client") return res.sendStatus(403);
+      next();
+    },
+  );
+
   const getPdfBankDetails = async () => {
     try {
       const { BankSettingsModel } = await import("./models");
@@ -1419,7 +1433,18 @@ export async function registerRoutes(
     try {
       const { UserModel, OtpModel } = await import("./models");
       const incomingEmail = req.body.email ? String(req.body.email).toLowerCase().trim() : null;
-      const role = req.body.role || "client";
+      const requestedRole = String(req.body.role || "client").trim().toLowerCase();
+      const isPrivilegedProvisioner =
+        req.isAuthenticated() &&
+        ["admin", "manager"].includes(String((req.user as any)?.role || ""));
+
+      // Public registration is customer registration. Never trust a role
+      // supplied by an unauthenticated browser; internal roles must be
+      // provisioned from an authenticated admin/manager session.
+      if (requestedRole !== "client" && !isPrivilegedProvisioner) {
+        return res.status(403).json({ error: "إنشاء حسابات الموظفين يتطلب صلاحية مسؤول" });
+      }
+      const role = requestedRole;
 
       // Customer registrations must explicitly acknowledge the current terms.
       // Internal employee provisioning uses this same endpoint but is not a customer

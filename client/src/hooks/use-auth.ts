@@ -4,11 +4,27 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 
 const DEVICE_TOKEN_KEY = "qirox_device_token";
+const STAFF_ROUTE_PREFIXES = ["/admin", "/employee", "/supplier", "/sales", "/investor"];
 
 export function getUserHomePath(role?: string): string {
   if (role === "client") return "/dashboard";
   if (role === "admin" || role === "manager") return "/admin";
   return "/employee/role-dashboard";
+}
+
+export function isPathAllowedForRole(role: string | undefined, path: string): boolean {
+  if (!path || !path.startsWith("/") || path.startsWith("//")) return false;
+  if (role !== "client") return true;
+  return !STAFF_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+export function getSafePostLoginPath(
+  role: string | undefined,
+  candidate: unknown,
+  fallback = getUserHomePath(role),
+): string {
+  const path = typeof candidate === "string" ? candidate : "";
+  return isPathAllowedForRole(role, path) ? path : fallback;
 }
 
 export function getStoredDeviceToken(): string | null {
@@ -74,7 +90,7 @@ export function useLogin() {
         const returnUrl = sessionStorage.getItem("returnAfterLogin");
         if (returnUrl) {
           sessionStorage.removeItem("returnAfterLogin");
-          setLocation(returnUrl);
+          setLocation(getSafePostLoginPath(user.role, returnUrl));
         } else {
           setLocation(homePath);
         }

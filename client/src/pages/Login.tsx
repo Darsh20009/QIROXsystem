@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLogin, useRegister, saveDeviceToken, getUserHomePath } from "@/hooks/use-auth";
+import { useLogin, useRegister, saveDeviceToken, getUserHomePath, getSafePostLoginPath } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -704,7 +704,7 @@ export default function Login() {
           : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
         if (user.role === "client") {
           const returnUrl = sessionStorage.getItem("returnAfterLogin");
-          if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+          if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
           else setLocation(redirectPath);
         } else {
           setLocation(redirectPath);
@@ -770,7 +770,7 @@ export default function Login() {
             : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
           if (user.role === "client") {
             const returnUrl = sessionStorage.getItem("returnAfterLogin");
-            if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+            if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
             else setLocation(redirectPath);
           } else { setLocation(redirectPath); }
         } else if (data.status === "denied") {
@@ -868,7 +868,7 @@ export default function Login() {
       const returnUrl = sessionStorage.getItem("returnAfterLogin");
       if (returnUrl) {
         sessionStorage.removeItem("returnAfterLogin");
-        setLocation(returnUrl);
+        setLocation(getSafePostLoginPath(role, returnUrl));
        } else if (role && role !== "client") {
          setLocation(getUserHomePath(role));
       } else {
@@ -1016,7 +1016,7 @@ export default function Login() {
       queryClient.setQueryData(["/api/user"], user);
       setPhoneLoginOpen(false);
       const returnUrl = sessionStorage.getItem("returnAfterLogin");
-      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
       else setLocation(user.role === "client" ? "/dashboard" : getUserHomePath(user.role));
     } catch {
       setPhoneLoginError("تعذر الاتصال بالخادم");
@@ -1044,7 +1044,7 @@ export default function Login() {
           // For client accounts — show face setup step first
           const redirectTo = user.email ? "/verify-email?flow=register" : (() => {
             const r = sessionStorage.getItem("returnAfterLogin");
-            if (r) { sessionStorage.removeItem("returnAfterLogin"); return r; }
+            if (r) { sessionStorage.removeItem("returnAfterLogin"); return getSafePostLoginPath(user.role, r); }
              return getUserHomePath(user.role);
           })();
 
@@ -1503,7 +1503,7 @@ export default function Login() {
                         : authenticatedUser.role === "client" ? "/dashboard" : "/employee/role-dashboard";
                       if (authenticatedUser.role === "client") {
                         const returnUrl = sessionStorage.getItem("returnAfterLogin");
-                        if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+                        if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(authenticatedUser.role, returnUrl)); }
                         else setLocation(redirectPath);
                       } else { setLocation(redirectPath); }
                     }

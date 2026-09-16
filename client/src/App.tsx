@@ -281,6 +281,7 @@ function HomeGate() {
 }
 
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai", "/youssef-darwish", "/team/youssef-darwish", "/mohammed-aldabbani", "/team/mohammed-aldabbani", "/ai-docs", "/support"];
+const CLIENT_BLOCKED_ROUTE_PREFIXES = ["/admin", "/employee", "/supplier", "/sales", "/investor"];
 
 
 function PublicRouter() {
@@ -1319,6 +1320,15 @@ function AppInner() {
     || location.startsWith("/ep/")
     || location.startsWith("/team/");
 
+  // A client must never render staff/admin pages, even when a stale
+  // post-login URL or a manually entered address points there. This is
+  // intentionally outside AdminRouter so it covers every current and future
+  // route registered in that large router.
+  const isClientBlockedRoute =
+    !isPublicRoute &&
+    user?.role === "client" &&
+    CLIENT_BLOCKED_ROUTE_PREFIXES.some((prefix) => location === prefix || location.startsWith(`${prefix}/`));
+
   // Guard: redirect unauthenticated users to /login (must be before any early returns)
   useEffect(() => {
     if (!isPublicRoute && !userLoading && user === null) {
@@ -1327,6 +1337,12 @@ function AppInner() {
     }
   }, [isPublicRoute, userLoading, user, location]);
 
+  useEffect(() => {
+    if (isClientBlockedRoute) {
+      navigate("/dashboard");
+    }
+  }, [isClientBlockedRoute, navigate]);
+
   // While auth is still resolving on private routes, show the branded loader
   if (!isPublicRoute && userLoading) {
     return <QiroxLoadingScreen />;
@@ -1334,6 +1350,10 @@ function AppInner() {
 
   if (!isPublicRoute && !userLoading && user === null) {
     return null;
+  }
+
+  if (isClientBlockedRoute) {
+    return <QiroxLoadingScreen />;
   }
 
   if (isPublicRoute) {
