@@ -257,19 +257,37 @@ workflows:
 
       - name: Set build number
         script: |
+          set -e
+          BUILD_NUMBER="${BUILD_NUMBER:-1}"
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Invalid BUILD_NUMBER: $BUILD_NUMBER" && exit 1 ;;
+          esac
           # Use Codemagic BUILD_NUMBER (auto-increments each build) as CFBundleVersion
           PLIST="ios/App/App/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          # Info.plist resolves CFBundleVersion from this Xcode build setting,
+          # so update the project setting as well.
+          sed -i '' -E "s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" \
+            ios/App/App.xcodeproj/project.pbxproj
           echo "CFBundleVersion set to: $BUILD_NUMBER"
+          echo "CURRENT_PROJECT_VERSION settings:"
+          grep -n "CURRENT_PROJECT_VERSION" ios/App/App.xcodeproj/project.pbxproj
 
       - name: Set up code signing and build IPA
         script: |
           set -e
+          set -o pipefail
+          mkdir -p /tmp/xcodebuild_logs
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles 2>&1 | tee /tmp/xcodebuild_logs/use-profiles.log
+          xcodebuild \
+            -workspace "ios/App/App.xcworkspace" \
+            -scheme "App" \
+            -configuration Release \
+            -showBuildSettings 2>&1 | tee /tmp/xcodebuild_logs/show-build-settings.log
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
-            --scheme "App"
+            --scheme "App" 2>&1 | tee /tmp/xcodebuild_logs/build-ipa.log
 
       - name: Publish to TestFlight
         script: |

@@ -129,6 +129,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         userId: form.userId,
         orderId: form.orderId || undefined,
         amount: finalAmount,
+        discountPercent: Number(form.discountPercent) || 0,
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
@@ -427,7 +428,8 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
   const mutation = useMutation({
     mutationFn: async () => {
       const r = await apiRequest("PATCH", `/api/invoices/${invoice.id}`, {
-        amount: finalAmount, totalAmount: finalAmount,
+         amount: finalAmount,
+         discountPercent: Number(form.discountPercent) || 0,
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,

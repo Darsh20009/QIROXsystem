@@ -10,6 +10,8 @@ const invoiceSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true, unique: true },
   title: { type: String, default: "" },
   amount: { type: Number, required: true },
+  discountPercent: { type: Number, default: 0 },
+  discountAmount: { type: Number, default: 0 },
   vatRate: { type: Number, default: 15 },
   vatAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },

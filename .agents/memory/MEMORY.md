@@ -63,3 +63,4 @@
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
 - [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.
 - [Phone verification and native push](phone-verification-native-push.md) — WhatsApp OTP must be sent directly; iOS push needs synced plugins, early token listeners, and APNs entitlements.
+- [Unified PDF pipeline](unified-pdf-pipeline.md) — invoices, quotations, and receipt vouchers share one server-side PDF path for downloads and email attachments.

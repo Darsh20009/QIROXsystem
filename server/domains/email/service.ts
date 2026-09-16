@@ -374,14 +374,14 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string;
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  orderId?: string; createdAt?: string;
+  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendInvoiceEmail(to, clientName, invoice);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
   receiptNumber: string; amount: number; amountInWords?: string;
-  paymentMethod: string; description?: string; createdAt?: string;
+  paymentMethod: string; description?: string; createdAt?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendReceiptEmail(to, clientName, receipt);
 }

@@ -1,11 +1,12 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
+import { Loader2, Printer, ArrowRight, Mail, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 const METHOD_LABELS: Record<string, string> = {
   bank_transfer: "تحويل بنكي", cash: "نقداً", stc_pay: "STC Pay",
@@ -43,6 +44,17 @@ export default function ReceiptPrint() {
     onSuccess: () => toast({ title: "تم إرسال السند بالبريد ✅" }),
     onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
   });
+
+  const handleDownload = async () => {
+    try {
+      await downloadAuthenticatedFile(
+        `/api/receipts/${params.id}/pdf`,
+        `receipt-${receipt?.receiptNumber || params.id}.pdf`,
+      );
+    } catch {
+      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
+    }
+  };
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -90,9 +102,13 @@ export default function ReceiptPrint() {
             {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
             إرسال للعميل
           </Button>
-          <Button onClick={() => window.print()} size="sm" className="bg-black text-white h-8 text-xs gap-1.5">
+          <Button onClick={() => window.print()} variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-black/[0.12]">
             <Printer className="w-3 h-3" />
-            طباعة / PDF
+            طباعة
+          </Button>
+          <Button onClick={handleDownload} size="sm" className="bg-black text-white h-8 text-xs gap-1.5">
+            <Download className="w-3 h-3" />
+            حفظ PDF
           </Button>
         </div>
       </div>

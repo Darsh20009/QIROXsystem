@@ -9,6 +9,7 @@ const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { printDocument } from "@/lib/print-document";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "", notes: "" };
 
@@ -25,6 +26,17 @@ export default function InvoicePrint() {
       await printDocument({ title: `فاتورة-${invoice?.invoiceNumber || "QIROX"}` });
     } catch {
       toast({ title: "تعذّرت تهيئة الفاتورة للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      await downloadAuthenticatedFile(
+        `/api/invoices/${params.id}/pdf`,
+        `invoice-${invoice?.invoiceNumber || params.id}.pdf`,
+      );
+    } catch {
+      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
     }
   };
 
@@ -125,7 +137,7 @@ export default function InvoicePrint() {
             طباعة
           </Button>
           <Button
-            onClick={handlePrint}
+            onClick={handleDownload}
             size="sm"
             className="bg-black text-white h-8 text-xs gap-1.5"
             data-testid="button-download-pdf-invoice"

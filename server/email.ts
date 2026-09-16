@@ -745,7 +745,7 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
   invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  orderId?: string; createdAt?: string;
+  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   const itemsHtml = invoice.items && invoice.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
@@ -785,12 +785,17 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
     text("معلومات التحويل البنكي: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
     btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الفاتورة في لوحة التحكم")
   );
-  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html);
+  const attachments: EmailAttachment[] = invoice.pdfBytes ? [{
+    filename: `invoice-${invoice.invoiceNumber}.pdf`,
+    fileblob: Buffer.from(invoice.pdfBytes).toString("base64"),
+    mimetype: "application/pdf",
+  }] : [];
+  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html, undefined, attachments);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
   receiptNumber: string; amount: number; amountInWords?: string;
-  paymentMethod: string; description?: string; createdAt?: string;
+  paymentMethod: string; description?: string; createdAt?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   const methodLabels: Record<string, string> = {
     bank_transfer: "تحويل بنكي", cash: "نقداً", paypal: "PayPal",
@@ -816,7 +821,12 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
     `<p style="margin:14px 0;font-size:13px;font-weight:700;color:#16a34a;">تم استلام المبلغ بنجاح &mdash; شكراً لثقتك في QIROX</p>` +
     btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض لوحة التحكم")
   );
-  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html);
+  const attachments: EmailAttachment[] = receipt.pdfBytes ? [{
+    filename: `receipt-${receipt.receiptNumber}.pdf`,
+    fileblob: Buffer.from(receipt.pdfBytes).toString("base64"),
+    mimetype: "application/pdf",
+  }] : [];
+  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html, undefined, attachments);
 }
 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {

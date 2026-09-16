@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
-import { Loader2, Plus, Printer, Mail, Trash2, FileCheck, Search } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Trash2, FileCheck, Search, Download } from "lucide-react";
 import { useLocation } from "wouter";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 function getPaymentMethods(L: boolean) { return [
   { value: "bank_transfer", label: L ? "تحويل بنكي" : "Bank Transfer" },
@@ -369,6 +370,20 @@ export default function AdminReceipts() {
                             data-testid={`button-print-receipt-${r.id}`}
                           >
                             <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => downloadAuthenticatedFile(
+                              `/api/receipts/${r.id}/pdf`,
+                              `receipt-${r.receiptNumber || r.id}.pdf`,
+                            ).catch(() => toast({
+                              title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+                              variant: "destructive",
+                            }))}
+                            className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
+                            title={L ? "تحميل PDF" : "Download PDF"}
+                            data-testid={`button-download-receipt-${r.id}`}
+                          >
+                            <Download className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => sendEmailMutation.mutate(r.id)}

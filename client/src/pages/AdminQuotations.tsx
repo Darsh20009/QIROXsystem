@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 interface Client { id: string; fullName: string; email: string; username: string; }
 interface QuotationItem { name: string; description?: string; qty: number; unitPrice: number; total: number; }
@@ -504,7 +505,10 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         <div className="grid grid-cols-2 gap-1">
           <button
             type="button"
-            onClick={() => setLocation(`/admin/quotation-print/${quotation.id}`)}
+            onClick={() => downloadAuthenticatedFile(
+              `/api/quotations/${quotation.id}/pdf`,
+              `quotation-${quotation.quotationNumber}.pdf`,
+            ).catch(() => toast({ title: L ? "تعذّر تحميل PDF" : "PDF download failed", variant: "destructive" }))}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
             <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}

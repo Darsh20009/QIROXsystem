@@ -549,6 +549,20 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+  const getPdfBankDetails = async () => {
+    try {
+      const { BankSettingsModel } = await import("./models");
+      const bank: any = await BankSettingsModel.findOne({ key: "main" }).lean();
+      return bank ? {
+        bankName: bank.bankName,
+        beneficiaryName: bank.beneficiaryName,
+        iban: bank.iban,
+        accountNumber: bank.accountNumber,
+      } : {};
+    } catch {
+      return {};
+    }
+  };
   const dashboardForUser = (user: any) => {
     if (user.role === "client") return "/dashboard";
     return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
@@ -11114,8 +11128,22 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
-    const totalAmount = req.body.amount || 0;
-    const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount: 0, totalAmount });
+    const amount = Number(req.body.amount) || 0;
+    const discountPercent = Math.min(100, Math.max(0, Number(req.body.discountPercent) || 0));
+    const discountAmount = Math.round(amount * discountPercent) / 100;
+    const vatRate = Math.min(100, Math.max(0, Number(req.body.vatRate ?? 15) || 0));
+    const vatAmount = Math.round((amount - discountAmount) * vatRate) / 100;
+    const totalAmount = amount - discountAmount + vatAmount;
+    const invoice = await InvoiceModel.create({
+      ...req.body,
+      invoiceNumber: invNum,
+      amount,
+      discountPercent,
+      discountAmount,
+      vatRate,
+      vatAmount,
+      totalAmount,
+    });
     try {
       if (req.body.userId) {
         const { NotificationModel } = await import("./models");
@@ -11134,7 +11162,20 @@ export async function registerRoutes(
   app.patch("/api/invoices/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
-    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) }, { returnDocument: "after" });
+    const current: any = await InvoiceModel.findById(req.params.id);
+    if (!current) return res.sendStatus(404);
+    const updates: any = { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) };
+    const amount = Number(req.body.amount ?? current.amount) || 0;
+    const discountPercent = Math.min(100, Math.max(0, Number(req.body.discountPercent ?? current.discountPercent) || 0));
+    const vatRate = Math.min(100, Math.max(0, Number(req.body.vatRate ?? current.vatRate ?? 15) || 0));
+    const discountAmount = Math.round(amount * discountPercent) / 100;
+    updates.amount = amount;
+    updates.discountPercent = discountPercent;
+    updates.discountAmount = discountAmount;
+    updates.vatRate = vatRate;
+    updates.vatAmount = Math.round((amount - discountAmount) * vatRate) / 100;
+    updates.totalAmount = amount - discountAmount + updates.vatAmount;
+    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, updates, { returnDocument: "after" });
     res.json(invoice);
   });
 
@@ -11191,6 +11232,39 @@ export async function registerRoutes(
       const targetName = (req.body?.toName) || invoice.externalName || snap.fullName || u.fullName || u.username || "عميل";
       if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للمستلم" });
       const { sendInvoiceEmail } = await import("./email");
+       const { generateInvoicePdf } = await import("./services/pdf.service");
+       const bank = await getPdfBankDetails();
+       const snapForPdf = invoice.clientSnapshot || {};
+       const clientForPdf = invoice.userId || {};
+       let pdfBytes: Uint8Array | undefined;
+       try {
+         pdfBytes = await generateInvoicePdf({
+           invoiceNumber: invoice.invoiceNumber,
+           title: invoice.title,
+           clientName: snapForPdf.fullName || clientForPdf.fullName || invoice.externalName || "—",
+           clientEmail: snapForPdf.email || clientForPdf.email || invoice.externalEmail,
+           clientPhone: snapForPdf.phone || clientForPdf.phone,
+           clientAddress: snapForPdf.address || clientForPdf.address,
+           clientCity: snapForPdf.city || clientForPdf.city,
+           clientTaxNumber: snapForPdf.taxNumber || clientForPdf.taxNumber,
+           clientOrganization: snapForPdf.organizationName || clientForPdf.organizationName || invoice.externalCompany,
+           clientCommercialReg: snapForPdf.commercialRegistration || clientForPdf.commercialRegistration,
+           totalAmount: invoice.totalAmount,
+           vatRate: invoice.vatRate,
+           vatAmount: invoice.vatAmount,
+           amount: invoice.amount,
+           discountPercent: invoice.discountPercent,
+           discountAmount: invoice.discountAmount,
+           dueDate: invoice.dueDate,
+           status: invoice.status,
+           items: invoice.items,
+           notes: invoice.notes,
+           createdAt: invoice.createdAt,
+           ...bank,
+         });
+       } catch (pdfErr) {
+         console.error("[INVOICE PDF EMAIL] generation error:", pdfErr);
+       }
       await sendInvoiceEmail(targetEmail, targetName, {
         invoiceNumber: (invoice as any).invoiceNumber,
         amount: (invoice as any).amount,
@@ -11201,6 +11275,7 @@ export async function registerRoutes(
         notes: (invoice as any).notes,
         items: (invoice as any).items,
         createdAt: (invoice as any).createdAt,
+         pdfBytes,
       });
       dispatchNotification({
         event: "invoice_sent",
@@ -11251,6 +11326,50 @@ export async function registerRoutes(
     res.json(receipt);
   });
 
+  // GET /api/receipts/:id/pdf — canonical server-generated receipt PDF
+  app.get("/api/receipts/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ReceiptVoucherModel } = await import("./models");
+      const receipt: any = await ReceiptVoucherModel.findById(req.params.id)
+        .populate("userId", "fullName email username phone whatsappNumber")
+        .populate("invoiceId", "invoiceNumber");
+      if (!receipt) return res.status(404).json({ error: "السند غير موجود" });
+
+      const user = req.user as any;
+      const ownerId = receipt.userId?._id ? String(receipt.userId._id) : String(receipt.userId || "");
+      const privileged = ["admin", "manager", "accountant", "sales_manager"].includes(user.role);
+      if (!privileged && ownerId !== String(user.id)) return res.sendStatus(403);
+
+      const { generateReceiptPdf } = await import("./services/pdf.service");
+      const bank = await getPdfBankDetails();
+      const client = receipt.userId || {};
+      const invoice = receipt.invoiceId || {};
+      const pdfBytes = await generateReceiptPdf({
+        receiptNumber: receipt.receiptNumber,
+        clientName: client.fullName || client.username || "—",
+        clientEmail: client.email,
+        clientPhone: client.phone || client.whatsappNumber,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: receipt.amount,
+        amountInWords: receipt.amountInWords,
+        paymentMethod: receipt.paymentMethod,
+        paymentRef: receipt.paymentRef,
+        description: receipt.description,
+        receivedBy: receipt.receivedBy,
+        notes: receipt.notes,
+        createdAt: receipt.createdAt,
+        ...bank,
+      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      console.error("[RECEIPT PDF] error:", err);
+      res.status(500).json({ error: "فشل توليد PDF" });
+    }
+  });
+
   app.post("/api/receipts", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
@@ -11292,6 +11411,29 @@ export async function registerRoutes(
       const user = (receipt as any).userId;
       if (!user?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
       const { sendReceiptEmail } = await import("./email");
+       const { generateReceiptPdf } = await import("./services/pdf.service");
+       const bank = await getPdfBankDetails();
+       let pdfBytes: Uint8Array | undefined;
+       try {
+         pdfBytes = await generateReceiptPdf({
+           receiptNumber: receipt.receiptNumber,
+           clientName: user.fullName || user.username || "—",
+           clientEmail: user.email,
+           clientPhone: user.phone || user.whatsappNumber,
+           invoiceNumber: receipt.invoiceId?.invoiceNumber,
+           amount: receipt.amount,
+           amountInWords: receipt.amountInWords,
+           paymentMethod: receipt.paymentMethod,
+           paymentRef: receipt.paymentRef,
+           description: receipt.description,
+           receivedBy: receipt.receivedBy,
+           notes: receipt.notes,
+           createdAt: receipt.createdAt,
+           ...bank,
+         });
+       } catch (pdfErr) {
+         console.error("[RECEIPT PDF EMAIL] generation error:", pdfErr);
+       }
       await sendReceiptEmail(user.email, user.fullName || user.username, {
         receiptNumber: (receipt as any).receiptNumber,
         amount: (receipt as any).amount,
@@ -11299,6 +11441,7 @@ export async function registerRoutes(
         paymentMethod: (receipt as any).paymentMethod,
         description: (receipt as any).description,
         createdAt: (receipt as any).createdAt,
+         pdfBytes,
       });
       res.json({ ok: true, message: "تم إرسال السند بنجاح" });
     } catch (err) {
@@ -11514,7 +11657,8 @@ export async function registerRoutes(
     if (!targetEmail) return res.status(400).json({ error: "البريد الإلكتروني غير موجود" });
 
     const { sendQuotationEmail } = await import("./email");
-    const { generateQuotationPdf } = await import("./pdf");
+    const { generateQuotationPdf } = await import("./services/pdf.service");
+    const bank = await getPdfBankDetails();
     const siteUrl = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 
     const isRegistered = !!client?.email && !externalEmail;
@@ -11540,10 +11684,16 @@ export async function registerRoutes(
         vatRate: (quotation as any).vatRate,
         vatAmount: (quotation as any).vatAmount,
         amount: (quotation as any).amount,
+        discountPercent: (quotation as any).discountPercent,
+        discountAmount: (quotation as any).discountAmount,
         validUntil: (quotation as any).validUntil,
         items: (quotation as any).items,
         notes: (quotation as any).notes,
         createdAt: (quotation as any).createdAt,
+        paymentTerms: (quotation as any).paymentTerms,
+        termsAndConditions: (quotation as any).termsAndConditions,
+        language: (quotation as any).language,
+        ...bank,
       });
     } catch (pdfErr) {
       console.error("[PDF] generation error:", pdfErr);
@@ -11604,12 +11754,13 @@ export async function registerRoutes(
       .populate("userId", "fullName email username phone country address city taxNumber organizationName commercialRegistration");
     if (!quotation) return res.sendStatus(404);
     if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
-    const { generateQuotationPdf } = await import("./pdf");
+      const { generateQuotationPdf } = await import("./services/pdf.service");
     const client = (quotation as any).userId as any;
     const clientName = (quotation as any).externalName || client?.fullName || client?.username || "العميل";
     const clientEmail = (quotation as any).externalEmail || client?.email || "";
     const clientCompany = (quotation as any).externalCompany || client?.organizationName || "";
     try {
+      const bank = await getPdfBankDetails();
       const pdfBytes = await generateQuotationPdf({
         quotationNumber: (quotation as any).quotationNumber,
         title: (quotation as any).title,
@@ -11625,10 +11776,16 @@ export async function registerRoutes(
         vatRate: (quotation as any).vatRate,
         vatAmount: (quotation as any).vatAmount,
         amount: (quotation as any).amount,
+        discountPercent: (quotation as any).discountPercent,
+        discountAmount: (quotation as any).discountAmount,
         validUntil: (quotation as any).validUntil,
         items: (quotation as any).items,
         notes: (quotation as any).notes,
         createdAt: (quotation as any).createdAt,
+        paymentTerms: (quotation as any).paymentTerms,
+        termsAndConditions: (quotation as any).termsAndConditions,
+        language: (quotation as any).language,
+        ...bank,
       });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="quotation-${(quotation as any).quotationNumber}.pdf"`);
@@ -11700,6 +11857,8 @@ export async function registerRoutes(
       quotationId: q._id,
       title: (q as any).title || "",
       amount: (q as any).amount,
+      discountPercent: (q as any).discountPercent,
+      discountAmount: (q as any).discountAmount,
       vatRate: (q as any).vatRate,
       vatAmount: (q as any).vatAmount,
       totalAmount: (q as any).totalAmount,
@@ -11730,7 +11889,8 @@ export async function registerRoutes(
       if (!privileged && ownerId !== String(u.id)) return res.sendStatus(403);
       const snap = invoice.clientSnapshot || {};
       const client = invoice.userId || {};
-      const { generateInvoicePdf } = await import("./pdf");
+      const { generateInvoicePdf } = await import("./services/pdf.service");
+      const bank = await getPdfBankDetails();
       const pdfBytes = await generateInvoicePdf({
         invoiceNumber: invoice.invoiceNumber,
         title: invoice.title,
@@ -11746,11 +11906,14 @@ export async function registerRoutes(
         vatRate: invoice.vatRate,
         vatAmount: invoice.vatAmount,
         amount: invoice.amount,
+         discountPercent: invoice.discountPercent,
+         discountAmount: invoice.discountAmount,
         dueDate: invoice.dueDate,
         status: invoice.status,
         items: invoice.items,
         notes: invoice.notes,
         createdAt: invoice.createdAt,
+         ...bank,
       });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);

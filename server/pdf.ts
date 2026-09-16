@@ -8,7 +8,7 @@ import * as path from "path";
 const _require = createRequire(import.meta.url);
 const fontkit  = _require("@pdf-lib/fontkit");
 
-interface QuotationData {
+export interface QuotationData {
   quotationNumber: string;
   title?: string;
   clientName: string;
@@ -23,13 +23,22 @@ interface QuotationData {
   vatRate?: number;
   vatAmount?: number;
   amount?: number;
+  discountPercent?: number;
+  discountAmount?: number;
   validUntil?: string;
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
   createdAt?: string;
+  paymentTerms?: string;
+  termsAndConditions?: string;
+  bankName?: string;
+  beneficiaryName?: string;
+  iban?: string;
+  accountNumber?: string;
+  language?: "ar" | "en";
 }
 
-interface InvoiceData {
+export interface InvoiceData {
   invoiceNumber: string;
   title?: string;
   clientName: string;
@@ -49,6 +58,32 @@ interface InvoiceData {
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
   createdAt?: string;
+  discountPercent?: number;
+  discountAmount?: number;
+  bankName?: string;
+  beneficiaryName?: string;
+  iban?: string;
+  accountNumber?: string;
+}
+
+export interface ReceiptData {
+  receiptNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  invoiceNumber?: string;
+  amount: number;
+  amountInWords?: string;
+  paymentMethod: string;
+  paymentRef?: string;
+  description?: string;
+  receivedBy?: string;
+  notes?: string;
+  createdAt?: string;
+  bankName?: string;
+  beneficiaryName?: string;
+  iban?: string;
+  accountNumber?: string;
 }
 
 function loadArabicFont(): Buffer | null {
@@ -69,6 +104,9 @@ function loadLogo(): Buffer | null {
     const paths = [
       path.resolve(process.cwd(), "public/qirox-logo-full.png"),
       path.resolve(process.cwd(), "public/qirox-icon.png"),
+      path.resolve(process.cwd(), "client/public/qirox-logo-full.png"),
+      path.resolve(process.cwd(), "client/public/qirox-logo-nobg.png"),
+      path.resolve(process.cwd(), "client/public/qirox-icon.png"),
       path.resolve(process.cwd(), "attached_assets/qirox_1771715726312.png"),
       path.resolve(process.cwd(), "public/logo.png"),
     ];
@@ -286,8 +324,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     const nameDisplay = name.length > 45 ? name.substring(0, 45) + "…" : name;
     drawSmart(nameDisplay, cols[0] + 6, cols[1] - 6, curY - 12, 8, DGRAY);
     drawL(String(item.qty),                       cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
-    drawL(item.unitPrice.toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
-    drawL(item.total.toLocaleString("en-SA"),     cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(Number(item.total || 0).toLocaleString("en-SA"),     cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
     curY -= rowH;
   });
 
@@ -307,8 +345,11 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     curY -= 20;
   };
 
-  const subtotal = q.amount ?? (q.totalAmount - (q.vatAmount ?? 0));
+   const subtotal = q.amount ?? (q.totalAmount - (q.vatAmount ?? 0));
   addTotalRow("Subtotal (SAR)", subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   if (Number((q as any).discountAmount || 0) > 0) {
+     addTotalRow("Discount (SAR)", `-${Number((q as any).discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
+   }
   addTotalRow(`VAT ${q.vatRate ?? 15}%`, (q.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
   addTotalRow("Total (SAR)", q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
 
@@ -319,7 +360,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   drawL(totalStr, totalsX + totalsW - 6 - latinBold.widthOfTextAtSize(totalStr, 8), totalY - 8, 8, WHITE, latinBold);
   curY -= 20;
 
-  /* ── Notes ── */
+   /* ── Notes and payment terms ── */
   if (q.notes) {
     curY -= 10;
     const notesBoxW = tableW * 0.8;
@@ -329,6 +370,21 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
     curY -= 54;
   }
+   if (q.paymentTerms || q.termsAndConditions) {
+     curY -= 8;
+     const text = [q.paymentTerms && `Payment terms: ${q.paymentTerms}`, q.termsAndConditions && `Terms: ${q.termsAndConditions}`]
+       .filter(Boolean).join(" | ");
+     drawSmart(text.slice(0, 280), tableX, tableX + tableW, curY - 10, 7, GRAY);
+     curY -= 20;
+   }
+   if (q.bankName || q.beneficiaryName || q.iban || q.accountNumber) {
+     curY -= 8;
+     drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
+     drawL("Bank details:", tableX + 8, curY - 12, 7, GRAY, latinBold);
+     drawSmart([q.bankName, q.beneficiaryName, q.iban && `IBAN: ${q.iban}`, q.accountNumber && `Account: ${q.accountNumber}`]
+       .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
+     curY -= 60;
+   }
 
   /* ── Footer ── */
   const footerY = 30;
@@ -467,8 +523,8 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     const nameDisplay = name.length > 45 ? name.substring(0, 45) + "…" : name;
     drawSmart(nameDisplay, cols[0] + 6, cols[1] - 6, curY - 12, 8, DGRAY);
     drawL(String(item.qty), cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
-    drawL(item.unitPrice.toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
-    drawL(item.total.toLocaleString("en-SA"), cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(Number(item.total || 0).toLocaleString("en-SA"), cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
     curY -= rowH;
   });
 
@@ -488,6 +544,9 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     curY -= 20;
   };
   addRow("Subtotal (SAR)", subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   if (Number(inv.discountAmount || 0) > 0) {
+     addRow("Discount (SAR)", `-${Number(inv.discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
+   }
   addRow(`VAT ${inv.vatRate ?? 15}%`, (inv.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
   addRow("TOTAL (SAR)", inv.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
 
@@ -501,6 +560,14 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
     curY -= 54;
   }
+   if (inv.bankName || inv.beneficiaryName || inv.iban || inv.accountNumber) {
+     curY -= 8;
+     drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
+     drawL("Bank details:", tableX + 8, curY - 12, 7, GRAY, latinBold);
+     drawSmart([inv.bankName, inv.beneficiaryName, inv.iban && `IBAN: ${inv.iban}`, inv.accountNumber && `Account: ${inv.accountNumber}`]
+       .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
+     curY -= 60;
+   }
 
   /* Footer */
   const footerY = 30;
@@ -508,6 +575,135 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   drawL("QIROX Studio", MARGIN, footerY + 6, 8, GRAY, latinBold);
   drawL("qiroxstudio.online", width / 2 - 40, footerY + 6, 8, GRAY, latinReg);
   drawL("© 2026", width - 70, footerY + 6, 8, GRAY, latinReg);
+
+  return pdfDoc.save();
+}
+
+/**
+ * Render a receipt voucher through the same server-side document pipeline.
+ * Receipt vouchers intentionally stay compact and fit on one A4 page.
+ */
+export async function generateReceiptPdf(receipt: ReceiptData): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+
+  const arabicFontBytes = loadArabicFont();
+  let arabicFont: any = null;
+  if (arabicFontBytes) {
+    try { arabicFont = await pdfDoc.embedFont(arabicFontBytes); } catch {}
+  }
+  const latinBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const latinReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const logoBytes = loadLogo();
+  let logoImage: any = null;
+  if (logoBytes) { try { logoImage = await pdfDoc.embedPng(logoBytes); } catch {} }
+
+  const page = pdfDoc.addPage([595, 842]);
+  const { width, height } = page.getSize();
+  const MARGIN = 34;
+  const BLACK = rgb(0, 0, 0);
+  const WHITE = rgb(1, 1, 1);
+  const GRAY = rgb(0.48, 0.48, 0.48);
+  const DGRAY = rgb(0.2, 0.2, 0.2);
+  const LGRAY = rgb(0.94, 0.94, 0.94);
+  const PALE = rgb(0.975, 0.975, 0.975);
+
+  const drawL = (text: string, x: number, y: number, size: number, color = BLACK, font = latinReg) => {
+    if (!text) return;
+    try { page.drawText(text, { x, y, size, color, font }); } catch {}
+  };
+  const drawAR = (text: string, rightX: number, y: number, size: number, color = BLACK) => {
+    if (!text || !arabicFont) return;
+    try {
+      const visual = prepareArabic(text);
+      const textWidth = arabicFont.widthOfTextAtSize(visual, size);
+      page.drawText(visual, { x: rightX - textWidth, y, size, color, font: arabicFont });
+    } catch {}
+  };
+  const drawSmart = (text: string, leftX: number, rightX: number, y: number, size: number, color = BLACK, font = latinReg) => {
+    if (!text) return;
+    if (hasArabic(text)) drawAR(text, rightX, y, size, color);
+    else drawL(text, leftX, y, size, color, font);
+  };
+  const rect = (x: number, y: number, w: number, h: number, color = LGRAY) =>
+    page.drawRectangle({ x, y, width: w, height: h, color });
+  const line = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5, color = LGRAY) =>
+    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness, color });
+  const date = receipt.createdAt
+    ? new Date(receipt.createdAt).toLocaleDateString("ar-SA")
+    : new Date().toLocaleDateString("ar-SA");
+  const methodLabels: Record<string, string> = {
+    bank_transfer: "تحويل بنكي", cash: "نقداً", paypal: "PayPal",
+    stc_pay: "STC Pay", apple_pay: "Apple Pay", other: "أخرى",
+  };
+
+  let curY = height - 42;
+  const headerH = 72;
+  rect(0, curY - 16, width, headerH, BLACK);
+  if (logoImage) {
+    const scale = Math.min(90 / logoImage.width, 44 / logoImage.height);
+    const lw = logoImage.width * scale;
+    const lh = logoImage.height * scale;
+    page.drawImage(logoImage, { x: 30, y: curY - 16 + (headerH - lh) / 2, width: lw, height: lh });
+    drawL("qiroxstudio.online", 30 + lw + 8, curY + 18, 8, rgb(0.6, 0.6, 0.6));
+  } else {
+    drawL("QIROX", 30, curY + 20, 26, WHITE, latinBold);
+    drawL("STUDIO", 108, curY + 22, 10, rgb(0.62, 0.62, 0.62));
+  }
+  drawL("RECEIPT VOUCHER", width - 150, curY + 20, 8, WHITE, latinBold);
+  drawAR("سند قبض", width - 34, curY + 4, 10, WHITE);
+  curY -= 86;
+
+  drawL(`#${receipt.receiptNumber}`, MARGIN, curY, 16, BLACK, latinBold);
+  drawL(`Date: ${date}`, width - 170, curY, 9, GRAY);
+  if (receipt.invoiceNumber) drawL(`Invoice: ${receipt.invoiceNumber}`, width - 170, curY - 14, 9, GRAY);
+  curY -= 36;
+
+  const clientBoxH = receipt.clientEmail || receipt.clientPhone ? 66 : 50;
+  rect(MARGIN, curY - clientBoxH + 8, width - MARGIN * 2, clientBoxH, PALE);
+  drawL("Received from:", MARGIN + 12, curY - 12, 8, GRAY);
+  drawSmart(receipt.clientName || "—", MARGIN + 12, width - MARGIN - 12, curY - 27, 12, BLACK, latinBold);
+  if (receipt.clientEmail) drawL(receipt.clientEmail, MARGIN + 12, curY - 44, 8, GRAY);
+  if (receipt.clientPhone) drawL(receipt.clientPhone, MARGIN + 230, curY - 44, 8, GRAY);
+  curY -= clientBoxH + 18;
+
+  rect(MARGIN, curY - 86, width - MARGIN * 2, 94, PALE);
+  drawL("AMOUNT RECEIVED", MARGIN + 16, curY - 22, 8, GRAY, latinBold);
+  const amountText = Number(receipt.amount || 0).toLocaleString("en-SA", { minimumFractionDigits: 2 });
+  drawL(`${amountText} SAR`, MARGIN + 16, curY - 52, 25, BLACK, latinBold);
+  if (receipt.amountInWords) drawSmart(receipt.amountInWords, MARGIN + 220, width - MARGIN - 16, curY - 50, 8, DGRAY);
+  curY -= 112;
+
+  const rows: Array<[string, string]> = [
+    ["Payment method", methodLabels[receipt.paymentMethod] || receipt.paymentMethod || "—"],
+  ];
+  if (receipt.paymentRef) rows.push(["Transaction reference", receipt.paymentRef]);
+  if (receipt.description) rows.push(["Description", receipt.description]);
+  if (receipt.receivedBy) rows.push(["Received by", receipt.receivedBy]);
+  if (receipt.bankName) rows.push(["Bank", receipt.bankName]);
+  if (receipt.beneficiaryName) rows.push(["Beneficiary", receipt.beneficiaryName]);
+  if (receipt.iban) rows.push(["IBAN", receipt.iban]);
+
+  const rowH = 24;
+  rows.forEach(([label, value], index) => {
+    const y = curY - rowH * index;
+    if (index % 2 === 0) rect(MARGIN, y - 7, width - MARGIN * 2, rowH, rgb(0.985, 0.985, 0.985));
+    drawL(label, MARGIN + 10, y + 1, 8, GRAY);
+    drawSmart(value, MARGIN + 170, width - MARGIN - 10, y + 1, 8, DGRAY);
+  });
+  curY -= rows.length * rowH + 18;
+
+  if (receipt.notes) {
+    rect(MARGIN, curY - 48, width - MARGIN * 2, 56, PALE);
+    drawL("Notes:", MARGIN + 10, curY - 17, 8, GRAY);
+    drawSmart(receipt.notes.slice(0, 180), MARGIN + 10, width - MARGIN - 10, curY - 34, 8, DGRAY);
+    curY -= 70;
+  }
+
+  line(MARGIN, 58, width - MARGIN, 58);
+  drawL("QIROX Studio", MARGIN, 42, 8, GRAY, latinBold);
+  drawL("qiroxstudio.online", width / 2 - 40, 42, 8, GRAY);
+  drawL("Electronic receipt", width - 118, 42, 8, GRAY);
 
   return pdfDoc.save();
 }

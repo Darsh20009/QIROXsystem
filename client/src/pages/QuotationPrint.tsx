@@ -9,6 +9,7 @@ const qiroxLogoPath = "/qirox-logo-nobg.png";
 import SARIcon from "@/components/SARIcon";
 import { useI18n } from "@/lib/i18n";
 import { printDocument } from "@/lib/print-document";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:    { label: "مسودة",              bg: "#f3f4f6", text: "#6b7280" },
@@ -80,6 +81,17 @@ export default function QuotationPrint() {
       await printDocument({ title: `عرض-سعر-${quotation?.quotationNumber || "QIROX"}` });
     } catch {
       toast({ title: "تعذّر تهيئة عرض السعر للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      await downloadAuthenticatedFile(
+        `/api/quotations/${params.id}/pdf`,
+        `quotation-${quotation?.quotationNumber || params.id}.pdf`,
+      );
+    } catch {
+      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
     }
   };
 
@@ -241,7 +253,7 @@ export default function QuotationPrint() {
             {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
           </Button>
           <Button
-            onClick={handlePrint}
+            onClick={handleDownload}
             size="sm"
             className="bg-black text-white h-8 gap-1.5 text-xs"
             data-testid="button-download-pdf"
