@@ -2108,11 +2108,11 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/users/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
+    const callerRole = String((req.user as any)?.role || "").trim().toLowerCase();
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes(callerRole)) {
       return res.sendStatus(403);
     }
     try {
-      const callerRole = (req.user as any).role;
       const isDataEntry = callerRole === "data_entry";
       // Customer records are managed by administration only. Data-entry
       // staff may still update permitted employee records through this shared
@@ -2218,7 +2218,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/users/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const callerRole = (req.user as any).role;
+    const callerRole = String((req.user as any)?.role || "").trim().toLowerCase();
     const allowedRoles = ["admin", "manager"];
     if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     try {
@@ -8406,12 +8406,13 @@ export async function registerRoutes(
   app.get("/api/admin/customers", async (req, res) => {
     const caller = req.user as any;
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    const callerRole = String(caller?.role || "").trim().toLowerCase();
     const allowedRoles = ["admin", "manager", "sales_manager", "sales", "accountant", "data_entry"];
-    if (!allowedRoles.includes(caller.role)) return res.sendStatus(403);
+    if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     const users = await storage.getUsers();
     const clients = users.filter((u: any) => u.role === "client");
     // Sales reps see only their assigned clients
-    if (caller.role === "sales") {
+    if (callerRole === "sales") {
       const scopedClients = clients.filter((c: any) =>
         c.assignedSalesId === String(caller.id || caller._id) ||
         c.assignedSalesUsername === caller.username
@@ -8424,7 +8425,8 @@ export async function registerRoutes(
   // PATCH /api/admin/customers/:id/assign-sales — assign a sales rep to a client (B4)
   app.patch("/api/admin/customers/:id/assign-sales", async (req, res) => {
     const caller = req.user as any;
-    if (!req.isAuthenticated() || !["admin", "manager", "sales_manager"].includes(caller.role)) return res.sendStatus(403);
+    const callerRole = String(caller?.role || "").trim().toLowerCase();
+    if (!req.isAuthenticated() || !["admin", "manager", "sales_manager"].includes(callerRole)) return res.sendStatus(403);
     try {
       const { UserModel } = await import("./models");
       const { salesRepId } = req.body;

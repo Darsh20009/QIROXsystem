@@ -46,8 +46,12 @@ export default function Customers() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const { data: user } = useUser();
-  const isAdmin = user && ["admin", "manager"].includes((user as any).role);
-  const isDataEntry = (user as any)?.role === "data_entry";
+  // Normalize the role because older sessions/accounts may return casing or
+  // surrounding whitespace from MongoDB. Management actions must not
+  // disappear for a valid admin/manager account.
+  const currentRole = String((user as any)?.role || "").trim().toLowerCase();
+  const canManageCustomers = ["admin", "manager"].includes(currentRole);
+  const isDataEntry = currentRole === "data_entry";
   const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -72,7 +76,7 @@ export default function Customers() {
 
   const { data: phoneRequests, isLoading: loadingRequests } = useQuery<PhoneRequest[]>({
     queryKey: ["/api/admin/phone-requests"],
-    enabled: isAdmin === true,
+    enabled: canManageCustomers,
   });
 
   const pendingCount = phoneRequests?.filter(r => r.status === "pending").length ?? 0;
@@ -144,7 +148,7 @@ export default function Customers() {
       const r = await fetch("/api/admin/employees?roles=sales,sales_manager", { credentials: "include" });
       return r.json();
     },
-    enabled: !!isAdmin,
+    enabled: canManageCustomers,
   });
 
   // Extract unique sales reps from customers (for filter dropdown)
@@ -246,7 +250,7 @@ export default function Customers() {
       )}
 
       {/* Phone correction requests panel (admin only) */}
-      {isAdmin && (
+      {canManageCustomers && (
         <Card className="border-foreground/[0.06] dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
           <button
             onClick={() => setShowRequests(v => !v)}
@@ -462,7 +466,7 @@ export default function Customers() {
                         >
                           <FileText className="w-4 h-4" />
                         </a>
-                        {isAdmin && (
+                        {canManageCustomers && (
                           <button
                             onClick={() => {
                               setAssignTarget(customer);
@@ -475,7 +479,7 @@ export default function Customers() {
                             <UserCheck className="w-4 h-4" />
                           </button>
                         )}
-                        {isAdmin && <button
+                        {canManageCustomers && <button
                             onClick={() => {
                               setEditTarget(customer);
                               setEditForm({
@@ -496,7 +500,7 @@ export default function Customers() {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>}
-                        {isAdmin && <button
+                        {canManageCustomers && <button
                           onClick={() => setDeleteTarget(customer)}
                           className="p-2 rounded-lg text-foreground/20 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                           title={L ? "حذف العميل" : "Delete customer"}
