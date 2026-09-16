@@ -755,6 +755,7 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
     : { item: "Description", qty: "Quantity", unit: "Unit price", total: "Total", number: "Invoice number", issued: "Issue date", due: "Due date", status: "Status", amount: "Amount", notes: "Notes", paid: "Paid", unpaid: "Unpaid", cancelled: "Cancelled", invoice: "Invoice", greeting: `Hello ${clientName}, please find your invoice details below:`, dashboard: "View invoice in dashboard", currency: "SAR" };
   const locale = ar ? "ar-SA" : "en-SA";
   const money = (value: number) => `${value.toLocaleString(locale)} ${labels.currency}`;
+  const termsUrl = `${getEmailCfg().siteUrl.replace(/\/+$/, "")}/terms`;
   const itemsHtml = invoice.items && invoice.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
         <tr style="background:#f9fafb;">
@@ -791,6 +792,7 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
     infoTable(totalsRows) +
     (invoice.notes ? text(`<strong>${labels.notes}:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
     text(ar ? "معلومات التحويل البنكي: IBAN: SA0380205098017222121010" : "Bank transfer details: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
+    text(`<a href="${termsUrl}" style="color:#111111;text-decoration:underline;">${ar ? "الشروط والأحكام" : "Terms & Conditions"}</a>`, "font-size:12px;margin-top:12px;") +
     btn(`${getEmailCfg().siteUrl}/dashboard`, labels.dashboard),
     ar ? "ar" : "en"
   );
@@ -849,6 +851,7 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     : { item: "Item", qty: "Quantity", unit: "Unit price", total: "Total", number: "Quotation number", issued: "Issue date", subject: "Subject", valid: "Valid until", vat: "VAT", grandTotal: "Total", quotation: "Quotation", greeting: `Hello ${clientName}, please find the following quotation from QIROX:`, attached: "📎 The quotation PDF is attached to this email.", notes: "Notes", currency: "SAR" };
   const locale = ar ? "ar-SA" : "en-SA";
   const money = (value: number) => `${value.toLocaleString(locale)} ${labels.currency}`;
+  const termsUrl = `${getEmailCfg().siteUrl.replace(/\/+$/, "")}/terms`;
   const itemsHtml = quotation.items && quotation.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
         <tr style="background:#f9fafb;">
@@ -885,6 +888,7 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     infoTable(rows) +
     itemsHtml +
     (quotation.notes ? text(`<strong>${labels.notes}:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    text(`<a href="${termsUrl}" style="color:#111111;text-decoration:underline;">${ar ? "الشروط والأحكام" : "Terms & Conditions"}</a>`, "font-size:12px;margin-top:12px;") +
     pdfNote,
     ar ? "ar" : "en"
   );

@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, PDFString, PDFName, rgb, StandardFonts } from "pdf-lib";
 import { createRequire } from "module";
 import * as fs from "fs";
 import * as path from "path";
@@ -117,6 +117,57 @@ function loadLogo(): Buffer | null {
 }
 
 const hasArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
+const TERMS_PATH = "/terms";
+
+function getTermsUrl(): string {
+  const baseUrl = (process.env.EMAIL_SITE_URL || "https://qiroxstudio.online").replace(/\/+$/, "");
+  return `${baseUrl}${TERMS_PATH}`;
+}
+
+function addPdfLink(
+  pdfDoc: PDFDocument,
+  page: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  url: string,
+) {
+  const linkRef = pdfDoc.context.register(pdfDoc.context.obj({
+    Type: "Annot",
+    Subtype: "Link",
+    Rect: [x, y, x + width, y + height],
+    Border: [0, 0, 0],
+    A: {
+      Type: "Action",
+      S: "URI",
+      URI: PDFString.of(url),
+    },
+  }));
+  page.node.set(PDFName.of("Annots"), pdfDoc.context.obj([linkRef]));
+}
+
+function drawTermsLink(
+  pdfDoc: PDFDocument,
+  page: any,
+  label: string,
+  x: number,
+  y: number,
+  size: number,
+  font: any,
+  arabicFont: any,
+  color: any,
+) {
+  const isArabic = hasArabic(label) && arabicFont;
+  const visual = isArabic ? prepareArabic(label) : label;
+  const textWidth = (isArabic ? arabicFont : font).widthOfTextAtSize(visual, size);
+  if (isArabic) {
+    page.drawText(visual, { x, y, size, color, font: arabicFont });
+  } else {
+    page.drawText(label, { x, y, size, color, font });
+  }
+  addPdfLink(pdfDoc, page, x, y - 2, textWidth, size + 4, getTermsUrl());
+}
 
 const PDF_LABELS = {
   ar: {
@@ -540,6 +591,21 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   drawL("QIROX Studio",       MARGIN,          footerY + 6, 8, GRAY, latinBold);
   drawL("qiroxstudio.online", width / 2 - 40,  footerY + 6, 8, GRAY, latinReg);
   drawL("© 2026",             width - 70,      footerY + 6, 8, GRAY, latinReg);
+   const quotationTermsLabel = q.language === "en" ? "Terms & Conditions" : "الشروط والأحكام";
+   const quotationTermsWidth = (q.language === "en" || !arabicFont)
+     ? latinReg.widthOfTextAtSize(quotationTermsLabel, 7)
+     : arabicFont.widthOfTextAtSize(prepareArabic(quotationTermsLabel), 7);
+   drawTermsLink(
+     pdfDoc,
+     page,
+     quotationTermsLabel,
+     (width - quotationTermsWidth) / 2,
+     footerY - 8,
+     7,
+     latinReg,
+     arabicFont,
+     GRAY,
+   );
 
   return pdfDoc.save();
 }
@@ -749,6 +815,21 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   drawL("QIROX Studio", MARGIN, footerY + 6, 8, GRAY, latinBold);
   drawL("qiroxstudio.online", width / 2 - 40, footerY + 6, 8, GRAY, latinReg);
   drawL("© 2026", width - 70, footerY + 6, 8, GRAY, latinReg);
+   const invoiceTermsLabel = inv.language === "en" ? "Terms & Conditions" : "الشروط والأحكام";
+   const invoiceTermsWidth = (inv.language === "en" || !arabicFont)
+     ? latinReg.widthOfTextAtSize(invoiceTermsLabel, 7)
+     : arabicFont.widthOfTextAtSize(prepareArabic(invoiceTermsLabel), 7);
+   drawTermsLink(
+     pdfDoc,
+     page,
+     invoiceTermsLabel,
+     (width - invoiceTermsWidth) / 2,
+     footerY - 8,
+     7,
+     latinReg,
+     arabicFont,
+     GRAY,
+   );
 
   return pdfDoc.save();
 }

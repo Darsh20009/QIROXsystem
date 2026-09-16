@@ -304,6 +304,14 @@ export default function InvoicePrint() {
             <div className="border-t border-black/[0.06] pt-4 text-center text-xs text-black/25">
               <p>شكراً لثقتكم في QIROX Studio — qiroxstudio.online</p>
               <p className="mt-1">هذه الفاتورة صادرة إلكترونياً وصالحة بدون توقيع</p>
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block mt-2 text-black/45 underline underline-offset-2 hover:text-black/70"
+              >
+                الشروط والأحكام
+              </a>
             </div>
           </div>
         </div>

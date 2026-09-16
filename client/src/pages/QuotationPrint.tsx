@@ -475,7 +475,17 @@ export default function QuotationPrint() {
 
           {/* Footer */}
           <div className="px-5 sm:px-10 py-5 bg-black/[0.02] border-t border-black/[0.06] flex items-center justify-between">
-            <p className="text-xs text-black/30">شكراً لتعاملكم مع QIROX Studio</p>
+            <div>
+              <p className="text-xs text-black/30">شكراً لتعاملكم مع QIROX Studio</p>
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block mt-1 text-xs text-black/45 underline underline-offset-2 hover:text-black/70"
+              >
+                {label("الشروط والأحكام", "Terms & Conditions")}
+              </a>
+            </div>
             <p className="text-xs text-black/20 font-mono" dir="ltr">{quotation.quotationNumber}</p>
           </div>
         </div>
