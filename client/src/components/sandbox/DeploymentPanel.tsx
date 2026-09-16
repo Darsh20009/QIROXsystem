@@ -49,6 +49,12 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
   const queryClient = useQueryClient();
   const [customDomain, setCustomDomain] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [preflightResult, setPreflightResult] = useState<{
+    success: boolean;
+    skipped?: boolean;
+    command?: string;
+    output?: string;
+  } | null>(null);
 
   const { data: project } = useQuery<SandboxProject>({
     queryKey: ["/api/sandbox/projects", projectId],
@@ -131,8 +137,37 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
     onError: (error: Error) => toast({ title: ar ? "تعذر تحديث الشعار" : "Could not update logo", description: error.message, variant: "destructive" }),
   });
 
+  const preflightMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/preflight`, {});
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || body.output || (ar ? "فشل فحص البناء" : "Build preflight failed"));
+      }
+      return body;
+    },
+    onSuccess: (body) => {
+      setPreflightResult(body);
+      toast({
+        title: body.skipped
+          ? (ar ? "لا يوجد بناء مطلوب" : "No build step required")
+          : (ar ? "فحص البناء ناجح" : "Build preflight passed"),
+      });
+    },
+    onError: (error: Error) => {
+      setPreflightResult({ success: false, output: error.message });
+      toast({ title: ar ? "فشل فحص البناء" : "Build preflight failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deployMutation = useMutation({
     mutationFn: async () => {
+      const preflightRes = await apiRequest("POST", `/api/sandbox/projects/${projectId}/preflight`, {});
+      const preflightBody = await preflightRes.json().catch(() => ({}));
+      setPreflightResult(preflightBody);
+      if (!preflightRes.ok || preflightBody.success !== true) {
+        throw new Error(preflightBody.message || preflightBody.error || preflightBody.output || (ar ? "فشل فحص البناء" : "Build preflight failed"));
+      }
       const res = await apiRequest("POST", `/api/deploy/projects/${activeDeployment?.id}/deploy`, {});
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -145,7 +180,7 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
       queryClient.invalidateQueries({ queryKey: ["/api/deploy/projects", activeDeployment?.id, "runs"] });
       toast({ title: ar ? "بدأ النشر" : "Deployment started" });
     },
-    onError: (error: Error) => toast({ title: ar ? "تعذر بدء النشر" : "Could not start deployment", description: error.message, variant: "destructive" }),
+    onError: (error: Error) => toast({ title: ar ? "لم يبدأ النشر" : "Deployment was not started", description: error.message, variant: "destructive" }),
   });
 
   const domainMutation = useMutation({
@@ -296,12 +331,44 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
                 <Button
                   className="h-10 w-full bg-foreground text-xs font-semibold text-background hover:bg-foreground/80"
                   onClick={() => deployMutation.mutate()}
-                  disabled={deployMutation.isPending || ["building", "deploying"].includes(status)}
+                   disabled={deployMutation.isPending || preflightMutation.isPending || ["building", "deploying"].includes(status)}
                   data-testid="button-deploy-project"
                 >
                   {deployMutation.isPending ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Rocket className="me-2 h-4 w-4" />}
-                  {status === "live" ? (ar ? "نشر نسخة جديدة" : "Deploy new version") : (ar ? "نشر الآن" : "Deploy now")}
+                   {status === "live" ? (ar ? "فحص ثم نشر نسخة جديدة" : "Check & deploy new version") : (ar ? "فحص ثم نشر الآن" : "Check & deploy now")}
                 </Button>
+
+                 <div className="rounded-xl border border-border bg-card p-3">
+                   <div className="flex items-center justify-between gap-2">
+                     <div className="flex items-center gap-2 text-xs font-semibold">
+                       <ShieldCheck className="h-4 w-4 text-foreground" />
+                       {ar ? "فحص ما قبل النشر" : "Pre-deployment check"}
+                     </div>
+                     <Button
+                       variant="outline"
+                       className="h-7 px-2 text-[10px]"
+                       onClick={() => preflightMutation.mutate()}
+                       disabled={preflightMutation.isPending || deployMutation.isPending}
+                       data-testid="button-run-deployment-preflight"
+                     >
+                       {preflightMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : (ar ? "فحص الآن" : "Run check")}
+                     </Button>
+                   </div>
+                   <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+                     {ar ? "لن يبدأ النشر إذا فشل بناء النسخة الحالية. سيتم إعادة الفحص تلقائياً عند الضغط على النشر." : "Deployment will not start if the current source fails to build. The check also runs automatically when deploying."}
+                   </p>
+                   {preflightResult && (
+                     <div className={`mt-2 rounded-lg border p-2 text-[10px] ${preflightResult.success ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300" : "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-300"}`}>
+                       <div className="font-semibold">
+                         {preflightResult.success
+                           ? (preflightResult.skipped ? (ar ? "تم تجاوز البناء" : "Build skipped") : (ar ? "البناء ناجح" : "Build passed"))
+                           : (ar ? "البناء فشل" : "Build failed")}
+                       </div>
+                       {preflightResult.command && <div className="mt-1 font-mono" dir="ltr">{preflightResult.command}</div>}
+                       {preflightResult.output && <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap font-mono leading-4" dir="ltr">{preflightResult.output.slice(-3000)}</pre>}
+                     </div>
+                   )}
+                 </div>
 
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="mb-2 flex items-center gap-2 text-xs font-semibold">

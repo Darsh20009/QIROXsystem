@@ -13,12 +13,13 @@ import {
   Terminal, PanelRightClose, PanelRightOpen, Hammer,
   Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw,
   FolderTree, Search, GitBranch, KeyRound, Rocket, Command,
-  MoreHorizontal, Check, Circle, ChevronDown, ScrollText, TerminalSquare
+  MoreHorizontal, Check, Circle, ChevronDown, ScrollText, TerminalSquare,
+  MousePointer2
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { FileTree } from "./FileTree";
 import { CodeEditor } from "./CodeEditor";
-import { AIPanel } from "./AIPanel";
+import { AIPanel, type SelectedElement } from "./AIPanel";
 import { EnvVarsPanel } from "./EnvVarsPanel";
 import { GitHubPanel } from "./GitHubPanel";
 import { DeploymentPanel } from "./DeploymentPanel";
@@ -71,6 +72,44 @@ function flattenFiles(entries: FileEntry[], output: FileEntry[] = []) {
     if (entry.children) flattenFiles(entry.children, output);
   }
   return output;
+}
+
+function escapeCssIdentifier(value: string): string {
+  if (typeof window !== "undefined" && window.CSS?.escape) return window.CSS.escape(value);
+  return value.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`);
+}
+
+function getElementSelector(element: Element): string {
+  const segments: string[] = [];
+  let current: Element | null = element;
+  while (current && current.nodeType === 1 && current.tagName.toLowerCase() !== "html") {
+    const id = current.getAttribute("id");
+    if (id) {
+      segments.unshift(`#${escapeCssIdentifier(id)}`);
+      break;
+    }
+
+    let segment = current.tagName.toLowerCase();
+    const classes = Array.from(current.classList)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((className) => `.${escapeCssIdentifier(className)}`)
+      .join("");
+    segment += classes;
+
+    const parent = current.parentElement;
+    if (parent) {
+      const sameTag = Array.from(parent.children).filter(
+        (child) => child.tagName === current?.tagName,
+      );
+      if (sameTag.length > 1) {
+        segment += `:nth-of-type(${sameTag.indexOf(current) + 1})`;
+      }
+    }
+    segments.unshift(segment);
+    current = current.parentElement;
+  }
+  return segments.join(" > ") || element.tagName.toLowerCase();
 }
 
 interface StartResult {
@@ -151,12 +190,109 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const wsRef = useRef<WebSocket | null>(null);
+  const previewRef = useRef<HTMLIFrameElement>(null);
+  const selectionCleanupRef = useRef<(() => void) | null>(null);
   const importedDeploymentEnvRef = useRef(false);
   const { data: user } = useUser();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
 
   const leftPanel = useResizer(240, "horizontal", 150, 400);
   const rightPanel = useResizer(320, "horizontal", 200, 500);
   const logsPanel = useResizer(200, "vertical", 100, 400);
+
+  const installPreviewSelection = useCallback(() => {
+    selectionCleanupRef.current?.();
+    selectionCleanupRef.current = null;
+    if (!selectionMode) return;
+
+    const iframe = previewRef.current;
+    let documentNode: Document;
+    try {
+      if (!iframe?.contentDocument) throw new Error("preview-document-unavailable");
+      documentNode = iframe.contentDocument;
+    } catch {
+      toast({
+        title: ar ? "تعذر تفعيل التحديد" : "Selection is unavailable",
+        description: ar ? "افتح المعاينة داخل نفس النافذة ثم حاول مرة أخرى." : "Open the preview in this window and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const style = documentNode.createElement("style");
+    style.id = "qirox-preview-selection-style";
+    style.textContent = `
+      .qirox-preview-selection-hover {
+        outline: 2px solid #2563eb !important;
+        outline-offset: 2px !important;
+        cursor: crosshair !important;
+      }
+    `;
+    documentNode.head?.appendChild(style);
+
+    let hovered: Element | null = null;
+    const isSelectable = (target: EventTarget | null): target is Element => {
+      if (!(target instanceof Element)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag !== "html" && tag !== "head" && tag !== "body" && tag !== "script" && tag !== "style";
+    };
+    const setHovered = (next: Element | null) => {
+      if (hovered === next) return;
+      hovered?.classList.remove("qirox-preview-selection-hover");
+      hovered = next;
+      hovered?.classList.add("qirox-preview-selection-hover");
+    };
+    const onMouseOver = (event: MouseEvent) => {
+      if (isSelectable(event.target)) setHovered(event.target);
+    };
+    const onMouseOut = (event: MouseEvent) => {
+      const related = event.relatedTarget;
+      if (related instanceof Node && hovered?.contains(related)) return;
+      setHovered(null);
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!isSelectable(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.target;
+      const text = (target.textContent || "").replace(/\s+/g, " ").trim().slice(0, 500);
+      setSelectedElement({
+        tagName: target.tagName.toLowerCase(),
+        selector: getElementSelector(target),
+        text,
+        className: typeof target.className === "string" ? target.className.slice(0, 500) : "",
+        ariaLabel: target.getAttribute("aria-label") || "",
+      });
+      setSelectionMode(false);
+      setRightPanelOpen(true);
+      setRightPanelTab("ai");
+      toast({ title: ar ? "تم تحديد العنصر" : "Element selected" });
+    };
+
+    documentNode.addEventListener("mouseover", onMouseOver, true);
+    documentNode.addEventListener("mouseout", onMouseOut, true);
+    documentNode.addEventListener("click", onClick, true);
+    selectionCleanupRef.current = () => {
+      hovered?.classList.remove("qirox-preview-selection-hover");
+      documentNode.removeEventListener("mouseover", onMouseOver, true);
+      documentNode.removeEventListener("mouseout", onMouseOut, true);
+      documentNode.removeEventListener("click", onClick, true);
+      style.remove();
+    };
+  }, [ar, selectionMode, toast]);
+
+  useEffect(() => {
+    installPreviewSelection();
+    return () => {
+      selectionCleanupRef.current?.();
+      selectionCleanupRef.current = null;
+    };
+  }, [installPreviewSelection]);
+
+  useEffect(() => {
+    if (!showPreview && selectionMode) setSelectionMode(false);
+  }, [showPreview, selectionMode]);
 
   const { data: project, isLoading: projectLoading } = useQuery<SandboxProjectDetail>({
     queryKey: ["/api/sandbox/projects", projectId],
@@ -783,6 +919,22 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground">
                     /sandbox/{projectId}/preview/
                   </span>
+                   {isRunning && (
+                     <Button
+                       variant={selectionMode ? "default" : "ghost"}
+                       size="sm"
+                       className={`h-6 gap-1 px-2 text-[10px] ${selectionMode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                       onClick={() => {
+                         setSelectedElement(null);
+                         setSelectionMode((active) => !active);
+                       }}
+                       title={ar ? "حدد عنصراً من المعاينة ليعدله الوكيل" : "Select an element for the agent to edit"}
+                       data-testid="button-select-preview-element"
+                     >
+                       <MousePointer2 className="h-3 w-3" />
+                       {ar ? "تحديد" : "Select"}
+                     </Button>
+                   )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -808,9 +960,11 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                 {isRunning ? (
                   <iframe
                     id="sandbox-preview"
+                     ref={previewRef}
                     src={`/sandbox/${projectId}/preview/`}
                     className="flex-1 w-full bg-white"
                     title="Preview"
+                     onLoad={installPreviewSelection}
                   />
                 ) : (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-muted text-muted-foreground">
@@ -951,6 +1105,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <AIPanel
                     projectId={projectId}
                     activeFile={activeTab}
+                    selectedElement={selectedElement}
                     onApplyToEditor={handleApplyToEditor}
                     onCreateFile={handleCreateFileFromAI}
                   />

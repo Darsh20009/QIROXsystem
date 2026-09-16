@@ -619,7 +619,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const filePath = req.query.path as string;
       if (!filePath) return res.status(400).json({ error: "مسار الملف مطلوب" });
-      const { readFile } = await import("./sandbox-fs");
+      const { readFile, getProjectDir } = await import("./sandbox-fs");
       const content = readFile(String(ctx.project._id), filePath);
       res.json({ path: filePath, content });
     } catch (err: any) {
@@ -1172,6 +1172,112 @@ ${JSON.stringify({
       res.json({ mode: "agent", agent: result });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "تعذر تشغيل الوكيل" });
+    }
+  });
+
+  // Run the workspace build synchronously before handing the project to the
+  // deployment provider. This keeps the deploy button honest: a provider
+  // request is never started when the current source cannot build locally.
+  app.post("/api/sandbox/projects/:id/preflight", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { readFile, getProjectDir } = await import("./sandbox-fs");
+      const { SandboxEnvVarModel } = await import("./models");
+      const { sanitizeCommand } = await import("./sandbox-runner");
+      const { spawn } = await import("child_process");
+
+      let buildCmd = String(ctx.project.buildCmd || "").trim();
+      if (!buildCmd) {
+        try {
+          const packageJson = JSON.parse(readFile(String(ctx.project._id), "package.json"));
+          if (packageJson?.scripts?.build) buildCmd = "npm run build";
+        } catch {
+          // Static and runtime-only projects do not have a build step.
+        }
+      }
+
+      if (!buildCmd) {
+        return res.json({
+          success: true,
+          skipped: true,
+          command: "",
+          output: "لا يوجد أمر بناء لهذا المشروع؛ تم تجاوز الفحص.",
+        });
+      }
+
+      let safeBuildCmd: string;
+      try {
+        safeBuildCmd = sanitizeCommand(buildCmd);
+      } catch (error: any) {
+        return res.status(400).json({ error: `أمر البناء غير آمن: ${error.message}` });
+      }
+
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      const env: Record<string, string> = {};
+      Object.entries(process.env).forEach(([key, value]) => {
+        if (value !== undefined) env[key] = value;
+      });
+      const secretValues: string[] = [];
+      for (const doc of envDocs as { key: string; value: string; iv: string }[]) {
+        try {
+          const value = decrypt(doc.value, doc.iv);
+          env[doc.key] = value;
+          if (value.length >= 4) secretValues.push(value);
+        } catch {
+          // An unreadable optional variable must not prevent build diagnostics.
+        }
+      }
+
+      const result = await new Promise<{ success: boolean; output: string }>((resolve) => {
+        const child = spawn("/bin/sh", ["-c", safeBuildCmd], {
+          cwd: getProjectDir(String(ctx.project._id)),
+          env,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+        let output = "";
+        let settled = false;
+        const redact = (text: string) => secretValues.reduce(
+          (value, secret) => value.split(secret).join("[REDACTED]"),
+          text,
+        );
+        const append = (chunk: Buffer) => {
+          output = `${output}${chunk.toString()}`.slice(-24_000);
+        };
+        const finish = (success: boolean, suffix = "") => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          output = redact(`${output}${suffix}`).slice(-24_000);
+          resolve({ success, output });
+        };
+        const timeout = setTimeout(() => {
+          try { child.kill("SIGTERM"); } catch {}
+          finish(false, "\n⏱ انتهت مهلة فحص البناء (120 ثانية)");
+        }, 120_000);
+        child.stdout?.on("data", append);
+        child.stderr?.on("data", append);
+        child.on("error", (error) => finish(false, `\n${error.message}`));
+        child.on("close", (code) => finish(code === 0, `\nانتهى الفحص (كود: ${code ?? "unknown"})`));
+      });
+
+      if (!result.success) {
+        return res.status(422).json({
+          success: false,
+          skipped: false,
+          command: safeBuildCmd,
+          output: result.output,
+          error: "فشل فحص البناء؛ أصلح الأخطاء قبل النشر.",
+        });
+      }
+      return res.json({
+        success: true,
+        skipped: false,
+        command: safeBuildCmd,
+        output: result.output,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر فحص المشروع قبل النشر" });
     }
   });
 
