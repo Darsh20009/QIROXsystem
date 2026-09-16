@@ -511,14 +511,14 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
             ).catch(() => toast({ title: L ? "تعذّر تحميل PDF" : "PDF download failed", variant: "destructive" }))}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
+            <Printer className="w-4 h-4" /> {L ? "طباعة" : "Print"}
           </button>
           <button
             type="button"
             onClick={() => setLocation(`/admin/quotation-print/${quotation.id}`)}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <FileText className="w-3 h-3" /> PDF
+            <FileText className="w-4 h-4" /> PDF
           </button>
         </div>
       </div>
@@ -539,6 +539,7 @@ interface SendEmailState {
   externalEmail: string;
   externalName: string;
   companyName: string;
+  language: "ar" | "en";
 }
 
 export default function AdminQuotations() {
@@ -565,6 +566,7 @@ export default function AdminQuotations() {
         if (state.externalName) body.externalName = state.externalName;
         if (state.companyName) body.companyName = state.companyName;
       }
+      body.language = state.language;
       const r = await apiRequest("POST", `/api/quotations/${state.quotationId}/send-email`, body);
       return r.json();
     },
@@ -724,14 +726,14 @@ export default function AdminQuotations() {
                       className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => setEditingQuotation(q)}
                       data-testid={`button-edit-quotation-${q.id}`}>
-                      <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                      <Pencil className="w-4 h-4" /> {L ? "تعديل" : "Edit"}
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => duplicateMutation.mutate(q.id)}
                       disabled={duplicateMutation.isPending}
                       data-testid={`button-duplicate-quotation-${q.id}`}>
-                      <Copy className="w-3 h-3" /> {L ? "نسخ" : "Copy"}
+                      <Copy className="w-4 h-4" /> {L ? "نسخ" : "Copy"}
                     </Button>
                     {q.status === "draft" && (
                       <Button size="sm" variant="outline"
@@ -739,7 +741,7 @@ export default function AdminQuotations() {
                         onClick={() => statusMutation.mutate({ id: q.id, status: "sent" })}
                         disabled={statusMutation.isPending}
                         data-testid={`button-mark-sent-${q.id}`}>
-                        <Send className="w-3 h-3" /> {L ? "تحديث لمُرسل" : "Mark Sent"}
+                        <Send className="w-4 h-4" /> {L ? "تحديث لمُرسل" : "Mark Sent"}
                       </Button>
                     )}
                     <Button size="sm" variant="outline"
@@ -752,15 +754,16 @@ export default function AdminQuotations() {
                         externalEmail: q.externalEmail || "",
                         externalName: q.externalName || "",
                         companyName: q.externalCompany || "",
+                        language: q.language || "ar",
                       })}
                       data-testid={`button-email-quotation-${q.id}`}>
-                      <Mail className="w-3 h-3" /> {L ? "إرسال" : "Email"}
+                      <Mail className="w-4 h-4" /> {L ? "إرسال" : "Email"}
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
                       onClick={() => setLocation(`/admin/quotation-print/${q.id}`)}
                       data-testid={`button-print-quotation-${q.id}`}>
-                      <FileText className="w-3 h-3" /> PDF
+                      <FileText className="w-4 h-4" /> PDF
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12] text-black hover:bg-black/[0.04]"
@@ -768,7 +771,7 @@ export default function AdminQuotations() {
                       disabled={convertToInvoiceMutation.isPending}
                       data-testid={`button-convert-invoice-${q.id}`}
                       title={L ? "إصدار فاتورة من عرض السعر" : "Issue invoice from quotation"}>
-                      {convertToInvoiceMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Receipt className="w-3 h-3" />}
+                      {convertToInvoiceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
                       {L ? "فاتورة" : "Invoice"}
                     </Button>
                     <Button size="sm" variant="outline"
@@ -856,6 +859,22 @@ export default function AdminQuotations() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">{L ? "لغة العرض والبريد" : "Quotation and email language"}</Label>
+                <Select
+                  value={emailDialog.language}
+                  onValueChange={value => setEmailDialog(s => s ? { ...s, language: value as "ar" | "en" } : s)}
+                >
+                  <SelectTrigger className="h-9 text-sm border-black/10" data-testid="select-quotation-email-language">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ar">العربية</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="bg-black/[0.03] rounded-lg px-3 py-2 text-xs text-black/50 flex items-start gap-2">
                 <span>📎</span>

@@ -30,6 +30,7 @@ interface Invoice {
   paidAt?: string;
   notes?: string;
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  language?: "ar" | "en";
   createdAt: string;
 }
 
@@ -84,6 +85,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     dueDate: "",
     notes: "",
     discountPercent: "0",
+    language: "ar" as "ar" | "en",
     items: [] as { name: string; qty: number; unitPrice: number; total: number }[],
     newItemName: "",
     newItemQty: "1",
@@ -133,6 +135,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
+        language: form.language,
         items: form.items.length > 0 ? form.items : undefined,
       });
       return r.json();
@@ -141,7 +144,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
       if (sendEmail && data?.id) {
         try {
-          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "include" });
+          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ language: form.language }), credentials: "include" });
           toast({ title: L ? "تم إنشاء الفاتورة وإرسالها بالبريد ✅" : "Invoice created and emailed ✅" });
         } catch {
           toast({ title: L ? "تم إنشاء الفاتورة، لكن فشل إرسال البريد" : "Invoice created, but email failed", variant: "destructive" });
@@ -198,6 +201,19 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
             {label}
           </button>
         ))}
+      </div>
+
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة الفاتورة والبريد" : "Invoice and email language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-invoice-language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">العربية</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Order Quick Selector */}
@@ -386,6 +402,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
     status: invoice.status as "paid" | "unpaid" | "cancelled",
     dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split("T")[0] : "",
     notes: invoice.notes || "",
+    language: invoice.language || "ar",
     items: invoice.items || [] as { name: string; qty: number; unitPrice: number; total: number }[],
     newItemName: "", newItemQty: "1", newItemPrice: "",
   });
@@ -433,6 +450,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
+         language: form.language,
         items: form.items.length > 0 ? form.items : undefined,
       });
       return r.json();
@@ -455,6 +473,19 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             {label}
           </button>
         ))}
+      </div>
+
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة الفاتورة والبريد" : "Invoice and email language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-edit-invoice-language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">العربية</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -581,7 +612,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
           type="button"
           onClick={async () => {
             try {
-              const r = await fetch(`/api/invoices/${invoice.id}/send-email`, { method: "POST", credentials: "include" });
+               const r = await fetch(`/api/invoices/${invoice.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ language: form.language }), credentials: "include" });
               const d = await r.json();
               if (r.ok) toast({ title: L ? "✅ تم إرسال الفاتورة بالبريد" : "✅ Invoice sent by email" });
               else toast({ title: d.error || (L ? "فشل الإرسال" : "Send failed"), variant: "destructive" });
@@ -598,7 +629,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
+            <Printer className="w-4 h-4" /> {L ? "طباعة" : "Print"}
           </a>
           <a
             href={`/api/invoices/${invoice.id}/pdf`}
@@ -606,7 +637,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <FileText className="w-3 h-3" /> PDF
+            <FileText className="w-4 h-4" /> PDF
           </a>
         </div>
       </div>
@@ -805,7 +836,7 @@ export default function AdminInvoices() {
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-xs font-semibold"
                             data-testid={`button-edit-invoice-${inv.id}`}
                           >
-                            <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                            <Pencil className="w-4 h-4" /> {L ? "تعديل" : "Edit"}
                           </button>
                           <button
                             onClick={() => duplicateMutation.mutate(inv.id)}
@@ -814,7 +845,7 @@ export default function AdminInvoices() {
                             title={L ? "نسخ" : "Copy"}
                             data-testid={`button-duplicate-invoice-${inv.id}`}
                           >
-                            <Copy className="w-3 h-3" />
+                            <Copy className="w-4 h-4" />
                           </button>
                           <button
                              onClick={() => downloadAuthenticatedFile(

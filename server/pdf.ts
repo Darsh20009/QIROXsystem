@@ -64,6 +64,7 @@ export interface InvoiceData {
   beneficiaryName?: string;
   iban?: string;
   accountNumber?: string;
+  language?: "ar" | "en";
 }
 
 export interface ReceiptData {
@@ -116,6 +117,63 @@ function loadLogo(): Buffer | null {
 }
 
 const hasArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
+
+const PDF_LABELS = {
+  ar: {
+    quotation: "عرض سعر",
+    invoice: "فاتورة ضريبية",
+    date: "التاريخ",
+    validUntil: "صالح حتى",
+    due: "تاريخ الاستحقاق",
+    preparedFor: "مقدم إلى:",
+    billedTo: "فاتورة إلى:",
+    organization: "المنشأة",
+    tax: "الرقم الضريبي",
+    commercialReg: "السجل التجاري",
+    item: "البند",
+    quantity: "الكمية",
+    unitPrice: "سعر الوحدة",
+    total: "الإجمالي",
+    subtotal: "المجموع الفرعي",
+    discount: "الخصم",
+    vat: "ضريبة القيمة المضافة",
+    notes: "ملاحظات:",
+    paymentTerms: "شروط الدفع:",
+    terms: "الشروط والأحكام:",
+    bankDetails: "بيانات التحويل البنكي:",
+    paid: "مدفوعة",
+    unpaid: "غير مدفوعة",
+    cancelled: "ملغاة",
+    sar: "ر.س",
+  },
+  en: {
+    quotation: "QUOTATION",
+    invoice: "TAX INVOICE",
+    date: "Date",
+    validUntil: "Valid until",
+    due: "Due",
+    preparedFor: "Prepared for:",
+    billedTo: "Billed to:",
+    organization: "Organization",
+    tax: "VAT/Tax #",
+    commercialReg: "CR",
+    item: "Item",
+    quantity: "Qty",
+    unitPrice: "Unit Price",
+    total: "Total",
+    subtotal: "Subtotal (SAR)",
+    discount: "Discount (SAR)",
+    vat: "VAT",
+    notes: "Notes:",
+    paymentTerms: "Payment terms:",
+    terms: "Terms:",
+    bankDetails: "Bank details:",
+    paid: "PAID",
+    unpaid: "UNPAID",
+    cancelled: "CANCELLED",
+    sar: "SAR",
+  },
+} as const;
 
 /* Load arabic-reshaper (CJS) for proper presentation-form shaping */
 let _arabicReshaper: any = null;
@@ -180,6 +238,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   const latinBold = helveticaBold;
   const latinReg  = helvetica;
+  const labels = PDF_LABELS[q.language === "en" ? "en" : "ar"];
+  const locale = q.language === "en" ? "en-SA" : "ar-SA";
 
   /* ── Drawing helpers ── */
 
@@ -252,19 +312,19 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     drawL("STUDIO",             110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
     drawL("qiroxstudio.online", width - 175, curY + 22, 9, rgb(0.6, 0.6, 0.6), latinReg);
   }
-  drawL("QUOTATION", width - 100, curY + 8, 7, GRAY, latinReg);
+   drawSmart(labels.quotation, width - 160, width - 30, curY + 8, 7, GRAY, latinReg);
   curY -= 70;
 
   /* ── Quotation number & date ── */
   drawL(`#${q.quotationNumber}`, MARGIN, curY, 16, BLACK, latinBold);
-  const dateStr = q.createdAt
-    ? new Date(q.createdAt).toLocaleDateString("en-SA")
-    : new Date().toLocaleDateString("en-SA");
-  drawL(`Date: ${dateStr}`, width - 150, curY, 9, GRAY, latinReg);
+   const dateStr = q.createdAt
+     ? new Date(q.createdAt).toLocaleDateString(locale)
+     : new Date().toLocaleDateString(locale);
+   drawSmart(`${labels.date}: ${dateStr}`, width - 150, width - MARGIN, curY, 9, GRAY, latinReg);
   if (q.validUntil) {
-    drawL(
-      `Valid until: ${new Date(q.validUntil).toLocaleDateString("en-SA")}`,
-      width - 150, curY - 14, 9, GRAY, latinReg
+     drawSmart(
+       `${labels.validUntil}: ${new Date(q.validUntil).toLocaleDateString(locale)}`,
+       width - 150, width - MARGIN, curY - 14, 9, GRAY, latinReg
     );
   }
   curY -= 30;
@@ -283,13 +343,17 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const extraRows = (hasOrg ? 1 : 0) + (hasTax ? 1 : 0) + (hasAddr ? 1 : 0);
   const boxH = 46 + extraRows * 11;
   drawRect(MARGIN, curY - boxH + 8, pageW, boxH, rgb(0.97, 0.97, 0.97));
-  drawL("Prepared for:", MARGIN + 10, curY - 10, 7, GRAY, latinReg);
+   drawSmart(labels.preparedFor, MARGIN + 10, boxRight - 10, curY - 10, 7, GRAY, latinReg);
   drawSmart(q.clientName || "—", MARGIN + 10, boxRight - 10, curY - 24, 11, BLACK, latinBold);
   let cy = curY - 37;
   if (q.clientEmail) { drawL(q.clientEmail, MARGIN + 10, cy, 8, GRAY, latinReg); cy -= 11; }
   if (q.clientPhone) { drawL(q.clientPhone, MARGIN + 200, curY - 37, 8, GRAY, latinReg); }
-  if (hasOrg) { drawSmart(`Org / المنشأة: ${q.clientOrganization}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY); cy -= 11; }
-  if (hasTax) { drawL(`VAT/Tax #: ${q.clientTaxNumber}`, MARGIN + 10, cy, 8, DGRAY, latinReg); if (q.clientCommercialReg) drawL(`CR: ${q.clientCommercialReg}`, MARGIN + 220, cy, 8, DGRAY, latinReg); cy -= 11; }
+   if (hasOrg) { drawSmart(`${labels.organization}: ${q.clientOrganization}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY, latinReg); cy -= 11; }
+   if (hasTax) {
+     drawSmart(`${labels.tax}: ${q.clientTaxNumber}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY, latinReg);
+     if (q.clientCommercialReg) drawSmart(`${labels.commercialReg}: ${q.clientCommercialReg}`, MARGIN + 220, boxRight - 10, cy - 11, 8, DGRAY, latinReg);
+     cy -= 11;
+   }
   if (hasAddr) { drawSmart(`${q.clientAddress || ""}${q.clientCity ? ", " + q.clientCity : ""}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY); cy -= 11; }
   curY -= boxH + 14;
 
@@ -307,11 +371,10 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   /* Header row */
   drawRect(tableX, curY - 20, tableW, 24, BLACK);
-  drawL("Item",       cols[0] + 6,              curY - 12, 8, WHITE, latinBold);
-  drawAR("البند",    cols[0] + colWidths[0] - 6, curY - 12, 8, WHITE);
-  drawL("Qty",        cols[1] + 6, curY - 12, 8, WHITE, latinBold);
-  drawL("Unit Price", cols[2] + 6, curY - 12, 8, WHITE, latinBold);
-  drawL("Total",      cols[3] + 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.item, cols[0] + 6, cols[1] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.quantity, cols[1] + 6, cols[2] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.unitPrice, cols[2] + 6, cols[3] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.total, cols[3] + 6, tableX + tableW - 6, curY - 12, 8, WHITE, latinBold);
   curY -= 26;
 
   /* Data rows */
@@ -340,24 +403,24 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     if (bgColor) drawRect(totalsX, curY - 16, totalsW, 22, bgColor);
     const f = bold ? latinBold : latinReg;
     const c = bold ? BLACK : GRAY;
-    drawL(label, totalsX + 6, curY - 8, 8, c, f);
+     drawSmart(label, totalsX + 6, totalsX + totalsW - 6, curY - 8, 8, c, f);
     drawL(value, totalsX + totalsW - 6 - latinReg.widthOfTextAtSize(value, 8), curY - 8, 8, c, f);
     curY -= 20;
   };
 
    const subtotal = q.amount ?? (q.totalAmount - (q.vatAmount ?? 0));
-  addTotalRow("Subtotal (SAR)", subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   addTotalRow(labels.subtotal, subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
    if (Number((q as any).discountAmount || 0) > 0) {
-     addTotalRow("Discount (SAR)", `-${Number((q as any).discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
+     addTotalRow(labels.discount, `-${Number((q as any).discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
    }
-  addTotalRow(`VAT ${q.vatRate ?? 15}%`, (q.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
-  addTotalRow("Total (SAR)", q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
+   addTotalRow(`${labels.vat} ${q.vatRate ?? 15}%`, (q.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   addTotalRow(labels.total, q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
 
   /* re-draw total row text in white */
   const totalY   = curY + 20;
   const totalStr = q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 });
-  drawL("Total (SAR)", totalsX + 6, totalY - 8, 8, WHITE, latinBold);
-  drawL(totalStr, totalsX + totalsW - 6 - latinBold.widthOfTextAtSize(totalStr, 8), totalY - 8, 8, WHITE, latinBold);
+   drawSmart(labels.total, totalsX + 6, totalsX + totalsW - 6, totalY - 8, 8, WHITE, latinBold);
+   drawL(totalStr, totalsX + totalsW - 6 - latinBold.widthOfTextAtSize(totalStr, 8), totalY - 8, 8, WHITE, latinBold);
   curY -= 20;
 
    /* ── Notes and payment terms ── */
@@ -365,14 +428,14 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     curY -= 10;
     const notesBoxW = tableW * 0.8;
     drawRect(tableX, curY - 36, notesBoxW, 44, rgb(0.97, 0.97, 0.97));
-    drawL("Notes:", tableX + 8, curY - 10, 7, GRAY, latinReg);
+     drawSmart(labels.notes, tableX + 8, tableX + notesBoxW - 8, curY - 10, 7, GRAY, latinReg);
     const noteText = q.notes.length > 120 ? q.notes.substring(0, 120) + "…" : q.notes;
     drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
     curY -= 54;
   }
    if (q.paymentTerms || q.termsAndConditions) {
      curY -= 8;
-     const text = [q.paymentTerms && `Payment terms: ${q.paymentTerms}`, q.termsAndConditions && `Terms: ${q.termsAndConditions}`]
+     const text = [q.paymentTerms && `${labels.paymentTerms} ${q.paymentTerms}`, q.termsAndConditions && `${labels.terms} ${q.termsAndConditions}`]
        .filter(Boolean).join(" | ");
      drawSmart(text.slice(0, 280), tableX, tableX + tableW, curY - 10, 7, GRAY);
      curY -= 20;
@@ -380,7 +443,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
    if (q.bankName || q.beneficiaryName || q.iban || q.accountNumber) {
      curY -= 8;
      drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
-     drawL("Bank details:", tableX + 8, curY - 12, 7, GRAY, latinBold);
+     drawSmart(labels.bankDetails, tableX + 8, tableX + tableW - 8, curY - 12, 7, GRAY, latinBold);
      drawSmart([q.bankName, q.beneficiaryName, q.iban && `IBAN: ${q.iban}`, q.accountNumber && `Account: ${q.accountNumber}`]
        .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
      curY -= 60;
@@ -429,6 +492,8 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
 
   const latinBold = helveticaBold;
   const latinReg  = helvetica;
+  const labels = PDF_LABELS[inv.language === "en" ? "en" : "ar"];
+  const locale = inv.language === "en" ? "en-SA" : "ar-SA";
 
   const drawL = (t: string, x: number, y: number, s: number, c = BLACK, f = latinReg) => {
     if (!t) return; try { page.drawText(t, { x, y, size: s, color: c, font: f }); } catch {}
@@ -463,19 +528,18 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     drawL("QIROX", 30, curY + 20, 28, WHITE, latinBold);
     drawL("STUDIO", 110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
   }
-  drawL("TAX INVOICE", width - 110, curY + 22, 9, WHITE, latinBold);
-  drawAR("فاتورة ضريبية", width - 30, curY + 8, 9, WHITE);
+   drawSmart(labels.invoice, width - 150, width - 30, curY + 22, 9, WHITE, latinBold);
   curY -= 70;
 
   /* Number + date + status */
   drawL(`#${inv.invoiceNumber}`, MARGIN, curY, 16, BLACK, latinBold);
-  const dateStr = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString("en-SA") : new Date().toLocaleDateString("en-SA");
-  drawL(`Date: ${dateStr}`, width - 160, curY, 9, GRAY, latinReg);
-  if (inv.dueDate) drawL(`Due: ${new Date(inv.dueDate).toLocaleDateString("en-SA")}`, width - 160, curY - 14, 9, GRAY, latinReg);
+   const dateStr = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString(locale) : new Date().toLocaleDateString(locale);
+   drawSmart(`${labels.date}: ${dateStr}`, width - 160, width - MARGIN, curY, 9, GRAY, latinReg);
+   if (inv.dueDate) drawSmart(`${labels.due}: ${new Date(inv.dueDate).toLocaleDateString(locale)}`, width - 160, width - MARGIN, curY - 14, 9, GRAY, latinReg);
   if (inv.status) {
     const stColor = inv.status === "paid" ? GREEN : inv.status === "cancelled" ? RED : DGRAY;
-    const stLabel = inv.status === "paid" ? "PAID" : inv.status === "cancelled" ? "CANCELLED" : "UNPAID";
-    drawL(stLabel, width - 160, curY - 28, 9, stColor, latinBold);
+     const stLabel = inv.status === "paid" ? labels.paid : inv.status === "cancelled" ? labels.cancelled : labels.unpaid;
+     drawSmart(stLabel, width - 160, width - MARGIN, curY - 28, 9, stColor, latinBold);
   }
   curY -= 30;
 
@@ -489,14 +553,18 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   const extraRows = (hasOrg ? 1 : 0) + (hasTax ? 1 : 0) + (hasAddr ? 1 : 0);
   const boxH = 46 + extraRows * 11;
   drawRect(MARGIN, curY - boxH + 8, pageW, boxH, rgb(0.97, 0.97, 0.97));
-  drawL("Billed to / فاتورة إلى:", MARGIN + 10, curY - 10, 7, GRAY, latinReg);
+   drawSmart(labels.billedTo, MARGIN + 10, boxRight - 10, curY - 10, 7, GRAY, latinReg);
   drawSmart(inv.clientName || "—", MARGIN + 10, boxRight - 10, curY - 24, 11, BLACK, latinBold);
   let cy = curY - 37;
   if (inv.clientEmail) drawL(inv.clientEmail, MARGIN + 10, cy, 8, GRAY, latinReg);
   if (inv.clientPhone) drawL(inv.clientPhone, MARGIN + 200, cy, 8, GRAY, latinReg);
   cy -= 11;
-  if (hasOrg) { drawSmart(`Org / المنشأة: ${inv.clientOrganization}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY); cy -= 11; }
-  if (hasTax) { drawL(`VAT/Tax #: ${inv.clientTaxNumber}`, MARGIN + 10, cy, 8, DGRAY, latinReg); if (inv.clientCommercialReg) drawL(`CR: ${inv.clientCommercialReg}`, MARGIN + 220, cy, 8, DGRAY, latinReg); cy -= 11; }
+   if (hasOrg) { drawSmart(`${labels.organization}: ${inv.clientOrganization}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY, latinReg); cy -= 11; }
+   if (hasTax) {
+     drawSmart(`${labels.tax}: ${inv.clientTaxNumber}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY, latinReg);
+     if (inv.clientCommercialReg) drawSmart(`${labels.commercialReg}: ${inv.clientCommercialReg}`, MARGIN + 220, boxRight - 10, cy - 11, 8, DGRAY, latinReg);
+     cy -= 11;
+   }
   if (hasAddr) { drawSmart(`${inv.clientAddress || ""}${inv.clientCity ? ", " + inv.clientCity : ""}`, MARGIN + 10, boxRight - 10, cy, 8, DGRAY); cy -= 11; }
   curY -= boxH + 14;
 
@@ -508,11 +576,10 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   const cols = [tableX, tableX + colWidths[0], tableX + colWidths[0] + colWidths[1], tableX + colWidths[0] + colWidths[1] + colWidths[2]];
 
   drawRect(tableX, curY - 20, tableW, 24, BLACK);
-  drawL("Item",       cols[0] + 6,                  curY - 12, 8, WHITE, latinBold);
-  drawAR("البند",    cols[0] + colWidths[0] - 6,    curY - 12, 8, WHITE);
-  drawL("Qty",        cols[1] + 6, curY - 12, 8, WHITE, latinBold);
-  drawL("Unit Price", cols[2] + 6, curY - 12, 8, WHITE, latinBold);
-  drawL("Total",      cols[3] + 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.item, cols[0] + 6, cols[1] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.quantity, cols[1] + 6, cols[2] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.unitPrice, cols[2] + 6, cols[3] - 6, curY - 12, 8, WHITE, latinBold);
+   drawSmart(labels.total, cols[3] + 6, tableX + tableW - 6, curY - 12, 8, WHITE, latinBold);
   curY -= 26;
 
   items.forEach((item, idx) => {
@@ -539,23 +606,23 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     if (bg) drawRect(totalsX, curY - 16, totalsW, 22, bg);
     const f = bold ? latinBold : latinReg;
     const c = bold ? (bg ? WHITE : BLACK) : GRAY;
-    drawL(label, totalsX + 6, curY - 8, 8, c, f);
+     drawSmart(label, totalsX + 6, totalsX + totalsW - 6, curY - 8, 8, c, f);
     drawL(value, totalsX + totalsW - 6 - f.widthOfTextAtSize(value, 8), curY - 8, 8, c, f);
     curY -= 20;
   };
-  addRow("Subtotal (SAR)", subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   addRow(labels.subtotal, subtotal.toLocaleString("en-SA", { minimumFractionDigits: 2 }));
    if (Number(inv.discountAmount || 0) > 0) {
-     addRow("Discount (SAR)", `-${Number(inv.discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
+     addRow(labels.discount, `-${Number(inv.discountAmount).toLocaleString("en-SA", { minimumFractionDigits: 2 })}`);
    }
-  addRow(`VAT ${inv.vatRate ?? 15}%`, (inv.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
-  addRow("TOTAL (SAR)", inv.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
+   addRow(`${labels.vat} ${inv.vatRate ?? 15}%`, (inv.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
+   addRow(labels.total, inv.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
 
   /* Notes */
   if (inv.notes) {
     curY -= 10;
     const notesBoxW = tableW * 0.8;
     drawRect(tableX, curY - 36, notesBoxW, 44, rgb(0.97, 0.97, 0.97));
-    drawL("Notes:", tableX + 8, curY - 10, 7, GRAY, latinReg);
+     drawSmart(labels.notes, tableX + 8, tableX + notesBoxW - 8, curY - 10, 7, GRAY, latinReg);
     const noteText = inv.notes.length > 120 ? inv.notes.substring(0, 120) + "…" : inv.notes;
     drawSmart(noteText, tableX + 8, tableX + notesBoxW - 8, curY - 24, 8, DGRAY);
     curY -= 54;
@@ -563,7 +630,7 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
    if (inv.bankName || inv.beneficiaryName || inv.iban || inv.accountNumber) {
      curY -= 8;
      drawRect(tableX, curY - 42, tableW, 50, rgb(0.97, 0.97, 0.97));
-     drawL("Bank details:", tableX + 8, curY - 12, 7, GRAY, latinBold);
+     drawSmart(labels.bankDetails, tableX + 8, tableX + tableW - 8, curY - 12, 7, GRAY, latinBold);
      drawSmart([inv.bankName, inv.beneficiaryName, inv.iban && `IBAN: ${inv.iban}`, inv.accountNumber && `Account: ${inv.accountNumber}`]
        .filter(Boolean).join(" · "), tableX + 8, tableX + tableW - 8, curY - 28, 7, DGRAY);
      curY -= 60;

@@ -374,7 +374,7 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string;
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array;
+  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendInvoiceEmail(to, clientName, invoice);
 }
@@ -389,7 +389,7 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
   quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string; link?: string; pdfBytes?: Uint8Array;
+  notes?: string; link?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendQuotationEmail(to, clientName, quotation);
 }

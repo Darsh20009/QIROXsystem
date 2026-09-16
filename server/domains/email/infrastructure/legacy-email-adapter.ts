@@ -78,7 +78,7 @@ export async function sendWeeklyReportEmail(
 /** TECH-001 — Invoice template not yet migrated to domain.ts */
 export async function sendInvoiceEmail(
   to: string, clientName: string,
-  invoice: { invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number; status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[]; orderId?: string; createdAt?: string; pdfBytes?: Uint8Array },
+  invoice: { invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number; status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[]; orderId?: string; createdAt?: string; pdfBytes?: Uint8Array; language?: "ar" | "en" },
 ): Promise<boolean> {
   return _sendInvoiceEmail(to, clientName, invoice);
 }
@@ -94,7 +94,7 @@ export async function sendReceiptEmail(
 /** TECH-001 — Quotation template (with PDF attachment) not yet migrated to domain.ts */
 export async function sendQuotationEmail(
   to: string, clientName: string,
-  quotation: { quotationNumber: string; title?: string; totalAmount: number; vatRate?: number; validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[]; notes?: string; link?: string; pdfBytes?: Uint8Array },
+  quotation: { quotationNumber: string; title?: string; totalAmount: number; vatRate?: number; validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[]; notes?: string; link?: string; pdfBytes?: Uint8Array; language?: "ar" | "en" },
 ): Promise<boolean> {
   return _sendQuotationEmail(to, clientName, quotation);
 }

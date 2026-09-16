@@ -16,6 +16,7 @@ const invoiceSchema = new mongoose.Schema({
   vatAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   status: { type: String, enum: ['unpaid', 'paid', 'cancelled'], default: 'unpaid' },
+  language: { type: String, enum: ["ar", "en"], default: "ar" },
   dueDate: Date,
   paidAt: Date,
   notes: String,

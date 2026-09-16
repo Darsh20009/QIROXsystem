@@ -204,18 +204,20 @@ function emailBanner() {
 </tr>`;
 }
 
-export function baseTemplate(content: string) {
+export function baseTemplate(content: string, language: "ar" | "en" = "ar") {
+  const isEnglish = language === "en";
+  const direction = isEnglish ? "ltr" : "rtl";
   return `<!DOCTYPE html>
-<html>
+<html lang="${isEnglish ? "en" : "ar"}" dir="${direction}">
 <head>
 <meta charset="UTF-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 </head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;direction:${direction};">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 16px;">
 <tr><td align="center">
-<table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap}">
+<table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap};direction:${direction};">
   ${emailBanner()}
   <tr><td style="${S.body}">${content}</td></tr>
   <tr><td style="${S.footer}">
@@ -745,52 +747,59 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
   invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array;
+  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
+  const ar = invoice.language !== "en";
+  const labels = ar
+    ? { item: "الوصف", qty: "الكمية", unit: "سعر الوحدة", total: "الإجمالي", number: "رقم الفاتورة", issued: "تاريخ الإصدار", due: "تاريخ الاستحقاق", status: "الحالة", amount: "المبلغ", notes: "ملاحظات", paid: "مدفوع", unpaid: "غير مدفوع", cancelled: "ملغاة", invoice: "فاتورة", greeting: `عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة أدناه:`, dashboard: "عرض الفاتورة في لوحة التحكم", currency: "ر.س" }
+    : { item: "Description", qty: "Quantity", unit: "Unit price", total: "Total", number: "Invoice number", issued: "Issue date", due: "Due date", status: "Status", amount: "Amount", notes: "Notes", paid: "Paid", unpaid: "Unpaid", cancelled: "Cancelled", invoice: "Invoice", greeting: `Hello ${clientName}, please find your invoice details below:`, dashboard: "View invoice in dashboard", currency: "SAR" };
+  const locale = ar ? "ar-SA" : "en-SA";
+  const money = (value: number) => `${value.toLocaleString(locale)} ${labels.currency}`;
   const itemsHtml = invoice.items && invoice.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
         <tr style="background:#f9fafb;">
-          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الوصف</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الاجمالي</th>
+          <th style="padding:8px 12px;text-align:${ar ? "right" : "left"};border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.item}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.qty}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.unit}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.total}</th>
         </tr>
         ${invoice.items.map(i => `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
           <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
-          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
-          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${money(i.unitPrice)}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${money(i.total)}</td>
         </tr>`).join("")}
       </table>`
     : "";
   const statusBadge = invoice.status === 'paid'
-    ? badge("badgeGreen", "مدفوع")
-    : badge("badgeAmber", "غير مدفوع");
+    ? badge("badgeGreen", labels.paid)
+    : invoice.status === "cancelled" ? badge("badgeRed", labels.cancelled) : badge("badgeAmber", labels.unpaid);
   const invoiceRows: [string, string][] = [
-    ["رقم الفاتورة", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${invoice.invoiceNumber}</span>`],
-    ["تاريخ الاصدار", invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')],
+    [labels.number, `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${invoice.invoiceNumber}</span>`],
+    [labels.issued, invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString(locale) : new Date().toLocaleDateString(locale)],
   ];
-  if (invoice.dueDate) invoiceRows.push(["تاريخ الاستحقاق", new Date(invoice.dueDate).toLocaleDateString('ar-SA')]);
-  invoiceRows.push(["الحالة", statusBadge]);
-  const totalsRows: [string, string][] = [["المبلغ", `${invoice.amount.toLocaleString()} ر.س`]];
-  totalsRows.push(["الاجمالي", `<strong style="font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</strong>`]);
+  if (invoice.dueDate) invoiceRows.push([labels.due, new Date(invoice.dueDate).toLocaleDateString(locale)]);
+  invoiceRows.push([labels.status, statusBadge]);
+  const totalsRows: [string, string][] = [[labels.amount, money(invoice.amount)]];
+  totalsRows.push([labels.total, `<strong style="font-size:16px;">${money(invoice.totalAmount)}</strong>`]);
   const html = baseTemplate(
-    tag("فاتورة") +
-    title(`فاتورة رقم ${invoice.invoiceNumber}`) +
-    text(`عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة ادناه:`) +
+    tag(labels.invoice) +
+    title(`${labels.invoice} ${invoice.invoiceNumber}`) +
+    text(labels.greeting) +
     infoTable(invoiceRows) +
     itemsHtml +
     infoTable(totalsRows) +
-    (invoice.notes ? text(`<strong>ملاحظات:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
-    text("معلومات التحويل البنكي: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
-    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الفاتورة في لوحة التحكم")
+    (invoice.notes ? text(`<strong>${labels.notes}:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    text(ar ? "معلومات التحويل البنكي: IBAN: SA0380205098017222121010" : "Bank transfer details: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, labels.dashboard),
+    ar ? "ar" : "en"
   );
   const attachments: EmailAttachment[] = invoice.pdfBytes ? [{
     filename: `invoice-${invoice.invoiceNumber}.pdf`,
     fileblob: Buffer.from(invoice.pdfBytes).toString("base64"),
     mimetype: "application/pdf",
   }] : [];
-  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html, undefined, attachments);
+  return sendEmail(to, clientName, `${labels.invoice} ${invoice.invoiceNumber} | QIROX`, html, undefined, attachments);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
@@ -832,45 +841,52 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
   quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string; link?: string; pdfBytes?: Uint8Array;
+  notes?: string; link?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
+  const ar = quotation.language !== "en";
+  const labels = ar
+    ? { item: "البند", qty: "الكمية", unit: "سعر الوحدة", total: "المجموع", number: "رقم العرض", issued: "تاريخ الإصدار", subject: "الموضوع", valid: "صالح حتى", vat: "ضريبة القيمة المضافة", grandTotal: "الإجمالي", quotation: "عرض سعر", greeting: `عزيزي ${clientName}، نرفق لكم عرض السعر التالي من فريق QIROX:`, attached: "📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF.", notes: "ملاحظات", currency: "ر.س" }
+    : { item: "Item", qty: "Quantity", unit: "Unit price", total: "Total", number: "Quotation number", issued: "Issue date", subject: "Subject", valid: "Valid until", vat: "VAT", grandTotal: "Total", quotation: "Quotation", greeting: `Hello ${clientName}, please find the following quotation from QIROX:`, attached: "📎 The quotation PDF is attached to this email.", notes: "Notes", currency: "SAR" };
+  const locale = ar ? "ar-SA" : "en-SA";
+  const money = (value: number) => `${value.toLocaleString(locale)} ${labels.currency}`;
   const itemsHtml = quotation.items && quotation.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
         <tr style="background:#f9fafb;">
-          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">البند</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">المجموع</th>
+          <th style="padding:8px 12px;text-align:${ar ? "right" : "left"};border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.item}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.qty}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.unit}</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">${labels.total}</th>
         </tr>
         ${quotation.items.map(i => `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
           <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
-          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
-          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${money(i.unitPrice)}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${money(i.total)}</td>
         </tr>`).join("")}
       </table>`
     : "";
   const rows: [string, string][] = [
-    ["رقم العرض", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${quotation.quotationNumber}</span>`],
-    ["تاريخ الإصدار", new Date().toLocaleDateString('ar-SA')],
+    [labels.number, `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${quotation.quotationNumber}</span>`],
+    [labels.issued, new Date().toLocaleDateString(locale)],
   ];
-  if (quotation.title) rows.push(["الموضوع", quotation.title]);
-  if (quotation.validUntil) rows.push(["صالح حتى", new Date(quotation.validUntil).toLocaleDateString('ar-SA')]);
-  if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
-  rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
+  if (quotation.title) rows.push([labels.subject, quotation.title]);
+  if (quotation.validUntil) rows.push([labels.valid, new Date(quotation.validUntil).toLocaleDateString(locale)]);
+  if (quotation.vatRate) rows.push([labels.vat, `${quotation.vatRate}%`]);
+  rows.push([labels.grandTotal, `<strong style="font-size:16px;">${money(quotation.totalAmount)}</strong>`]);
 
   const pdfNote = quotation.pdfBytes
-    ? text(`<span style="font-size:13px;color:#666;">📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF.</span>`)
+    ? text(`<span style="font-size:13px;color:#666;">${labels.attached}</span>`)
     : "";
 
   const html = baseTemplate(
-    tag("عرض سعر") +
-    title(`عرض سعر رقم ${quotation.quotationNumber}`) +
-    text(`عزيزي ${clientName}، نرفق لكم عرض السعر التالي من فريق QIROX:`) +
+    tag(labels.quotation) +
+    title(`${labels.quotation} ${quotation.quotationNumber}`) +
+    text(labels.greeting) +
     infoTable(rows) +
     itemsHtml +
-    (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
-    pdfNote
+    (quotation.notes ? text(`<strong>${labels.notes}:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    pdfNote,
+    ar ? "ar" : "en"
   );
 
   const attachments: EmailAttachment[] = quotation.pdfBytes ? [{
@@ -879,7 +895,7 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     mimetype: "application/pdf",
   }] : [];
 
-  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html, undefined, attachments);
+  return sendEmail(to, clientName, `${labels.quotation} ${quotation.quotationNumber} | QIROX`, html, undefined, attachments);
 }
 
 export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {

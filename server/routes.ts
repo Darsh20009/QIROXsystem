@@ -11231,6 +11231,10 @@ export async function registerRoutes(
       const targetEmail = (req.body?.toEmail) || invoice.externalEmail || snap.email || u.email;
       const targetName = (req.body?.toName) || invoice.externalName || snap.fullName || u.fullName || u.username || "عميل";
       if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للمستلم" });
+       const language = req.body?.language === "en" ? "en" : ((invoice.language as "ar" | "en") === "en" ? "en" : "ar");
+       if (req.body?.language === "ar" || req.body?.language === "en") {
+         await InvoiceModel.findByIdAndUpdate(invoice._id, { $set: { language } });
+       }
       const { sendInvoiceEmail } = await import("./email");
        const { generateInvoicePdf } = await import("./services/pdf.service");
        const bank = await getPdfBankDetails();
@@ -11260,6 +11264,7 @@ export async function registerRoutes(
            items: invoice.items,
            notes: invoice.notes,
            createdAt: invoice.createdAt,
+            language,
            ...bank,
          });
        } catch (pdfErr) {
@@ -11275,6 +11280,7 @@ export async function registerRoutes(
         notes: (invoice as any).notes,
         items: (invoice as any).items,
         createdAt: (invoice as any).createdAt,
+          language,
          pdfBytes,
       });
       dispatchNotification({
@@ -11648,6 +11654,10 @@ export async function registerRoutes(
     if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
 
     const { externalEmail, externalName, companyName } = req.body || {};
+    const language = req.body?.language === "en" ? "en" : ((quotation as any).language === "en" ? "en" : "ar");
+    if (req.body?.language === "ar" || req.body?.language === "en") {
+      await QuotationModel.findByIdAndUpdate(quotation._id, { $set: { language } });
+    }
 
     const client = (quotation as any).userId as any;
     const targetEmail: string = externalEmail?.trim() || client?.email || (quotation as any).externalEmail;
@@ -11692,7 +11702,7 @@ export async function registerRoutes(
         createdAt: (quotation as any).createdAt,
         paymentTerms: (quotation as any).paymentTerms,
         termsAndConditions: (quotation as any).termsAndConditions,
-        language: (quotation as any).language,
+         language,
         ...bank,
       });
     } catch (pdfErr) {
@@ -11709,6 +11719,7 @@ export async function registerRoutes(
       notes: (quotation as any).notes,
       link,
       pdfBytes,
+      language,
     });
     if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
     dispatchNotification({
@@ -11868,6 +11879,7 @@ export async function registerRoutes(
       externalName: (q as any).externalName,
       externalEmail: (q as any).externalEmail,
       externalCompany: (q as any).externalCompany,
+      language: (q as any).language === "en" ? "en" : "ar",
       createdBy: user.id,
       clientSnapshot,
     });
@@ -11913,6 +11925,7 @@ export async function registerRoutes(
         items: invoice.items,
         notes: invoice.notes,
         createdAt: invoice.createdAt,
+        language: invoice.language === "en" ? "en" : "ar",
          ...bank,
       });
       res.setHeader("Content-Type", "application/pdf");
