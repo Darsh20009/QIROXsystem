@@ -3737,7 +3737,7 @@ export default function Dashboard() {
                      <p className="border-t border-black/[0.06] dark:border-white/[0.08] pt-3 mb-4 text-[10px] leading-relaxed font-bold text-black/40 dark:text-white/40">
                        {isLifetime
                          ? (L ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»" : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
-                         : (L ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند" : "A “Made by QIROX Studio” badge will be placed on the project or document")}
+                         : (L ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع" : "A “Made by QIROX Studio” badge will be placed on the project")}
                      </p>
                     <Link href="/order"><Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.1]"}`} data-testid={`button-select-plan-${plan.slug}`}>{L ? "اختر الباقة" : "Select Plan"}<ChevronLeft className="w-3.5 h-3.5 mr-1" /></Button></Link>
                   </div>

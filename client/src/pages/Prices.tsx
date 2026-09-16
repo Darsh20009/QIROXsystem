@@ -671,7 +671,7 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         }`}>
           {isLifetime
             ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»"
-            : "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند"}
+            : "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع"}
         </div>
       </div>
 

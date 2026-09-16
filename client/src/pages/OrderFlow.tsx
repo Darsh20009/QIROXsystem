@@ -991,8 +991,8 @@ export default function OrderFlow() {
                                   ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»"
                                   : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
                                 : (lang === "ar"
-                                  ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند"
-                                  : "A “Made by QIROX Studio” badge will be placed on the project or document")}
+                                  ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع"
+                                  : "A “Made by QIROX Studio” badge will be placed on the project")}
                             </p>
                           </div>
                         </div>

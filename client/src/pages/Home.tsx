@@ -1609,7 +1609,7 @@ export default function Home() {
                       }`}>
                         {pricingPeriod === "lifetime"
                           ? (ar ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»" : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
-                          : (ar ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند" : "A “Made by QIROX Studio” badge will be placed on the project or document")}
+                          : (ar ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع" : "A “Made by QIROX Studio” badge will be placed on the project")}
                       </div>
                     </div>
 
