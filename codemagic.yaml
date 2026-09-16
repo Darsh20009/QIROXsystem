@@ -285,9 +285,19 @@ workflows:
             -scheme "App" \
             -configuration Release \
             -showBuildSettings 2>&1 | tee /tmp/xcodebuild_logs/show-build-settings.log
-          xcode-project build-ipa \
+          if ! xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
-            --scheme "App" 2>&1 | tee /tmp/xcodebuild_logs/build-ipa.log
+            --scheme "App" 2>&1 | tee /tmp/xcodebuild_logs/build-ipa.log; then
+            echo "----- iOS signing/archive diagnostics -----"
+            grep -E -i \
+              'error:|warning:.*sign|code ?sign|provision|profile|entitlement|No profiles|requires a provisioning profile|does not support' \
+              /tmp/xcodebuild_logs/build-ipa.log \
+              /tmp/xcodebuild_logs/use-profiles.log \
+              /tmp/xcodebuild_logs/show-build-settings.log \
+              || true
+            echo "----- End iOS signing/archive diagnostics -----"
+            exit 1
+          fi
 
       - name: Publish to TestFlight
         script: |

@@ -236,6 +236,8 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const userSelectedCountryRef = useRef(false);
+  const lastEmittedValueRef = useRef("");
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
 
   useEffect(() => {
@@ -248,20 +250,31 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
       .sort((a, b) => b.dial.length - a.dial.length)
       .find(c => normalized.startsWith(c.dial));
     if (country) {
-      setSelected(country);
+      // A user-selected country must not be replaced by the asynchronous
+      // parent update (or by a late geo-detection result).
+      if (normalized === lastEmittedValueRef.current) {
+        userSelectedCountryRef.current = false;
+      } else if (!userSelectedCountryRef.current) {
+        setSelected(country);
+      }
       setPhoneNumber(normalized.slice(country.dial.length).replace(/\D/g, ""));
     }
   }, [value]);
 
   useEffect(() => {
     if (detected) return;
+    let cancelled = false;
     getCountryCode().then(code => {
-      if (code && COUNTRY_CODE_MAP[code]) {
+      if (cancelled) return;
+      if (!userSelectedCountryRef.current && !value.trim() && code && COUNTRY_CODE_MAP[code]) {
         setSelected(COUNTRY_CODE_MAP[code]);
       }
       setDetected(true);
-    }).catch(() => setDetected(true));
-  }, []);
+    }).catch(() => {
+      if (!cancelled) setDetected(true);
+    });
+    return () => { cancelled = true; };
+  }, [detected, value]);
 
   // Keep the desktop menu attached to its trigger. Mobile uses a stable bottom sheet
   // so opening the keyboard cannot move the menu off-screen.
@@ -282,40 +295,46 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
   }, [open, isMobile]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handlePointerDownOutside = (e: PointerEvent) => {
       const target = e.target as Node;
       const inContainer = containerRef.current?.contains(target);
       const inPortal = dropdownPortalRef.current?.contains(target);
       if (!inContainer && !inPortal) setOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handlePointerDownOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
     };
   }, []);
 
   useEffect(() => {
-    if (open && searchRef.current && !isMobile) {
-      setTimeout(() => searchRef.current?.focus(), 50);
+    if (open && searchRef.current) {
+      const focusTimer = window.setTimeout(() => searchRef.current?.focus(), isMobile ? 120 : 50);
+      return () => window.clearTimeout(focusTimer);
     } else {
       setSearch("");
     }
-  }, [open]);
+  }, [open, isMobile]);
 
   const filtered = COUNTRIES.filter(c =>
     c.nameAr.includes(search) || c.name.toLowerCase().includes(search.toLowerCase()) || c.dial.includes(search)
   );
 
   const handleSelect = (country: CountryData) => {
+    const nextValue = `${country.dial}${phoneNumber.replace(/^0+/, "")}`;
+    userSelectedCountryRef.current = true;
+    lastEmittedValueRef.current = nextValue;
     setSelected(country);
     setOpen(false);
-    onChange(`${country.dial}${phoneNumber.replace(/^0+/, "")}`);
+    onChange(nextValue);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const num = e.target.value.replace(/[^0-9]/g, "");
+    const nextValue = `${selected.dial}${num.replace(/^0+/, "")}`;
+    lastEmittedValueRef.current = nextValue;
     setPhoneNumber(num);
-    onChange(`${selected.dial}${num.replace(/^0+/, "")}`);
+    onChange(nextValue);
   };
 
   const activePlaceholder = placeholder || selected.placeholder;
@@ -327,15 +346,19 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
       style={{
         position: "fixed",
         top: isMobile ? "auto" : dropPos.top,
-        bottom: isMobile ? "max(12px, env(safe-area-inset-bottom))" : "auto",
+        bottom: isMobile ? "12px" : "auto",
         left: isMobile ? "12px" : dropPos.left,
         right: isMobile ? "12px" : "auto",
         width: isMobile ? "auto" : dropPos.width,
         zIndex: 99999,
-        maxHeight: isMobile ? "min(70dvh, 520px)" : "240px",
+        height: isMobile ? "min(70dvh, 520px)" : "240px",
+        maxHeight: isMobile ? "calc(100dvh - 24px)" : "240px",
         display: "flex",
         flexDirection: "column",
+        minHeight: 0,
+        touchAction: "manipulation",
       }}
+      onPointerDown={e => e.stopPropagation()}
     >
       <div className="p-2 border-b border-black/[0.04] dark:border-white/[0.04] shrink-0">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.02] dark:bg-white/[0.04] rounded-lg">
@@ -351,7 +374,10 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
           />
         </div>
       </div>
-      <div className="overflow-y-auto flex-1">
+      <div
+        className="overflow-y-auto flex-1 min-h-0"
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
+      >
         {filtered.length === 0 ? (
           <div className="p-4 text-center text-xs text-black/30 dark:text-white/30">لا توجد نتائج</div>
         ) : (
@@ -379,6 +405,7 @@ export function CountryPhoneInput({ value, onChange, placeholder, className, id,
         className={`relative flex h-12 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] focus-within:border-black/20 dark:focus-within:border-white/20 transition-colors ${className || ""}`}
         ref={containerRef}
         dir="ltr"
+        style={{ touchAction: "manipulation" }}
       >
         <button
           type="button"
