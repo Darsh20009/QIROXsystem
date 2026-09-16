@@ -402,16 +402,41 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
                     </div>
                   </div>
 
-                  <label className="flex items-start gap-2 text-[11px] text-black/55 dark:text-white/55 select-none cursor-pointer pt-1">
+                  <div className="flex items-start gap-2 text-[11px] text-black/55 dark:text-white/55 pt-1">
                     <input
+                      id="register-agree"
                       type="checkbox"
                       checked={agreed}
                       onChange={(e) => setAgreed(e.target.checked)}
                       className="mt-0.5 accent-violet-600"
                       data-testid="checkbox-register-agree"
                     />
-                    <span>أوافق على شروط الاستخدام وسياسة الخصوصية لمنصة كيروكس</span>
-                  </label>
+                    <label htmlFor="register-agree" className="leading-relaxed cursor-pointer">
+                      أوافق على{" "}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-bold text-violet-600 dark:text-violet-400 underline underline-offset-2"
+                        data-testid="link-register-terms"
+                      >
+                        الشروط والأحكام
+                      </a>
+                      {" "}و{" "}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-bold text-violet-600 dark:text-violet-400 underline underline-offset-2"
+                        data-testid="link-register-privacy"
+                      >
+                        سياسة الخصوصية
+                      </a>
+                      {" "}لمنصة كيروكس
+                    </label>
+                  </div>
 
                   <Button
                     type="submit"

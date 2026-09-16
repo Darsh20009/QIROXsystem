@@ -1602,6 +1602,15 @@ export default function Home() {
                           </li>
                         ))}
                       </ul>
+                      <div className={`mt-5 pt-4 border-t text-[10px] leading-relaxed font-bold ${
+                        isInf ? "border-amber-500/15 text-amber-300/65" :
+                        isPro ? "border-white/10 text-blue-100/65" :
+                        "border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500"
+                      }`}>
+                        {pricingPeriod === "lifetime"
+                          ? (ar ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»" : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
+                          : (ar ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند" : "A “Made by QIROX Studio” badge will be placed on the project or document")}
+                      </div>
                     </div>
 
                     {/* CTA */}

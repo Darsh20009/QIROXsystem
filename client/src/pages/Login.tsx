@@ -2267,7 +2267,7 @@ export default function Login() {
                         <FormLabel className="text-xs text-black/55 leading-relaxed cursor-pointer">
                           أوافق على{" "}
                           <Link href="/terms" className="text-black font-semibold underline">الشروط والأحكام</Link>
-                          {" "}وسياسة الخصوصية
+                            {" "}و<Link href="/privacy" className="text-black font-semibold underline">سياسة الخصوصية</Link>
                         </FormLabel>
                       </div>
                       <FormMessage className="text-xs" />

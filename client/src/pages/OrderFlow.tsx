@@ -981,6 +981,19 @@ export default function OrderFlow() {
                                 {lang === "ar" ? "لا توجد مميزات مضافة بعد" : "No features added yet"}
                               </p>
                             )}
+                            <p className={`mt-4 pt-3 border-t text-[10px] leading-relaxed font-bold ${
+                              v.isDark
+                                ? "border-white/10 text-white/45"
+                                : "border-black/[0.08] dark:border-white/[0.08] text-black/40 dark:text-white/40"
+                            }`}>
+                              {periodFromUrl === "lifetime"
+                                ? (lang === "ar"
+                                  ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»"
+                                  : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
+                                : (lang === "ar"
+                                  ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند"
+                                  : "A “Made by QIROX Studio” badge will be placed on the project or document")}
+                            </p>
                           </div>
                         </div>
                       </motion.button>

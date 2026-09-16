@@ -664,6 +664,15 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
             </div>
           ))}
         </div>
+        <div className={`mt-5 pt-4 border-t text-[10px] leading-relaxed font-bold ${
+          isInfinity ? "border-amber-500/15 text-amber-300/65" :
+          isPro ? "border-white/10 text-blue-100/65" :
+          "border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500"
+        }`}>
+          {isLifetime
+            ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»"
+            : "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع أو المستند"}
+        </div>
       </div>
 
       {/* CTA */}
@@ -679,11 +688,6 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         <p className="text-[10px] text-center mt-2 opacity-50">
           {isInfinity || isPro ? "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب" : "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب"}
         </p>
-        {!isLifetime && (
-          <p className={`mt-3 text-center text-[10px] font-bold ${isInfinity ? "text-amber-300/60" : isPro ? "text-blue-200/60" : "text-gray-400 dark:text-slate-500"}`}>
-            صنع بواسطة QIROX
-          </p>
-        )}
       </div>
     </motion.div>
   );
