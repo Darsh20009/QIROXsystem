@@ -45,7 +45,7 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [agreed, setAgreed] = useState(true);
+  const [agreed, setAgreed] = useState(false);
 
   // Countdown timer
   useEffect(() => {
@@ -73,6 +73,7 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
       setFullName("");
       setEmail("");
       setPassword("");
+       setAgreed(false);
     }, 300);
   }
 
@@ -138,6 +139,7 @@ export default function RegisterModal({ open, onOpenChange, onSwitchToLogin }: R
         phone: verifiedPhone || undefined,
         phoneToken: phoneToken || undefined,
         role: "client",
+        termsAccepted: agreed,
       } as any);
 
       queryClient.setQueryData(["/api/user"], userData);

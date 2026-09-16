@@ -265,6 +265,9 @@ const priceRequestSchema = new mongoose.Schema({
   status:         { type: String, enum: ['pending', 'reviewing', 'quoted', 'accepted', 'rejected'], default: 'pending' },
   quotedPrice:    { type: Number, default: null },
   quotedCurrency: { type: String, default: 'SAR' },
+  baseWebsiteValue: { type: Number, default: null },
+  quoteMultiplier: { type: Number, default: null },
+  providerCostsIncluded: { type: Boolean, default: false },
   quotedAt:       { type: Date, default: null },
   adminNotes:     { type: String, default: '' },
 }, { timestamps: true });

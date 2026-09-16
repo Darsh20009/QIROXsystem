@@ -64,3 +64,4 @@
 - [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.
 - [Phone verification and native push](phone-verification-native-push.md) — WhatsApp OTP must be sent directly; iOS push needs synced plugins, early token listeners, and APNs entitlements.
 - [Unified PDF pipeline](unified-pdf-pipeline.md) — invoices, quotations, and receipt vouchers share one server-side PDF path for downloads and email attachments.
+- [Partner URL hygiene](partner-url-hygiene.md) — partner website data feeds UI, SEO/AEO, and AI; reject malformed hostnames consistently before publishing or prompting.

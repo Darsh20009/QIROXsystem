@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrency } from "@/hooks/use-currency";
 import SARIcon from "@/components/SARIcon";
-import { PLAN_PRICES } from "@shared/plan-prices";
+import { PLAN_PRICES, CUSTOM_QUOTE_BASE_WEBSITE_VALUE, CUSTOM_QUOTE_MULTIPLIER, CUSTOM_QUOTE_BASE_PRICE } from "@shared/plan-prices";
 import {
   Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
   UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
@@ -679,6 +679,11 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
         <p className="text-[10px] text-center mt-2 opacity-50">
           {isInfinity || isPro ? "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب" : "إكمال البيانات → تحويل بنكي → تواصل عبر واتساب"}
         </p>
+        {!isLifetime && (
+          <p className={`mt-3 text-center text-[10px] font-bold ${isInfinity ? "text-amber-300/60" : isPro ? "text-blue-200/60" : "text-gray-400 dark:text-slate-500"}`}>
+            صنع بواسطة QIROX
+          </p>
+        )}
       </div>
     </motion.div>
   );
@@ -708,6 +713,9 @@ function CustomBanner({ onOpen }: { onOpen: ()=>void }) {
           </div>
           <p className="text-sm text-gray-500 dark:text-slate-400">
             اوصف احتياجاتك بمساعدة الذكاء الاصطناعي، وسنعد لك عرض سعر مخصص مع رقم تذكرة للمتابعة
+          </p>
+          <p className="text-[11px] text-violet-600/80 dark:text-violet-300/70 mt-2">
+            العرض خارج الباقات = {CUSTOM_QUOTE_MULTIPLIER} × قيمة الموقع الأساسية ({fmt(CUSTOM_QUOTE_BASE_WEBSITE_VALUE)} ر.س) = {fmt(CUSTOM_QUOTE_BASE_PRICE)} ر.س كأساس، دون تكاليف مزودي الخدمات.
           </p>
           <div className="flex items-center gap-4 mt-2 justify-center md:justify-start">
             {["أي مدة تناسبك","ميزات غير محدودة","عرض سعر خاص بك"].map((t,i)=>(

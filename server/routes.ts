@@ -8,7 +8,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
-import { getPlanPrice } from "@shared/plan-prices";
+import { getPlanPrice, CUSTOM_QUOTE_BASE_WEBSITE_VALUE, CUSTOM_QUOTE_MULTIPLIER, CUSTOM_QUOTE_BASE_PRICE } from "@shared/plan-prices";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import multer from "multer";
 import path from "path";
@@ -1367,6 +1367,14 @@ export async function registerRoutes(
     try {
       const { UserModel, OtpModel } = await import("./models");
       const incomingEmail = req.body.email ? String(req.body.email).toLowerCase().trim() : null;
+      const role = req.body.role || "client";
+
+      // Customer registrations must explicitly acknowledge the current terms.
+      // Internal employee provisioning uses this same endpoint but is not a customer
+      // contract, so it keeps its existing employee registration flow.
+      if (role === "client" && req.body.termsAccepted !== true) {
+        return res.status(400).json({ error: "يجب الموافقة على الشروط والأحكام لإنشاء الحساب" });
+      }
 
       // Check if username already exists
       const existingByUsername = await storage.getUserByUsername(req.body.username);
@@ -1431,14 +1439,15 @@ export async function registerRoutes(
       }
 
       // New account — create it
-      const role = req.body.role || "client";
       const hashedPassword = await hashPassword(req.body.password);
+      const { termsAccepted: _termsAccepted, ...registrationBody } = req.body;
       const user = await storage.createUser({
-        ...req.body,
+        ...registrationBody,
         username: String(req.body.username).trim().toLowerCase(),
         role,
         password: hashedPassword,
         email: String(incomingEmail || req.body.email).toLowerCase().trim(),
+        ...(role === "client" ? { termsAcceptedAt: new Date(), termsVersion: "2026-09-16" } : {}),
       });
 
       req.login(user, async (err) => {
@@ -14792,6 +14801,9 @@ export async function registerRoutes(
       const ticket = await PriceRequestModel.create({
         ticketNumber, sector, sectorLabel: sectorLabel || sector, duration: duration || "", requirements,
         contactName, contactPhone, contactEmail: contactEmail || "", userId,
+        baseWebsiteValue: CUSTOM_QUOTE_BASE_WEBSITE_VALUE,
+        quoteMultiplier: CUSTOM_QUOTE_MULTIPLIER,
+        providerCostsIncluded: false,
       });
 
       // Notify all admins/managers via push + internal notification
@@ -14829,7 +14841,16 @@ export async function registerRoutes(
         await sendDirectEmail("info@qirox.online", "فريق كيروكس", subject, body).catch(() => {});
       } catch {}
 
-      res.status(201).json({ ticketNumber, id: ticket._id });
+      res.status(201).json({
+        ticketNumber,
+        id: ticket._id,
+        pricingPolicy: {
+          baseWebsiteValue: CUSTOM_QUOTE_BASE_WEBSITE_VALUE,
+          multiplier: CUSTOM_QUOTE_MULTIPLIER,
+          calculatedBasePrice: CUSTOM_QUOTE_BASE_PRICE,
+          providerCostsIncluded: false,
+        },
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -21294,10 +21315,38 @@ ${p.image ? `    <image:image>
 
   // LLMs.txt — AI Engine Optimization (AEO)
   // Served dynamically so it can include real-time data if needed
-  app.get("/llms.txt", (_req, res) => {
+  const safePublicPartnerUrl = (value: unknown): string | null => {
+    try {
+      const parsed = new URL(String(value || ""));
+      if (
+        !["http:", "https:"].includes(parsed.protocol)
+        || !parsed.hostname.includes(".")
+        || parsed.hostname.split(".").some(part => !part)
+      ) return null;
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  };
+
+  app.get("/llms.txt", async (_req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=86400");
-    res.sendFile("llms.txt", { root: process.cwd() + "/client/public" });
+    try {
+      const base = fs.readFileSync(path.join(process.cwd(), "client/public/llms.txt"), "utf8");
+      const partners = await storage.getPartners();
+      const partnerLines = partners.length
+        ? `\n\n## Partners / الشركاء\n${partners.map((partner: any) => {
+            const name = partner.nameAr ? `${partner.nameAr} / ${partner.name}` : partner.name;
+            const website = safePublicPartnerUrl(partner.websiteUrl) ? ` — Website: ${safePublicPartnerUrl(partner.websiteUrl)}` : "";
+            const category = partner.category ? ` — Category: ${partner.category}` : "";
+            return `- ${name}${category}${website}`;
+          }).join("\n")}`
+        : "\n\n## Partners / الشركاء\n- لا توجد بيانات شركاء منشورة حالياً / No publicly listed partners at this time.";
+      res.send(base + partnerLines);
+    } catch {
+      res.sendFile("llms.txt", { root: process.cwd() + "/client/public" });
+    }
   });
 
   // AI Plugin Discovery — for ChatGPT plugins and AI agents
@@ -21318,8 +21367,12 @@ ${p.image ? `    <image:image>
   });
 
   // Public company info API — for AI agents and third-party integrations
-  app.get("/api/public/info", (_req, res) => {
+  app.get("/api/public/info", async (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=3600");
+    let partners: any[] = [];
+    try {
+      partners = await storage.getPartners();
+    } catch {}
     res.json({
       company: {
         name: "Qirox Studio",
@@ -21375,6 +21428,13 @@ ${p.image ? `    <image:image>
         "عيادات وصحة", "عقارات", "رياضة ولياقة", "شركات ومؤسسات",
         "فعاليات وضيافة", "تقنية وشركات ناشئة"
       ],
+      partners: partners.map((partner: any) => ({
+        name: partner.name,
+        nameAr: partner.nameAr || partner.name,
+        website: safePublicPartnerUrl(partner.websiteUrl),
+        category: partner.category || null,
+        relatedService: partner.relatedService || null,
+      })),
       pricing: {
         currency: "SAR",
         note: "أسعار تنافسية جداً مقارنة بالسوق السعودي — تقسيط متاح",

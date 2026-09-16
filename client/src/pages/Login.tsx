@@ -907,6 +907,9 @@ export default function Login() {
     country: z.string().optional(),
     businessType: z.string().optional(),
     role: z.string().optional(),
+    termsAccepted: isEmployeeRegister
+      ? z.boolean().optional()
+      : z.literal(true, { errorMap: () => ({ message: "يجب الموافقة على الشروط والأحكام" }) }),
   }).refine((data) => data.password === data.confirmPassword, {
     message: "كلمتا المرور غير متطابقتين",
     path: ["confirmPassword"],
@@ -931,6 +934,7 @@ export default function Login() {
       country: "",
       businessType: "",
       role: isEmployeeRegister ? "employee_manager" : "client",
+      termsAccepted: false,
     },
   });
 
@@ -1023,9 +1027,9 @@ export default function Login() {
 
   const onSubmit = (data: any) => {
     if (isRegister) {
-      const { confirmPassword, whatsappNumber, ...rest } = data;
+      const { confirmPassword, whatsappNumber, termsAccepted, ...rest } = data;
       const userData = { ...rest, phone: whatsappNumber || undefined, whatsappNumber: whatsappNumber || undefined };
-      register(userData, {
+      register({ ...userData, termsAccepted: isEmployeeRegister ? undefined : termsAccepted }, {
         onSuccess: (user: any) => {
           queryClient.setQueryData(["/api/user"], user);
           if (user.resent) {
@@ -2244,6 +2248,34 @@ export default function Login() {
                 />
               )}
 
+              {isRegister && !isEmployeeRegister && (
+                <FormField
+                  control={form.control}
+                  name="termsAccepted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-2 pt-1">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value === true}
+                            onChange={e => field.onChange(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 accent-black"
+                            data-testid="checkbox-register-terms"
+                          />
+                        </FormControl>
+                        <FormLabel className="text-xs text-black/55 leading-relaxed cursor-pointer">
+                          أوافق على{" "}
+                          <Link href="/terms" className="text-black font-semibold underline">الشروط والأحكام</Link>
+                          {" "}وسياسة الخصوصية
+                        </FormLabel>
+                      </div>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               {/* Submit */}
               <Button
                 type="submit"
@@ -2285,10 +2317,8 @@ export default function Login() {
           {/* Policy note for register */}
           {isRegister && !isEmployeeRegister && (
             <p className="mt-4 text-center text-[11px] text-black/25 leading-relaxed">
-              بالتسجيل، أنت توافق على{" "}
-              <span className="text-black/40 underline cursor-pointer">سياسة الخصوصية</span>
-              {" "}و{" "}
-              <span className="text-black/40 underline cursor-pointer">شروط الاستخدام</span>
+              يمكنك مراجعة <Link href="/privacy" className="text-black/40 underline">سياسة الخصوصية</Link>
+              {" "}في أي وقت.
             </p>
           )}
         </motion.div>

@@ -32,6 +32,21 @@ const staticPartners = [
   { name: "InstaPay",        nameAr: "إنستاباي",         logo: instapayLogo,   sector: "المدفوعات",        sectorEn: "Fintech",      url: null },
 ];
 
+function safeWebsiteUrl(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (
+      !["http:", "https:"].includes(url.protocol)
+      || !url.hostname.includes(".")
+      || url.hostname.split(".").some(part => !part)
+    ) return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
@@ -68,8 +83,21 @@ export default function Partners() {
       "publisher": {
         "@type": "Organization",
         "name": "Qirox Studio",
-        "sameAs": "https://qiroxstudio.online"
-      }
+         "sameAs": ["https://qiroxstudio.online"]
+       },
+       "mentions": [
+         ...staticPartners.map(partner => ({
+           "@type": "Organization",
+           "name": partner.nameAr ? `${partner.nameAr} | ${partner.name}` : partner.name,
+           ...(safeWebsiteUrl(partner.url) ? { "url": safeWebsiteUrl(partner.url), "sameAs": [safeWebsiteUrl(partner.url)] } : {}),
+         })),
+         ...(dbPartners || []).map(partner => ({
+           "@type": "Organization",
+           "name": partner.nameAr ? `${partner.nameAr} | ${partner.name}` : partner.name,
+           ...(safeWebsiteUrl(partner.websiteUrl) ? { "url": safeWebsiteUrl(partner.websiteUrl), "sameAs": [safeWebsiteUrl(partner.websiteUrl)] } : {}),
+           ...(partner.category ? { "category": partner.category } : {}),
+         })),
+       ]
     }
   });
 
@@ -141,9 +169,9 @@ export default function Partners() {
                     <div className="p-6">
                       <div className="flex items-start gap-4 mb-4">
                         {/* Logo */}
-                        <div className="w-16 h-16 rounded-xl bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
-                          {partner.websiteUrl ? (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
+                         <div className="w-16 h-16 rounded-xl bg-transparent border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
+                          {safeWebsiteUrl(partner.websiteUrl) ? (
+                            <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer">
                               <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
                             </a>
                           ) : (
@@ -152,8 +180,8 @@ export default function Partners() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          {partner.websiteUrl ? (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                           {safeWebsiteUrl(partner.websiteUrl) ? (
+                             <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer"
                               className="font-bold text-black dark:text-white hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors leading-tight block"
                               data-testid={`link-partner-name-${partner.id}`}>
                               {name}
@@ -176,12 +204,12 @@ export default function Partners() {
                             )}
                           </div>
 
-                          {partner.websiteUrl && (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                           {safeWebsiteUrl(partner.websiteUrl) && (
+                             <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-[10px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white mt-1 transition-colors"
                               data-testid={`link-partner-website-${partner.id}`}>
                               <ExternalLink className="w-2.5 h-2.5" />
-                              {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return partner.websiteUrl; } })()}
+                               {new URL(safeWebsiteUrl(partner.websiteUrl)!).hostname.replace("www.", "")}
                             </a>
                           )}
                         </div>
@@ -230,18 +258,18 @@ export default function Partners() {
         >
           {staticPartners.map((partner, idx) => (
             <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
-              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
-                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-white p-1.5">
-                  {partner.url ? (
-                    <a href={partner.url} target="_blank" rel="noopener noreferrer">
+               <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-transparent p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
+                 <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-transparent p-1.5">
+                   {safeWebsiteUrl(partner.url) ? (
+                     <a href={safeWebsiteUrl(partner.url)} target="_blank" rel="noopener noreferrer">
                       <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                     </a>
                   ) : (
                     <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                   )}
                 </div>
-                {partner.url ? (
-                  <a href={partner.url} target="_blank" rel="noopener noreferrer"
+                 {safeWebsiteUrl(partner.url) ? (
+                   <a href={safeWebsiteUrl(partner.url)} target="_blank" rel="noopener noreferrer"
                     className="text-xs font-bold text-black dark:text-white text-center hover:underline" data-testid={`link-static-partner-${idx}`}>
                     {lang === "ar" ? partner.nameAr : partner.name}
                   </a>
@@ -251,7 +279,7 @@ export default function Partners() {
                 <span className="text-[9px] text-black/35 dark:text-white/35 mt-1 font-medium">
                   {lang === "ar" ? partner.sector : partner.sectorEn}
                 </span>
-                {partner.url && (
+                 {safeWebsiteUrl(partner.url) && (
                   <ExternalLink className="w-2.5 h-2.5 text-black/20 dark:text-white/20 absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 )}
               </div>

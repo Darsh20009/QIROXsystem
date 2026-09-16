@@ -13,6 +13,11 @@ export const PLAN_PRICES = {
   other: { lite: { sm: 0, yr: 0, life: 0 }, pro: { sm: 0, yr: 0, life: 0 }, infinity: { sm: 0, yr: 0, life: 0 } },
 } as const;
 
+/** Policy used when a customer asks for a project outside the published packages. */
+export const CUSTOM_QUOTE_BASE_WEBSITE_VALUE = 5000;
+export const CUSTOM_QUOTE_MULTIPLIER = 4;
+export const CUSTOM_QUOTE_BASE_PRICE = CUSTOM_QUOTE_BASE_WEBSITE_VALUE * CUSTOM_QUOTE_MULTIPLIER;
+
 type PlanTier = "lite" | "pro" | "infinity" | "infinite";
 
 function normalizeTier(tier: string): "lite" | "pro" | "infinity" {

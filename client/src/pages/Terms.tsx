@@ -42,6 +42,16 @@ const sections = {
       ]
     },
     {
+      icon: FileText,
+      title: "الشارة والعروض المخصصة",
+      items: [
+        "تتضمن الباقات المحددة زمنياً وعروض الأسعار المحددة زمنياً عبارة أو شارة «صنع بواسطة QIROX» في فوتر الموقع أو المستند، بحسب الخدمة المقدمة.",
+        "تُزال الشارة في باقات مدى الحياة، أو عندما ينص عرض سعر مخصص على إزالتها صراحةً.",
+        "أي مشروع أو عرض سعر خارج الباقات المطروحة يُحتسب أساسه بأربعة أضعاف قيمة الموقع الأساسية، وقيمة الموقع الأساسية 5,000 ريال سعودي؛ أي 20,000 ريال سعودي كأساس.",
+        "الأساس المذكور لا يشمل تكاليف مزودي الخدمات من نطاق واستضافة وبوابات دفع أو أي خدمة خارجية، وتُحدد هذه التكاليف أو تُدفع بشكل منفصل.",
+      ]
+    },
+    {
       icon: CreditCard,
       title: "الأسعار والدفع",
       items: [
@@ -128,6 +138,16 @@ const sections = {
         "Client dashboard for tracking project progress and communicating with the team.",
         "Technical support and maintenance according to the selected plan.",
         "Option to request additional add-ons and modules based on client needs.",
+      ]
+    },
+    {
+      icon: FileText,
+      title: "Badge & Custom Quotes",
+      items: [
+        "Time-limited packages and time-limited quotations include a “Made by QIROX” notice or badge in the website or document footer, depending on the service provided.",
+        "The badge is removed for lifetime packages, or when a custom quotation explicitly includes its removal.",
+        "Any project or quotation outside the published packages is based on four times the base website value. The base website value is SAR 5,000, making the base custom quote SAR 20,000.",
+        "This base excludes third-party provider costs such as domains, hosting, payment gateways, or other external services; those costs are determined or paid separately.",
       ]
     },
     {

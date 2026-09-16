@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema({
   commercialRegistration: { type: String, default: "" },
   nationalAddress: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false },
+  termsAcceptedAt: { type: Date, default: null },
+  termsVersion: { type: String, default: null },
   whatsappNumber: String,
   logoUrl: String,
   avatarUrl: String,
