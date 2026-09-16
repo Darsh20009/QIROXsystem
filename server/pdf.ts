@@ -28,7 +28,7 @@ export interface QuotationData {
   discountPercent?: number;
   discountAmount?: number;
   validUntil?: string;
-  items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  items?: { name: string; description?: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
   createdAt?: string;
   paymentTerms?: string;
@@ -57,7 +57,7 @@ export interface InvoiceData {
   amount?: number;
   dueDate?: string;
   status?: string;
-  items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  items?: { name: string; description?: string; qty: number; unitPrice: number; total: number }[];
   notes?: string;
   createdAt?: string;
   discountPercent?: number;
@@ -154,8 +154,82 @@ function loadLogo(): Buffer | null {
   } catch { return null; }
 }
 
-const hasArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
+const ARABIC_CHAR_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const hasArabic = (t: string) => ARABIC_CHAR_RE.test(t);
+const hasLatinOrNumber = (t: string) => /[A-Za-z0-9]/.test(t);
 const TERMS_PATH = "/terms";
+
+function isArabicChar(char: string): boolean {
+  return ARABIC_CHAR_RE.test(char);
+}
+
+function splitMixedText(text: string): Array<{ text: string; arabic: boolean }> {
+  const runs: Array<{ text: string; arabic: boolean }> = [];
+  let current = "";
+  let currentDirection: boolean | null = null;
+
+  for (const char of text) {
+    const arabic = isArabicChar(char);
+    const latinOrNumber = /[A-Za-z0-9]/.test(char);
+    const strongDirection = arabic ? true : latinOrNumber ? false : currentDirection;
+
+    // Spaces and punctuation stay with the current script run. This keeps
+    // Arabic words together instead of reversing them one word at a time.
+    if (strongDirection !== null && currentDirection !== null && strongDirection !== currentDirection) {
+      const trimmed = current.trim();
+      if (trimmed) runs.push({ text: trimmed, arabic: currentDirection });
+      current = "";
+    }
+    current += char;
+    if (strongDirection !== null) currentDirection = strongDirection;
+  }
+
+  const trimmed = current.trim();
+  if (trimmed) runs.push({ text: trimmed, arabic: !!currentDirection });
+  return runs;
+}
+
+function measureMixedText(
+  text: string,
+  size: number,
+  latinFont: any,
+  arabicFont: any,
+): number {
+  const runs = splitMixedText(text);
+  const separatorWidth = arabicFont.widthOfTextAtSize(" ", size);
+  return runs.reduce((width, run, index) => {
+    const visual = run.arabic ? prepareArabic(run.text) : run.text;
+    // The embedded document font is used for mixed-script runs so punctuation,
+    // currency symbols, Latin text, and Arabic all share a complete glyph set.
+    return width + arabicFont.widthOfTextAtSize(visual, size) + (index > 0 ? separatorWidth : 0);
+  }, 0);
+}
+
+function drawMixedText(
+  page: any,
+  text: string,
+  rightX: number,
+  y: number,
+  size: number,
+  color: any,
+  arabicFont: any,
+): void {
+  const visualRuns = [...splitMixedText(text)].reverse();
+  const separatorWidth = arabicFont.widthOfTextAtSize(" ", size);
+  const totalWidth = visualRuns.reduce((width, run) => {
+    const visual = run.arabic ? prepareArabic(run.text) : run.text;
+    return width + arabicFont.widthOfTextAtSize(visual, size);
+  }, 0) + Math.max(0, visualRuns.length - 1) * separatorWidth;
+  let x = rightX - totalWidth;
+
+  visualRuns.forEach((run, index) => {
+    const visual = run.arabic ? prepareArabic(run.text) : run.text;
+    const width = arabicFont.widthOfTextAtSize(visual, size);
+    page.drawText(visual, { x, y, size, color, font: arabicFont });
+    x += width;
+    if (index < visualRuns.length - 1) x += separatorWidth;
+  });
+}
 
 function getTermsUrl(): string {
   const baseUrl = (process.env.EMAIL_SITE_URL || "https://qiroxstudio.online").replace(/\/+$/, "");
@@ -305,7 +379,7 @@ function wrapPdfText(
       if (!arabicFont) {
         throw new Error("[PDF] Cannot measure Arabic text without an Arabic font");
       }
-      return arabicFont.widthOfTextAtSize(prepareArabic(value), size);
+      return measureMixedText(value, size, latinFont, arabicFont);
     }
     return latinFont.widthOfTextAtSize(value, size);
   };
@@ -412,7 +486,13 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     size: number, color = BLACK, latinFont = latinReg
   ) => {
     if (!txt) return;
-    if (hasArabic(txt)) drawAR(txt, rightX, y, size, color);
+    if (hasArabic(txt)) {
+      if (hasLatinOrNumber(txt)) {
+        drawMixedText(page, txt, rightX, y, size, color, arabicFont);
+      } else {
+        drawAR(txt, rightX, y, size, color);
+      }
+    }
     else drawL(txt, leftX, y, size, color, latinFont);
   };
 
@@ -526,13 +606,27 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
    items.forEach((item, idx) => {
     const rowBg = idx % 2 === 0 ? WHITE : rgb(0.97, 0.97, 0.97);
 
-    const name = item.name || "—";
-     const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont);
-     const rowH = Math.max(22, Math.min(nameLines.length, 3) * 10 + 8);
+     const name = item.name || "—";
+      const description = typeof item.description === "string" ? item.description.trim() : "";
+      const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont).slice(0, 2);
+      const descriptionLines = description
+        ? wrapPdfText(description, cols[1] - cols[0] - 12, 7, latinReg, arabicFont).slice(0, 4)
+        : [];
+      const rowH = Math.max(22, (nameLines.length * 10) + (descriptionLines.length * 9) + 8);
      drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
      nameLines.slice(0, 3).forEach((line, lineIndex) => {
        drawSmart(line, cols[0] + 6, cols[1] - 6, curY - 12 - lineIndex * 10, 8, DGRAY);
      });
+      descriptionLines.forEach((line, lineIndex) => {
+        drawSmart(
+          line,
+          cols[0] + 6,
+          cols[1] - 6,
+          curY - 12 - nameLines.length * 10 - lineIndex * 9,
+          7,
+          GRAY,
+        );
+      });
     drawL(String(item.qty),                       cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.total || 0).toLocaleString("en-SA"),     cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
@@ -550,7 +644,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
     if (bgColor) drawRect(totalsX, curY - 16, totalsW, 22, bgColor);
     const f = bold ? latinBold : latinReg;
     const c = bold ? BLACK : GRAY;
-     drawSmart(label, totalsX + 6, totalsX + totalsW - 6, curY - 8, 8, c, f);
+     drawSmart(label, totalsX + 6, totalsX + totalsW - 74, curY - 8, 8, c, f);
     drawL(value, totalsX + totalsW - 6 - latinReg.widthOfTextAtSize(value, 8), curY - 8, 8, c, f);
     curY -= 20;
   };
@@ -566,7 +660,7 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   /* re-draw total row text in white */
   const totalY   = curY + 20;
   const totalStr = q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 });
-   drawSmart(labels.total, totalsX + 6, totalsX + totalsW - 6, totalY - 8, 8, WHITE, latinBold);
+    drawSmart(labels.total, totalsX + 6, totalsX + totalsW - 74, totalY - 8, 8, WHITE, latinBold);
    drawL(totalStr, totalsX + totalsW - 6 - latinBold.widthOfTextAtSize(totalStr, 8), totalY - 8, 8, WHITE, latinBold);
   curY -= 20;
 
@@ -677,7 +771,15 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
   };
   const drawSmart = (t: string, leftX: number, rightX: number, y: number, s: number, c = BLACK, lf = latinReg) => {
     if (!t) return;
-    if (hasArabic(t)) drawAR(t, rightX, y, s, c); else drawL(t, leftX, y, s, c, lf);
+    if (hasArabic(t)) {
+      if (hasLatinOrNumber(t)) {
+        drawMixedText(page, t, rightX, y, s, c, arabicFont);
+      } else {
+        drawAR(t, rightX, y, s, c);
+      }
+    } else {
+      drawL(t, leftX, y, s, c, lf);
+    }
   };
   const drawSmartWrapped = (
     t: string, leftX: number, rightX: number, y: number, s: number,
@@ -766,13 +868,27 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
 
   items.forEach((item, idx) => {
     const rowBg = idx % 2 === 0 ? WHITE : rgb(0.97, 0.97, 0.97);
-    const name = item.name || "—";
-     const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont);
-     const rowH = Math.max(22, Math.min(nameLines.length, 3) * 10 + 8);
+     const name = item.name || "—";
+      const description = typeof item.description === "string" ? item.description.trim() : "";
+      const nameLines = wrapPdfText(name, cols[1] - cols[0] - 12, 8, latinReg, arabicFont).slice(0, 2);
+      const descriptionLines = description
+        ? wrapPdfText(description, cols[1] - cols[0] - 12, 7, latinReg, arabicFont).slice(0, 4)
+        : [];
+      const rowH = Math.max(22, (nameLines.length * 10) + (descriptionLines.length * 9) + 8);
      drawRect(tableX, curY - rowH + 4, tableW, rowH, rowBg);
      nameLines.slice(0, 3).forEach((line, lineIndex) => {
        drawSmart(line, cols[0] + 6, cols[1] - 6, curY - 12 - lineIndex * 10, 8, DGRAY);
      });
+      descriptionLines.forEach((line, lineIndex) => {
+        drawSmart(
+          line,
+          cols[0] + 6,
+          cols[1] - 6,
+          curY - 12 - nameLines.length * 10 - lineIndex * 9,
+          7,
+          GRAY,
+        );
+      });
     drawL(String(item.qty), cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.unitPrice || 0).toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
     drawL(Number(item.total || 0).toLocaleString("en-SA"), cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
@@ -790,7 +906,7 @@ export async function generateInvoicePdf(inv: InvoiceData): Promise<Uint8Array> 
     if (bg) drawRect(totalsX, curY - 16, totalsW, 22, bg);
     const f = bold ? latinBold : latinReg;
     const c = bold ? (bg ? WHITE : BLACK) : GRAY;
-     drawSmart(label, totalsX + 6, totalsX + totalsW - 6, curY - 8, 8, c, f);
+     drawSmart(label, totalsX + 6, totalsX + totalsW - 74, curY - 8, 8, c, f);
     drawL(value, totalsX + totalsW - 6 - f.widthOfTextAtSize(value, 8), curY - 8, 8, c, f);
     curY -= 20;
   };
@@ -893,8 +1009,15 @@ export async function generateReceiptPdf(receipt: ReceiptData): Promise<Uint8Arr
   };
   const drawSmart = (text: string, leftX: number, rightX: number, y: number, size: number, color = BLACK, font = latinReg) => {
     if (!text) return;
-    if (hasArabic(text)) drawAR(text, rightX, y, size, color);
-    else drawL(text, leftX, y, size, color, font);
+    if (hasArabic(text)) {
+      if (hasLatinOrNumber(text)) {
+        drawMixedText(page, text, rightX, y, size, color, arabicFont);
+      } else {
+        drawAR(text, rightX, y, size, color);
+      }
+    } else {
+      drawL(text, leftX, y, size, color, font);
+    }
   };
   const rect = (x: number, y: number, w: number, h: number, color = LGRAY) =>
     page.drawRectangle({ x, y, width: w, height: h, color });
