@@ -14,3 +14,9 @@ The Arabic TTF used by the server renderer must be copied into the production bu
 **Why:** The development source process could see the repository font while the prebuilt server/frontend runtime could not, causing Arabic measurement to fall back to Helvetica and fail with WinAnsi encoding errors.
 
 **How to apply:** Treat the font as a required build asset, log its resolved path and embedding failure, and fail explicitly rather than measuring Arabic text with a Latin font.
+
+Server PDF modules run under ESM during the development workflow, so path resolution must use `import.meta.url` rather than relying on `__dirname`.
+
+**Why:** The first production-font fix passed a direct CJS-style probe but failed in the actual `tsx server/index.ts` workflow because `__dirname` is undefined there.
+
+**How to apply:** Use `fileURLToPath(import.meta.url)` for module-relative assets and test the renderer through the same workflow mode used by the app.
