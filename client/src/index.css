@@ -208,6 +208,18 @@
   [dir="rtl"] * {
     -webkit-font-smoothing: antialiased;
   }
+
+  /*
+   * Arabic glyphs must not inherit Latin display tracking.
+   * Tailwind tracking utilities and inline letter-spacing are useful for
+   * English labels, but they visibly separate Arabic letters from each
+   * other. The document direction is switched by the i18n provider, so this
+   * fixes every Arabic screen and component centrally.
+   */
+  html[dir="rtl"] [class*="tracking-"],
+  html[dir="rtl"] [style*="letter-spacing"] {
+    letter-spacing: normal !important;
+  }
 }
 
 @layer utilities {
