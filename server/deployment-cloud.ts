@@ -1212,8 +1212,8 @@ ${logText}
           detail: `اضغط Add Record ثم اختر CNAME`,
           record: {
             type: "CNAME",
-            name: `*.${domain.split(".").slice(1).join(".")}`,
-            value: "qiroxstudio.online",
+            name: `*.${domain}`,
+            value: process.env.QIROX_CLOUD_DNS_TARGET || "qiroxstudio.online",
             ttl: "14400"
           }
         },
@@ -1223,15 +1223,15 @@ ${logText}
           detail: `إذا كان مزوّد DNS لا يدعم wildcard CNAME، أضف A record`,
           record: {
             type: "A",
-            name: `*.${domain.split(".").slice(1).join(".")}`,
-            value: "سيظهر هنا IP الخادم بعد الانتهاء من إعداد Render",
+            name: `*.${domain}`,
+            value: process.env.QIROX_CLOUD_DNS_TARGET || "سيظهر هنا عنوان الخادم العام بعد إعداد مزود النشر",
             ttl: "14400"
           }
         },
         {
           step: 4,
           title: "أضف الدومين في Render Dashboard",
-          detail: `اذهب إلى Render → Service → Settings → Custom Domains → أضف *.${domain.split(".").slice(1).join(".")}`
+           detail: `اذهب إلى مزود النشر → إعدادات الخدمة → Custom Domains → أضف *.${domain}`
         },
         {
           step: 5,

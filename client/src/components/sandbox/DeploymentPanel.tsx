@@ -53,6 +53,9 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
   const { data: project } = useQuery<SandboxProject>({
     queryKey: ["/api/sandbox/projects", projectId],
   });
+  const { data: sandboxEnvVars } = useQuery<{ key: string; value: string }[]>({
+    queryKey: ["/api/sandbox/projects", projectId, "env"],
+  });
   const { data: config } = useQuery<any>({
     queryKey: ["/api/deploy/config"],
   });
@@ -94,7 +97,9 @@ export function DeploymentPanel({ projectId, onDownload }: DeploymentPanelProps)
         outputDir: "dist",
         provider: config?.mode === "vercel" ? "vercel" : "simulation",
         logoUrl: logoUrl.trim(),
-        envVars: [],
+        envVars: (sandboxEnvVars || [])
+          .filter((item) => item.key && item.value)
+          .map((item) => ({ key: item.key, value: item.value, isSecret: true })),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

@@ -151,6 +151,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const wsRef = useRef<WebSocket | null>(null);
+  const importedDeploymentEnvRef = useRef(false);
   const { data: user } = useUser();
 
   const leftPanel = useResizer(240, "horizontal", 150, 400);
@@ -177,6 +178,20 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     refetchInterval: 2000,
     staleTime: 0,
   });
+
+  useEffect(() => {
+    if (!projectId || !user?._id || importedDeploymentEnvRef.current) return;
+    importedDeploymentEnvRef.current = true;
+    apiRequest("POST", `/api/sandbox/projects/${projectId}/env/import-deployment`, {})
+      .then((res) => {
+        if (res.ok) {
+          queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "env"] });
+        }
+      })
+      .catch(() => {
+        // A standalone sandbox has no deployment record; that is expected.
+      });
+  }, [projectId, user?._id, queryClient]);
 
   useEffect(() => {
     if (!user?._id) return;

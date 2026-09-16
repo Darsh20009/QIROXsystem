@@ -67,3 +67,4 @@
 - [Partner URL hygiene](partner-url-hygiene.md) — partner website data feeds UI, SEO/AEO, and AI; reject malformed hostnames consistently before publishing or prompting.
 - [WebSocket identity](websocket-identity.md) — authenticate upgrades from the session/device token; never trust a client-supplied userId handshake.
 - [Security probe handling](security-probe-handling.md) — use generic 404 dead ends with privacy-safe fingerprints; never create exploitable fake admin or secret surfaces.
+- [Sandbox environment synchronization](sandbox-environment-sync.md) — sync deployment variables additively; preserve existing workspace secrets and keep values out of public serialization.

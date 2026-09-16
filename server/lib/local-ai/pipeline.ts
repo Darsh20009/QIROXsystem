@@ -145,6 +145,23 @@ ${ragContext  ? `\n📚 معلومات ذات صلة بالسؤال:\n${ragConte
 - استند على البيانات الحية قبل المعلومات العامة`;
 }
 
+function normalizeQiroxReply(reply: string, query: string, fallback: string, lang: "ar" | "en"): string {
+  const cleaned = String(reply || "")
+    .replace(/[\u3040-\u30ff\u3400-\u9fff]/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+  const hasArabic = /[\u0600-\u06ff]/.test(cleaned);
+  const identityQuestion = /من أنت|اسمك|مين أنت|who are you|your name/i.test(query);
+  if (!cleaned || /[\u0000-\u0008]/.test(cleaned)) return fallback;
+  if (lang === "ar" && !hasArabic) return fallback;
+  if (identityQuestion && !/qirox/i.test(cleaned)) {
+    return lang === "ar"
+      ? `أنا QIROX AI، المساعد الذكي الرسمي لمنصة QIROX. ${cleaned}`
+      : `I’m QIROX AI, the official assistant for QIROX. ${cleaned}`;
+  }
+  return cleaned;
+}
+
 // ── Main local chat function ──────────────────────────────────────────────────
 export async function localChat(
   messages: { role: string; content: string }[],
@@ -199,6 +216,7 @@ export async function localChat(
   if (!reply) {
     reply = buildFallbackResponse(docs, query, lang, isFirst);
   }
+  reply = normalizeQiroxReply(reply, query, buildFallbackResponse(docs, query, lang, isFirst), lang);
 
   const latencyMs = Date.now() - start;
   const approxTokens = Math.ceil((query.length + reply.length) / 4);

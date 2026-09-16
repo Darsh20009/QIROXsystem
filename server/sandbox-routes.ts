@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import type { Server as HttpServer } from "http";
 import crypto from "crypto";
+import path from "path";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
@@ -190,6 +191,39 @@ function normalizeLogoUrl(value: unknown): string {
 function parseGithubRepo(value: unknown): { owner: string; repo: string } | null {
   const match = String(value || "").trim().match(/github\.com[/:]([^/]+)\/([^/#]+?)(?:\.git)?$/i);
   return match ? { owner: match[1], repo: match[2] } : null;
+}
+
+async function inferProjectCommands(projectId: string, projectObjectId: any): Promise<void> {
+  try {
+    const { readFile } = await import("./sandbox-fs");
+    const { SandboxProjectModel } = await import("./models");
+    const packageJson = JSON.parse(readFile(projectId, "package.json"));
+    const scripts = packageJson?.scripts || {};
+    const files = new Set<string>();
+    const { listTree } = await import("./sandbox-fs");
+    for (const entry of listTree(projectId, "", 2) as any[]) {
+      if (entry.type === "file") files.add(String(entry.path));
+    }
+
+    let startCmd = "";
+    if (scripts.start) startCmd = "npm start";
+    else if (scripts.dev) startCmd = "npm run dev -- --host 0.0.0.0 --port $PORT";
+    else if (packageJson.main) startCmd = `node ${String(packageJson.main).replace(/^\.?\//, "")}`;
+    else if (files.has("index.js")) startCmd = "node index.js";
+
+    const updates: Record<string, string> = {};
+    if (startCmd) updates.startCmd = startCmd;
+    if (scripts.build) updates.buildCmd = "npm run build";
+    if (files.has("package-lock.json")) updates.installCmd = "npm ci";
+    else if (files.has("package.json")) updates.installCmd = "npm install";
+    const entryFile = packageJson.main || (files.has("index.js") ? "index.js" : "");
+    if (entryFile) updates.entryFile = String(entryFile).replace(/^\.?\//, "");
+    if (Object.keys(updates).length) {
+      await SandboxProjectModel.findByIdAndUpdate(projectObjectId, updates);
+    }
+  } catch {
+    // A repository without package.json keeps the selected template defaults.
+  }
 }
 
 async function requireProjectAccess(req: Request, res: Response): Promise<{ user: any; project: any } | null> {
@@ -964,6 +998,54 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     }
   });
 
+  // Copy deployment variables into the workspace when a project is opened.
+  // Existing workspace values win, so opening the builder never overwrites a
+  // secret that was already configured locally.
+  app.post("/api/sandbox/projects/:id/env/import-deployment", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { DeploymentProjectModel, SandboxEnvVarModel } = await import("./models");
+      const requestedId = String(req.body?.deploymentProjectId || "").trim();
+      const repo = parseGithubRepo(ctx.project.githubRepo);
+      const query = requestedId
+        ? { _id: requestedId }
+        : repo
+          ? { githubOwner: repo.owner, githubRepo: repo.repo }
+          : null;
+
+      if (!query) return res.json({ imported: 0, skipped: 0, reason: "لا يوجد مستودع مرتبط" });
+      const deployment = await DeploymentProjectModel.findOne(query).sort({ updatedAt: -1 }).lean() as any;
+      if (!deployment) return res.json({ imported: 0, skipped: 0, reason: "لا يوجد مشروع نشر مرتبط" });
+
+      const isAdmin = ["admin", "manager"].includes(ctx.user.role);
+      if (!isAdmin && String(deployment.ownerId) !== String(ctx.user._id || ctx.user.id)) {
+        return res.status(403).json({ error: "لا تملك صلاحية نقل متغيرات هذا المشروع" });
+      }
+
+      const existing = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).select("key").lean();
+      const existingKeys = new Set((existing as any[]).map((item) => String(item.key || "").toUpperCase()));
+      let imported = 0;
+      let skipped = 0;
+      for (const item of (deployment.envVars || []) as any[]) {
+        const key = String(item?.key || "").trim();
+        const value = String(item?.value || "");
+        if (!key || !value || existingKeys.has(key.toUpperCase())) {
+          skipped++;
+          continue;
+        }
+        const { encrypted, iv } = encrypt(value);
+        await SandboxEnvVarModel.create({ projectId: ctx.project._id, key, value: encrypted, iv });
+        existingKeys.add(key.toUpperCase());
+        imported++;
+      }
+
+      res.json({ imported, skipped, deploymentProjectId: String(deployment._id) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.delete("/api/sandbox/projects/:id/env/:key", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
@@ -1274,6 +1356,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       });
 
       await syncDiskToDb(pid, ctx.project._id);
+      await inferProjectCommands(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
@@ -1322,6 +1405,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       });
 
       await syncDiskToDb(pid, ctx.project._id);
+      await inferProjectCommands(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
