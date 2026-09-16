@@ -28,35 +28,35 @@ const qiroxMeaning = [
     letter: "Q",
     word: "Quality",
     ar: "الجودة",
-    description: "حلول مصممة بعناية، لا تكتفي بأن تعمل؛ بل تصنع قيمة.",
+    description: "معايير عالية في كل تفصيلة.",
     icon: ShieldCheck,
   },
   {
     letter: "I",
     word: "Innovation",
     ar: "الابتكار",
-    description: "نعيد التفكير في المألوف ونحوّل الأفكار إلى فرص جديدة.",
+    description: "أفكار جديدة تتحول إلى قيمة.",
     icon: Lightbulb,
   },
   {
     letter: "R",
     word: "Reliability",
     ar: "الموثوقية",
-    description: "شريك يمكن الاعتماد عليه في البناء والتشغيل والنمو.",
+    description: "أنظمة وشراكة يمكن الاعتماد عليها.",
     icon: Handshake,
   },
   {
     letter: "O",
     word: "Optimization",
     ar: "التحسين",
-    description: "نطوّر العمليات والأنظمة باستمرار لتعمل الأعمال بكفاءة أعلى.",
+    description: "تحسين مستمر لأداء الأعمال.",
     icon: Workflow,
   },
   {
     letter: "X",
     word: "Xperience",
     ar: "التجربة",
-    description: "كل تفصيلة يجب أن تجعل تجربة العميل أوضح وأسهل وأفضل.",
+    description: "تجربة واضحة وأسهل وأفضل.",
     icon: Sparkles,
   },
 ];
@@ -179,49 +179,6 @@ function TypewriterMessage({ text }: { text: string }) {
   );
 }
 
-const typewriterPhrases = {
-  ar: ["نبني ما تحتاجه الأعمال لتكبر.", "نحوّل التعقيد إلى وضوح.", "بعد التسليم تبدأ القصة."],
-  en: ["We build what businesses need to grow.", "We turn complexity into clarity.", "The story starts after delivery."],
-};
-
-function TypewriterHeadline({ isArabic }: { isArabic: boolean }) {
-  const phrases = isArabic ? typewriterPhrases.ar : typewriterPhrases.en;
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [visibleText, setVisibleText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const phrase = phrases[phraseIndex];
-    const isComplete = visibleText === phrase;
-    const isEmpty = visibleText.length === 0;
-    const timer = window.setTimeout(
-      () => {
-        if (!isDeleting && !isComplete) {
-          setVisibleText(phrase.slice(0, visibleText.length + 1));
-        } else if (!isDeleting && isComplete) {
-          setIsDeleting(true);
-        } else if (isDeleting && !isEmpty) {
-          setVisibleText(phrase.slice(0, visibleText.length - 1));
-        } else {
-          setIsDeleting(false);
-          setPhraseIndex((current) => (current + 1) % phrases.length);
-        }
-      },
-      isComplete ? 1700 : isDeleting ? 30 : 58,
-    );
-
-    return () => window.clearTimeout(timer);
-  }, [isArabic, isDeleting, phraseIndex, phrases, visibleText]);
-
-  return (
-    <div className="mt-9 flex min-h-10 items-center gap-3 text-sm font-bold text-emerald-300/90 md:text-base" role="status" aria-live="polite">
-      <span className="h-px w-8 bg-emerald-300/50" aria-hidden="true" />
-      <span>{visibleText}</span>
-      <span className="inline-block h-5 w-px bg-emerald-300 animate-pulse" aria-hidden="true" />
-    </div>
-  );
-}
-
 export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
   const isArabic = lang === "ar";
 
@@ -256,7 +213,6 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                   ? "QIROX هو الاختصار الذي يجمع طريقة كيروكس في بناء البنية التحتية الرقمية للأعمال: جودة، ابتكار، موثوقية، تحسين، وتجربة لا تُنسى."
                   : "QIROX brings together the way we build digital business infrastructure: quality, innovation, reliability, optimization, and an experience people remember."}
               </p>
-              <TypewriterHeadline isArabic={isArabic} />
             </div>
 
             <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -277,20 +233,20 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.2 }}
                     transition={{ duration: 0.55, delay: index * 0.07 }}
-                    whileHover={{ y: -8, rotate: index % 2 === 0 ? -1 : 1 }}
-                    className="group relative min-h-[220px] overflow-hidden rounded-[1.75rem] border border-slate-900/[0.08] bg-white p-6 shadow-[0_16px_50px_-30px_rgba(15,23,42,0.35)] transition-[border-color,box-shadow] duration-500 hover:border-emerald-700/30 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,0.4)] dark:border-white/[0.08] dark:bg-white/[0.04]"
+                    whileHover={{ y: -4 }}
+                    className="group relative min-h-[205px] overflow-hidden rounded-2xl border border-slate-900/[0.08] bg-white p-5 shadow-[0_16px_50px_-30px_rgba(15,23,42,0.35)] transition-[border-color,box-shadow] duration-500 hover:border-emerald-700/30 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,0.4)] dark:border-white/[0.08] dark:bg-white/[0.04]"
                   >
                     <div className="absolute -end-10 -top-10 h-28 w-28 rounded-full bg-emerald-500/[0.07] transition-transform duration-500 group-hover:scale-150" />
                     <div className="relative flex items-start justify-between">
-                      <span className="text-6xl font-black tracking-[-0.08em] text-slate-950 transition-transform duration-500 group-hover:translate-x-1 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{item.letter}</span>
+                      <span className="text-5xl font-black tracking-[-0.08em] text-slate-950 transition-colors duration-500 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-300">{item.letter}</span>
                       <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-600/20 bg-emerald-500/[0.06]">
                         <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
                       </span>
                     </div>
-                    <div className="relative mt-8">
+                    <div className="relative mt-5">
                       <p className="mb-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500 dark:bg-white/[0.07] dark:text-white/45">{item.word}</p>
-                      <h3 className="mb-3 text-xl font-black text-slate-900 dark:text-white">{item.ar}</h3>
-                      <p className="line-clamp-2 text-sm leading-7 text-slate-500 dark:text-white/50">{item.description}</p>
+                      <h3 className="mb-2 text-lg font-black text-slate-900 dark:text-white">{item.ar}</h3>
+                      <p className="text-xs leading-6 text-slate-500 dark:text-white/50">{item.description}</p>
                     </div>
                   </motion.div>
                 );
