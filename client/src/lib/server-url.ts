@@ -11,16 +11,23 @@
 
 export function isCapacitorNative(): boolean {
   try {
-    // Capacitor 7 exposes the platform check as a function. Use the imported
-    // runtime API first because the global `isNative` flag is not guaranteed
-    // when the app uses `server.url`, which made iOS builds take the
-    // external-browser OAuth path. Avoid importing @capacitor/core here:
-    // this project intentionally leaves Capacitor packages external in the
-    // browser bundle and the native runtime provides the global object.
+    // Capacitor 7 exposes the platform check as a function. Use the global
+    // runtime API first because the app intentionally keeps Capacitor
+    // packages external in the browser bundle.
     const capacitor = (window as any).Capacitor;
     if (typeof capacitor?.isNativePlatform === "function") {
       return !!capacitor.isNativePlatform();
     }
+
+    // When `server.url` points at the production site, the WebView location
+    // is HTTPS instead of `capacitor://localhost`. In that configuration the
+    // global Capacitor object is not guaranteed to be populated before the
+    // first render, but the native bridge is already present. Detecting the
+    // bridge prevents OAuth buttons from taking the user to external Safari.
+    const webkitBridge = (window as any).webkit?.messageHandlers?.bridge;
+    const androidBridge = (window as any).androidBridge;
+    if (webkitBridge || androidBridge) return true;
+
     return (
       !!capacitor?.isNative ||
       window.location.protocol === "capacitor:" ||
