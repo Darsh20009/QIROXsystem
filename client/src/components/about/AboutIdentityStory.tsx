@@ -226,24 +226,6 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                 <CircleDot className="h-3.5 w-3.5 text-emerald-600" />
                 {isArabic ? "لماذا اسم كيروكس؟" : "Why QIROX?"}
               </div>
-              <h2 className="mb-6 text-4xl font-black leading-[1.18] tracking-tight text-slate-950 dark:text-white md:text-6xl">
-                {isArabic ? (
-                  <>
-                    الاسم ليس اختصاراً فقط.
-                    <span className="block text-slate-400 dark:text-white/30">إنه وعد نعمل به.</span>
-                  </>
-                ) : (
-                  <>
-                    More than an acronym.
-                    <span className="block text-slate-400 dark:text-white/30">A promise we build by.</span>
-                  </>
-                )}
-              </h2>
-              <p data-about-summary className="max-w-2xl text-base leading-8 text-slate-500 dark:text-white/50 md:text-lg">
-                {isArabic
-                  ? "QIROX هو الاختصار الذي يجمع طريقة كيروكس في بناء البنية التحتية الرقمية للأعمال: جودة، ابتكار، موثوقية، تحسين، وتجربة لا تُنسى."
-                  : "QIROX brings together the way we build digital business infrastructure: quality, innovation, reliability, optimization, and an experience people remember."}
-              </p>
             </div>
 
             <div className="border-y border-slate-900/10 py-8 dark:border-white/10" dir="ltr">
@@ -268,7 +250,11 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                         transition={{ duration: 0.35 }}
                         className={`relative z-10 flex h-[4.3rem] w-[4.3rem] items-center justify-center rounded-full border bg-[#f4f5f5] font-mono text-3xl font-bold shadow-[0_0_0_8px_#f4f5f5] transition-colors duration-300 dark:bg-[#0b1119] dark:shadow-[0_0_0_8px_#0b1119] sm:h-[4.8rem] sm:w-[4.8rem] sm:text-4xl ${isActive ? "border-emerald-500 text-emerald-700 dark:border-emerald-300 dark:text-emerald-300" : "border-slate-900/15 text-slate-950 dark:border-white/20 dark:text-white"}`}
                       >
-                        {item.letter}
+                        {item.letter === "Q" ? (
+                          <img src="/qirox-icon.png" alt="QIROX" className="h-9 w-9 object-contain sm:h-10 sm:w-10" />
+                        ) : (
+                          item.letter
+                        )}
                         <motion.span
                           animate={{ opacity: isActive ? 1 : 0, scale: isActive ? 1 : 0.5 }}
                           transition={{ duration: 0.25 }}
@@ -310,6 +296,31 @@ export function AboutIdentityStory({ lang }: AboutIdentityStoryProps) {
                   <MeaningTypewriter text={activeMeaning.description} />
                 </p>
               </motion.div>
+            </div>
+
+            <div className="mt-10 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="border-s-2 border-emerald-600/50 bg-white/60 p-6 dark:bg-white/[0.03] md:p-8">
+                <h2 className="text-3xl font-black leading-[1.2] tracking-tight text-slate-950 dark:text-white md:text-4xl">
+                  {isArabic ? (
+                    <>
+                      الاسم ليس اختصاراً فقط.
+                      <span className="block text-slate-400 dark:text-white/30">إنه وعد نعمل به.</span>
+                    </>
+                  ) : (
+                    <>
+                      More than an acronym.
+                      <span className="block text-slate-400 dark:text-white/30">A promise we build by.</span>
+                    </>
+                  )}
+                </h2>
+              </div>
+              <div className="border border-slate-900/10 bg-white/60 p-6 dark:border-white/10 dark:bg-white/[0.03] md:p-8">
+                <p data-about-summary className="text-base leading-8 text-slate-500 dark:text-white/50 md:text-lg">
+                  {isArabic
+                    ? "QIROX هو الاختصار الذي يجمع طريقة كيروكس في بناء البنية التحتية الرقمية للأعمال: جودة، ابتكار، موثوقية، تحسين، وتجربة لا تُنسى."
+                    : "QIROX brings together the way we build digital business infrastructure: quality, innovation, reliability, optimization, and an experience people remember."}
+                </p>
+              </div>
             </div>
           </div>
         </div>
