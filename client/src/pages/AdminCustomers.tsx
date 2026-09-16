@@ -475,27 +475,27 @@ export default function Customers() {
                             <UserCheck className="w-4 h-4" />
                           </button>
                         )}
-                        <button
-                          onClick={() => {
-                            setEditTarget(customer);
-                            setEditForm({
-                              fullName: customer.fullName || "",
-                              email: customer.email || "",
-                              phone: (customer as any).phone || "",
-                              address: (customer as any).address || "",
-                              city: (customer as any).city || "",
-                              taxNumber: (customer as any).taxNumber || "",
-                              organizationName: (customer as any).organizationName || "",
-                              commercialRegistration: (customer as any).commercialRegistration || "",
-                              nationalAddress: (customer as any).nationalAddress || "",
-                            });
-                          }}
-                          className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                          title={L ? "تعديل بيانات العميل" : "Edit customer data"}
-                          data-testid={`button-edit-customer-${customer.id}`}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        {isAdmin && <button
+                            onClick={() => {
+                              setEditTarget(customer);
+                              setEditForm({
+                                fullName: customer.fullName || "",
+                                email: customer.email || "",
+                                phone: (customer as any).phone || "",
+                                address: (customer as any).address || "",
+                                city: (customer as any).city || "",
+                                taxNumber: (customer as any).taxNumber || "",
+                                organizationName: (customer as any).organizationName || "",
+                                commercialRegistration: (customer as any).commercialRegistration || "",
+                                nationalAddress: (customer as any).nationalAddress || "",
+                              });
+                            }}
+                            className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                            title={L ? "تعديل بيانات العميل" : "Edit customer data"}
+                            data-testid={`button-edit-customer-${customer.id}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>}
                         {isAdmin && <button
                           onClick={() => setDeleteTarget(customer)}
                           className="p-2 rounded-lg text-foreground/20 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"

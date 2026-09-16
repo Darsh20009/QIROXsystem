@@ -2114,10 +2114,16 @@ export async function registerRoutes(
     try {
       const callerRole = (req.user as any).role;
       const isDataEntry = callerRole === "data_entry";
+      // Customer records are managed by administration only. Data-entry
+      // staff may still update permitted employee records through this shared
+      // endpoint, but may not change a customer's identity or contact data.
+      const targetBeforeUpdate = await storage.getUser(req.params.id);
+      if (!targetBeforeUpdate) return res.sendStatus(404);
+      if (isDataEntry && (targetBeforeUpdate as any).role === "client") {
+        return res.status(403).json({ error: "لا يمكن للموظف تعديل بيانات العملاء. ارفع طلب تصحيح الرقم للمسؤول." });
+      }
       if (isDataEntry) {
-        const target = await storage.getUser(req.params.id);
-        if (!target) return res.sendStatus(404);
-        if (["admin", "manager"].includes((target as any).role)) {
+        if (["admin", "manager"].includes((targetBeforeUpdate as any).role)) {
           return res.status(403).json({ error: "لا يمكن لموظف إدخال البيانات تعديل حسابات الإدارة" });
         }
       }
