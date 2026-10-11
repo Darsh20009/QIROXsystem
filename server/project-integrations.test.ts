@@ -160,6 +160,7 @@ test("the public project API key works over HTTP for both channels without leaki
   let whatsappDeliveryId = "";
   let whatsappProviderCalls = 0;
   let whatsappMessage = "";
+  let whatsappAttachment: any = null;
   const { waModule } = await import("./whatsapp-module");
   const originalSendNotification = waModule.sendNotification;
 
@@ -171,9 +172,10 @@ test("the public project API key works over HTTP for both channels without leaki
     process.env.NODE_ENV = "test";
     process.env.SESSION_SECRET = "project-integration-http-test-session";
     process.env.WHATSAPP_PROVIDER = "baileys";
-    waModule.sendNotification = (async (_phone: string, message: string) => {
+    waModule.sendNotification = (async (_phone: string, message: string, attachments: any[] = []) => {
       whatsappProviderCalls += 1;
       whatsappMessage = message;
+      whatsappAttachment = attachments[0] || null;
     }) as typeof waModule.sendNotification;
     for (const key of smtpKeys) delete process.env[key];
 
@@ -336,6 +338,37 @@ test("the public project API key works over HTTP for both channels without leaki
       idempotencyKey: `project-integration:${apiIntegrationId}:${whatsappIdempotencyKey}`,
       channel: "whatsapp",
     }), 1);
+
+    const attachmentResponse = await requestProjectApi(server, endpoint, {
+      authorization: `Bearer ${apiSecret.rawKey}`,
+      idempotencyKey: `${marker}-whatsapp-attachment`,
+      body: {
+        channel: "whatsapp",
+        recipient: { phone: "+966501234567" },
+        attachments: [{ url: "https://cdn.example.com/invoice.pdf", filename: "invoice.pdf", caption: "الفاتورة" }],
+      },
+    });
+    assert.equal(attachmentResponse.status, 202);
+    assert.equal(attachmentResponse.body?.delivery?.status, "sent");
+    assert.equal(whatsappProviderCalls, 2);
+    assert.equal(whatsappMessage, "");
+    assert.deepEqual(whatsappAttachment, {
+      url: "https://cdn.example.com/invoice.pdf",
+      filename: "invoice.pdf",
+      caption: "الفاتورة",
+    });
+
+    const privateAttachmentResponse = await requestProjectApi(server, endpoint, {
+      authorization: `Bearer ${apiSecret.rawKey}`,
+      idempotencyKey: `${marker}-private-media`,
+      body: {
+        channel: "whatsapp",
+        recipient: { phone: "+966501234567" },
+        attachments: [{ url: "https://127.0.0.1/private.pdf" }],
+      },
+    });
+    assert.equal(privateAttachmentResponse.status, 400);
+    assert.equal(whatsappProviderCalls, 2, "a private source must be rejected before delivery");
 
     const disabledApi = await ProjectIntegrationModel.findByIdAndUpdate(
       apiIntegrationId,

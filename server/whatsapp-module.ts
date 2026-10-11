@@ -9,6 +9,7 @@
 import { EventEmitter } from "events";
 import * as fs from "fs";
 import * as path from "path";
+import { downloadWhatsAppMedia, type WhatsAppMediaAttachment } from "./whatsapp-media";
 
 export type WAStatus = "disconnected" | "qr" | "connecting" | "connected";
 
@@ -362,13 +363,45 @@ class WhatsAppModule extends EventEmitter {
   }
 
   // ── Send order/project update via WhatsApp ────────────────────────────────
-  async sendNotification(phoneRaw: string | null | undefined, message: string) {
+  async sendNotification(
+    phoneRaw: string | null | undefined,
+    message: string,
+    attachments: WhatsAppMediaAttachment[] = [],
+    progress: {
+      textSent?: boolean;
+      sentMediaIndexes?: number[];
+      sentCaptionIndexes?: number[];
+      onPartSent?: (part: "text" | `media:${number}` | `captions:${number}`) => Promise<void>;
+    } = {},
+  ) {
     if (!phoneRaw) throw new Error("رقم واتساب غير متوفر");
     if (this.status !== "connected") throw new Error("WhatsApp غير متصل");
     const phone = phoneRaw.replace(/\D/g, "");
     if (phone.length < 7) throw new Error("رقم واتساب غير صالح");
     const chatId = `${phone}@s.whatsapp.net`;
-    await this.sendText(chatId, message, false);
+    if (message && !progress.textSent) {
+      await this.sendText(chatId, message, false);
+      await progress.onPartSent?.("text");
+    }
+    const sentIndexes = new Set(progress.sentMediaIndexes || []);
+    const sentCaptions = new Set(progress.sentCaptionIndexes || []);
+    for (let index = 0; index < attachments.length; index += 1) {
+      const attachment = attachments[index];
+      if (!sentIndexes.has(index)) {
+        const downloaded = await downloadWhatsAppMedia(attachment);
+        await this.sendMedia(chatId, downloaded.buffer, {
+          mimeType: downloaded.mimeType,
+          filename: downloaded.filename,
+        });
+        await progress.onPartSent?.(`media:${index}`);
+      }
+      if (attachment.caption && !sentCaptions.has(index)) {
+        // Captions travel as their own text message so images, audio and
+        // documents behave consistently and can be checkpointed on retries.
+        await this.sendText(chatId, attachment.caption, false);
+        await progress.onPartSent?.(`captions:${index}`);
+      }
+    }
   }
 
   // ── Send messages ─────────────────────────────────────────────────────────
@@ -381,10 +414,73 @@ class WhatsAppModule extends EventEmitter {
 
   async sendImageUrl(chatId: string, imageUrl: string, caption?: string) {
     if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
-    const resp = await fetch(imageUrl);
-    const buf = Buffer.from(await resp.arrayBuffer());
-    await this.sock.sendMessage(chatId, { image: buf, caption: caption || "" });
-    await this.persistMessage({ chatId, fromMe: true, body: caption || "[صورة]", aiGenerated: true, timestamp: new Date(), mediaType: "image" });
+    const media = await downloadWhatsAppMedia({ url: imageUrl, caption });
+    if (media.kind !== "image") throw new Error("رابط المصدر لا يحتوي على صورة مدعومة");
+    await this.sendMedia(chatId, media.buffer, {
+      mimeType: media.mimeType,
+      filename: media.filename,
+      caption,
+      aiGenerated: true,
+    });
+  }
+
+  async sendMedia(
+    chatId: string,
+    buffer: Buffer,
+    options: { mimeType: string; filename: string; caption?: string; aiGenerated?: boolean },
+  ) {
+    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+    if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new Error("الملف المرفق فارغ أو غير صالح");
+
+    const {
+      whatsAppMediaKind,
+      MAX_WHATSAPP_MEDIA_BYTES,
+      MAX_WHATSAPP_INLINE_MEDIA_BYTES,
+    } = await import("./whatsapp-media");
+    if (buffer.length > MAX_WHATSAPP_MEDIA_BYTES) throw new Error("حجم الملف يتجاوز الحد المسموح وهو 20 ميجابايت");
+    const mimeType = String(options.mimeType || "application/octet-stream").split(";")[0].trim().toLowerCase();
+    const kind = whatsAppMediaKind(mimeType);
+    if (kind !== "document" && buffer.length > MAX_WHATSAPP_INLINE_MEDIA_BYTES) {
+      throw new Error("حجم الصورة أو الصوت أو الفيديو يتجاوز الحد المسموح وهو 16 ميجابايت");
+    }
+    const filename = String(options.filename || "attachment")
+      .replace(/\\/g, "/").split("/").pop()?.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 180) || "attachment";
+    const caption = String(options.caption || "").trim().slice(0, 1000);
+    const mediaBody: Record<string, unknown> = {
+      [kind]: buffer,
+      mimetype: mimeType,
+      ...(kind === "document" ? { fileName: filename } : {}),
+      ...(caption && kind !== "audio" ? { caption } : {}),
+    };
+    const result = await this.sock.sendMessage(chatId, mediaBody);
+    const mediaType = kind;
+    const body = caption || `[${filename}]`;
+    const timestamp = new Date();
+    await this.persistMessage({
+      chatId,
+      messageId: result?.key?.id,
+      fromMe: true,
+      body,
+      timestamp,
+      aiGenerated: Boolean(options.aiGenerated),
+      mediaType,
+      mediaName: filename,
+      mimeType,
+      caption,
+    });
+    this.sendSSE({
+      type: "message",
+      chatId,
+      fromMe: true,
+      body,
+      aiGenerated: Boolean(options.aiGenerated),
+      mediaType,
+      mediaName: filename,
+      mimeType,
+      timestamp: timestamp.toISOString(),
+    });
+    if (caption && kind === "audio") await this.sendText(chatId, caption, Boolean(options.aiGenerated));
+    return result;
   }
 
   async sendLink(chatId: string, url: string, title?: string) {
@@ -933,7 +1029,7 @@ class WhatsAppModule extends EventEmitter {
   private async persistMessage(msg: {
     chatId: string; messageId?: string; fromMe: boolean;
     senderName?: string; body: string; timestamp: Date;
-    aiGenerated?: boolean; mediaType?: string;
+    aiGenerated?: boolean; mediaType?: string; mediaName?: string; mimeType?: string; caption?: string;
   }) {
     try {
       const { WAMessageModel, WAChatModel } = await import("./models/whatsapp");

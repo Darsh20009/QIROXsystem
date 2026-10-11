@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2, Wifi, WifiOff, QrCode, MessageSquare, Settings, Send,
   Bot, User, Phone, RefreshCw, Plus, X, Zap, ChevronLeft, Check,
-  BrainCircuit, Smartphone
+  BrainCircuit, Smartphone, Paperclip
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +29,7 @@ import { useI18n } from "@/lib/i18n";
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WAStatus { status: "disconnected"|"qr"|"connecting"|"connected"; qr: string|null; phoneNumber: string|null; }
 interface WAChat { _id: string; chatId: string; name: string; phoneNumber: string; lastMessage: string; lastMessageAt: string; unreadCount: number; aiEnabled: boolean; }
-interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; }
+interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; mediaName?: string; mimeType?: string; }
 interface WASavedMessage { _id: string; text: string; createdAt?: string; }
 interface WASettings { adminNumbers: string[]; aiEnabled: boolean; aiDelaySeconds: number; systemPromptExtra: string; connectedPhone?: string; savedMessages: WASavedMessage[]; }
 interface NotificationHealth {
@@ -59,12 +59,14 @@ export default function AdminWhatsApp() {
   const [waStatus, setWaStatus] = useState<WAStatus>({ status: "disconnected", qr: null, phoneNumber: null });
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newAdminNum, setNewAdminNum] = useState("");
   const [newSavedMessage, setNewSavedMessage] = useState("");
   const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 5, systemPromptExtra: "", savedMessages: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<EventSource | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── SSE connection ──────────────────────────────────────────────────────
   const connectSSE = useCallback(() => {
@@ -204,6 +206,39 @@ export default function AdminWhatsApp() {
     },
     onError: (e: any) => toast({ title: e.message || "فشل الإرسال", variant: "destructive" }),
   });
+
+  const sendMediaMutation = useMutation({
+    mutationFn: async ({ file, caption }: { file: File; caption: string }) => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("caption", caption);
+      const response = await fetch(`/api/admin/whatsapp/chats/${encodeURIComponent(selectedChatId!)}/send-media`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || (L ? "تعذر إرسال الملف" : "Failed to send attachment"));
+      return data;
+    },
+    onSuccess: () => {
+      setReplyText("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/messages", selectedChatId] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/chats"] });
+    },
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل إرسال الملف" : "Failed to send attachment"), variant: "destructive" }),
+  });
+
+  const handleSend = () => {
+    if (selectedFile) {
+      sendMediaMutation.mutate({ file: selectedFile, caption: replyText.trim() });
+    } else if (replyText.trim()) {
+      sendMutation.mutate(replyText);
+    }
+  };
+  const sending = sendMutation.isPending || sendMediaMutation.isPending;
 
   const aiToggleMutation = useMutation({
     mutationFn: ({ chatId, enabled }: { chatId: string; enabled: boolean }) =>
@@ -469,7 +504,15 @@ export default function AdminWhatsApp() {
                         {!msg.fromMe && msg.senderName && (
                           <p className="text-[9px] font-bold text-[#25D366] mb-0.5">{msg.senderName}</p>
                         )}
-                        <p className="text-[13px] text-black dark:text-white leading-snug whitespace-pre-wrap">{msg.body}</p>
+                        {msg.mediaType && (
+                          <div className="flex items-center gap-2 mb-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-2 py-1.5">
+                            <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#128C7E]" />
+                            <span className="text-xs text-black/70 dark:text-white/70 break-all">{msg.mediaName || msg.mediaType}</span>
+                          </div>
+                        )}
+                        {msg.body && msg.body !== `[${msg.mediaName}]` && (
+                          <p className="text-[13px] text-black dark:text-white leading-snug whitespace-pre-wrap">{msg.body}</p>
+                        )}
                         <div className="flex items-center gap-1 justify-end mt-0.5">
                           {msg.aiGenerated && <Bot className="w-2.5 h-2.5 text-[#25D366]" title="AI generated" />}
                           <span className="text-[9px] text-black/30 dark:text-white/30">{fmtTime(msg.timestamp)}</span>
@@ -508,29 +551,72 @@ export default function AdminWhatsApp() {
                        ))}
                      </div>
                    )}
+                  {selectedFile && (
+                    <div className="flex items-center gap-2 mb-2 rounded-lg border border-black/10 dark:border-white/10 px-2.5 py-1.5">
+                      <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#128C7E]" />
+                      <span className="flex-1 min-w-0 truncate text-xs text-black/70 dark:text-white/70">{selectedFile.name}</span>
+                      <span className="text-[10px] text-black/40 dark:text-white/40">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                        className="p-1 rounded hover:bg-black/[0.06] dark:hover:bg-white/[0.08]"
+                        aria-label={L ? "إزالة الملف" : "Remove attachment"}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex items-end gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,video/mp4,video/3gpp,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt,.csv,.json"
+                      className="hidden"
+                      onChange={event => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 20 * 1024 * 1024) {
+                          toast({ title: L ? "الحد الأقصى لحجم الملف 20 ميجابايت" : "Maximum file size is 20 MB", variant: "destructive" });
+                          event.target.value = "";
+                          return;
+                        }
+                        setSelectedFile(file);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={sending}
+                      title={L ? "إرفاق ملف" : "Attach file"}
+                      className="w-10 h-10 shrink-0 rounded-xl border-black/10 dark:border-white/10"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </Button>
                     <Textarea
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
-                          if (replyText.trim()) sendMutation.mutate(replyText);
+                          handleSend();
                         }
                       }}
-                      placeholder={L ? "اكتب رسالة... (Enter للإرسال)" : "Type a message... (Enter to send)"}
+                      placeholder={selectedFile ? (L ? "أضف وصفاً للملف..." : "Add a caption...") : (L ? "اكتب رسالة... (Enter للإرسال)" : "Type a message... (Enter to send)")}
                       rows={1}
                       className="flex-1 resize-none text-sm border-black/10 dark:border-white/10 rounded-xl min-h-[38px] max-h-[120px]"
                     />
                     <Button
                       size="icon"
-                      onClick={() => { if (replyText.trim()) sendMutation.mutate(replyText); }}
-                      disabled={sendMutation.isPending || !replyText.trim()}
+                      onClick={handleSend}
+                      disabled={sending || (!replyText.trim() && !selectedFile)}
                       className="bg-[#25D366] hover:bg-[#22c55e] text-white rounded-xl w-10 h-10 shrink-0"
                     >
-                      {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
+                  <p className="text-[9px] text-black/30 dark:text-white/30 mt-1 text-center">{L ? "الصور والصوت والفيديو حتى 16 ميجابايت، والملفات حتى 20 ميجابايت" : "Images, audio and video up to 16 MB; documents up to 20 MB"}</p>
                   <p className="text-[9px] text-black/20 dark:text-white/20 mt-1 text-center">{L ? "الرد اليدوي يوقف الذكاء الاصطناعي مؤقتاً لمدة 30 دقيقة" : "Manual reply pauses AI for 30 minutes"}</p>
                 </div>
               </>

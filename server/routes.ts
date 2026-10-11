@@ -31,6 +31,7 @@ import { registerCustomerV2Routes } from "./routes/customer-v2";
 import { registerPwaRoutes } from "./routes-pwa";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { cache, CACHE_TTL } from "./cache";
+import { normalizeWhatsAppAttachments } from "./whatsapp-media";
 import {
   DATA_ENTRY_ORDER_HIDDEN_FIELDS,
   DATA_ENTRY_SPEC_HIDDEN_FIELDS,
@@ -7187,10 +7188,17 @@ export async function registerRoutes(
     const phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim());
     const message = String(req.body?.message || "").trim();
     const template = req.body?.template || null;
+    let attachments: ReturnType<typeof normalizeWhatsAppAttachments>;
+    try {
+      attachments = normalizeWhatsAppAttachments(req.body?.attachments ?? req.body?.media);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || "Invalid WhatsApp attachment" });
+    }
     const idempotencyToken = String(req.get("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
     if (!hasStoreWhatsAppScope(ctx.key, template ? "templates:send" : "messages:send", res)) return;
     if (!phone.valid) return res.status(400).json({ error: phone.reason || "A valid recipient phone is required" });
-    if (!message && !template) return res.status(400).json({ error: "message or approved template is required" });
+    if (!message && !template && !attachments.length) return res.status(400).json({ error: "message, attachment, or approved template is required" });
+    if (template && attachments.length) return res.status(400).json({ error: "Send attachments in a separate request from an approved template" });
     if (message.length > 4000) return res.status(400).json({ error: "Message must not exceed 4000 characters" });
     if (idempotencyToken.length < 8 || idempotencyToken.length > 160) {
       return res.status(400).json({ error: "Idempotency-Key must be between 8 and 160 characters" });
@@ -7207,7 +7215,13 @@ export async function registerRoutes(
     }
 
     const payloadHash = crypto.createHash("sha256").update(JSON.stringify({
-      phone: phone.e164, message, name: String(recipient.name || "").trim(), templateName, templateLanguage, templateParameters,
+      phone: phone.e164,
+      message,
+      ...(attachments.length ? { attachments } : {}),
+      name: String(recipient.name || "").trim(),
+      templateName,
+      templateLanguage,
+      templateParameters,
     })).digest("hex");
     const claim = await claimStoreWhatsAppRequest(String(ctx.key._id), ctx.storeId, idempotencyToken, payloadHash);
     const { NotificationDeliveryModel, StoreWhatsAppRequestModel } = await import("./models");
@@ -7250,6 +7264,7 @@ export async function registerRoutes(
         recipient: { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
         subject: "Store WhatsApp Business message",
         message,
+        attachments,
         channels: ["whatsapp"],
         whatsappTemplate: templateName,
         metadata: {
@@ -7524,8 +7539,14 @@ export async function registerRoutes(
     let templateName = "";
     let templateLanguage = "ar";
     let templateParameters: string[] = [];
+    let attachments: ReturnType<typeof normalizeWhatsAppAttachments> = [];
 
     if (channel === "whatsapp") {
+      try {
+        attachments = normalizeWhatsAppAttachments(req.body?.attachments ?? req.body?.media);
+      } catch (error: any) {
+        return res.status(400).json({ error: error.message || "Invalid WhatsApp attachment" });
+      }
       phone = normalizePhone(String(recipient.phone || req.body?.phone || "").trim()) as any;
       const platformName = String(req.body?.platformName || req.body?.platform || "").trim().slice(0, 160);
       const clientName = String(req.body?.clientName || recipient.name || "").trim().slice(0, 160);
@@ -7551,7 +7572,8 @@ export async function registerRoutes(
         if (templateParameters.some(value => value.length > 1024)) return res.status(400).json({ error: "Template parameters must not exceed 1024 characters" });
       }
       if (!phone.valid) return res.status(400).json({ error: phone.reason || "A valid recipient phone is required" });
-      if (!message && !templateName) return res.status(400).json({ error: "message or approved template is required" });
+      if (!message && !templateName && !attachments.length) return res.status(400).json({ error: "message, attachment, or approved template is required" });
+      if (templateName && attachments.length) return res.status(400).json({ error: "Send attachments in a separate request from an approved template" });
       if (message.length > 4000) return res.status(400).json({ error: "Message must not exceed 4000 characters" });
     } else {
       const email = String(recipient.email || req.body?.to || req.body?.email || "").trim();
@@ -7562,7 +7584,17 @@ export async function registerRoutes(
       recipient.email = email;
     }
 
-    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({ channel, credentialType, recipient, subject, message, templateName, templateLanguage, templateParameters })).digest("hex");
+    const payloadHash = crypto.createHash("sha256").update(JSON.stringify({
+      channel,
+      credentialType,
+      recipient,
+      subject,
+      message,
+      ...(attachments.length ? { attachments } : {}),
+      templateName,
+      templateLanguage,
+      templateParameters,
+    })).digest("hex");
     try {
       const result = (await dispatchNotification({
         event: `project_${channel}_message`,
@@ -7572,6 +7604,7 @@ export async function registerRoutes(
           : { name: String(recipient.name || "").trim().slice(0, 160), phone: phone.e164 },
         subject: subject || "Project WhatsApp CRM message",
         message,
+        ...(channel === "whatsapp" ? { attachments } : {}),
         channels: [channel],
         whatsappTemplate: templateName,
         metadata: {
@@ -22195,6 +22228,35 @@ export async function registerInstallmentRoutes(app: Express) {
         await waModule.setHumanOverride(chatId, 30);
         res.json({ ok: true });
       } catch (e: any) { res.status(500).json({ error: e.message }); }
+    });
+
+    const whatsappMediaUpload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 20 * 1024 * 1024, files: 1 },
+    });
+    app.post("/api/admin/whatsapp/chats/:chatId/send-media", (req, res) => {
+      if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      whatsappMediaUpload.single("file")(req, res, async (uploadError: any) => {
+        if (uploadError) {
+          const tooLarge = uploadError.code === "LIMIT_FILE_SIZE";
+          return res.status(tooLarge ? 413 : 400).json({
+            error: tooLarge ? "الحد الأقصى لحجم الملف 20 ميجابايت" : uploadError.message || "تعذر قراءة الملف المرفق",
+          });
+        }
+        if (!req.file) return res.status(400).json({ error: "اختر ملفاً لإرساله" });
+        const chatId = decodeURIComponent(req.params.chatId);
+        try {
+          await waModule.sendMedia(chatId, req.file.buffer, {
+            mimeType: req.file.mimetype,
+            filename: req.file.originalname,
+            caption: String(req.body?.caption || "").trim(),
+          });
+          await waModule.setHumanOverride(chatId, 30);
+          return res.json({ ok: true });
+        } catch (error: any) {
+          return res.status(502).json({ error: error?.message || "تعذر إرسال الملف عبر واتساب" });
+        }
+      });
     });
 
     // ── Send to a specific phone number directly ──────────────────────────────

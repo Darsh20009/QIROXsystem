@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import { NotificationDeliveryModel, NotificationTemplateModel } from "../models/notification-delivery";
 import { normalizePhone } from "./phone";
+import { downloadWhatsAppMedia, type WhatsAppMediaAttachment } from "../whatsapp-media";
 
 export type NotificationChannel = "email" | "whatsapp";
 
@@ -21,6 +22,7 @@ export type NotificationRequest = {
   actionUrl?: string;
   channels?: NotificationChannel[];
   whatsappTemplate?: string;
+  attachments?: WhatsAppMediaAttachment[];
   metadata?: Record<string, unknown>;
   sensitive?: boolean;
 };
@@ -125,7 +127,12 @@ async function createDelivery(
       textBody: request.message,
       sensitive: Boolean(request.sensitive),
       template: request.whatsappTemplate || "",
-      metadata: request.metadata || {},
+      metadata: {
+        ...(request.metadata || {}),
+        ...(channel === "whatsapp" && request.attachments?.length
+          ? { whatsappAttachments: request.attachments }
+          : {}),
+      },
       lastError: hasRecipient
         ? ""
         : channel === "email"
@@ -162,48 +169,139 @@ async function sendWhatsAppThroughMeta(delivery: any): Promise<{ provider: strin
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "_");
   const template = directTemplateName || (templateKey ? process.env[`WHATSAPP_META_TEMPLATE_${templateKey}`] || "" : "");
-  const payload: Record<string, unknown> = {
+  const basePayload: Record<string, unknown> = {
     messaging_product: "whatsapp",
     to,
   };
+  const attachments: WhatsAppMediaAttachment[] = Array.isArray(delivery.metadata?.whatsappAttachments)
+    ? delivery.metadata.whatsappAttachments
+    : [];
+  if (template && attachments.length) {
+    throw new Error("إرسال المرفقات مع القوالب غير مدعوم؛ أرسل الملف في طلب مستقل");
+  }
+  const progress = delivery.metadata?.whatsappProgress || {};
+  const sendMetaPayload = async (payload: Record<string, unknown>): Promise<string | undefined> => {
+    const response = await fetch(`https://graph.facebook.com/${version}/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...basePayload, ...payload }),
+    });
+    const data: any = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = data?.error?.message || `HTTP ${response.status}`;
+      throw new Error(`Meta WhatsApp: ${detail}`);
+    }
+    return data?.messages?.[0]?.id;
+  };
+
+  const markSent = async (part: "text" | `media:${number}` | `captions:${number}`) => {
+    const [partType, partIndex] = part.split(":");
+    const path = partType === "text"
+      ? "metadata.whatsappProgress.textSent"
+      : `metadata.whatsappProgress.${partType}.${Number(partIndex)}`;
+    const result = await NotificationDeliveryModel.updateOne(
+      { _id: delivery._id, status: "sending", claimToken: delivery.claimToken },
+      { $set: { [path]: true } },
+    );
+    if (!result.matchedCount) throw new Error("انتهت صلاحية محاولة التسليم قبل حفظ حالة الرسالة");
+    if (partType === "text") progress.textSent = true;
+    else {
+      progress[partType] ||= {};
+      progress[partType][Number(partIndex)] = true;
+    }
+    delivery.metadata.whatsappProgress = progress;
+  };
+
+  let messageId: string | undefined;
   if (template) {
-    payload.type = "template";
     const parameters = Array.isArray(delivery.metadata?.metaTemplateParameters)
       ? delivery.metadata.metaTemplateParameters
         .map((value: unknown) => ({ type: "text", text: String(value) }))
         .slice(0, 20)
       : [];
-    payload.template = {
-      name: template,
-      language: { code: String(delivery.metadata?.metaTemplateLanguage || process.env.WHATSAPP_META_TEMPLATE_LANGUAGE || "ar") },
-      ...(parameters.length ? { components: [{ type: "body", parameters }] } : {}),
-    };
-  } else {
+    if (!progress.textSent) {
+      messageId = await sendMetaPayload({
+        type: "template",
+        template: {
+          name: template,
+          language: { code: String(delivery.metadata?.metaTemplateLanguage || process.env.WHATSAPP_META_TEMPLATE_LANGUAGE || "ar") },
+          ...(parameters.length ? { components: [{ type: "body", parameters }] } : {}),
+        },
+      });
+      await markSent("text");
+    }
+  } else if (!attachments.length) {
     // Meta permits free-form text only within its customer-service window.
     // If Meta rejects it, the durable delivery record keeps the provider error.
-    payload.type = "text";
-    payload.text = { preview_url: false, body: String(delivery.textBody || "") };
+    if (!progress.textSent && delivery.textBody) {
+      messageId = await sendMetaPayload({ type: "text", text: { preview_url: false, body: String(delivery.textBody) } });
+      await markSent("text");
+    }
+  } else {
+    if (!progress.textSent && delivery.textBody) {
+      messageId = await sendMetaPayload({ type: "text", text: { preview_url: false, body: String(delivery.textBody) } });
+      await markSent("text");
+    }
+    for (let index = 0; index < attachments.length; index += 1) {
+      if (progress.media?.[index]) continue;
+      const attachment = attachments[index];
+      const media = await downloadWhatsAppMedia(attachment);
+      const caption = String(attachment.caption || "").trim();
+      const kind = media.kind;
+      const field = kind === "document" ? "document" : kind;
+      const payloadMedia: Record<string, unknown> = { link: media.finalUrl };
+      if (kind === "document") payloadMedia.filename = media.filename;
+      messageId = await sendMetaPayload({ type: kind, [field]: payloadMedia });
+      await markSent(`media:${index}`);
+      if (caption && !progress.captions?.[index]) {
+        messageId = await sendMetaPayload({ type: "text", text: { preview_url: false, body: caption } });
+        await markSent(`captions:${index}`);
+      }
+    }
   }
-
-  const response = await fetch(`https://graph.facebook.com/${version}/${phoneNumberId}/messages`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  const data: any = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const detail = data?.error?.message || `HTTP ${response.status}`;
-    throw new Error(`Meta WhatsApp: ${detail}`);
-  }
-  return { provider: "meta", messageId: data?.messages?.[0]?.id };
+  return { provider: "meta", messageId };
 }
 
 async function sendWhatsAppThroughBaileys(delivery: any): Promise<{ provider: string }> {
   const { waModule } = await import("../whatsapp-module");
-  await waModule.sendNotification(delivery.recipient?.normalizedPhone || delivery.recipient?.phone, delivery.textBody || "");
+  const attachments: WhatsAppMediaAttachment[] = Array.isArray(delivery.metadata?.whatsappAttachments)
+    ? delivery.metadata.whatsappAttachments
+    : [];
+  const progress = delivery.metadata?.whatsappProgress || {};
+  await waModule.sendNotification(
+    delivery.recipient?.normalizedPhone || delivery.recipient?.phone,
+    delivery.textBody || "",
+    attachments,
+    {
+      textSent: Boolean(progress.textSent),
+      sentMediaIndexes: Object.entries(progress.media || {})
+        .filter(([, sent]) => Boolean(sent))
+        .map(([index]) => Number(index)),
+      sentCaptionIndexes: Object.entries(progress.captions || {})
+        .filter(([, sent]) => Boolean(sent))
+        .map(([index]) => Number(index)),
+      onPartSent: async part => {
+        const [partType, partIndex] = part.split(":");
+        const path = partType === "text"
+          ? "metadata.whatsappProgress.textSent"
+          : `metadata.whatsappProgress.${partType}.${Number(partIndex)}`;
+        const result = await NotificationDeliveryModel.updateOne(
+          { _id: delivery._id, status: "sending", claimToken: delivery.claimToken },
+          { $set: { [path]: true } },
+        );
+        if (!result.matchedCount) throw new Error("انتهت صلاحية محاولة التسليم قبل حفظ حالة الرسالة");
+        if (partType === "text") progress.textSent = true;
+        else {
+          progress[partType] ||= {};
+          progress[partType][Number(partIndex)] = true;
+        }
+        delivery.metadata.whatsappProgress = progress;
+      },
+    },
+  );
   return { provider: "baileys" };
 }
 

@@ -8,6 +8,8 @@ const waMessageSchema = new Schema({
   senderName:   { type: String },
   body:         { type: String, default: "" },
   mediaType:    { type: String },   // image | document | audio | sticker
+  mediaName:    { type: String },
+  mimeType:     { type: String },
   mediaBase64:  { type: String },   // base64 for stored media
   caption:      { type: String },
   aiGenerated:  { type: Boolean, default: false },
