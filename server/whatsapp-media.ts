@@ -117,6 +117,23 @@ export function whatsAppMediaKind(mimeType: string): DownloadedWhatsAppMedia["ki
   return "document";
 }
 
+const MEDIA_MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  pdf: "application/pdf",
+};
+
+export function resolveWhatsAppMediaMimeType(responseMimeType: string, filename: string): string {
+  const normalized = String(responseMimeType || "").split(";")[0].trim().toLowerCase();
+  if (normalized && !["application/octet-stream", "application/binary", "binary/octet-stream"].includes(normalized)) {
+    return normalized;
+  }
+  const extension = filename.split(".").pop()?.trim().toLowerCase() || "";
+  return MEDIA_MIME_BY_EXTENSION[extension] || normalized || "application/octet-stream";
+}
+
 function filenameFromResponse(url: URL, contentDisposition: string | undefined, hint?: string): string {
   if (hint) return cleanFilename(hint) || "attachment";
   const encoded = contentDisposition?.match(/filename\*=(?:UTF-8'')?([^;]+)/i)?.[1]?.trim();
@@ -230,12 +247,14 @@ export async function downloadWhatsAppMedia(
   }
   if (!result || result.statusCode !== 200) throw new Error("تعذر تحميل المرفق من المصدر");
 
-  const mimeType = String(result.headers["content-type"] || "application/octet-stream")
-    .split(";")[0].trim().toLowerCase();
   const filename = filenameFromResponse(
     result.finalUrl,
     String(result.headers["content-disposition"] || ""),
     attachment.filename,
+  );
+  const mimeType = resolveWhatsAppMediaMimeType(
+    String(result.headers["content-type"] || ""),
+    filename || result.finalUrl,
   );
   return {
     buffer: Buffer.concat(result.chunks),

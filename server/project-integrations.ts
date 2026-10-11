@@ -122,7 +122,7 @@ export const projectIntegrationApiDocs = {
           { url: "https://cdn.example.com/photo.jpg", caption: "صورة الطلب" },
         ],
       },
-      description: "إرسال رسالة أو حتى 5 مرفقات عبر رقم QIROX المتصل بواتساب CRM. الصور والصوت والفيديو حتى 16 ميجابايت، والملفات حتى 20 ميجابايت؛ الروابط HTTPS عامة فقط.",
+      description: "إرسال رسالة أو حتى 5 مرفقات عبر رقم QIROX المتصل بواتساب CRM. تقبل الصور JPEG/PNG/WebP وملفات PDF عبر روابط HTTPS عامة؛ الصور حتى 16 ميجابايت والملفات حتى 20 ميجابايت.",
     },
     {
       method: "POST",

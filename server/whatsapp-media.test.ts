@@ -3,13 +3,20 @@ import test from "node:test";
 import {
   isPublicMediaAddress,
   normalizeWhatsAppAttachments,
+  resolveWhatsAppMediaMimeType,
   whatsAppMediaKind,
 } from "./whatsapp-media";
 
 test("WhatsApp attachment API accepts only public HTTPS URLs", () => {
   assert.deepEqual(
-    normalizeWhatsAppAttachments([{ url: "https://cdn.example.com/file.pdf", filename: "invoice.pdf" }]),
-    [{ url: "https://cdn.example.com/file.pdf", filename: "invoice.pdf" }],
+    normalizeWhatsAppAttachments([
+      { url: "https://cdn.example.com/file.pdf", filename: "invoice.pdf", caption: "الفاتورة" },
+      { url: "https://cdn.example.com/menu.jpg", filename: "menu.jpg", caption: "القائمة" },
+    ]),
+    [
+      { url: "https://cdn.example.com/file.pdf", filename: "invoice.pdf", caption: "الفاتورة" },
+      { url: "https://cdn.example.com/menu.jpg", filename: "menu.jpg", caption: "القائمة" },
+    ],
   );
   for (const url of [
     "http://cdn.example.com/file.pdf",
@@ -32,6 +39,14 @@ test("media MIME types map to WhatsApp image, video, audio, or document sends", 
   assert.equal(whatsAppMediaKind("video/mp4"), "video");
   assert.equal(whatsAppMediaKind("audio/ogg; codecs=opus"), "audio");
   assert.equal(whatsAppMediaKind("application/pdf"), "document");
+});
+
+test("image and PDF URLs retain the correct WhatsApp media type when hosts send a generic MIME type", () => {
+  assert.equal(resolveWhatsAppMediaMimeType("application/octet-stream", "menu.jpg"), "image/jpeg");
+  assert.equal(resolveWhatsAppMediaMimeType("binary/octet-stream", "menu.png"), "image/png");
+  assert.equal(resolveWhatsAppMediaMimeType("", "menu.webp"), "image/webp");
+  assert.equal(resolveWhatsAppMediaMimeType("application/octet-stream", "invoice.pdf"), "application/pdf");
+  assert.equal(resolveWhatsAppMediaMimeType("image/png", "menu.jpg"), "image/png");
 });
 
 test("public address filter rejects reserved and private IPv4/IPv6 addresses", () => {

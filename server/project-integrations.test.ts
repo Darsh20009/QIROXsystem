@@ -160,7 +160,7 @@ test("the public project API key works over HTTP for both channels without leaki
   let whatsappDeliveryId = "";
   let whatsappProviderCalls = 0;
   let whatsappMessage = "";
-  let whatsappAttachment: any = null;
+  let whatsappAttachments: any[] = [];
   const { waModule } = await import("./whatsapp-module");
   const originalSendNotification = waModule.sendNotification;
 
@@ -175,7 +175,7 @@ test("the public project API key works over HTTP for both channels without leaki
     waModule.sendNotification = (async (_phone: string, message: string, attachments: any[] = []) => {
       whatsappProviderCalls += 1;
       whatsappMessage = message;
-      whatsappAttachment = attachments[0] || null;
+      whatsappAttachments = attachments;
     }) as typeof waModule.sendNotification;
     for (const key of smtpKeys) delete process.env[key];
 
@@ -345,18 +345,28 @@ test("the public project API key works over HTTP for both channels without leaki
       body: {
         channel: "whatsapp",
         recipient: { phone: "+966501234567" },
-        attachments: [{ url: "https://cdn.example.com/invoice.pdf", filename: "invoice.pdf", caption: "الفاتورة" }],
+        attachments: [
+          { url: "https://cdn.example.com/invoice.pdf", filename: "invoice.pdf", caption: "الفاتورة" },
+          { url: "https://cdn.example.com/menu.jpg", filename: "menu.jpg", caption: "صورة القائمة" },
+        ],
       },
     });
     assert.equal(attachmentResponse.status, 202);
     assert.equal(attachmentResponse.body?.delivery?.status, "sent");
     assert.equal(whatsappProviderCalls, 2);
     assert.equal(whatsappMessage, "");
-    assert.deepEqual(whatsappAttachment, {
-      url: "https://cdn.example.com/invoice.pdf",
-      filename: "invoice.pdf",
-      caption: "الفاتورة",
-    });
+    assert.deepEqual(whatsappAttachments, [
+      {
+        url: "https://cdn.example.com/invoice.pdf",
+        filename: "invoice.pdf",
+        caption: "الفاتورة",
+      },
+      {
+        url: "https://cdn.example.com/menu.jpg",
+        filename: "menu.jpg",
+        caption: "صورة القائمة",
+      },
+    ]);
 
     const privateAttachmentResponse = await requestProjectApi(server, endpoint, {
       authorization: `Bearer ${apiSecret.rawKey}`,

@@ -3,15 +3,7 @@ services:
     name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
-    buildCommand: |
-      mkdir -p node_modules runtime
-      printf '{"name":"runtime","version":"1.0.0","private":true}\n' > runtime/package.json
-      cd runtime
-      npm install --no-audit --no-fund --ignore-scripts @whiskeysockets/baileys passkit-generator @huggingface/transformers
-      npm install --no-audit --no-fund onnxruntime-node
-      cd ..
-      cp -r runtime/node_modules/. node_modules/
-      npm run build
+    buildCommand: bash scripts/render-build.sh
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

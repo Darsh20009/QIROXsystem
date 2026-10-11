@@ -49,7 +49,7 @@
 - [Mongoose pre-save hooks](mongoose-presave-hooks.md) — On the current Mongoose runtime, synchronous pre-save hooks must not call a `next` callback.
 - [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.
 - [Post-merge setup](post-merge-setup.md) — Use deterministic npm ci plus a rebuild; do not auto-run the legacy PostgreSQL push in the MongoDB-primary project.
-- [HTTP route test sessions](http-route-test-sessions.md) — Mongo-backed route tests must isolate the session store or the test process can remain open after all assertions pass.
+- [HTTP route test isolation](http-route-test-sessions.md) — isolate Mongo session clients and stub notification providers; persisted SMTP settings can cause tests to send real mail.
 - [Project integration secret policy](project-integration-secret-policy.md) — Environment Variables receives a placeholder only; raw integration secrets remain one-time and are never persisted in specs.
 - [GitHub repository provisioning](github-repository-provisioning.md) — One stable repo per project; managed/pinned identity plus lease fencing and versioned visibility prevent duplicate or stale writes.
 - [Project code backups](project-code-backups.md) — Protect project code with a GitHub backup ref before any ZIP replacement; never write an empty or secret-bearing archive.
