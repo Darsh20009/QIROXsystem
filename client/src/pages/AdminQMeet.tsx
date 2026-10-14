@@ -421,6 +421,8 @@ export default function AdminQMeet() {
                   { method: "GET",  path: "/api/qmeet/v1/meetings", desc: "قائمة الاجتماعات المنشأة" },
                   { method: "GET",  path: "/api/qmeet/v1/meetings/:roomName", desc: "تفاصيل اجتماع محدد" },
                   { method: "DELETE", path: "/api/qmeet/v1/meetings/:roomName", desc: "إلغاء اجتماع" },
+                  { method: "PATCH", path: "/api/qmeet/v1/customization", desc: "هوية العميل والميزات والنطاقات" },
+                  { method: "PATCH", path: "/api/qmeet/v1/meetings/:roomName/customization", desc: "تخصيص اجتماع يملكه المفتاح" },
                 ].map(e => (
                   <div key={e.path} className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2">
                     <span className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded-md ${e.method === "POST" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : e.method === "GET" ? "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70" : "bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white dark:bg-black dark:bg-white dark:text-black/70 dark:text-white/70"}`}>{e.method}</span>
@@ -435,6 +437,8 @@ export default function AdminQMeet() {
                 <p className="text-black/40 dark:text-white/40 mt-2"># مثال: إنشاء اجتماع</p>
                 <p><span className="text-black dark:text-white dark:text-black/70 dark:text-white/70">POST</span> {window.location.origin}/api/qmeet/v1/meetings</p>
                 <p>{"{"} "title": "اجتماع العميل", "scheduledAt": "2025-06-01T10:00:00Z", "durationMinutes": 60 {"}"}</p>
+                <a href="/qmeet-sdk-guide.html" target="_blank" rel="noopener noreferrer"
+                  className="block mt-3 text-teal-600 underline font-sans">دليل التخصيص والتضمين والإضافات مع أمثلة SDK</a>
               </div>
             </div>
 

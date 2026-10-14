@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ensureGitHubRepository,
   githubRepositoryName,
+  customGitHubRepositoryName,
   resolveGitHubToken,
   updateGitHubRepositoryVisibility,
 } from "./github-repositories";
@@ -13,6 +14,53 @@ function jsonResponse(body: unknown, status = 200): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+test("custom names are preserved without automatic suffixes and reject invalid input", () => {
+  assert.equal(customGitHubRepositoryName(" My_Cafe.System "), "My_Cafe.System");
+  assert.equal(customGitHubRepositoryName(""), "");
+  for (const value of ["اسم", "foo/bar", "../repo", "repo.git", "x".repeat(101), "a b", {}, null]) {
+    assert.throws(() => customGitHubRepositoryName(value), { status: 400 });
+  }
+});
+
+test("custom names never adopt or modify an unrelated existing repository", async () => {
+  const originalFetch = globalThis.fetch;
+  const methods: string[] = [];
+  globalThis.fetch = async (url, init) => {
+    methods.push(init?.method || "GET");
+    return String(url).endsWith("/user") ? jsonResponse({ login: "qirox" })
+      : jsonResponse({ name: "my-cafe", private: false, description: "Unrelated customer code" });
+  };
+  try {
+    await assert.rejects(() => ensureGitHubRepository({ token: "test-token", name: "my-cafe", visibility: "private",
+      expectedProjectMarker: "[qirox-project:own-id]" }), { status: 409 });
+    assert.deepEqual(methods, ["GET", "GET"]);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("custom creation uses the exact name and retries adopt only their own repository", async () => {
+  const originalFetch = globalThis.fetch;
+  const description = "QIROX project: Cafe [qirox-project:own-id]";
+  let created = false;
+  let requests = 0;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith("/user")) return jsonResponse({ login: "qirox" });
+    if (init?.method === "POST") {
+      const body = JSON.parse(String(init.body));
+      assert.equal(body.name, "My-Cafe");
+      assert.equal(body.description, description);
+      created = true; requests++;
+    } else if (!created) return jsonResponse({}, 404);
+    return jsonResponse({ id: 7, name: "My-Cafe", description, private: true, owner: { login: "qirox" } });
+  };
+  try {
+    const input = { token: "test-token", name: "My-Cafe", visibility: "private" as const, description, expectedProjectMarker: "[qirox-project:own-id]" };
+    const first = await ensureGitHubRepository(input);
+    const retry = await ensureGitHubRepository(input);
+    assert.equal(first.name, "My-Cafe"); assert.equal(retry.name, "My-Cafe");
+    assert.equal(requests, 1);
+  } finally { globalThis.fetch = originalFetch; }
+});
 
 test("repository names are stable, ASCII-only, bounded, and use an Arabic fallback", () => {
   const id = "66d0ff001122334455667788";

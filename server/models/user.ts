@@ -12,6 +12,11 @@ const userSchema = new mongoose.Schema({
   githubAvatarUrl: String,
   appleId: { type: String, sparse: true, index: true },
   role: { type: String, enum: [...roles], default: "client", required: true },
+  // Additive employee lifecycle marker. Missing values on legacy documents are
+  // treated as active; termination never deletes the account or its history.
+  employmentStatus: { type: String, enum: ["active", "terminated"], default: "active", index: true },
+  employmentTerminatedAt: { type: Date, default: null },
+  employmentTerminationReason: { type: String, default: "" },
   employeeCode: { type: String, unique: true, sparse: true, index: true },
   fullName: { type: String, required: true },
   phone: String,
@@ -24,6 +29,8 @@ const userSchema = new mongoose.Schema({
   commercialRegistration: { type: String, default: "" },
   nationalAddress: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false },
+  termsAcceptedAt: { type: Date, default: null },
+  termsVersion: { type: String, default: null },
   whatsappNumber: String,
   logoUrl: String,
   avatarUrl: String,

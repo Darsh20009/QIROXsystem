@@ -185,6 +185,33 @@
 
 ---
 
+## QMeet Native Media Infrastructure — Current Initiative
+
+QMeet is moving from browser mesh/interim media routing to a Qirox-owned
+self-hosted media layer. The production target is one meeting with up to 50
+participants, but the target must not be claimed until real staged tests pass.
+
+- [x] Document current signaling, room, participant, media, and permission boundaries
+- [x] Define native QMeet signaling and WebRTC protocol
+- [x] Define independent QMeet SFU service boundary
+- [x] Define self-hosted STUN/TURN and media-node requirements
+- [x] Implement Go/Pion QMeet SFU foundation (health, auth, registry, tests)
+- [ ] Integrate short-lived server-authorized media credentials
+- [ ] Integrate native SFU behind an internal feature flag
+- [ ] Validate 3, 10, 25, and 50 real participants
+- [ ] Remove legacy LiveKit/P2P production path after acceptance
+
+Reference documents:
+
+- `docs/qmeet-media-architecture.md`
+- `docs/qmeet-webrtc-protocol.md`
+- `docs/qmeet-signaling.md`
+- `docs/qmeet-sfu.md`
+- `docs/qmeet-capacity-testing.md`
+- `infra/qmeet-media/README.md`
+
+---
+
 ## 🧱 الأولويات التقنية عبر كل المراحل
 
 ```

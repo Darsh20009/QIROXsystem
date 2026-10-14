@@ -54,8 +54,15 @@ interface FormData {
   features: string[];
   featuresAr: string[];
   relatedService: string;
+  serviceIds: string[];
   featureInput: string;
   featureArInput: string;
+}
+
+interface PartnerService {
+  id: string;
+  title: string;
+  features?: string[];
 }
 
 const emptyForm: FormData = {
@@ -74,9 +81,17 @@ const emptyForm: FormData = {
   features: [],
   featuresAr: [],
   relatedService: "",
+  serviceIds: [],
   featureInput: "",
   featureArInput: "",
 };
+
+function getPartnerDisplayFeatures(partner: Partner, isArabic: boolean) {
+  const manualFeatures = isArabic && partner.featuresAr?.length
+    ? partner.featuresAr
+    : partner.features || [];
+  return Array.from(new Set([...(partner.serviceFeatures || []), ...manualFeatures]));
+}
 
 export default function AdminPartners() {
   const { toast } = useToast();
@@ -95,6 +110,36 @@ export default function AdminPartners() {
   const { data: partners, isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
   });
+
+  const { data: availableServices = [] } = useQuery<PartnerService[]>({
+    queryKey: ["/api/services"],
+    queryFn: async () => {
+      const response = await fetch("/api/services", { credentials: "include" });
+      if (!response.ok) throw new Error("Unable to load services");
+      const payload = await response.json();
+      return Array.isArray(payload) ? payload : payload.services || [];
+    },
+  });
+
+  const selectedServiceFeatures = Array.from(new Set(
+    availableServices
+      .filter(service => formData.serviceIds.includes(String(service.id)))
+      .flatMap(service => service.features || [])
+      .map(feature => String(feature).trim())
+      .filter(Boolean),
+  ));
+
+  const toggleService = (serviceId: string) => {
+    setFormData(current => {
+      const selected = current.serviceIds.includes(serviceId);
+      return {
+        ...current,
+        serviceIds: selected
+          ? current.serviceIds.filter(id => id !== serviceId)
+          : [...current.serviceIds, serviceId],
+      };
+    });
+  };
 
   const set = (k: keyof FormData, v: any) => setFormData(f => ({ ...f, [k]: v }));
 
@@ -115,6 +160,7 @@ export default function AdminPartners() {
       features: [...(partner.features || [])],
       featuresAr: [...(partner.featuresAr || [])],
       relatedService: partner.relatedService || "",
+      serviceIds: [...(partner.serviceIds || [])],
       featureInput: "",
       featureArInput: "",
     });
@@ -140,6 +186,7 @@ export default function AdminPartners() {
     features: data.features,
     featuresAr: data.featuresAr,
     relatedService: data.relatedService || undefined,
+    serviceIds: data.serviceIds,
   });
 
   const createMutation = useMutation({
@@ -223,6 +270,7 @@ export default function AdminPartners() {
       features: partner.features || [],
       featuresAr: partner.featuresAr || [],
       relatedService: partner.relatedService || "",
+      serviceIds: [...(partner.serviceIds || [])],
       featureInput: "",
       featureArInput: "",
     });
@@ -355,16 +403,16 @@ export default function AdminPartners() {
                 )}
 
                 {/* Features */}
-                {(partner.featuresAr?.length || partner.features?.length) ? (
+                {getPartnerDisplayFeatures(partner, L).length > 0 ? (
                   <div className="mt-3 space-y-1">
-                    {(partner.featuresAr?.length ? partner.featuresAr : partner.features || []).slice(0, 3).map((f, i) => (
+                    {getPartnerDisplayFeatures(partner, L).slice(0, 3).map((f, i) => (
                       <div key={i} className="flex items-center gap-1.5 text-xs text-black/60 dark:text-white/60">
                         <CheckCircle2 className="w-3 h-3 text-black dark:text-white shrink-0" />
                         {f}
                       </div>
                     ))}
-                    {(partner.features?.length || 0) > 3 && (
-                      <p className="text-[10px] text-black/30 dark:text-white/30">+{(partner.features?.length || 0) - 3} {L ? "ميزة أخرى" : "more"}</p>
+                    {getPartnerDisplayFeatures(partner, L).length > 3 && (
+                      <p className="text-[10px] text-black/30 dark:text-white/30">+{getPartnerDisplayFeatures(partner, L).length - 3} {L ? "ميزة أخرى" : "more"}</p>
                     )}
                   </div>
                 ) : null}
@@ -572,6 +620,61 @@ export default function AdminPartners() {
               </select>
             </div>
 
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
+              <div>
+                <label className="text-sm font-bold text-black dark:text-white">
+                  {L ? "الخدمات الموجودة لهذا الشريك" : "Existing services for this partner"}
+                </label>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-1">
+                  {L ? "مميزات الخدمات المحددة ستظهر ضمن مميزات الشريك تلقائياً." : "Features from selected services will appear on the partner automatically."}
+                </p>
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-1.5">
+                {availableServices.map(service => {
+                  const selected = formData.serviceIds.includes(String(service.id));
+                  return (
+                    <button
+                      key={service.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleService(String(service.id))}
+                      className={`w-full rounded-xl border px-3 py-2 text-right transition-colors ${selected ? "border-black bg-black/[0.04] dark:border-white dark:bg-white/[0.08]" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20"}`}
+                      data-testid={`partner-service-${service.id}`}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-black dark:text-white">{service.title}</span>
+                        {selected && <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0" />}
+                      </span>
+                      {service.features?.length ? (
+                        <span className="mt-1 block text-[10px] text-black/40 dark:text-white/40 line-clamp-2">
+                          {service.features.join(" • ")}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {!availableServices.length && (
+                  <p className="text-xs text-black/35 dark:text-white/35 text-center py-3">
+                    {L ? "لا توجد خدمات في الكتالوج حالياً" : "No catalog services are available"}
+                  </p>
+                )}
+              </div>
+              {selectedServiceFeatures.length > 0 && (
+                <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-3">
+                  <p className="text-[10px] font-bold text-black/45 dark:text-white/45 mb-2">
+                    {L ? "المميزات القادمة من الخدمات المختارة" : "Features from selected services"}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedServiceFeatures.map((feature, index) => (
+                      <span key={`${feature}-${index}`} className="rounded-full bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.08] px-2 py-1 text-[10px] text-black/65 dark:text-white/65">
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Description */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -612,7 +715,7 @@ export default function AdminPartners() {
                   ))}
                 </div>
               )}
-              {formData.features.length === 0 && (
+              {formData.features.length === 0 && selectedServiceFeatures.length === 0 && (
                 <p className="text-xs text-black/30 dark:text-white/30 text-center py-2">{L ? "أضف مميزات النظام الذي حصل عليه هذا الشريك" : "Add features of the system this partner uses"}</p>
               )}
             </div>

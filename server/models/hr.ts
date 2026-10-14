@@ -70,3 +70,75 @@ const faceDescriptorSchema = new mongoose.Schema({
 }, { timestamps: true });
 faceDescriptorSchema.set("toJSON", { transform: (_: any, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const FaceDescriptorModel = mongoose.models.FaceDescriptor || mongoose.model("FaceDescriptor", faceDescriptorSchema);
+
+/**
+ * Separate, additive employment-contract records. Client/order contracts stay
+ * in their existing collection and are not affected by this workflow.
+ */
+const employeeWorkContractSchema = new mongoose.Schema({
+  contractNumber: { type: String, required: true, unique: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  status: { type: String, enum: ["draft", "sent", "terminated"], default: "draft", index: true },
+  jurisdiction: { type: String, default: "المملكة العربية السعودية" },
+  employerName: { type: String, required: true },
+  employerLegalName: { type: String, default: "" },
+  employerCommercialReg: { type: String, default: "" },
+  employeeSnapshot: {
+    fullName: { type: String, required: true },
+    nationalId: { type: String, default: "" },
+    role: { type: String, default: "" },
+    jobTitle: { type: String, required: true },
+  },
+  salarySnapshot: {
+    salaryType: { type: String, enum: ["fixed", "hourly", "commission"], required: true },
+    amount: { type: Number, default: 0 },
+    commissionRate: { type: Number, default: 0 },
+  },
+  terms: {
+    contractType: { type: String, enum: ["fixed", "indefinite"], required: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, default: null },
+    workLocation: { type: String, required: true },
+    weeklyHours: { type: Number, required: true },
+    probationDays: { type: Number, required: true },
+  },
+  clauses: {
+    workProductOwnership: { type: Boolean, default: true },
+    confidentiality: { type: Boolean, default: true },
+    handover: { type: Boolean, default: true },
+  },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  sentAt: { type: Date, default: null },
+  terminatedAt: { type: Date, default: null },
+  terminationReason: { type: String, default: "" },
+  terminationNotice: { type: String, default: "" },
+}, { timestamps: true });
+employeeWorkContractSchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+employeeWorkContractSchema.set("toObject", { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const EmployeeWorkContractModel =
+  mongoose.models.EmployeeWorkContract ||
+  mongoose.model("EmployeeWorkContract", employeeWorkContractSchema);
+
+/**
+ * Durable audit trail for role notices, contract delivery, terminations and
+ * project-subscription reminders sent through the existing Baileys session.
+ */
+const employeeOperationMessageSchema = new mongoose.Schema({
+  kind: { type: String, enum: ["role_notice", "contract", "termination_notice", "subscription_reminder"], required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null, index: true },
+  contractId: { type: mongoose.Schema.Types.ObjectId, ref: "EmployeeWorkContract", default: null },
+  recipientName: { type: String, required: true },
+  recipientPhone: { type: String, required: true, select: false },
+  message: { type: String, required: true },
+  internalNote: { type: String, default: "" },
+  status: { type: String, enum: ["draft", "sending", "sent", "failed"], default: "draft", index: true },
+  error: { type: String, default: "" },
+  sentBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  sentAt: { type: Date, default: null },
+}, { timestamps: true });
+employeeOperationMessageSchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+employeeOperationMessageSchema.set("toObject", { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const EmployeeOperationMessageModel =
+  mongoose.models.EmployeeOperationMessage ||
+  mongoose.model("EmployeeOperationMessage", employeeOperationMessageSchema);

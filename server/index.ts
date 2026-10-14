@@ -1,8 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
+import { isBuilderDatabaseSetupRoute } from "./security-route-exceptions";
 import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
 import rateLimit from "express-rate-limit";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
+import { authenticateWebSocketRequest } from "./auth";
 import { registerAiRoutes } from "./ai";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -10,17 +12,19 @@ import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
 import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, forceSetRoomHost, setActivePoll, getActivePoll, getAttendanceLog, addLockPending, removeLockPending, getLockPending } from "./ws";
 import { initCronJobs } from "./cron";
-import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
+import { startQMeetScheduler, registerQMeetRoutes, getQMeetMediaCapabilities } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
 import { registerDeploymentCloudRoutes, registerSubdomainMiddleware } from "./deployment-cloud";
 import { registerCrmRoutes } from "./domains/crm";
 import { registerCrmV2Routes } from "./domains/crm-v2";
 import { registerProposalV2Routes } from "./domains/proposal-v2";
+import { registerEmployeeOperationsV2Routes } from "./domains/employee-operations-v2/routes";
 import { registerApiDocsRoutes } from "./docs";
 import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterestedCollection } from "./email-marketing";
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
+import { createHash } from "crypto";
 import { mkdirSync, existsSync } from "fs";
 import path from "path";
 // ── Sprint 002: Infrastructure layer (additive — zero downtime) ───────────────
@@ -65,6 +69,7 @@ try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 
 const app = express();
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
 // Gzip/Brotli compression — reduces response size by 60-80%, dramatically speeds up all API and static responses
 app.use(compression({
@@ -92,7 +97,9 @@ declare module "http" {
 
 app.use(
   express.json({
-    limit: "50mb",
+    // JSON endpoints should never be the path for large binary payloads.
+    // Multipart uploads have their own explicit limits below.
+    limit: "5mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -104,14 +111,42 @@ app.use(express.urlencoded({ extended: false }));
 // ── Security Headers ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  // Allow iframe embedding (e.g., Replit canvas preview)
-  res.removeHeader("X-Frame-Options");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
+  // The two remote proxy surfaces intentionally need to be frameable. The
+  // application itself is frameable only by the same site and Replit preview
+  // hosts, which preserves the preview while reducing clickjacking exposure.
+  const isEmbeddedProxy = req.path.startsWith("/cafe-proxy") || req.path.startsWith("/ecommerce-proxy");
+  if (!isEmbeddedProxy) {
+    const externalScriptSources = process.env.NODE_ENV === "production"
+      ? "'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com"
+      : "'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.paypalobjects.com";
+    res.setHeader("Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-src 'self' https://*.replit.dev https://*.replit.app https://*.repl.co https://www.paypal.com https://www.paypalobjects.com",
+        "frame-ancestors 'self' https://*.replit.dev https://*.replit.app https://*.repl.co",
+        "form-action 'self' https://www.paypal.com",
+        "connect-src 'self' https: wss:",
+        "img-src 'self' data: blob: https:",
+        "font-src 'self' data: https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        `script-src ${externalScriptSources}`,
+        "media-src 'self' blob: https:",
+        "worker-src 'self' blob:",
+        "manifest-src 'self'",
+      ].join("; ")
+    );
+  } else {
+    res.removeHeader("Content-Security-Policy");
+    res.removeHeader("X-Frame-Options");
+  }
+  res.setHeader("X-XSS-Protection", "0");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
   // Allow camera, microphone, and screen capture globally (required for WebRTC meeting rooms)
   // The app is a SPA — client-side routing means the initial document policy applies everywhere
-  res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
+  res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()");
 
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("X-DNS-Prefetch-Control", "off");
@@ -120,6 +155,56 @@ app.use((req, res, next) => {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
   next();
+});
+
+// ── Secret/probe path guard ───────────────────────────────────────────────────
+// Do not expose decoy credentials or fake admin surfaces. Common secret and
+// infrastructure probes terminate in the same generic 404 while a privacy-safe
+// fingerprint is recorded for operational alerting.
+const sensitiveProbePatterns: Array<[string, RegExp]> = [
+  ["dotfile", /^\/(?:\.env(?:\.[^/]+)?|\.git(?:\/|$)|\.svn(?:\/|$)|\.hg(?:\/|$))/i],
+  ["admin-tool", /^\/(?:wp-admin|wp-login\.php|phpmyadmin|pma|adminer)(?:\/|$)/i],
+  ["diagnostic", /^\/(?:server-status|server-info|actuator|debug|trace)(?:\/|$)/i],
+  ["backup", /\/(?:backup|backups|dump|database|db|credentials|secrets|private|keys)(?:\.(?:zip|tar|gz|sql|json)|\/|$)/i],
+  ["config-file", /\/(?:composer\.(?:json|lock)|package-lock\.json|yarn\.lock|config\.json|\.npmrc)$/i],
+];
+const probeLogBuckets = new Map<string, { startedAt: number; count: number }>();
+const probeBucketMs = 60_000;
+
+app.use((req, res, next) => {
+  let probePath = req.path;
+  try {
+    probePath = decodeURIComponent(probePath);
+  } catch {
+    // An invalid encoded path is itself not useful to route; leave it to the
+    // normal Express error path instead of trying to normalize it.
+  }
+  const match = sensitiveProbePatterns.find(([, pattern]) => pattern.test(probePath));
+  if (!match) return next();
+  if (isBuilderDatabaseSetupRoute(req.method, probePath)) return next();
+  // Native preview client modules are authorized by the preview grant below.
+  // A source folder called "db" is not a platform database backup.
+  const previewClientModule = /^\/sandbox\/[a-f0-9]{24}\/preview\/src\/(?:[^/]+\/)*[^/]+\.(?:[cm]?[jt]sx?|css|json)$/i.test(probePath)
+    && !probePath.split("/").some(segment => segment === "." || segment === ".." || segment.startsWith("."));
+  if (match[0] === "backup" && previewClientModule) return next();
+
+  const [category] = match;
+  const fingerprint = createHash("sha256")
+    .update(`${req.ip}|${category}`)
+    .digest("hex")
+    .slice(0, 16);
+  const now = Date.now();
+  const bucket = probeLogBuckets.get(fingerprint);
+  if (!bucket || now - bucket.startedAt >= probeBucketMs) {
+    probeLogBuckets.set(fingerprint, { startedAt: now, count: 1 });
+    console.warn(`[SecurityProbe] blocked category=${category} fingerprint=${fingerprint}`);
+  } else {
+    bucket.count += 1;
+    if (bucket.count === 10) {
+      console.warn(`[SecurityProbe] repeated category=${category} fingerprint=${fingerprint} count=10+`);
+    }
+  }
+  return res.status(404).json({ error: "Not found" });
 });
 
 // ── Cafe Site Proxy (strips X-Frame-Options so pages can be embedded) ─────────
@@ -259,6 +344,35 @@ const globalApiLimiter = rateLimit({
 });
 app.use(globalApiLimiter);
 
+// Same-site Origin check for browser state-changing API requests. Native
+// clients and server-to-server webhooks normally omit Origin and continue
+// through their existing authentication/signature checks.
+app.use((req, res, next) => {
+  const isMutation = !["GET", "HEAD", "OPTIONS"].includes(req.method);
+  if (!isMutation || !req.path.startsWith("/api/") || !req.headers.origin) return next();
+
+  // Apple Sign In sends the form_post callback from Apple's origin rather
+  // than from qiroxstudio.online. The OAuth strategy validates the provider
+  // response; do not reject this provider callback with the app's browser
+  // same-origin mutation check before passport can process it.
+  if (req.method === "POST" && req.path === "/api/auth/apple/callback") {
+    return next();
+  }
+
+  const origin = String(req.headers.origin).replace(/\/+$/, "");
+  const host = String(req.headers.host || "").replace(/\/+$/, "");
+  const expectedOrigin = `${req.secure ? "https" : "http"}://${host}`;
+  const canonicalOrigins = new Set([
+    expectedOrigin,
+    "https://qiroxstudio.online",
+    "https://www.qiroxstudio.online",
+  ]);
+  if (!canonicalOrigins.has(origin)) {
+    return res.status(403).json({ error: "طلب من مصدر غير مصرح به" });
+  }
+  next();
+});
+
 // ── Anti-scraping / bot detection ─────────────────────────────────────────────
 const suspiciousPatterns = [
   /sqlmap/i, /nikto/i, /nmap/i, /masscan/i, /havij/i,
@@ -315,21 +429,81 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({
+  noServer: true,
+  maxPayload: 64 * 1024,
+  perMessageDeflate: false,
+  handleProtocols: (protocols) => protocols.has("qirox-auth") ? "qirox-auth" : false,
+});
 
-wss.on("connection", (ws) => {
-  let userId: string | null = null;
+const QMEET_GUEST_ALLOWED_WS_MESSAGES = new Set([
+  "ping",
+  "webrtc_join",
+  "webrtc_offer",
+  "webrtc_answer",
+  "webrtc_ice",
+  "webrtc_leave",
+  "webrtc_chat",
+  "webrtc_media_state",
+  "webrtc_raise_hand",
+  "webrtc_reaction",
+  "webrtc_screen_share",
+  "webrtc_screen_share_request",
+  "webrtc_draw",
+  "webrtc_whiteboard_clear",
+  "webrtc_poll_create",
+  "webrtc_poll_vote",
+  "webrtc_get_attendance",
+  "webrtc_caption",
+]);
+
+wss.on("connection", (ws, _request, authenticatedUser: any) => {
+  let userId: string | null = authenticatedUser?.id ? String(authenticatedUser.id) : null;
+  const qmeetGuestAdmission = authenticatedUser?.qmeetGuestAdmission || null;
   let currentRoomId: string | null = null;
+
+  if (!userId) {
+    ws.close(1008, "Authentication required");
+    return;
+  }
+  registerSocket(userId, ws);
+  ws.send(JSON.stringify({ type: "online_users", users: getOnlineUsers() }));
 
   ws.on("message", (data) => {
     try {
       const msg = JSON.parse(data.toString());
 
-      if (msg.type === "auth" && msg.userId) {
-        userId = String(msg.userId);
-        registerSocket(userId, ws);
-        ws.send(JSON.stringify({ type: "online_users", users: getOnlineUsers() }));
+      if (msg.type === "auth") {
+        // Kept as a compatibility handshake for existing clients. The identity
+        // is established from the authenticated session/device token above;
+        // never trust a userId supplied by the browser.
+        if (msg.userId && String(msg.userId) !== userId) {
+          ws.close(1008, "Invalid identity");
+        }
         return;
+      }
+
+      if (qmeetGuestAdmission) {
+        const messageType = String(msg.type || "");
+        if (!QMEET_GUEST_ALLOWED_WS_MESSAGES.has(messageType)) return;
+        if (messageType === "ping") {
+          // The global WebSocket heartbeat does not carry a room ID.
+        } else if (messageType === "webrtc_join") {
+          if (String(msg.roomId || "") !== qmeetGuestAdmission.roomId) {
+            ws.close(1008, "Invalid meeting admission");
+            return;
+          }
+        } else if (["webrtc_offer", "webrtc_answer", "webrtc_ice"].includes(messageType)) {
+          if (
+            currentRoomId !== qmeetGuestAdmission.roomId ||
+            !getMeetRoomPeers(qmeetGuestAdmission.roomId).includes(String(msg.to || ""))
+          ) return;
+        } else if (
+          messageType !== "webrtc_leave" &&
+          String(msg.roomId || "") !== qmeetGuestAdmission.roomId
+        ) {
+          return;
+        }
       }
 
       if (!userId) return;
@@ -393,6 +567,27 @@ wss.on("connection", (ws) => {
         (async () => {
           const rId = String(msg.roomId);
           const uid = String(userId);
+
+          if (qmeetGuestAdmission) {
+            if (rId !== qmeetGuestAdmission.roomId || uid !== qmeetGuestAdmission.guestId) {
+              ws.close(1008, "Invalid meeting admission");
+              return;
+            }
+            try {
+              const [{ QMeetingModel: QMF }, { isApprovedQMeetGuest }] = await Promise.all([
+                import("./qmeet-db"),
+                import("./qmeet-guest-admission"),
+              ]);
+              const meeting = await QMF().findOne({ roomName: rId });
+              if (!isApprovedQMeetGuest(meeting, qmeetGuestAdmission)) {
+                ws.close(1008, "Meeting admission expired");
+                return;
+              }
+            } catch {
+              ws.close(1011, "Meeting admission check failed");
+              return;
+            }
+          }
 
           // ── Ban check ─────────────────────────────────────────────────────
           if (isBannedFromRoom(rId, uid)) {
@@ -466,12 +661,25 @@ wss.on("connection", (ws) => {
               }
             }
           }
+          const mediaCapabilities = getQMeetMediaCapabilities();
+          const roomPeersBeforeJoin = getMeetRoomPeers(rId);
+          if (roomPeersBeforeJoin.length >= mediaCapabilities.maxParticipants) {
+            ws.send(JSON.stringify({
+              type: "webrtc_capacity_limit",
+              roomId: rId,
+              mode: mediaCapabilities.mode,
+              maxParticipants: mediaCapabilities.maxParticipants,
+              reason: mediaCapabilities.reason || "تم الوصول إلى الحد الآمن للاجتماع",
+            }));
+            return;
+          }
           currentRoomId = rId;
           const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "", msg.facingMode || "user");
           const hostId = getRoomHost(currentRoomId);
           const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== uid);
           ws.send(JSON.stringify({
             type: "webrtc_peers",
+            selfId: uid,
             peers: existingPeers,
             peerInfoList,
             roomId: currentRoomId,
@@ -503,6 +711,7 @@ wss.on("connection", (ws) => {
 
       if (msg.type === "webrtc_leave" && msg.roomId) {
         const rId = String(msg.roomId);
+        if (qmeetGuestAdmission && (rId !== qmeetGuestAdmission.roomId || currentRoomId !== rId)) return;
         const wasHost = getRoomHost(rId) === userId;
         const remaining = leaveMeetRoom(rId, userId);
         for (const peerId of remaining) {
@@ -883,10 +1092,33 @@ wss.on("connection", (ws) => {
 });
 
 httpServer.on("upgrade", (req, socket, head) => {
-  if (req.url === "/ws") {
-    wss.handleUpgrade(req, socket as any, head, (ws) => {
-      wss.emit("connection", ws, req);
-    });
+  const upgradeUrl = new URL(req.url || "/", "http://localhost");
+  if (upgradeUrl.pathname === "/ws") {
+    const protocols = String(req.headers["sec-websocket-protocol"] || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!protocols.includes("qirox-auth")) {
+      socket.write("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    authenticateWebSocketRequest(req)
+      .then((user) => {
+        if (!user) {
+          socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+        wss.handleUpgrade(req, socket as any, head, (ws) => {
+          wss.emit("connection", ws, req, user);
+        });
+      })
+      .catch(() => {
+        socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+        socket.destroy();
+      });
   }
   // /vite-hmr is handled by Vite middleware, do not destroy
 });
@@ -894,21 +1126,15 @@ httpServer.on("upgrade", (req, socket, head) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+      // Keep dynamic IDs, emails, tokens, and phone numbers out of request
+      // logs. The first three path segments retain enough operational context
+      // to identify the endpoint without logging user-controlled identifiers.
+      const safePath = path.split("/").slice(0, 4).join("/") || "/";
+      let logLine = `${req.method} ${safePath} ${res.statusCode} in ${duration}ms`;
       if (logLine.length > 200) logLine = logLine.slice(0, 200) + "…";
       log(logLine);
     }
@@ -921,13 +1147,17 @@ app.use((req, res, next) => {
 function gracefulShutdown(signal: string) {
   console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
   import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
-  httpServer.close(() => {
-    console.log("[Shutdown] HTTP server closed");
-    mongoose.connection.close().then(() => {
-      console.log("[Shutdown] MongoDB connections closed");
-      cache.destroy();
-      process.exit(0);
-    }).catch(() => process.exit(1));
+  import("./whatsapp-module").then(async ({ waModule }) => {
+    await waModule.shutdown(false);
+  }).catch(() => {}).finally(() => {
+    httpServer.close(() => {
+      console.log("[Shutdown] HTTP server closed");
+      mongoose.connection.close().then(() => {
+        console.log("[Shutdown] MongoDB connections closed");
+        cache.destroy();
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
   });
   setTimeout(() => {
     console.error("[Shutdown] Forced shutdown after timeout");
@@ -1069,6 +1299,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   // Additive only. New /api/v2/proposals/* namespace. No existing endpoint
   // touched. Gate: FEATURE_PROPOSAL_V2 (see server/domains/proposal-v2/routes.ts).
   registerProposalV2Routes(app);
+  registerEmployeeOperationsV2Routes(app);
   registerEmailMarketingRoutes(app);
 
   // ── Email Marketing Cron Jobs ────────────────────────────────────────────────
@@ -1132,6 +1363,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
           res.setHeader("Cache-Control", "no-cache, must-revalidate");
         } else if (filePath.includes("/assets/")) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else {
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
         }
       },
     }));

@@ -104,10 +104,12 @@ export async function deleteCachedMessage(
 export async function findCachedMessages(
   accountId: string,
   folder: string,
-  limit: number
+  limit: number,
+  offset = 0,
 ): Promise<any[]> {
   return MailCacheModel.find({ accountId, folder })
     .sort({ date: -1 })
+    .skip(offset)
     .limit(limit)
     .lean();
 }

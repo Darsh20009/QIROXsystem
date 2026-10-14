@@ -1,15 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-auth";
 import {
   Search, MessageCircle, Phone, User2, Copy, Star,
   CheckCircle2, Clock, Filter, Pencil, X, Send,
-  Smartphone, AlertCircle, ChevronDown, ChevronUp,
+  Smartphone, AlertCircle, ChevronDown, ChevronUp, QrCode,
   LayoutGrid, List, ExternalLink, Sparkles,
 } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -90,7 +92,10 @@ const DEFAULT_TEMPLATES = [
 export default function EmployeeWhatsappCRM() {
   const { lang } = useI18n();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { data: currentUser } = useUser();
   const L = lang === "ar";
+  const canManageWhatsApp = ["admin", "manager"].includes(currentUser?.role);
 
   // ── State
   const [search, setSearch] = useState("");
@@ -223,7 +228,24 @@ export default function EmployeeWhatsappCRM() {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {canManageWhatsApp && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setLocation("/admin/whatsapp")}
+              className="h-10 gap-2 bg-black px-3 text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85"
+              aria-label={L ? "فتح ربط واتساب والباركود وفك الربط والدردشات" : "Open WhatsApp connection, QR, disconnect, and chats"}
+            >
+              <QrCode className="h-4 w-4 shrink-0" />
+              <span className="flex flex-col items-start leading-tight">
+                <span>{L ? "إدارة واتساب" : "WhatsApp management"}</span>
+                <span className="text-[9px] font-normal opacity-70">
+                  {L ? "الربط · QR · فك الربط · الدردشات" : "Connect · QR · Disconnect · Chats"}
+                </span>
+              </span>
+            </Button>
+          )}
           <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-700/30 rounded-xl px-3 py-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">{withWA} لديهم واتساب</span>

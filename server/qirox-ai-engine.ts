@@ -141,6 +141,28 @@ export async function fetchLiveContext(query: string): Promise<string> {
     ]);
     parts.push(`👥 العملاء: ${clientCount} | الفريق: ${staffCount}`);
 
+    // Partners are public company context. Keep the list live so answers about
+    // QIROX's work never rely on stale or invented client names.
+    try {
+      const { storage } = await import("./storage");
+      const partners = await storage.getPartners();
+      const partnerLines = partners.map((partner: any) => {
+        let website = "";
+        try {
+          const parsed = new URL(String(partner.websiteUrl || ""));
+          if (
+            ["http:", "https:"].includes(parsed.protocol)
+            && parsed.hostname.includes(".")
+            && !parsed.hostname.split(".").some(part => !part)
+          ) {
+            website = ` — ${parsed.toString()}`;
+          }
+        } catch {}
+        return `- ${partner.nameAr || partner.name}${partner.nameAr && partner.name ? ` / ${partner.name}` : ""}${website}`;
+      });
+      if (partnerLines.length) parts.push(`🤝 الشركاء المنشورون:\n${partnerLines.join("\n")}`);
+    } catch {}
+
     // Project stats when query is about projects/work
     if (/مشروع|عمل|project|contract|order|خدم/i.test(query)) {
       try {
@@ -192,6 +214,7 @@ ${extra        ? `\n📌 **ملاحظات إضافية:**\n${extra}\n` : ""}
 - لا تبدأ برد بتحية إذا المحادثة مستمرة (لا "هلا" أو "مرحبا" بعد الرسالة الأولى)
 - إذا ما عندك معلومة كافية، قل بصراحة واقترح التواصل المباشر
 - اعتمد على البيانات الحية أولاً، ثم المعلومات من قاعدة المعرفة
+ - عند السؤال عن QIROX أو أعمالها أو عملائها أو الشركاء، اذكر الشركاء ذوي الصلة وروابطهم عندما تتوفر في البيانات الحية، ولا تخترع أي شريك أو رابط
 - لا ترد أبداً بالصينية
 - إذا سُئلت عن بيانات حساسة (عقود خاصة، بيانات مالية تفصيلية) وجّه للتواصل المباشر`;
 }

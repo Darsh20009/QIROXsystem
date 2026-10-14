@@ -30,7 +30,7 @@ export {
 export { ConsoleLogger, createLogger } from "./logger-impl";
 // Re-export the ILogger interface so callers can type-annotate without
 // importing from the inner logger/ directory.
-export type { ILogger } from "../logger/ILogger";
+export type { ILogger } from "./logger/ILogger";
 
 // ── Feature Flags ─────────────────────────────────────────────────────────────
 export {
@@ -58,7 +58,7 @@ export { createHealthRouter, type HealthRouterOptions } from "./health";
 
 import { container }      from "./container";
 import { TOKENS }         from "./tokens";
-import type { ILogger }   from "../logger/ILogger";
+import type { ILogger }   from "./logger/ILogger";
 import type { FeatureFlagEngine as FFE } from "./feature-flags";
 import type { QiroxEventBus as QEB }     from "./event-bus";
 import type { LoadedConfig }             from "./config-loader";

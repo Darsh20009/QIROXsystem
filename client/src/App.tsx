@@ -49,13 +49,15 @@ const PhoneVerify = lazy(() => import("@/pages/PhoneVerify"));
 const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
 const AdminServices = lazy(() => import("@/pages/AdminServices"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
+const EmployeeDraftProjects = lazy(() => import("@/pages/EmployeeDraftProjects"));
 const AdminEmployees = lazy(() => import("@/pages/AdminEmployees"));
+const EmployeeOperations = lazy(() => import("@/pages/EmployeeOperations"));
 const AdminGamification = lazy(() => import("@/pages/AdminGamification"));
 const AdminFinance = lazy(() => import("@/pages/AdminFinance"));
 const Login = lazy(() => import("@/pages/Login"));
 const OrderFlow = lazy(() => import("@/pages/OrderFlow"));
 const ProjectDetails = lazy(() => import("@/pages/ProjectDetails"));
-const About = lazy(() => import("@/pages/About"));
+const About = lazy(() => import("@/pages/AboutReferencePage"));
 const ServiceDetail = lazy(() => import("@/pages/ServiceDetail"));
 const Prices = lazy(() => import("@/pages/Prices"));
 const Customers = lazy(() => import("@/pages/Customers"));
@@ -116,6 +118,8 @@ const EmployeeCRM = lazy(() => import("@/pages/EmployeeCRM"));
 const CrmV2Page = lazy(() => import("@/features/crm-v2/CrmV2Page"));
 const ProposalV2Page = lazy(() => import("@/features/proposal-v2/ProposalV2Page"));
 const EmployeeWhatsappCRM = lazy(() => import("@/pages/EmployeeWhatsappCRM"));
+const EmployeeManualMarketing = lazy(() => import("@/pages/EmployeeManualMarketing"));
+const EmployeePotentialClients = lazy(() => import("@/pages/EmployeePotentialClients"));
 const EmployeeLeadsData = lazy(() => import("@/pages/EmployeeLeadsData"));
 const LeadCallRating = lazy(() => import("@/pages/LeadCallRating"));
 const EmployeeMyFinance = lazy(() => import("@/pages/EmployeeMyFinance"));
@@ -227,8 +231,15 @@ const ADMIN_MANAGER_HR = ["admin", "manager", "hr", "data_entry"] as const;
 const ADMIN_MANAGER_ACCOUNTANT_HR = ["admin", "manager", "accountant", "hr"] as const;
 const ADMIN_ONLY = ["admin"] as const;
 const ADMIN_MANAGER_SALES_ACCOUNTANT = ["admin", "manager", "sales_manager", "accountant"] as const;
+const DRAFT_PROJECT_STAFF_ROLES = [
+  "admin", "manager", "owner", "ceo", "cto", "employee", "developer", "designer",
+  "support", "sales", "sales_manager", "marketing", "accountant", "data_entry", "hr",
+  "merchant", "content",
+] as const;
 
 function G_Employees() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_HR]}><AdminEmployees /></RoleGuard>; }
+function G_EmployeeOperations() { return <RoleGuard allowedRoles={["admin", "manager", "hr"]}><EmployeeOperations /></RoleGuard>; }
+function G_DraftProjects() { return <RoleGuard allowedRoles={[...DRAFT_PROJECT_STAFF_ROLES]}><EmployeeDraftProjects /></RoleGuard>; }
 function G_Finance()   { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_ACCOUNTANT]}><AdminFinance /></RoleGuard>; }
 function G_Analytics() { return <RoleGuard allowedRoles={[...ADMIN_MANAGER_SALES_ACCOUNTANT]}><AdminAnalytics /></RoleGuard>; }
 function G_ActivityLog(){ return <RoleGuard allowedRoles={[...ADMIN_ONLY]}><AdminActivityLog /></RoleGuard>; }
@@ -281,6 +292,7 @@ function HomeGate() {
 }
 
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/alliances", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding", "/start", "/quick-start", "/track", "/our-tools", "/meet/join", "/rate-call", "/posters", "/community", "/sector/ecommerce", "/sector/restaurant", "/sector/corporate", "/sector/healthcare", "/sector/realestate", "/sector/beauty", "/sector/education", "/sector/ai", "/youssef-darwish", "/team/youssef-darwish", "/mohammed-aldabbani", "/team/mohammed-aldabbani", "/ai-docs", "/support"];
+const CLIENT_BLOCKED_ROUTE_PREFIXES = ["/admin", "/employee", "/supplier", "/sales", "/investor"];
 
 
 function PublicRouter() {
@@ -361,8 +373,10 @@ function AdminRouter() {
         <Route path="/admin" component={AdminSystemMap} />
         <Route path="/admin/services" component={AdminServices} />
         <Route path="/admin/orders" component={AdminOrders} />
+        <Route path="/employee/draft-projects" component={G_DraftProjects} />
         <Route path="/admin/project-data" component={AdminProjectData} />
         <Route path="/admin/employees" component={G_Employees} />
+        <Route path="/admin/employee-operations" component={G_EmployeeOperations} />
         <Route path="/admin/gamification" component={AdminGamification} />
         <Route path="/admin/finance" component={G_Finance} />
         <Route path="/admin/templates" component={AdminTemplates} />
@@ -459,6 +473,8 @@ function AdminRouter() {
         <Route path="/employee/crm-v2" component={CrmV2Page} />
         <Route path="/employee/proposals-v2" component={ProposalV2Page} />
         <Route path="/employee/whatsapp-crm" component={EmployeeWhatsappCRM} />
+        <Route path="/employee/manual-marketing" component={EmployeeManualMarketing} />
+        <Route path="/employee/potential-clients" component={EmployeePotentialClients} />
         <Route path="/employee/leads-data" component={EmployeeLeadsData} />
         <Route path="/employee/my-finance" component={EmployeeMyFinance} />
         <Route path="/admin/kanban" component={G_Kanban} />
@@ -534,7 +550,9 @@ const ALL_PAGES = [
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
   { title: "طلبات تجديد المشاريع", titleEn: "Project Renewal Requests", url: "/admin/project-renewals", group: "employee" },
   { title: "QIROX AI Hub", titleEn: "QIROX AI Hub", url: "/admin/qirox-ai", group: "employee" },
-  { title: "واتساب CRM", titleEn: "WhatsApp CRM", url: "/admin/whatsapp", group: "employee" },
+  { title: "واتساب CRM", titleEn: "WhatsApp CRM", url: "/employee/whatsapp-crm", group: "employee" },
+  { title: "التسويق اليدوي", titleEn: "Manual Marketing", url: "/employee/manual-marketing", group: "employee" },
+  { title: "العملاء المحتملون", titleEn: "Potential Clients", url: "/employee/potential-clients", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
   { title: "المالية والحسابات", titleEn: "Finance", url: "/admin/finance", group: "employee" },
   { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
@@ -1254,6 +1272,10 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 function AppInner() {
   const [location, navigate] = useLocation();
   const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location === "/employee/qi-agent" || location === "/employee/studio" || location === "/admin/studio" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const hideCompanion = location === "/employee/mail"
+    || location === "/admin/mail-accounts"
+    || location === "/admin/email-marketing"
+    || location === "/admin/email-guide";
   const { data: user, isLoading: userLoading } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
@@ -1308,12 +1330,22 @@ function AppInner() {
     );
   }
 
-  const isPublicRoute = publicRoutes.some(r => location === r)
+  const normalizedPublicLocation = location.replace(/\/+$/, "") || "/";
+  const isPublicRoute = publicRoutes.some(r => normalizedPublicLocation === r)
     || location.startsWith("/templates/")
     || location.startsWith("/s/")
     || location.startsWith("/sector/")
     || location.startsWith("/ep/")
     || location.startsWith("/team/");
+
+  // A client must never render staff/admin pages, even when a stale
+  // post-login URL or a manually entered address points there. This is
+  // intentionally outside AdminRouter so it covers every current and future
+  // route registered in that large router.
+  const isClientBlockedRoute =
+    !isPublicRoute &&
+    user?.role === "client" &&
+    CLIENT_BLOCKED_ROUTE_PREFIXES.some((prefix) => location === prefix || location.startsWith(`${prefix}/`));
 
   // Guard: redirect unauthenticated users to /login (must be before any early returns)
   useEffect(() => {
@@ -1323,6 +1355,12 @@ function AppInner() {
     }
   }, [isPublicRoute, userLoading, user, location]);
 
+  useEffect(() => {
+    if (isClientBlockedRoute) {
+      navigate("/dashboard");
+    }
+  }, [isClientBlockedRoute, navigate]);
+
   // While auth is still resolving on private routes, show the branded loader
   if (!isPublicRoute && userLoading) {
     return <QiroxLoadingScreen />;
@@ -1330,6 +1368,10 @@ function AppInner() {
 
   if (!isPublicRoute && !userLoading && user === null) {
     return null;
+  }
+
+  if (isClientBlockedRoute) {
+    return <QiroxLoadingScreen />;
   }
 
   if (isPublicRoute) {
@@ -1427,7 +1469,7 @@ function AppInner() {
             <MobileBottomNav />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
-            <QiroxCompanion />
+            {!hideCompanion && <QiroxCompanion />}
             <Toaster />
           </div>
         </div>

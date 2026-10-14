@@ -21,8 +21,13 @@ import {
   resetGitHubVisibilitySelection,
 } from "@/lib/github-visibility-state";
 import { ProjectIntegrationsPanel } from "@/components/ProjectIntegrationsPanel";
+import ProjectInternalFormsEditor from "@/components/ProjectInternalFormsEditor";
 import ProjectSubscriptionCard from "@/components/ProjectSubscriptionCard";
 import AdminProjectSubscriptionCell from "@/components/AdminProjectSubscriptionCell";
+import { SaasProjectBuilderPanel } from "@/components/SaasProjectBuilderPanel";
+import { ProjectRepositoryName } from "@/components/ProjectRepositoryName";
+import type { Partner } from "@shared/schema";
+import { findPartnerForProject, getPartnerLogoPresentation } from "@/lib/partner-logo";
 
 interface Employee {
   id: string;
@@ -86,6 +91,30 @@ function getOrderAssigneeIds(order: Pick<OrderData, "assignedTo" | "assignedToId
   const legacy = order?.assignedTo?._id || order?.assignedTo?.id || order?.assignedTo;
   const ids = Array.isArray(order?.assignedToIds) ? order.assignedToIds : [];
   return [...new Set([legacy, ...ids].filter(Boolean).map(String))];
+}
+
+function OrderProjectLogo({ orderId, projectId }: { orderId: string; projectId?: string }) {
+  const { data } = useQuery<any>({
+    queryKey: ["/api/admin/orders", orderId, "saas-builder"],
+    enabled: !!orderId && !!projectId,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/orders/${orderId}/saas-builder`, { credentials: "include" });
+      if (!response.ok) {
+        const error = new Error(String(response.status)) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
+      }
+      return response.json();
+    },
+  });
+  const logoUrl = data?.config?.logoUrl || data?.logoUrl
+    || (Array.isArray(data?.projectFiles)
+      ? data.projectFiles.find((file: any) => file.logoUrl || file.type === "logo" || /logo|شعار/i.test(file.title || file.titleAr || ""))?.logoUrl
+        || data.projectFiles.find((file: any) => file.type === "logo" || /logo|شعار/i.test(file.title || file.titleAr || ""))?.url
+      : "");
+  return logoUrl ? <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 rounded-lg border border-black/[0.08] bg-white object-contain p-0.5" /> : null;
 }
 
 function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
@@ -225,6 +254,10 @@ export default function AdminOrders() {
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
+  });
+
+  const { data: partners = [] } = useQuery<Partner[]>({
+    queryKey: ["/api/partners"],
   });
 
   const { data: employees } = useQuery<Employee[]>({
@@ -1130,6 +1163,24 @@ export default function AdminOrders() {
             <tbody>
               {filteredOrders.map((order) => {
                 const assigneeNames = getAssigneeNames(order);
+                const projectLogo = (order as any).logoUrl
+                  || (order as any).projectLogoUrl
+                  || (order as any).project?.logoUrl
+                  || (Array.isArray((order as any).projectFiles)
+                    ? (order as any).projectFiles.find((file: any) => file.logoUrl || file.type === "logo" || /logo|شعار/i.test(file.title || file.titleAr || ""))?.logoUrl
+                      || (order as any).projectFiles.find((file: any) => file.type === "logo" || /logo|شعار/i.test(file.title || file.titleAr || ""))?.url
+                    : "");
+                const matchedPartner = findPartnerForProject(
+                  partners,
+                  (order as any).projectPartnerId || (order as any).project?.branding?.partnerId,
+                  [order.businessName, (order as any).projectPublicName, (order as any).projectPublicNameAr,
+                    (order as any).project?.branding?.publicName, (order as any).project?.branding?.publicNameAr],
+                );
+                const partnerLogo = matchedPartner ? getPartnerLogoPresentation(matchedPartner) : null;
+                const displayProjectLogo = projectLogo || partnerLogo?.src || "";
+                const isRestaurantSaasOrder = /cafe|café|coffee|restaurant|مقهى|كافيه|مطعم/i.test(
+                  `${order.sector || ""} ${order.projectType || ""} ${(order as any).serviceType || ""}`,
+                );
                 return (
                   <tr key={order.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-order-${order.id}`}>
                     <td className="p-4">
@@ -1138,7 +1189,14 @@ export default function AdminOrders() {
                       </p>
                     </td>
                     <td className="p-4">
-                      <p className="text-sm font-semibold text-black">{order.businessName || order.projectType || order.sector || "—"}</p>
+                      <div className="flex items-center gap-2">
+                        {displayProjectLogo
+                          ? <img src={displayProjectLogo} alt="" className={`h-9 w-9 shrink-0 rounded-lg border border-black/[0.08] ${partnerLogo?.darkSurface && !projectLogo ? "bg-[#18201d]" : "bg-white"} object-contain p-0.5`} />
+                          : order.projectId && isRestaurantSaasOrder
+                            ? <OrderProjectLogo orderId={order.id} projectId={order.projectId} />
+                            : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-black/[0.025] text-black/35"><Package className="h-4 w-4" /></span>}
+                        <p className="text-sm font-semibold text-black">{order.businessName || order.projectType || order.sector || "—"}</p>
+                      </div>
                       {(order.projectType || order.sector) && order.businessName && (
                         <p className="text-[10px] text-black/35 mt-0.5">{order.projectType || order.sector}</p>
                       )}
@@ -1309,6 +1367,11 @@ export default function AdminOrders() {
                   <TabsTrigger value="files" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <Paperclip className="w-3 h-3" />{L ? "ملفات المشروع" : "Project Files"}
                   </TabsTrigger>
+                  {orderProject && (
+                    <TabsTrigger value="saas-builder" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0" data-testid="tab-saas-builder">
+                      <Wand2 className="w-3 h-3" />صنع المشروع
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="team" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black dark:border-white data-[state=active]:text-black dark:text-white data-[state=active]:bg-transparent h-10 px-4 gap-1 flex-shrink-0">
                     <Users className="w-3 h-3" />{L ? "فريق العمل" : "Team"}
                   </TabsTrigger>
@@ -2281,6 +2344,13 @@ export default function AdminOrders() {
                            mode={["admin", "manager"].includes(currentUser?.role || "") ? "manage" : "readonly"}
                            onSecretCreated={addIntegrationKeyHint}
                          />
+                         {!isDataEntry && (
+                           <ProjectInternalFormsEditor
+                             key={selectedOrder.id}
+                             orderId={selectedOrder.id}
+                             initialForms={selectedOrderSpecs?.internalForms}
+                           />
+                         )}
 
                         {/* Design Notes */}
                         <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
@@ -2525,6 +2595,7 @@ export default function AdminOrders() {
 
                       {["admin", "manager"].includes(currentUser?.role || "") && (
                         <div className="border border-black/[0.08] rounded-2xl p-4 bg-white space-y-4" data-testid="github-provisioning-panel">
+                          <ProjectRepositoryName orderId={String(selectedOrder.id)} />
                           {orderProject && (
                             <ProjectSubscriptionCard project={orderProject} lang={lang} compact />
                           )}
@@ -3359,6 +3430,14 @@ export default function AdminOrders() {
                 </TabsContent>
 
                 {/* Tab 6: Team Members */}
+                <TabsContent value="saas-builder" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-4 sm:p-6">
+                      {selectedOrder && orderProject && <SaasProjectBuilderPanel key={selectedOrder.id} orderId={selectedOrder.id} />}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
                 <TabsContent value="team" className="flex-1 overflow-hidden mt-0">
                   <ScrollArea className="h-full">
                     <div className="px-6 py-5 space-y-6">

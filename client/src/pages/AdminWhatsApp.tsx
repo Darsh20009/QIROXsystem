@@ -20,16 +20,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2, Wifi, WifiOff, QrCode, MessageSquare, Settings, Send,
   Bot, User, Phone, RefreshCw, Plus, X, Zap, ChevronLeft, Check,
-  BrainCircuit, Smartphone, Paperclip
+  BrainCircuit, Smartphone
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface WAStatus { status: "disconnected"|"qr"|"connecting"|"connected"; qr: string|null; phoneNumber: string|null; }
+interface WAStatus { status: "disconnected"|"qr"|"connecting"|"connected"; qr: string|null; phoneNumber: string|null; error: string|null; }
 interface WAChat { _id: string; chatId: string; name: string; phoneNumber: string; lastMessage: string; lastMessageAt: string; unreadCount: number; aiEnabled: boolean; }
-interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; mediaName?: string; mimeType?: string; }
+interface WAMessage { _id: string; chatId: string; fromMe: boolean; senderName?: string; body: string; timestamp: string; aiGenerated?: boolean; mediaType?: string; }
 interface WASavedMessage { _id: string; text: string; createdAt?: string; }
 interface WASettings { adminNumbers: string[]; aiEnabled: boolean; aiDelaySeconds: number; systemPromptExtra: string; connectedPhone?: string; savedMessages: WASavedMessage[]; }
 interface NotificationHealth {
@@ -49,6 +49,22 @@ const fmtDate = (ts: string) => {
   return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
 };
 
+function isRawWhatsAppQr(value: unknown): value is string {
+  return typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 2048 &&
+    !value.startsWith("data:");
+}
+
+function parseWAStatus(value: any): WAStatus {
+  return {
+    status: value?.status || "disconnected",
+    qr: isRawWhatsAppQr(value?.qr) ? value.qr : null,
+    phoneNumber: value?.phoneNumber || null,
+    error: typeof value?.error === "string" ? value.error : null,
+  };
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function AdminWhatsApp() {
   const { toast } = useToast();
@@ -56,17 +72,16 @@ export default function AdminWhatsApp() {
   const L = lang === "ar";
   const qc = useQueryClient();
 
-  const [waStatus, setWaStatus] = useState<WAStatus>({ status: "disconnected", qr: null, phoneNumber: null });
+  const [waStatus, setWaStatus] = useState<WAStatus>({ status: "disconnected", qr: null, phoneNumber: null, error: null });
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newAdminNum, setNewAdminNum] = useState("");
   const [newSavedMessage, setNewSavedMessage] = useState("");
   const [settings, setSettings] = useState<WASettings>({ adminNumbers: [], aiEnabled: true, aiDelaySeconds: 5, systemPromptExtra: "", savedMessages: [] });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<EventSource | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const resetInProgressRef = useRef(false);
 
   // ── SSE connection ──────────────────────────────────────────────────────
   const connectSSE = useCallback(() => {
@@ -76,7 +91,7 @@ export default function AdminWhatsApp() {
       try {
         const evt = JSON.parse(e.data);
         if (evt.type === "status") {
-          setWaStatus({ status: evt.status, qr: evt.qr, phoneNumber: evt.phoneNumber });
+          setWaStatus(parseWAStatus(evt));
         } else if (evt.type === "message" || evt.type === "chat_update") {
           qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/chats"] });
           if (evt.chatId === selectedChatId) {
@@ -92,7 +107,15 @@ export default function AdminWhatsApp() {
   useEffect(() => {
     // Load initial status
     fetch("/api/admin/whatsapp/status", { credentials: "include" })
-      .then(r => r.json()).then(setWaStatus).catch(() => {});
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "تعذر قراءة حالة اتصال واتساب");
+        setWaStatus(parseWAStatus(data));
+      })
+      .catch((error: any) => setWaStatus((current) => ({
+        ...current,
+        error: error?.message || "تعذر قراءة حالة اتصال واتساب",
+      })));
     connectSSE();
     return () => { sseRef.current?.close(); };
   }, []);
@@ -103,22 +126,27 @@ export default function AdminWhatsApp() {
     connectSSE();
   }, [selectedChatId]);
 
-  // ── QR polling fallback (every 2s while connecting/qr — in case SSE events are buffered) ──
+  // ── QR polling fallback (raw challenge, in case SSE events are buffered) ──
   useEffect(() => {
     const needsQR = waStatus.status === "connecting" || waStatus.status === "qr";
     if (!needsQR) return;
     // Poll immediately then every 2s
     const poll = () => {
+      if (resetInProgressRef.current) return;
       fetch("/api/admin/whatsapp/qr-image", { credentials: "include" })
-        .then(r => r.json())
-        .then((d: { status: string; qr: string | null }) => {
-          if (d.qr && d.qr !== waStatus.qr) {
-            setWaStatus(prev => ({ ...prev, status: d.status as any, qr: d.qr }));
-          } else if (d.status && d.status !== waStatus.status && !d.qr) {
-            setWaStatus(prev => ({ ...prev, status: d.status as any }));
-          }
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "تعذر التحقق من رمز واتساب");
+          if (resetInProgressRef.current) return;
+          setWaStatus(parseWAStatus(data));
         })
-        .catch(() => {});
+        .catch((error: any) => {
+          if (resetInProgressRef.current) return;
+          setWaStatus((current) => ({
+            ...current,
+            error: error?.message || "تعذر التحقق من رمز واتساب",
+          }));
+        });
     };
     poll();
     const interval = setInterval(poll, 2000);
@@ -176,25 +204,44 @@ export default function AdminWhatsApp() {
   // ── Mutations ───────────────────────────────────────────────────────────
   const connectMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/admin/whatsapp/connect").then(r => r.json()),
-    onSuccess: () => toast({ title: L ? "جاري الاتصال..." : "Connecting..." }),
-    onError: () => toast({ title: L ? "فشل الاتصال" : "Connection failed", variant: "destructive" }),
+    onMutate: () => setWaStatus({ status: "connecting", qr: null, phoneNumber: null, error: null }),
+    onSuccess: () => {
+      setWaStatus((current) => current.status === "disconnected" && !current.error
+        ? { ...current, status: "connecting" }
+        : current);
+      toast({ title: L ? "جاري تجهيز اتصال واتساب والباركود..." : "Preparing WhatsApp connection and QR..." });
+    },
+    onError: (error: any) => {
+      setWaStatus({ status: "disconnected", qr: null, phoneNumber: null, error: error?.message || "تعذر بدء اتصال واتساب" });
+      toast({ title: L ? "فشل الاتصال" : "Connection failed", description: error?.message, variant: "destructive" });
+    },
   });
 
   const disconnectMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/admin/whatsapp/disconnect").then(r => r.json()),
-    onSuccess: () => { setWaStatus({ status: "disconnected", qr: null, phoneNumber: null }); toast({ title: L ? "تم قطع الاتصال" : "Disconnected" }); },
+    onSuccess: () => { setWaStatus({ status: "disconnected", qr: null, phoneNumber: null, error: null }); toast({ title: L ? "تم قطع الاتصال" : "Disconnected" }); },
   });
 
-  // Disconnect (clears saved session) then immediately start a fresh connection → new QR
+  // Atomically clear the saved session and begin a fresh QR connection.
   const resetAndReconnectMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/admin/whatsapp/disconnect").then(r => r.json());
-      setWaStatus({ status: "disconnected", qr: null, phoneNumber: null });
-      await new Promise(res => setTimeout(res, 700));
-      return apiRequest("POST", "/api/admin/whatsapp/connect").then(r => r.json());
+      const response = await apiRequest("POST", "/api/admin/whatsapp/reset-session");
+      return response.json();
     },
-    onSuccess: () => toast({ title: L ? "جاري توليد باركود جديد..." : "Generating new QR code..." }),
-    onError: () => toast({ title: L ? "فشل إعادة الربط" : "Reset failed", variant: "destructive" }),
+    onMutate: () => {
+      resetInProgressRef.current = true;
+      setWaStatus({ status: "connecting", qr: null, phoneNumber: null, error: null });
+    },
+    onSuccess: (result: any) => {
+      resetInProgressRef.current = false;
+      if (result?.status) setWaStatus(parseWAStatus(result.status));
+      toast({ title: L ? "جاري توليد باركود جديد..." : "Generating new QR code..." });
+    },
+    onError: (error: any) => {
+      resetInProgressRef.current = false;
+      setWaStatus({ status: "disconnected", qr: null, phoneNumber: null, error: error?.message || "تعذر إعادة ربط واتساب" });
+      toast({ title: L ? "فشل إعادة الربط" : "Reset failed", description: error?.message, variant: "destructive" });
+    },
   });
 
   const sendMutation = useMutation({
@@ -206,39 +253,6 @@ export default function AdminWhatsApp() {
     },
     onError: (e: any) => toast({ title: e.message || "فشل الإرسال", variant: "destructive" }),
   });
-
-  const sendMediaMutation = useMutation({
-    mutationFn: async ({ file, caption }: { file: File; caption: string }) => {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("caption", caption);
-      const response = await fetch(`/api/admin/whatsapp/chats/${encodeURIComponent(selectedChatId!)}/send-media`, {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || (L ? "تعذر إرسال الملف" : "Failed to send attachment"));
-      return data;
-    },
-    onSuccess: () => {
-      setReplyText("");
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/messages", selectedChatId] });
-      qc.invalidateQueries({ queryKey: ["/api/admin/whatsapp/chats"] });
-    },
-    onError: (e: any) => toast({ title: e.message || (L ? "فشل إرسال الملف" : "Failed to send attachment"), variant: "destructive" }),
-  });
-
-  const handleSend = () => {
-    if (selectedFile) {
-      sendMediaMutation.mutate({ file: selectedFile, caption: replyText.trim() });
-    } else if (replyText.trim()) {
-      sendMutation.mutate(replyText);
-    }
-  };
-  const sending = sendMutation.isPending || sendMediaMutation.isPending;
 
   const aiToggleMutation = useMutation({
     mutationFn: ({ chatId, enabled }: { chatId: string; enabled: boolean }) =>
@@ -355,7 +369,12 @@ export default function AdminWhatsApp() {
             <h2 className="text-lg font-bold text-black dark:text-white mb-1">{L ? "ربط واتساب" : "Link WhatsApp"}</h2>
             <p className="text-sm text-black/50 dark:text-white/50 max-w-xs">{L ? "افتح واتساب على هاتفك ← الإعدادات ← الأجهزة المرتبطة ← ربط جهاز" : "Open WhatsApp → Settings → Linked Devices → Link a Device"}</p>
           </div>
-          {waStatus.qr ? (
+          {waStatus.error && (
+            <p role="alert" className="max-w-md rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              {waStatus.error}
+            </p>
+          )}
+          {isRawWhatsAppQr(waStatus.qr) ? (
             <div className="p-4 bg-white rounded-2xl shadow-xl border border-black/[0.06]">
               <QRCodeCanvas value={waStatus.qr} size={220} level="M" includeMargin={false} bgColor="#ffffff" fgColor="#000000" />
             </div>
@@ -395,7 +414,12 @@ export default function AdminWhatsApp() {
             <p className="font-bold text-black dark:text-white mb-1">{L ? "واتساب غير متصل" : "WhatsApp not connected"}</p>
             <p className="text-sm text-black/40 dark:text-white/40">{L ? "اضغط اتصال لربط الواتساب بالنظام" : "Click Connect to link WhatsApp to the system"}</p>
           </div>
-          <Button className="gap-2 bg-[#25D366] hover:bg-[#22c55e] text-white" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending}>
+          {waStatus.error && (
+            <p role="alert" className="max-w-md rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              {waStatus.error}
+            </p>
+          )}
+          <Button className="gap-2 bg-[#25D366] hover:bg-[#22c55e] text-white" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending || resetAndReconnectMutation.isPending}>
             {connectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
             {L ? "ربط واتساب الآن" : "Connect WhatsApp Now"}
           </Button>
@@ -504,15 +528,7 @@ export default function AdminWhatsApp() {
                         {!msg.fromMe && msg.senderName && (
                           <p className="text-[9px] font-bold text-[#25D366] mb-0.5">{msg.senderName}</p>
                         )}
-                        {msg.mediaType && (
-                          <div className="flex items-center gap-2 mb-1 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-2 py-1.5">
-                            <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#128C7E]" />
-                            <span className="text-xs text-black/70 dark:text-white/70 break-all">{msg.mediaName || msg.mediaType}</span>
-                          </div>
-                        )}
-                        {msg.body && msg.body !== `[${msg.mediaName}]` && (
-                          <p className="text-[13px] text-black dark:text-white leading-snug whitespace-pre-wrap">{msg.body}</p>
-                        )}
+                        <p className="text-[13px] text-black dark:text-white leading-snug whitespace-pre-wrap">{msg.body}</p>
                         <div className="flex items-center gap-1 justify-end mt-0.5">
                           {msg.aiGenerated && <Bot className="w-2.5 h-2.5 text-[#25D366]" title="AI generated" />}
                           <span className="text-[9px] text-black/30 dark:text-white/30">{fmtTime(msg.timestamp)}</span>
@@ -551,72 +567,29 @@ export default function AdminWhatsApp() {
                        ))}
                      </div>
                    )}
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 mb-2 rounded-lg border border-black/10 dark:border-white/10 px-2.5 py-1.5">
-                      <Paperclip className="w-3.5 h-3.5 shrink-0 text-[#128C7E]" />
-                      <span className="flex-1 min-w-0 truncate text-xs text-black/70 dark:text-white/70">{selectedFile.name}</span>
-                      <span className="text-[10px] text-black/40 dark:text-white/40">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="p-1 rounded hover:bg-black/[0.06] dark:hover:bg-white/[0.08]"
-                        aria-label={L ? "إزالة الملف" : "Remove attachment"}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
                   <div className="flex items-end gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,video/mp4,video/3gpp,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt,.csv,.json"
-                      className="hidden"
-                      onChange={event => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 20 * 1024 * 1024) {
-                          toast({ title: L ? "الحد الأقصى لحجم الملف 20 ميجابايت" : "Maximum file size is 20 MB", variant: "destructive" });
-                          event.target.value = "";
-                          return;
-                        }
-                        setSelectedFile(file);
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={sending}
-                      title={L ? "إرفاق ملف" : "Attach file"}
-                      className="w-10 h-10 shrink-0 rounded-xl border-black/10 dark:border-white/10"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </Button>
                     <Textarea
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
-                          handleSend();
+                          if (replyText.trim()) sendMutation.mutate(replyText);
                         }
                       }}
-                      placeholder={selectedFile ? (L ? "أضف وصفاً للملف..." : "Add a caption...") : (L ? "اكتب رسالة... (Enter للإرسال)" : "Type a message... (Enter to send)")}
+                      placeholder={L ? "اكتب رسالة... (Enter للإرسال)" : "Type a message... (Enter to send)"}
                       rows={1}
                       className="flex-1 resize-none text-sm border-black/10 dark:border-white/10 rounded-xl min-h-[38px] max-h-[120px]"
                     />
                     <Button
                       size="icon"
-                      onClick={handleSend}
-                      disabled={sending || (!replyText.trim() && !selectedFile)}
+                      onClick={() => { if (replyText.trim()) sendMutation.mutate(replyText); }}
+                      disabled={sendMutation.isPending || !replyText.trim()}
                       className="bg-[#25D366] hover:bg-[#22c55e] text-white rounded-xl w-10 h-10 shrink-0"
                     >
-                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
-                  <p className="text-[9px] text-black/30 dark:text-white/30 mt-1 text-center">{L ? "الصور والصوت والفيديو حتى 16 ميجابايت، والملفات حتى 20 ميجابايت" : "Images, audio and video up to 16 MB; documents up to 20 MB"}</p>
                   <p className="text-[9px] text-black/20 dark:text-white/20 mt-1 text-center">{L ? "الرد اليدوي يوقف الذكاء الاصطناعي مؤقتاً لمدة 30 دقيقة" : "Manual reply pauses AI for 30 minutes"}</p>
                 </div>
               </>

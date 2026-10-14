@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLogin, useRegister, saveDeviceToken, getUserHomePath } from "@/hooks/use-auth";
+import { useLogin, useRegister, saveDeviceToken, getUserHomePath, getSafePostLoginPath } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
 const qiroxLogoPath = "/qirox-icon-nobg.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
-import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 import { isCapacitorNative, getServerUrl } from "@/lib/server-url";
@@ -72,16 +71,6 @@ function AuthPremiumPanel({ isRegister, isEmployeeRegister, googleEnabled, githu
       {/* Subtle top-right light bloom */}
       <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 65%)" }} />
-
-      {/* Subtle grid */}
-      <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{
-        backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-        backgroundSize: "48px 48px",
-      }} />
-
-      {/* Left accent stripe */}
-      <div className="absolute left-0 top-0 bottom-0 w-[3px]"
-        style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.18) 60%, transparent 100%)" }} />
 
       {/* ── Top brand bar ── */}
       <div className="relative z-10 px-10 pt-10 pb-0 flex items-center justify-between">
@@ -325,14 +314,6 @@ export default function Login() {
   const [appleLoading, setAppleLoading] = useState(false);
   const appleCallbackHandled = useRef(false);
 
-  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
-  const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp" | "not-registered">("phone");
-  const [phoneLoginPhone, setPhoneLoginPhone] = useState("");
-  const [phoneLoginOtp, setPhoneLoginOtp] = useState("");
-  const [phoneLoginPending, setPhoneLoginPending] = useState(false);
-  const [phoneLoginExpiry, setPhoneLoginExpiry] = useState<Date | null>(null);
-  const [phoneLoginSecsLeft, setPhoneLoginSecsLeft] = useState(900);
-
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
 
@@ -364,14 +345,17 @@ export default function Login() {
     }, 200);
   }, []);
 
-  // Phone OTP login countdown timer
+  // Password and employee-QR login can use a trusted device token when an
+  // embedded browser refuses to persist the regular session cookie.
   useEffect(() => {
-    if (!phoneLoginExpiry || phoneLoginStep !== "otp") return;
-    const tick = () => setPhoneLoginSecsLeft(Math.max(0, Math.floor((phoneLoginExpiry.getTime() - Date.now()) / 1000)));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [phoneLoginExpiry, phoneLoginStep]);
+    const params = new URLSearchParams(window.location.search);
+    const deviceToken = params.get("deviceToken");
+    if (!deviceToken) return;
+    const nextPath = params.get("next") || "/employee/role-dashboard";
+    saveDeviceToken(deviceToken);
+    window.history.replaceState({}, "", window.location.pathname);
+    window.location.href = nextPath.startsWith("/") ? nextPath : "/employee/role-dashboard";
+  }, []);
 
   // Check if Google OAuth is enabled on the server
   useEffect(() => {
@@ -410,7 +394,8 @@ export default function Login() {
         setTwoFAPassphrase("");
         setTwoFAError("");
         setEmailOtpSent(false);
-             setWhatsappOtpSent(false);
+         setWhatsappApprovalChallengeId(null);
+         setWhatsappApprovalStatus("idle");
         setTwoFAExpiresAt(Number(data.expiresAt) || Date.now() + 10 * 60 * 1000);
         setTwoFASecondsLeft(Math.max(0, Math.floor(((Number(data.expiresAt) || Date.now()) - Date.now()) / 1000)));
         window.history.replaceState({}, "", window.location.pathname);
@@ -459,6 +444,9 @@ export default function Login() {
     const { Browser } = await import("@capacitor/browser");
     const { App } = await import("@capacitor/app");
     const serverUrl = getServerUrl(); // e.g. https://qiroxstudio.online
+    if (!serverUrl) {
+      throw new Error("Native OAuth server URL is not configured");
+    }
     const separator = path.includes("?") ? "&" : "?";
     const url = `${serverUrl}${path}${separator}native=1`;
     // Listen for the deep-link / universal-link callback coming back into the app
@@ -484,7 +472,13 @@ export default function Login() {
         window.location.href = nextPath;
       } else {
         setGoogleLoading(false); setAppleLoading(false); setGithubLoading(false);
-        toast({ title: "فشل تسجيل الدخول", description: "تعذّر إتمام المصادقة، حاول مرة أخرى", variant: "destructive" });
+        const error = cbUrl.searchParams.get("error");
+        const message = error === "google_failed"
+          ? "رفض Google الطلب أو تعذر التحقق من الحساب"
+          : error === "apple_failed"
+            ? "رفض Apple الطلب أو تعذر التحقق من الحساب"
+            : "تعذّر إتمام المصادقة، حاول مرة أخرى";
+        toast({ title: "فشل تسجيل الدخول", description: message, variant: "destructive" });
       }
     });
     // Fallback: if browserFinished fires without appUrlOpen (no universal link), check session
@@ -501,7 +495,9 @@ export default function Login() {
       }
     });
     try {
-      await Browser.open({ url, toolbarColor: "#000000", windowName: "_self" });
+      // Browser.open uses SFSafariViewController on iOS, which keeps the
+      // provider page inside the app instead of sending the reviewer to Safari.
+      await Browser.open({ url, toolbarColor: "#ffffff", windowName: "_self" });
     } catch {
       await finishHandle.remove();
       await handle.remove();
@@ -637,8 +633,42 @@ export default function Login() {
   const [is2FAResending, setIs2FAResending] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
-  const [whatsappOtpSent, setWhatsappOtpSent] = useState(false);
-  const [isSendingWhatsappOtp, setIsSendingWhatsappOtp] = useState(false);
+  const [whatsappApprovalChallengeId, setWhatsappApprovalChallengeId] = useState<string | null>(null);
+  const [whatsappApprovalStatus, setWhatsappApprovalStatus] = useState<"idle" | "waiting" | "approved" | "denied" | "expired">("idle");
+  const [isRequestingWhatsappApproval, setIsRequestingWhatsappApproval] = useState(false);
+  const whatsappCompletionInFlight = useRef(false);
+
+  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
+  const [phoneLoginStep, setPhoneLoginStep] = useState<"phone" | "otp">("phone");
+  const [phoneLoginNumber, setPhoneLoginNumber] = useState("");
+  const [phoneLoginOtp, setPhoneLoginOtp] = useState("");
+  const [phoneLoginToken, setPhoneLoginToken] = useState("");
+  const [phoneLoginSecondsLeft, setPhoneLoginSecondsLeft] = useState(0);
+  const [phoneLoginError, setPhoneLoginError] = useState("");
+  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
+  const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
+
+  const confirmAuthenticatedSession = useCallback(async () => {
+    let lastError = "تعذر تثبيت جلسة الدخول. حاول مرة أخرى";
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      if (attempt > 0) {
+        await new Promise(resolve => window.setTimeout(resolve, 250 * attempt));
+      }
+      try {
+        const response = await fetch("/api/user", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (response.ok) return await response.json();
+        lastError = response.status === 401
+          ? "لم يتم تثبيت جلسة الدخول بعد"
+          : "تعذر التحقق من جلسة الدخول";
+      } catch {
+        lastError = "تعذر الاتصال بالخادم لتثبيت جلسة الدخول";
+      }
+    }
+    throw new Error(lastError);
+  }, []);
 
   const [twoFAExpiresAt, setTwoFAExpiresAt] = useState<number | null>(null);
   const [twoFASecondsLeft, setTwoFASecondsLeft] = useState(600);
@@ -658,6 +688,68 @@ export default function Login() {
     }, 1000);
     return () => clearInterval(interval);
   }, [twoFA, twoFAExpiresAt]);
+
+  useEffect(() => {
+    if (whatsappApprovalStatus !== "waiting" || !whatsappApprovalChallengeId || !twoFA?.tempToken) return;
+    let cancelled = false;
+    const finishApprovedLogin = async () => {
+      try {
+        const response = await fetch("/api/auth/verify-2fa", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tempToken: twoFA.tempToken, method: "whatsapp", challengeId: whatsappApprovalChallengeId }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setTwoFAError(data.error || "تعذر إكمال التحقق عبر واتساب");
+          setWhatsappApprovalStatus("denied");
+          whatsappCompletionInFlight.current = false;
+          return;
+        }
+        if (data.deviceToken) saveDeviceToken(data.deviceToken);
+        const user = await confirmAuthenticatedSession();
+        queryClient.setQueryData(["/api/user"], user);
+        setTwoFA(null);
+        setWhatsappApprovalChallengeId(null);
+        const redirectPath = typeof user.redirectPath === "string" && user.redirectPath.startsWith("/")
+          ? user.redirectPath
+          : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
+        if (user.role === "client") {
+          const returnUrl = sessionStorage.getItem("returnAfterLogin");
+          if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
+          else setLocation(redirectPath);
+        } else {
+          setLocation(redirectPath);
+        }
+      } catch {
+        setTwoFAError("تعذر الاتصال بالخادم لإكمال الدخول");
+        setWhatsappApprovalStatus("denied");
+        whatsappCompletionInFlight.current = false;
+      }
+    };
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/auth/2fa/whatsapp/status/${whatsappApprovalChallengeId}?tempToken=${encodeURIComponent(twoFA.tempToken)}`, { credentials: "include" });
+        if (cancelled) return;
+        if (response.status === 410 || response.status === 404) { setWhatsappApprovalStatus("expired"); return; }
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.status === "approved") {
+          if (whatsappCompletionInFlight.current) return;
+          whatsappCompletionInFlight.current = true;
+          setWhatsappApprovalStatus("approved");
+          await finishApprovedLogin();
+        } else if (data.status === "denied") {
+          setWhatsappApprovalStatus("denied");
+          setTwoFAError("تم رفض طلب تسجيل الدخول من واتساب");
+        }
+      } catch {}
+    };
+    poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [whatsappApprovalStatus, whatsappApprovalChallengeId, twoFA?.tempToken]);
 
   // Push Approval states
   const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
@@ -684,16 +776,17 @@ export default function Login() {
             body: JSON.stringify({ challengeId: pushChallengeId, tempToken: twoFA?.tempToken }),
           });
           if (!r2.ok) { const err = await r2.json().catch(() => ({})); setTwoFAError(err.error || "فشل إكمال تسجيل الدخول"); return; }
-          const user = await r2.json();
+          const completedLogin = await r2.json();
+          if (completedLogin.deviceToken) saveDeviceToken(completedLogin.deviceToken);
+          const user = await confirmAuthenticatedSession();
           queryClient.setQueryData(["/api/user"], user);
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
           setTwoFA(null);
           const redirectPath = typeof user.redirectPath === "string" && user.redirectPath.startsWith("/")
             ? user.redirectPath
             : user.role === "client" ? "/dashboard" : "/employee/role-dashboard";
           if (user.role === "client") {
             const returnUrl = sessionStorage.getItem("returnAfterLogin");
-            if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+            if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
             else setLocation(redirectPath);
           } else { setLocation(redirectPath); }
         } else if (data.status === "denied") {
@@ -791,7 +884,7 @@ export default function Login() {
       const returnUrl = sessionStorage.getItem("returnAfterLogin");
       if (returnUrl) {
         sessionStorage.removeItem("returnAfterLogin");
-        setLocation(returnUrl);
+        setLocation(getSafePostLoginPath(role, returnUrl));
        } else if (role && role !== "client") {
          setLocation(getUserHomePath(role));
       } else {
@@ -820,68 +913,6 @@ export default function Login() {
     }
   };
 
-  const togglePhoneLogin = () => {
-    if (phoneLoginOpen) {
-      setPhoneLoginOpen(false);
-      setPhoneLoginStep("phone");
-      setPhoneLoginOtp("");
-      setPhoneLoginExpiry(null);
-    } else {
-      setPhoneLoginOpen(true);
-    }
-  };
-
-  const handleSendPhoneOtp = async () => {
-    if (phoneLoginPhone.replace(/\D/g, "").length < 10) {
-      toast({ title: "أدخل رقم جوال صحيح مع رمز الدولة", variant: "destructive" });
-      return;
-    }
-    setPhoneLoginPending(true);
-    try {
-      const r = await fetch("/api/auth/phone-otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneLoginPhone, method: "whatsapp" }),
-      });
-      const data = await r.json();
-      if (data.notRegistered) {
-        setPhoneLoginStep("not-registered");
-        return;
-      }
-      if (!r.ok || data.error) { toast({ title: data.error || "حدث خطأ، حاول مرة أخرى", variant: "destructive" }); return; }
-      const expiry = new Date(Date.now() + 15 * 60 * 1000);
-      setPhoneLoginExpiry(expiry);
-      setPhoneLoginSecsLeft(900);
-      setPhoneLoginStep("otp");
-    } catch {
-      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
-    } finally { setPhoneLoginPending(false); }
-  };
-
-  const handleVerifyPhoneOtp = async () => {
-    if (phoneLoginOtp.length !== 6) return;
-    setPhoneLoginPending(true);
-    try {
-      const r = await fetch("/api/auth/phone-otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneLoginPhone, otp: phoneLoginOtp }),
-      });
-      const data = await r.json();
-      if (data.error || !data.success) {
-        toast({ title: data.error || "الرمز غير صحيح أو انتهت صلاحيته", variant: "destructive" });
-        return;
-      }
-      queryClient.setQueryData(["/api/user"], data.user);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      const ret = sessionStorage.getItem("returnAfterLogin");
-      if (ret) { sessionStorage.removeItem("returnAfterLogin"); setLocation(ret); }
-       else setLocation(getUserHomePath(data.user?.role));
-    } catch {
-      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
-    } finally { setPhoneLoginPending(false); }
-  };
-
   const registerSchema = z.object({
     username: z.string().min(3, "اسم المستخدم 3 أحرف على الأقل"),
     password: z.string().min(6, "كلمة المرور 6 أحرف على الأقل"),
@@ -892,6 +923,9 @@ export default function Login() {
     country: z.string().optional(),
     businessType: z.string().optional(),
     role: z.string().optional(),
+    termsAccepted: isEmployeeRegister
+      ? z.boolean().optional()
+      : z.literal(true, { errorMap: () => ({ message: "يجب الموافقة على الشروط والأحكام" }) }),
   }).refine((data) => data.password === data.confirmPassword, {
     message: "كلمتا المرور غير متطابقتين",
     path: ["confirmPassword"],
@@ -916,14 +950,102 @@ export default function Login() {
       country: "",
       businessType: "",
       role: isEmployeeRegister ? "employee_manager" : "client",
+      termsAccepted: false,
     },
   });
 
+  const beginTwoFA = (user: any) => {
+    setTwoFA({ tempToken: user.tempToken, methods: user.methods });
+    setTwoFAMethod(user.methods[0]);
+    setTwoFACode("");
+    setTwoFAPassphrase("");
+    setTwoFAError("");
+    setEmailOtpSent(false);
+    setWhatsappApprovalChallengeId(null);
+    setWhatsappApprovalStatus("idle");
+    const expiresAt = Number(user.expiresAt) || Date.now() + 10 * 60 * 1000;
+    setTwoFAExpiresAt(expiresAt);
+    setTwoFASecondsLeft(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
+    const epoch = Math.floor(Date.now() / 1000);
+    setTotpSecondsLeft(30 - (epoch % 30));
+  };
+
+  useEffect(() => {
+    if (!phoneLoginOpen || phoneLoginStep !== "otp" || !phoneLoginToken) return;
+    const interval = window.setInterval(() => {
+      setPhoneLoginSecondsLeft(value => {
+        if (value <= 1) {
+          window.clearInterval(interval);
+          return 0;
+        }
+        return value - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [phoneLoginOpen, phoneLoginStep, phoneLoginToken]);
+
+  const sendPhoneLoginOtp = async () => {
+    const digits = phoneLoginNumber.replace(/\D/g, "");
+    if (digits.length < 8) { setPhoneLoginError("أدخل رقم جوال صحيحاً"); return; }
+    setIsSendingPhoneOtp(true);
+    setPhoneLoginError("");
+    try {
+      const response = await fetch("/api/auth/phone-otp/send", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneLoginNumber, method: "whatsapp" }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setPhoneLoginError(data.error || "تعذر إرسال رمز التحقق"); return; }
+      setPhoneLoginToken(data.token);
+      setPhoneLoginStep("otp");
+      setPhoneLoginSecondsLeft(Math.max(1, Math.floor((Number(data.expiresAt) - Date.now()) / 1000)));
+      toast({ title: "تم إرسال رمز التحقق", description: "تحقق من رسالة واتساب على الرقم المدخل" });
+    } catch {
+      setPhoneLoginError("تعذر الاتصال بالخادم");
+    } finally {
+      setIsSendingPhoneOtp(false);
+    }
+  };
+
+  const verifyPhoneLoginOtp = async () => {
+    if (phoneLoginOtp.replace(/\D/g, "").length !== 6) { setPhoneLoginError("أدخل الرمز المكوّن من 6 أرقام"); return; }
+    setIsVerifyingPhoneOtp(true);
+    setPhoneLoginError("");
+    try {
+      const response = await fetch("/api/auth/phone-otp/verify", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: phoneLoginToken, otp: phoneLoginOtp }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setPhoneLoginError(data.error || "الرمز غير صحيح أو منتهي الصلاحية"); return; }
+      if (data.deviceToken) saveDeviceToken(data.deviceToken);
+      if (data.requires2FA) {
+        setPhoneLoginOpen(false);
+        beginTwoFA(data);
+        return;
+      }
+      const user = await confirmAuthenticatedSession();
+      queryClient.setQueryData(["/api/user"], user);
+      setPhoneLoginOpen(false);
+      const returnUrl = sessionStorage.getItem("returnAfterLogin");
+      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(user.role, returnUrl)); }
+      else setLocation(user.role === "client" ? "/dashboard" : getUserHomePath(user.role));
+    } catch {
+      setPhoneLoginError("تعذر الاتصال بالخادم");
+    } finally {
+      setIsVerifyingPhoneOtp(false);
+    }
+  };
+
   const onSubmit = (data: any) => {
     if (isRegister) {
-      const { confirmPassword, whatsappNumber, ...rest } = data;
+      const { confirmPassword, whatsappNumber, termsAccepted, ...rest } = data;
       const userData = { ...rest, phone: whatsappNumber || undefined, whatsappNumber: whatsappNumber || undefined };
-      register(userData, {
+      register({ ...userData, termsAccepted: isEmployeeRegister ? undefined : termsAccepted }, {
         onSuccess: (user: any) => {
           queryClient.setQueryData(["/api/user"], user);
           if (user.resent) {
@@ -938,7 +1060,7 @@ export default function Login() {
           // For client accounts — show face setup step first
           const redirectTo = user.email ? "/verify-email?flow=register" : (() => {
             const r = sessionStorage.getItem("returnAfterLogin");
-            if (r) { sessionStorage.removeItem("returnAfterLogin"); return r; }
+            if (r) { sessionStorage.removeItem("returnAfterLogin"); return getSafePostLoginPath(user.role, r); }
              return getUserHomePath(user.role);
           })();
 
@@ -949,17 +1071,7 @@ export default function Login() {
       login(data, {
         onSuccess: (user: any) => {
           if (user.requires2FA) {
-            setTwoFA({ tempToken: user.tempToken, methods: user.methods });
-            setTwoFAMethod(user.methods[0]);
-            setTwoFACode("");
-            setTwoFAPassphrase("");
-            setTwoFAError("");
-            setEmailOtpSent(false);
-            const expiresAt = Number(user.expiresAt) || Date.now() + 10 * 60 * 1000;
-            setTwoFAExpiresAt(expiresAt);
-            setTwoFASecondsLeft(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)));
-            const epoch = Math.floor(Date.now() / 1000);
-            setTotpSecondsLeft(30 - (epoch % 30));
+            beginTwoFA(user);
             return;
           }
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
@@ -985,7 +1097,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white" dir={dir}>
-      <PageGraphics variant="auth" />
       {/* Left decorative panel — hidden on mobile */}
       <AuthPremiumPanel isRegister={isRegister} isEmployeeRegister={isEmployeeRegister}
         googleEnabled={googleEnabled} githubEnabled={githubEnabled} appleEnabled={appleEnabled}
@@ -997,60 +1108,6 @@ export default function Login() {
       {/* Right form area */}
       <div className="flex-1 flex flex-col items-center px-4 pt-6 pb-20 sm:px-6 sm:py-8 md:px-10 md:py-8 xl:px-6 xl:py-12 overflow-y-auto relative" style={{ justifyContent: "safe center" }}>
 
-        {/* ── Decorative background layer ── */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none md:max-xl:opacity-40">
-          {/* Dot grid */}
-          <div className="absolute inset-0 opacity-[0.5]" style={{
-            backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.055) 1.2px, transparent 1.2px)",
-            backgroundSize: "26px 26px",
-          }} />
-
-          {/* Large circle rings — top-left corner */}
-          <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full border border-black/[0.05]" />
-          <div className="absolute -top-28 -left-28 w-[420px] h-[420px] rounded-full border border-black/[0.04]" />
-          <div className="absolute -top-14 -left-14 w-[300px] h-[300px] rounded-full border border-black/[0.03]" />
-
-          {/* Large circle rings — bottom-right corner */}
-          <div className="absolute -bottom-40 -right-40 w-[480px] h-[480px] rounded-full border border-black/[0.04]" />
-          <div className="absolute -bottom-24 -right-24 w-[340px] h-[340px] rounded-full border border-black/[0.03]" />
-
-          {/* Hexagon — top right */}
-          <svg className="absolute top-10 right-10 opacity-[0.045]" width="140" height="140" viewBox="0 0 140 140">
-            <polygon points="70,6 126,37 126,103 70,134 14,103 14,37" fill="none" stroke="black" strokeWidth="1.5"/>
-            <polygon points="70,24 110,46 110,94 70,116 30,94 30,46" fill="none" stroke="black" strokeWidth="0.8"/>
-          </svg>
-
-          {/* Hexagon — bottom left */}
-          <svg className="absolute bottom-16 left-6 opacity-[0.035]" width="100" height="100" viewBox="0 0 100 100">
-            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="black" strokeWidth="1.5"/>
-          </svg>
-
-          {/* Diamond/square rotated — mid left */}
-          <svg className="absolute top-1/2 -translate-y-1/2 -left-10 opacity-[0.03]" width="180" height="180" viewBox="0 0 180 180">
-            <rect x="15" y="15" width="150" height="150" rx="8" fill="none" stroke="black" strokeWidth="1.5" transform="rotate(45 90 90)"/>
-            <rect x="35" y="35" width="110" height="110" rx="6" fill="none" stroke="black" strokeWidth="0.8" transform="rotate(45 90 90)"/>
-          </svg>
-
-          {/* Accent line — top */}
-          <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent" />
-
-          {/* QIROX large watermark letter */}
-          <div className="absolute bottom-8 right-8 text-[180px] font-black text-black/[0.018] leading-none font-heading tracking-tight select-none">
-            Q
-          </div>
-
-          {/* Small floating accent dots */}
-          <div className="absolute top-1/3 right-[15%] w-2 h-2 rounded-full bg-black/[0.06]" />
-          <div className="absolute top-1/3 right-[18%] w-1 h-1 rounded-full bg-black/[0.04]" />
-          <div className="absolute top-[40%] left-[12%] w-1.5 h-1.5 rounded-full bg-black/[0.05]" />
-          <div className="absolute bottom-1/3 left-[18%] w-2 h-2 rounded-full bg-black/[0.04]" />
-
-          {/* Diagonal accent lines */}
-          <svg className="absolute inset-0 w-full h-full opacity-[0.025]" preserveAspectRatio="none">
-            <line x1="0" y1="0" x2="30%" y2="60%" stroke="black" strokeWidth="0.8"/>
-            <line x1="100%" y1="100%" x2="70%" y2="40%" stroke="black" strokeWidth="0.8"/>
-          </svg>
-        </div>
         {/* Mobile logo */}
         <div className="lg:hidden md:max-xl:hidden mb-8 text-center">
           <Link href="/">
@@ -1179,7 +1236,10 @@ export default function Login() {
                     onClick={() => {
                       setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError("");
                       if (m !== "email") setEmailOtpSent(false);
-                       if (m !== "whatsapp") setWhatsappOtpSent(false);
+                       if (m !== "whatsapp") {
+                         setWhatsappApprovalChallengeId(null);
+                         setWhatsappApprovalStatus("idle");
+                       }
                       if (m !== "push") { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }
                     }}
                     className={`py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all text-center leading-tight ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
@@ -1284,63 +1344,40 @@ export default function Login() {
               </div>
             )}
 
-            {twoFAMethod === "whatsapp" && !whatsappOtpSent && (
+             {twoFAMethod === "whatsapp" && (
               <div className="space-y-4 text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-black/[0.05] mx-auto">
                   <MessageSquare className="w-6 h-6 text-black/50" />
                 </div>
-                <p className="text-sm text-black/60">سيتم إرسال رمز التحقق إلى رقم واتساب المسجّل في حسابك</p>
+                 <p className="text-sm text-black/60">سيتم إرسال طلب موافقة إلى رقم واتساب الموثّق في حسابك. افتح واتساب وأرسل 1 أو اكتب «قبول».</p>
                 <Button
                   onClick={async () => {
-                    setIsSendingWhatsappOtp(true);
+                     setIsRequestingWhatsappApproval(true);
                     setTwoFAError("");
                     try {
-                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
-                      if (r.ok) { setWhatsappOtpSent(true); toast({ title: "تم إرسال الرمز عبر واتساب", description: "تحقق من رسائل واتساب وأدخل الرمز هنا" }); }
-                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إرسال رمز واتساب"); }
+                       const r = await fetch("/api/auth/2fa/whatsapp/request", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                       const data = await r.json().catch(() => ({}));
+                       if (r.ok) {
+                          whatsappCompletionInFlight.current = false;
+                         setWhatsappApprovalChallengeId(data.challengeId);
+                         setWhatsappApprovalStatus("waiting");
+                         toast({ title: "تم إرسال طلب الموافقة", description: "بانتظار موافقتك من واتساب" });
+                       }
+                       else { setTwoFAError(data.error || "فشل إرسال طلب الموافقة عبر واتساب"); }
                     } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
-                    setIsSendingWhatsappOtp(false);
+                     setIsRequestingWhatsappApproval(false);
                   }}
-                  disabled={isSendingWhatsappOtp}
+                   disabled={isRequestingWhatsappApproval || whatsappApprovalStatus === "waiting"}
                   className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
-                  data-testid="button-send-2fa-whatsapp"
+                   data-testid="button-request-2fa-whatsapp"
                 >
-                  {isSendingWhatsappOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                    <><MessageSquare className="w-4 h-4 ml-2" />إرسال رمز واتساب</>
+                   {isRequestingWhatsappApproval ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                     <><MessageSquare className="w-4 h-4 ml-2" />{whatsappApprovalStatus === "waiting" ? "بانتظار موافقة واتساب..." : "إرسال طلب الموافقة"}</>
                   )}
                 </Button>
-              </div>
-            )}
-
-            {twoFAMethod === "whatsapp" && whatsappOtpSent && (
-              <div className="space-y-3">
-                <p className="text-sm text-black/60">أدخل الرمز المرسل إلى واتساب:</p>
-                <Input
-                  value={twoFACode}
-                  onChange={e => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="000000"
-                  className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
-                  maxLength={6}
-                  inputMode="numeric"
-                  autoFocus
-                  data-testid="input-2fa-whatsapp"
-                />
-                <button
-                  onClick={async () => {
-                    setIs2FAResending(true);
-                    try {
-                      const r = await fetch("/api/auth/resend-2fa-whatsapp", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
-                      if (r.ok) { toast({ title: "تم إعادة إرسال الرمز عبر واتساب" }); setTwoFACode(""); }
-                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إعادة الإرسال"); }
-                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
-                    setIs2FAResending(false);
-                  }}
-                  disabled={is2FAResending}
-                  className="text-xs text-black/40 hover:text-black/70 transition-colors underline"
-                  data-testid="button-resend-2fa-whatsapp"
-                >
-                  {is2FAResending ? "جارٍ الإرسال..." : "إعادة إرسال الرمز"}
-                </button>
+                 {whatsappApprovalStatus === "waiting" && <p className="text-xs text-emerald-600">الطلب قيد الانتظار. سيتم الدخول تلقائياً بعد الموافقة.</p>}
+                 {whatsappApprovalStatus === "denied" && <p className="text-xs text-red-600">تم رفض الطلب. يمكنك إرسال طلب جديد.</p>}
+                 {whatsappApprovalStatus === "expired" && <p className="text-xs text-red-600">انتهت صلاحية الطلب. أرسل طلباً جديداً.</p>}
               </div>
             )}
 
@@ -1460,7 +1497,7 @@ export default function Login() {
               </motion.div>
             )}
 
-            {twoFAMethod !== "push" && (
+             {twoFAMethod !== "push" && twoFAMethod !== "whatsapp" && (
               <Button
                 onClick={async () => {
                   const codeVal = twoFAMethod === "passphrase" ? twoFAPassphrase : twoFACode;
@@ -1471,25 +1508,26 @@ export default function Login() {
                     const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
                     const data = await r.json().catch(() => ({}));
                     if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
+                    if (data.deviceToken) saveDeviceToken(data.deviceToken);
+                    const authenticatedUser = await confirmAuthenticatedSession();
                     setTwoFA(null);
                     if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {
                       setVerifyStep({ email: data.email, name: data.fullName || data.username || "" });
                     } else {
-                      queryClient.setQueryData(["/api/user"], data);
-                      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                      queryClient.setQueryData(["/api/user"], authenticatedUser);
                       const redirectPath = typeof data.redirectPath === "string" && data.redirectPath.startsWith("/")
                         ? data.redirectPath
-                        : data.role === "client" ? "/dashboard" : "/employee/role-dashboard";
-                      if (data.role === "client") {
+                        : authenticatedUser.role === "client" ? "/dashboard" : "/employee/role-dashboard";
+                      if (authenticatedUser.role === "client") {
                         const returnUrl = sessionStorage.getItem("returnAfterLogin");
-                        if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+                        if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(getSafePostLoginPath(authenticatedUser.role, returnUrl)); }
                         else setLocation(redirectPath);
                       } else { setLocation(redirectPath); }
                     }
                   } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                   setIs2FAVerifying(false);
                 }}
-                disabled={is2FAVerifying || ((twoFAMethod === "email" || twoFAMethod === "whatsapp") && !(twoFAMethod === "email" ? emailOtpSent : whatsappOtpSent)) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+                disabled={is2FAVerifying || ((twoFAMethod === "email") && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
                 className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
                 data-testid="button-verify-2fa"
               >
@@ -1500,7 +1538,7 @@ export default function Login() {
             )}
 
             <div className="text-center mt-4">
-              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setWhatsappOtpSent(false); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+               <button onClick={() => { whatsappCompletionInFlight.current = false; setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setWhatsappApprovalChallengeId(null); setWhatsappApprovalStatus("idle"); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
                 العودة لتسجيل الدخول
               </button>
             </div>
@@ -1829,45 +1867,29 @@ export default function Login() {
                 </button>
               )}
 
-              {/* Phone Login — alongside Google/Apple/QR */}
               {!isRegister && (
-                <motion.button
+                <button
                   type="button"
-                  onClick={togglePhoneLogin}
-                  data-testid="btn-phone-login"
-                  whileHover={{ scale: 1.005 }}
-                  whileTap={{ scale: 0.99 }}
-                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
-                    phoneLoginOpen
-                      ? "border-emerald-400 bg-emerald-600"
-                      : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
-                  }`}
+                  onClick={() => { setPhoneLoginOpen(true); setPhoneLoginStep("phone"); setPhoneLoginError(""); }}
+                  className="mt-3 w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                  data-testid="button-open-phone-login"
                 >
-                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
-                    <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
+                  <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/[0.06] flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-black/60" />
                   </div>
-                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
-                    <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
-                    <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
-                      {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
-                    </p>
+                  <div className="flex-1">
+                    <p className="text-black font-bold text-[13px] leading-snug">{ar ? "الدخول برقم الجوال" : "Sign in with mobile"}</p>
+                    <p className="text-black/45 text-[10.5px] font-medium mt-0.5">{ar ? "أرسلنا رمز تحقق إلى واتساب" : "Receive a verification code on WhatsApp"}</p>
                   </div>
-                  <div className="px-4">
-                    {phoneLoginOpen
-                      ? <X className="w-4 h-4 text-white/70" />
-                      : <ChevronLeft className="w-4 h-4 text-gray-300" />
-                    }
-                  </div>
-                </motion.button>
+                  <ChevronLeft className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+                </button>
               )}
 
-              {!phoneLoginOpen && (
-                <div className="flex items-center gap-3 mt-4">
-                  <div className="flex-1 h-px bg-black/[0.07]" />
-                  <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
-                  <div className="flex-1 h-px bg-black/[0.07]" />
-                </div>
-              )}
+              <div className="flex items-center gap-3 mt-4">
+                <div className="flex-1 h-px bg-black/[0.07]" />
+                <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
+                <div className="flex-1 h-px bg-black/[0.07]" />
+              </div>
             </div>
           )}
 
@@ -1894,49 +1916,87 @@ export default function Login() {
                 </div>
                 <QrCode className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
               </button>
-              {/* Phone Login — for non-OAuth section */}
-              {!isRegister && (
-                <motion.button
-                  type="button"
-                  onClick={togglePhoneLogin}
-                  data-testid="btn-phone-login-alt"
-                  whileHover={{ scale: 1.005 }}
-                  whileTap={{ scale: 0.99 }}
-                  className={`mt-3 w-full relative overflow-hidden rounded-xl border flex items-center gap-0 transition-all duration-200 ${
-                    phoneLoginOpen
-                      ? "border-emerald-400 bg-emerald-600"
-                      : "border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50"
-                  }`}
-                >
-                  <div className={`flex-shrink-0 w-[58px] h-[58px] md:max-xl:w-12 md:max-xl:h-12 flex items-center justify-center border-l ${phoneLoginOpen ? "border-emerald-500/40" : "border-emerald-100"}`}>
-                    <Phone className={`w-5 h-5 ${phoneLoginOpen ? "text-white" : "text-emerald-600"}`} />
-                  </div>
-                  <div className="flex-1 px-4 py-3.5 md:max-xl:py-2.5 text-right">
-                    <p className={`font-bold text-[14px] leading-snug ${phoneLoginOpen ? "text-white" : "text-gray-800"}`}>دخول بالجوال</p>
-                    <p className={`text-[10.5px] font-medium mt-0.5 ${phoneLoginOpen ? "text-white/60" : "text-emerald-600/70"}`}>
-                      {phoneLoginOpen ? "اضغط للإلغاء والعودة" : "رمز واتساب · بدون كلمة مرور"}
-                    </p>
-                  </div>
-                  <div className="px-4">
-                    {phoneLoginOpen ? <X className="w-4 h-4 text-white/70" /> : <ChevronLeft className="w-4 h-4 text-gray-300" />}
-                  </div>
-                </motion.button>
-              )}
-
-              {!phoneLoginOpen && (
-                <div className="flex items-center gap-3 mt-4">
-                  <div className="flex-1 h-px bg-black/[0.07]" />
-                  <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
-                  <div className="flex-1 h-px bg-black/[0.07]" />
+              <button
+                type="button"
+                onClick={() => { setPhoneLoginOpen(true); setPhoneLoginStep("phone"); setPhoneLoginError(""); }}
+                className="mt-3 w-full flex items-center gap-3 rounded-xl border border-black/[0.1] bg-white hover:bg-black/[0.02] transition-colors p-3 text-right group"
+                data-testid="button-open-phone-login-alt"
+              >
+                <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/[0.06] flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-black/60" />
                 </div>
-              )}
+                <div className="flex-1">
+                  <p className="text-black font-bold text-[13px] leading-snug">{ar ? "الدخول برقم الجوال" : "Sign in with mobile"}</p>
+                  <p className="text-black/45 text-[10.5px] font-medium mt-0.5">{ar ? "أرسلنا رمز تحقق إلى واتساب" : "Receive a verification code on WhatsApp"}</p>
+                </div>
+                <ChevronLeft className="w-4 h-4 text-black/40 group-hover:text-black transition-colors" />
+              </button>
             </div>
           )}
 
           <QrLoginScanner open={qrScannerOpen} onClose={() => setQrScannerOpen(false)} />
 
-          {/* Form OR Phone Panel */}
-          {!phoneLoginOpen ? (
+          {!isRegister && phoneLoginOpen ? (
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-5 space-y-4" data-testid="phone-login-panel">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-black">{ar ? "الدخول برقم الجوال" : "Mobile sign in"}</h2>
+                  <p className="text-xs text-black/40 mt-1">{ar ? "سيصل رمز التحقق إلى واتساب" : "A verification code will be sent to WhatsApp"}</p>
+                </div>
+                <button type="button" onClick={() => setPhoneLoginOpen(false)} className="text-xs text-black/40 hover:text-black underline">
+                  {ar ? "رجوع" : "Back"}
+                </button>
+              </div>
+              {phoneLoginStep === "phone" ? (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="input-phone-login" className="text-xs font-semibold text-black/50">
+                      {ar ? "رقم الجوال" : "Mobile number"}
+                    </label>
+                    <CountryPhoneInput
+                      id="input-phone-login"
+                      value={phoneLoginNumber}
+                      onChange={setPhoneLoginNumber}
+                      placeholder="5XXXXXXXX"
+                      className="w-full"
+                      autoFocus
+                    />
+                    <p className="text-[10px] text-black/35">
+                      {ar ? "اختر الدولة ثم اكتب الرقم بدون كود الدولة" : "Choose a country, then enter the number without its country code"}
+                    </p>
+                  </div>
+                  <Button type="button" onClick={sendPhoneLoginOtp} disabled={isSendingPhoneOtp} className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold">
+                    {isSendingPhoneOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <><MessageSquare className="w-4 h-4 ml-2" />{ar ? "إرسال رمز واتساب" : "Send WhatsApp code"}</>}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-black/60">{ar ? "أدخل الرمز المرسل إلى واتساب:" : "Enter the code sent to WhatsApp:"}</p>
+                  <Input
+                    value={phoneLoginOtp}
+                    onChange={e => setPhoneLoginOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
+                    maxLength={6}
+                    inputMode="numeric"
+                    autoFocus
+                    data-testid="input-phone-login-otp"
+                  />
+                  <div className="flex items-center justify-between text-xs text-black/40">
+                    <button type="button" onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginOtp(""); }} className="underline hover:text-black">
+                      {ar ? "تغيير الرقم" : "Change number"}
+                    </button>
+                    <span>{phoneLoginSecondsLeft > 0 ? `${Math.floor(phoneLoginSecondsLeft / 60)}:${String(phoneLoginSecondsLeft % 60).padStart(2, "0")}` : (ar ? "انتهت الصلاحية" : "Expired")}</span>
+                  </div>
+                  <Button type="button" onClick={verifyPhoneLoginOtp} disabled={isVerifyingPhoneOtp || phoneLoginSecondsLeft <= 0} className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold">
+                    {isVerifyingPhoneOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{ar ? "تحقق ودخول" : "Verify and sign in"}<ChevronLeft className="w-4 h-4 mr-2" /></>}
+                  </Button>
+                </>
+              )}
+              {phoneLoginError && <p className="text-xs text-red-600 text-center" role="alert">{phoneLoginError}</p>}
+            </div>
+          ) : (
+          /* Password form */
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
@@ -2205,6 +2265,34 @@ export default function Login() {
                 />
               )}
 
+              {isRegister && !isEmployeeRegister && (
+                <FormField
+                  control={form.control}
+                  name="termsAccepted"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-2 pt-1">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value === true}
+                            onChange={e => field.onChange(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 accent-black"
+                            data-testid="checkbox-register-terms"
+                          />
+                        </FormControl>
+                        <FormLabel className="text-xs text-black/55 leading-relaxed cursor-pointer">
+                          أوافق على{" "}
+                          <Link href="/terms" className="text-black font-semibold underline">الشروط والأحكام</Link>
+                            {" "}و<Link href="/privacy" className="text-black font-semibold underline">سياسة الخصوصية</Link>
+                        </FormLabel>
+                      </div>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               {/* Submit */}
               <Button
                 type="submit"
@@ -2230,112 +2318,6 @@ export default function Login() {
               )}
             </form>
           </Form>
-          ) : (
-          /* ── Phone OTP Panel ── */
-          <div className="space-y-4">
-            <button type="button"
-              onClick={togglePhoneLogin}
-              className="flex items-center gap-1.5 text-xs text-black/40 hover:text-black/70 transition-colors -mb-1">
-              <ArrowRight className="w-3.5 h-3.5" />
-              <span>العودة لتسجيل الدخول بكلمة المرور</span>
-            </button>
-
-            {phoneLoginStep === "phone" && (
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-semibold text-black/50 mb-2">رقم الجوال مع رمز الدولة</p>
-                  <CountryPhoneInput value={phoneLoginPhone} onChange={setPhoneLoginPhone} placeholder="5XXXXXXXX" />
-                </div>
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-emerald-700 leading-relaxed">سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني المسجّل</p>
-                </div>
-                <Button type="button" onClick={handleSendPhoneOtp}
-                  disabled={phoneLoginPending || phoneLoginPhone.replace(/\D/g, "").length < 10}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm gap-2"
-                  data-testid="btn-send-phone-otp">
-                  {phoneLoginPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <><MessageSquare className="w-4 h-4" /> إرسال رمز التحقق</>
-                  }
-                </Button>
-              </div>
-            )}
-
-            {phoneLoginStep === "not-registered" && (
-              <div className="space-y-3">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center space-y-2">
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
-                    <AlertCircle className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <p className="text-sm font-bold text-amber-800">رقم غير مسجّل</p>
-                  <p className="text-xs text-amber-700 leading-relaxed">
-                    هذا الرقم غير مسجّل لدينا.
-                    <br />أنشئ حساباً جديداً للمتابعة.
-                  </p>
-                </div>
-                <Button type="button"
-                  onClick={() => { togglePhoneLogin(); setLocation("/register"); }}
-                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm gap-2">
-                  <UserPlus className="w-4 h-4" /> إنشاء حساب جديد
-                </Button>
-                <button type="button"
-                  onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginPhone(""); }}
-                  className="w-full text-center text-xs text-black/30 hover:text-black/50 py-1 transition-colors">
-                  تغيير رقم الجوال
-                </button>
-              </div>
-            )}
-
-            {phoneLoginStep === "otp" && (
-              <div className="space-y-3">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
-                  <p className="text-[11px] text-emerald-600 mb-1">تم إرسال الرمز عبر واتساب وبريدك الإلكتروني</p>
-                  <p className="font-mono text-sm font-bold text-black/70" dir="ltr">{phoneLoginPhone}</p>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-black/50">رمز التحقق (6 أرقام)</p>
-                    <span className={`text-xs font-mono font-bold tabular-nums ${phoneLoginSecsLeft < 60 ? "text-red-500" : "text-black/30"}`}>
-                      {String(Math.floor(phoneLoginSecsLeft / 60)).padStart(2, "0")}:{String(phoneLoginSecsLeft % 60).padStart(2, "0")}
-                    </span>
-                  </div>
-                  <Input
-                    value={phoneLoginOtp}
-                    onChange={e => setPhoneLoginOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="______"
-                    className="h-14 text-2xl font-mono tracking-[0.4em] text-center bg-white border-black/[0.08] rounded-xl"
-                    type="text" inputMode="numeric" dir="ltr"
-                    data-testid="input-phone-otp" autoFocus
-                    onKeyDown={e => e.key === "Enter" && phoneLoginOtp.length === 6 && handleVerifyPhoneOtp()}
-                  />
-                </div>
-                <Button type="button" onClick={handleVerifyPhoneOtp}
-                  disabled={phoneLoginOtp.length !== 6 || phoneLoginPending}
-                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm gap-2"
-                  data-testid="btn-phone-otp-verify">
-                  {phoneLoginPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <><CheckCircle2 className="w-4 h-4" /> تأكيد الرمز والدخول</>
-                  }
-                </Button>
-                {phoneLoginSecsLeft === 0 && (
-                  <Button type="button" onClick={handleSendPhoneOtp} disabled={phoneLoginPending}
-                    variant="outline" className="w-full h-10 rounded-xl text-sm gap-1.5">
-                    {phoneLoginPending
-                      ? <Loader2 className="w-4 h-4 animate-spin" />
-                      : <><RefreshCw className="w-3.5 h-3.5" /> إعادة إرسال الرمز</>
-                    }
-                  </Button>
-                )}
-                <button type="button"
-                  onClick={() => { setPhoneLoginStep("phone"); setPhoneLoginOtp(""); setPhoneLoginExpiry(null); }}
-                  className="w-full text-center text-xs text-black/30 hover:text-black/50 py-1 transition-colors">
-                  تغيير رقم الجوال
-                </button>
-              </div>
-            )}
-          </div>
           )}
 
 
@@ -2352,10 +2334,8 @@ export default function Login() {
           {/* Policy note for register */}
           {isRegister && !isEmployeeRegister && (
             <p className="mt-4 text-center text-[11px] text-black/25 leading-relaxed">
-              بالتسجيل، أنت توافق على{" "}
-              <span className="text-black/40 underline cursor-pointer">سياسة الخصوصية</span>
-              {" "}و{" "}
-              <span className="text-black/40 underline cursor-pointer">شروط الاستخدام</span>
+              يمكنك مراجعة <Link href="/privacy" className="text-black/40 underline">سياسة الخصوصية</Link>
+              {" "}في أي وقت.
             </p>
           )}
         </motion.div>

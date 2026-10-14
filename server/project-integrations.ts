@@ -96,14 +96,7 @@ export const projectIntegrationApiDocs = {
     production: "للاستخدام الحي",
   },
   limits: {
-    whatsapp: {
-      messageMaxLength: 4000,
-      attachmentsMaxCount: 5,
-      attachmentMaxSize: "16 MB for image/audio/video, 20 MB for documents",
-      attachmentSource: "روابط HTTPS عامة فقط؛ الصور والفيديو والصوت والملفات كمرفقات",
-      idempotencyKey: "8-160 characters",
-      rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة",
-    },
+    whatsapp: { messageMaxLength: 4000, idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
     email: { messageMaxLength: 100000, subjectMaxLength: 200, idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
     api: { messageMaxLength: 100000, channels: ["email", "whatsapp"], idempotencyKey: "8-160 characters", rateLimit: "حسب إعداد المشروع، الافتراضي 30 طلباً/دقيقة" },
   },
@@ -117,12 +110,8 @@ export const projectIntegrationApiDocs = {
         clientName: "اسم العميل",
         code: "123456",
         message: "رسالة نصية اختيارية",
-        attachments: [
-          { url: "https://cdn.example.com/invoice.pdf", filename: "invoice.pdf", caption: "الفاتورة" },
-          { url: "https://cdn.example.com/photo.jpg", caption: "صورة الطلب" },
-        ],
       },
-      description: "إرسال رسالة أو حتى 5 مرفقات عبر رقم QIROX المتصل بواتساب CRM. تقبل الصور JPEG/PNG/WebP وملفات PDF عبر روابط HTTPS عامة؛ الصور حتى 16 ميجابايت والملفات حتى 20 ميجابايت.",
+      description: "إرسال الرسالة من رقم QIROX المتصل بواتساب CRM عبر QR. لا يحتاج WhatsApp Business أو Meta.",
     },
     {
       method: "POST",
@@ -133,12 +122,7 @@ export const projectIntegrationApiDocs = {
     {
       method: "POST",
       path: "/api/v1/projects/:projectId/api",
-      body: {
-        channel: "email",
-        recipient: { email: "customer@example.com", name: "اسم المستلم" },
-        subject: "عنوان الرسالة",
-        message: "نص الرسالة",
-      },
+      body: { channel: "email", recipient: { email: "customer@example.com", name: "اسم المستلم" }, subject: "عنوان الرسالة", message: "نص الرسالة" },
       description: "نقطة الربط العامة للمشروع؛ اختر email أو whatsapp مع نفس مفتاح الربط.",
     },
   ],

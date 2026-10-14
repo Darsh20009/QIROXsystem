@@ -4,8 +4,10 @@ import App from "./App";
 import "./index.css";
 import { SplashScreen } from "@/components/qirox-brand";
 import { installNativeAuthFetch } from "@/lib/server-url";
+import { installArabicDigitInputNormalization } from "@/lib/arabic-digit-input";
 
 installNativeAuthFetch();
+installArabicDigitInputNormalization();
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;

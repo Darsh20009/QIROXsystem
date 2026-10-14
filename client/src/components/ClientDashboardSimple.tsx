@@ -50,17 +50,17 @@ function getPhaseLabel(progress: number) {
 
 /* ── Social Media Posts Data ── */
 const SOCIAL_POSTS = [
-  { src: "/post-1.png",  caption: "تقنية مصممة خصيصًا ونتائج حقيقية",         tag: "نتائج حقيقية" },
-  { src: "/post-2.png",  caption: "شريكك الموثوق في التحول الرقمي",             tag: "تحول رقمي" },
-  { src: "/post-3.png",  caption: "فريق واحد ورؤية واحدة وإمكانيات بلا حدود", tag: "من نحن" },
-  { src: "/post-4.png",  caption: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال", tag: "تكنولوجيا" },
-  { src: "/post-5.png",  caption: "نصنع تجارب ذكية للأعمال الحديثة",           tag: "تجارب ذكية" },
-  { src: "/post-6.png",  caption: "استثمر في نظام يبني نمو مشروعك",            tag: "استثمار" },
-  { src: "/post-7.png",  caption: "الإدارة الذكية تبدأ من نظام ذكي",           tag: "إدارة ذكية" },
-  { src: "/post-8.png",  caption: "التحول الرقمي صار ضرورة لا خيار",           tag: "رقمنة" },
-  { src: "/post-9.png",  caption: "الحل الصحيح يبدأ بمفتاح يفهم أعمالك",     tag: "حلول مخصصة" },
-  { src: "/post-10.png", caption: "خسارة الوقت تبدأ من الإدارة التقليدية",    tag: "توفير الوقت" },
-  { src: "/post-11.png", caption: "لما تكون بياناتك مرتبة قراراتك تصير أسرع", tag: "بيانات منظمة" },
+  { src: "/post-1.webp",  caption: "تقنية مصممة خصيصًا ونتائج حقيقية",         tag: "نتائج حقيقية" },
+  { src: "/post-2.webp",  caption: "شريكك الموثوق في التحول الرقمي",             tag: "تحول رقمي" },
+  { src: "/post-3.webp",  caption: "فريق واحد ورؤية واحدة وإمكانيات بلا حدود", tag: "من نحن" },
+  { src: "/post-4.webp",  caption: "كيروكس — حيث تلتقي التكنولوجيا بنمو الأعمال", tag: "تكنولوجيا" },
+  { src: "/post-5.webp",  caption: "نصنع تجارب ذكية للأعمال الحديثة",           tag: "تجارب ذكية" },
+  { src: "/post-6.webp",  caption: "استثمر في نظام يبني نمو مشروعك",            tag: "استثمار" },
+  { src: "/post-7.webp",  caption: "الإدارة الذكية تبدأ من نظام ذكي",           tag: "إدارة ذكية" },
+  { src: "/post-8.webp",  caption: "التحول الرقمي صار ضرورة لا خيار",           tag: "رقمنة" },
+  { src: "/post-9.webp",  caption: "الحل الصحيح يبدأ بمفتاح يفهم أعمالك",     tag: "حلول مخصصة" },
+  { src: "/post-10.webp", caption: "خسارة الوقت تبدأ من الإدارة التقليدية",    tag: "توفير الوقت" },
+  { src: "/post-11.webp", caption: "لما تكون بياناتك مرتبة قراراتك تصير أسرع", tag: "بيانات منظمة" },
 ];
 
 /* ── Social Posts Section ── */
@@ -245,7 +245,7 @@ function SocialPostsSection() {
             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
             data-testid="post-main-0"
           >
-            <img src={SOCIAL_POSTS[0].src} alt={SOCIAL_POSTS[0].caption} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
+            <img src={SOCIAL_POSTS[0].src} alt={SOCIAL_POSTS[0].caption} loading="lazy" decoding="async" className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
             {/* Corner dot active indicator */}
             {active === 0 && (
@@ -276,7 +276,7 @@ function SocialPostsSection() {
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 data-testid={`post-sm-${i}`}
               >
-                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption} className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption} loading="lazy" decoding="async" className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 {active === i && (
                   <motion.div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
@@ -304,7 +304,7 @@ function SocialPostsSection() {
               whileHover={{ scale: 1.03, zIndex: 10 }} whileTap={{ scale: 0.97 }}
               data-testid={`post-mid-${i}`}
             >
-              <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption}
+              <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption} loading="lazy" decoding="async"
                 className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               {/* Tag chip */}
@@ -344,7 +344,7 @@ function SocialPostsSection() {
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                 data-testid={`post-bot-${i}`}
               >
-                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption}
+                <img src={SOCIAL_POSTS[i].src} alt={SOCIAL_POSTS[i].caption} loading="lazy" decoding="async"
                   className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 {active === i && (
@@ -367,7 +367,7 @@ function SocialPostsSection() {
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             data-testid="post-tall-8"
           >
-            <img src={SOCIAL_POSTS[8].src} alt={SOCIAL_POSTS[8].caption}
+            <img src={SOCIAL_POSTS[8].src} alt={SOCIAL_POSTS[8].caption} loading="lazy" decoding="async"
               className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             {active === 8 && (
@@ -399,7 +399,7 @@ function SocialPostsSection() {
         >
           <div className="flex items-center gap-3 p-3">
             <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 border border-white/20 dark:border-white/10">
-              <img src={SOCIAL_POSTS[active].src} alt="" className="w-full h-full object-cover object-top" />
+              <img src={SOCIAL_POSTS[active].src} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-black text-gray-900 dark:text-white leading-snug line-clamp-2">{SOCIAL_POSTS[active].caption}</p>
@@ -445,7 +445,7 @@ function SocialPostsSection() {
               whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
               data-testid={`strip-${i}`}
             >
-              <img src={post.src} alt={post.caption} className="w-full h-full object-cover object-top" />
+              <img src={post.src} alt={post.caption} loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
               {active === i && (
                 <div className="absolute inset-0 bg-black/30" />
               )}

@@ -1,7 +1,11 @@
 import type { Express, Request, Response } from "express";
 import type { Server as HttpServer } from "http";
 import crypto from "crypto";
-import { createProxyMiddleware } from "http-proxy-middleware";
+import path from "path";
+import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
+import { runSandboxAgent } from "./sandbox-agent";
+import { recordSandboxLog } from "./sandbox-runner";
+import { rewriteSandboxPreviewPath } from "./sandbox-preview-path";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
 if (!ENC_KEY_RAW) {
@@ -11,10 +15,11 @@ const ENC_KEY = (ENC_KEY_RAW || "qirox-sandbox-default-key-32ch").padEnd(32, "0"
 const ENC_ALGO = "aes-256-cbc" as const;
 
 const PREVIEW_TOKEN_TTL = 15 * 60 * 1000;
+const PREVIEW_SIGNING_KEY = process.env.SESSION_SECRET || ENC_KEY_RAW || crypto.randomBytes(32).toString("hex");
 
 function generatePreviewToken(userId: string, projectId: string): string {
   const payload = JSON.stringify({ userId, projectId, exp: Date.now() + PREVIEW_TOKEN_TTL });
-  const hmac = crypto.createHmac("sha256", ENC_KEY).update(payload).digest("hex");
+  const hmac = crypto.createHmac("sha256", PREVIEW_SIGNING_KEY).update(payload).digest("hex");
   return Buffer.from(payload).toString("base64url") + "." + hmac;
 }
 
@@ -23,7 +28,7 @@ function verifyPreviewToken(token: string): { userId: string; projectId: string 
   if (parts.length !== 2) return null;
   try {
     const payload = Buffer.from(parts[0], "base64url").toString("utf8");
-    const hmac = crypto.createHmac("sha256", ENC_KEY).update(payload).digest("hex");
+    const hmac = crypto.createHmac("sha256", PREVIEW_SIGNING_KEY).update(payload).digest("hex");
     if (hmac !== parts[1]) return null;
     const data = JSON.parse(payload);
     if (data.exp < Date.now()) return null;
@@ -41,6 +46,20 @@ function encrypt(text: string): { encrypted: string; iv: string } {
   return { encrypted, iv: iv.toString("hex") };
 }
 
+export async function persistMissingSandboxEnvironment(projectId: any, values: Record<string, string>, overwriteKeys: string[] = []) {
+  const { SandboxEnvVarModel } = await import("./models");
+  const existing = await SandboxEnvVarModel.find({ projectId }).select("key").lean();
+  const keys = new Set(existing.map((item: any) => String(item.key)));
+  let imported = 0;
+  for (const [key, value] of Object.entries(values)) {
+    if (!value || (keys.has(key) && !overwriteKeys.includes(key))) continue;
+    const { encrypted, iv } = encrypt(value);
+    await SandboxEnvVarModel.updateOne({ projectId, key }, { $set: { value: encrypted, iv } }, { upsert: true });
+    imported++;
+  }
+  return imported;
+}
+
 function decrypt(encrypted: string, ivHex: string): string {
   const decipher = crypto.createDecipheriv(ENC_ALGO, Buffer.from(ENC_KEY), Buffer.from(ivHex, "hex"));
   let decrypted = decipher.update(encrypted, "hex", "utf8");
@@ -48,7 +67,7 @@ function decrypt(encrypted: string, ivHex: string): string {
   return decrypted;
 }
 
-const SANDBOX_ALLOWED_ROLES = ["admin", "manager", "employee"];
+const SANDBOX_ALLOWED_ROLES = ["admin", "manager", "owner", "employee", "cto", "developer", "designer"];
 const LOCAL_SECRET_KEYS = new Set([
   "SESSION_SECRET",
   "COOKIE_SECRET",
@@ -167,7 +186,7 @@ function requireAuth(req: Request, res: Response): any {
 function requireAdmin(req: Request, res: Response): any {
   const user = requireAuth(req, res);
   if (!user) return null;
-  if (!["admin", "manager"].includes(user.role)) {
+    if (!["admin", "manager", "cto"].includes(user.role)) {
     res.status(403).json({ error: "غير مصرّح" });
     return null;
   }
@@ -192,6 +211,39 @@ function parseGithubRepo(value: unknown): { owner: string; repo: string } | null
   return match ? { owner: match[1], repo: match[2] } : null;
 }
 
+async function inferProjectCommands(projectId: string, projectObjectId: any): Promise<void> {
+  try {
+    const { readFile } = await import("./sandbox-fs");
+    const { SandboxProjectModel } = await import("./models");
+    const packageJson = JSON.parse(readFile(projectId, "package.json"));
+    const scripts = packageJson?.scripts || {};
+    const files = new Set<string>();
+    const { listTree } = await import("./sandbox-fs");
+    for (const entry of listTree(projectId, "", 2) as any[]) {
+      if (entry.type === "file") files.add(String(entry.path));
+    }
+
+    let startCmd = "";
+    if (scripts.start) startCmd = "npm start";
+    else if (scripts.dev) startCmd = "npm run dev -- --host 0.0.0.0 --port $PORT";
+    else if (packageJson.main) startCmd = `node ${String(packageJson.main).replace(/^\.?\//, "")}`;
+    else if (files.has("index.js")) startCmd = "node index.js";
+
+    const updates: Record<string, string> = {};
+    if (startCmd) updates.startCmd = startCmd;
+    if (scripts.build) updates.buildCmd = "npm run build";
+    if (files.has("package-lock.json")) updates.installCmd = "npm ci";
+    else if (files.has("package.json")) updates.installCmd = "npm install";
+    const entryFile = packageJson.main || (files.has("index.js") ? "index.js" : "");
+    if (entryFile) updates.entryFile = String(entryFile).replace(/^\.?\//, "");
+    if (Object.keys(updates).length) {
+      await SandboxProjectModel.findByIdAndUpdate(projectObjectId, updates);
+    }
+  } catch {
+    // A repository without package.json keeps the selected template defaults.
+  }
+}
+
 async function requireProjectAccess(req: Request, res: Response): Promise<{ user: any; project: any } | null> {
   const user = requireAuth(req, res);
   if (!user) return null;
@@ -200,7 +252,7 @@ async function requireProjectAccess(req: Request, res: Response): Promise<{ user
   if (!projectId) { res.status(400).json({ error: "معرّف المشروع مطلوب" }); return null; }
   const project = await SandboxProjectModel.findById(projectId);
   if (!project) { res.status(404).json({ error: "المشروع غير موجود" }); return null; }
-  const isAdmin = ["admin", "manager"].includes(user.role);
+  const isAdmin = ["admin", "manager", "cto"].includes(user.role);
   const isOwner = String(project.ownerId) === String(user._id || user.id);
   let isProjectDeveloper = false;
 
@@ -225,7 +277,7 @@ async function requireProjectAccess(req: Request, res: Response): Promise<{ user
   return { user, project };
 }
 
-async function syncDiskToDb(projectId: string, objectId: any): Promise<number> {
+export async function syncDiskToDb(projectId: string, objectId: any): Promise<number> {
   const { SandboxFileModel } = await import("./models");
   const { listTree, readFile } = await import("./sandbox-fs");
   const tree = listTree(projectId, "", 10);
@@ -350,15 +402,18 @@ async function getOpenAIClient() {
 
 const proxyCache = new Map<string, ReturnType<typeof createProxyMiddleware>>();
 
-function getOrCreateProxy(port: number, projectId: string) {
-  const cacheKey = `${projectId}:${port}`;
+function getOrCreateProxy(port: number, projectId: string, websocket = false, preserveBasePath = false) {
+  const cacheKey = `${projectId}:${port}${websocket ? ":ws" : ""}${preserveBasePath ? ":scoped" : ""}`;
   if (proxyCache.has(cacheKey)) return proxyCache.get(cacheKey)!;
   const proxy = createProxyMiddleware({
     target: `http://127.0.0.1:${port}`,
     changeOrigin: true,
-    pathRewrite: (_path: string) => _path.replace(new RegExp(`^/sandbox/${projectId}/preview`), ""),
+    xfwd: true,
+    cookiePathRewrite: `/sandbox/${projectId}/preview`,
+    pathRewrite: (requestPath: string) => rewriteSandboxPreviewPath(requestPath, projectId, preserveBasePath),
     ws: true,
     on: {
+      proxyReq: fixRequestBody,
       error: (_err: any, _req: any, res: any) => {
         if (res && typeof res.status === "function") {
           res.status(502).send("الخادم غير متاح حالياً");
@@ -372,6 +427,7 @@ function getOrCreateProxy(port: number, projectId: string) {
 
 function invalidateProxy(projectId: string, port: number): void {
   proxyCache.delete(`${projectId}:${port}`);
+  proxyCache.delete(`${projectId}:${port}:ws`);
 }
 
 export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): void {
@@ -384,7 +440,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const { SandboxProjectModel, ProjectMemberModel, ProjectModel } = await import("./models");
       const { isRunning } = await import("./sandbox-runner");
-      const isAdmin = ["admin", "manager"].includes(user.role);
+      const isAdmin = ["admin", "manager", "cto"].includes(user.role);
       let query: any;
       if (isAdmin) {
         query = {};
@@ -583,7 +639,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const filePath = req.query.path as string;
       if (!filePath) return res.status(400).json({ error: "مسار الملف مطلوب" });
-      const { readFile } = await import("./sandbox-fs");
+      const { readFile, getProjectDir } = await import("./sandbox-fs");
       const content = readFile(String(ctx.project._id), filePath);
       res.json({ path: filePath, content });
     } catch (err: any) {
@@ -739,6 +795,8 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
+      const { synchronizeSaasWorkspace } = await import("./domains/saas-builder/workspace");
+      await synchronizeSaasWorkspace(ctx.project);
       const { startProcess } = await import("./sandbox-runner");
       const { SandboxProjectModel, SandboxEnvVarModel } = await import("./models");
       const pid = String(ctx.project._id);
@@ -964,6 +1022,56 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     }
   });
 
+  // Copy deployment variables into the workspace when a project is opened.
+  // Existing workspace values win, so opening the builder never overwrites a
+  // secret that was already configured locally.
+  app.post("/api/sandbox/projects/:id/env/import-deployment", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { synchronizeSaasWorkspace } = await import("./domains/saas-builder/workspace");
+      const saasImported = await synchronizeSaasWorkspace(ctx.project);
+      const { DeploymentProjectModel, SandboxEnvVarModel } = await import("./models");
+      const requestedId = String(req.body?.deploymentProjectId || "").trim();
+      const repo = parseGithubRepo(ctx.project.githubRepo);
+      const query = requestedId
+        ? { _id: requestedId }
+        : repo
+          ? { githubOwner: repo.owner, githubRepo: repo.repo }
+          : null;
+
+      if (!query) return res.json({ imported: saasImported, skipped: 0, reason: saasImported ? "تم ربط إعدادات النظام" : "لا يوجد مستودع مرتبط" });
+      const deployment = await DeploymentProjectModel.findOne(query).sort({ updatedAt: -1 }).lean() as any;
+      if (!deployment) return res.json({ imported: saasImported, skipped: 0, reason: saasImported ? "تم ربط إعدادات النظام" : "لا يوجد مشروع نشر مرتبط" });
+
+      const isAdmin = ["admin", "manager", "cto"].includes(ctx.user.role);
+      if (!isAdmin && String(deployment.ownerId) !== String(ctx.user._id || ctx.user.id)) {
+        return res.status(403).json({ error: "لا تملك صلاحية نقل متغيرات هذا المشروع" });
+      }
+
+      const existing = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).select("key").lean();
+      const existingKeys = new Set((existing as any[]).map((item) => String(item.key || "").toUpperCase()));
+      let imported = saasImported;
+      let skipped = 0;
+      for (const item of (deployment.envVars || []) as any[]) {
+        const key = String(item?.key || "").trim();
+        const value = String(item?.value || "");
+        if (!key || !value || existingKeys.has(key.toUpperCase())) {
+          skipped++;
+          continue;
+        }
+        const { encrypted, iv } = encrypt(value);
+        await SandboxEnvVarModel.create({ projectId: ctx.project._id, key, value: encrypted, iv });
+        existingKeys.add(key.toUpperCase());
+        imported++;
+      }
+
+      res.json({ imported, skipped, deploymentProjectId: String(deployment._id) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.delete("/api/sandbox/projects/:id/env/:key", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
@@ -1020,6 +1128,182 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
   });
 
   // ── AI Code Generation ────────────────────────────────────────────────────
+
+  app.post("/api/sandbox/:id/ai/agent", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const prompt = String(req.body?.prompt || "").trim();
+      if (!prompt) return res.status(400).json({ error: "وصف المهمة مطلوب" });
+      const selectedElement = req.body?.selectedElement;
+      const selectionContext = selectedElement && typeof selectedElement === "object"
+        ? `\n\nالعنصر المحدد من المعاينة:
+${JSON.stringify({
+  tagName: String(selectedElement.tagName || "").slice(0, 40),
+  selector: String(selectedElement.selector || "").slice(0, 500),
+  text: String(selectedElement.text || "").slice(0, 500),
+  className: String(selectedElement.className || "").slice(0, 500),
+  ariaLabel: String(selectedElement.ariaLabel || "").slice(0, 200),
+}, null, 2)}
+استخدم هذا الوصف لتحديد ملف المصدر المناسب، ولا تكتفِ بتعديل HTML الناتج داخل المعاينة.`
+        : "";
+
+      const { SandboxEnvVarModel, SandboxProjectModel } = await import("./models");
+      const { getProcessLogs, isRunning, startProcess } = await import("./sandbox-runner");
+      const pid = String(ctx.project._id);
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      const env: Record<string, string> = {};
+      for (const doc of envDocs as any[]) {
+        try { env[doc.key] = decrypt(doc.value, doc.iv); } catch {}
+      }
+
+      const result = await runSandboxAgent({
+        projectId: pid,
+        prompt: `${prompt}${selectionContext}`,
+        maxIterations: Number(req.body?.maxIterations) || 4,
+        autoRun: req.body?.autoRun !== false,
+        env,
+        log: (entry) => {
+          recordSandboxLog(String(ctx.user._id), pid, entry.stream, entry.text);
+        },
+        startProject: async (startCmd) => {
+          const command = startCmd || ctx.project.startCmd;
+          if (!command) return { running: false, output: "لا يوجد أمر تشغيل للمشروع" };
+          try {
+            const started = await startProcess(pid, String(ctx.user._id), {
+              startCmd: command,
+              env,
+              runtime: ctx.project.runtime,
+            });
+            await new Promise((resolve) => setTimeout(resolve, 1800));
+            const running = isRunning(pid);
+            const output = getProcessLogs(pid).slice(-30).map((entry) => entry.text).join("");
+            await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, {
+              status: running ? "running" : "error",
+              port: running ? started.port : null,
+              lastStartedAt: running ? new Date() : undefined,
+            });
+            return { running, port: running ? started.port : undefined, output };
+          } catch (error: any) {
+            return { running: false, output: error.message || String(error) };
+          }
+        },
+      });
+
+      if (result.projectConfig && Object.keys(result.projectConfig).length) {
+        await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, result.projectConfig);
+      }
+      res.json({ mode: "agent", agent: result });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تشغيل الوكيل" });
+    }
+  });
+
+  // Run the workspace build synchronously before handing the project to the
+  // deployment provider. This keeps the deploy button honest: a provider
+  // request is never started when the current source cannot build locally.
+  app.post("/api/sandbox/projects/:id/preflight", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { readFile, getProjectDir } = await import("./sandbox-fs");
+      const { SandboxEnvVarModel } = await import("./models");
+      const { sanitizeCommand } = await import("./sandbox-runner");
+      const { spawn } = await import("child_process");
+
+      let buildCmd = String(ctx.project.buildCmd || "").trim();
+      if (!buildCmd) {
+        try {
+          const packageJson = JSON.parse(readFile(String(ctx.project._id), "package.json"));
+          if (packageJson?.scripts?.build) buildCmd = "npm run build";
+        } catch {
+          // Static and runtime-only projects do not have a build step.
+        }
+      }
+
+      if (!buildCmd) {
+        return res.json({
+          success: true,
+          skipped: true,
+          command: "",
+          output: "لا يوجد أمر بناء لهذا المشروع؛ تم تجاوز الفحص.",
+        });
+      }
+
+      let safeBuildCmd: string;
+      try {
+        safeBuildCmd = sanitizeCommand(buildCmd);
+      } catch (error: any) {
+        return res.status(400).json({ error: `أمر البناء غير آمن: ${error.message}` });
+      }
+
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      const env: Record<string, string> = {};
+      Object.entries(process.env).forEach(([key, value]) => {
+        if (value !== undefined) env[key] = value;
+      });
+      const secretValues: string[] = [];
+      for (const doc of envDocs as { key: string; value: string; iv: string }[]) {
+        try {
+          const value = decrypt(doc.value, doc.iv);
+          env[doc.key] = value;
+          if (value.length >= 4) secretValues.push(value);
+        } catch {
+          // An unreadable optional variable must not prevent build diagnostics.
+        }
+      }
+
+      const result = await new Promise<{ success: boolean; output: string }>((resolve) => {
+        const child = spawn("/bin/sh", ["-c", safeBuildCmd], {
+          cwd: getProjectDir(String(ctx.project._id)),
+          env,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+        let output = "";
+        let settled = false;
+        const redact = (text: string) => secretValues.reduce(
+          (value, secret) => value.split(secret).join("[REDACTED]"),
+          text,
+        );
+        const append = (chunk: Buffer) => {
+          output = `${output}${chunk.toString()}`.slice(-24_000);
+        };
+        const finish = (success: boolean, suffix = "") => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          output = redact(`${output}${suffix}`).slice(-24_000);
+          resolve({ success, output });
+        };
+        const timeout = setTimeout(() => {
+          try { child.kill("SIGTERM"); } catch {}
+          finish(false, "\n⏱ انتهت مهلة فحص البناء (120 ثانية)");
+        }, 120_000);
+        child.stdout?.on("data", append);
+        child.stderr?.on("data", append);
+        child.on("error", (error) => finish(false, `\n${error.message}`));
+        child.on("close", (code) => finish(code === 0, `\nانتهى الفحص (كود: ${code ?? "unknown"})`));
+      });
+
+      if (!result.success) {
+        return res.status(422).json({
+          success: false,
+          skipped: false,
+          command: safeBuildCmd,
+          output: result.output,
+          error: "فشل فحص البناء؛ أصلح الأخطاء قبل النشر.",
+        });
+      }
+      return res.json({
+        success: true,
+        skipped: false,
+        command: safeBuildCmd,
+        output: result.output,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر فحص المشروع قبل النشر" });
+    }
+  });
 
   app.post("/api/sandbox/:id/ai/generate", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
@@ -1257,7 +1541,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       const { repoUrl, branch } = req.body;
       if (!repoUrl) return res.status(400).json({ error: "رابط المستودع مطلوب" });
 
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const { ensureProjectDir, deleteProjectDir } = await import("./sandbox-fs");
       const { SandboxProjectModel } = await import("./models");
       const pid = String(ctx.project._id);
@@ -1274,6 +1558,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       });
 
       await syncDiskToDb(pid, ctx.project._id);
+      await inferProjectCommands(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
@@ -1288,7 +1573,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       const { repoUrl, branch, pat } = req.body;
       if (!repoUrl) return res.status(400).json({ error: "رابط المستودع مطلوب" });
 
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const { ensureProjectDir, deleteProjectDir } = await import("./sandbox-fs");
       const { SandboxProjectModel } = await import("./models");
       const pid = String(ctx.project._id);
@@ -1322,6 +1607,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       });
 
       await syncDiskToDb(pid, ctx.project._id);
+      await inferProjectCommands(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
@@ -1333,7 +1619,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
       const git = simpleGit(dir);
@@ -1358,7 +1644,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       if (!targetRepo) return res.status(400).json({ error: "رابط المستودع مطلوب" });
       safeRepoUrl = targetRepo;
 
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
       git = simpleGit(dir);
@@ -1390,7 +1676,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
       const git = simpleGit(dir);
@@ -1431,12 +1717,25 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       if (!project || !project.port) return res.status(404).send("المشروع غير متاح");
 
       const isOwner = req.isAuthenticated?.() && String((req as any).user?._id) === String(project.ownerId);
-      const isAdmin = req.isAuthenticated?.() && ["admin", "manager"].includes((req as any).user?.role);
-      if (!project.isPublic && !isOwner && !isAdmin) {
+       const isAdmin = req.isAuthenticated?.() && ["admin", "manager", "cto"].includes((req as any).user?.role);
+       const cookieName = `qirox_preview_${project._id}`;
+       const { sandboxPreviewCookie } = await import("./sandbox-preview-cookie");
+       const grant = verifyPreviewToken(String(req.query.token || "")) || verifyPreviewToken(sandboxPreviewCookie(req.headers.cookie, String(project._id)));
+       const hasGrant = grant?.projectId === String(project._id);
+       if (!project.isPublic && !isOwner && !isAdmin && !hasGrant) {
         return res.status(403).send("غير مصرّح");
       }
+       res.setHeader("Referrer-Policy", "no-referrer");
+       if (isOwner || isAdmin || hasGrant) {
+         res.cookie(cookieName, generatePreviewToken(String(grant?.userId || (req as any).user._id), String(project._id)), {
+           httpOnly: true, sameSite: req.secure ? "none" : "lax", secure: req.secure,
+           partitioned: req.secure,
+           path: `/sandbox/${project._id}/preview`, maxAge: PREVIEW_TOKEN_TTL,
+         });
+       }
 
-      const proxy = getOrCreateProxy(project.port, String(project._id));
+      const hasScopedPreviewBase = Boolean(project.sourceProjectId && project.sourceOrderId);
+      const proxy = getOrCreateProxy(project.port, String(project._id), false, hasScopedPreviewBase);
       proxy(req, res, next);
     } catch {
       res.status(500).send("خطأ في البروكسي");
@@ -1549,9 +1848,11 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
 
           if (!project.isPublic) {
             const token = new URL(req.url, "http://localhost").searchParams.get("token");
-            if (!token) { socket.destroy(); return; }
-
-            const decoded = verifyPreviewToken(token);
+            // Vite uses its own query token. The parent's signed grant is in an
+            // HttpOnly cookie scoped to this preview, including WebSocket requests.
+            const { sandboxPreviewCookie } = await import("./sandbox-preview-cookie");
+            const cookieToken = sandboxPreviewCookie(req.headers.cookie, projectId);
+            const decoded = verifyPreviewToken(token || "") || verifyPreviewToken(cookieToken);
             if (!decoded || decoded.projectId !== projectId) { socket.destroy(); return; }
 
             const { UserModel } = await import("./models");
@@ -1560,11 +1861,12 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
             const uid = String(user._id);
             const ownerId = String(project.ownerId);
             const isOwner = uid === ownerId;
-            const isAdmin = user.role === "admin" || user.role === "manager";
+            const isAdmin = ["admin", "manager", "cto"].includes(user.role);
             if (!isOwner && !isAdmin) { socket.destroy(); return; }
           }
 
-          const proxy = getOrCreateProxy(project.port, String(project._id));
+          const hasScopedPreviewBase = Boolean(project.sourceProjectId && project.sourceOrderId);
+          const proxy = getOrCreateProxy(project.port, String(project._id), true, hasScopedPreviewBase);
           (proxy as any).upgrade(req, socket, head);
         } catch {
           socket.destroy();

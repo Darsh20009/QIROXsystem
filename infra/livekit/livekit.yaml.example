@@ -1,0 +1,29 @@
+# QMeet self-hosted LiveKit configuration.
+#
+# Copy this file to the media VPS as /opt/livekit/livekit.yaml and replace
+# the placeholder key/secret there. Never commit the real values.
+
+port: 7880
+log_level: info
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+
+# Keep Redis bound to localhost on a single media node. It is used for
+# coordination when more than one LiveKit node is added later.
+redis:
+  address: 127.0.0.1:6379
+
+# TURN over UDP/443 improves connectivity on restrictive mobile and
+# corporate networks. TCP/TLS signaling remains behind the HTTPS proxy.
+turn:
+  enabled: true
+  udp_port: 443
+
+# Replace both values only on the VPS. The same pair must be stored in
+# Replit Secrets and exposed to the QMeet API process.
+keys:
+  QMEET_REPLACE_API_KEY: QMEET_REPLACE_API_SECRET

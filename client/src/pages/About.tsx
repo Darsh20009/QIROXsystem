@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
 import { useQuery } from "@tanstack/react-query";
+import { AboutIdentityStory } from "@/components/about/AboutIdentityStory";
 import {
   ArrowLeft, Code2, Layers, Globe, Cpu, GitBranch, TrendingUp,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -38,12 +39,61 @@ export default function About() {
   const { t, lang, dir } = useI18n();
 
   useSEO({
-    title: lang === "ar" ? "من نحن كيروكس استوديو | شركة برمجة سعودية في الرياض" : "About Us Qirox Studio | Saudi Software Company",
+    title: lang === "ar" ? "من نحن | كيروكس — المنظومة التقنية لبناء البنية التحتية الرقمية للأعمال" : "About QIROX | Digital Business Infrastructure Company",
     description: lang === "ar"
-      ? "كيروكس استوديو شركة برمجة سعودية تأسست في الرياض. نبني مواقع وتطبيقات وأنظمة رقمية احترافية. فريق من أفضل المطورين السعوديين بخبرة 4+ سنوات."
-      : "Qirox Studio Saudi software company based in Riyadh. We build professional websites, apps, and digital systems. A team of top Saudi developers with 4+ years experience.",
-    keywords: "كيروكس استوديو, من نحن, شركة برمجة سعودية, مطورين سعوديين, Qirox Studio about, software company Riyadh, فريق كيروكس",
+      ? "تعرف على كيروكس: منظومة تقنية تبني البنية التحتية الرقمية للشركات عبر الحلول الرقمية المتكاملة، الأتمتة، الذكاء الاصطناعي، المنتجات التقنية، والمعرفة."
+      : "Meet QIROX, a technology ecosystem building digital business infrastructure through integrated solutions, automation, artificial intelligence, products, and knowledge.",
+    keywords: "من نحن كيروكس, QIROX, Qirox Studio, هوية كيروكس, رؤية كيروكس, رسالة كيروكس, البنية التحتية الرقمية للأعمال, شركة تقنية سعودية, الذكاء الاصطناعي, الأتمتة, محمد الدباني, يوسف درويش",
     canonical: "/about",
+    ogType: "website",
+    ogImage: "https://qiroxstudio.online/og-cover.png",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": "https://qiroxstudio.online/about#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "ما هي كيروكس؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "كيروكس هي منظومة تقنية لبناء البنية التحتية الرقمية للشركات، تجمع بين الحلول الرقمية المتكاملة، الأتمتة، الذكاء الاصطناعي، المنتجات التقنية، والمعرفة."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ماذا يعني اسم QIROX؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "QIROX اختصار لـ Quality الجودة، Innovation الابتكار، Reliability الموثوقية، Optimization التحسين، وXperience التجربة."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ما رؤية كيروكس؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "تطمح كيروكس إلى أن تصبح المنظومة التقنية الأكثر تأثيراً في تمكين الشركات ورواد الأعمال من بناء أعمال أكثر كفاءة واستدامة، انطلاقاً من المملكة العربية السعودية إلى الأسواق العالمية."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "هل ينتهي دور كيروكس عند تسليم المشروع؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "لا. تؤمن كيروكس بأن تسليم المشروع ليس نهاية العلاقة مع العميل، بل بدايتها؛ فبعد الإطلاق تبدأ مرحلة التطوير والتحسين وقياس الأداء ودعم التوسع."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "من يقود كيروكس؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "يقود كيروكس محمد بن علي الدباني بصفته الرئيس التنفيذي، ويوسف محمد درويش بصفته المدير التنفيذي التقني."
+          }
+        }
+      ]
+    },
   });
 
   const { data: partners = [] } = useQuery<any[]>({
@@ -119,21 +169,29 @@ export default function About() {
             <motion.div initial="hidden" animate="visible" variants={stagger}>
               <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] mb-6">
                 <span className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
-                <span className="text-white/45 text-xs tracking-wider uppercase">{t("about.badge")}</span>
+                <span className="text-white/45 text-xs tracking-wider uppercase">
+                  {lang === "ar" ? "منظومة تقنية لبناء الأعمال" : "Digital business infrastructure"}
+                </span>
               </motion.div>
-              <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-5xl lg:text-6xl font-black font-heading text-white leading-[1.08] mb-6 tracking-tight">
-                {t("about.hero.title1")}
+              <motion.h1 data-about-summary variants={fadeUp} custom={1} className="text-4xl md:text-5xl lg:text-6xl font-black font-heading text-white leading-[1.08] mb-6 tracking-tight">
+                {lang === "ar" ? "نبني البنية التحتية الرقمية للأعمال." : "We build digital business infrastructure."}
                 <br />
-                <span className="text-white/30">{t("about.hero.title2")}</span>
+                <span className="text-white/30">
+                  {lang === "ar" ? "وبعد التسليم تبدأ القصة." : "The story starts after delivery."}
+                </span>
               </motion.h1>
               <motion.p variants={fadeUp} custom={2} className="text-base text-white/40 leading-relaxed max-w-md">
-                {t("about.hero.subtitle")}
+                {lang === "ar"
+                  ? "كيروكس منظومة تقنية تجمع الحلول الرقمية المتكاملة، الأتمتة، الذكاء الاصطناعي، المنتجات التقنية، والمعرفة في شراكة واحدة قابلة للنمو."
+                  : "QIROX connects integrated digital solutions, automation, AI, products, and knowledge into one partnership built for growth."}
               </motion.p>
             </motion.div>
             <AboutHeroVisual lang={lang} />
           </div>
         </div>
       </section>
+
+      <AboutIdentityStory lang={lang} />
 
       {/* Features */}
       <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">

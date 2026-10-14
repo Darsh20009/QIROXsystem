@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
+import SARIcon from "@/components/SARIcon";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Loader2, Sparkles,
   UtensilsCrossed, ShoppingBag, GraduationCap, Building2,
@@ -66,9 +67,9 @@ const FEATURES_EN = [
 
 const BUDGETS_AR_SAR = [
   { key: "unknown",   label: "لم أحدد بعد",           sub: "سنقترح ما يناسبك" },
-  { key: "small",     label: "أقل من 15,000 ريال",    sub: "مشاريع لايت" },
-  { key: "medium",    label: "15,000 – 50,000 ريال",  sub: "مشاريع برو" },
-  { key: "large",     label: "أكثر من 50,000 ريال",   sub: "مشاريع إنفينيت" },
+  { key: "small",     label: <>أقل من 15,000 <SARIcon size={12} /></>,    sub: "مشاريع لايت" },
+  { key: "medium",    label: <>15,000 – 50,000 <SARIcon size={12} /></>,  sub: "مشاريع برو" },
+  { key: "large",     label: <>أكثر من 50,000 <SARIcon size={12} /></>,   sub: "مشاريع إنفينيت" },
 ];
 
 const BUDGETS_AR_EGP = [
@@ -80,9 +81,9 @@ const BUDGETS_AR_EGP = [
 
 const BUDGETS_EN = [
   { key: "unknown",   label: "Not sure yet",        sub: "We'll suggest the best fit" },
-  { key: "small",     label: "Under SAR 15,000",    sub: "Lite projects" },
-  { key: "medium",    label: "SAR 15,000 – 50,000", sub: "Pro projects" },
-  { key: "large",     label: "SAR 50,000+",          sub: "Infinite projects" },
+  { key: "small",     label: <>Under <SARIcon size={12} /> 15,000</>,    sub: "Lite projects" },
+  { key: "medium",    label: <><SARIcon size={12} /> 15,000 – 50,000</>, sub: "Pro projects" },
+  { key: "large",     label: <><SARIcon size={12} /> 50,000+</>,          sub: "Infinite projects" },
 ];
 
 const CONTACT_OPTIONS_AR = [

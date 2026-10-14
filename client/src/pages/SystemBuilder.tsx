@@ -30,6 +30,7 @@ interface SandboxProject {
   status?: string;
   createdAt?: string;
   updatedAt?: string;
+  logoUrl?: string;
 }
 
 interface TemplateMeta {
@@ -61,7 +62,7 @@ export default function SystemBuilder() {
   const [renameDialog, setRenameDialog] = useState<{ id: string; name: string } | null>(null);
   const [renameName, setRenameName] = useState("");
 
-  const { data: projects, isLoading } = useQuery<SandboxProject[]>({
+  const { data: projects, isLoading, isError, error, refetch, isFetching } = useQuery<SandboxProject[], Error>({
     queryKey: ["/api/sandbox/projects"],
   });
 
@@ -182,6 +183,17 @@ export default function SystemBuilder() {
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
+        ) : isError ? (
+          <div className="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center" role="alert">
+            <p className="font-medium">{ar ? "تعذر تحميل مشاريع صانع الأنظمة" : "Could not load System Builder projects"}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {error.message || (ar ? "تحقق من صلاحية حسابك ثم أعد المحاولة." : "Check your account access and try again.")}
+            </p>
+            <Button className="mt-4" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              {isFetching && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {ar ? "إعادة المحاولة" : "Retry"}
+            </Button>
+          </div>
         ) : !projects?.length ? (
           <div className="text-center py-20">
             <FileCode className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
@@ -209,9 +221,11 @@ export default function SystemBuilder() {
                         className="flex items-center gap-3 flex-1 min-w-0"
                         onClick={() => navigate(`/employee/system-builder/${p.id}`)}
                       >
-                        <div className={`w-10 h-10 rounded-lg ${meta.color} flex items-center justify-center flex-shrink-0`}>
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
+                        {p.logoUrl
+                          ? <img src={p.logoUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-lg border border-border bg-white object-contain p-1" />
+                          : <div className={`w-10 h-10 rounded-lg ${meta.color} flex items-center justify-center flex-shrink-0`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>}
                         <div className="min-w-0">
                           <h3 className="font-semibold truncate">{p.name}</h3>
                           <p className="text-xs text-muted-foreground">{meta.label}</p>

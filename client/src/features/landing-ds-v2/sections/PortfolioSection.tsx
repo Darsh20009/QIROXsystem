@@ -1,8 +1,8 @@
 import { useTemplates } from "@/hooks/use-templates";
 import { useI18n } from "@/lib/i18n";
 import { ExternalLink, ArrowRight, ArrowLeft } from "lucide-react";
-import ecommerceDemoImg from "@/assets/ecommerce-demo.png";
-import restaurantDemoImg from "@/assets/restaurant-demo.png";
+import ecommerceDemoImg from "@/assets/ecommerce-demo.webp";
+import restaurantDemoImg from "@/assets/restaurant-demo.webp";
 
 export default function PortfolioSection() {
   const { t, lang } = useI18n();

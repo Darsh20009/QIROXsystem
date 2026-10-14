@@ -335,6 +335,8 @@ export interface Partner {
   features?: string[];
   featuresAr?: string[];
   relatedService?: string;
+  serviceIds?: string[];
+  serviceFeatures?: string[];
   description?: string;
   descriptionAr?: string;
   createdAt?: Date;
@@ -354,6 +356,7 @@ export interface InsertPartner {
   features?: string[];
   featuresAr?: string[];
   relatedService?: string;
+  serviceIds?: string[];
   description?: string;
   descriptionAr?: string;
 }
@@ -455,6 +458,11 @@ export interface OrderSpecs {
   colorPalette?: string[];
   referenceLinks?: string[];
   customVars?: Record<string, any>;
+  internalForms?: Array<{
+    id: string;
+    name: string;
+    fields: Array<{ id: string; label: string; value: string }>;
+  }>;
   createdAt?: Date;
   updatedAt?: Date;
 }

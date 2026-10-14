@@ -15,9 +15,10 @@ import { SiGithub } from "react-icons/si";
 interface GitHubPanelProps {
   projectId: string;
   adminOrderId?: string;
+  beforePush?: () => Promise<void>;
 }
 
-export function GitHubPanel({ projectId, adminOrderId }: GitHubPanelProps) {
+export function GitHubPanel({ projectId, adminOrderId, beforePush }: GitHubPanelProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();
@@ -50,6 +51,7 @@ export function GitHubPanel({ projectId, adminOrderId }: GitHubPanelProps) {
 
   const adminPushMutation = useMutation({
     mutationFn: async () => {
+      await beforePush?.();
       const res = await apiRequest("POST", `/api/admin/orders/${adminOrderId}/github/code/workspace/push`, {
         commitMessage: commitMsg || (ar ? "تحديث من بيئة تطوير QIROX" : "Update from QIROX Code Workspace"),
       });
@@ -108,6 +110,7 @@ export function GitHubPanel({ projectId, adminOrderId }: GitHubPanelProps) {
 
   const pushMutation = useMutation({
     mutationFn: async () => {
+      await beforePush?.();
       await apiRequest("POST", `/api/sandbox/projects/${projectId}/github/push`, {
         repoUrl: pushRepo || undefined,
         pat: pushPat || undefined,

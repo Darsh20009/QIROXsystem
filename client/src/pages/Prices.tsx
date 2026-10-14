@@ -10,6 +10,8 @@ import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrency } from "@/hooks/use-currency";
+import SARIcon from "@/components/SARIcon";
+import { PLAN_PRICES, CUSTOM_QUOTE_BASE_WEBSITE_VALUE, CUSTOM_QUOTE_MULTIPLIER, CUSTOM_QUOTE_BASE_PRICE } from "@shared/plan-prices";
 import {
   Check, Zap, Star, Crown, Infinity as InfinityIcon, Globe, Sparkles,
   UtensilsCrossed, ShoppingBag, Building2, GraduationCap, Heart, Home,
@@ -30,20 +32,7 @@ import { Input } from "@/components/ui/input";
 /* These prices match the original prices used in the employee/admin system
    (seeded in server/routes.ts). Each sector has lite/pro/infinity tiers
    with sm (6-month), yr (annual) and life (lifetime) prices. */
-const PRICES = {
-  restaurant: { lite: { sm: 399,  yr: 899,  life: 5299  }, pro: { sm: 799,  yr: 1699, life: 9299  }, infinity: { sm: 1699, yr: 3299, life: 17299 } },
-  ecommerce:  { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  education:  { lite: { sm: 999,  yr: 1849, life: 9699  }, pro: { sm: 2099, yr: 3599, life: 17199 }, infinity: { sm: 4087, yr: 6787, life: 30787 } },
-  healthcare: { lite: { sm: 1248, yr: 1948, life: 8198  }, pro: { sm: 2238, yr: 3388, life: 13788 }, infinity: { sm: 3899, yr: 5999, life: 25299 } },
-  realestate: { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  corporate:  { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
-  fitness:    { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  beauty:     { lite: { sm: 998,  yr: 1498, life: 5898  }, pro: { sm: 1788, yr: 2688, life: 10288 }, infinity: { sm: 3199, yr: 4799, life: 18799 } },
-  events:     { lite: { sm: 649,  yr: 1349, life: 7599  }, pro: { sm: 1249, yr: 2399, life: 12799 }, infinity: { sm: 2399, yr: 4499, life: 23799 } },
-  marketing:  { lite: { sm: 899,  yr: 1749, life: 9599  }, pro: { sm: 1699, yr: 3199, life: 16799 }, infinity: { sm: 3099, yr: 5799, life: 29799 } },
-  ai:         { lite: { sm: 1249, yr: 2399, life: 12799 }, pro: { sm: 2599, yr: 4899, life: 25299 }, infinity: { sm: 5399, yr: 9999, life: 50799 } },
-  other:      { lite: { sm: 0,    yr: 0,    life: 0     }, pro: { sm: 0,    yr: 0,    life: 0     }, infinity: { sm: 0,    yr: 0,    life: 0     } },
-} as const;
+const PRICES = PLAN_PRICES;
 type SectorKey = keyof typeof PRICES;
 function multiYearPrice(annual: number, years: number) {
   let total = 0;
@@ -546,7 +535,6 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
     sublabel = disc > 0 ? `خصم ${disc}% على السنوات الإضافية` : "";
   }
   else { price = prices.life; label = "مدى الحياة"; sublabel = "دفعة واحدة للأبد"; }
-
   // Monthly equivalent + savings
   const monthlyEquiv =
     period === "sixmonth"  ? Math.round(prices.sm / 6) :
@@ -625,11 +613,13 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
           <motion.div key={`${tier}-${period}-${years}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-2">
               <span className={`text-4xl font-black tracking-tight ${st.textColor}`}>{currency.format(price)}</span>
-              <span className={`text-sm font-bold ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+              <span className={`text-sm font-bold inline-flex items-center ${isPro || isInfinity ? "text-white/40" : "text-gray-400"}`}>
+                {currency.isSaudi ? <SARIcon size={15} /> : currency.symbol}
+              </span>
             </div>
             {!currency.isSaudi && (
               <p className={`text-[10px] mt-0.5 font-bold ${isPro ? "text-blue-200/50" : isInfinity ? "text-amber-300/40" : "text-gray-400/70"}`}>
-                ≈ {fmt(price)} ر.س
+                ≈ {fmt(price)} <SARIcon size={10} className="opacity-70" />
               </p>
             )}
             <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInfinity ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>
@@ -643,12 +633,15 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
               }`}>
                 <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>≈</span>
                 <span className={`text-sm font-black ${st.textColor}`}>{currency.format(monthlyEquiv)}</span>
-                <span className={`text-[11px] font-bold ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>{currency.symbol} / شهر</span>
+                <span className={`text-[11px] font-bold inline-flex items-center gap-1 ${isInfinity ? "text-amber-300/70" : isPro ? "text-blue-200/70" : "text-gray-500 dark:text-slate-400"}`}>
+                  {currency.isSaudi ? <SARIcon size={11} /> : currency.symbol} / شهر
+                </span>
               </div>
             )}
             {period === "sixmonth" && (
               <p className={`text-[10px] mt-1.5 ${isPro || isInfinity ? "text-white/35" : "text-gray-400/80"}`}>
-                يساوي <span className="line-through">{currency.format(prices.sm * 2)}</span> {currency.symbol} سنوياً
+                يساوي <span className="line-through">{currency.format(prices.sm * 2)}</span>{" "}
+                {currency.isSaudi ? <SARIcon size={11} className="opacity-70" /> : currency.symbol} سنوياً
               </p>
             )}
           </motion.div>
@@ -670,6 +663,15 @@ function PlanCard({ tier, period, years, sector, onCustom, onOrder }: {
               <span className={`text-[12px] leading-snug ${isInfinity ? "text-slate-300" : isPro ? "text-blue-100" : "text-gray-600 dark:text-slate-300"}`}>{ar}</span>
             </div>
           ))}
+        </div>
+        <div className={`mt-5 pt-4 border-t text-[10px] leading-relaxed font-bold ${
+          isInfinity ? "border-amber-500/15 text-amber-300/65" :
+          isPro ? "border-white/10 text-blue-100/65" :
+          "border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500"
+        }`}>
+          {isLifetime
+            ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»"
+            : "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع"}
         </div>
       </div>
 
@@ -715,6 +717,9 @@ function CustomBanner({ onOpen }: { onOpen: ()=>void }) {
           </div>
           <p className="text-sm text-gray-500 dark:text-slate-400">
             اوصف احتياجاتك بمساعدة الذكاء الاصطناعي، وسنعد لك عرض سعر مخصص مع رقم تذكرة للمتابعة
+          </p>
+          <p className="text-[11px] text-violet-600/80 dark:text-violet-300/70 mt-2">
+            العرض خارج الباقات = {CUSTOM_QUOTE_MULTIPLIER} × قيمة الموقع الأساسية ({fmt(CUSTOM_QUOTE_BASE_WEBSITE_VALUE)} ر.س) = {fmt(CUSTOM_QUOTE_BASE_PRICE)} ر.س كأساس، دون تكاليف مزودي الخدمات.
           </p>
           <div className="flex items-center gap-4 mt-2 justify-center md:justify-start">
             {["أي مدة تناسبك","ميزات غير محدودة","عرض سعر خاص بك"].map((t,i)=>(

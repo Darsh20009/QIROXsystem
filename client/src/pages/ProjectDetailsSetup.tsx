@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -36,6 +36,38 @@ const SECTIONS = [
   { label: "التكاملات", icon: Zap, desc: "الأنظمة التي تحتاجها" },
   { label: "فكرتك", icon: Layers, desc: "صف ما تريد بناؤه" },
   { label: "الوثائق الرسمية", icon: Shield, desc: "ارفع وثائق نشاطك التجاري" },
+];
+
+type SetupFieldSubfield = {
+  id: string;
+  fieldKey: string;
+  name: string;
+  value: string;
+};
+
+const SETUP_FIELD_OPTIONS = [
+  { key: "businessName", ar: "اسم النشاط / المشروع", en: "Business / project name" },
+  { key: "phone", ar: "رقم الجوال", en: "Phone number" },
+  { key: "sector", ar: "القطاع", en: "Sector" },
+  { key: "targetAudience", ar: "الجمهور المستهدف", en: "Target audience" },
+  { key: "siteLanguage", ar: "لغة الموقع / النظام", en: "Site / system language" },
+  { key: "whatsappIntegration", ar: "تكامل واتساب", en: "WhatsApp integration" },
+  { key: "needsPayment", ar: "نظام الدفع", en: "Payment system" },
+  { key: "needsBooking", ar: "حجز المواعيد", en: "Appointment booking" },
+  { key: "brandColor", ar: "ألوان العلامة التجارية", en: "Brand colors" },
+  { key: "requiredFunctions", ar: "فكرة المشروع والمتطلبات", en: "Project idea and requirements" },
+  { key: "logoUrl", ar: "شعار النشاط", en: "Business logo" },
+  { key: "commercialRegUrl", ar: "السجل التجاري", en: "Commercial registration" },
+  { key: "taxRegUrl", ar: "شهادة التسجيل الضريبي", en: "Tax registration certificate" },
+  { key: "nationalIdUrl", ar: "الهوية الوطنية / الإقامة", en: "National ID / residency" },
+  { key: "ibanCertUrl", ar: "شهادة الإيبان", en: "IBAN certificate" },
+];
+
+const SETUP_FORM_KEYS = [
+  "businessName", "phone", "sector", "targetAudience", "siteLanguage",
+  "whatsappIntegration", "needsPayment", "needsBooking", "brandColor",
+  "requiredFunctions", "logoUrl", "commercialRegUrl", "taxRegUrl",
+  "nationalIdUrl", "ibanCertUrl",
 ];
 
 const DOC_TYPES = [
@@ -346,7 +378,8 @@ function AIWritingAssistant({
 }
 
 export default function ProjectDetailsSetup() {
-  const { dir } = useI18n();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [, params] = useRoute("/order-setup/:orderId");
   const orderId = params?.orderId || "";
   const { data: user } = useUser();
@@ -363,10 +396,25 @@ export default function ProjectDetailsSetup() {
     },
     retry: false,
   });
+  const {
+    data: savedDetails,
+    isLoading: detailsLoading,
+    isError: detailsError,
+  } = useQuery<any>({
+    queryKey: ["/api/orders", orderId, "details"],
+    enabled: Boolean(orderId),
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}/details`, { credentials: "include" });
+      if (!response.ok) throw new Error("تعذر تحميل تفاصيل المشروع");
+      return response.json();
+    },
+    retry: false,
+  });
 
   const [section, setSection] = useState(0);
   const [saved, setSaved] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [newSubfieldParent, setNewSubfieldParent] = useState(SETUP_FIELD_OPTIONS[0].key);
   const [form, setForm] = useState({
     businessName: (user as any)?.businessName || (user as any)?.fullName || "",
     phone: (user as any)?.phone || "",
@@ -384,7 +432,23 @@ export default function ProjectDetailsSetup() {
     taxRegUrl: "",
     nationalIdUrl: "",
     ibanCertUrl: "",
+    setupFieldSubfields: [] as SetupFieldSubfield[],
   });
+
+  useEffect(() => {
+    if (!savedDetails) return;
+    const savedFormValues = Object.fromEntries(
+      SETUP_FORM_KEYS
+        .filter(key => savedDetails[key] !== undefined)
+        .map(key => [key, savedDetails[key]]),
+    );
+    const setupFieldSubfields = Array.isArray(savedDetails.setupFieldSubfields)
+      ? savedDetails.setupFieldSubfields.filter((item: any) =>
+          item && typeof item.id === "string" && typeof item.fieldKey === "string",
+        )
+      : [];
+    setForm(current => ({ ...current, ...savedFormValues, setupFieldSubfields }));
+  }, [savedDetails]);
 
   const { data: sectorTemplates = [] } = useQuery<any[]>({
     queryKey: ["/api/templates"],
@@ -406,12 +470,60 @@ export default function ProjectDetailsSetup() {
   });
 
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+  const addSetupSubfield = () => {
+    const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `setup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const count = form.setupFieldSubfields.filter(item => item.fieldKey === newSubfieldParent).length + 1;
+    set("setupFieldSubfields", [
+      ...form.setupFieldSubfields,
+      {
+        id,
+        fieldKey: newSubfieldParent,
+        name: `${L ? "تفصيل" : "Detail"} ${count}`,
+        value: "",
+      },
+    ]);
+  };
+  const updateSetupSubfield = (id: string, key: "name" | "value", value: string) => {
+    set("setupFieldSubfields", form.setupFieldSubfields.map(item =>
+      item.id === id ? { ...item, [key]: value } : item,
+    ));
+  };
+  const removeSetupSubfield = (id: string) => {
+    set("setupFieldSubfields", form.setupFieldSubfields.filter(item => item.id !== id));
+  };
 
   const canNext0 = !!form.businessName && !!form.sector;
   const canNext1 = !!form.siteLanguage;
   const isLast = section === SECTIONS.length - 1;
 
   const docsComplete = !!form.commercialRegUrl && !!form.nationalIdUrl;
+  const canSaveSetup = !detailsLoading && !detailsError && docsComplete
+    && form.setupFieldSubfields.every(item => Boolean(item.name.trim()));
+
+  if (detailsLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-white dark:bg-gray-950 text-black dark:text-white" dir={dir} role="status">
+        <Loader2 className="w-7 h-7 animate-spin" />
+        <p className="text-sm">{L ? "جارٍ تحميل تفاصيل المشروع المحفوظة..." : "Loading saved project details..."}</p>
+      </div>
+    );
+  }
+
+  if (detailsError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white dark:bg-gray-950 p-6 text-center text-black dark:text-white" dir={dir} role="alert">
+        <p className="max-w-md text-sm text-black/60 dark:text-white/60">
+          {L ? "تعذر تحميل التفاصيل المحفوظة. أعد المحاولة قبل المتابعة حتى لا تُستبدل بيانات المشروع الحالية." : "Saved details could not be loaded. Retry before continuing so existing project data is not overwritten."}
+        </p>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>{L ? "العودة للوحة التحكم" : "Back to dashboard"}</Button>
+          <Button type="button" onClick={() => window.location.reload()}>{L ? "إعادة المحاولة" : "Retry"}</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (saved) {
     return (
@@ -466,6 +578,16 @@ export default function ProjectDetailsSetup() {
                 {provisioning.status === "failed" && "لم تتأثر بياناتك. تواصل مع فريق الدعم لإعادة المحاولة."}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {(detailsLoading || detailsError) && (
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <div className="rounded-xl border border-black/[0.08] bg-black/[0.02] px-4 py-3 text-xs text-black/55 dark:text-white/55" role={detailsError ? "alert" : "status"}>
+            {detailsLoading
+              ? (L ? "جارٍ تحميل تفاصيل المشروع المحفوظة..." : "Loading saved project details...")
+              : (L ? "تعذر تحميل التفاصيل المحفوظة. أعد تحميل الصفحة قبل الحفظ حتى لا تُستبدل البيانات الحالية." : "Saved details could not be loaded. Reload before saving so existing data is not overwritten.")}
           </div>
         </div>
       )}
@@ -675,6 +797,63 @@ export default function ProjectDetailsSetup() {
                     );
                   })}
                 </div>
+                <div className="mt-5 border-t border-black/[0.06] dark:border-white/[0.08] pt-5 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-black text-black dark:text-white">
+                      {L ? "حقول فرعية لكل خانة" : "Subfields for setup fields"}
+                    </h3>
+                    <p className="text-xs text-black/40 dark:text-white/40 mt-1">
+                      {L ? "اختر أي خانة من إعداد المشروع أو التكاملات، ثم أضف لها تفاصيل فرعية متكررة باسم وقيمة." : "Choose any setup or integration field, then add repeatable named subfields with values."}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                    <select
+                      value={newSubfieldParent}
+                      onChange={event => setNewSubfieldParent(event.target.value)}
+                      className="h-10 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-950 px-3 text-sm text-black dark:text-white"
+                      data-testid="setup-subfield-parent"
+                    >
+                      {SETUP_FIELD_OPTIONS.map(option => (
+                        <option key={option.key} value={option.key}>
+                          {L ? option.ar : option.en}
+                        </option>
+                      ))}
+                    </select>
+                    <Button type="button" onClick={addSetupSubfield} className="h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black" data-testid="setup-add-subfield">
+                      + {L ? "إضافة خانة فرعية" : "Add subfield"}
+                    </Button>
+                  </div>
+                  {SETUP_FIELD_OPTIONS.map(parent => {
+                    const subfields = form.setupFieldSubfields.filter(item => item.fieldKey === parent.key);
+                    if (!subfields.length) return null;
+                    return (
+                      <div key={parent.key} className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-3 space-y-2">
+                        <p className="text-xs font-bold text-black/65 dark:text-white/65">{L ? parent.ar : parent.en}</p>
+                        {subfields.map(subfield => (
+                          <div key={subfield.id} className="grid grid-cols-[1fr_1.5fr_auto] gap-2">
+                            <Input
+                              value={subfield.name}
+                              onChange={event => updateSetupSubfield(subfield.id, "name", event.target.value)}
+                              placeholder={L ? "اسم فرعي" : "Subfield name"}
+                              aria-label={L ? "اسم الحقل الفرعي" : "Subfield name"}
+                              className="h-9 text-xs"
+                            />
+                            <Input
+                              value={subfield.value}
+                              onChange={event => updateSetupSubfield(subfield.id, "value", event.target.value)}
+                              placeholder={L ? "القيمة" : "Value"}
+                              aria-label={L ? "قيمة الحقل الفرعي" : "Subfield value"}
+                              className="h-9 text-xs"
+                            />
+                            <Button type="button" size="icon" variant="ghost" onClick={() => removeSetupSubfield(subfield.id)} aria-label={L ? "حذف الحقل الفرعي" : "Remove subfield"} className="h-9 w-9">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setSection(1)} className="h-13 py-4 px-5 rounded-2xl" data-testid="setup-btn-back-2">
@@ -829,7 +1008,7 @@ export default function ProjectDetailsSetup() {
                 </Button>
                 <Button
                   onClick={() => saveMutation.mutate()}
-                  disabled={saveMutation.isPending || !docsComplete}
+                  disabled={saveMutation.isPending || !canSaveSetup}
                   className="flex-1 h-13 py-4 rounded-2xl bg-gradient-to-r from-black to-gray-800 dark:from-white dark:to-gray-200 text-white dark:text-black font-black gap-2 shadow-xl disabled:opacity-50"
                   data-testid="setup-btn-save"
                 >

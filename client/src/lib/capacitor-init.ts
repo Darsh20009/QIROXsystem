@@ -5,6 +5,36 @@
 
 import { isCapacitorNative, getServerUrl } from "./server-url";
 
+let lastQMeetDeepLink = "";
+
+function handleQMeetDeepLink(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "qirox:" || url.hostname !== "qmeet") return;
+    const roomId = String(url.searchParams.get("roomId") || url.pathname.replace(/^\/+/, ""));
+    if (!/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(roomId) || rawUrl === lastQMeetDeepLink) return;
+    lastQMeetDeepLink = rawUrl;
+    const screenShare = url.searchParams.get("screenShare") === "1";
+    const destination = `/meet/${encodeURIComponent(roomId)}${screenShare ? "?screenShare=1" : ""}`;
+    if (`${window.location.pathname}${window.location.search}` !== destination) {
+      window.location.assign(destination);
+    }
+  } catch {
+    // Ignore malformed or unrelated external URLs.
+  }
+}
+
+async function initQMeetDeepLinks() {
+  try {
+    const { App } = await import("@capacitor/app");
+    await App.addListener("appUrlOpen", ({ url }) => handleQMeetDeepLink(url));
+    const launch = await App.getLaunchUrl();
+    if (launch?.url) handleQMeetDeepLink(launch.url);
+  } catch (err) {
+    console.warn("[CAP] QMeet deep-link initialization failed:", err);
+  }
+}
+
 async function savePushToken(token: string, platform: "ios" | "android") {
   try {
     const base = getServerUrl();
@@ -36,8 +66,6 @@ async function initPushNotifications() {
       return;
     }
 
-    await PushNotifications.register();
-
     await PushNotifications.addListener("registration", async (token) => {
       console.log("[CAP] Push token:", token.value);
       const platform = (window as any).Capacitor?.getPlatform?.() === "android" ? "android" : "ios";
@@ -62,6 +90,10 @@ async function initPushNotifications() {
         }
       }
     });
+
+    // Register only after listeners are attached; otherwise iOS can emit the
+    // token before the app has a chance to persist it.
+    await PushNotifications.register();
   } catch (err) {
     console.warn("[CAP] Push notifications init error:", err);
   }
@@ -71,7 +103,9 @@ async function initStatusBar() {
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     const isDark = document.documentElement.classList.contains("dark");
-    await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light });
+    // Style.Dark means dark status-bar icons; Style.Light means light icons.
+    // The default QIROX surface is white, so it needs dark icons.
+    await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark });
     await StatusBar.setBackgroundColor({ color: isDark ? "#111111" : "#ffffff" });
     await StatusBar.setOverlaysWebView({ overlay: false });
   } catch {}
@@ -111,6 +145,7 @@ export async function initCapacitor(): Promise<void> {
     initStatusBar(),
     initHaptics(),
     initKeyboard(),
+    initQMeetDeepLinks(),
   ]);
 
   await initPushNotifications();

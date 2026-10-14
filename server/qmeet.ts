@@ -2,16 +2,98 @@ import { type Express } from "express";
 import { QMeetingModel as _QM, QFeedbackModel as _QF, QReportModel as _QR, QMeetApiKeyModel as _QMAK } from "./qmeet-db";
 import { UserModel as _UserM } from "./models";
 import crypto from "crypto";
+import { normalizeQMeetCustomization } from "./qmeet-customization";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
 import { sendPushToUser } from "./push";
 import { connManager } from "./connection-manager";
+import { FeatureFlag, getFlags } from "./infrastructure";
+import {
+  hashQMeetGuestProof,
+  isApprovedQMeetGuest,
+  issueQMeetGuestTicket,
+  verifyQMeetGuestTicket,
+} from "./qmeet-guest-admission";
 
 // ── LiveKit SFU (scales to 100 concurrent participants) ───────────────────────
 const LIVEKIT_URL        = process.env.LIVEKIT_URL        || "";
 const LIVEKIT_API_KEY    = process.env.LIVEKIT_API_KEY    || "";
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || "";
 const LIVEKIT_ENABLED    = !!(LIVEKIT_URL && LIVEKIT_API_KEY && LIVEKIT_API_SECRET);
+
+function nativeSfuFlagEnabled(): boolean {
+  try {
+    return getFlags().isEnabled(FeatureFlag.NATIVE_SFU);
+  } catch {
+    // Route-level unit tests can import this module before infrastructure
+    // bootstrap. Production requests always use the bootstrapped engine.
+    return /^(1|true|yes|on)$/i.test(process.env.FEATURE_NATIVE_SFU || "");
+  }
+}
+
+function nativeSfuWebSocketUrl(): string {
+  const configured = String(process.env.QMEET_SFU_URL || process.env.QMEET_SFU_WS_URL || "").trim();
+  if (!configured) return "";
+  const withProtocol = /^wss?:\/\//i.test(configured)
+    ? configured
+    : configured.replace(/^https?:\/\//i, value => value.toLowerCase() === "https://" ? "wss://" : "ws://");
+  const url = new URL(withProtocol);
+  if (!/^wss?:$/.test(url.protocol)) throw new Error("QMEET_SFU_URL must use ws:// or wss://");
+  if (!url.pathname || url.pathname === "/") url.pathname = "/ws";
+  return url.toString();
+}
+
+function nativeSfuConfigured(): boolean {
+  try {
+    return Boolean(process.env.QMEET_SFU_CONTROL_SECRET && nativeSfuWebSocketUrl());
+  } catch {
+    return false;
+  }
+}
+
+function qmeetIOSScreenBroadcastEnabled(): boolean {
+  return process.env.FEATURE_QMEET_IOS_SCREEN_BROADCAST === "true"
+    && nativeSfuFlagEnabled()
+    && nativeSfuConfigured();
+}
+
+function signNativeCredential(claims: {
+  roomId: string;
+  participantId: string;
+  iat: number;
+  exp: number;
+  canPublish: boolean;
+  canSubscribe: boolean;
+  canScreenShare: boolean;
+}): string {
+  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+  const signature = crypto.createHmac("sha256", String(process.env.QMEET_SFU_CONTROL_SECRET))
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+export function getQMeetMediaCapabilities() {
+  const nativeEnabled = nativeSfuFlagEnabled();
+  return {
+    mode: nativeEnabled ? "native-sfu" : LIVEKIT_ENABLED ? "sfu" : "limited-p2p",
+    enabled: LIVEKIT_ENABLED,
+    maxParticipants: nativeEnabled ? 50 : LIVEKIT_ENABLED ? 100 : 2,
+    nativeSfu: {
+      enabled: nativeEnabled,
+      configured: nativeSfuConfigured(),
+      maxParticipants: 50,
+    },
+    iosScreenShare: {
+      enabled: qmeetIOSScreenBroadcastEnabled(),
+    },
+    reason: nativeEnabled
+      ? (nativeSfuConfigured() ? null : "خادم Native SFU غير مهيأ في البيئة الحالية.")
+      : LIVEKIT_ENABLED
+      ? null
+      : "خادم الاجتماعات متعدد المشاركين غير مفعّل حالياً. يلزم إعداد LiveKit قبل دخول أكثر من مشاركين.",
+  };
+}
 
 /** Generate a LiveKit JWT using Node.js built-in crypto — no external SDK needed */
 function makeLiveKitJWT(identity: string, name: string, room: string): string {
@@ -213,20 +295,124 @@ function requireAuth(req: any, res: any, next: any) {
 // ── Routes ────────────────────────────────────────────────────────────────────
 export function registerQMeetRoutes(app: Express) {
 
-  // GET /api/qmeet/livekit-token/:roomId — SFU JWT (supports 100+ participants)
-  app.get("/api/qmeet/livekit-token/:roomId", (req: any, res) => {
-    if (!LIVEKIT_ENABLED) return res.json({ enabled: false });
-    const userId = req.isAuthenticated()
-      ? String((req.user as any)._id || (req.user as any).id)
-      : `guest-${Date.now()}`;
-    const name = req.isAuthenticated()
-      ? ((req.user as any).fullName || (req.user as any).username || userId)
-      : String(req.query.name || "مشارك");
+  // GET /api/qmeet/media-capabilities — lets clients choose a safe transport
+  // instead of silently falling back to an unstable mesh for larger rooms.
+  app.get("/api/qmeet/media-capabilities", (_req: any, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(getQMeetMediaCapabilities());
+  });
+
+  // GET /api/qmeet/native-media/:roomId — short-lived, room-scoped Pion access
+  app.get("/api/qmeet/native-media/:roomId", async (req: any, res) => {
+    const screenShare = String(req.query?.source || "") === "screen";
+    if (req.query?.source && !screenShare) {
+      return res.status(400).json({ enabled: false, error: "Invalid media source" });
+    }
+    if (screenShare && !qmeetIOSScreenBroadcastEnabled()) {
+      return res.status(404).json({ enabled: false, error: "iPhone screen sharing is not enabled" });
+    }
+    if (!nativeSfuFlagEnabled()) return res.status(404).json({ enabled: false });
+    if (!nativeSfuConfigured()) {
+      return res.status(503).json({ enabled: false, error: "Native SFU is not configured" });
+    }
+
+    const roomId = String(req.params.roomId || "").trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/.test(roomId)) {
+      return res.status(400).json({ enabled: false, error: "Invalid room" });
+    }
+
+    const isAuthenticated = Boolean(req.isAuthenticated?.() && req.user);
+    const guestTicket = isAuthenticated
+      ? null
+      : verifyQMeetGuestTicket(req.headers["x-qmeet-guest-ticket"], roomId);
+    if (!isAuthenticated && !guestTicket) {
+      return res.status(401).json({ enabled: false, error: "Meeting admission required" });
+    }
+
     try {
-      const token = makeLiveKitJWT(userId, name, req.params.roomId);
-      res.json({ enabled: true, token, url: LIVEKIT_URL });
+      const meeting = await QMeetingModel.findOne({ roomName: roomId });
+      if (!meeting) return res.status(404).json({ enabled: false, error: "Meeting not found" });
+      if (screenShare && meeting.customization?.features?.screenShare === false) {
+        return res.status(403).json({ enabled: false, error: "Screen sharing is disabled for this meeting" });
+      }
+
+      let participantId = "";
+      if (isAuthenticated) {
+        participantId = String((req.user as any)._id || (req.user as any).id || "");
+        const participantIds = (meeting.participantIds || []).map((id: any) => String(id));
+        const isHost = String(meeting.hostId || "") === participantId;
+        const isStaff = STAFF_ROLES.includes(String((req.user as any).role || ""));
+        if (!participantId || (!isHost && !participantIds.includes(participantId) && !isStaff)) {
+          return res.status(403).json({ enabled: false, error: "Not authorized for this meeting" });
+        }
+      } else {
+        if (!guestTicket || !isApprovedQMeetGuest(meeting, guestTicket)) {
+          return res.status(401).json({ enabled: false, error: "Meeting admission required" });
+        }
+        participantId = guestTicket.guestId;
+      }
+
+      const ownerParticipantId = participantId;
+      if (screenShare) participantId = `${participantId}:qmeet-screen`;
+      const issuedAt = Math.floor(Date.now() / 1000);
+      const expiresAt = issuedAt + 15 * 60;
+      const credential = signNativeCredential({
+        roomId,
+        participantId,
+        iat: issuedAt,
+        exp: expiresAt,
+        canPublish: true,
+        canSubscribe: !screenShare,
+        canScreenShare: screenShare,
+      });
+
+      res.setHeader("Cache-Control", "no-store");
+      return res.json({
+        enabled: true,
+        url: nativeSfuWebSocketUrl(),
+        credential,
+        participantId,
+        ...(screenShare ? { ownerParticipantId, source: "screen" } : {}),
+        expiresAt,
+        maxParticipants: 50,
+      });
+    } catch (error: any) {
+      console.error("[QMeet] Native media credential error:", error?.message || error);
+      return res.status(500).json({ enabled: false, error: "Native media credential unavailable" });
+    }
+  });
+
+  // GET /api/qmeet/livekit-token/:roomId — SFU JWT (supports 100+ participants)
+  app.get("/api/qmeet/livekit-token/:roomId", async (req: any, res) => {
+    if (!LIVEKIT_ENABLED) return res.json({ enabled: false });
+    const roomId = String(req.params.roomId || "").trim();
+    const authenticated = Boolean(req.isAuthenticated?.() && req.user);
+    const guestTicket = authenticated ? null : verifyQMeetGuestTicket(req.headers["x-qmeet-guest-ticket"], roomId);
+    if (!authenticated && !guestTicket) {
+      return res.status(401).json({ enabled: false, error: "Meeting admission required" });
+    }
+    const userId = authenticated
+      ? String((req.user as any)._id || (req.user as any).id)
+      : guestTicket!.guestId;
+    const name = authenticated
+      ? ((req.user as any).fullName || (req.user as any).username || userId)
+      : guestTicket!.name;
+    try {
+      const meeting = await QMeetingModel.findOne({ roomName: roomId });
+      if (!meeting) return res.status(404).json({ enabled: false, error: "Meeting not found" });
+      if (authenticated) {
+        const allowed = String(meeting.hostId) === userId
+          || (meeting.participantIds || []).some((id: any) => String(id) === userId)
+          || STAFF_ROLES.includes(String(req.user.role || ""));
+        if (!allowed) return res.status(403).json({ enabled: false, error: "Not authorized for this meeting" });
+      } else if (!isApprovedQMeetGuest(meeting, guestTicket!)) {
+        return res.status(401).json({ enabled: false, error: "Meeting admission required" });
+      }
+      const token = makeLiveKitJWT(userId, name, roomId);
+      res.json({ enabled: true, token, url: LIVEKIT_URL, participantId: userId });
     } catch (e: any) {
-      res.json({ enabled: false, error: e.message });
+      console.error("[QMeet] LiveKit credential unavailable");
+      res.status(503).json({ enabled: false, error: "Meeting media unavailable" });
     }
   });
 
@@ -247,6 +433,18 @@ export function registerQMeetRoutes(app: Express) {
   });
 
   // GET /api/qmeet/room/:roomName — get meeting info by room name (public, no auth required)
+  // Only this meeting's explicitly allowlisted customer origins may embed its UI.
+  app.get("/meet/:roomName", async (req, res, next) => {
+    try {
+      const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName }).select("customization").lean();
+      const config = normalizeQMeetCustomization((meeting as any)?.customization || {});
+      if (config.allowedOrigins.length) {
+        const policy = String(res.getHeader("Content-Security-Policy") || "");
+        res.setHeader("Content-Security-Policy", policy.replace(/frame-ancestors[^;]*/, match => `${match} ${config.allowedOrigins.join(" ")}`));
+      }
+      next();
+    } catch { next(); }
+  });
   app.get("/api/qmeet/room/:roomName", async (req: any, res) => {
     try {
       const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName });
@@ -575,6 +773,7 @@ export function registerQMeetRoutes(app: Express) {
         durationMinutes: meeting.durationMinutes,
         type: meeting.type,
         joinCode: meeting.joinCode,
+        roomName: meeting.roomName,
       });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -586,59 +785,123 @@ export function registerQMeetRoutes(app: Express) {
   app.post("/api/qmeet/by-code/:code/request", async (req: any, res) => {
     try {
       const code = String(req.params.code).toUpperCase().trim();
-      const meeting = await QMeetingModel.findOne({ joinCode: code });
+      const meeting = await QMeetingModel.findOne({ joinCode: code }).select("+joinRequests.guestProofHash");
       if (!meeting) return res.status(404).json({ message: "كود غير صحيح" });
       if (meeting.status === "completed" || meeting.status === "cancelled") {
         return res.status(410).json({ message: "الاجتماع منتهٍ" });
       }
 
-      // Support both logged-in users and guests
-      const isLoggedIn = req.isAuthenticated && req.isAuthenticated() && req.user;
-      const userId = isLoggedIn
-        ? String(req.user._id || req.user.id)
-        : (req.body.guestId ? String(req.body.guestId) : `guest_${Date.now()}`);
-      const userName = isLoggedIn
-        ? (req.user.fullName || req.user.username || "مشارك")
-        : (req.body.guestName || "ضيف");
-      const userEmail = isLoggedIn ? (req.user.email || "") : "";
+      const isLoggedIn = Boolean(req.isAuthenticated?.() && req.user);
+      const guestProof = isLoggedIn ? "" : String(req.body?.guestProof || "").toLowerCase();
+      const guestProofHash = isLoggedIn ? null : hashQMeetGuestProof(guestProof);
+      if (!isLoggedIn && !guestProofHash) {
+        return res.status(400).json({ message: "تعذر التحقق من جلسة الضيف. أعد المحاولة." });
+      }
 
       const joinRequests: any[] = meeting.joinRequests || [];
-
-      // Check if already approved (participant)
-      if ((meeting.participantIds || []).includes(userId)) {
-        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+      let guestRequest: any = null;
+      if (!isLoggedIn) {
+        guestRequest = joinRequests.find((r: any) => String(r.guestProofHash || "") === guestProofHash);
+        if (guestRequest) {
+          if (guestRequest.status === "rejected") {
+            return res.status(403).json({ message: "تم رفض طلبك من قِبل المضيف" });
+          }
+          if (guestRequest.status === "approved") {
+            if (!(meeting.participantIds || []).map(String).includes(String(guestRequest.userId))) {
+              return res.status(403).json({ message: "لم تعد موافقتك على الاجتماع سارية" });
+            }
+            return res.json({
+              status: "approved",
+              meetingLink: meeting.meetingLink,
+              roomName: meeting.roomName,
+              guestId: guestRequest.userId,
+              guestAdmissionToken: issueQMeetGuestTicket({
+                roomId: String(meeting.roomName),
+                guestId: String(guestRequest.userId),
+                requestId: String(guestRequest._id),
+                name: String(guestRequest.userName || "ضيف"),
+              }),
+            });
+          }
+          return res.json({
+            status: guestRequest.status,
+            meetingLink: null,
+            roomName: meeting.roomName,
+            guestId: guestRequest.userId,
+          });
+        }
       }
 
-      // Auto-approve when lobby is disabled (open meeting)
-      if (!(meeting as any).lobbyEnabled) {
-        await QMeetingModel.findByIdAndUpdate(meeting._id, {
-          $addToSet: { participantIds: userId },
-          $push: { joinRequests: { userId, userName, userEmail, status: "approved", requestedAt: new Date() } }
-        });
-        pushToUser(userId, {
-          type: "qmeet_join_response",
-          approved: true,
+      const userId = isLoggedIn
+        ? String(req.user._id || req.user.id)
+        : `qmeet_guest_${crypto.randomBytes(24).toString("hex")}`;
+      const userName = isLoggedIn
+        ? String(req.user.fullName || req.user.username || "مشارك")
+        : String(req.body?.guestName || "").trim().slice(0, 80);
+      if (!isLoggedIn && !userName) {
+        return res.status(400).json({ message: "أدخل اسمك قبل الانضمام" });
+      }
+      const userEmail = isLoggedIn ? (req.user.email || "") : "";
+
+      if (isLoggedIn && (meeting.participantIds || []).map(String).includes(userId)) {
+        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+      }
+      if (isLoggedIn) {
+        const existing = joinRequests.find((r: any) => String(r.userId) === userId);
+        if (existing?.status === "approved") {
+          return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+        }
+        if (existing?.status === "pending") return res.json({ status: "pending" });
+        if (existing?.status === "rejected") {
+          return res.status(403).json({ message: "تم رفض طلبك من قِبل المضيف" });
+        }
+      }
+
+      const userPhone = isLoggedIn ? ((req.user as any).phone || "") : "";
+      const requestedAt = new Date();
+      const autoApprove = !(meeting as any).lobbyEnabled;
+      const newRequest: any = {
+        userId,
+        userName,
+        userEmail,
+        userPhone,
+        status: autoApprove ? "approved" : "pending",
+        requestedAt,
+        ...(!isLoggedIn ? { guestProofHash } : {}),
+      };
+
+      const update: any = { $push: { joinRequests: newRequest } };
+      if (autoApprove) update.$addToSet = { participantIds: userId };
+      const updatedMeeting = await QMeetingModel.findByIdAndUpdate(meeting._id, update, { new: true });
+      const savedRequest: any = (updatedMeeting?.joinRequests || []).find((r: any) =>
+        String(r.userId) === userId && new Date(r.requestedAt).getTime() === requestedAt.getTime()
+      );
+      if (!savedRequest) throw new Error("Could not persist QMeet join request");
+
+      if (autoApprove) {
+        if (isLoggedIn) {
+          pushToUser(userId, {
+            type: "qmeet_join_response",
+            approved: true,
+            meetingLink: meeting.meetingLink,
+            meetingTitle: meeting.title,
+          });
+        }
+        return res.json({
+          status: "approved",
           meetingLink: meeting.meetingLink,
-          meetingTitle: meeting.title,
+          roomName: meeting.roomName,
+          ...(!isLoggedIn ? {
+            guestId: userId,
+            guestAdmissionToken: issueQMeetGuestTicket({
+              roomId: String(meeting.roomName),
+              guestId: userId,
+              requestId: String(savedRequest._id),
+              name: userName,
+            }),
+          } : {}),
         });
-        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
       }
-
-      // Check existing request
-      const existing = joinRequests.find((r: any) => String(r.userId) === userId);
-      if (existing) {
-        if (existing.status === "approved") return res.json({ status: "approved", meetingLink: meeting.meetingLink });
-        if (existing.status === "pending") return res.json({ status: "pending" });
-        if (existing.status === "rejected") return res.status(403).json({ message: "تم رفض طلبك من قِبل المضيف" });
-      }
-
-      const userPhone = isLoggedIn ? ((req.user as any).phone || "") : (req.body.guestPhone || "");
-      const requestedAt = new Date().toISOString();
-
-      // Add new request
-      await QMeetingModel.findByIdAndUpdate(meeting._id, {
-        $push: { joinRequests: { userId, userName, userEmail, userPhone, status: "pending", requestedAt: new Date() } }
-      });
 
       // Notify host via WebSocket + device push
       pushToUser(meeting.hostId, {
@@ -649,7 +912,7 @@ export function registerQMeetRoutes(app: Express) {
         userName,
         userEmail,
         userPhone,
-        requestedAt,
+        requestedAt: requestedAt.toISOString(),
         message: `${userName} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
       });
       sendPushToUser(String(meeting.hostId), {
@@ -660,7 +923,11 @@ export function registerQMeetRoutes(app: Express) {
         data: { url: meeting.meetingLink || `/meet/join?code=${meeting.joinCode}` },
       }).catch(() => {});
 
-      res.json({ status: "pending" });
+      res.json({
+        status: "pending",
+        roomName: meeting.roomName,
+        ...(!isLoggedIn ? { guestId: userId } : {}),
+      });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -698,6 +965,9 @@ export function registerQMeetRoutes(app: Express) {
       await QMeetingModel.findByIdAndUpdate(meeting._id, {
         $set: { [`joinRequests.${reqIdx}.status`]: newStatus },
         ...(action === "approve" ? { $addToSet: addToSet } : {}),
+        ...(action === "reject" && joinReq.status === "approved"
+          ? { $pull: { participantIds: joinReq.userId } }
+          : {}),
       });
 
       // Notify the requester via WebSocket
@@ -711,6 +981,13 @@ export function registerQMeetRoutes(app: Express) {
           ? `تمت الموافقة على انضمامك لـ "${meeting.title}"`
           : `تم رفض طلب انضمامك لـ "${meeting.title}"`,
       });
+      if (action === "reject" && joinReq.status === "approved") {
+        pushToUser(joinReq.userId, {
+          type: "webrtc_kicked",
+          roomId: meeting.roomName,
+          reason: "Meeting admission revoked",
+        });
+      }
 
       res.json({ success: true, status: newStatus });
     } catch (err: any) {
@@ -837,19 +1114,33 @@ export function registerQMeetRoutes(app: Express) {
   app.get("/api/qmeet/by-code/:code/my-status", async (req: any, res) => {
     try {
       const code = String(req.params.code).toUpperCase().trim();
-      const meeting = await QMeetingModel.findOne({ joinCode: code });
+      const meeting = await QMeetingModel.findOne({ joinCode: code }).select("+joinRequests.guestProofHash");
       if (!meeting) return res.status(404).json({ message: "كود غير صحيح" });
-      if (!req.isAuthenticated() && !req.query.guestId) return res.json({ status: "none" });
-      const guestId = req.query.guestId as string | undefined;
-      if (guestId) {
-        const joinRequests: any[] = meeting.joinRequests || [];
-        // Guest requests historically store the stable browser id in userId;
-        // accept guestId too for forward compatibility with older clients.
-        const req_ = joinRequests.find((r: any) =>
-          String(r.guestId || r.userId || "") === guestId
+      const isLoggedIn = Boolean(req.isAuthenticated?.() && req.user);
+      if (!isLoggedIn) {
+        const proof = String(req.headers["x-qmeet-guest-proof"] || "").toLowerCase();
+        const proofHash = hashQMeetGuestProof(proof);
+        if (!proofHash) return res.json({ status: "none" });
+        const guestRequest: any = (meeting.joinRequests || []).find(
+          (r: any) => String(r.guestProofHash || "") === proofHash,
         );
-        if (!req_) return res.json({ status: "none" });
-        return res.json({ status: req_.status, meetingLink: req_.status === "approved" ? meeting.meetingLink : null });
+        if (!guestRequest) return res.json({ status: "none" });
+        const approved = guestRequest.status === "approved" &&
+          (meeting.participantIds || []).map(String).includes(String(guestRequest.userId));
+        return res.json({
+          status: approved ? "approved" : guestRequest.status,
+          meetingLink: approved ? meeting.meetingLink : null,
+          roomName: meeting.roomName,
+          ...(approved ? {
+            guestId: guestRequest.userId,
+            guestAdmissionToken: issueQMeetGuestTicket({
+              roomId: String(meeting.roomName),
+              guestId: String(guestRequest.userId),
+              requestId: String(guestRequest._id),
+              name: String(guestRequest.userName || "ضيف"),
+            }),
+          } : {}),
+        });
       }
       const userId = String(req.user._id || req.user.id);
       if ((meeting.participantIds || []).includes(userId)) {
@@ -1051,9 +1342,41 @@ export function registerQMeetRoutes(app: Express) {
   }
 
   // POST /api/qmeet/v1/meetings — create meeting via API key
+  const requireCustomizationV2 = (_req: any, res: any, next: any) => {
+    if (!getFlags().isEnabled(FeatureFlag.QMEET_PRESENTATION_V2)) return res.status(404).json({ error: "غير موجود" });
+    next();
+  };
+  app.get("/api/qmeet/v1/customization", requireCustomizationV2, async (req: any, res) => {
+    try {
+      const key = await resolveApiKey(req, res); if (!key) return;
+      res.json(normalizeQMeetCustomization(key.customization || {}));
+    } catch { res.status(500).json({ error: "تعذر قراءة إعدادات التكامل" }); }
+  });
+  app.patch("/api/qmeet/v1/customization", requireCustomizationV2, async (req: any, res) => {
+    try {
+      const key = await resolveApiKey(req, res); if (!key) return;
+      const customization = normalizeQMeetCustomization(req.body);
+      await QMeetApiKeyModel.updateOne({ _id: key._id }, { $set: { customization } });
+      res.json({ customization, appliesTo: "new-meetings" });
+    } catch (error: any) { res.status(400).json({ error: error.message }); }
+  });
+  app.patch("/api/qmeet/v1/meetings/:roomName/customization", requireCustomizationV2, async (req: any, res) => {
+    try {
+      const key = await resolveApiKey(req, res); if (!key) return;
+      const customization = normalizeQMeetCustomization(req.body);
+      const meeting = await QMeetingModel.findOneAndUpdate(
+        { roomName: req.params.roomName, apiKeyId: String(key._id) }, { $set: { customization } }, { new: true },
+      );
+      if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
+      res.json({ customization });
+    } catch (error: any) { res.status(400).json({ error: error.message }); }
+  });
   app.post("/api/qmeet/v1/meetings", async (req: any, res) => {
     try {
       const apiKey = await resolveApiKey(req, res); if (!apiKey) return;
+      let customization;
+      try { customization = normalizeQMeetCustomization(req.body.customization ?? apiKey.customization ?? {}); }
+      catch (error: any) { return res.status(400).json({ error: error.message }); }
       const {
         title, description = "", scheduledAt, durationMinutes = 60,
         participantEmails = [], participantNames = [], notes = "",
@@ -1075,11 +1398,13 @@ export function registerQMeetRoutes(app: Express) {
         joinCode: generateJoinCode(),
         joinRequests: [], reminderSent: false, instantJoin: false,
         apiKeyId: String(apiKey._id),
+        customization,
       });
       res.status(201).json({
         id: meeting._id,
         roomName: meeting.roomName,
         joinCode: meeting.joinCode,
+        customization: meeting.customization,
         meetingLink: `${SITE_URL}${meeting.meetingLink}`,
         joinUrl: `${SITE_URL}/meet/join?code=${meeting.joinCode}`,
         title: meeting.title,

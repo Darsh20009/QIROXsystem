@@ -1,6 +1,6 @@
 
 import SARIcon from "@/components/SARIcon";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,19 @@ const SECTORS = [
   "الصحة والتجميل", "الذكاء الاصطناعي", "التعليم والمنصات",
   "ابدأ فكرتك",
 ];
+const MARKETING_LEAD_SECTOR_LABELS: Record<string, string> = {
+  restaurant: "مطاعم والمقاهي",
+  ecommerce: "المتاجر",
+  education: "التعليم والمنصات",
+  healthcare: "الصحة والتجميل",
+  realestate: "الشركات والوكلات",
+  corporate: "الشركات والوكلات",
+  fitness: "الصحة والتجميل",
+  beauty: "الصحة والتجميل",
+  events: "ابدأ فكرتك",
+  marketing: "الشركات والوكلات",
+  ai: "الذكاء الاصطناعي",
+};
 const PROJECT_TYPES = [
   "موقع إلكتروني", "تطبيق جوال", "نظام إداري", "متجر إلكتروني",
   "منصة تعليمية", "نظام حجوزات", "تطبيق مطاعم", "نظام عيادات",
@@ -82,6 +95,9 @@ export default function EmployeeNewOrder() {
     const { toast } = useToast();
     const { lang, dir } = useI18n();
     const L = lang === "ar";
+  const [manualMarketingLeadId, setManualMarketingLeadId] = useState(
+    () => new URLSearchParams(window.location.search).get("manualMarketingLeadId") || "",
+  );
     const BILLING_LABELS: Record<string, string> = L
       ? { monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة" }
       : { monthly: "Monthly", sixmonth: "6-Month", annual: "Annual", lifetime: "Lifetime" };
@@ -150,11 +166,51 @@ export default function EmployeeNewOrder() {
   const { data: extraAddons = [] } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
   const { data: products = [] } = useQuery<any[]>({ queryKey: ["/api/products"] });
+  const { data: marketingLead } = useQuery<any>({
+    queryKey: ["/api/whatsapp/crm/manual-marketing/leads", manualMarketingLeadId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/whatsapp/crm/manual-marketing/leads/${encodeURIComponent(manualMarketingLeadId)}`,
+        { credentials: "include" },
+      );
+      if (!response.ok) throw new Error("تعذر تحميل بيانات العميل المحتمل");
+      return response.json();
+    },
+    enabled: Boolean(manualMarketingLeadId),
+  });
+  const leadPrefilledRef = useRef("");
+
+  useEffect(() => {
+    if (!manualMarketingLeadId || !marketingLead || leadPrefilledRef.current === manualMarketingLeadId) return;
+    leadPrefilledRef.current = manualMarketingLeadId;
+    const contactName = marketingLead.lastReplyContactName && marketingLead.lastReplyContactName !== "غير ظاهر في واتساب"
+      ? marketingLead.lastReplyContactName
+      : marketingLead.businessName || "";
+    setPhone(marketingLead.normalizedPhone ? `+${marketingLead.normalizedPhone}` : "");
+    setFullName(contactName);
+    setUsername(generateUsername(contactName || `client${String(marketingLead.normalizedPhone || "").slice(-4)}`));
+    setBusinessName(marketingLead.businessName || contactName);
+    setBusinessType(
+      marketingLead.sector === "restaurant" ? "مطعم / مقهى" :
+      marketingLead.sector === "education" ? "تعليمي" :
+      marketingLead.sector === "healthcare" || marketingLead.sector === "beauty" ? "طبي / صحي" :
+      marketingLead.sector === "ecommerce" ? "تجاري" : "أخرى",
+    );
+    if (COUNTRIES.some((item) => item.code === marketingLead.countryCode)) setCountry(marketingLead.countryCode);
+    setSector(MARKETING_LEAD_SECTOR_LABELS[marketingLead.sector] || "");
+  }, [manualMarketingLeadId, marketingLead]);
 
   /* ── Mutations ── */
   const newClientMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/employee/create-client-order", data),
-    onSuccess: async (res: any) => { const data = await res.json(); setResult(data); setStep("done"); },
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      setResult(data);
+      setStep("done");
+      if (data.leadConversionWarning) {
+        toast({ title: data.leadConversionWarning, variant: "destructive" });
+      }
+    },
     onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
@@ -256,6 +312,7 @@ export default function EmployeeNewOrder() {
         businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal,
         services: items, planPeriod: selectedBilling,
         planTier: selectedPlan?.tier || "", planSegment: selectedPlan?.segment || "",
+        ...(manualMarketingLeadId ? { manualMarketingLeadId } : {}),
       });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
@@ -945,7 +1002,7 @@ export default function EmployeeNewOrder() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setSelectedBilling(""); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                   <Button onClick={() => { setManualMarketingLeadId(""); const url = new URL(window.location.href); url.searchParams.delete("manualMarketingLeadId"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setSelectedBilling(""); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
                     <Plus className="w-4 h-4" /> {L ? "مشروع جديد" : "New Project"}
                   </Button>
                   <Link href="/admin/orders">

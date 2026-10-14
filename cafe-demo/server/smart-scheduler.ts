@@ -76,16 +76,6 @@ function detectOccasion(): Occasion | null {
   const month = saudi.getMonth() + 1; // 1-12
   const day = saudi.getDate();
 
-  // Saudi National Day: Sep 23
-  if (month === 9 && day === 23) {
-    return {
-      name: "اليوم الوطني السعودي",
-      emoji: "🇸🇦",
-      morningMsg: "كل عام وأنتم بخير بمناسبة اليوم الوطني! 🇸🇦 احتفل بيوم وطنك مع كوب قهوة دافئ من كيروكس",
-      eveningMsg: "ليلة وطنية سعيدة! 🎆 سهرتك في ليلة اليوم الوطني ما تكتمل إلا بمشروبك المفضل من كيروكس",
-    };
-  }
-
   // Saudi Founding Day: Feb 22
   if (month === 2 && day === 22) {
     return {

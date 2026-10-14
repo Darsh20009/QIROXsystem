@@ -70,3 +70,35 @@ SFU badge in top bar: `"SFU · 100↑"` (emerald green), shown only when `liveki
 The `@livekit/server-sdk` npm package is not in the Replit npm registry. JWT is built manually using Node.js `crypto` module (`createHmac("sha256", secret)`). Same token format LiveKit expects (HS256, `video` grant object).
 
 **How to apply:** When user wants LiveKit, set the 3 env vars. Free cloud at livekit.io (50k min/month).
+
+## Self-hosting boundary
+
+The QMeet API can run on Render, but a production self-hosted LiveKit node
+must run on infrastructure with a public IP and the required UDP media range
+(normally 50000-60000), plus TCP signaling and TURN support. Do not place the
+SFU in an HTTP-only web service and assume WebRTC will be reliable.
+
+**Why:** WebRTC media uses direct UDP paths and public address discovery; an
+HTTP deployment that only exposes its web port can appear healthy while mobile
+audio/video fails intermittently.
+
+**How to apply:** Keep the application/API and auth on Render if desired, run
+LiveKit on a separate VPS, and set LIVEKIT_URL/API_KEY/API_SECRET only in the
+application's secret store.
+
+## Guest admission boundary
+
+Unauthenticated guests must not authenticate with a browser-supplied `guestId`.
+Use a random proof whose hash is stored with the join request, then issue a
+short-lived HMAC ticket scoped to the room and approved request. Validate the
+ticket and current approval for native/LiveKit media and WebSocket room entry. A guest
+WebSocket identity must be restricted to an explicit allowlist of meeting-only
+messages; it is not a general app user session.
+
+**Why:** Guests could be approved but still fail the authenticated media and
+signaling checks. Treating a guest ticket as general WebSocket authentication
+would instead grant access to unrelated app message handlers.
+
+**How to apply:** Keep the raw proof out of the database, bind every guest
+ticket to the intended room and request, re-check approval at admission, and
+scope guest signaling to that same room. Sign with the existing server secret.

@@ -21,6 +21,7 @@ function extractUser(req: Request): MailUser {
 
 function send<T>(res: Response, result: service.ServiceResult<T>): void {
   if (result.ok) {
+    if (result.stale) res.setHeader("X-Mail-Stale", "true");
     res.json(result.data);
   } else {
     res.status(result.status).json({ error: result.error });
@@ -85,7 +86,9 @@ export async function getInbox(req: Request, res: Response): Promise<void> {
   try {
     const user   = extractUser(req);
     const folder = (req.query.folder as string) || "INBOX";
-    const result = await service.getInbox(req.params.accountId, folder, user);
+    const rawOffset = Number(req.query.offset || 0);
+    const offset = Number.isFinite(rawOffset) ? Math.max(0, Math.min(10_000, Math.floor(rawOffset))) : 0;
+    const result = await service.getInbox(req.params.accountId, folder, user, offset);
     send(res, result);
   } catch (err: any) {
     console.error("[Mail] inbox error:", err.message);

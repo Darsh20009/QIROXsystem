@@ -27,6 +27,7 @@ import {
   TrendingDown, AlertCircle, Building, Send, Globe2,
   ChevronDown,
 } from "lucide-react";
+import { useFlag } from "@/features/customer-journey/hooks/use-feature-flags";
 
 export interface NavItem {
   id: string;
@@ -42,6 +43,7 @@ const ALL_NAV: Record<string, NavItem> = {
   workspace:         { id: "workspace",         labelAr: "مساحات العمل",        labelEn: "Workspaces",            icon: LayoutDashboard, href: "/employee/workspace",         group: "main" },
   dashboard:         { id: "dashboard",         labelAr: "لوحتي",               labelEn: "My Dashboard",        icon: LayoutDashboard, href: "/employee/role-dashboard",    group: "main" },
   orders:            { id: "orders",            labelAr: "المشاريع",             labelEn: "Projects",             icon: Package,         href: "/admin/orders",               group: "main" },
+  draft_projects:    { id: "draft_projects",    labelAr: "المشاريع المسودة",     labelEn: "Draft Projects",       icon: FileText,        href: "/employee/draft-projects",    group: "main" },
   customers:         { id: "customers",         labelAr: "العملاء",              labelEn: "Clients",              icon: Users,           href: "/admin/customers",            group: "main" },
   new_order:         { id: "new_order",         labelAr: "عميل وطلب جديد",      labelEn: "New Order",            icon: PlusCircle,      href: "/employee/new-order",         group: "main" },
   subscriptions:     { id: "subscriptions",     labelAr: "الاشتراكات",           labelEn: "Subscriptions",        icon: Star,            href: "/employee/subscriptions",     group: "main" },
@@ -74,6 +76,8 @@ const ALL_NAV: Record<string, NavItem> = {
   leads_data:        { id: "leads_data",        labelAr: "داتا العملاء",         labelEn: "Leads Data",           icon: Building2,       href: "/employee/leads-data",        group: "main" },
   crm:               { id: "crm",               labelAr: "CRM",                  labelEn: "CRM",                  icon: TrendingUp,      href: "/employee/crm",               group: "main" },
   whatsapp_crm:      { id: "whatsapp_crm",      labelAr: "واتساب CRM",           labelEn: "WhatsApp CRM",         icon: MessageSquare,   href: "/employee/whatsapp-crm",      group: "main" },
+  manual_marketing:  { id: "manual_marketing",  labelAr: "التسويق اليدوي",       labelEn: "Manual Marketing",     icon: Megaphone,       href: "/employee/manual-marketing",  group: "main" },
+  potential_clients: { id: "potential_clients", labelAr: "العملاء المحتملون",   labelEn: "Potential Clients",    icon: Users,           href: "/employee/potential-clients", group: "main" },
   // ── Logistics ─────────────────────────────────────────────────────────────
   shipping:          { id: "shipping",          labelAr: "إعدادات الشحن",       labelEn: "Shipping Settings",    icon: Truck,           href: "/admin/shipping",             group: "main" },
   shipments:         { id: "shipments",         labelAr: "الشحنات",              labelEn: "Shipments",            icon: Truck,           href: "/admin/shipments",            group: "main" },
@@ -107,6 +111,7 @@ const ALL_NAV: Record<string, NavItem> = {
   investors:         { id: "investors",         labelAr: "المستثمرون",           labelEn: "Investors",            icon: TrendingUp,      href: "/admin/investors",            group: "finance" },
   // ── HR ────────────────────────────────────────────────────────────────────
   employees:         { id: "employees",         labelAr: "الموظفون",             labelEn: "Employees",            icon: Building2,       href: "/admin/employees",            group: "hr" },
+  employee_operations:{ id: "employee_operations",labelAr: "عقود ورسائل الموظفين", labelEn: "Employee Operations", icon: FileSignature,   href: "/admin/employee-operations", group: "hr" },
   attendance:        { id: "attendance",        labelAr: "الحضور والانصراف",    labelEn: "Attendance",           icon: CalendarDays,    href: "/admin/attendance",           group: "hr" },
   // ── Config ────────────────────────────────────────────────────────────────
   settings:          { id: "settings",          labelAr: "الإعدادات",            labelEn: "Settings",             icon: Settings,        href: "/admin/settings",             group: "config" },
@@ -128,21 +133,27 @@ const ALL_NAV: Record<string, NavItem> = {
   profile:           { id: "profile",           labelAr: "ملفي الشخصي",         labelEn: "My Profile",           icon: User2,           href: "/employee/profile",           group: "personal" },
   changelog:         { id: "changelog",         labelAr: "التحديثات",            labelEn: "Updates",              icon: BookOpen,        href: "/employee/changelog",         group: "personal" },
   my_finance:        { id: "my_finance",        labelAr: "حقي المالي",           labelEn: "My Financials",        icon: Banknote,        href: "/employee/my-finance",        group: "personal" },
+  security_2fa:      { id: "security_2fa",      labelAr: "الأمان والتحقق الثنائي", labelEn: "Security & 2FA",       icon: ShieldCheck,     href: "/security/2fa",                 group: "personal" },
 };
+
+// Every employee must be able to manage their own second factor, regardless
+// of the operational pages assigned to their role.
+const ensureSecurityNav = (ids: string[]) =>
+  ids.includes("security_2fa") ? ids : [...ids, "security_2fa"];
 
 // Mobile drawer shows a compact set — same as the original sidebar before the expansion
 const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
-  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "project_renewals", "mail", "profile", "changelog"],
-  manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "admin_whatsapp", "employees", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
+  admin:         ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "admin_whatsapp", "employees", "employee_operations", "finance", "invoices", "receipts", "payroll", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "settings", "project_renewals", "mail", "profile", "changelog"],
+  manager:       ["dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "admin_whatsapp", "employees", "employee_operations", "finance", "invoices", "receipts", "reports", "quotations", "kanban", "attendance", "qmeet", "builder", "deployment", "qi_agent", "checklist", "mail", "profile", "changelog"],
   developer:     ["dashboard", "mod_requests", "orders", "whatsapp_crm", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
   designer:      ["dashboard", "mod_requests", "whatsapp_crm", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
-  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
-  sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "checklist", "mail", "profile", "my_finance"],
-  marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
+  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
+  sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "orders", "new_order", "subscriptions", "quotations", "abandoned_carts", "reports", "checklist", "mail", "profile", "my_finance"],
+  marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "quotations", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
   accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "reports", "checklist", "mail", "profile", "my_finance"],
   support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "checklist", "mail", "profile", "my_finance"],
   data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "employees", "contact_msgs", "mail", "profile", "changelog"],
-  hr:            ["dashboard", "whatsapp_crm", "employees", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
+  hr:            ["dashboard", "whatsapp_crm", "employees", "employee_operations", "payroll", "attendance", "checklist", "mail", "profile", "my_finance"],
   merchant:      ["dashboard", "whatsapp_crm", "shipments", "checklist", "mail", "profile", "my_finance"],
   content:       ["dashboard", "whatsapp_crm", "products", "news", "marketing_posts", "checklist", "mail", "profile", "my_finance"],
 };
@@ -150,7 +161,7 @@ const MOBILE_ROLE_ITEMS: Record<string, string[]> = {
 const ROLE_ITEMS: Record<string, string[]> = {
   admin: [
     // Core operations
-    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions", "project_renewals",
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "subscriptions", "project_renewals",
     // Client services
     "quotations", "contracts", "consultations", "mod_requests", "cs_chat", "support_tickets", "contact_msgs", "sla",
     // Products & catalog
@@ -165,7 +176,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     "finance", "invoices", "receipts", "payroll", "wallet", "installments",
     "profit_report", "sales_reports", "reports", "bank_settings", "investors",
     // HR
-    "employees", "attendance",
+    "employees", "employee_operations", "attendance",
     // Tools
     "kanban", "qmeet", "builder", "deployment", "sector_guide", "qi_agent",
     "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "gamification", "activity_log",
@@ -177,7 +188,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
   ],
   manager: [
     // Core operations
-    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "subscriptions", "project_renewals",
+    "dashboard", "orders", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "subscriptions", "project_renewals",
     // Client services
     "quotations", "contracts", "consultations", "mod_requests", "cs_chat", "support_tickets", "contact_msgs", "sla",
     // Products & catalog
@@ -191,7 +202,7 @@ const ROLE_ITEMS: Record<string, string[]> = {
     // Finance
     "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "reports",
     // HR
-    "employees", "attendance",
+    "employees", "employee_operations", "attendance",
     // Tools
     "kanban", "qmeet", "builder", "deployment", "qi_agent", "ai_hub", "local_ai", "admin_whatsapp", "checklist", "sys_dashboards", "activity_log",
     // Config (limited)
@@ -201,9 +212,9 @@ const ROLE_ITEMS: Record<string, string[]> = {
   ],
   developer:     ["dashboard", "mod_requests", "orders", "whatsapp_crm", "builder", "deployment", "sector_guide", "qi_agent", "checklist", "qmeet", "kanban", "mail", "profile", "my_finance", "changelog"],
   designer:      ["dashboard", "mod_requests", "whatsapp_crm", "builder", "checklist", "qmeet", "mail", "profile", "my_finance", "changelog"],
-  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
-  sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "orders", "new_order", "subscriptions", "quotations", "contracts", "abandoned_carts", "discount_codes", "reports", "profit_report", "sales_reports", "checklist", "mail", "profile", "my_finance"],
-  marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "new_order", "quotations", "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews", "push_notif", "checklist", "mail", "profile", "my_finance"],
+  sales:         ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "quotations", "contracts", "checklist", "mail", "profile", "my_finance"],
+  sales_manager: ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "orders", "new_order", "subscriptions", "quotations", "contracts", "abandoned_carts", "discount_codes", "reports", "profit_report", "sales_reports", "checklist", "mail", "profile", "my_finance"],
+  marketing:     ["dashboard", "customers", "leads_data", "crm", "whatsapp_crm", "potential_clients", "new_order", "quotations", "marketing_posts", "discount_codes", "promotions", "loyalty", "reviews", "push_notif", "checklist", "mail", "profile", "my_finance"],
   accountant:    ["dashboard", "whatsapp_crm", "finance", "invoices", "receipts", "payroll", "wallet", "installments", "profit_report", "sales_reports", "reports", "bank_settings", "checklist", "mail", "profile", "my_finance"],
   support:       ["dashboard", "whatsapp_crm", "cs_chat", "support_tickets", "contact_msgs", "customers", "leads_data", "sla", "checklist", "mail", "profile", "my_finance"],
   data_entry:    ["dashboard", "whatsapp_crm", "orders", "customers", "partners", "kanban", "employees", "contact_msgs", "mail", "profile", "changelog"],
@@ -214,10 +225,11 @@ const ROLE_ITEMS: Record<string, string[]> = {
 const DEFAULT_ITEMS = ["dashboard", "mail", "profile"];
 
 export function getAllowedEmployeeNavItems(role: string, allowedPages?: string[] | null): NavItem[] {
-  const ids = allowedPages && allowedPages.length > 0
+  const configuredIds = allowedPages && allowedPages.length > 0
     ? allowedPages
     : (ROLE_ITEMS[role] || DEFAULT_ITEMS);
-  return [ALL_NAV.workspace, ...ids.map(id => ALL_NAV[id]).filter(Boolean)];
+  const ids = [...new Set([...configuredIds, "whatsapp_crm", "manual_marketing", "potential_clients", "draft_projects"])];
+  return [ALL_NAV.workspace, ...ensureSecurityNav(ids).map(id => ALL_NAV[id]).filter(Boolean)];
 }
 
 const WORKSPACE_META: Record<string, { labelAr: string; labelEn: string; descriptionAr: string; descriptionEn: string; icon: React.ElementType; candidates: string[] }> = {
@@ -528,6 +540,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const [allNavigationOpen, setAllNavigationOpen] = useState(false);
   const [location] = useLocation();
   const { data: user } = useUser();
+  const employeeOperationsEnabled = useFlag("FEATURE_EMPLOYEE_OPERATIONS_V2");
   const { lang } = useI18n();
   const { theme, toggle: toggleTheme } = useTheme();
   const { mutate: logout, isPending: loggingOut } = useLogout();
@@ -540,8 +553,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     // Use custom allowedPages per employee if set by admin (overrides role default)
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
-    return getAllowedEmployeeNavItems(role, customPages);
-  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope]);
+    const items = getAllowedEmployeeNavItems(role, customPages);
+    return employeeOperationsEnabled ? items : items.filter(item => item.id !== "employee_operations");
+  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, employeeOperationsEnabled]);
 
   const grouped = useMemo(() => {
     const g: Record<string, NavItem[]> = {};
@@ -589,9 +603,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const mobileDrawerItems = useMemo(() => {
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
-    const ids = (customPages && customPages.length > 0) ? customPages : (MOBILE_ROLE_ITEMS[role] || ROLE_ITEMS[role] || DEFAULT_ITEMS);
-    return ids.map(id => ALL_NAV[id]).filter(Boolean);
-  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope]);
+    const configuredIds = (customPages && customPages.length > 0) ? customPages : (MOBILE_ROLE_ITEMS[role] || ROLE_ITEMS[role] || DEFAULT_ITEMS);
+    const ids = [...new Set([...configuredIds, "whatsapp_crm", "manual_marketing", "potential_clients", "draft_projects"])];
+    const items = ensureSecurityNav(ids).map(id => ALL_NAV[id]).filter(Boolean);
+    return employeeOperationsEnabled ? items : items.filter(item => item.id !== "employee_operations");
+  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, employeeOperationsEnabled]);
 
   const mobileGrouped = useMemo(() => {
     const g: Record<string, NavItem[]> = {};
@@ -916,7 +932,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         </AnimatePresence>
 
         {/* Content */}
-        <div className="flex-1 pb-20 md:pb-0">
+        <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           {children}
         </div>
 

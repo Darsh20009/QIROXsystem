@@ -36,6 +36,26 @@ export function unregisterSocket(userId: string, ws: WebSocket) {
   }
 }
 
+/** Immediately disconnect every live connection after a staff account is revoked. */
+export function revokeUserSockets(userId: string, reason = "Account access revoked") {
+  const uid = String(userId);
+  const sockets = userSockets.get(uid);
+  if (!sockets) return;
+  for (const ws of sockets) {
+    try {
+      sendTo(ws, { type: "account_access_revoked" });
+      if (ws.readyState === WebSocket.CONNECTING) ws.terminate();
+      else if (ws.readyState === WebSocket.OPEN) {
+        ws.close(1008, reason.slice(0, 120));
+        const forceClose = setTimeout(() => {
+          if (ws.readyState !== WebSocket.CLOSED) ws.terminate();
+        }, 500);
+        forceClose.unref?.();
+      }
+    } catch {}
+  }
+}
+
 export function getOnlineUsers(): string[] {
   return [...userSockets.keys()];
 }

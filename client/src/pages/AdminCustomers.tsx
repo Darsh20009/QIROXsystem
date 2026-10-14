@@ -13,6 +13,7 @@ import {
 import { SiTelegram, SiWhatsapp } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import SARIcon from "@/components/SARIcon";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -45,8 +46,12 @@ export default function Customers() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const { data: user } = useUser();
-  const isAdmin = user && ["admin", "manager"].includes((user as any).role);
-  const isDataEntry = (user as any)?.role === "data_entry";
+  // Normalize the role because older sessions/accounts may return casing or
+  // surrounding whitespace from MongoDB. Management actions must not
+  // disappear for a valid admin/manager account.
+  const currentRole = String((user as any)?.role || "").trim().toLowerCase();
+  const canManageCustomers = ["admin", "manager"].includes(currentRole);
+  const isDataEntry = currentRole === "data_entry";
   const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -71,7 +76,7 @@ export default function Customers() {
 
   const { data: phoneRequests, isLoading: loadingRequests } = useQuery<PhoneRequest[]>({
     queryKey: ["/api/admin/phone-requests"],
-    enabled: isAdmin === true,
+    enabled: canManageCustomers,
   });
 
   const pendingCount = phoneRequests?.filter(r => r.status === "pending").length ?? 0;
@@ -143,7 +148,7 @@ export default function Customers() {
       const r = await fetch("/api/admin/employees?roles=sales,sales_manager", { credentials: "include" });
       return r.json();
     },
-    enabled: !!isAdmin,
+    enabled: canManageCustomers,
   });
 
   // Extract unique sales reps from customers (for filter dropdown)
@@ -245,7 +250,7 @@ export default function Customers() {
       )}
 
       {/* Phone correction requests panel (admin only) */}
-      {isAdmin && (
+      {canManageCustomers && (
         <Card className="border-foreground/[0.06] dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
           <button
             onClick={() => setShowRequests(v => !v)}
@@ -433,12 +438,12 @@ export default function Customers() {
                         const credit = bal > 0 ? bal : 0;
                         if (outstanding > 0) return (
                           <span className="text-xs font-bold text-red-600 dark:text-red-400">
-                            -{outstanding.toLocaleString()} ر.س
+                            -{outstanding.toLocaleString()} <SARIcon size={11} className="opacity-80" />
                           </span>
                         );
                         if (credit > 0) return (
                           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            +{credit.toLocaleString()} ر.س
+                            +{credit.toLocaleString()} <SARIcon size={11} className="opacity-80" />
                           </span>
                         );
                         return <span className="text-xs text-foreground/30">—</span>;
@@ -461,7 +466,7 @@ export default function Customers() {
                         >
                           <FileText className="w-4 h-4" />
                         </a>
-                        {isAdmin && (
+                        {canManageCustomers && (
                           <button
                             onClick={() => {
                               setAssignTarget(customer);
@@ -474,28 +479,28 @@ export default function Customers() {
                             <UserCheck className="w-4 h-4" />
                           </button>
                         )}
-                        <button
-                          onClick={() => {
-                            setEditTarget(customer);
-                            setEditForm({
-                              fullName: customer.fullName || "",
-                              email: customer.email || "",
-                              phone: (customer as any).phone || "",
-                              address: (customer as any).address || "",
-                              city: (customer as any).city || "",
-                              taxNumber: (customer as any).taxNumber || "",
-                              organizationName: (customer as any).organizationName || "",
-                              commercialRegistration: (customer as any).commercialRegistration || "",
-                              nationalAddress: (customer as any).nationalAddress || "",
-                            });
-                          }}
-                          className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                          title={L ? "تعديل بيانات العميل" : "Edit customer data"}
-                          data-testid={`button-edit-customer-${customer.id}`}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        {isAdmin && <button
+                        {canManageCustomers && <button
+                            onClick={() => {
+                              setEditTarget(customer);
+                              setEditForm({
+                                fullName: customer.fullName || "",
+                                email: customer.email || "",
+                                phone: (customer as any).phone || "",
+                                address: (customer as any).address || "",
+                                city: (customer as any).city || "",
+                                taxNumber: (customer as any).taxNumber || "",
+                                organizationName: (customer as any).organizationName || "",
+                                commercialRegistration: (customer as any).commercialRegistration || "",
+                                nationalAddress: (customer as any).nationalAddress || "",
+                              });
+                            }}
+                            className="p-2 rounded-lg text-foreground/20 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                            title={L ? "تعديل بيانات العميل" : "Edit customer data"}
+                            data-testid={`button-edit-customer-${customer.id}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>}
+                        {canManageCustomers && <button
                           onClick={() => setDeleteTarget(customer)}
                           className="p-2 rounded-lg text-foreground/20 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                           title={L ? "حذف العميل" : "Delete customer"}

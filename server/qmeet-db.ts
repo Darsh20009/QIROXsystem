@@ -38,6 +38,7 @@ const qMeetingSchema = new mongoose.Schema({
   joinCode:       { type: String, default: null },
   instantJoin:    { type: Boolean, default: false },
   apiKeyId:       { type: String, default: null },
+  customization: { type: mongoose.Schema.Types.Mixed, default: null },
   lobbyEnabled:   { type: Boolean, default: false },
   aiSummary:      { type: String, default: "" },
   aiSummaryAt:    { type: Date, default: null },
@@ -49,6 +50,7 @@ const qMeetingSchema = new mongoose.Schema({
     userPhone:   { type: String, default: "" },
     status:      { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     requestedAt: { type: Date, default: Date.now },
+    guestProofHash: { type: String, default: null, select: false },
   }],
 }, { timestamps: true });
 qMeetingSchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
@@ -82,6 +84,7 @@ export const QReportModel = () => getModel("QReport", qReportSchema);
 
 // ── QMeet API Key ─────────────────────────────────────────────────────────────
 const qMeetApiKeySchema = new mongoose.Schema({
+  customization: { type: mongoose.Schema.Types.Mixed, default: null },
   key:           { type: String, required: true, unique: true },
   name:          { type: String, required: true },
   createdBy:     { type: String, required: true },

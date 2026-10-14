@@ -9,6 +9,8 @@
 import * as repository from "./repository";
 import * as domain from "./domain";
 import * as mapper from "./mapper";
+import { UserModel } from "../../models";
+import { ALL_EMPLOYEE_MAIL_ROLES } from "../../mail-access";
 import {
   fetchInbox,
   fetchFolders,
@@ -28,7 +30,7 @@ import type {
 // ── Typed result union ────────────────────────────────────────────────────────
 
 export type ServiceResult<T> =
-  | { ok: true;  data: T }
+  | { ok: true;  data: T; stale?: boolean }
   | { ok: false; status: number; error: string };
 
 function ok<T>(data: T): ServiceResult<T>          { return { ok: true, data }; }
@@ -114,20 +116,22 @@ export async function deleteAccount(id: string): Promise<ServiceResult<{ ok: tru
 export async function getInbox(
   accountId: string,
   folder: string,
-  user: MailUser
+  user: MailUser,
+  offset = 0,
 ): Promise<ServiceResult<any[]>> {
   const account = await repository.findAccountById(accountId);
   if (!account) return fail(404, "Account not found");
   if (!domain.canAccessAccount(user, account)) return fail(403, "Forbidden");
 
   try {
-    const messages = await fetchInbox(accountId, folder, 40);
+    const messages = await fetchInbox(accountId, folder, 40, offset);
     return ok(messages);
   } catch (err: any) {
     console.error("[Mail] inbox error:", err.message);
-    // Cache fallback — preserves existing error-recovery behaviour
-    const cached = await repository.findCachedMessages(accountId, folder, 40);
-    return ok(cached.map(mapper.toCachedMessage));
+    // Keep the existing cached fallback, but identify it so clients do not
+    // present stale data as a successful live sync.
+    const cached = await repository.findCachedMessages(accountId, folder, 40, offset);
+    return { ok: true, data: cached.map(mapper.toCachedMessage), stale: true };
   }
 }
 
@@ -226,11 +230,11 @@ export async function testConnection(
 export async function sendAccountMail(
   input: SendMailInput,
   user: MailUser
-): Promise<ServiceResult<{ ok: true }>> {
+): Promise<ServiceResult<{ ok: true; sentCopySaved: boolean }>> {
   const account = await repository.findAccountById(input.accountId);
   if (!account || !domain.canAccessAccount(user, account)) return fail(403, "Forbidden");
 
-  await imapSendMail({
+  const sent = await imapSendMail({
     accountId:   input.accountId,
     to:          input.to,
     cc:          input.cc,
@@ -239,5 +243,47 @@ export async function sendAccountMail(
     attachments: input.attachments,
   });
 
-  return ok({ ok: true as const });
+  return ok({ ok: true as const, sentCopySaved: sent.sentCopySaved });
+}
+
+/**
+ * WhatsApp mail commands use a stricter allowlist than general inbox access:
+ * all staff may send from info; only the single CTO and CEO may use the
+ * specifically approved executive/team mailboxes.
+ */
+export async function sendWhatsAppAccountMail(
+  input: Omit<SendMailInput, "accountId"> & { fromAddress: string },
+  user: MailUser,
+): Promise<ServiceResult<{ ok: true; sentCopySaved: boolean }>> {
+  const role = String(user?.role || "").toLowerCase();
+  const staffRoles = new Set(ALL_EMPLOYEE_MAIL_ROLES.filter((value) => value !== "investor"));
+  if (!staffRoles.has(role)) return fail(403, "Forbidden");
+
+  const fromAddress = String(input.fromAddress || "").trim().toLowerCase();
+  const accounts = await repository.findAllAccounts();
+  const account = accounts.find((candidate: any) =>
+    String(candidate.emailAddress || "").trim().toLowerCase() === fromAddress
+      && candidate.accountType !== "customer",
+  ) as any;
+  if (!account) return fail(404, "Mailbox not found");
+
+  const localPart = fromAddress.split("@")[0];
+  let allowed = localPart === "info" && staffRoles.has(role);
+  if (role === "cto" && ["y.business", "support", "hr", "marketing", "ceo"].includes(localPart)) {
+    allowed = (await UserModel.countDocuments({ role: "cto" })) === 1;
+  }
+  if (role === "ceo" && ["support", "hr", "marketing", "ceo"].includes(localPart)) {
+    allowed = (await UserModel.countDocuments({ role: "ceo" })) === 1;
+  }
+  if (!allowed) return fail(403, "Forbidden");
+
+  const sent = await imapSendMail({
+    accountId: account.id || String(account._id),
+    to: input.to,
+    cc: input.cc,
+    subject: input.subject,
+    body: input.body,
+    attachments: input.attachments,
+  });
+  return ok({ ok: true as const, sentCopySaved: sent.sentCopySaved });
 }

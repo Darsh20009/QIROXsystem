@@ -44,6 +44,19 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
+	<false/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDarkContent</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>qiroxstudio.online</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>qirox</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

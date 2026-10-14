@@ -23,7 +23,7 @@ import {
   validResult,
   invalidResult,
 } from "./types";
-import { LogLevel, parseLoglevel } from "../logger/levels";
+import { LogLevel, parseLoglevel } from "../infrastructure/logger/levels";
 
 // ── Interface ─────────────────────────────────────────────────────────────────
 

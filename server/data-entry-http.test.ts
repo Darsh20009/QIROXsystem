@@ -197,6 +197,9 @@ test("authenticated Data Entry requests enforce the route matrix and response bo
     getUsers: storage.getUsers,
     getUser: storage.getUser,
     updateUser: storage.updateUser,
+    getOrderWithUser: storage.getOrderWithUser,
+    getOrderSpecs: storage.getOrderSpecs,
+    upsertOrderSpecs: storage.upsertOrderSpecs,
     apiFind: (ClientApiKeyModel as any).find,
     userFind: (UserModel as any).find,
     taskFind: (KanbanTaskModel as any).find,
@@ -273,6 +276,7 @@ test("authenticated Data Entry requests enforce the route matrix and response bo
 
     const forbiddenRequests: Array<[string, string, string, { method?: string; body?: unknown }?]> = [
       ["partner delete", "data_entry", "/api/admin/partners/partner-1", { method: "DELETE" }],
+      ["internal project forms", "data_entry", "/api/admin/orders/order-1/specs/internal-forms", { method: "PUT", body: { internalForms: [] } }],
       ["client API key create", "data_entry", "/api/my-api-keys", { method: "POST", body: { name: "Nope" } }],
       ["api key update", "data_entry", "/api/admin/api-keys/key-1", { method: "PATCH", body: { name: "Nope" } }],
       ["api key delete", "data_entry", "/api/admin/api-keys/key-1", { method: "DELETE" }],
@@ -291,6 +295,51 @@ test("authenticated Data Entry requests enforce the route matrix and response bo
       assert.equal(response.status, 403, `${label} should return 403`);
     }
 
+    const savedInternalForms: unknown[] = [];
+    (storage as any).getOrderWithUser = async () => ({
+      _id: "order-1",
+      userId: { _id: "client-user" },
+      assignedTo: "another-employee",
+    });
+    (storage as any).upsertOrderSpecs = async (orderId: string, updates: Record<string, unknown>) => {
+      savedInternalForms.splice(0, savedInternalForms.length, ...(updates.internalForms as unknown[]));
+      return { id: "spec-1", orderId, ...updates };
+    };
+
+    const dataEntryDirectSave = await request(server, "data_entry", "/api/admin/orders/order-1/specs", {
+      method: "PUT",
+      body: { internalForms: [{ id: "restricted", name: "Do not save", fields: [] }] },
+    });
+    assert.equal(dataEntryDirectSave.status, 400, "Data Entry cannot bypass the internal-forms route");
+
+    const staffSave = await request(server, "manager", "/api/admin/orders/order-1/specs/internal-forms", {
+      method: "PUT",
+      body: {
+        internalForms: [{
+          id: "website",
+          name: "الموقع",
+          fields: [{ id: "domain", label: "الدومين", value: "example.test" }],
+        }],
+      },
+    });
+    assert.equal(staffSave.status, 200, "authorized staff can save internal project forms");
+    assert.equal(savedInternalForms.length, 1, "internal forms are persisted through order specs");
+
+    (storage as any).getOrderSpecs = async () => ({
+      customSections: [{ id: "website", title: "الموقع", fields: [] }],
+      internalForms: [{ id: "website", name: "الموقع", fields: [] }],
+      totalBudget: 1000,
+    });
+    const dataEntrySpecs = await request(server, "data_entry", "/api/admin/orders/order-1/specs");
+    assert.equal(dataEntrySpecs.status, 200);
+    assert.equal("customSections" in (dataEntrySpecs.body as object), false, "Data Entry cannot read custom project sections");
+    assert.equal("internalForms" in (dataEntrySpecs.body as object), false, "Data Entry cannot read internal project forms");
+
+    const clientSpecs = await request(server, "client", "/api/orders/order-1/specs");
+    assert.equal(clientSpecs.status, 200);
+    assert.equal("customSections" in (clientSpecs.body as object), false, "clients cannot read internal custom project sections");
+    assert.equal("internalForms" in (clientSpecs.body as object), false, "clients cannot read internal project forms");
+
     currentTask = makeTask({ assignedTo: "another-employee" });
     const unassignedStatus = await request(
       server,
@@ -301,7 +350,7 @@ test("authenticated Data Entry requests enforce the route matrix and response bo
     assert.equal(unassignedStatus.status, 403, "Data Entry cannot update an unassigned task");
 
     const unauthenticated = await request(server, undefined, "/api/admin/partners");
-    assert.equal(unauthenticated.status, 403);
+    assert.equal(unauthenticated.status, 401, "Unauthenticated requests should return 401");
   } finally {
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
     (storage as any).getAllPartners = originals.getAllPartners;
@@ -310,6 +359,9 @@ test("authenticated Data Entry requests enforce the route matrix and response bo
     (storage as any).getUsers = originals.getUsers;
     (storage as any).getUser = originals.getUser;
     (storage as any).updateUser = originals.updateUser;
+    (storage as any).getOrderWithUser = originals.getOrderWithUser;
+    (storage as any).getOrderSpecs = originals.getOrderSpecs;
+    (storage as any).upsertOrderSpecs = originals.upsertOrderSpecs;
     (ClientApiKeyModel as any).find = originals.apiFind;
     (UserModel as any).find = originals.userFind;
     (KanbanTaskModel as any).find = originals.taskFind;

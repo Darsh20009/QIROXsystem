@@ -34,6 +34,8 @@ const mailCacheSchema = new mongoose.Schema({
   html:       { type: String, default: "" },
   text:       { type: String, default: "" },
   snippet:    { type: String, default: "" },
+  whatsappAlertRequested: { type: Boolean, default: false },
+  whatsappNotifiedTo: { type: [String], default: [] },
 }, { timestamps: true });
 mailCacheSchema.index({ accountId: 1, folder: 1, uid: 1 }, { unique: true });
 mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });

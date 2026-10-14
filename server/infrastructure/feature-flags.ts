@@ -36,6 +36,8 @@ export const FeatureFlag = {
   STRUCTURED_LOGGING:       "FEATURE_STRUCTURED_LOGGING",
   HEALTH_DETAILED_PUBLIC:   "FEATURE_HEALTH_DETAILED_PUBLIC",
   EVENT_BUS_DEBUG:          "FEATURE_EVENT_BUS_DEBUG",
+  NATIVE_SFU:               "FEATURE_NATIVE_SFU",
+  QMEET_PRESENTATION_V2:    "FEATURE_QMEET_PRESENTATION_V2",
 
   // ── Sprint 003 — Customer Journey V2 flags ────────────────────────────────
   CUSTOMER_JOURNEY_V2:      "FEATURE_CUSTOMER_JOURNEY_V2",
@@ -43,6 +45,7 @@ export const FeatureFlag = {
 
   // ── Sprint 008 — CRM V2 Foundation ────────────────────────────────────────
   CRM_V2:                   "FEATURE_CRM_V2",
+  EMPLOYEE_OPERATIONS_V2:   "FEATURE_EMPLOYEE_OPERATIONS_V2",
 
   // ── Sprint D — Proposal Builder V2 ─────────────────────────────────────────
   PROPOSAL_V2:              "FEATURE_PROPOSAL_V2",
@@ -96,6 +99,8 @@ export class FeatureFlagEngine {
     [FeatureFlag.STRUCTURED_LOGGING, false],
     [FeatureFlag.HEALTH_DETAILED_PUBLIC, false],
     [FeatureFlag.EVENT_BUS_DEBUG, false],
+    [FeatureFlag.NATIVE_SFU, false],
+    [FeatureFlag.QMEET_PRESENTATION_V2, true],
 
     // Sprint 003 — Customer Journey V2 flags (off by default)
     [FeatureFlag.CUSTOMER_JOURNEY_V2,  false],
@@ -103,6 +108,7 @@ export class FeatureFlagEngine {
 
     // Sprint 008 — CRM V2 (off by default)
     [FeatureFlag.CRM_V2,               false],
+    [FeatureFlag.EMPLOYEE_OPERATIONS_V2, false],
 
     // Sprint D — Proposal Builder V2 (off by default — do not activate)
     [FeatureFlag.PROPOSAL_V2,          false],

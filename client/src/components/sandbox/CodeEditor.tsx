@@ -1,9 +1,17 @@
 import { useRef, useCallback, useEffect } from "react";
-import Editor, { type OnMount } from "@monaco-editor/react";
+import Editor, { loader, type OnMount } from "@monaco-editor/react";
+import * as monaco from "monaco-editor/editor/editor.api";
+import EditorWorker from "monaco-editor/editor/editor.worker?worker";
 import type { editor } from "monaco-editor";
 import { X, Circle, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
+
+// Bundle the editor and worker locally; the CSP intentionally blocks CDN scripts.
+loader.config({ monaco });
+(globalThis as any).MonacoEnvironment = {
+  getWorker: () => new EditorWorker(),
+};
 
 const EXT_LANG: Record<string, string> = {
   js: "javascript", jsx: "javascript", ts: "typescript", tsx: "typescript",

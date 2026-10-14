@@ -142,6 +142,7 @@ export default function EmployeeMail() {
 
   const [selectedAccountId, setSelectedAccountId] = useState<string|null>(null);
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
+  const [messagePage, setMessagePage] = useState(0);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage|null>(null);
   const [search, setSearch] = useState("");
   const [outlookAccount, setOutlookAccount] = useState<MailAccount|null>(null);
@@ -167,11 +168,12 @@ export default function EmployeeMail() {
     queryFn: async()=>{ if(!selectedAccountId) return ["INBOX","Sent","Drafts","Trash"]; const r=await fetch(`/api/mail/folders/${selectedAccountId}`,{credentials:"include"}); return r.ok?r.json():["INBOX","Sent","Drafts","Trash"]; },
     enabled:!!selectedAccountId,
   });
-  const { data:messages=[], isLoading:msgLoading, isError:msgError, refetch:refetchMsgs } = useQuery<EmailMessage[]>({
-    queryKey:["/api/mail/inbox", selectedAccountId, selectedFolder],
-    queryFn: async()=>{ if(!selectedAccountId) return []; const r=await fetch(`/api/mail/inbox/${selectedAccountId}?folder=${encodeURIComponent(selectedFolder)}`,{credentials:"include"}); if(!r.ok) throw new Error(`${r.status}`); return r.json(); },
+  const { data:inboxData={messages:[],stale:false}, isLoading:msgLoading, isError:msgError, refetch:refetchMsgs } = useQuery<{messages:EmailMessage[];stale:boolean}>({
+    queryKey:["/api/mail/inbox", selectedAccountId, selectedFolder, messagePage],
+    queryFn: async()=>{ if(!selectedAccountId) return {messages:[],stale:false}; const r=await fetch(`/api/mail/inbox/${selectedAccountId}?folder=${encodeURIComponent(selectedFolder)}&offset=${messagePage*40}`,{credentials:"include"}); if(!r.ok) throw new Error(`${r.status}`); return {messages:await r.json(),stale:r.headers.get("X-Mail-Stale")==="true"}; },
     enabled:!!selectedAccountId, staleTime:60_000, retry:1,
   });
+  const messages = inboxData.messages;
 
   useEffect(()=>{ if(accounts.length>0&&!selectedAccountId) setSelectedAccountId((accounts[0] as MailAccount).id); },[accounts]);
 
@@ -245,7 +247,14 @@ export default function EmployeeMail() {
     try {
       const r=await fetch("/api/mail/send",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountId:selectedAccountId,to:composeTo,cc:composeCc||undefined,subject:composeSubject,body:composeBody,attachments:attachments.map(a=>({filename:a.name,content:a.data,contentType:a.type,encoding:"base64"}))})});
       if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error||`HTTP ${r.status}`); }
-      toast({title:L?"تم الإرسال ✓":"Sent ✓"});
+      const result=await r.json().catch(()=>({}));
+      const sentCopyMissing=result.sentCopySaved===false;
+      toast({
+        title:L?"تم الإرسال ✓":"Sent ✓",
+        description:sentCopyMissing
+          ? (L?"تم قبول البريد، لكن تعذر حفظ نسخة في مجلد المرسل. لا تعِد الإرسال لتجنب التكرار.":"The email was accepted, but its Sent copy could not be saved. Do not resend to avoid a duplicate.")
+          : undefined,
+      });
       setComposing(false); setComposeTo(""); setComposeSubject(""); setComposeBody(""); setAttachments([]);
       qc.invalidateQueries({queryKey:["/api/mail/inbox",selectedAccountId,"Sent"]});
     } catch(e:any){ toast({title:L?"فشل الإرسال":"Send failed",description:e.message,variant:"destructive"}); }
@@ -336,7 +345,7 @@ export default function EmployeeMail() {
         {acctLoading?<Loader2 className="w-4 h-4 animate-spin text-white/20 mt-2"/>:(accounts as MailAccount[]).map(a=>(
           <div key={a.id} className="relative group shrink-0">
             <button
-              onClick={()=>{setSelectedAccountId(a.id);setSelectedEmail(null);setSelectedFolder("INBOX");}}
+              onClick={()=>{setSelectedAccountId(a.id);setSelectedEmail(null);setSelectedFolder("INBOX");setMessagePage(0);}}
               title={a.displayName||a.emailAddress}
               className={`w-9 h-9 rounded-xl ${acctColor(a.emailAddress)} flex items-center justify-center text-[11px] font-black text-white transition ${selectedAccountId===a.id?"ring-2 ring-white ring-offset-1 ring-offset-[#0f1117]":"opacity-60 hover:opacity-90"}`}
               data-testid={`button-account-${a.id}`}
@@ -362,7 +371,7 @@ export default function EmployeeMail() {
             const Icon=FOLDER_ICONS[f]??Tag;
             const isActive=selectedFolder===f;
             return (
-              <button key={f} onClick={()=>{setSelectedFolder(f);setSelectedEmail(null);}} className={`w-auto md:w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 transition text-[12px] shrink-0 ${isActive?"bg-blue-600 text-white font-semibold":"text-black/55 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"}`} data-testid={`button-folder-${f}`}>
+              <button key={f} onClick={()=>{setSelectedFolder(f);setSelectedEmail(null);setMessagePage(0);}} className={`w-auto md:w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl mb-0.5 transition text-[12px] shrink-0 ${isActive?"bg-blue-600 text-white font-semibold":"text-black/55 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-black dark:hover:text-white"}`} data-testid={`button-folder-${f}`}>
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive?"text-white":"opacity-50"}`}/>
                 <span className="truncate flex-1 text-start">{folderLabel(f,L)}</span>
                 {f==="INBOX"&&unread>0&&<span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${isActive?"bg-white/20 text-white":"bg-blue-600 text-white"}`}>{unread}</span>}
@@ -391,6 +400,7 @@ export default function EmployeeMail() {
         <div className="flex-1 overflow-y-auto">
           {msgLoading&&<div className="flex flex-col items-center justify-center h-32 gap-2 text-black/20 dark:text-white/20"><Loader2 className="w-5 h-5 animate-spin"/><p className="text-xs">{L?"جاري التحميل...":"Loading..."}</p></div>}
           {!msgLoading&&msgError&&<div className="mx-3 mt-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/20 flex gap-2"><AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5"/><p className="text-[11px] text-red-500">{L?"تعذّر الاتصال بالخادم البريدي":"Cannot connect to mail server"}</p></div>}
+          {!msgLoading&&inboxData.stale&&<div className="mx-3 mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/20"><p className="text-[10px] text-amber-700 dark:text-amber-300">{L?"يعرض هذا المجلد نسخة محفوظة؛ تعذّر الاتصال بالبريد الآن.":"Showing cached messages; the mail server could not be reached."}</p></div>}
           {!msgLoading&&!selectedAccountId&&<div className="flex flex-col items-center justify-center h-32 gap-2 text-black/20 dark:text-white/20"><Mail className="w-8 h-8"/><p className="text-xs">{L?"اختر حساباً":"Select account"}</p></div>}
           {!msgLoading&&selectedAccountId&&filtered.length===0&&<div className="flex flex-col items-center justify-center h-32 gap-2 text-black/15 dark:text-white/15"><MailOpen className="w-7 h-7"/><p className="text-xs">{L?"لا توجد رسائل":"No messages"}</p></div>}
           {(filtered as EmailMessage[]).map((msg)=>{
@@ -413,6 +423,10 @@ export default function EmployeeMail() {
               </button>
             );
           })}
+          {!msgLoading&&selectedAccountId&&<div className="flex items-center justify-center gap-2 p-3 border-t border-black/[0.04] dark:border-white/[0.04]">
+            {messagePage>0&&<button onClick={()=>setMessagePage((page)=>Math.max(0,page-1))} className="px-3 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] text-[10px] text-black/60 dark:text-white/60 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">{L?"الأحدث":"Newer messages"}</button>}
+            {messages.length===40&&<button onClick={()=>setMessagePage((page)=>page+1)} className="px-3 py-1.5 rounded-lg border border-black/[0.08] dark:border-white/[0.1] text-[10px] text-black/60 dark:text-white/60 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]">{L?"الأقدم":"Older messages"}</button>}
+          </div>}
         </div>
       </div>
 

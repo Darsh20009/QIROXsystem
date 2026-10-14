@@ -2,11 +2,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Loader2, Printer, ArrowRight, Download, Mail, RefreshCw, Building2, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
+import { printDocument } from "@/lib/print-document";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
+import {
+  FinanceApproval,
+  FinanceBankCard,
+  FinanceDocumentFrame,
+  FinanceItemsTable,
+  FinanceProjectPanel,
+  FinanceTermsCard,
+  FinanceTotals,
+} from "./FinanceDocumentTemplate";
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:    { label: "مسودة",              bg: "#f3f4f6", text: "#6b7280" },
@@ -17,12 +27,11 @@ const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }>
 };
 
 export default function QuotationPrint() {
-  const { dir } = useI18n();
+  useI18n();
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [showBankInfo, setShowBankInfo] = useState(true);
-  const printCardRef = useRef<HTMLDivElement>(null);
 
   const { data: bankSettings } = useQuery<{ bankName: string; beneficiaryName: string; iban: string; accountNumber?: string }>({
     queryKey: ["/api/bank-settings"],
@@ -73,18 +82,27 @@ export default function QuotationPrint() {
     onError: (err: any) => toast({ title: err?.message || "فشل التحويل", variant: "destructive" }),
   });
 
-  const handleDownloadPDF = () => {
-    // Use browser print-to-PDF — Arabic RTL renders correctly in browser
-    const noprint = document.querySelectorAll(".no-print");
-    noprint.forEach(el => (el as HTMLElement).style.display = "none");
-    window.print();
-    setTimeout(() => {
-      noprint.forEach(el => (el as HTMLElement).style.display = "");
-    }, 1000);
+  const handlePrint = async () => {
+    try {
+      await printDocument({ title: `عرض-سعر-${quotation?.quotationNumber || "QIROX"}` });
+    } catch {
+      toast({ title: "تعذّر تهيئة عرض السعر للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownload = async () => {
+    try {
+      await downloadAuthenticatedFile(
+        `/api/quotations/${params.id}/pdf`,
+        `quotation-${quotation?.quotationNumber || params.id}.pdf`,
+      );
+    } catch (error) {
+      toast({
+        title: "تعذّر تحميل ملف PDF",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) return (
@@ -105,41 +123,22 @@ export default function QuotationPrint() {
   const clientPhone = client?.phone || "";
   const clientCountry = client?.country || "";
   const clientCompany = quotation.externalCompany || "";
+  const documentLanguage = quotation.language === "en" ? "en" : "ar";
+  const D = documentLanguage === "ar";
+  const label = (ar: string, en: string) => D ? ar : en;
 
   const st = STATUS_LABELS[quotation.status] || { label: quotation.status, bg: "#f3f4f6", text: "#6b7280" };
   const isExternal = !!quotation.externalEmail && !client;
   const canConvert = isAdmin && quotation.status === "accepted" && client && !quotation.orderId;
-
+  const quotationSubtotal = Number(quotation.amount) || (quotation.items || []).reduce((sum: number, item: any) => sum + (Number(item.total) || 0), 0);
+  const quotationDiscountPercent = Number(quotation.discountPercent) || 0;
+  const quotationDiscountAmount = Number(quotation.discountAmount) > 0
+    ? Number(quotation.discountAmount)
+    : Math.round(quotationSubtotal * quotationDiscountPercent) / 100;
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-        @page { margin: 12mm; size: A4; }
-        @media print {
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          /* Hide ALL UI chrome */
-          nav, aside, header, footer,
-          [data-sidebar], [data-sidebar="sidebar"],
-          #qirox-companion, #page-hint-card, #push-banner,
-          [role="dialog"]:not(.print-keep),
-          .no-print { display: none !important; }
-          /* Force print content to full width */
-          main, #main-content { padding: 0 !important; margin: 0 !important; }
-          .no-print-bg { background: white !important; padding: 0 !important; }
-          .print-card {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            width: 100% !important;
-          }
-          table { page-break-inside: avoid; }
-          h1, h2, h3 { page-break-after: avoid; }
-        }
-      `}</style>
-
       {/* Controls – hidden on print */}
-      <div className="no-print bg-white border-b border-black/[0.07] px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div className="no-print bg-white border-b border-black/[0.07] px-3 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-10">
         <button
           onClick={() => window.history.back()}
           className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors"
@@ -147,7 +146,7 @@ export default function QuotationPrint() {
           <ArrowRight className="w-4 h-4" />
           رجوع
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {isAdmin && (
             <Button
               variant="outline"
@@ -201,203 +200,87 @@ export default function QuotationPrint() {
             {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
           </Button>
           <Button
-            onClick={handleDownloadPDF}
+            onClick={handleDownload}
             size="sm"
             className="bg-black text-white h-8 gap-1.5 text-xs"
             data-testid="button-download-pdf"
           >
             <Download className="w-3 h-3" />
-            تحميل PDF
+            حفظ PDF
           </Button>
         </div>
       </div>
 
-      {/* Document Area */}
-      <div className="min-h-screen bg-gray-50 py-8 px-4 no-print-bg">
-        <div
-          ref={printCardRef}
-          className="print-card bg-white w-full max-w-[800px] mx-auto shadow-lg rounded-2xl overflow-hidden"
-          style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
-          dir={dir}
-        >
-          {/* Header */}
-          <div className="bg-black px-10 py-8 flex items-start justify-between">
-            <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 opacity-90" />
-              <p className="text-white/40 text-xs">qiroxstudio.online</p>
-            </div>
-            <div className="text-left">
-              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">عرض سعر</p>
-              <p className="text-white font-black text-2xl font-mono tracking-tight">{quotation.quotationNumber}</p>
-              <p className="text-white/50 text-xs mt-1">
-                {new Date(quotation.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
-              </p>
-              {quotation.validUntil && (
-                <p className="text-black/70 dark:text-white/70 text-xs mt-0.5">
-                  صالح حتى: {new Date(quotation.validUntil).toLocaleDateString("ar-SA")}
-                </p>
-              )}
-              <span
-                className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-                style={{ backgroundColor: st.bg, color: st.text }}
-              >
-                {st.label}
-              </span>
-            </div>
-          </div>
+      <FinanceDocumentFrame
+        titleAr="عرض سعر"
+        titleEn="QUOTATION"
+        documentNumber={quotation.quotationNumber}
+        createdAt={quotation.createdAt}
+        dates={[{ labelAr: "صالح حتى", labelEn: "Valid until", value: quotation.validUntil }]}
+        status={{ label: st.label, color: st.text, background: st.bg }}
+        direction={D ? "rtl" : "ltr"}
+        recipient={{
+          label: label("إلى", "Prepared for"),
+          name: clientName,
+          company: clientCompany || undefined,
+          email: clientEmail || undefined,
+          phone: clientPhone || undefined,
+          country: clientCountry || undefined,
+          note: isExternal ? label("عميل خارجي", "External client") : undefined,
+        }}
+        footerLink={{ href: "/terms", label: label("الشروط والأحكام", "Terms & Conditions") }}
+        footerNote={label("شكراً لتعاملكم مع QIROX Studio", "Thank you for choosing QIROX Studio")}
+      >
+        <FinanceProjectPanel
+          label={label("المشروع", "Project")}
+          title={quotation.title}
+          description={quotation.projectDescription || quotation.description}
+        />
 
-          {/* Client Info */}
-          <div className="px-10 py-6 border-b border-black/[0.07] grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم من</p>
-              <p className="font-black text-black text-sm">QIROX Studio</p>
-              <p className="text-xs text-black/40 mt-0.5">info@qiroxstudio.online</p>
-              <p className="text-xs text-black/40">qiroxstudio.online</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم إلى</p>
-              <p className="font-black text-black text-sm">{clientName}</p>
-              {clientCompany && <p className="text-xs text-black/60 font-medium mt-0.5">{clientCompany}</p>}
-              {clientEmail && <p className="text-xs text-black/40 mt-0.5">{clientEmail}</p>}
-              {clientPhone && <p className="text-xs text-black/40">{clientPhone}</p>}
-              {clientCountry && <p className="text-xs text-black/40">{clientCountry}</p>}
-              {isExternal && (
-                <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white border border-black/10 dark:border-white/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                  عميل خارجي
-                </span>
-              )}
-            </div>
-          </div>
+        <FinanceItemsTable
+          items={quotation.items || []}
+          direction={D ? "rtl" : "ltr"}
+          labels={{
+            item: label("البند", "Item"),
+            quantity: label("الكمية", "Qty"),
+            unitPrice: label("سعر الوحدة", "Unit price"),
+            total: label("الإجمالي", "Total"),
+          }}
+        />
 
-          {/* Subject */}
-          {quotation.title && (
-            <div className="px-10 py-4 border-b border-black/[0.07] bg-black/[0.01]">
-              <span className="text-[10px] font-bold text-black/30 uppercase tracking-wider ml-3">الموضوع</span>
-              <span className="font-bold text-black text-sm">{quotation.title}</span>
-            </div>
-          )}
+        {(quotation.items?.length > 0 || quotation.totalAmount != null) && (
+          <FinanceTotals
+            subtotal={quotationSubtotal}
+            discountAmount={quotationDiscountAmount}
+            discountPercent={quotationDiscountPercent}
+            vatRate={Number(quotation.vatRate) || 0}
+            vatAmount={Number(quotation.vatAmount) || 0}
+            totalAmount={Number(quotation.totalAmount) || 0}
+            direction={D ? "rtl" : "ltr"}
+            labels={{
+              subtotal: label("المجموع الفرعي", "Subtotal"),
+              discount: label("الخصم", "Discount"),
+              vat: label("ضريبة القيمة المضافة", "VAT"),
+              total: label("الإجمالي", "Total"),
+              currency: label("ريال سعودي", "Saudi Riyal"),
+            }}
+          />
+        )}
 
-          {/* Items Table */}
-          {quotation.items?.length > 0 && (
-            <div className="px-10 py-6 border-b border-black/[0.07]">
-              <p className="text-[10px] font-bold text-black/30 mb-4 uppercase tracking-wider">تفاصيل البنود</p>
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-black text-white">
-                    <th className="text-right px-4 py-2.5 font-bold text-xs rounded-r-lg">البند</th>
-                    <th className="text-center px-4 py-2.5 font-bold text-xs w-20">الكمية</th>
-                    <th className="text-center px-4 py-2.5 font-bold text-xs w-28">سعر الوحدة</th>
-                    <th className="text-left px-4 py-2.5 font-bold text-xs w-28 rounded-l-lg">المجموع</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quotation.items.map((item: any, i: number) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-black/[0.02]"}>
-                      <td className="px-4 py-3 text-black/80 font-medium">
-                        {item.name}
-                        {item.description && (
-                          <span className="block text-xs text-black/35 mt-0.5">{item.description}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center text-black/50">{item.qty}</td>
-                      <td className="px-4 py-3 text-center text-black/50 font-mono">
-                        {item.unitPrice?.toLocaleString("ar-SA")}
-                      </td>
-                      <td className="px-4 py-3 text-left font-bold text-black/70 font-mono">
-                        {item.total?.toLocaleString("ar-SA")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Totals */}
-              <div className="mt-5 flex justify-end">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between text-sm text-black/50 pb-2 border-b border-black/[0.07]">
-                    <span>المجموع الفرعي</span>
-                    <span className="font-bold text-black/70 font-mono">
-                      {quotation.amount?.toLocaleString("ar-SA")} ر.س
-                    </span>
-                  </div>
-                  {quotation.vatRate > 0 && (
-                    <div className="flex justify-between text-sm text-black/50">
-                      <span>ضريبة القيمة المضافة ({quotation.vatRate}%)</span>
-                      <span className="font-bold text-black/70 font-mono">
-                        {quotation.vatAmount?.toLocaleString("ar-SA")} ر.س
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-base bg-black text-white px-4 py-3 rounded-xl font-black mt-2">
-                    <span>الإجمالي</span>
-                    <span className="font-mono">{quotation.totalAmount?.toLocaleString("ar-SA")} ر.س</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Notes / Terms */}
-          {(quotation.notes || quotation.termsAndConditions) && (
-            <div className="px-10 py-6 border-b border-black/[0.07] grid grid-cols-2 gap-6">
-              {quotation.notes && (
-                <div className="bg-black/[0.02] rounded-xl p-4">
-                  <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">ملاحظات</p>
-                  <p className="text-sm text-black/60 leading-relaxed">{quotation.notes}</p>
-                </div>
-              )}
-              {quotation.termsAndConditions && (
-                <div className="bg-black/[0.02] rounded-xl p-4">
-                  <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">الشروط والأحكام</p>
-                  <p className="text-sm text-black/60 leading-relaxed">{quotation.termsAndConditions}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Bank Transfer Info — toggleable */}
-          {showBankInfo && (
-            <div className="px-10 py-5 border-t border-black/[0.06]">
-              <div className="border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-3.5 h-3.5 text-black dark:text-white" />
-                  <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="text-black/30">طريقة الدفع</p>
-                    <p className="font-bold text-black/70">تحويل بنكي</p>
-                  </div>
-                  <div>
-                    <p className="text-black/30">البنك</p>
-                    <p className="font-bold text-black/70">{bank.bankName}</p>
-                  </div>
-                  <div>
-                    <p className="text-black/30">رقم الآيبان (IBAN)</p>
-                    <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.iban}</p>
-                  </div>
-                  <div>
-                    <p className="text-black/30">اسم المستفيد</p>
-                    <p className="font-bold text-black/70">{bank.beneficiaryName}</p>
-                  </div>
-                  {bank.accountNumber && (
-                    <div>
-                      <p className="text-black/30">رقم الحساب</p>
-                      <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.accountNumber}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="px-10 py-5 bg-black/[0.02] border-t border-black/[0.06] flex items-center justify-between">
-            <p className="text-xs text-black/30">شكراً لتعاملكم مع QIROX Studio</p>
-            <p className="text-xs text-black/20 font-mono" dir="ltr">{quotation.quotationNumber}</p>
-          </div>
+        <div className="fd-info-columns">
+          {showBankInfo && <FinanceBankCard bank={bank} title={label("بيانات التحويل البنكي", "Bank transfer details")} />}
+          <FinanceTermsCard
+            title={label("الشروط والأحكام", "Terms & conditions")}
+            entries={[
+              { label: label("ملاحظات", "Notes"), text: quotation.notes },
+              { label: label("شروط الدفع", "Payment terms"), text: quotation.paymentTerms },
+              { text: quotation.termsAndConditions },
+            ]}
+          />
         </div>
-      </div>
+
+        <FinanceApproval />
+      </FinanceDocumentFrame>
     </>
   );
 }

@@ -9,10 +9,27 @@ import CtaSection from "./sections/CtaSection";
 import PilotFooter from "./sections/PilotFooter";
 import TrustedSection from "./sections/TrustedSection";
 import EcosystemSection from "./sections/EcosystemSection";
+import { useQuery } from "@tanstack/react-query";
+import type { Partner } from "@shared/schema";
+
+function safePartnerWebsite(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return (
+      ["http:", "https:"].includes(url.protocol)
+      && url.hostname.includes(".")
+      && !url.hostname.split(".").some(part => !part)
+    ) ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export default function LandingDSV2Page() {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
+  const { data: partners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
 
   useSEO({
     title: ar ? "كيروكس استوديو | مصنع الأنظمة الرقمية" : "QIROX Studio | Digital Systems Factory",
@@ -37,6 +54,18 @@ export default function LandingDSV2Page() {
           "addressCountry": "SA",
         },
         "sameAs": ["https://qiroxstudio.online"],
+        "knowsAbout": [
+          "Website development",
+          "Mobile app development",
+          "Business management systems",
+          "Restaurant and e-commerce systems",
+          "تطوير المواقع والأنظمة والتطبيقات",
+        ],
+        "mentions": (partners || []).map(partner => ({
+          "@type": "Organization",
+          "name": partner.nameAr ? `${partner.nameAr} | ${partner.name}` : partner.name,
+          ...(safePartnerWebsite(partner.websiteUrl) ? { "url": safePartnerWebsite(partner.websiteUrl), "sameAs": [safePartnerWebsite(partner.websiteUrl)] } : {}),
+        })),
       },
       {
         "@context": "https://schema.org",

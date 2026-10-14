@@ -16,6 +16,17 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { DocumentAiComposer } from "@/components/DocumentAiComposer";
 import { useUser } from "@/hooks/use-auth";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
+import { CatalogItemSelect } from "@/components/CatalogItemSelect";
+import { useDocumentCatalog } from "@/hooks/use-document-catalog";
+
+interface InvoiceItem {
+  name: string;
+  description?: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+}
 
 interface Invoice {
   id: string;
@@ -28,7 +39,9 @@ interface Invoice {
   dueDate?: string;
   paidAt?: string;
   notes?: string;
-  items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  discountPercent?: number;
+  items?: InvoiceItem[];
+  language?: "ar" | "en";
   createdAt: string;
 }
 
@@ -52,6 +65,8 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const { data: catalogOptions = [], isLoading: catalogLoading, isError: catalogError } = useDocumentCatalog(L);
+  const [catalogSelection, setCatalogSelection] = useState("");
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
@@ -83,8 +98,10 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     dueDate: "",
     notes: "",
     discountPercent: "0",
-    items: [] as { name: string; qty: number; unitPrice: number; total: number }[],
+    language: "ar" as "ar" | "en",
+    items: [] as InvoiceItem[],
     newItemName: "",
+    newItemDescription: "",
     newItemQty: "1",
     newItemPrice: "",
   });
@@ -110,9 +127,10 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     const total = qty * unitPrice;
     setForm(prev => ({
       ...prev,
-      items: [...prev.items, { name: prev.newItemName, qty, unitPrice, total }],
-      newItemName: "", newItemQty: "1", newItemPrice: "",
+      items: [...prev.items, { name: prev.newItemName, description: prev.newItemDescription || undefined, qty, unitPrice, total }],
+      newItemName: "", newItemDescription: "", newItemQty: "1", newItemPrice: "",
     }));
+    setCatalogSelection("");
   };
 
   const removeItem = (i: number) => {
@@ -128,9 +146,11 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         userId: form.userId,
         orderId: form.orderId || undefined,
         amount: finalAmount,
+        discountPercent: Number(form.discountPercent) || 0,
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
+        language: form.language,
         items: form.items.length > 0 ? form.items : undefined,
       });
       return r.json();
@@ -139,7 +159,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
       if (sendEmail && data?.id) {
         try {
-          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "include" });
+          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ language: form.language }), credentials: "include" });
           toast({ title: L ? "تم إنشاء الفاتورة وإرسالها بالبريد ✅" : "Invoice created and emailed ✅" });
         } catch {
           toast({ title: L ? "تم إنشاء الفاتورة، لكن فشل إرسال البريد" : "Invoice created, but email failed", variant: "destructive" });
@@ -196,6 +216,19 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
             {label}
           </button>
         ))}
+      </div>
+
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة الفاتورة والبريد" : "Invoice and email language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-invoice-language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">العربية</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Order Quick Selector */}
@@ -308,11 +341,37 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           );
         })()}
 
+        <div className="mb-2">
+          <CatalogItemSelect
+            lang={lang}
+            value={catalogSelection}
+            options={catalogOptions}
+            isLoading={catalogLoading}
+            isError={catalogError}
+            onValueChange={id => {
+              const option = catalogOptions.find(item => item.id === id);
+              if (!option) return;
+              setCatalogSelection(id);
+              setForm(p => ({
+                ...p,
+                newItemName: option.name,
+                newItemDescription: option.description,
+                newItemPrice: String(option.price),
+              }));
+            }}
+          />
+        </div>
         <div className="grid grid-cols-4 gap-2 mb-2">
           <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
           <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
           <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
         </div>
+        <Input
+          placeholder={L ? "الوصف / المزايا" : "Description / features"}
+          value={form.newItemDescription}
+          onChange={e => setForm(p => ({ ...p, newItemDescription: e.target.value }))}
+          className="h-8 text-xs border-black/[0.10] mb-2"
+        />
         <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs mb-3" disabled={!form.newItemName || !form.newItemPrice}>
           <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند مخصص" : "Add Custom Item"}
         </Button>
@@ -320,7 +379,10 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5 mb-2">
             {form.items.map((item, i) => (
               <div key={i} className="flex items-center justify-between bg-black/[0.02] rounded-lg px-3 py-2 border border-black/[0.06]">
-                <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
+                  {item.description && <span className="block text-[10px] text-black/40">{item.description}</span>}
+                </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
                   <button onClick={() => removeItem(i)} className="text-black/70 dark:text-white/70 hover:text-black dark:text-white"><X className="w-3 h-3" /></button>
@@ -378,23 +440,28 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const { data: catalogOptions = [], isLoading: catalogLoading, isError: catalogError } = useDocumentCatalog(L);
+  const [catalogSelection, setCatalogSelection] = useState("");
 
   const [form, setForm] = useState({
     amount: String(invoice.totalAmount || invoice.amount || ""),
     status: invoice.status as "paid" | "unpaid" | "cancelled",
+    discountPercent: String(invoice.discountPercent ?? 0),
     dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split("T")[0] : "",
     notes: invoice.notes || "",
-    items: invoice.items || [] as { name: string; qty: number; unitPrice: number; total: number }[],
+    language: invoice.language || "ar",
+    items: (invoice.items || []) as InvoiceItem[],
     newItemName: "", newItemQty: "1", newItemPrice: "",
+    newItemDescription: "",
   });
 
   // Inline item editing
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editBuf, setEditBuf] = useState({ name: "", qty: "1", unitPrice: "" });
+  const [editBuf, setEditBuf] = useState({ name: "", description: "", qty: "1", unitPrice: "" });
 
   const startEdit = (i: number) => {
     const it = form.items[i];
-    setEditBuf({ name: it.name, qty: String(it.qty), unitPrice: String(it.unitPrice) });
+    setEditBuf({ name: it.name, description: it.description || "", qty: String(it.qty), unitPrice: String(it.unitPrice) });
     setEditingIdx(i);
   };
   const saveEdit = () => {
@@ -403,7 +470,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
     const unitPrice = Number(editBuf.unitPrice) || 0;
     setForm(p => ({
       ...p,
-      items: p.items.map((it, idx) => idx === editingIdx ? { ...it, name: editBuf.name, qty, unitPrice, total: qty * unitPrice } : it),
+      items: p.items.map((it, idx) => idx === editingIdx ? { ...it, name: editBuf.name, description: editBuf.description || undefined, qty, unitPrice, total: qty * unitPrice } : it),
     }));
     setEditingIdx(null);
   };
@@ -412,7 +479,8 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
     if (!form.newItemName || !form.newItemPrice) return;
     const qty = Number(form.newItemQty) || 1;
     const unitPrice = Number(form.newItemPrice);
-    setForm(p => ({ ...p, items: [...p.items, { name: p.newItemName, qty, unitPrice, total: qty * unitPrice }], newItemName: "", newItemQty: "1", newItemPrice: "" }));
+    setForm(p => ({ ...p, items: [...p.items, { name: p.newItemName, description: p.newItemDescription || undefined, qty, unitPrice, total: qty * unitPrice }], newItemName: "", newItemDescription: "", newItemQty: "1", newItemPrice: "" }));
+    setCatalogSelection("");
   };
 
   const removeItem = (i: number) => {
@@ -426,10 +494,12 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
   const mutation = useMutation({
     mutationFn: async () => {
       const r = await apiRequest("PATCH", `/api/invoices/${invoice.id}`, {
-        amount: finalAmount, totalAmount: finalAmount,
+         amount: finalAmount,
+         discountPercent: Number(form.discountPercent) || 0,
         status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
+         language: form.language,
         items: form.items.length > 0 ? form.items : undefined,
       });
       return r.json();
@@ -452,6 +522,19 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             {label}
           </button>
         ))}
+      </div>
+
+      <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة الفاتورة والبريد" : "Invoice and email language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-edit-invoice-language">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">العربية</SelectItem>
+            <SelectItem value="en">English</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -478,9 +561,15 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
                     <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                     <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
+                  <Input
+                    value={editBuf.description}
+                    onChange={e => setEditBuf(p => ({ ...p, description: e.target.value }))}
+                    placeholder={L ? "الوصف / المزايا" : "Description / features"}
+                    className="h-8 text-xs border-black/15 dark:border-white/15"
+                  />
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
-                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1 flex items-center gap-1">
+                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} <SARIcon size={11} />
                     </p>
                   )}
                   <div className="flex gap-2">
@@ -494,7 +583,10 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
                 </div>
               ) : (
                 <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-black/10 dark:border-white/10 transition-all">
-                  <span className="text-xs text-black font-medium flex-1">{item.name} <span className="text-black/40 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span></span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-black font-medium">{item.name} <span className="text-black/40 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span></span>
+                    {item.description && <span className="block text-[10px] text-black/40 mt-0.5">{item.description}</span>}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
                     <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-black dark:text-white hover:text-black dark:text-white transition-all p-1 rounded-lg hover:bg-black/[0.04] dark:bg-white/[0.06]">
@@ -556,12 +648,38 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
               </div>
             );
           })()}
+          <div className="mb-2">
+            <CatalogItemSelect
+              lang={lang}
+              value={catalogSelection}
+              options={catalogOptions}
+              isLoading={catalogLoading}
+              isError={catalogError}
+              onValueChange={id => {
+                const option = catalogOptions.find(item => item.id === id);
+                if (!option) return;
+                setCatalogSelection(id);
+                setForm(p => ({
+                  ...p,
+                  newItemName: option.name,
+                  newItemDescription: option.description,
+                  newItemPrice: String(option.price),
+                }));
+              }}
+            />
+          </div>
           <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "بند مخصص" : "Custom Item"}</p>
           <div className="grid grid-cols-4 gap-2 mb-2">
             <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
             <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
             <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
           </div>
+          <Input
+            placeholder={L ? "الوصف / المزايا" : "Description / features"}
+            value={form.newItemDescription}
+            onChange={e => setForm(p => ({ ...p, newItemDescription: e.target.value }))}
+            className="h-8 text-xs border-black/[0.10] mb-2"
+          />
           <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs gap-1" disabled={!form.newItemName || !form.newItemPrice}>
             <Plus className="w-3 h-3" /> {L ? "إضافة بند" : "Add Item"}
           </Button>
@@ -578,7 +696,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
           type="button"
           onClick={async () => {
             try {
-              const r = await fetch(`/api/invoices/${invoice.id}/send-email`, { method: "POST", credentials: "include" });
+               const r = await fetch(`/api/invoices/${invoice.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ language: form.language }), credentials: "include" });
               const d = await r.json();
               if (r.ok) toast({ title: L ? "✅ تم إرسال الفاتورة بالبريد" : "✅ Invoice sent by email" });
               else toast({ title: d.error || (L ? "فشل الإرسال" : "Send failed"), variant: "destructive" });
@@ -595,7 +713,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
+            <Printer className="w-4 h-4" /> {L ? "طباعة" : "Print"}
           </a>
           <a
             href={`/api/invoices/${invoice.id}/pdf`}
@@ -603,7 +721,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <FileText className="w-3 h-3" /> PDF
+            <FileText className="w-4 h-4" /> PDF
           </a>
         </div>
       </div>
@@ -802,7 +920,7 @@ export default function AdminInvoices() {
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06] transition-colors text-xs font-semibold"
                             data-testid={`button-edit-invoice-${inv.id}`}
                           >
-                            <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                            <Pencil className="w-4 h-4" /> {L ? "تعديل" : "Edit"}
                           </button>
                           <button
                             onClick={() => duplicateMutation.mutate(inv.id)}
@@ -811,10 +929,16 @@ export default function AdminInvoices() {
                             title={L ? "نسخ" : "Copy"}
                             data-testid={`button-duplicate-invoice-${inv.id}`}
                           >
-                            <Copy className="w-3 h-3" />
+                            <Copy className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => window.open(`/api/invoices/${inv.id}/pdf`, "_blank")}
+                             onClick={() => downloadAuthenticatedFile(
+                               `/api/invoices/${inv.id}/pdf`,
+                               `invoice-${inv.invoiceNumber}.pdf`,
+                             ).catch(() => toast({
+                               title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+                               variant: "destructive",
+                             }))}
                             className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
                             title={L ? "تحميل PDF" : "Download PDF"}
                             data-testid={`button-print-${inv.id}`}

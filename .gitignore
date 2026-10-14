@@ -35,6 +35,10 @@ attached_assets/*.key
 attached_assets/*.p8
 attached_assets/AuthKey_*
 attached_assets/._*
+sandboxes/*/.replit
+sandboxes/*/.env
+sandboxes/*/.env.*
+sandboxes/*/server/keys/
 ._*
 .whatsapp-auth/
 # dist/index.cjs is committed — pre-built bundle deployed directly to Render

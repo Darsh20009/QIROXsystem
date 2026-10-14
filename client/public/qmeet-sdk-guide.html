@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QMeet — التخصيص والإضافات</title>
+<style>body{font:16px/1.8 system-ui;background:#111827;color:#e2e8f0;margin:0}main{max-width:900px;margin:40px auto;padding:24px}h1,h2{color:#2dd4bf}pre{direction:ltr;text-align:left;background:#1e293b;padding:18px;overflow:auto;border-radius:12px;font-size:13px}code{color:#99f6e4}a{color:#2dd4bf}.note{border-right:3px solid #2dd4bf;padding:14px;background:#1e293b}</style>
+<main><h1>QMeet: تخصيص الهوية وإضافة ميزات</h1>
+<p>أنشئ الاجتماعات من خادم تطبيقك باستخدام مفتاح API. خصص الاسم والشعار واللون وأزرار الميزات، ثم ضمّن الاجتماع عبر SDK وأضف أدواتك في تطبيقك.</p>
+<p class="note">لا تضع مفتاح API في JavaScript المتصفح أو رابط iframe. المفتاح يستخدم على خادمك فقط. السماح بالتضمين لا يلغي موافقة دخول الضيوف ولا يمنح صلاحيات المضيف.</p>
+<h2>1. الإعداد الافتراضي لاجتماعات مفتاحك</h2>
+<p><code>PATCH /api/qmeet/v1/customization</code> مع رأس <code>x-qmeet-api-key</code>. أرسل الإعداد كاملاً؛ يطبّق على الاجتماعات الجديدة فقط.</p>
+<pre>{
+  "brandName": "أكاديمية العميل",
+  "logoUrl": "https://academy.example/logo.png",
+  "accentColor": "#14b8a6",
+  "allowedOrigins": ["https://academy.example"],
+  "features": {
+    "chat": true, "whiteboard": true,
+    "screenShare": true, "annotations": true
+  }
+}</pre>
+<p>استخدم <code>GET /api/qmeet/v1/customization</code> لقراءة الإعداد. يمكنك إرفاق <code>customization</code> عند <code>POST /api/qmeet/v1/meetings</code>، أو تعديله لاجتماع موجود عبر <code>PATCH /api/qmeet/v1/meetings/:roomName/customization</code>. يُسمح فقط باجتماعات مفتاحك. أعد تحميل الاجتماع بعد التعديل.</p>
+<p>مفاتيح features تخصص واجهة المستخدم وليست بديلًا عن صلاحيات الخادم. النطاقات أصول HTTPS كاملة بدون مسارات أو نجمة، وبحد أقصى عشرة نطاقات.</p>
+<h2>2. تضمين الاجتماع</h2>
+<p>استبدل QMEET_ORIGIN بعنوان خدمة QMeet التي تتكامل معها، وROOM_NAME باسم الغرفة الصادر من API. أضف أصل موقعك إلى allowedOrigins قبل التضمين. قد تحتاج سياسة CSP الخاصة بموقعك للسماح بعنوان QMeet في script-src وframe-src.</p>
+<pre>&lt;div id="meeting" style="height:80vh"&gt;&lt;/div&gt;
+&lt;script src="QMEET_ORIGIN/qmeet-sdk.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+const meeting = QMeet.mount("#meeting", {
+  serverUrl: "QMEET_ORIGIN",
+  roomName: "ROOM_NAME"
+});
+meeting.on("ready", () =&gt; console.log("واجهة الاجتماع جاهزة"));
+meeting.on("state", state =&gt; console.log(state));
+// state: {joined, camera, microphone, screenSharing}
+&lt;/script&gt;</pre>
+<h2>3. إضافة ميزتك الخاصة</h2>
+<p>الإضافة تنفذ في تطبيق العميل، ولا تُحمّل تعليمات JavaScript عشوائية داخل QMeet. يمكن ربطها بـCRM أو تدوين الملاحظات أو واجهة خاصة بتطبيقك.</p>
+<pre>const removePlugin = meeting.addPlugin({
+  id: "notes",
+  label: "ملاحظاتي",
+  onClick: () =&gt; {
+    // افتح لوحة الملاحظات الخاصة بتطبيقك هنا.
+    document.querySelector("#my-notes").hidden = false;
+  }
+});
+meeting.command("toggleCamera");
+meeting.command("toggleMicrophone");
+meeting.command("openAnnotations");
+// تنظيف عند مغادرة صفحة تطبيقك:
+removePlugin();
+meeting.destroy();</pre>
+<p>الأوامر المدعومة: toggleCamera، toggleMicrophone، openAnnotations، leave. يعمل التحكم فقط بعد الانضمام، ومن الأصل المسجل، ولا يمنح صلاحيات إدارة الاجتماع. أمر toggleScreenShare يعرض توجيهًا للضغط على زر المشاركة داخل الاجتماع لأن المتصفح يتطلب نقرة مباشرة لمنح الإذن.</p>
+<h2>مشاركة الشاشة والكتابة</h2>
+<p>أثناء المشاركة، افتح أدوات الشرح. القلم والنصوص تُدمج في بث الشاشة الفعلي ويشاهدها المشاركون. الاختصارات: P قلم، T نص، V عرض. تتوفر الألوان وسُمك القلم والتراجع والمسح.</p>
+<p>تبقى الكاميرا مستقلة وتظهر كصورة صغيرة داخل المشاركة. نافذة الأدوات العائمة تستخدم Document Picture-in-Picture في المتصفحات الداعمة، وتتطلب نقرة لفتحها. الرسم فيها على المعاينة الحية، وليس فوق نوافذ نظام التشغيل. في المتصفحات الأخرى تبقى الأدوات داخل QMeet. مشاركة الشاشة من الجوال غير مدعومة في المسار الحالي.</p>
+<p class="note">الميزة الجديدة تحت FEATURE_QMEET_PRESENTATION_V2؛ يمكن إيقافها والرجوع لمسار المشاركة القديم دون تغيير واجهات API القديمة. إعدادات العميل لا تغير QMeet الأساسي للآخرين.</p>
+</main></html>

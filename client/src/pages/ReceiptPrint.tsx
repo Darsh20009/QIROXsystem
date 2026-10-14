@@ -1,11 +1,21 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
+import { Loader2, Printer, ArrowRight, Mail, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-const qiroxLogoPath = "/qirox-logo-nobg.png";
 import { useI18n } from "@/lib/i18n";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
+import { printDocument } from "@/lib/print-document";
+import {
+  FinanceApproval,
+  FinanceBankCard,
+  FinanceDetailGrid,
+  FinanceDocumentFrame,
+  FinanceNotesCard,
+  FinanceProjectPanel,
+  FinanceReceiptAmount,
+} from "./FinanceDocumentTemplate";
 
 const METHOD_LABELS: Record<string, string> = {
   bank_transfer: "تحويل بنكي", cash: "نقداً", stc_pay: "STC Pay",
@@ -35,6 +45,14 @@ export default function ReceiptPrint() {
   });
   const bank = bankSettings || DEFAULT_BANK;
 
+  const handlePrint = async () => {
+    try {
+      await printDocument({ title: `سند-قبض-${receipt?.receiptNumber || "QIROX"}` });
+    } catch {
+      toast({ title: "تعذّرت تهيئة السند للطباعة", description: "أعد المحاولة بعد اكتمال تحميل الصفحة.", variant: "destructive" });
+    }
+  };
+
   const sendEmailMutation = useMutation({
     mutationFn: async () => {
       const r = await apiRequest("POST", `/api/receipts/${params.id}/send-email`, {});
@@ -43,6 +61,17 @@ export default function ReceiptPrint() {
     onSuccess: () => toast({ title: "تم إرسال السند بالبريد ✅" }),
     onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
   });
+
+  const handleDownload = async () => {
+    try {
+      await downloadAuthenticatedFile(
+        `/api/receipts/${params.id}/pdf`,
+        `receipt-${receipt?.receiptNumber || params.id}.pdf`,
+      );
+    } catch {
+      toast({ title: "تعذّر تحميل ملف PDF", variant: "destructive" });
+    }
+  };
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -61,18 +90,6 @@ export default function ReceiptPrint() {
 
   return (
     <>
-      <style>{`
-        @media print {
-          nav, aside, header, footer,
-          [data-sidebar], [data-sidebar="sidebar"],
-          #qirox-companion, #page-hint-card, #push-banner,
-          .no-print { display: none !important; }
-          body { background: white !important; }
-          main, #main-content { padding: 0 !important; margin: 0 !important; }
-          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; }
-        }
-      `}</style>
-
       {/* Controls */}
       <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir={dir}>
         <button onClick={() => setLocation("/admin/receipts")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
@@ -90,136 +107,73 @@ export default function ReceiptPrint() {
             {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
             إرسال للعميل
           </Button>
-          <Button onClick={() => window.print()} size="sm" className="bg-black text-white h-8 text-xs gap-1.5">
+          <Button onClick={handlePrint} variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-black/[0.12]">
             <Printer className="w-3 h-3" />
-            طباعة / PDF
+            طباعة
+          </Button>
+          <Button onClick={handleDownload} size="sm" className="bg-black text-white h-8 text-xs gap-1.5">
+            <Download className="w-3 h-3" />
+            حفظ PDF
           </Button>
         </div>
       </div>
 
-      {/* Receipt Paper */}
-      <div className="min-h-screen bg-gray-50 flex justify-center py-8 px-4">
-        <div
-          className="print-page bg-white w-full max-w-[680px] shadow-lg rounded-xl overflow-hidden"
-          style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
-          dir={dir}
-        >
-          {/* Header */}
-          <div className="bg-black px-8 py-6 flex items-center justify-between">
-            <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain opacity-90" />
-              <p className="text-white/40 text-xs mt-1">qiroxstudio.online</p>
-            </div>
-            <div className="text-left">
-              <div className="text-white font-black text-xl">سند قبض</div>
-              <div className="text-white/50 text-sm font-mono mt-1">{receipt.receiptNumber}</div>
-            </div>
-          </div>
+      <FinanceDocumentFrame
+        titleAr="سند قبض"
+        titleEn="RECEIPT VOUCHER"
+        documentNumber={receipt.receiptNumber}
+        createdAt={receipt.createdAt}
+        direction={dir}
+        recipient={{
+          label: "استُلم من",
+          name: client?.fullName || client?.username || "—",
+          email: client?.email || undefined,
+          phone: client?.phone || client?.whatsappNumber || undefined,
+          country: client?.country || undefined,
+        }}
+        footerNote="هذا السند صادر إلكترونياً ويُعدّ مستنداً رسمياً لاستلام المبلغ المذكور"
+      >
+        <FinanceProjectPanel
+          label="الغرض / الوصف"
+          title={receipt.description}
+          description={invoice?.invoiceNumber ? `مرتبط بالفاتورة ${invoice.invoiceNumber}` : undefined}
+        />
 
-          {/* Date bar */}
-          <div className="bg-black/[0.03] border-b border-black/[0.06] px-8 py-3 flex justify-between text-xs text-black/50">
-            <div>
-              <span className="text-black/30">التاريخ: </span>
-              <span className="font-medium text-black/70">
-                {new Date(receipt.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
-              </span>
-            </div>
-            {invoice && (
-              <div>
-                <span className="text-black/30">مرتبط بالفاتورة: </span>
-                <span className="font-medium text-black/70 font-mono">{invoice.invoiceNumber}</span>
-              </div>
-            )}
-          </div>
+        <FinanceReceiptAmount
+          amount={Number(receipt.amount) || 0}
+          amountInWords={receipt.amountInWords}
+        />
 
-          <div className="px-8 py-8">
-            {/* Amount - prominent */}
-            <div className="text-center mb-8 bg-black/[0.03] border border-black/[0.07] rounded-2xl px-6 py-8">
-              <p className="text-xs text-black/30 font-bold uppercase tracking-wider mb-3">المبلغ المستلم</p>
-              <div className="text-5xl font-black text-black mb-2">{receipt.amount?.toLocaleString()}</div>
-              <div className="text-lg font-bold text-black/40">ريال سعودي</div>
-              {receipt.amountInWords && (
-                <p className="mt-3 text-sm text-black/50 font-medium border-t border-black/[0.08] pt-3">
-                  {receipt.amountInWords}
-                </p>
-              )}
-            </div>
+        <FinanceDetailGrid
+          details={[
+            {
+              label: "طريقة الدفع",
+              value: METHOD_LABELS[receipt.paymentMethod] || receipt.paymentMethod || "—",
+            },
+            {
+              label: "رقم مرجع الدفع",
+              value: receipt.paymentRef ? <span dir="ltr">{receipt.paymentRef}</span> : undefined,
+            },
+            { label: "المستلِم", value: receipt.receivedBy || "QIROX Studio" },
+            { label: "رقم السند", value: <span dir="ltr">{receipt.receiptNumber}</span> },
+          ]}
+        />
 
-            {/* Details grid */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-5 mb-8">
-              <div>
-                <p className="text-xs font-bold text-black/30 mb-1">استُلم من</p>
-                <p className="font-black text-black">{client?.fullName || client?.username || "—"}</p>
-                {client?.email && <p className="text-xs text-black/40 mt-0.5">{client.email}</p>}
-              </div>
-              <div>
-                <p className="text-xs font-bold text-black/30 mb-1">طريقة الدفع</p>
-                <p className="font-bold text-black">{METHOD_LABELS[receipt.paymentMethod] || receipt.paymentMethod}</p>
-                {receipt.paymentRef && <p className="text-xs text-black/40 mt-0.5 font-mono">{receipt.paymentRef}</p>}
-              </div>
-              {receipt.paymentMethod === "bank_transfer" && (
-                <>
-                  <div>
-                    <p className="text-xs font-bold text-black/30 mb-1">البنك</p>
-                    <p className="font-bold text-black">{bank.bankName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-black/30 mb-1">اسم المستفيد</p>
-                    <p className="font-bold text-black">{bank.beneficiaryName}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs font-bold text-black/30 mb-1">رقم الآيبان (IBAN)</p>
-                    <p className="font-bold text-black font-mono tracking-wide" dir="ltr">{bank.iban}</p>
-                  </div>
-                </>
-              )}
-              {receipt.description && (
-                <div className="col-span-2">
-                  <p className="text-xs font-bold text-black/30 mb-1">الغرض / الوصف</p>
-                  <p className="font-medium text-black/70">{receipt.description}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs font-bold text-black/30 mb-1">المستلِم</p>
-                <p className="font-bold text-black">{receipt.receivedBy || "QIROX Studio"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-black/30 mb-1">رقم السند</p>
-                <p className="font-bold text-black font-mono">{receipt.receiptNumber}</p>
-              </div>
-            </div>
+        {receipt.paymentMethod === "bank_transfer" && (
+          <FinanceBankCard
+            bank={bank}
+            title="بيانات التحويل البنكي"
+            method={METHOD_LABELS[receipt.paymentMethod]}
+          />
+        )}
 
-            {receipt.notes && (
-              <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl px-4 py-3 mb-6">
-                <p className="text-xs font-bold text-black/40 mb-1">ملاحظات</p>
-                <p className="text-sm text-black/60">{receipt.notes}</p>
-              </div>
-            )}
-
-            {/* Signatures */}
-            <div className="grid grid-cols-2 gap-8 mt-10">
-              <div className="text-center">
-                <div className="border-t-2 border-black/[0.12] pt-3">
-                  <p className="text-xs font-bold text-black/40">توقيع المستلِم</p>
-                  <p className="text-sm font-bold text-black/60 mt-1">{receipt.receivedBy || "QIROX Studio"}</p>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="border-t-2 border-black/[0.12] pt-3">
-                  <p className="text-xs font-bold text-black/40">توقيع الدافع</p>
-                  <p className="text-sm font-bold text-black/60 mt-1">{client?.fullName || "—"}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-black/[0.06] pt-4 mt-8 text-center text-xs text-black/25">
-              <p>QIROX Studio — qiroxstudio.online — support@qiroxstudio.online</p>
-              <p className="mt-0.5">هذا السند صادر إلكترونياً ويُعدّ مستنداً رسمياً لاستلام المبلغ المذكور</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <FinanceNotesCard notes={receipt.notes} />
+        <FinanceApproval
+          receipt
+          issuerName={receipt.receivedBy || "QIROX Studio"}
+          payerName={client?.fullName || client?.username || "—"}
+        />
+      </FinanceDocumentFrame>
     </>
   );
 }

@@ -208,6 +208,18 @@
   [dir="rtl"] * {
     -webkit-font-smoothing: antialiased;
   }
+
+  /*
+   * Arabic glyphs must not inherit Latin display tracking.
+   * Tailwind tracking utilities and inline letter-spacing are useful for
+   * English labels, but they visibly separate Arabic letters from each
+   * other. The document direction is switched by the i18n provider, so this
+   * fixes every Arabic screen and component centrally.
+   */
+  html[dir="rtl"] [class*="tracking-"],
+  html[dir="rtl"] [style*="letter-spacing"] {
+    letter-spacing: normal !important;
+  }
 }
 
 @layer utilities {
@@ -1303,6 +1315,42 @@
 }
 
 /* ── Global print styles — hide all UI chrome when printing ── */
+.qirox-loading-word {
+  display: inline-flex;
+  align-items: center;
+}
+
+.qirox-loading-rest {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 0;
+  opacity: 0;
+  animation: qirox-loading-type 2.6s steps(4, end) infinite;
+}
+
+@keyframes qirox-loading-type {
+  0%, 12% {
+    width: 0;
+    opacity: 0;
+  }
+  48%, 68% {
+    width: 4.1em;
+    opacity: 1;
+  }
+  94%, 100% {
+    width: 0;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qirox-loading-rest {
+    width: auto;
+    opacity: 1;
+    animation: none;
+  }
+}
+
 @media print {
   /* Navigation bars */
   nav,

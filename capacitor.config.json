@@ -12,7 +12,7 @@
     "minVersion": "16.0",
     "buildVersion": "1",
     "version": "1.0.0",
-    "backgroundColor": "#111111",
+    "backgroundColor": "#ffffff",
     "scrollEnabled": true,
     "allowsLinkPreview": false,
     "handleApplicationNotifications": true,
@@ -31,7 +31,7 @@
     "StatusBar": {
       "style": "DARK",
       "overlaysWebView": false,
-      "backgroundColor": "#111111"
+      "backgroundColor": "#ffffff"
     },
     "SplashScreen": {
       "launchAutoHide": true,

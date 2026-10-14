@@ -1,6 +1,7 @@
 import { ImapFlow } from "imapflow";
 import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
+import { randomUUID } from "crypto";
 import { MailAccountModel, MailCacheModel, UserModel } from "./models";
 import type { Document } from "mongoose";
 import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
@@ -32,6 +33,7 @@ export interface EmailMessage {
   text: string;
   snippet: string;
   folder: string;
+  attachments?: Array<{ filename: string; contentType: string; content: Buffer }>;
 }
 
 async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> {
@@ -40,7 +42,13 @@ async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> 
   return { ...doc, id: doc._id.toString(), password: doc.password };
 }
 
-export async function fetchInbox(accountId: string, folder = "INBOX", maxMessages = 30): Promise<EmailMessage[]> {
+export async function fetchInbox(
+  accountId: string,
+  folder = "INBOX",
+  maxMessages = 30,
+  offset = 0,
+  includeAttachmentContent = false,
+): Promise<EmailMessage[]> {
   const account = await getAccountRaw(accountId);
   if (!account) throw new Error("Account not found");
 
@@ -81,13 +89,14 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
     const mailbox = await client.mailboxOpen(folder);
     const total = mailbox.exists;
 
-    if (total === 0) {
+    if (total === 0 || offset >= total) {
       await client.logout();
       return [];
     }
 
-    const start = Math.max(1, total - maxMessages + 1);
-    const range = `${start}:${total}`;
+    const end = Math.max(1, total - offset);
+    const start = Math.max(1, end - maxMessages + 1);
+    const range = `${start}:${end}`;
 
     for await (const msg of client.fetch(range, { uid: true, flags: true, envelope: true, source: true })) {
       try {
@@ -110,6 +119,13 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
           text,
           snippet,
           folder,
+          ...(includeAttachmentContent ? {
+            attachments: (parsed.attachments || []).slice(0, 20).map((attachment: any, index: number) => ({
+              filename: String(attachment.filename || `attachment-${index + 1}`).replace(/[\\/\r\n]/g, "_").slice(0, 180),
+              contentType: String(attachment.contentType || "application/octet-stream").slice(0, 160),
+              content: Buffer.from(attachment.content || []),
+            })),
+          } : {}),
         };
         messages.push(message);
 
@@ -120,7 +136,7 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
           { upsert: true }
         );
       } catch (e) {
-        // skip malformed message
+        console.warn(`[Mail] Skipped malformed message ${accountId}/${folder}/${msg.uid}:`, (e as any)?.message || e);
       }
     }
 
@@ -285,7 +301,7 @@ export async function sendMail(opts: {
   subject: string;
   body: string;
   attachments?: { filename: string; content: string; contentType: string; encoding?: string }[];
-}): Promise<void> {
+}): Promise<{ sentCopySaved: boolean }> {
   const account = await getAccountRaw(opts.accountId);
   if (!account) throw new Error("Account not found");
 
@@ -295,6 +311,32 @@ export async function sendMail(opts: {
     body: opts.body,
   });
 
+  const domain = account.emailAddress.split("@")[1] || "qirox.online";
+  const messageId = `<qirox-${randomUUID()}@${domain}>`;
+  const messageOptions: any = {
+    from: `"${account.displayName || "QIROX"}" <${account.emailAddress}>`,
+    to: opts.to,
+    ...(opts.cc ? { cc: opts.cc } : {}),
+    subject: opts.subject,
+    html,
+    text: opts.body,
+    messageId,
+    attachments: (opts.attachments || []).map(a => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, "base64"),
+      contentType: a.contentType,
+    })),
+  };
+  const rawTransport = nodemailer.createTransport({
+    streamTransport: true,
+    buffer: true,
+    newline: "unix",
+  } as any);
+  const rawInfo: any = await rawTransport.sendMail(messageOptions);
+  const rawMessage = Buffer.isBuffer(rawInfo.message)
+    ? rawInfo.message
+    : Buffer.from(rawInfo.message || "");
+
   const transport = nodemailer.createTransport({
     host: account.smtpHost,
     port: account.smtpPort,
@@ -303,19 +345,59 @@ export async function sendMail(opts: {
     tls: { rejectUnauthorized: false },
   });
 
-  await transport.sendMail({
-    from: `"${account.displayName || "QIROX"}" <${account.emailAddress}>`,
-    to: opts.to,
-    ...(opts.cc ? { cc: opts.cc } : {}),
-    subject: opts.subject,
-    html,
-    text: opts.body,
-    attachments: (opts.attachments || []).map(a => ({
-      filename: a.filename,
-      content: Buffer.from(a.content, "base64"),
-      contentType: a.contentType,
-    })),
+  await transport.sendMail(messageOptions);
+
+  let sentCopySaved = false;
+  try {
+    await appendSentCopy(account, rawMessage, messageId);
+    sentCopySaved = true;
+  } catch (error: any) {
+    // SMTP already accepted the message. Report the partial result without
+    // making the caller retry and accidentally send a duplicate.
+    console.error(`[Mail] SMTP delivered but Sent copy could not be saved for ${account.emailAddress}:`, error?.message || error);
+  }
+  return { sentCopySaved };
+}
+
+async function appendSentCopy(account: MailAccountDoc, rawMessage: Buffer, messageId: string): Promise<void> {
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
   });
+  client.on("error", () => {});
+
+  let connected = false;
+  try {
+    await client.connect();
+    connected = true;
+    const folders = await client.list();
+    const sentFolder = folders.find((folder: any) =>
+      String(folder.specialUse || "").toLowerCase().includes("\\sent"),
+    ) || folders.find((folder: any) =>
+      /(^|[./ ])sent(?: items| messages)?$/i.test(String(folder.path || "")),
+    );
+    if (!sentFolder?.path) throw new Error("Sent folder was not found");
+
+    await client.mailboxOpen(sentFolder.path);
+    let alreadySaved = false;
+    try {
+      const matches = await client.search({ header: { "Message-ID": messageId } });
+      alreadySaved = Array.isArray(matches) && matches.length > 0;
+    } catch {
+      // Some IMAP providers do not implement header search consistently.
+    }
+    if (!alreadySaved) await client.append(sentFolder.path, rawMessage, ["\\Seen"]);
+  } finally {
+    if (connected) {
+      try { await client.logout(); } catch {}
+    }
+  }
 }
 
 export async function testMailConnection(creds: {
@@ -339,16 +421,29 @@ export async function testMailConnection(creds: {
     socketTimeout: 8000,
     connectionTimeout: 8000,
   });
+  let imapConnected = false;
+  // ImapFlow may emit socket errors independently of connect() rejecting.
+  // Consume those events so an authentication failure cannot crash the process.
+  imapClient.on("error", () => {});
   try {
+    const connection = imapClient.connect();
+    // If the timeout wins, consume a later rejection from the connection
+    // attempt instead of allowing it to become an unhandled rejection.
+    connection.catch(() => {});
     await Promise.race([
-      imapClient.connect(),
+      connection,
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connection timeout")), 9000)),
     ]);
     imapOk = true;
-    await imapClient.logout();
+    imapConnected = true;
   } catch (e: any) {
     imapError = e.responseText || e.message || "Unknown error";
-    try { await imapClient.logout(); } catch {}
+  } finally {
+    // logout() is only valid after connect succeeds. Calling it after an
+    // authentication rejection emits a second "Connection not available".
+    if (imapConnected) {
+      try { await imapClient.logout(); } catch {}
+    }
   }
 
   // Test SMTP
@@ -382,7 +477,6 @@ export async function seedDefaultAccounts(): Promise<void> {
   const defaults = [
     {
       emailAddress: "m.adbani@qirox.online",
-      password: "ASDqwe@12345678",
       displayName: "محمد الدباني",
       jobTitle: "المدير التنفيذي - CEO",
       isShared: false,
@@ -390,7 +484,6 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "y.business@qirox.online",
-      password: "ASDqwe@12345678",
       displayName: "يوسف درويش",
       jobTitle: "المدير التقني - CTO",
       isShared: false,
@@ -398,7 +491,6 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "hr@qirox.online",
-      password: "ASDqwe@12345678",
       displayName: "Qirox HR",
       jobTitle: "الموارد البشرية",
       isShared: true,
@@ -406,7 +498,6 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "info@qirox.online",
-      password: "ASDqwe@12345678",
       displayName: "QIROX Info",
       jobTitle: "البريد العام",
       isShared: true,
@@ -414,7 +505,6 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "support@qirox.online",
-      password: "ASDqwe@12345678",
       displayName: "QIROX Support",
       jobTitle: "الدعم الفني",
       isShared: true,
@@ -431,18 +521,19 @@ export async function seedDefaultAccounts(): Promise<void> {
   await MailAccountModel.deleteOne({ emailAddress: "m.aldbani@qirox.online" }).catch(() => {});
 
   for (const acc of defaults) {
-    const { password, isShared: _isShared, sharedWith: _sharedWith, ...rest } = acc;
+    const { isShared: _isShared, sharedWith: _sharedWith, ...rest } = acc;
     const isTeamWide = ["support@qirox.online", "info@qirox.online", "hr@qirox.online"].includes(acc.emailAddress);
+    const update: Record<string, any> = {
+      // Fresh installs need an account record, but mailbox credentials must be
+      // entered by an administrator rather than embedded in application code.
+      $setOnInsert: { ...rest, password: "" },
+    };
+    if (isTeamWide) {
+      update.$set = { isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES };
+    }
     await MailAccountModel.findOneAndUpdate(
       { emailAddress: acc.emailAddress },
-      {
-        $setOnInsert: rest,
-        // Also update existing records so an old restricted assignment is
-        // corrected automatically on the next server start.
-        $set: isTeamWide
-          ? { password, isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES }
-          : { password },
-      },
+      update,
       { upsert: true }
     );
   }

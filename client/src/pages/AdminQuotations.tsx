@@ -15,6 +15,9 @@ import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
+import { CatalogItemSelect } from "@/components/CatalogItemSelect";
+import { useDocumentCatalog } from "@/hooks/use-document-catalog";
 
 interface Client { id: string; fullName: string; email: string; username: string; }
 interface QuotationItem { name: string; description?: string; qty: number; unitPrice: number; total: number; }
@@ -25,6 +28,7 @@ interface Quotation {
   orderId?: string;
   title: string; items: QuotationItem[];
   amount: number; vatRate: number; vatAmount: number; totalAmount: number;
+  discountPercent?: number; discountAmount?: number; paymentTerms?: string; language?: "ar" | "en";
   validUntil?: string; status: "draft" | "sent" | "accepted" | "rejected" | "expired";
   notes?: string; termsAndConditions?: string; createdAt: string;
 }
@@ -43,6 +47,8 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const L = lang === "ar";
   const qc = useQueryClient();
   const [clientMode, setClientMode] = useState<"registered" | "external">("registered");
+  const { data: catalogOptions = [], isLoading: catalogLoading, isError: catalogError } = useDocumentCatalog(L);
+  const [catalogSelection, setCatalogSelection] = useState("");
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
@@ -57,7 +63,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     userId: "", title: "", vatRate: "15", validUntil: "", notes: "", termsAndConditions: "",
     externalName: "", externalEmail: "", externalCompany: "",
-    discountPercent: "0", paymentTerms: "",
+    discountPercent: "0", paymentTerms: "", language: L ? "ar" : "en",
     items: [] as QuotationItem[],
     newName: "", newDesc: "", newQty: "1", newPrice: "",
   });
@@ -71,6 +77,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
       ...p, items: [...p.items, { name: p.newName, description: p.newDesc, qty, unitPrice, total }],
       newName: "", newDesc: "", newQty: "1", newPrice: "",
     }));
+    setCatalogSelection("");
   };
 
   const removeItem = (i: number) => setForm(p => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }));
@@ -90,6 +97,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
         title: form.title, items: form.items, vatRate: Number(form.vatRate),
         validUntil: form.validUntil || undefined,
         notes: form.notes, termsAndConditions: form.termsAndConditions,
+        discountPercent: Number(form.discountPercent), paymentTerms: form.paymentTerms, language: form.language,
       };
       if (clientMode === "registered") {
         body.userId = form.userId;
@@ -195,15 +203,39 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
             className="h-9 text-sm border-black/[0.10]" dir="ltr" data-testid="input-quotation-valid-until" />
         </div>
       </div>
-      <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+       <div>
         <Label className="text-xs text-black/50 mb-1 block">{L ? "شروط الدفع" : "Payment Terms"}</Label>
         <Input value={form.paymentTerms} onChange={e => setForm(p => ({ ...p, paymentTerms: e.target.value }))}
           placeholder={L ? "مثال: 50% مقدماً، 50% عند التسليم" : "e.g. 50% upfront, 50% on delivery"}
           className="h-9 text-sm border-black/[0.10]" data-testid="input-quotation-payment-terms" />
+       </div>
+       <div>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة المستند" : "Document Language"}</Label>
+        <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="ar">العربية</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+        </Select>
+       </div>
       </div>
 
       <div>
         <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود العرض" : "Quotation Items"}</Label>
+        <div className="mb-2">
+          <CatalogItemSelect
+            lang={lang}
+            value={catalogSelection}
+            options={catalogOptions}
+            isLoading={catalogLoading}
+            isError={catalogError}
+            onValueChange={id => {
+              const option = catalogOptions.find(item => item.id === id);
+              if (!option) return;
+              setCatalogSelection(id);
+              setForm(p => ({ ...p, newName: option.name, newDesc: option.description, newPrice: String(option.price) }));
+            }}
+          />
+        </div>
         <div className="grid grid-cols-12 gap-2 mb-2">
           <Input placeholder={L ? "اسم البند *" : "Item name *"} value={form.newName}
             onChange={e => setForm(p => ({ ...p, newName: e.target.value }))}
@@ -279,6 +311,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const [, setLocation] = useLocation();
+  const { data: catalogOptions = [], isLoading: catalogLoading, isError: catalogError } = useDocumentCatalog(L);
+  const [catalogSelection, setCatalogSelection] = useState("");
 
   const [form, setForm] = useState({
     title: quotation.title || "",
@@ -286,6 +321,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
     validUntil: quotation.validUntil ? new Date(quotation.validUntil).toISOString().split("T")[0] : "",
     notes: quotation.notes || "",
     termsAndConditions: quotation.termsAndConditions || "",
+    discountPercent: String(quotation.discountPercent || 0),
+    paymentTerms: quotation.paymentTerms || "",
+    language: quotation.language || "ar",
     items: (quotation.items || []) as QuotationItem[],
     newName: "", newDesc: "", newQty: "1", newPrice: "",
   });
@@ -318,6 +356,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
     const unitPrice = Number(form.newPrice);
     const total = qty * unitPrice;
     setForm(p => ({ ...p, items: [...p.items, { name: p.newName, description: p.newDesc, qty, unitPrice, total }], newName: "", newDesc: "", newQty: "1", newPrice: "" }));
+    setCatalogSelection("");
   };
 
   const removeItem = (i: number) => {
@@ -326,8 +365,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
   };
 
   const subtotal = form.items.reduce((s, i) => s + i.total, 0);
-  const vatAmt = Math.round(subtotal * (Number(form.vatRate) / 100) * 100) / 100;
-  const total = subtotal + vatAmt;
+  const discountAmt = Math.round(subtotal * (Number(form.discountPercent || 0) / 100) * 100) / 100;
+  const vatAmt = Math.round((subtotal - discountAmt) * (Number(form.vatRate) / 100) * 100) / 100;
+  const total = subtotal - discountAmt + vatAmt;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -335,6 +375,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         title: form.title, items: form.items, vatRate: Number(form.vatRate),
         validUntil: form.validUntil || undefined,
         notes: form.notes, termsAndConditions: form.termsAndConditions,
+        discountPercent: Number(form.discountPercent), paymentTerms: form.paymentTerms, language: form.language,
       });
       return r.json();
     },
@@ -352,14 +393,31 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         <Label className="text-xs text-black/50 mb-1 block">{L ? "عنوان العرض" : "Title"}</Label>
         <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <Label className="text-xs text-black/50 mb-1 block">{L ? "ضريبة القيمة المضافة %" : "VAT Rate %"}</Label>
           <Input type="number" value={form.vatRate} onChange={e => setForm(p => ({ ...p, vatRate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
         </div>
         <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "الخصم %" : "Discount %"}</Label>
+          <Input type="number" min="0" max="100" value={form.discountPercent} onChange={e => setForm(p => ({ ...p, discountPercent: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+        <div>
           <Label className="text-xs text-black/50 mb-1 block">{L ? "صالح حتى" : "Valid Until"}</Label>
           <Input type="date" value={form.validUntil} onChange={e => setForm(p => ({ ...p, validUntil: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "شروط الدفع" : "Payment Terms"}</Label>
+          <Input value={form.paymentTerms} onChange={e => setForm(p => ({ ...p, paymentTerms: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
+        </div>
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "لغة المستند" : "Document Language"}</Label>
+          <Select value={form.language} onValueChange={value => setForm(p => ({ ...p, language: value as "ar" | "en" }))}>
+            <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="ar">العربية</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -381,8 +439,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
                     <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="col-span-2 h-8 text-xs border-black/15 dark:border-white/15" dir="ltr" />
                   </div>
                   {editBuf.unitPrice && (
-                    <p className="text-[11px] text-black dark:text-white font-bold px-1">
-                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
+                    <p className="text-[11px] text-black dark:text-white font-bold px-1 flex items-center gap-1">
+                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()}
+                      <SARIcon size={11} className="opacity-80" />
                     </p>
                   )}
                   <div className="flex gap-2">
@@ -400,7 +459,9 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-black font-semibold">{item.name}</span>
                     {item.description && <span className="text-[10px] text-black/40 mr-2">{item.description}</span>}
-                    <span className="text-[10px] text-black/40 mr-2 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span>
+                    <span className="text-[10px] text-black/40 mr-2 font-mono inline-flex items-center gap-1">
+                      × {item.qty} × {item.unitPrice.toLocaleString()} <SARIcon size={9} className="opacity-60" />
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
@@ -417,6 +478,7 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
             {/* Totals */}
             <div className="text-xs text-black/50 space-y-0.5 px-3 pt-2 border-t border-black/[0.06]">
               <div className="flex justify-between"><span>{L ? "المجموع الفرعي" : "Subtotal"}</span><span className="font-bold">{subtotal.toLocaleString()}</span></div>
+              {discountAmt > 0 && <div className="flex justify-between text-emerald-600"><span>{L ? `خصم (${form.discountPercent}%)` : `Discount (${form.discountPercent}%)`}</span><span className="font-bold">-{discountAmt.toLocaleString()}</span></div>}
               <div className="flex justify-between"><span>{L ? `ضريبة (${form.vatRate}%)` : `VAT (${form.vatRate}%)`}</span><span className="font-bold">{vatAmt.toLocaleString()}</span></div>
               <div className="flex justify-between text-black font-black text-sm border-t border-black/[0.10] pt-1.5 mt-1">
                 <span>{L ? "الإجمالي" : "Total"}</span>
@@ -429,6 +491,21 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
         {/* Add new item row */}
         <div className="bg-black/[0.01] border border-dashed border-black/[0.12] rounded-xl p-3">
           <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "إضافة بند جديد" : "Add New Item"}</p>
+          <div className="mb-2">
+            <CatalogItemSelect
+              lang={lang}
+              value={catalogSelection}
+              options={catalogOptions}
+              isLoading={catalogLoading}
+              isError={catalogError}
+              onValueChange={id => {
+                const option = catalogOptions.find(item => item.id === id);
+                if (!option) return;
+                setCatalogSelection(id);
+                setForm(p => ({ ...p, newName: option.name, newDesc: option.description, newPrice: String(option.price) }));
+              }}
+            />
+          </div>
           <div className="grid grid-cols-12 gap-2">
             <Input placeholder={L ? "اسم البند *" : "Item name *"} value={form.newName} onChange={e => setForm(p => ({ ...p, newName: e.target.value }))} className="col-span-4 h-8 text-xs border-black/[0.10]" />
             <Input placeholder={L ? "وصف" : "Desc"} value={form.newDesc} onChange={e => setForm(p => ({ ...p, newDesc: e.target.value }))} className="col-span-3 h-8 text-xs border-black/[0.10]" />
@@ -464,22 +541,23 @@ function EditQuotationForm({ quotation, onClose }: { quotation: Quotation; onClo
           <Mail className="w-3.5 h-3.5" /> {L ? "إعادة إرسال" : "Resend Email"}
         </button>
         <div className="grid grid-cols-2 gap-1">
-          <a
-            href={`/admin/quotation-print/${quotation.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => downloadAuthenticatedFile(
+              `/api/quotations/${quotation.id}/pdf`,
+              `quotation-${quotation.quotationNumber}.pdf`,
+            ).catch(() => toast({ title: L ? "تعذّر تحميل PDF" : "PDF download failed", variant: "destructive" }))}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <Printer className="w-3 h-3" /> {L ? "طباعة" : "Print"}
-          </a>
-          <a
-            href={`/api/quotations/${quotation.id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
+            <Printer className="w-4 h-4" /> {L ? "طباعة" : "Print"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation(`/admin/quotation-print/${quotation.id}`)}
             className="flex items-center justify-center gap-1 h-9 rounded-xl border border-black/[0.12] text-xs font-semibold text-black/60 hover:bg-black/[0.04] hover:text-black transition-colors"
           >
-            <FileText className="w-3 h-3" /> PDF
-          </a>
+            <FileText className="w-4 h-4" /> PDF
+          </button>
         </div>
       </div>
 
@@ -499,6 +577,7 @@ interface SendEmailState {
   externalEmail: string;
   externalName: string;
   companyName: string;
+  language: "ar" | "en";
 }
 
 export default function AdminQuotations() {
@@ -525,6 +604,7 @@ export default function AdminQuotations() {
         if (state.externalName) body.externalName = state.externalName;
         if (state.companyName) body.companyName = state.companyName;
       }
+      body.language = state.language;
       const r = await apiRequest("POST", `/api/quotations/${state.quotationId}/send-email`, body);
       return r.json();
     },
@@ -684,14 +764,14 @@ export default function AdminQuotations() {
                       className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => setEditingQuotation(q)}
                       data-testid={`button-edit-quotation-${q.id}`}>
-                      <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                      <Pencil className="w-4 h-4" /> {L ? "تعديل" : "Edit"}
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/10 dark:border-white/10 text-black dark:text-white hover:bg-black/[0.04] dark:bg-white/[0.06]"
                       onClick={() => duplicateMutation.mutate(q.id)}
                       disabled={duplicateMutation.isPending}
                       data-testid={`button-duplicate-quotation-${q.id}`}>
-                      <Copy className="w-3 h-3" /> {L ? "نسخ" : "Copy"}
+                      <Copy className="w-4 h-4" /> {L ? "نسخ" : "Copy"}
                     </Button>
                     {q.status === "draft" && (
                       <Button size="sm" variant="outline"
@@ -699,7 +779,7 @@ export default function AdminQuotations() {
                         onClick={() => statusMutation.mutate({ id: q.id, status: "sent" })}
                         disabled={statusMutation.isPending}
                         data-testid={`button-mark-sent-${q.id}`}>
-                        <Send className="w-3 h-3" /> {L ? "تحديث لمُرسل" : "Mark Sent"}
+                        <Send className="w-4 h-4" /> {L ? "تحديث لمُرسل" : "Mark Sent"}
                       </Button>
                     )}
                     <Button size="sm" variant="outline"
@@ -712,15 +792,16 @@ export default function AdminQuotations() {
                         externalEmail: q.externalEmail || "",
                         externalName: q.externalName || "",
                         companyName: q.externalCompany || "",
+                        language: q.language || "ar",
                       })}
                       data-testid={`button-email-quotation-${q.id}`}>
-                      <Mail className="w-3 h-3" /> {L ? "إرسال" : "Email"}
+                      <Mail className="w-4 h-4" /> {L ? "إرسال" : "Email"}
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
-                      onClick={() => window.open(`/api/quotations/${q.id}/pdf`, "_blank")}
+                      onClick={() => setLocation(`/admin/quotation-print/${q.id}`)}
                       data-testid={`button-print-quotation-${q.id}`}>
-                      <FileText className="w-3 h-3" /> PDF
+                      <FileText className="w-4 h-4" /> PDF
                     </Button>
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12] text-black hover:bg-black/[0.04]"
@@ -728,7 +809,7 @@ export default function AdminQuotations() {
                       disabled={convertToInvoiceMutation.isPending}
                       data-testid={`button-convert-invoice-${q.id}`}
                       title={L ? "إصدار فاتورة من عرض السعر" : "Issue invoice from quotation"}>
-                      {convertToInvoiceMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Receipt className="w-3 h-3" />}
+                      {convertToInvoiceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
                       {L ? "فاتورة" : "Invoice"}
                     </Button>
                     <Button size="sm" variant="outline"
@@ -816,6 +897,22 @@ export default function AdminQuotations() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">{L ? "لغة العرض والبريد" : "Quotation and email language"}</Label>
+                <Select
+                  value={emailDialog.language}
+                  onValueChange={value => setEmailDialog(s => s ? { ...s, language: value as "ar" | "en" } : s)}
+                >
+                  <SelectTrigger className="h-9 text-sm border-black/10" data-testid="select-quotation-email-language">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ar">العربية</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="bg-black/[0.03] rounded-lg px-3 py-2 text-xs text-black/50 flex items-start gap-2">
                 <span>📎</span>

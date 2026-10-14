@@ -5,6 +5,7 @@
 - [Logo migration](logo-migration.md) — Old @assets logo imports replaced system-wide; new icon at /qirox-icon.png (transparent bg, no invert needed for nav/sidebar/footer). qirox-icon-nobg.png is a copy of qirox-icon.png — both must exist in client/public/.
 - [WhatsApp CRM](whatsapp-crm.md) — wa.me links only (iframe blocked by browser); page at /employee/whatsapp-crm with 6 editable templates + {name} substitution.
 - [WhatsApp staff access](whatsapp-staff-access.md) — API linking remains admin/manager-only; staff use the operational CRM without QR or connection settings.
+- [WhatsApp login separation](whatsapp-login-separation.md) — Standalone WhatsApp login is not a second-factor method; 2FA uses authenticator, email, recovery phrase, or push approval.
 - [DeploymentCloud standalone](deployment-cloud-design.md) — No EmployeeLayout; custom CloudLayout header. GitHub OAuth via /api/deploy/github/oauth/*. UserModel has githubDeployToken. Both routes registered in App.tsx.
 - [Pixel Tracking](pixel-tracking.md) — PixelTracking component auto-injects Meta/TikTok/Snap/GA4/GTM; IDs stored in QiroxSystemSettingsModel and exposed via /api/public/settings.
 - [QIROX Studio AI](qirox-studio-ai.md) — Smart provider: OPENAI_API_KEY→GPT-4o (vision on, no Chinese), MOONSHOT_API_KEY→Kimi (vision off). Video gen via /api/ai/video-proxy. Images use Arabic→English translation + flux+enhance. Anti-Chinese rule in ALL system prompts.
@@ -13,24 +14,29 @@
 - [SEO coverage](seo-coverage.md) — useSEO hook uses JSON.stringify(config) as dep key (all fields update on navigation). Pages WITH useSEO: Home, About, Prices, Contact, Jobs, JoinUs, Systems, News, Partners. sitemap.xml in client/public/ covers 14 public URLs.
 - [Vite SIGBUS crash](vite-sigbus-crash.md) — serve pre-built dist/public instead of launching Vite (SIGBUS crash in this env).
 - [esbuild ALWAYS_EXTERNAL](esbuild-always-external.md) — ESM-only packages need ALWAYS_EXTERNAL + new Function('m','return import(m)') trick; passkit/baileys/transformers all fixed.
-- [dist/index.cjs git exclusion](dist-index-cjs-gitignore.md) — dist/index.cjs excluded from git (.gitignore) — bundled server bakes in env secrets which GitHub push protection blocks.
+- [dist/index.cjs deployment bundle](dist-index-cjs-gitignore.md) — dist/index.cjs is intentionally tracked because Render deploys the pre-built server bundle; keep credentials out of the build environment.
+- [Render dashboard build command](render-dashboard-build-command.md) — Verify Render's live Build Command; this service did not apply a pushed render.yaml update.
 - [attached_assets git exclusion](attached-assets-gitignore.md) — attached_assets/ excluded from git — Replit stores uploaded files there (screenshots, env var dumps with secrets) which trigger GitHub push protection.
 - [Group chat audio/image fixes](group-chat-media.md) — .webm MIME was video/webm (wrong), fixed to audio/webm; uploads get Cache-Control 7d; notification link → /groups/:id; GroupVoicePlayer has async play() + error handling.
-- [QMeet LiveKit SFU](qmeet-livekit-sfu.md) — P2P mesh → LiveKit SFU for 100+ participants; hybrid: LiveKit for media, WS for chat/reactions/polls; JWT built with Node.js crypto (no SDK); 3 env vars activate it.
+- [QMeet LiveKit SFU and guest admission](qmeet-livekit-sfu.md) — hybrid media/chat architecture; guests need hashed proof, room-scoped signed tickets, and QMeet-only WebSocket actions.
 - [QIROX environment setup](qirox-env-setup.md) — fresh import needs npm install (root + mockup-sandbox) + MONGODB_URI; client changes need a vite build + restart since dev serves prebuilt dist; full tsc OOMs regardless of your changes.
 - [Customer Journey V2](customer-journey-v2.md) — V2 feature flags, API endpoints, and frontend wiring are all live. Flags persist via env vars; admin override endpoint exists at /api/admin/feature-flags/override.
 - [Live data shape drift](live-data-shape-drift.md) — /api/services runtime shape doesn't match its shared/schema.ts TS type; always curl live endpoints before trusting a schema.ts type for Mongo-backed routes.
 - [Design System V2 pilot](design-system-v2-pilot.md) — Landing Page rebuilt behind FEATURE_LANDING_DS_V2 in client/src/features/landing-ds-v2/; real content only, Team/Partners sections intentionally omitted pending real assets.
 - [Sector Pages](sector-pages.md) — 6 sector pages at /sector/:slug; home Systems section is horizontal scroll portrait cards linking there; sitemap + SEO included.
 - [Employee Profile Features](employee-profile-features.md) — Password change, Apple Wallet (.pkpass needs 3 Apple cert env vars), QR login card, 2FA link, log-revision-for-client endpoint + AdminModRequests UI.
+- [Employee contracts and WhatsApp notices](employee-contract-whatsapp.md) — Keep Saudi contracts as counsel-reviewed drafts; role, termination, and project reminder messages require review or manual send.
 - [Employee QR login contract](employee-qr-login-contract.md) — Profile cards and Wallet passes use one protected canonical QR URL; public profile QR codes never authenticate.
 - [WhatsApp CRM](whatsapp-crm.md) — @whiskeysockets/baileys (free, no Chrome); SSE for QR+events; AI auto-reply with dialect matching; admin commands; /admin/whatsapp page.
 - [WhatsApp AI system integration](whatsapp-ai-system-integration.md) — WhatsApp AI must use the shared QIROX AI Hub/RAG path; deterministic handlers own client account, booking, and language-sensitive actions.
+- [WhatsApp 2FA approval identities](whatsapp-2fa-approval-identities.md) — Baileys may deliver @lid messages and Arabic-Indic replies; normalize alternate JIDs and digits before matching approval challenges.
 - [QIROX AI Hub](qirox-ai-hub.md) — BM25 RAG (pure math, no deps); KnowledgeDoc+QiroxAIKey+QiroxAILog+QiroxAISettings models; /admin/qirox-ai page; public /api/qirox-ai/chat endpoint (Bearer token).
 - [OpenAI base URL](openai-base-url.md) — All AI calls route through server/lib/openai-client.ts singleton; set OPENAI_BASE_URL env to redirect to BazaarLink or any OpenAI-compatible provider.
 - [PDF Print Fix](pdf-print-fix.md) — PDF download uses browser window.print() (not server pdf-lib) — fixes reversed Arabic text; ContractPrint.tsx at /admin/contract-print/:id.
 - [Apple Wallet certs](apple-wallet-certs.md) — Certs stored in server/certs/ (apple-pass-cert.pem, apple-pass-key.pem, apple-wwdr.pem); route reads files as fallback when env vars absent. passTypeId=pass.com.qirox.employee teamId=V4K6RM59LS.
 - [iOS OAuth in-app browser](ios-oauth-browser.md) — On Capacitor native, Google/Apple/GitHub OAuth uses Browser.open() (SFSafariViewController) not window.location. appUrlOpen listener handles callback; browserFinished is the fallback.
+- [Apple OAuth form POST](apple-oauth-form-post.md) — Apple form_post callbacks originate at Apple, so they must bypass the app's same-origin mutation check before Passport validates the OAuth response.
+- [Capacitor web bundling](capacitor-web-bundling.md) — Capacitor JS proxy packages must be bundled by Vite; external bare imports can blank the browser build before native-only code runs.
 - [QMeet zombie PC fix](qmeet-zombie-pc.md) — null ALL handlers (ontrack/onicecandidate/etc.) BEFORE close(), then guard every async handler with isCurrent() check to prevent stale state updates.
 - [Group Chat attachments](group-chat-attachments.md) — GroupChat supports image/voice/file attachments; server route already accepts them; GroupVoicePlayer component inline in GroupChat.tsx.
 - [Push banner persistence](push-banner-persistence.md) — PushPermissionBanner uses localStorage (not sessionStorage) with 7-day TTL so it re-shows after a week if user dismissed without subscribing.
@@ -49,14 +55,34 @@
 - [Mongoose pre-save hooks](mongoose-presave-hooks.md) — On the current Mongoose runtime, synchronous pre-save hooks must not call a `next` callback.
 - [Codemagic iOS verification](codemagic-ios-verification.md) — Signed IPA confirmation requires an external Codemagic macOS runner; Replit Linux can only validate the configuration and install stage.
 - [Post-merge setup](post-merge-setup.md) — Use deterministic npm ci plus a rebuild; do not auto-run the legacy PostgreSQL push in the MongoDB-primary project.
-- [HTTP route test isolation](http-route-test-sessions.md) — isolate Mongo session clients and stub notification providers; persisted SMTP settings can cause tests to send real mail.
+- [HTTP route test sessions](http-route-test-sessions.md) — Mongo-backed route tests must isolate the session store or the test process can remain open after all assertions pass.
 - [Project integration secret policy](project-integration-secret-policy.md) — Environment Variables receives a placeholder only; raw integration secrets remain one-time and are never persisted in specs.
 - [GitHub repository provisioning](github-repository-provisioning.md) — One stable repo per project; managed/pinned identity plus lease fencing and versioned visibility prevent duplicate or stale writes.
 - [Project code backups](project-code-backups.md) — Protect project code with a GitHub backup ref before any ZIP replacement; never write an empty or secret-bearing archive.
 - [Project completion subscription flow](project-subscription-http-flow.md) — Close responses must wait for subscription activation, and project serialization must strip credential-like fields.
+- [Email inbox alert routing](mail-inbox-alert-routing.md) — Inbound mailbox alerts must never route to the CTO; preserve other configured recipients and mailbox access.
 - [Mongo uniqueness in production](mongo-uniqueness-production.md) — Schema uniqueness needs explicit startup index creation when production disables Mongoose autoIndex; routes must handle duplicate-key races.
 - [Apple review demo account](apple-review-demo-account.md) — Re-test the submitted review credentials from a fresh session before every App Store resubmission; stale credentials cause Guideline 2.1 rejection.
 - [GitHub history recovery](github-history-recovery.md) — An overwritten empty root commit may still be recoverable from an unreachable commit SHA; preserve the current ref before restoring.
 - [Project code workspace](project-code-workspace.md) — Reuse the sandbox IDE/runner for linked order projects; never persist GitHub tokens in the workspace remote.
 - [Workspace secrets and branding](workspace-secrets-and-branding.md) — Scan variable names only, generate only app-owned secrets, and keep each project's logo separate from QIROX branding.
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
+- [Auth device-token fallback](two-factor-session-confirmation.md) — Password, 2FA, and employee QR login issue a device token because embedded browsers may drop Passport cookies.
+- [Phone verification and native push](phone-verification-native-push.md) — WhatsApp OTP must be sent directly; iOS push needs synced plugins, early token listeners, and APNs entitlements.
+- [Finance PDF pipeline and artwork](unified-pdf-pipeline.md) — one PDF path serves downloads and email; keep baked-in document title zones aligned across HTML and PDF.
+- [Partner URL hygiene](partner-url-hygiene.md) — partner website data feeds UI, SEO/AEO, and AI; reject malformed hostnames consistently before publishing or prompting.
+- [Partner logo presentation](partner-logo-presentation.md) — display transparent local logo conversions only while the live partner logo URL still matches their source.
+- [WebSocket identity](websocket-identity.md) — authenticate upgrades from the session/device token; never trust a client-supplied userId handshake.
+- [Security probe handling](security-probe-handling.md) — use generic 404 dead ends with privacy-safe fingerprints; never create exploitable fake admin or secret surfaces.
+- [Sandbox environment synchronization](sandbox-environment-sync.md) — sync deployment variables additively; preserve existing workspace secrets and keep values out of public serialization.
+- [Pion dependency firewall](pion-package-firewall.md) — Previous crypto dependency blocks were resolved; check the current graph/build rather than assuming native SFU remains blocked.
+- [Public team profile policy](public-team-profile-policy.md) — Show only approved, verified staff identities; use a collective team card when public profile assets are unavailable.
+- [Partner service catalog](partner-service-catalog.md) — Keep service links additive and derive current service features separately from manually maintained partner features.
+- [SaaS project factory](saas-project-factory.md) — Cafe/restaurant templates follow order packages; generate once before choosing ZIP or GitHub delivery.
+- [QMeet media verification](qmeet-media-verification.md) — Connected WebRTC and inbound RTP do not prove remote tiles work; verify opposite-party playback and independent control reconnection.
+- [QMeet presentation and SDK](qmeet-presentation-sdk.md) — Participant-visible notes, independent camera capture, customer-scoped extensions, and browser pop-out limits.
+- [SaaS runtime verification](saas-runtime-verification.md) — Actual execution, test-session mail side effects, and orphaned browser recorders exhausting memory.
+- [SaaS template build isolation](saas-template-build-isolation.md) — use independent installs; parent upgrades may leave firewall-blocked transitive packages pinned in the lockfile.
+- [Draft promotion side effects](draft-promotion-side-effects.md) — Link drafts to existing client projects directly; rerunning order provisioning can alter GitHub settings.
+- [SaaS tenant rebranding](saas-tenant-rebranding.md) — Inject customer names/assets at generation time; rebrand visible copy without rewriting QIROX platform endpoints.
+- [Android TWA screen sharing](android-twa-screen-sharing.md) — Keep the existing Android TWA; only browser-supported screen capture is in scope unless native Android is explicitly approved.

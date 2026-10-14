@@ -160,7 +160,6 @@ test("the public project API key works over HTTP for both channels without leaki
   let whatsappDeliveryId = "";
   let whatsappProviderCalls = 0;
   let whatsappMessage = "";
-  let whatsappAttachments: any[] = [];
   const { waModule } = await import("./whatsapp-module");
   const originalSendNotification = waModule.sendNotification;
 
@@ -172,10 +171,9 @@ test("the public project API key works over HTTP for both channels without leaki
     process.env.NODE_ENV = "test";
     process.env.SESSION_SECRET = "project-integration-http-test-session";
     process.env.WHATSAPP_PROVIDER = "baileys";
-    waModule.sendNotification = (async (_phone: string, message: string, attachments: any[] = []) => {
+    waModule.sendNotification = (async (_phone: string, message: string) => {
       whatsappProviderCalls += 1;
       whatsappMessage = message;
-      whatsappAttachments = attachments;
     }) as typeof waModule.sendNotification;
     for (const key of smtpKeys) delete process.env[key];
 
@@ -338,47 +336,6 @@ test("the public project API key works over HTTP for both channels without leaki
       idempotencyKey: `project-integration:${apiIntegrationId}:${whatsappIdempotencyKey}`,
       channel: "whatsapp",
     }), 1);
-
-    const attachmentResponse = await requestProjectApi(server, endpoint, {
-      authorization: `Bearer ${apiSecret.rawKey}`,
-      idempotencyKey: `${marker}-whatsapp-attachment`,
-      body: {
-        channel: "whatsapp",
-        recipient: { phone: "+966501234567" },
-        attachments: [
-          { url: "https://cdn.example.com/invoice.pdf", filename: "invoice.pdf", caption: "الفاتورة" },
-          { url: "https://cdn.example.com/menu.jpg", filename: "menu.jpg", caption: "صورة القائمة" },
-        ],
-      },
-    });
-    assert.equal(attachmentResponse.status, 202);
-    assert.equal(attachmentResponse.body?.delivery?.status, "sent");
-    assert.equal(whatsappProviderCalls, 2);
-    assert.equal(whatsappMessage, "");
-    assert.deepEqual(whatsappAttachments, [
-      {
-        url: "https://cdn.example.com/invoice.pdf",
-        filename: "invoice.pdf",
-        caption: "الفاتورة",
-      },
-      {
-        url: "https://cdn.example.com/menu.jpg",
-        filename: "menu.jpg",
-        caption: "صورة القائمة",
-      },
-    ]);
-
-    const privateAttachmentResponse = await requestProjectApi(server, endpoint, {
-      authorization: `Bearer ${apiSecret.rawKey}`,
-      idempotencyKey: `${marker}-private-media`,
-      body: {
-        channel: "whatsapp",
-        recipient: { phone: "+966501234567" },
-        attachments: [{ url: "https://127.0.0.1/private.pdf" }],
-      },
-    });
-    assert.equal(privateAttachmentResponse.status, 400);
-    assert.equal(whatsappProviderCalls, 2, "a private source must be rejected before delivery");
 
     const disabledApi = await ProjectIntegrationModel.findByIdAndUpdate(
       apiIntegrationId,

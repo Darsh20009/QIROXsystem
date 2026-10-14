@@ -26,7 +26,9 @@ export default function PhoneVerify() {
   const L = lang === "ar";
 
   const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
-  const nextAfterVerify = isRegisterFlow ? "/onboarding" : "/dashboard";
+  const requestedReturnTo = new URLSearchParams(window.location.search).get("returnTo") || "";
+  const safeReturnTo = requestedReturnTo.startsWith("/") && !requestedReturnTo.startsWith("//") ? requestedReturnTo : "";
+  const nextAfterVerify = safeReturnTo || (isRegisterFlow ? "/onboarding" : "/dashboard");
 
   const [stage, setStage] = useState<Stage>("enter-phone");
   const [method] = useState<Method>("whatsapp");
@@ -91,12 +93,8 @@ export default function PhoneVerify() {
   useEffect(() => {
     if (!(user as any)?.phoneVerified) return;
     if (stage === "done") return;
-    if (isRegisterFlow) {
-      navigate("/onboarding");
-    } else {
-      navigate("/dashboard");
-    }
-  }, [user, stage, isRegisterFlow]);
+    navigate(nextAfterVerify);
+  }, [user, stage, nextAfterVerify]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex flex-col" dir={dir}>
@@ -146,7 +144,7 @@ export default function PhoneVerify() {
 
               <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                 <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-                  {L ? "سيُرسَل رمز التحقق عبر واتساب أو بريدك الإلكتروني" : "OTP code sent via WhatsApp and your email"}
+                   {L ? "سيُرسَل رمز التحقق مباشرة عبر واتساب إلى رقمك" : "A verification code will be sent directly to your WhatsApp number"}
                 </p>
                 <CountryPhoneInput
                   value={phone}
@@ -156,7 +154,7 @@ export default function PhoneVerify() {
                 <div className="flex items-start gap-2 mt-3 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl p-3">
                   <Info className="w-4 h-4 text-white/50 mt-0.5 shrink-0" />
                   <p className="text-xs text-white/50 leading-relaxed">
-                    {L ? "سيصلك رمز التحقق عبر رسالة واتساب وبريدك الإلكتروني خلال دقائق." : "You'll receive a verification code via WhatsApp and your email within minutes."}
+                     {L ? "تأكد أن واتساب متصل بالإنترنت وأن الرقم يستقبل الرسائل." : "Make sure WhatsApp is connected and the number can receive messages."}
                   </p>
                 </div>
               </div>
@@ -190,9 +188,9 @@ export default function PhoneVerify() {
                   </div>
                   <div className="absolute inset-0 rounded-full border-2 border-emerald-400/20 animate-ping" />
                 </div>
-                <h2 className="font-black text-gray-900 dark:text-white text-xl mb-1">{L ? "أدخل رمز واتساب" : "Enter WhatsApp OTP"}</h2>
+                 <h2 className="font-black text-gray-900 dark:text-white text-xl mb-1">{L ? "أدخل رمز التحقق" : "Enter verification code"}</h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
-                  {L ? "سيصلك رمز التحقق عبر واتساب على الرقم:" : "You'll receive a code via WhatsApp at:"}
+                   {L ? "أرسلنا الرمز عبر واتساب إلى الرقم:" : "We sent the code via WhatsApp to:"}
                 </p>
                 <div className="inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 mb-5">
                   <Phone className="w-4 h-4 text-gray-400" />
@@ -274,7 +272,7 @@ export default function PhoneVerify() {
                   className="w-full h-12 rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black gap-2"
                   data-testid="btn-done">
                   <CheckCircle2 className="w-4 h-4" />
-                  {isRegisterFlow ? (L ? "متابعة ←" : "Continue →") : (L ? "لوحة التحكم" : "Dashboard")}
+                   {safeReturnTo ? (L ? "العودة إلى إعدادات التحقق" : "Back to security settings") : isRegisterFlow ? (L ? "متابعة ←" : "Continue →") : (L ? "لوحة التحكم" : "Dashboard")}
                 </Button>
               </div>
             </motion.div>

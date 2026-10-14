@@ -20,6 +20,12 @@ export function serveStatic(app: Express) {
       // HTML: always revalidate so updated app is served immediately
       if (filePath.endsWith(".html")) {
         res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        // Vite assets are content-hashed and can be cached permanently.
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      } else {
+        // Public images keep stable names, so cache briefly and revalidate later.
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
       }
     },
   }));

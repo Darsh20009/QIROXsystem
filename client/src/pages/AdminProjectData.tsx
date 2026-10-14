@@ -21,6 +21,8 @@ import { useUser } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ProjectBrandingActions, ProjectBrandingLogo } from "@/components/ProjectBrandingActions";
+import { SaasProjectBuilderPanel } from "@/components/SaasProjectBuilderPanel";
 
 /* ─── Short order ID ─────────────────────────────────── */
 function shortId(id: string): string {
@@ -184,6 +186,24 @@ function OrderCard({ order: initialOrder }: { order: any }) {
   const qc = useQueryClient();
   const { data: currentUser } = useUser();
   const isAdmin = currentUser && ["admin"].includes((currentUser as any).role);
+  const canEditBranding = currentUser && ["admin", "cto"].includes((currentUser as any).role);
+  const { lang } = useI18n();
+  const ar = lang === "ar";
+  const projectId = order.projectId || order.project?.id || order.project?._id;
+  const orderSector = `${order.sector || order.project?.sector || order.projectType || order.serviceType || order.category || order.wizardData?.sector || ""}`.toLowerCase();
+  const isRestaurantSaas = /cafe|café|coffee|restaurant|مقهى|كافيه|مطعم/.test(orderSector);
+  const [showSaasBuilder, setShowSaasBuilder] = useState(false);
+  const { data: linkedProject } = useQuery<any>({
+    queryKey: ["/api/admin/orders", order._id || order.id, "project"],
+    enabled: expanded,
+    retry: false,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/orders/${order._id || order.id}/project`, { credentials: "include" });
+      if (!response.ok) throw new Error(String(response.status));
+      return response.json();
+    },
+  });
+  const linkedProjectId = linkedProject?.id || linkedProject?._id || projectId;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -236,6 +256,7 @@ function OrderCard({ order: initialOrder }: { order: any }) {
     order.planTier || order.serviceType || "";
 
   const allFiles = collectFiles(order);
+  const storedListLogo = order.logoUrl || order.projectLogoUrl || order.project?.logoUrl || w.logoFile;
 
   // Aggregate contact info from wizardData + root-level + client user
   const phone   = w.whatsapp || order.client?.phone || "";
@@ -250,9 +271,10 @@ function OrderCard({ order: initialOrder }: { order: any }) {
     >
       {/* ── Header ── */}
       <div className="p-4 sm:p-5 flex items-center gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-black dark:from-white to-black dark:to-white flex items-center justify-center text-white font-black text-base shrink-0 shadow-md shadow-blue-500/20">
-          {name.charAt(0) || "?"}
-        </div>
+        {storedListLogo
+          ? <img src={storedListLogo} alt="" className="h-11 w-11 shrink-0 rounded-2xl border border-black/10 bg-white object-contain p-1" />
+          : projectId ? <ProjectBrandingLogo projectId={String(projectId)} fallback={name.charAt(0) || "?"} />
+            : <div className="w-11 h-11 rounded-2xl bg-[#e8eee9] flex items-center justify-center text-[#315548] font-black text-base shrink-0">{name.charAt(0) || "?"}</div>}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -365,6 +387,17 @@ function OrderCard({ order: initialOrder }: { order: any }) {
             className="overflow-hidden"
           >
             <div className="border-t border-black/[0.04] dark:border-white/[0.04] p-4 sm:p-5 space-y-6">
+
+              {linkedProjectId && <ProjectBrandingActions key={String(linkedProjectId)} projectId={String(linkedProjectId)} canEdit={!!canEditBranding} />}
+              {linkedProjectId && isRestaurantSaas && (
+                <div className="space-y-3 rounded-2xl border border-[#d7e0d8] bg-[#f5f7f1] p-4">
+                  <button type="button" onClick={() => setShowSaasBuilder(value => !value)} className="flex w-full items-center justify-between gap-3 text-right">
+                    <span className="text-sm font-bold text-[#315548]">{ar ? "صنع المشروع" : "Create system"}</span>
+                    {showSaasBuilder ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  {showSaasBuilder && <SaasProjectBuilderPanel key={`saas-${order._id || order.id}`} orderId={String(order._id || order.id)} />}
+                </div>
+              )}
 
               {/* ── معلومات المنشأة ── */}
               <Section icon={Building2} title="معلومات المنشأة" color="blue">

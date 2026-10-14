@@ -4,10 +4,21 @@ import { transform } from "./utils";
 const projectSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  draftProjectId: { type: mongoose.Schema.Types.ObjectId, ref: "DraftProject", default: null },
   managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   status: { type: String, enum: ["new", "under_study", "pending_payment", "in_progress", "testing", "review", "delivery", "closed"], default: "new", required: true },
   progress: { type: Number, default: 0 },
   repoUrl: String,
+  logoUrl: String,
+  logoOriginalUrl: String,
+  branding: {
+    publicName: { type: String, default: "" },
+    publicNameAr: { type: String, default: "" },
+    websiteUrl: { type: String, default: "" },
+    partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", default: null },
+  },
+  brandingPartnerLeaseToken: { type: String, default: null, select: false },
+  brandingPartnerLeaseExpiresAt: { type: Date, default: null, select: false },
   githubRepoName: String,
   githubRepoId: String,
   githubRepoOwner: String,
@@ -46,6 +57,42 @@ const projectSchema = new mongoose.Schema({
 projectSchema.set('toJSON', { transform });
 projectSchema.set('toObject', { transform });
 export const ProjectModel = mongoose.models.Project || mongoose.model("Project", projectSchema);
+
+const saasBuilderSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, unique: true, index: true },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, index: true },
+  tier: { type: String, enum: ["lite", "pro", "infinity"], required: true },
+  templateId: { type: String, default: "" },
+  config: { type: mongoose.Schema.Types.Mixed, default: {} },
+  prefillVersion: { type: Number, default: 0 },
+  credentials: { type: mongoose.Schema.Types.Mixed, default: {}, select: false },
+  accessConfigured: {
+    admin: { type: Boolean, default: false },
+    staff: { type: Boolean, default: false },
+  },
+  logoOriginalUrl: { type: String, default: "" },
+  logoProcessingStatus: { type: String, enum: ["processed", "fallback", "unknown"], default: "unknown" },
+  logoProcessingWarning: { type: String, default: "" },
+  status: { type: String, enum: ["draft", "building", "prepared", "published", "failed"], default: "draft" },
+  configFingerprint: { type: String, default: "" },
+  build: {
+    branch: String,
+    commitSha: String,
+    backupRef: String,
+    fileCount: Number,
+    buildCommand: String,
+    startCommand: String,
+    envRequirements: [{ key: String, required: Boolean, description: String }],
+    warnings: [String],
+    completedAt: Date,
+  },
+  leaseToken: { type: String, default: null, select: false },
+  leaseExpiresAt: { type: Date, default: null, index: true },
+  partnerId: { type: mongoose.Schema.Types.ObjectId, ref: "Partner", default: null },
+}, { timestamps: true });
+saasBuilderSchema.set("toJSON", { transform });
+saasBuilderSchema.set("toObject", { transform });
+export const SaasBuilderModel = mongoose.models.SaasBuilder || mongoose.model("SaasBuilder", saasBuilderSchema);
 
 const taskSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },

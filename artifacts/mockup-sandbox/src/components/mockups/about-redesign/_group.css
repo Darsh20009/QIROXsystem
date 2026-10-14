@@ -1,0 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+:root { --font-heading: 'Cairo', sans-serif; --font-body: 'IBM Plex Sans Arabic', sans-serif; }
+.about-reference-content { font-family: var(--font-body); }
+.font-heading { font-family: var(--font-heading); }

@@ -9,6 +9,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
+import SARIcon from "@/components/SARIcon";
 
 import type { Partner } from "@shared/schema";
 const qiroxLogo = "/qirox-icon-nobg.png";
@@ -1130,7 +1131,7 @@ export default function Home() {
               {/* ── Hero image column ── */}
               <motion.div {...fade(0)} className="flex items-end justify-center order-2 mx-0 overflow-visible">
                 <img
-                  src="/qirox-hero-new.png"
+                  src="/qirox-hero-new.webp"
                   alt="QIROX"
                   className="w-full max-w-[520px] sm:max-w-[640px] lg:max-w-none lg:w-full select-none pointer-events-none block"
                   draggable={false}
@@ -1418,7 +1419,9 @@ export default function Home() {
                 {/* ambient glow behind the devices */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-radial from-black/[0.04] via-transparent to-transparent dark:from-white/[0.04]" />
                 <img
-                  src="/demo-devices.png"
+                  src="/demo-devices.webp"
+                  loading="lazy"
+                  decoding="async"
                   alt="QIROX Demo"
                   className="w-full max-w-xl object-contain relative"
                   style={{
@@ -1426,7 +1429,6 @@ export default function Home() {
                     maskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
                     WebkitMaskImage: "radial-gradient(ellipse 88% 82% at 50% 52%, black 55%, transparent 100%)",
                   }}
-                  loading="lazy"
                 />
               </motion.div>
             </div>
@@ -1581,7 +1583,9 @@ export default function Home() {
                         <motion.div key={`${tier}-${pricingSector}-${pricingPeriod}-${pricingYears}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
                           <div className="flex items-baseline gap-2">
                             <span className={`text-4xl font-black tracking-tight ${isInf || isPro ? "text-white" : "text-gray-900 dark:text-white"}`}>{currency.format(price)}</span>
-                            <span className={`text-sm font-bold ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>{currency.symbol}</span>
+                            <span className={`text-sm font-bold inline-flex items-center ${isInf || isPro ? "text-white/40" : "text-gray-400"}`}>
+                              {currency.isSaudi ? <SARIcon size={15} /> : currency.symbol}
+                            </span>
                           </div>
                           <p className={`text-xs mt-1 font-bold ${isPro ? "text-blue-200/70" : isInf ? "text-amber-300/60" : "text-gray-500 dark:text-slate-400"}`}>{periodLabel}</p>
                         </motion.div>
@@ -1598,6 +1602,15 @@ export default function Home() {
                           </li>
                         ))}
                       </ul>
+                      <div className={`mt-5 pt-4 border-t text-[10px] leading-relaxed font-bold ${
+                        isInf ? "border-amber-500/15 text-amber-300/65" :
+                        isPro ? "border-white/10 text-blue-100/65" :
+                        "border-gray-100 dark:border-slate-800 text-gray-400 dark:text-slate-500"
+                      }`}>
+                        {pricingPeriod === "lifetime"
+                          ? (ar ? "باقة مدى الحياة: إمكانية إزالة شارة «صنع بواسطة QIROX Studio»" : "Lifetime plan: option to remove the “Made by QIROX Studio” badge")
+                          : (ar ? "سيتم وضع شارة «صنع بواسطة QIROX Studio» في المشروع" : "A “Made by QIROX Studio” badge will be placed on the project")}
+                      </div>
                     </div>
 
                     {/* CTA */}
@@ -1841,8 +1854,8 @@ export default function Home() {
                       className="grid grid-cols-1 sm:grid-cols-2 gap-0 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden"
                       style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.05)" }}
                     >
-                      {/* Transparent logo area: partner artwork stays clean without a tile background. */}
-                      <div className="flex items-center justify-center bg-transparent p-10 md:p-14 min-h-[220px] relative overflow-hidden">
+                      {/* Neutral gray logo surface keeps logos with built-in white backgrounds visible. */}
+                      <div className="flex items-center justify-center bg-gray-200 dark:bg-gray-800 p-10 md:p-14 min-h-[220px] relative overflow-hidden">
                         <img
                           src={activeP.logo}
                           alt={ar ? activeP.nameAr : activeP.name}
@@ -1901,8 +1914,8 @@ export default function Home() {
                         onClick={() => { setActivePartnerIdx(i); setPartnerPaused(true); }}
                         className={`h-11 px-3 rounded-xl border transition-all duration-300 flex items-center justify-center overflow-hidden ${
                           i === (activePartnerIdx % partners.length)
-                            ? "border-black/15 dark:border-white/15 bg-transparent shadow-sm scale-105"
-                            : "border-transparent bg-transparent opacity-50 hover:opacity-80"
+                              ? "border-black/15 dark:border-white/15 bg-gray-200 dark:bg-gray-800 shadow-sm scale-105"
+                              : "border-transparent bg-gray-100 dark:bg-gray-800/70 opacity-60 hover:opacity-100"
                         }`}
                         title={ar ? sp.nameAr : sp.name}
                       >
@@ -1967,11 +1980,12 @@ export default function Home() {
                 className="flex items-center justify-end relative"
               >
                 <img
-                  src="/qirox-hero-cube.png"
+                  src="/qirox-hero-cube.webp"
+                  loading="lazy"
+                  decoding="async"
                   alt="QIROX"
                   className="w-auto max-h-[200px] md:max-h-[220px] select-none pointer-events-none drop-shadow-2xl"
                   draggable={false}
-                  loading="lazy"
                 />
               </motion.div>
 

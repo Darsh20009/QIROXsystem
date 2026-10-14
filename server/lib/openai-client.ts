@@ -61,7 +61,16 @@ export function getOpenAIClient(): OpenAI {
     }
     const baseURL = process.env.OPENAI_BASE_URL || (isMoonshot ? "https://api.moonshot.cn/v1" : undefined);
     _client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
-    console.log(`[ExternalAI] Provider: ${baseURL ? baseURL : "openai.com"} | model:${getExternalAIModel()}`);
+    let provider = "openai.com";
+    if (baseURL) {
+      try {
+        provider = new URL(baseURL).hostname;
+      } catch {
+        provider = "custom-provider";
+      }
+    }
+    // Do not log provider configuration: even metadata can reveal which
+    // external integrations are enabled in a production environment.
   }
   return _client;
 }
