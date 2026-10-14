@@ -23459,6 +23459,85 @@ export async function registerInstallmentRoutes(app: Express) {
       res.json({ connected: waModule.getStatus().status === "connected" });
     });
 
+    app.get("/api/whatsapp/crm/manual-marketing/daily-quota", async (req, res) => {
+      const actor: any = req.user;
+      const role = actor?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      try {
+        const { UserModel } = await import("./models");
+        const { getSaudiDayWindow, getManualMarketingDailyCounts } = await import("./manual-marketing-quota");
+        const { dayKey, start, end } = getSaudiDayWindow();
+        const counts = await getManualMarketingDailyCounts(start, end);
+        const actorId = String(actor?._id || actor?.id || "");
+        const currentUser: any = await UserModel.findById(actorId)
+          .select("role fullName manualMarketingDailyQuota")
+          .lean();
+        if (!currentUser) return res.sendStatus(401);
+        const quota = Math.max(0, Number(currentUser.manualMarketingDailyQuota) || 0);
+        const sent = counts.get(actorId) || 0;
+        const canManage = role === "admin" || role === "manager";
+        let staff: any[] = [];
+        if (canManage) {
+          const employees: any[] = await UserModel.find({
+            role: "data_entry",
+            employmentStatus: { $ne: "terminated" },
+          }).select("fullName username manualMarketingDailyQuota").sort({ fullName: 1 }).lean();
+          staff = employees.map(employee => {
+            const employeeQuota = Math.max(0, Number(employee.manualMarketingDailyQuota) || 0);
+            const employeeSent = counts.get(String(employee._id)) || 0;
+            return {
+              id: String(employee._id),
+              name: employee.fullName || employee.username,
+              username: employee.username,
+              quota: employeeQuota,
+              sent: employeeSent,
+              remaining: employeeQuota ? Math.max(0, employeeQuota - employeeSent) : null,
+            };
+          });
+        }
+        res.json({
+          dayKey,
+          sent,
+          quota,
+          remaining: quota ? Math.max(0, quota - sent) : null,
+          completed: Boolean(quota && sent >= quota),
+          canManage,
+          staff,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحميل عداد التسويق اليومي" });
+      }
+    });
+
+    app.patch("/api/whatsapp/crm/manual-marketing/daily-quota/:employeeId", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !["admin", "manager"].includes(role)) return res.sendStatus(403);
+      if (!/^[\da-f]{24}$/i.test(req.params.employeeId)) return res.status(400).json({ error: "معرّف الموظف غير صالح" });
+      const dailyQuota = req.body?.dailyQuota;
+      if (!Number.isInteger(dailyQuota) || dailyQuota < 0 || dailyQuota > 10000) {
+        return res.status(400).json({ error: "أدخل حصة صحيحة من 0 إلى 10000 رسالة" });
+      }
+      try {
+        const { UserModel } = await import("./models");
+        const employee: any = await UserModel.findOneAndUpdate(
+          { _id: req.params.employeeId, role: "data_entry", employmentStatus: { $ne: "terminated" } },
+          { $set: { manualMarketingDailyQuota: dailyQuota } },
+          { new: true, runValidators: true },
+        ).select("fullName username manualMarketingDailyQuota").lean();
+        if (!employee) return res.status(404).json({ error: "لم يتم العثور على موظف Data Entry نشط" });
+        void import("./manual-marketing-quota")
+          .then(({ notifyManualMarketingQuotaCompletion }) => notifyManualMarketingQuotaCompletion(String(employee._id)))
+          .catch((error: any) => console.error("[ManualMarketingQuota] Quota-change check failed:", error?.message || error));
+        res.json({
+          id: String(employee._id),
+          name: employee.fullName || employee.username,
+          dailyQuota: Math.max(0, Number(employee.manualMarketingDailyQuota) || 0),
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر حفظ حصة الموظف" });
+      }
+    });
+
     app.get("/api/whatsapp/crm/manual-marketing/leads", async (req, res) => {
       const role = (req.user as any)?.role;
       if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
@@ -23809,6 +23888,9 @@ export async function registerInstallmentRoutes(app: Express) {
         ).catch((error: any) => {
           console.error("[ManualMarketing] Could not archive an older campaign:", error?.message || error);
         });
+        void import("./manual-marketing-quota")
+          .then(({ notifyManualMarketingQuotaCompletion }) => notifyManualMarketingQuotaCompletion(String(senderId), sentAt))
+          .catch((error: any) => console.error("[ManualMarketingQuota] Completion check failed:", error?.message || error));
         res.json({
           ok: true,
           campaignId: String(campaign._id),

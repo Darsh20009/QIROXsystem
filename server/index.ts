@@ -1384,6 +1384,16 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   // Cron jobs
   const nodeCron = await import("node-cron");
 
+  nodeCron.default.schedule("59 23 * * *", async () => {
+    try {
+      const { sendManualMarketingIncompleteDailySummary } = await import("./manual-marketing-quota");
+      const result = await sendManualMarketingIncompleteDailySummary();
+      if (result.incomplete) console.log(`[ManualMarketingQuota] Daily report: ${result.incomplete} employee(s) below quota.`);
+    } catch (error: any) {
+      console.error("[ManualMarketingQuota] Daily report failed:", error?.message || error);
+    }
+  }, { timezone: "Asia/Riyadh" });
+
   nodeCron.default.schedule("*/2 * * * *", async () => {
     try {
       if (connManager.qmeetConn?.readyState !== 1) return;

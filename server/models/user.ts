@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   // Additive employee lifecycle marker. Missing values on legacy documents are
   // treated as active; termination never deletes the account or its history.
   employmentStatus: { type: String, enum: ["active", "terminated"], default: "active", index: true },
+  manualMarketingDailyQuota: { type: Number, min: 0, max: 10000, default: 0 },
   employmentTerminatedAt: { type: Date, default: null },
   employmentTerminationReason: { type: String, default: "" },
   employeeCode: { type: String, unique: true, sparse: true, index: true },

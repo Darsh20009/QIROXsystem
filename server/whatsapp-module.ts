@@ -31,7 +31,7 @@ const ARABIC_STATUS: Record<string, string> = {
   cancelled: "ملغى",
 };
 
-const MANUAL_MARKETING_REPLY_CHAT_ID = "966532441566@s.whatsapp.net";
+export const MANUAL_MARKETING_REPLY_CHAT_ID = "966532441566@s.whatsapp.net";
 
 function cleanText(value: unknown): string {
   return String(value || "").trim().replace(/\s+/g, " ");

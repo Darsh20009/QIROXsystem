@@ -119,3 +119,10 @@ The QR polling endpoint must return Baileys' raw QR challenge because the browse
 **Why:** Encoding a PNG data URL as a second QR payload can exceed QR capacity, crash the WhatsApp page, and trigger the global retry/landing-page recovery.
 
 **How to apply:** Keep the polling and SSE payload shapes aligned: both should provide the raw challenge string.
+
+## Manual-marketing employee targets
+- Managers assign daily message targets to Data Entry employees. Only successful manual-marketing sends count; send a WhatsApp alert to the manager when an employee reaches the target and a Saudi-time end-of-day summary for employees below target.
+
+**Why:** the user wants to monitor each employee’s daily outreach and distinguish completed targets from unfinished work.
+
+**How to apply:** Keep quota edits manager/admin-only, display each employee’s sent and remaining counts on the manual-marketing page, and route completion/incomplete notifications through the existing QIROX WhatsApp session.

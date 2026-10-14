@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Link2, LoaderCircle, MessageCircle, Phone, Send, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Link2, LoaderCircle, MessageCircle, Phone, Send, Sparkles, Target, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   inferManualMarketingCountryCode,
@@ -41,6 +41,10 @@ function getCountryName(code: string, language: ManualMarketingLanguage): string
 
 export default function ManualMarketingPanel() {
   const { toast } = useToast();
+  const [dailyQuota, setDailyQuota] = useState<any>(null);
+  const [quotaLoadError, setQuotaLoadError] = useState("");
+  const [quotaDrafts, setQuotaDrafts] = useState<Record<string, number>>({});
+  const [savingQuotaFor, setSavingQuotaFor] = useState("");
   const [phone, setPhone] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [sector, setSector] = useState<ManualMarketingSector>("restaurant");
@@ -56,6 +60,53 @@ export default function ManualMarketingPanel() {
   const [leadLookupError, setLeadLookupError] = useState("");
   const [confirmRepeat, setConfirmRepeat] = useState(false);
   const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(null);
+
+  const loadDailyQuota = useCallback(async () => {
+    try {
+      const response = await fetch("/api/whatsapp/crm/manual-marketing/daily-quota", { credentials: "include" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "تعذر تحميل عداد اليوم");
+      setDailyQuota(data);
+      setQuotaLoadError("");
+      if (Array.isArray(data.staff)) {
+        setQuotaDrafts(current => {
+          const next = { ...current };
+          for (const employee of data.staff) {
+            if (next[employee.id] === undefined) next[employee.id] = Number(employee.quota) || 0;
+          }
+          return next;
+        });
+      }
+    } catch (error: any) {
+      setQuotaLoadError(error.message || "تعذر تحميل عداد اليوم");
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDailyQuota();
+    const timer = window.setInterval(() => void loadDailyQuota(), 30000);
+    return () => window.clearInterval(timer);
+  }, [loadDailyQuota]);
+
+  async function saveEmployeeQuota(employeeId: string) {
+    setSavingQuotaFor(employeeId);
+    try {
+      const response = await fetch(`/api/whatsapp/crm/manual-marketing/daily-quota/${encodeURIComponent(employeeId)}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyQuota: Number(quotaDrafts[employeeId]) || 0 }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "تعذر حفظ الحصة");
+      toast({ title: "تم حفظ الحصة اليومية", description: `${data.name}: ${data.dailyQuota} رسالة` });
+      await loadDailyQuota();
+    } catch (error: any) {
+      toast({ title: "تعذر حفظ الحصة", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingQuotaFor("");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -188,6 +239,7 @@ export default function ManualMarketingPanel() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "تعذر إرسال الرسالة");
+      void loadDailyQuota();
       setLastSentFingerprint(fingerprint);
       setKnownLead((current: any) => ({
         ...(current || {}),
@@ -238,6 +290,88 @@ export default function ManualMarketingPanel() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="mx-4 mt-4 rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-2 text-sm font-black text-black dark:text-white">
+          <Target className="h-4 w-4 text-emerald-600" />
+          عداد التسويق اليدوي اليوم
+          {dailyQuota?.dayKey && <span className="text-[10px] font-medium text-black/45 dark:text-white/45">{dailyQuota.dayKey} · توقيت الرياض</span>}
+        </div>
+        {quotaLoadError ? (
+          <p className="mt-2 text-xs text-red-600">{quotaLoadError}</p>
+        ) : dailyQuota ? (
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span>أرسلت بنجاح اليوم: <strong>{dailyQuota.sent}</strong> رسالة</span>
+              {dailyQuota.quota > 0 ? (
+                <span>حصتك: <strong>{dailyQuota.quota}</strong> · المتبقي: <strong>{dailyQuota.remaining}</strong></span>
+              ) : (
+                <span className="text-black/50 dark:text-white/50">لم يحدد المدير حصة يومية لحسابك</span>
+              )}
+            </div>
+            {dailyQuota.quota > 0 && (
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${Math.min(100, (dailyQuota.sent / dailyQuota.quota) * 100)}%` }}
+                />
+              </div>
+            )}
+            {dailyQuota.completed && (
+              <p className="mt-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">اكتملت حصتك؛ وصل إشعار إلى المدير.</p>
+            )}
+            {dailyQuota.canManage && (
+              <div className="mt-4 border-t border-emerald-200/70 pt-3 dark:border-emerald-900/50">
+                <div className="mb-2 flex items-center gap-2 text-xs font-black">
+                  <Users className="h-4 w-4 text-emerald-600" />
+                  حصص موظفي Data Entry
+                </div>
+                {dailyQuota.staff?.length ? (
+                  <div className="space-y-2">
+                    {dailyQuota.staff.map((employee: any) => (
+                      <div key={employee.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/80 p-2 dark:bg-gray-900/70">
+                        <div className="min-w-[140px] flex-1">
+                          <p className="text-xs font-bold">{employee.name}</p>
+                          <p className="text-[10px] text-black/50 dark:text-white/50">
+                            أرسل {employee.sent} · {employee.quota > 0 ? `المتبقي ${employee.remaining}` : "لا توجد حصة محددة"}
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-1.5 text-[10px] text-black/60 dark:text-white/60">
+                          الحصة
+                          <input
+                            type="number"
+                            min={0}
+                            max={10000}
+                            step={1}
+                            value={quotaDrafts[employee.id] ?? employee.quota}
+                            onChange={event => setQuotaDrafts(current => ({ ...current, [employee.id]: Math.max(0, Math.min(10000, Number(event.target.value) || 0)) }))}
+                            className="h-8 w-20 rounded-md border border-black/10 bg-white px-2 text-sm text-black outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-gray-950 dark:text-white"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={savingQuotaFor === employee.id}
+                          onClick={() => void saveEmployeeQuota(employee.id)}
+                          className="h-8 rounded-md bg-emerald-600 px-3 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          {savingQuotaFor === employee.id ? "جارٍ الحفظ..." : "حفظ"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-black/50 dark:text-white/50">لا يوجد موظفو Data Entry نشطون.</p>
+                )}
+                <p className="mt-2 text-[10px] text-black/45 dark:text-white/45">
+                  يُرسل إشعار إكمال الحصة فورًا، وملخص غير المكتملين يوميًا عند 11:59 مساءً بتوقيت الرياض.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-black/50 dark:text-white/50">جارٍ تحميل العداد…</p>
+        )}
       </div>
 
       <form onSubmit={sendManualMarketingMessage} className="p-4 md:p-5 space-y-4">

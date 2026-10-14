@@ -69,10 +69,30 @@ manualMarketingCampaignSchema.index(
   { normalizedPhone: 1, status: 1, sentAt: -1 },
   { name: "manual_marketing_reply_lookup" },
 );
+manualMarketingCampaignSchema.index(
+  { sentBy: 1, status: 1, sentAt: 1 },
+  { name: "manual_marketing_daily_quota_lookup" },
+);
 
 export const ManualMarketingCampaignModel =
   mongoose.models.ManualMarketingCampaign ||
   mongoose.model("ManualMarketingCampaign", manualMarketingCampaignSchema);
+
+const manualMarketingQuotaNoticeSchema = new Schema({
+  dayKey: { type: String, required: true },
+  userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+  type: { type: String, enum: ["completed", "incomplete_summary"], required: true },
+  status: { type: String, enum: ["sending", "sent", "failed"], default: "sending" },
+  sentAt: { type: Date, default: null },
+  error: { type: String, default: "" },
+}, { timestamps: true });
+manualMarketingQuotaNoticeSchema.index(
+  { dayKey: 1, userId: 1, type: 1 },
+  { unique: true, name: "manual_marketing_quota_notice_daily_unique" },
+);
+export const ManualMarketingQuotaNoticeModel =
+  mongoose.models.ManualMarketingQuotaNotice ||
+  mongoose.model("ManualMarketingQuotaNotice", manualMarketingQuotaNoticeSchema);
 
 const manualMarketingLeadSchema = new Schema({
   normalizedPhone: { type: String, required: true },
