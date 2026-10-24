@@ -18,7 +18,8 @@ interface PaymobCheckoutProps {
   paymentMethod?: string;
   publicKey?: string;
   clientSecret?: string;
-  onSuccess: () => void;
+  paymentSessionToken?: string;
+  onSuccess: (confirmedOrderNumber?: string) => void;
   onError: (message: string) => void;
   onCancel: () => void;
 }
@@ -30,6 +31,7 @@ export default function PaymobCheckout({
   amount,
   checkoutUrl,
   paymentMethod = "paymob-card",
+  paymentSessionToken,
   onSuccess,
   onError,
   onCancel,
@@ -72,7 +74,7 @@ export default function PaymobCheckout({
     }
   };
 
-  const triggerSuccess = () => {
+  const triggerSuccess = (confirmedOrderNumber?: string) => {
     if (successTriggered.current) return;
     successTriggered.current = true;
     stopPolling();
@@ -80,7 +82,7 @@ export default function PaymobCheckout({
     setState("success");
     setTimeout(() => {
       setVisible(false);
-      setTimeout(onSuccess, 400);
+      setTimeout(() => onSuccess(confirmedOrderNumber), 400);
     }, 1800);
   };
 
@@ -91,16 +93,51 @@ export default function PaymobCheckout({
     onError(msg);
   };
 
-  const verifyPaymentStatus = async (retries = 8, delayMs = 1500): Promise<boolean> => {
+  const verifyPaymentStatus = async (
+    retries = 8,
+    delayMs = 1500,
+    targetOrderNumber = orderNumber,
+  ): Promise<boolean> => {
     for (let i = 0; i < retries; i++) {
       try {
-        const res = await fetch(`/api/payments/order-status/${encodeURIComponent(orderNumber)}`);
+        const res = await fetch(`/api/payments/order-status/${encodeURIComponent(targetOrderNumber)}`);
         const data = await res.json();
         if (data.paid === true) return true;
       } catch {}
       if (i < retries - 1) await new Promise(r => setTimeout(r, delayMs));
     }
     return false;
+  };
+
+  const confirmTokenPayment = async (
+    transactionId?: string,
+    retries = 5,
+    delayMs = 1000,
+  ): Promise<string | null> => {
+    if (!paymentSessionToken) return null;
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch("/api/payments/confirm-payment-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            token: paymentSessionToken,
+            paymobTxId: transactionId,
+            session: orderNumber,
+          }),
+        });
+        const result = await response.json();
+        if (response.ok && result.success && result.orderNumber) {
+          return String(result.orderNumber);
+        }
+        if (response.status === 402 || result.paymentFailed || response.status === 410) {
+          return null;
+        }
+      } catch {}
+      if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+    return null;
   };
 
   const verifyPaymobWithServer = async (retries = 5, delayMs = 1000): Promise<boolean> => {
@@ -127,6 +164,16 @@ export default function PaymobCheckout({
     setState("verifying");
     setConfirmCancel(false);
     await new Promise(r => setTimeout(r, 1000));
+    if (paymentSessionToken) {
+      const confirmedOrderNumber = await confirmTokenPayment(undefined, 2, 800);
+      if (confirmedOrderNumber) {
+        triggerSuccess(confirmedOrderNumber);
+        return;
+      }
+      setState("ready");
+      setConfirmCancel(true);
+      return;
+    }
     const paid = await verifyPaymentStatus() || await verifyPaymobWithServer(2, 800);
     if (paid) {
       triggerSuccess();
@@ -150,6 +197,14 @@ export default function PaymobCheckout({
 
       // Helper: check payment status once
       const checkOnce = async (): Promise<boolean> => {
+        if (paymentSessionToken) {
+          const confirmedOrderNumber = await confirmTokenPayment(undefined, 1, 0);
+          if (confirmedOrderNumber) {
+            triggerSuccess(confirmedOrderNumber);
+            return true;
+          }
+          return false;
+        }
         try {
           const res = await fetch(`/api/payments/order-status/${encodeURIComponent(orderNumber)}`);
           const data = await res.json();
@@ -189,6 +244,13 @@ export default function PaymobCheckout({
         setState("verifying");
 
         // Step 1: check order DB status (works if webhook already confirmed)
+        if (paymentSessionToken) {
+          const confirmedOrderNumber = await confirmTokenPayment(undefined, 5, 1000);
+          if (confirmedOrderNumber) {
+            triggerSuccess(confirmedOrderNumber);
+            return;
+          }
+        }
         const paid = await verifyPaymentStatus(4, 1500);
         if (paid) { triggerSuccess(); return; }
 
@@ -241,8 +303,25 @@ export default function PaymobCheckout({
   useEffect(() => {
     if (isCapacitorNative()) return;
 
-    const verifyAndSetResult = async () => {
+    const verifyAndSetResult = async (transactionId?: string, returnedOrderNumber?: string) => {
       setState("verifying");
+      if (paymentSessionToken) {
+        const confirmedOrderNumber = await confirmTokenPayment(transactionId);
+        if (confirmedOrderNumber) {
+          triggerSuccess(confirmedOrderNumber);
+        } else {
+          setState("ready");
+        }
+        return;
+      }
+      if (returnedOrderNumber) {
+        if (await verifyPaymentStatus(8, 1200, returnedOrderNumber)) {
+          triggerSuccess(returnedOrderNumber);
+        } else {
+          setState("ready");
+        }
+        return;
+      }
       if (await verifyPaymobWithServer()) {
         triggerSuccess();
       } else {
@@ -262,9 +341,20 @@ export default function PaymobCheckout({
           data.payment_status === "PAID" ||
           data.status === "success"
         ) {
-          void verifyAndSetResult();
+          void verifyAndSetResult(
+            data.transactionId || data.paymobTxId,
+            data.orderNumber,
+          );
         } else if (data.type === "PAYMOB_ERROR" || data.success === false || data.type === "PAYMOB_PENDING") {
           const msg = data.message || tc("فشلت عملية الدفع. يرجى المحاولة مرة أخرى.", "Payment failed. Please try again.");
+          if (paymentSessionToken) {
+            void confirmTokenPayment(data.transactionId || data.paymobTxId).then((confirmedOrderNumber) => {
+              if (confirmedOrderNumber) triggerSuccess(confirmedOrderNumber);
+              else if (data.type === "PAYMOB_PENDING") setState("ready");
+              else triggerError(msg);
+            });
+            return;
+          }
           setState("verifying");
           (async () => {
             const paid = await verifyPaymentStatus(10, 1200);
@@ -283,7 +373,7 @@ export default function PaymobCheckout({
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [checkoutUrl, orderNumber, paymentSessionToken]);
 
   // Cleanup polling on unmount
   useEffect(() => () => stopPolling(), []);

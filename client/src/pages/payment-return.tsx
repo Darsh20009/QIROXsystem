@@ -216,7 +216,14 @@ export default function PaymentReturnPage() {
                 ? tc("طلبك مؤكد بالفعل! شكراً لك.", "Your order is already confirmed! Thank you.")
                 : tc("تمت عملية الدفع بنجاح! شكراً لك.", "Payment successful! Thank you.")
             );
-            try { window.parent.postMessage({ type: "PAYMOB_SUCCESS", status: "success", orderNumber: orderNum }, "*"); } catch {}
+            try {
+              window.parent.postMessage({
+                type: "PAYMOB_SUCCESS",
+                status: "success",
+                orderNumber: orderNum,
+                transactionId: paymobTxId,
+              }, "*");
+            } catch {}
             if (!isInIframe()) setTimeout(() => navigate("/my-orders"), 3000);
             return;
           }

@@ -222,7 +222,6 @@ export default function CheckoutPage() {
   const [showPaymobCheckout, setShowPaymobCheckout] = useState(false);
   const [paymobCheckoutUrl, setPaymobCheckoutUrl] = useState("");
   const [paymobSessionId, setPaymobSessionId] = useState("");
-  const isPaymobFlow = useRef(false);
   const pendingApplePaySessionId = useRef<string | null>(null);
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [showSuccessPage, setShowSuccessPage] = useState(false);
@@ -724,16 +723,6 @@ export default function CheckoutPage() {
       const displayNum = data.orderNumber;
       if (displayNum) {
         localStorage.setItem("br-active-order", String(displayNum));
-      }
-      // PayMob flow: skip the big success page — navigate straight to "My Orders"
-      if (isPaymobFlow.current) {
-        isPaymobFlow.current = false;
-        toast({
-          title: "✅ تم الدفع بنجاح!",
-          description: displayNum ? `رقم طلبك: #${displayNum}` : "سيبدأ الفريق بتحضير طلبك فوراً",
-        });
-        setTimeout(() => setLocation("/my-orders"), 400);
-        return;
       }
       setShowSuccessPage(true);
       toast({ title: t("checkout.order_success"), description: `${t("tracking.order_number")}: ${displayNum}` });
@@ -1273,7 +1262,6 @@ export default function CheckoutPage() {
 
       if (payData.success && payData.redirectUrl) {
         pendingGeideaOrderData.current = orderData;
-        isPaymobFlow.current = true;
         setPaymobCheckoutUrl(payData.redirectUrl);
         setPaymobSessionId(payData.sessionId || tempRef);
         setIsVerifyingPayment(false);
@@ -2341,16 +2329,37 @@ export default function CheckoutPage() {
                     amount={pendingGeideaOrderData.current?.totalAmount || getFinalTotalWithPoints()}
                     checkoutUrl={paymobCheckoutUrl}
                     paymentMethod={String(pendingGeideaOrderData.current?.paymentMethod || selectedPaymentMethod || 'paymob-card')}
-                    onSuccess={() => {
+                    paymentSessionToken={sessionStorage.getItem('paymentSessionToken') || undefined}
+                    onSuccess={(confirmedOrderNumber) => {
                       setShowPaymobCheckout(false);
                       const od = pendingGeideaOrderData.current;
                       if (od) {
-                        createOrderMutation.mutate({
+                        const confirmedOrder = {
                           ...od,
+                          orderNumber: confirmedOrderNumber || od.orderNumber,
                           paymentStatus: 'paid',
                           status: 'payment_confirmed',
-                          paymentReference: `PAYMOB-${Date.now()}`,
+                        };
+                        setOrderDetails(confirmedOrder);
+                        clearCart();
+                        customerStorage.clearActiveOffer();
+                        setPointsToRedeem(0);
+                        setAppliedGiftCard(null);
+                        setGiftCardCode("");
+                        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+                        if (confirmedOrderNumber) {
+                          localStorage.setItem("br-active-order", String(confirmedOrderNumber));
+                        }
+                        sessionStorage.removeItem('pendingOrderData');
+                        sessionStorage.removeItem('paymentProvider');
+                        sessionStorage.removeItem('paymentSessionToken');
+                        toast({
+                          title: "✅ تم الدفع بنجاح!",
+                          description: confirmedOrderNumber
+                            ? `رقم طلبك: #${confirmedOrderNumber}`
+                            : "سيبدأ الفريق بتحضير طلبك فوراً",
                         });
+                        setTimeout(() => setLocation("/my-orders"), 400);
                       } else {
                         clearCart();
                         setShowSuccessPage(true);
