@@ -1343,6 +1343,7 @@ export interface IOrder extends Document {
   paymentMethod: string;
   paymentProvider?: 'paymob' | 'geidea' | 'neoleap' | string;
   paymentTransactionId?: string;
+  paymentSessionTokenId?: string;
   paymentDetails?: string;
   paymentReceiptUrl?: string;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
@@ -1490,6 +1491,7 @@ const OrderSchema = new Schema<IOrder>({
   paymentMethod: { type: String, enum: ["cash", "pos", "apple_pay", "pos-network", "alinma", "rajhi", "ur", "barq", "qahwa-card", "stc-pay", "mada", "geidea", "neoleap", "neoleap-apple-pay", "bank_card", "paymob-card", "paymob-wallet", "paymob-apple-pay", "loyalty-card", "split", "card", "network", "credit_card", "bank_transfer", "other"], required: true },
   paymentProvider: { type: String, enum: ['paymob', 'geidea', 'neoleap'] },
   paymentTransactionId: { type: String },
+  paymentSessionTokenId: { type: String },
   paymentDetails: { type: String },
   paymentReceiptUrl: { type: String },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
@@ -1541,6 +1543,7 @@ OrderSchema.index({ customerId: 1, createdAt: -1 });
 OrderSchema.index({ customerPhone: 1, tenantId: 1 });
 OrderSchema.index({ tenantId: 1, branchId: 1, createdAt: -1 });
 OrderSchema.index({ tenantId: 1, paymentStatus: 1, createdAt: -1 });
+OrderSchema.index({ paymentSessionTokenId: 1 }, { unique: true, sparse: true });
 OrderSchema.index({ tableId: 1, status: 1 });
 OrderSchema.index({ tenantId: 1, orderType: 1, createdAt: -1 });
 OrderSchema.index({ tenantId: 1, assignedDriverId: 1, status: 1 });

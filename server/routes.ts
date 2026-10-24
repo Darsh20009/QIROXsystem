@@ -855,6 +855,8 @@ const PaymentSessionTokenSchema = new mongoose.Schema({
   paymentMethod:        { type: String, required: true },
   used:                 { type: Boolean, default: false },
   confirmedOrderNumber: { type: String, default: null },
+  paymentTransactionId: { type: String, default: null },
+  processingAt:         { type: Date, default: null },
   expiresAt:            { type: Date,   required: true },
   createdAt:            { type: Date,   default: Date.now },
 });
@@ -5606,6 +5608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const record = await PaymentSessionTokenModel.findOne({ token }) as any;
       if (!record) return res.status(404).json({ error: "رمز الدفع غير موجود أو انتهت صلاحيته" });
+      const tokenRecordId = String(record._id);
 
       // ── Helper: auto-login customer by phone ────────────────────────────
       const autoLoginCustomer = async () => {
@@ -5622,6 +5625,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return safe;
       };
 
+      // Recover if the order was persisted before the token's final update.
+      const existingTokenOrder: any = await OrderModel.findOne({
+        paymentSessionTokenId: tokenRecordId,
+      }).lean();
+      if (existingTokenOrder) {
+        record.used = true;
+        record.confirmedOrderNumber = String(existingTokenOrder.orderNumber);
+        record.paymentTransactionId = String(existingTokenOrder.paymentTransactionId || record.paymentTransactionId || '');
+        record.processingAt = null;
+        await record.save().catch(() => {});
+        const customerData = await autoLoginCustomer();
+        return res.json({
+          success: true,
+          alreadyConfirmed: true,
+          orderNumber: record.confirmedOrderNumber,
+          customer: customerData,
+        });
+      }
+
       // ── Idempotency: token already used and order was created ────────────
       if (record.used && record.confirmedOrderNumber) {
         const customerData = await autoLoginCustomer();
@@ -5634,7 +5656,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (record.used) {
-        return res.status(410).json({ error: "رمز الدفع استُخدم بالفعل", alreadyUsed: true });
+        const processingAgeMs = record.processingAt
+          ? Date.now() - new Date(record.processingAt).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (processingAgeMs < 5 * 60 * 1000) {
+          return res.status(202).json({ waiting: true, message: "يجري تأكيد الطلب؛ أعد التحقق بعد لحظات" });
+        }
+        const reset = await PaymentSessionTokenModel.updateOne(
+          {
+            _id: record._id,
+            used: true,
+            ...(record.processingAt ? { processingAt: record.processingAt } : { processingAt: { $in: [null] } }),
+          },
+          { $set: { used: false, processingAt: null } },
+        );
+        if (!reset.modifiedCount) {
+          return res.status(202).json({ waiting: true, message: "يجري تأكيد الطلب؛ أعد التحقق بعد لحظات" });
+        }
+        record.used = false;
+        record.processingAt = null;
       }
       if (record.expiresAt < new Date()) {
         return res.status(410).json({ error: "انتهت صلاحية رمز الدفع" });
@@ -5686,9 +5726,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const branchResolution = await resolveOnlineOrderBranch(orderTenantId, record.orderData?.branchId);
       const branchAssignmentRequired = !branchResolution.branchId;
 
-      // ── Mark as used now (payment verified or explicitly success=true) ──
+      // Claim the token only after server-side verification. The order carries
+      // this stable token record id so a retry can recover an inserted order.
+      const processingAt = new Date();
+      const claimedRecord = await PaymentSessionTokenModel.findOneAndUpdate(
+        { _id: record._id, used: false, expiresAt: { $gt: processingAt } },
+        {
+          $set: {
+            used: true,
+            processingAt,
+            paymentTransactionId: verifiedTransactionId || null,
+          },
+        },
+        { new: true },
+      );
+      if (!claimedRecord) {
+        const completedOrder: any = await OrderModel.findOne({
+          paymentSessionTokenId: tokenRecordId,
+        }).lean();
+        if (completedOrder) {
+          const latestRecord: any = await PaymentSessionTokenModel.findById(record._id);
+          if (latestRecord) {
+            latestRecord.used = true;
+            latestRecord.confirmedOrderNumber = String(completedOrder.orderNumber);
+            latestRecord.processingAt = null;
+            latestRecord.paymentTransactionId = String(completedOrder.paymentTransactionId || verifiedTransactionId || '');
+            await latestRecord.save().catch(() => {});
+          }
+          const customerData = await autoLoginCustomer();
+          return res.json({
+            success: true,
+            alreadyConfirmed: true,
+            orderNumber: String(completedOrder.orderNumber),
+            customer: customerData,
+          });
+        }
+        return res.status(202).json({ waiting: true, message: "يجري تأكيد الطلب؛ أعد التحقق بعد لحظات" });
+      }
       record.used = true;
-      await record.save();
+      record.processingAt = processingAt;
+      record.paymentTransactionId = verifiedTransactionId || '';
 
       // ── Auto-login customer (by phone, no password needed — token proves identity) ──
       const customerData = await autoLoginCustomer();
@@ -5700,7 +5777,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...record.orderData,
         tenantId: orderTenantId,
         paymentStatus: "paid",
-        status: "pending",
+        status: "payment_confirmed",
+        paymentSessionTokenId: tokenRecordId,
         paymentMethod: record.orderData?.paymentMethod || "geidea",
         branchId: branchResolution.branchId || 'unassigned',
         ...(branchAssignmentRequired ? { branchAssignmentRequired: true } : {}),
@@ -5733,15 +5811,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         order = await storage.createOrder(orderData);
       } catch (createErr: any) {
-        console.error("[confirm-payment-order] Order creation failed:", createErr);
-        return res.status(500).json({ error: "تم الدفع لكن فشل تأكيد الطلب. يرجى التواصل مع الدعم.", details: createErr?.message });
+        const recoveredOrder: any = await OrderModel.findOne({
+          paymentSessionTokenId: tokenRecordId,
+        }).lean().catch(() => null);
+        if (recoveredOrder) {
+          order = recoveredOrder;
+        } else {
+          await PaymentSessionTokenModel.updateOne(
+            { _id: record._id, used: true, processingAt },
+            { $set: { used: false, processingAt: null } },
+          ).catch(() => {});
+          record.used = false;
+          record.processingAt = null;
+          console.error("[confirm-payment-order] Order creation failed:", createErr);
+          return res.status(500).json({ error: "تم الدفع لكن تعذر حفظ الطلب؛ أعد التحقق لإكمال التأكيد بأمان." });
+        }
       }
 
       const serializedOrder = serializeDoc(order);
 
       // ── Store orderNumber for idempotency (refresh won't create duplicate) ──
       record.confirmedOrderNumber = serializedOrder.orderNumber;
-      await record.save();
+      record.processingAt = null;
+      await record.save().catch((saveErr: any) => {
+        // The order carries paymentSessionTokenId, so a later retry can recover.
+        console.error("[confirm-payment-order] Order saved but token finalization deferred:", saveErr?.message);
+      });
 
       // ── Cache invalidation + WebSocket broadcast ────────────────────────
       cache.invalidate('live-orders:');
