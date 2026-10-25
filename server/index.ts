@@ -910,33 +910,41 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
 
-    // Auto-migrate orders/shifts/employees with branchId='main' to first real branch
-    try {
-      const { OrderModel, BranchModel, CashierShiftModel, EmployeeModel } = await import("@shared/schema");
-      const mainOrderCount = await OrderModel.countDocuments({ $or: [{ branchId: 'main' }, { branchId: null }, { branchId: { $exists: false } }] });
-      if (mainOrderCount > 0) {
-        const branches = await BranchModel.find({ id: { $ne: 'main' } }).sort({ createdAt: 1 }).limit(1).lean();
-        if (branches.length > 0) {
-          const targetBranch = branches[0] as any;
-          const targetId = targetBranch.id;
-          const ordersResult = await OrderModel.updateMany(
-            { $or: [{ branchId: 'main' }, { branchId: null }, { branchId: { $exists: false } }] },
-            { $set: { branchId: targetId } }
-          );
-          await CashierShiftModel.updateMany(
-            { $or: [{ branchId: 'main' }, { branchId: null }] },
-            { $set: { branchId: targetId, branchName: targetBranch.nameAr || '' } }
-          );
-          await EmployeeModel.updateMany(
-            { branchId: 'main' },
-            { $set: { branchId: targetId } }
-          );
-          await BranchModel.findOneAndDelete({ $or: [{ id: 'main' }, { nameEn: /^main$/i }] });
-          console.log(`✅ Auto-migrated ${ordersResult.modifiedCount} 'main' orders → branch "${targetBranch.nameAr}" (${targetId})`);
+    // This changes existing records; only run it after explicitly reviewing the target branch.
+    if (process.env.ALLOW_MAIN_BRANCH_DATA_MIGRATION === "true") {
+      try {
+        const { OrderModel, BranchModel, CashierShiftModel, EmployeeModel } = await import("@shared/schema");
+        const mainOrderCount = await OrderModel.countDocuments({ branchId: "main" });
+        if (mainOrderCount > 0) {
+          const branches = await BranchModel.find({ id: { $ne: "main" } }).sort({ createdAt: 1 }).limit(1).lean();
+          if (branches.length > 0) {
+            const targetBranch = branches[0] as any;
+            const targetId = typeof targetBranch.id === "string" ? targetBranch.id.trim() : "";
+            if (!targetId || targetId.toLowerCase() === "undefined") {
+              console.error("⚠️ Main-branch migration skipped: the target branch has no valid ID.");
+            } else {
+              const ordersResult = await OrderModel.updateMany(
+                { branchId: "main" },
+                { $set: { branchId: targetId } }
+              );
+              await CashierShiftModel.updateMany(
+                { branchId: "main" },
+                { $set: { branchId: targetId, branchName: targetBranch.nameAr || "" } }
+              );
+              await EmployeeModel.updateMany(
+                { branchId: "main" },
+                { $set: { branchId: targetId } }
+              );
+              await BranchModel.findOneAndDelete({ $or: [{ id: "main" }, { nameEn: /^main$/i }] });
+              console.log(`✅ Auto-migrated ${ordersResult.modifiedCount} 'main' orders → branch "${targetBranch.nameAr}" (${targetId})`);
+            }
+          }
         }
+      } catch (err) {
+        console.error("⚠️ Auto-migration of main branch skipped:", err);
       }
-    } catch (err) {
-      console.error('⚠️ Auto-migration of main branch skipped:', err);
+    } else {
+      console.log("ℹ️ Skipping main-branch data migration; explicit opt-in is required.");
     }
 
     // ── Sync Geidea credentials only when explicitly provided in Replit Secrets.

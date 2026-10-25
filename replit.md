@@ -23,11 +23,13 @@ Starts the Express server (port 5000) with Vite middleware for hot-reloading the
 
 | Variable | Description | Status |
 |---|---|---|
-| `MONGODB_URI` | MongoDB connection string (Atlas or local) | Required for server startup |
+| `MONGODB_URI` | MongoDB connection string (Atlas or local) | Required; use an isolated development database in Replit |
 | `SESSION_SECRET` | Secret for express-session cookie signing | ✅ Set |
 | `MONGODB_URI_2` | (Optional) Secondary DB for auto-rotation | Not set |
 
 Install dependencies with `npm ci` to restore the versions in `package-lock.json`. The `Start application` workflow (`npm run dev`) runs the Express server with Vite middleware on port 5000.
+
+The legacy `main`-branch data migration is disabled by default. It only processes records explicitly marked with `branchId: "main"` and requires `ALLOW_MAIN_BRANCH_DATA_MIGRATION=true`; review the target branch and back up the database before enabling it.
 
 **Security note:** Imported `.replit` settings contain credential-like values as plain text. Before publishing, move credentials to Replit Secrets and rotate values that may have been exposed.
 
