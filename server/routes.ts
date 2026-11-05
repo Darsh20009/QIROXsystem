@@ -46,6 +46,10 @@ import {
   roleCanAccess,
 } from "./data-entry-policy";
 
+// Hash phone-login codes with a server-only key so a database snapshot cannot
+// be used to brute-force the six-digit value offline.
+const phoneLoginOtpHmacKey = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+
 // ── Rate limiters ────────────────────────────────────────────────
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -19438,16 +19442,17 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       // Expire previous login OTPs for this user
       await (PhoneVerifyOtpModel as any).updateMany(
         { userId: dbUser._id, verified: false, purpose: "login" },
-        { expiresAt: new Date() }
+        { $set: { expiresAt: new Date() }, $unset: { otp: 1, otpHash: 1 } }
       );
       const otp = genOtp();
       const token = genPhoneToken();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      const otpHash = crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${token}:${otp}`).digest("hex");
       await (PhoneVerifyOtpModel as any).create({
         userId: dbUser._id,
         phone: normPhone,
         token,
-        otp,
+        otpHash,
         method,
         expiresAt,
         verified: false,
@@ -19462,17 +19467,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         const waSent = await _waOtp.sendOTP(waPhone, otp, clientName).then(() => true).catch(() => false);
 
         if (!waSent) {
-          // WhatsApp not connected — fall back to email alert for the admin to send manually
-          const { sendEmail, baseTemplate } = await import("./email");
-          const waMsg = encodeURIComponent(`رمز دخولك إلى منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
-          const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
-          sendEmail("youssefd.business@gmail.com", "Youssef",
-            `🔑 طلب دخول بالجوال — ${clientName} (${normPhone})`,
-            baseTemplate(`<p>العميل <strong>${clientName}</strong> يريد الدخول عبر رقم <strong dir="ltr">${normPhone}</strong></p>
-            <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
-            <p style="color:#e53e3e;">⚠️ واتساب غير متصل — الرجاء الإرسال يدوياً:</p>
-            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
-          ).catch(() => {});
+          await (PhoneVerifyOtpModel as any).deleteOne({ token });
+          return res.status(503).json({ error: "تعذر إرسال الرمز عبر واتساب. تحقق من اتصال واتساب ثم حاول مجدداً." });
         }
       }
       return res.json({ sent: true, expiresAt, phone: normPhone });
@@ -19484,20 +19480,43 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { phone, otp } = req.body;
       if (!phone || !otp) return res.status(400).json({ error: "phone و otp مطلوبان" });
+      if (!/^\d{6}$/.test(String(otp).trim())) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
       const normPhone = normalisePhone(String(phone).trim());
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
-      const record = await (PhoneVerifyOtpModel as any).findOne({
+      const record = await (PhoneVerifyOtpModel as any).findOneAndUpdate({
         phone: normPhone,
-        otp: String(otp).trim(),
         verified: false,
         purpose: "login",
         expiresAt: { $gt: new Date() },
-      });
+        $expr: {
+          $lt: [
+            { $ifNull: ["$attempts", 0] },
+            { $ifNull: ["$maxAttempts", 5] },
+          ],
+        },
+      }, { $inc: { attempts: 1 } }, { new: true }).select("+otpHash");
       if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
-      record.verified = true;
-      await record.save();
+      const submittedOtp = String(otp).trim();
+      const expectedHash = record.otpHash || (record.otp ? crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${record.token}:${record.otp}`).digest("hex") : "");
+      const submittedHash = crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${record.token}:${submittedOtp}`).digest("hex");
+      const expected = Buffer.from(expectedHash);
+      const submitted = Buffer.from(submittedHash);
+      if (expected.length !== submitted.length || !crypto.timingSafeEqual(expected, submitted)) {
+        return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
+      }
+      const consumed = await (PhoneVerifyOtpModel as any).findOneAndUpdate(
+        { _id: record._id, verified: false, expiresAt: { $gt: new Date() } },
+        { $set: { verified: true }, $unset: { otp: 1, otpHash: 1 } },
+        { new: true },
+      );
+      if (!consumed) return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
       const dbUser = await (UserModel as any).findById(record.userId);
       if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const { methods } = await getEnabled2FAMethods(String(dbUser._id));
+      if (methods.length > 0) {
+        const challenge = await create2FAChallenge(dbUser, methods, "password");
+        return res.json({ success: false, requires2FA: true, methods, ...challenge });
+      }
       return new Promise<void>((resolve) => {
         req.logIn(dbUser, (err) => {
           if (err) { res.status(500).json({ error: "خطأ في تسجيل الدخول" }); return resolve(); }

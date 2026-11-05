@@ -849,9 +849,9 @@ export default function Login() {
         return;
       }
       if (!r.ok || data.error) { toast({ title: data.error || "حدث خطأ، حاول مرة أخرى", variant: "destructive" }); return; }
-      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      const expiry = new Date(Date.now() + 10 * 60 * 1000);
       setPhoneLoginExpiry(expiry);
-      setPhoneLoginSecsLeft(900);
+      setPhoneLoginSecsLeft(600);
       setPhoneLoginStep("otp");
     } catch {
       toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
@@ -868,6 +868,19 @@ export default function Login() {
         body: JSON.stringify({ phone: phoneLoginPhone, otp: phoneLoginOtp }),
       });
       const data = await r.json();
+      if (data.requires2FA && data.tempToken) {
+        const methods = data.methods || [];
+        setTwoFA({ tempToken: data.tempToken, methods });
+        setTwoFAMethod(methods[0] || "");
+        setTwoFACode("");
+        setTwoFAPassphrase("");
+        setTwoFAError("");
+        setEmailOtpSent(false);
+        setWhatsappOtpSent(false);
+        setTwoFAExpiresAt(Number(data.expiresAt) || Date.now() + 10 * 60 * 1000);
+        setTwoFASecondsLeft(Math.max(0, Math.floor(((Number(data.expiresAt) || Date.now() + 10 * 60 * 1000) - Date.now()) / 1000)));
+        return;
+      }
       if (data.error || !data.success) {
         toast({ title: data.error || "الرمز غير صحيح أو انتهت صلاحيته", variant: "destructive" });
         return;
