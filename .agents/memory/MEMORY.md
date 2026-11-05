@@ -63,3 +63,4 @@
 - [Workspace runtime logs](workspace-runtime-logs.md) — Open Logs immediately for long-running starts and retain Shell/build/install output after the process exits.
 - [QIROX mailbox credentials](qirox-mailbox-credentials.md) — Secrets seed mailboxes, but individual mailbox passwords must persist and never be overwritten on startup.
 - [Safe Git snapshot uploads](safe-git-snapshot-uploads.md) — For divergent histories or secret-bearing local files, use a scrubbed temporary index; do not orphan-switch the active worktree.
+- [Phone login OTP safety](phone-login-otp-safety.md) — WhatsApp OTP delivery must fail closed; never relay live login codes to admins, and enforce per-user 2FA after the code.
