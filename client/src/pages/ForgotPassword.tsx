@@ -1,424 +1,451 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PhoneInput } from "@/components/phone-input";
-import { Mail, Phone, User, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
-import clunyLogoStaff from "@assets/cluny-logo-customer.png";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslate } from "@/lib/useTranslate";
+import { Loader2, Mail, KeyRound, ShieldCheck, ArrowLeft, Eye, EyeOff, CheckCircle2, RefreshCw, AlertCircle } from "lucide-react";
+import { Link } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+const qiroxLogoPath = "/qirox-icon-nobg.png";
+import { useI18n } from "@/lib/i18n";
 
-type Step =
-  | "choice"
-  | "email" | "phone" | "password"
-  | "phone-only" | "name" | "phone-password";
+type Step = "email" | "otp" | "reset" | "done";
 
 export default function ForgotPassword() {
-  const [, navigate] = useLocation();
   const { toast } = useToast();
-  const tc = useTranslate();
-
-  const [step, setStep] = useState<Step>("choice");
-
+  const { dir } = useI18n();
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [emailPhone, setEmailPhone] = useState("");
-  const [emailPassword, setEmailPassword] = useState("");
-  const [emailConfirm, setEmailConfirm] = useState("");
-  const [verifiedEmail, setVerifiedEmail] = useState("");
-
-  const [phoneOnly, setPhoneOnly] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [phonePassword, setPhonePassword] = useState("");
-  const [phoneConfirm, setPhoneConfirm] = useState("");
-  const [verifiedPhone, setVerifiedPhone] = useState("");
-
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendCount, setResendCount] = useState(0);
+  const [emailError, setEmailError] = useState("");
 
-  useEffect(() => {
-    document.title = tc("نسيت كلمة المرور - CLUNY CAFE | إعادة تعيين", "Forgot Password - CLUNY CAFE | Reset");
-  }, [tc]);
+  const otpCode = otp.join("");
 
-  const err = (msg: string) => toast({ title: tc("خطأ", "Error"), description: msg, variant: "destructive" });
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return err(tc("البريد الإلكتروني غير صحيح", "Invalid email address"));
+  async function handleSendOtp(e?: React.FormEvent) {
+    e?.preventDefault();
+    setEmailError("");
+    if (!email.trim() || !email.includes("@")) {
+      setEmailError("أدخل بريداً إلكترونياً صالحاً");
+      return;
     }
     setLoading(true);
     try {
-      const res = await apiRequest("POST", "/api/customers/check-email", { email });
-      const data = await res.json();
-      if (data.exists) {
-        setVerifiedEmail(email);
-        setStep("phone");
-      } else {
-        err(tc("البريد غير مسجل لدينا", "Email not registered"));
-      }
-    } catch (e: any) {
-      err(e.message || tc("حدث خطأ", "An error occurred"));
-    } finally { setLoading(false); }
-  };
-
-  const handleEmailPhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = emailPhone.trim().replace(/\s/g, "");
-    if (!/^5\d{8}$/.test(clean)) {
-      return err(tc("رقم الجوال يجب أن يبدأ بـ 5 (9 أرقام)", "Phone must start with 5 (9 digits)"));
-    }
-    setLoading(true);
-    try {
-      const res = await apiRequest("POST", "/api/customers/verify-phone-email", { email: verifiedEmail, phone: clean });
-      const data = await res.json();
-      if (data.valid) {
-        setStep("password");
-      } else {
-        err(tc("رقم الجوال غير مطابق للبريد", "Phone does not match the email"));
-      }
-    } catch (e: any) {
-      err(e.message || tc("حدث خطأ", "An error occurred"));
-    } finally { setLoading(false); }
-  };
-
-  const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (emailPassword.length < 4) return err(tc("كلمة المرور 4 أحرف على الأقل", "Password must be at least 4 characters"));
-    if (emailPassword !== emailConfirm) return err(tc("كلمتا المرور غير متطابقتان", "Passwords do not match"));
-    setLoading(true);
-    const clean = emailPhone.trim().replace(/\s/g, "");
-    try {
-      await apiRequest("POST", "/api/customers/reset-password-direct", {
-        email: verifiedEmail, phone: clean, newPassword: emailPassword,
+      const r = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
       });
-      toast({ title: tc("تم بنجاح!", "Success!"), description: tc("تم تغيير كلمة المرور. يمكنك تسجيل الدخول الآن", "Password changed. You can now log in") });
-      setTimeout(() => navigate("/auth"), 1500);
-    } catch (e: any) {
-      err(e.message || tc("حدث خطأ", "An error occurred"));
-    } finally { setLoading(false); }
-  };
-
-  const handlePhoneOnlySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = phoneOnly.trim().replace(/\s/g, "");
-    if (!/^5\d{8}$/.test(clean)) {
-      return err(tc("رقم الجوال يجب أن يبدأ بـ 5 (9 أرقام)", "Phone must start with 5 (9 digits)"));
-    }
-    setVerifiedPhone(clean);
-    setStep("name");
-  };
-
-  const handleNameSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName.trim()) {
-      return err(tc("يرجى إدخال الاسم", "Please enter your name"));
-    }
-    setLoading(true);
-    try {
-      const res = await apiRequest("POST", "/api/customers/verify-phone-name", {
-        phone: verifiedPhone, name: customerName.trim(),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        setStep("phone-password");
-        toast({ title: tc("تم التحقق", "Verified"), description: tc("الآن أدخل كلمة المرور الجديدة", "Now enter your new password") });
-      } else {
-        err(tc("رقم الجوال أو الاسم غير صحيح", "Phone number or name is incorrect"));
+      const data = await r.json();
+      if (r.status === 404) {
+        setEmailError("لا يوجد حساب مرتبط بهذا البريد الإلكتروني");
+        return;
       }
-    } catch (e: any) {
-      err(e.message || tc("حدث خطأ", "An error occurred"));
-    } finally { setLoading(false); }
-  };
+      if (!r.ok) throw new Error(data.error || "حدث خطأ");
+      setStep("otp");
+      setResendCount(c => c + 1);
+      if (data.emailSent === false) {
+        toast({
+          title: "تم إنشاء الرمز",
+          description: "تعذّر إرسال البريد الإلكتروني. استخدم زر عرض الرمز (وضع التطوير) للمتابعة.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: resendCount > 0 ? "تم إعادة إرسال الرمز" : "تم إرسال رمز التحقق",
+          description: "راجع بريدك الإلكتروني. قد يصل في مجلد الـ Spam.",
+        });
+      }
+    } catch (err: any) {
+      toast({ title: err.message || "حدث خطأ في الإرسال", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const handlePhonePasswordSubmit = async (e: React.FormEvent) => {
+  async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (phonePassword.length < 4) return err(tc("كلمة المرور 4 أحرف على الأقل", "Password must be at least 4 characters"));
-    if (phonePassword !== phoneConfirm) return err(tc("كلمتا المرور غير متطابقتان", "Passwords do not match"));
+    if (otpCode.length !== 6) return;
     setLoading(true);
     try {
-      await apiRequest("POST", "/api/customers/reset-password-by-phone-name", {
-        phone: verifiedPhone, name: customerName.trim(), newPassword: phonePassword,
+      const r = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), code: otpCode }),
       });
-      toast({ title: tc("تم بنجاح!", "Success!"), description: tc("تم تغيير كلمة المرور. يمكنك تسجيل الدخول الآن", "Password changed. You can now log in") });
-      setTimeout(() => navigate("/auth"), 1500);
-    } catch (e: any) {
-      err(e.message || tc("حدث خطأ", "An error occurred"));
-    } finally { setLoading(false); }
-  };
+      const d = await r.json();
+      if (!r.ok || !d.valid) throw new Error(d.error || "رمز غير صحيح أو منتهي الصلاحية");
+      setStep("reset");
+    } catch (err: any) {
+      toast({ title: err.message || "رمز غير صحيح", variant: "destructive" });
+      setOtp(["", "", "", "", "", ""]);
+      document.getElementById("otp-0")?.focus();
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const titles: Record<Step, string> = {
-    choice: tc("نسيت كلمة المرور؟", "Forgot Password?"),
-    email: tc("استرداد بالبريد الإلكتروني", "Recover via Email"),
-    phone: tc("تحقق من رقم الجوال", "Verify Phone Number"),
-    password: tc("كلمة المرور الجديدة", "New Password"),
-    "phone-only": tc("استرداد برقم الجوال والاسم", "Recover via Phone & Name"),
-    name: tc("تحقق من هويتك", "Verify Your Identity"),
-    "phone-password": tc("كلمة المرور الجديدة", "New Password"),
-  };
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) return toast({ title: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+    if (newPassword !== confirmPassword) return toast({ title: "كلمتا المرور غير متطابقتين", variant: "destructive" });
+    setLoading(true);
+    try {
+      const r = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), code: otpCode, newPassword }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "خطأ في التغيير");
+      setStep("done");
+    } catch (err: any) {
+      toast({ title: err.message || "حدث خطأ", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const descs: Record<Step, string> = {
-    choice: tc("اختر طريقة الاسترداد", "Choose a recovery method"),
-    email: tc("أدخل بريدك الإلكتروني المسجل", "Enter your registered email"),
-    phone: tc("أدخل رقم الجوال المرتبط بالبريد", "Enter the phone linked to the email"),
-    password: tc("أدخل كلمة المرور الجديدة وتأكيدها", "Enter and confirm your new password"),
-    "phone-only": tc("أدخل رقم جوالك المسجل", "Enter your registered phone number"),
-    name: tc("أدخل الاسم المسجل في حسابك", "Enter the name registered in your account"),
-    "phone-password": tc("أدخل كلمة المرور الجديدة وتأكيدها", "Enter and confirm your new password"),
-  };
+  function handleOtpInput(idx: number, val: string) {
+    const digit = val.replace(/\D/g, "").slice(-1);
+    const newOtp = [...otp];
+    newOtp[idx] = digit;
+    setOtp(newOtp);
+    if (digit && idx < 5) {
+      document.getElementById(`otp-${idx + 1}`)?.focus();
+    }
+  }
 
-  const canGoBack = step !== "choice";
-  const handleBack = () => {
-    if (step === "email" || step === "phone-only") setStep("choice");
-    else if (step === "phone") setStep("email");
-    else if (step === "password") setStep("phone");
-    else if (step === "name") setStep("phone-only");
-    else if (step === "phone-password") setStep("name");
-  };
+  function handleOtpPaste(e: React.ClipboardEvent) {
+    e.preventDefault();
+    const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (paste.length > 0) {
+      const newOtp = paste.split("").concat(Array(6).fill("")).slice(0, 6);
+      setOtp(newOtp);
+      document.getElementById(`otp-${Math.min(paste.length - 1, 5)}`)?.focus();
+    }
+  }
 
-  const SubmitButton = ({ label, testId }: { label: string; testId: string }) => (
-    <Button
-      type="submit"
-      disabled={loading}
-      className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all duration-300"
-      data-testid={testId}
-    >
-      {loading ? (
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-          <span>{tc("جارٍ التحقق...", "Verifying...")}</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <span>{label}</span>
-          <ArrowRight className="w-5 h-5" />
-        </div>
-      )}
-    </Button>
-  );
+  function handleOtpKeyDown(idx: number, e: React.KeyboardEvent) {
+    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
+      document.getElementById(`otp-${idx - 1}`)?.focus();
+    }
+  }
+
+  const steps = [
+    { key: "email", icon: Mail, label: "البريد" },
+    { key: "otp",   icon: KeyRound, label: "التحقق" },
+    { key: "reset", icon: ShieldCheck, label: "كلمة المرور" },
+  ];
+  const currentStepIdx = steps.findIndex(s => s.key === step);
+
+  const pwStrength = newPassword.length === 0 ? 0 : newPassword.length < 6 ? 1 : newPassword.length < 10 ? 2 : 3;
+  const pwStrengthColors = ["", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black/[0.08] dark:bg-white/[0.1]", "bg-black dark:bg-white"];
+  const pwStrengthLabels = ["", "ضعيفة", "متوسطة", "قوية"];
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "linear-gradient(135deg, hsl(165, 15%, 97%) 0%, hsl(165, 12%, 88%) 50%, hsl(165, 15%, 97%) 100%)" }}
-     
-    >
-      <Card className="w-full max-w-md border-primary/30 bg-card backdrop-blur shadow-xl">
-        <CardHeader className="space-y-3 text-center pb-4">
-          <div className="flex justify-center mb-1">
-            <img src={clunyLogoStaff} alt="CLUNY" className="h-12 object-contain" />
+    <div className="relative overflow-hidden min-h-screen flex bg-white" dir={dir}>
+      <PageGraphics variant="auth" />
+      {/* Decorative left panel */}
+      <div className="hidden lg:flex w-[40%] bg-black flex-col justify-center items-center p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+        <div className="relative z-10 text-center">
+          <Link href="/">
+            <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-10 mx-auto mb-12 w-auto object-contain invert opacity-90 hover:opacity-100 transition cursor-pointer" />
+          </Link>
+          <div className="w-20 h-20 bg-white/[0.07] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/[0.08]">
+            <ShieldCheck className="w-10 h-10 text-white/60" />
           </div>
-          <CardTitle className="text-2xl font-bold text-foreground">{titles[step]}</CardTitle>
-          <CardDescription className="text-muted-foreground">{descs[step]}</CardDescription>
-        </CardHeader>
+          <h2 className="text-3xl font-black text-white font-heading mb-4">
+            حماية حسابك<br /><span className="text-white/35">أولويتنا</span>
+          </h2>
+          <p className="text-white/35 text-sm leading-relaxed max-w-xs mx-auto">
+            نستخدم رمز تحقق أحادي الاستخدام (OTP) لضمان أن استعادة الحساب تتم بأمان تام
+          </p>
+          <div className="mt-10 grid grid-cols-3 gap-3">
+            {[
+              { label: "رمز سري", desc: "6 أرقام" },
+              { label: "صلاحية", desc: "10 دقائق" },
+              { label: "استخدام", desc: "مرة واحدة" },
+            ].map(s => (
+              <div key={s.label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 text-center">
+                <p className="text-white text-xs font-bold">{s.label}</p>
+                <p className="text-white/35 text-[10px] mt-0.5">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-        <CardContent className="space-y-5">
+      {/* Right content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        {/* Mobile logo */}
+        <div className="lg:hidden mb-8 text-center">
+          <Link href="/">
+            <div className="inline-block hover:opacity-85 transition-opacity">
+              <img src="/qirox-logo-nobg.png" alt="QIROX" className="h-7 w-auto object-contain dark:invert" />
+            </div>
+          </Link>
+        </div>
 
-          {step === "choice" && (
-            <div className="space-y-3">
-              <button
-                onClick={() => setStep("email")}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group text-right"
-                data-testid="button-choice-email"
-              >
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <Mail className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground">{tc("لدي بريد إلكتروني", "I have an email")}</p>
-                  <p className="text-sm text-muted-foreground">{tc("استرداد عبر البريد الإلكتروني ورقم الجوال", "Recover via email and phone number")}</p>
-                </div>
-                <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </button>
+        <div className="w-full max-w-md">
+          <AnimatePresence mode="wait">
 
-              <button
-                onClick={() => setStep("phone-only")}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all group text-right"
-                data-testid="button-choice-phone"
-              >
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <Phone className="w-5 h-5 text-primary" />
+            {/* ── STEP: EMAIL ── */}
+            {step === "email" && (
+              <motion.div key="email" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="mb-8">
+                  <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-5">
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-black font-heading text-black mb-1.5">استعادة كلمة المرور</h1>
+                  <p className="text-black/40 text-sm">سنرسل رمز تحقق على بريدك الإلكتروني لإعادة تعيين كلمة المرور</p>
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground">{tc("ليس لدي بريد إلكتروني", "I don't have an email")}</p>
-                  <p className="text-sm text-muted-foreground">{tc("استرداد عبر رقم الجوال واسم الحساب", "Recover via phone number and account name")}</p>
+
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">البريد الإلكتروني</label>
+                    <div className="relative">
+                      <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={e => { setEmail(e.target.value); setEmailError(""); }}
+                        className={`w-full h-12 pr-10 pl-4 rounded-xl border text-sm outline-none transition-colors ${emailError ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.08] bg-black/[0.02] focus:border-black/25"}`}
+                        dir="ltr"
+                        required
+                        data-testid="input-forgot-email"
+                      />
+                    </div>
+                    {emailError && (
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {emailError}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button type="submit" className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm" disabled={loading} data-testid="button-send-otp">
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin ml-2" /> جاري الإرسال...</> : <><Mail className="w-4 h-4 ml-2" /> إرسال رمز التحقق</>}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <Link href="/login" className="text-xs text-black/35 hover:text-black/60 transition-colors flex items-center justify-center gap-1.5">
+                    <ArrowLeft className="w-3.5 h-3.5" /> العودة لتسجيل الدخول
+                  </Link>
                 </div>
-                <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </button>
+              </motion.div>
+            )}
+
+            {/* ── STEP: OTP ── */}
+            {step === "otp" && (
+              <motion.div key="otp" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="mb-8">
+                  <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-5">
+                    <KeyRound className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-black font-heading text-black mb-1.5">أدخل رمز التحقق</h1>
+                  <p className="text-black/40 text-sm">
+                    أرسلنا رمزاً مكوّناً من 6 أرقام إلى{" "}
+                    <span className="text-black font-semibold">{email}</span>
+                  </p>
+                  <p className="text-black/25 text-xs mt-1">تحقق من مجلد الـ Spam إذا لم يصل خلال دقيقة</p>
+                </div>
+
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  {/* OTP Boxes */}
+                  <div>
+                    <label className="text-xs font-semibold text-black/50 block mb-3">رمز التحقق (6 أرقام)</label>
+                    <div className="flex gap-2 justify-center" dir="ltr" onPaste={handleOtpPaste}>
+                      {otp.map((digit, i) => (
+                        <input
+                          key={i}
+                          id={`otp-${i}`}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={e => handleOtpInput(i, e.target.value)}
+                          onKeyDown={e => handleOtpKeyDown(i, e)}
+                          className={`w-12 h-14 text-center text-2xl font-black border-2 rounded-2xl outline-none transition-all select-none ${
+                            digit
+                              ? "border-black bg-black text-white shadow-lg shadow-black/20 scale-105"
+                              : "border-black/[0.10] bg-black/[0.01] text-black focus:border-black/40 focus:bg-black/[0.02]"
+                          }`}
+                          data-testid={`otp-digit-${i}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-center text-[10px] text-black/25 mt-2">يمكنك لصق الرمز مباشرة</p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
+                    disabled={loading || otpCode.length !== 6}
+                    data-testid="button-verify-otp"
+                  >
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin ml-2" /> جاري التحقق...</> : <><KeyRound className="w-4 h-4 ml-2" /> تأكيد الرمز</>}
+                  </Button>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSendOtp()}
+                      disabled={loading}
+                      className="w-full text-sm text-black/40 hover:text-black/70 transition-colors flex items-center justify-center gap-1.5 py-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      لم تستلم الرمز؟ إعادة إرسال
+                    </button>
+
+                  </div>
+
+                </form>
+              </motion.div>
+            )}
+
+            {/* ── STEP: RESET ── */}
+            {step === "reset" && (
+              <motion.div key="reset" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="mb-8">
+                  <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-5">
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-black font-heading text-black mb-1.5">كلمة مرور جديدة</h1>
+                  <p className="text-black/40 text-sm">اختر كلمة مرور قوية — 6 أحرف على الأقل</p>
+                </div>
+
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">كلمة المرور الجديدة</label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                      <input
+                        type={showPw ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className="w-full h-12 pr-10 pl-10 border border-black/[0.08] bg-black/[0.02] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
+                        required
+                        minLength={6}
+                        data-testid="input-new-password"
+                      />
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/20 hover:text-black/50 transition-colors">
+                        {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {newPassword.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex gap-1">
+                          {[1, 2, 3].map(level => (
+                            <div key={level} className={`h-1 flex-1 rounded-full transition-all ${pwStrength >= level ? pwStrengthColors[pwStrength] : "bg-black/[0.06]"}`} />
+                          ))}
+                        </div>
+                        <p className={`text-[10px] ${pwStrength === 1 ? "text-black dark:text-white" : pwStrength === 2 ? "text-black dark:text-white" : "text-black dark:text-white"}`}>
+                          قوة كلمة المرور: {pwStrengthLabels[pwStrength]}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">تأكيد كلمة المرور</label>
+                    <div className="relative">
+                      <ShieldCheck className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                      <input
+                        type={showConfirmPw ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        className={`w-full h-12 pr-10 pl-10 border rounded-xl text-sm outline-none transition-colors ${
+                          confirmPassword && newPassword !== confirmPassword
+                            ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] focus:border-black/15 dark:border-white/15"
+                            : confirmPassword && newPassword === confirmPassword
+                            ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] focus:border-black/15 dark:border-white/15"
+                            : "border-black/[0.08] bg-black/[0.02] focus:border-black/25"
+                        }`}
+                        required
+                        data-testid="input-confirm-password"
+                      />
+                      <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/20 hover:text-black/50 transition-colors">
+                        {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {confirmPassword && newPassword !== confirmPassword && (
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> كلمتا المرور غير متطابقتين
+                      </p>
+                    )}
+                    {confirmPassword && newPassword === confirmPassword && newPassword.length >= 6 && (
+                      <p className="mt-1.5 text-xs text-black dark:text-white flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> كلمتا المرور متطابقتان
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-2"
+                    disabled={loading || newPassword !== confirmPassword || newPassword.length < 6}
+                    data-testid="button-reset-password"
+                  >
+                    {loading
+                      ? <><Loader2 className="w-4 h-4 animate-spin ml-2" /> جاري الحفظ...</>
+                      : <><ShieldCheck className="w-4 h-4 ml-2" /> تغيير كلمة المرور</>
+                    }
+                  </Button>
+                </form>
+              </motion.div>
+            )}
+
+            {/* ── STEP: DONE ── */}
+            {step === "done" && (
+              <motion.div key="done" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="text-center">
+                <div className="w-20 h-20 bg-black dark:bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/25">
+                  <CheckCircle2 className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-black font-heading text-black mb-2">تم بنجاح!</h2>
+                <p className="text-black/40 text-sm mb-8 max-w-xs mx-auto">
+                  تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.
+                </p>
+                <Link href="/login">
+                  <Button className="bg-black hover:bg-black/80 text-white font-bold rounded-xl px-10 h-12" data-testid="button-go-login">
+                    تسجيل الدخول
+                  </Button>
+                </Link>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+
+          {/* Step indicator */}
+          {step !== "done" && (
+            <div className="mt-10 flex items-center justify-center gap-3">
+              {steps.map((s, i) => (
+                <div key={s.key} className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all text-[10px] font-bold ${
+                    i === currentStepIdx ? "bg-black text-white shadow-md" :
+                    i < currentStepIdx ? "bg-black dark:bg-white text-white" :
+                    "bg-black/[0.06] text-black/30"
+                  }`}>
+                    {i < currentStepIdx ? "✓" : i + 1}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`w-8 h-px transition-all ${i < currentStepIdx ? "bg-black/[0.08] dark:bg-white/[0.1]" : "bg-black/[0.08]"}`} />
+                  )}
+                </div>
+              ))}
             </div>
           )}
-
-          {step === "email" && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2 text-foreground">
-                  <Mail className="w-4 h-4" /> {tc("البريد الإلكتروني", "Email")}
-                </Label>
-                <Input
-                  id="email" type="email" dir="ltr"
-                  placeholder="example@email.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="bg-secondary border-border focus:border-primary focus:ring-primary/30"
-                  data-testid="input-email" required
-                />
-              </div>
-              <SubmitButton label={tc("التالي", "Next")} testId="button-submit-email" />
-            </form>
-          )}
-
-          {step === "phone" && (
-            <form onSubmit={handleEmailPhoneSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="emailPhone" className="flex items-center gap-2 text-foreground">
-                  <Phone className="w-4 h-4" /> {tc("رقم الجوال", "Phone Number")}
-                </Label>
-                <PhoneInput
-                  id="emailPhone" value={emailPhone} onChange={(v) => setEmailPhone(v)}
-                  placeholder="5xxxxxxxx" data-testid="input-phone" required
-                />
-                <p className="text-xs text-muted-foreground">{tc("رقم الجوال المرتبط بالبريد المدخل", "The phone linked to the entered email")}</p>
-              </div>
-              <SubmitButton label={tc("تحقق", "Verify")} testId="button-submit-phone" />
-            </form>
-          )}
-
-          {step === "password" && (
-            <form onSubmit={handleEmailPasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">{tc("كلمة المرور الجديدة", "New Password")}</Label>
-                <div className="relative">
-                  <Input
-                    type={showPass ? "text" : "password"} placeholder={tc("أدخل كلمة المرور الجديدة", "Enter new password")}
-                    value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary pl-10"
-                    data-testid="input-new-password" required
-                  />
-                  <button type="button" onClick={() => setShowPass(!showPass)}
-                    className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground">
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">{tc("تأكيد كلمة المرور", "Confirm Password")}</Label>
-                <div className="relative">
-                  <Input
-                    type={showConfirm ? "text" : "password"} placeholder={tc("أعد إدخال كلمة المرور", "Re-enter password")}
-                    value={emailConfirm} onChange={(e) => setEmailConfirm(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary pl-10"
-                    data-testid="input-confirm-password" required
-                  />
-                  <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground">
-                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground">{tc("كلمة المرور يجب أن تكون 4 أحرف على الأقل", "Password must be at least 4 characters")}</p>
-              </div>
-              <SubmitButton label={tc("تغيير كلمة المرور", "Change Password")} testId="button-reset-password" />
-            </form>
-          )}
-
-          {step === "phone-only" && (
-            <form onSubmit={handlePhoneOnlySubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phoneOnly" className="flex items-center gap-2 text-foreground">
-                  <Phone className="w-4 h-4" /> {tc("رقم الجوال", "Phone Number")}
-                </Label>
-                <PhoneInput
-                  id="phoneOnly" value={phoneOnly} onChange={(v) => setPhoneOnly(v)}
-                  placeholder="5xxxxxxxx" data-testid="input-phone-only" required
-                />
-                <p className="text-xs text-muted-foreground">{tc("رقم الجوال المسجل في حسابك", "Phone number registered in your account")}</p>
-              </div>
-              <SubmitButton label={tc("التالي", "Next")} testId="button-submit-phone-only" />
-            </form>
-          )}
-
-          {step === "name" && (
-            <form onSubmit={handleNameSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerName" className="flex items-center gap-2 text-foreground">
-                  <User className="w-4 h-4" /> {tc("اسم الحساب", "Account Name")}
-                </Label>
-                <Input
-                  id="customerName"
-                  placeholder={tc("أدخل اسمك كما هو مسجل في الحساب", "Enter your name as registered")}
-                  value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                  className="bg-secondary border-border focus:border-primary focus:ring-primary/30"
-                  data-testid="input-name" required
-                />
-                <p className="text-xs text-muted-foreground">
-                  {tc("الاسم الذي أدخلته عند إنشاء حسابك", "The name you entered when creating your account")}
-                </p>
-              </div>
-              <SubmitButton label={tc("تحقق من الهوية", "Verify Identity")} testId="button-submit-name" />
-            </form>
-          )}
-
-          {step === "phone-password" && (
-            <form onSubmit={handlePhonePasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">{tc("كلمة المرور الجديدة", "New Password")}</Label>
-                <div className="relative">
-                  <Input
-                    type={showPass ? "text" : "password"} placeholder={tc("أدخل كلمة المرور الجديدة", "Enter new password")}
-                    value={phonePassword} onChange={(e) => setPhonePassword(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary pl-10"
-                    data-testid="input-phone-new-password" required
-                  />
-                  <button type="button" onClick={() => setShowPass(!showPass)}
-                    className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground">
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">{tc("تأكيد كلمة المرور", "Confirm Password")}</Label>
-                <div className="relative">
-                  <Input
-                    type={showConfirm ? "text" : "password"} placeholder={tc("أعد إدخال كلمة المرور", "Re-enter password")}
-                    value={phoneConfirm} onChange={(e) => setPhoneConfirm(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary pl-10"
-                    data-testid="input-phone-confirm-password" required
-                  />
-                  <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground">
-                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground">{tc("كلمة المرور يجب أن تكون 4 أحرف على الأقل", "Password must be at least 4 characters")}</p>
-              </div>
-              <SubmitButton label={tc("تغيير كلمة المرور", "Change Password")} testId="button-phone-reset-password" />
-            </form>
-          )}
-
-          <div className="pt-2 flex items-center justify-between">
-            {canGoBack ? (
-              <button
-                type="button" onClick={handleBack}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-back"
-              >
-                <ArrowRight className="w-4 h-4" />
-                {tc("رجوع", "Back")}
-              </button>
-            ) : (
-              <span />
-            )}
-            <button
-              type="button" onClick={() => navigate("/auth")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
-              data-testid="link-back-to-login"
-            >
-              {tc("تسجيل الدخول", "Login")}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

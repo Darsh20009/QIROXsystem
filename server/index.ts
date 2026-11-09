@@ -1,841 +1,894 @@
-// Polyfill Web Crypto API for MongoDB driver compatibility (must be first)
-import { webcrypto } from "node:crypto";
-if (!globalThis.crypto) {
-  (globalThis as any).crypto = webcrypto;
-}
-
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
-import MongoStore from "connect-mongo";
 import compression from "compression";
-import fs from "fs";
-import path from "path";
-import { cache } from "./cache";
-import { queue } from "./queue";
-import { fileURLToPath } from "url";
-import mongoose from "mongoose";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { registerQiroxRoutes } from "./qirox-admin";
-import { storage } from "./storage";
-import { initWebPush } from "./push-service";
-import helmet from "helmet";
+import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
-import hpp from "hpp";
-import {
-  initSecondaryConnection,
-  getDbStatus,
-  hasSecondaryDb,
-  isUsingSecondaryDb,
-  getIsControlledSwitch,
-} from "./db-manager";
+import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
+import { registerAiRoutes } from "./ai";
+import { serveStatic } from "./static";
+import { createServer } from "http";
+import { connectToDatabase } from "./db";
+import { WebSocketServer } from "ws";
+import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, forceSetRoomHost, setActivePoll, getActivePoll, getAttendanceLog, addLockPending, removeLockPending, getLockPending } from "./ws";
+import { initCronJobs } from "./cron";
+import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
+import { registerSandboxRoutes } from "./sandbox-routes";
+import { registerDeploymentCloudRoutes, registerSubdomainMiddleware } from "./deployment-cloud";
+import { registerCrmRoutes } from "./domains/crm";
+import { registerCrmV2Routes } from "./domains/crm-v2";
+import { registerProposalV2Routes } from "./domains/proposal-v2";
+import { registerApiDocsRoutes } from "./docs";
+import { registerEmailMarketingRoutes, runDailyBulkCampaign, runWeeklyInterestedCollection } from "./email-marketing";
+import mongoose from "mongoose";
+import { cache } from "./cache";
+import { connManager } from "./connection-manager";
+import { mkdirSync, existsSync } from "fs";
+import path from "path";
+// ── Sprint 002: Infrastructure layer (additive — zero downtime) ───────────────
+import { initInfrastructure } from "./infrastructure";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ── Beta Readiness: structured error capture ─────────────────────────────────
+// Routes every unhandled error through the existing ConsoleLogger (registered
+// in the DI container by initInfrastructure) when available, so production
+// gets a single structured JSON error stream instead of ad-hoc console.error
+// calls. Falls back to console.error before the container is ready (e.g.
+// errors during the earliest boot steps) — behaviour is unchanged in that
+// case, so this is purely additive.
+//
+// Optional Sentry-style capture: if SENTRY_DSN is set, the payload shape below
+// (message/error/context) is exactly what @sentry/node's captureException
+// expects, so wiring a real Sentry transport later is a one-line addition in
+// this function — no call sites need to change. Not wired today (no Sentry
+// package/DSN configured), left as a documented, additive-only next step in
+// the Beta Readiness report.
+// Populated once initInfrastructure() resolves (see below); undefined before
+// that point or if bootstrap failed — logErrorEvent falls back to console.error.
+let _structuredLogger: { error: (msg: string, opts?: any) => void } | undefined;
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  console.error("❌ ERROR: MONGODB_URI environment variable is not set");
-  process.exit(1);
-}
-
-// Track database connection status
-let isDbConnected = false;
-let isInitializing = false;
-let connectionRetries = 0;
-const MAX_RETRIES = 5;
-
-// Connect to MongoDB with robust error handling and retries
-async function connectDatabase() {
-  if (isInitializing) return;
-  isInitializing = true;
-  
-  const options = {
-    serverSelectionTimeoutMS: 8000,
-    socketTimeoutMS: 45000,
-    heartbeatFrequencyMS: 10000,
-    dbName: process.env.MONGODB_DATABASE,
-    // Atlas free/shared clusters have a 500-connection ceiling. Keep each
-    // app instance's replica-set pool small instead of opening hundreds.
-    maxPoolSize: 5,
-    minPoolSize: 0,
-    maxConnecting: 1,
-    waitQueueTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
-    maxIdleTimeMS: 60000,
-    compressors: ['zlib'] as any,
-  };
-
-  try {
-    console.log(`🔌 Attempting MongoDB connection (Attempt ${connectionRetries + 1})...`);
-    await mongoose.connect(MONGODB_URI!, options);
-    isDbConnected = true;
-    connectionRetries = 0;
-    console.log("✅ MongoDB connected successfully");
-    // Connect secondary DB in background (non-blocking)
-    initSecondaryConnection().catch(() => {});
-    // Avoid mutating the recovered production database from the Replit
-    // development preview while we verify its contents.
-    if (process.env.NODE_ENV === "production" || process.env.ALLOW_STARTUP_DATA_MUTATIONS === "true") {
-    // Drop old unique index on orderNumber (allows wrap-around counter at 1000)
-    try {
-      const { OrderModel } = await import("@shared/schema");
-      await OrderModel.collection.dropIndex("orderNumber_1").catch(() => {});
-      console.log("✅ Order number uniqueness migrated to allow counter wrap-around");
-    } catch (_) {}
-    // ── Connection warming: pre-fetch common collections to populate Atlas pool ──
-    // Without this, the first requests after restart hit a 3–6 s cold-start penalty.
-    setImmediate(async () => {
-      try {
-        const {
-          CoffeeItemModel, MenuCategoryModel, ProductAddonModel,
-          BusinessConfigModel,
-        } = await import("@shared/schema");
-        await Promise.all([
-          CoffeeItemModel.findOne({}).lean(),
-          MenuCategoryModel.findOne({}).lean(),
-          ProductAddonModel.findOne({}).lean(),
-          BusinessConfigModel.findOne({}).lean(),
-        ]);
-        console.log("✅ DB connection pool warmed — first requests will be fast");
-      } catch (_) {
-        // warming is best-effort, never block startup
-      }
-    });
-    // ── One-time migration: set tenantId on tables that don't have one ──
-    try {
-      const { TableModel } = await import("@shared/schema");
-      const tableMigration = await TableModel.updateMany(
-        { $or: [{ tenantId: { $exists: false } }, { tenantId: null }, { tenantId: "" }] },
-        { $set: { tenantId: 'demo-tenant' } }
-      );
-      if (tableMigration.modifiedCount > 0) {
-        console.log(`✅ Migration: Fixed tenantId on ${tableMigration.modifiedCount} tables`);
-      } else {
-        console.log("✅ All tables already have tenantId set");
-      }
-    } catch (err) {
-      console.error("Table tenantId migration error:", err);
-    }
-    // ── One-time migration: publish all products to all branches ──
-    // Ensures every product is visible in every branch by setting publishedBranches: ['*']
-    try {
-      const { CoffeeItemModel } = await import("@shared/schema");
-      const migrationResult = await CoffeeItemModel.updateMany(
-        { $or: [{ publishedBranches: { $exists: false } }, { publishedBranches: { $size: 0 } }, { publishedBranches: { $not: { $elemMatch: { $eq: '*' } } } }] },
-        [{ $set: { publishedBranches: ['*'] } }]
-      );
-      if (migrationResult.modifiedCount > 0) {
-        console.log(`✅ Migration: Published ${migrationResult.modifiedCount} products to all branches`);
-      } else {
-        console.log("✅ All products already published to all branches");
-      }
-    } catch (err) {
-      console.error("Product branch migration error:", err);
-    }
-    // Ensure admin/owner accounts exist and use the portal password
-    try {
-      const bcrypt = await import("bcryptjs");
-      const { v4: uuidv4 } = await import("uuid");
-      const { EmployeeModel } = await import("@shared/schema");
-      const ownerPass = process.env.PORTAL_DEFAULT_PASSWORD;
-      const adminPass = process.env.ADMIN_DEFAULT_PASSWORD;
-
-      // Sync admin password
-      if (adminPass) {
-        const adminPasswordHash = await bcrypt.hash(adminPass, 10);
-        const adminResult = await EmployeeModel.updateOne(
-          { username: "admin" },
-          { $set: { password: adminPasswordHash, isActivated: 1, isActive: 1 } }
-        );
-        if (adminResult.matchedCount > 0) {
-          console.log(`✅ Portal account 'admin' password synced`);
-        }
-      }
-
-      // Create or sync owner account
-      const ownerExists = await EmployeeModel.findOne({ username: "owner" });
-      if (!ownerExists && ownerPass) {
-        const ownerPasswordHash = await bcrypt.hash(ownerPass, 10);
-        await EmployeeModel.create({
-          id: uuidv4(),
-          tenantId: "demo-tenant",
-          username: "owner",
-          password: ownerPasswordHash,
-          fullName: "المالك",
-          role: "owner",
-          phone: "0000000001",
-          jobTitle: "المالك",
-          isActivated: 1,
-          isActive: 1,
-        });
-        console.log(`✅ Owner account created`);
-      } else if (ownerExists && ownerPass) {
-        const ownerPasswordHash = await bcrypt.hash(ownerPass, 10);
-        await EmployeeModel.updateOne({ username: "owner" }, { $set: { password: ownerPasswordHash, isActivated: 1, isActive: 1 } });
-        console.log(`✅ Portal account 'owner' password synced`);
-      }
-    } catch (err) { console.error("Owner sync error:", err); }
-    // Ensure demo-tenant has Infinity plan — all features unlocked
-    try {
-      const { SubscriptionConfigModel } = await import("./qirox-admin");
-      await SubscriptionConfigModel.findOneAndUpdate(
-        { tenantId: 'demo-tenant' },
-        {
-          $set: {
-            plan: 'infinity',
-            isActive: true,
-            maxBranches: 999,
-            maxEmployees: 9999,
-            maxProducts: 9999,
-            maxOrders: 999999,
-            customBranding: true,
-            apiAccess: true,
-            advancedAnalytics: true,
-            multiLanguage: true,
-            inventoryManagement: true,
-            recipeManagement: true,
-            accountingModule: true,
-            erpIntegration: true,
-            deliveryManagement: true,
-            loyaltyProgram: true,
-            giftCards: true,
-            tableManagement: true,
-            kitchenDisplay: true,
-            customerApp: true,
-            posSystem: true,
-            payrollManagement: true,
-            supplierManagement: true,
-            warehouseManagement: true,
-            zatcaCompliance: true,
-            supportPriority: 'dedicated',
-            activatedBy: 'system',
-            updatedAt: new Date(),
-          }
-        },
-        { upsert: true, new: true }
-      );
-      console.log("✅ Subscription: Infinity plan — all features unlocked");
-    } catch (_) {}
-    // Seed promotional discount code BRCAFE10 (10% off, shareable promo link)
-    // Hidden from customers by default — admin can toggle visibility from admin settings.
-    try {
-      const { DiscountCodeModel } = await import("@shared/schema");
-      await DiscountCodeModel.findOneAndUpdate(
-        { code: "BRCAFE10" },
-        {
-          $setOnInsert: {
-            code: "BRCAFE10",
-            discountPercentage: 10,
-            reason: "كوبون ترويجي 10% - رابط خاص",
-            employeeId: "system",
-            isActive: 1,
-            usageCount: 0,
-            visibleToCustomers: false,
-            createdAt: new Date(),
-          },
-        },
-        { upsert: true, new: true }
-      );
-      // One-time migration: hide previously auto-visible seeded code without
-      // overriding any subsequent manual change (marker prevents re-applying).
-      await DiscountCodeModel.updateOne(
-        { code: "BRCAFE10", _seedHiddenV1: { $exists: false } },
-        { $set: { visibleToCustomers: false, _seedHiddenV1: true } }
-      );
-      console.log("✅ Promo code BRCAFE10 (10% off) is ready (hidden by default)");
-    } catch (err) {
-      console.error("BRCAFE10 seed error:", err);
-    }
-    // Seed discount code TECH10 — خصم 10% للمستخدم عبر نقطة البيع
-    // Hidden from customers by default — admin can toggle visibility from admin settings.
-    try {
-      const { DiscountCodeModel } = await import("@shared/schema");
-      await DiscountCodeModel.findOneAndUpdate(
-        { code: "TECH10" },
-        {
-          $setOnInsert: {
-            code: "TECH10",
-            discountPercentage: 10,
-            reason: "خصم خاص 10%",
-            employeeId: "system",
-            isActive: 1,
-            usageCount: 0,
-            visibleToCustomers: false,
-            createdAt: new Date(),
-          },
-        },
-        { upsert: true, new: true }
-      );
-      // One-time migration: hide previously auto-visible seeded code without
-      // overriding any subsequent manual change (marker prevents re-applying).
-      await DiscountCodeModel.updateOne(
-        { code: "TECH10", _seedHiddenV1: { $exists: false } },
-        { $set: { visibleToCustomers: false, _seedHiddenV1: true } }
-      );
-      console.log("✅ Discount code TECH10 (خصم خاص 10%) is ready (hidden by default)");
-    } catch (err) {
-      console.error("TECH10 seed error:", err);
-    }
-    } else {
-      console.log("ℹ️ Skipping startup data migrations and seed writes in development.");
-    }
-  } catch (error) {
-    isDbConnected = false;
-    const err = error as Error & {
-      code?: string;
-      cause?: Error;
-    };
-
-    console.error("❌ MongoDB connection error:", {
-      name: err.name,
-      code: err.code,
-      message: err.message.replace(
-        /mongodb(\+srv)?:\/\/[^ ]+/gi,
-        "[REDACTED_URI]"
-      ),
-      causeName: err.cause?.name,
-      causeMessage: err.cause?.message?.replace(
-        /mongodb(\+srv)?:\/\/[^ ]+/gi,
-        "[REDACTED_URI]"
-      ),
-    });
-    
-    if (connectionRetries < MAX_RETRIES) {
-      connectionRetries++;
-      const delay = Math.min(1000 * Math.pow(2, connectionRetries), 30000);
-      console.log(`🔄 Retrying in ${delay / 1000}s...`);
-      setTimeout(() => {
-        isInitializing = false;
-        connectDatabase();
-      }, delay);
-    } else {
-      console.error("❌ Max retries reached. Database functionality will be unavailable.");
-    }
-  } finally {
-    isInitializing = false;
-  }
-}
-
-// Handle connection events
-mongoose.connection.on('disconnected', () => {
-  // Skip auto-reconnect if db-manager is performing a controlled DB switch
-  if (getIsControlledSwitch()) {
-    console.log('📡 MongoDB disconnected (controlled switch in progress — skipping auto-reconnect)');
+function logErrorEvent(message: string, err: any, context?: Record<string, unknown>): void {
+  if (_structuredLogger) {
+    _structuredLogger.error(message, { error: err, data: context });
     return;
   }
-  console.log('📡 MongoDB disconnected. Attempting to reconnect...');
-  isDbConnected = false;
-  connectDatabase();
+  console.error(`[${message}]`, err?.message || err, context ?? "");
+}
+
+process.on("unhandledRejection", (reason: any, promise) => {
+  logErrorEvent("UnhandledRejection", reason, { promise: String(promise) });
+});
+process.on("uncaughtException", (err: Error) => {
+  logErrorEvent("UncaughtException", err);
 });
 
-mongoose.connection.on('error', (err) => {
-  console.error('📡 MongoDB error:', err);
-  isDbConnected = false;
-});
-
-// ─── Process-level crash guards ──────────────────────────────────────────────
-// Prevent the server from dying on unhandled async errors or uncaught exceptions.
-// Log the error and keep running; the request that triggered it will time-out
-// rather than bringing the entire process down.
-process.on('unhandledRejection', (reason: any) => {
-  console.error('🚨 [UNHANDLED REJECTION]', reason?.stack ?? reason);
-});
-
-process.on('uncaughtException', (err: Error) => {
-  console.error('🚨 [UNCAUGHT EXCEPTION]', err.stack ?? err.message);
-  // Don't call process.exit() — let the server keep serving other requests.
-});
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Start database connection in background
-connectDatabase();
-
-// Initialize Web Push
-initWebPush();
-
-// ── Register background job queue handlers ────────────────────────────────────
-queue.register("invalidate_cache", async (job) => {
-  const pattern = job.payload.pattern as string;
-  if (pattern) cache.invalidate(pattern);
-});
-
-queue.register("send_notification", async (job) => {
-  // Delegate to push-service — non-blocking best-effort
-  try {
-    const { sendPushToCustomer } = await import("./push-service");
-    const { customerId, title, body, data } = job.payload;
-    if (customerId) await sendPushToCustomer(customerId, { title, body, data });
-  } catch (err: any) {
-    console.warn("[Queue:send_notification]", err?.message);
-  }
-});
-
-queue.register("deduct_inventory", async (job) => {
-  // Async inventory deduction — runs after order is confirmed
-  try {
-    const { RawItemModel, CoffeeItemModel } = await import("@shared/schema");
-    const { items, tenantId } = job.payload as { items: Array<{ coffeeItemId: string; quantity: number }>; tenantId: string };
-    for (const { coffeeItemId, quantity } of items) {
-      const item = await CoffeeItemModel.findOne({ id: coffeeItemId, tenantId }).lean() as any;
-      if (!item?.recipe?.length) continue;
-      for (const ingredient of item.recipe) {
-        const deduct = (ingredient.amountPerUnit || 0) * quantity;
-        if (deduct > 0) {
-          await RawItemModel.findOneAndUpdate(
-            { id: ingredient.rawItemId, tenantId },
-            { $inc: { currentStock: -deduct, currentStockLevel: -deduct } }
-          );
-        }
-      }
-    }
-    cache.invalidate(`inventory:${tenantId}`);
-  } catch (err: any) {
-    console.warn("[Queue:deduct_inventory]", err?.message);
-  }
-});
-
-queue.register("recalc_loyalty", async (job) => {
-  // Lightweight loyalty tier update
-  try {
-    const { CustomerModel } = await import("@shared/schema");
-    const { customerId, pointsDelta } = job.payload;
-    await CustomerModel.findOneAndUpdate(
-      { id: customerId },
-      { $inc: { totalPoints: pointsDelta, availablePoints: pointsDelta } }
-    );
-  } catch (err: any) {
-    console.warn("[Queue:recalc_loyalty]", err?.message);
-  }
-});
-
-queue.register("generate_report", async (_job) => {
-  // Placeholder — future: pre-generate PDF reports and store in object storage
-  console.log("[Queue:generate_report] Report generation job received (stub)");
-});
-
-console.log("✅ Background job queue initialized with 5 handlers");
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Start smart notification scheduler (runs after 5s to allow DB to connect)
-import("./smart-scheduler").then(({ startSmartScheduler }) => {
-  setTimeout(startSmartScheduler, 5000);
-}).catch((err) => console.error("[SCHEDULER] Failed to load:", err));
-
-// Scheduled task: Clean up expired table reservations and send notifications
-let isMaintenanceRunning = false;
-setInterval(async () => {
-  if (isMaintenanceRunning || !isDbConnected) return;
-  
-  isMaintenanceRunning = true;
-  try {
-    const { TableModel, CustomerModel } = await import("@shared/schema");
-    const { sendReservationExpiryWarningEmail } = await import("./mail-service");
-
-    const now = new Date();
-    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60000);
-
-    // 1. Check for expired reservations
-    const expiredTables = await TableModel.find({
-      'reservedFor.status': { $in: ['pending', 'confirmed'] },
-      'reservedFor.autoExpiryTime': { $lt: now }
-    });
-
-    let expiredCount = 0;
-    for (const table of expiredTables) {
-      if (table.reservedFor) {
-        table.reservedFor.status = 'expired';
-        await table.save();
-        expiredCount++;
-      }
-    }
-
-    if (expiredCount > 0) {
-      console.log(`🔄 Cleaned ${expiredCount} expired reservations`);
-    }
-
-    // 2. Send expiry warnings (15 minutes before expiry)
-    const warningTables = await TableModel.find({
-      'reservedFor.status': { $in: ['pending', 'confirmed'] },
-      'reservedFor.autoExpiryTime': {
-        $gte: now,
-        $lte: fifteenMinutesFromNow
-      },
-      'reservedFor.emailNotificationSent': { $ne: true }
-    });
-
-    for (const table of warningTables) {
-      if (table.reservedFor && table.reservedFor.autoExpiryTime) {
-        try {
-          const customer = await CustomerModel.findOne({
-            phone: table.reservedFor.customerPhone
-          });
-
-          if (customer && customer.email) {
-            const emailSent = await sendReservationExpiryWarningEmail(
-              customer.email,
-              table.reservedFor.customerName,
-              table.tableNumber,
-              table.reservedFor.autoExpiryTime.toString()
-            );
-
-            if (emailSent) {
-              table.reservedFor.emailNotificationSent = true;
-              await table.save();
-              console.log(`📧 Expiry warning sent to ${customer.email}`);
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to send expiry warning for table ${table.tableNumber}:`, error);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Maintenance task error:", error);
-  } finally {
-    isMaintenanceRunning = false;
-  }
-}, 60000); // Run every 60 seconds (1 minute)
+// Ensure required directories exist on startup
+try { mkdirSync("uploads", { recursive: true }); } catch {}
+try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 
 const app = express();
+app.set("trust proxy", 1);
 
-// ─── Apple Pay domain verification — BEFORE all middleware ────────────────────
-// Must be first so Helmet, rate-limiters, and session middleware do NOT touch
-// these responses. Apple's verifier rejects files served with CSP / security
-// headers or rate-limit delays.
-// Serve domain-specific files: cluny.cafe / www.cluny.cafe get the cluny file,
-// all other hosts (e.g. *.onrender.com) get the render file.
-function appleWellKnownFile(req: import('express').Request, res: import('express').Response, ext: string) {
-  const host = (req.get('host') || '').replace(/:\d+$/, '');
-  const isCluny = host === 'cluny.cafe' || host === 'www.cluny.cafe';
-  const filename = isCluny
-    ? `apple-developer-merchantid-domain-association-cluny${ext}`
-    : `apple-developer-merchantid-domain-association${ext}`;
-  const filePath = path.resolve(__dirname, '..', 'public', '.well-known', filename);
-  // Must read and send manually — res.sendFile() derives Content-Type from the
-  // file extension and falls back to application/octet-stream for extensionless
-  // files, which causes browsers to download instead of serve the content.
-  // Apple and Geidea both require the file to be publicly readable as text.
-  import('fs').then(({ readFile }) => {
-    readFile(filePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error(`[ApplePay] Missing file: ${filename}`, err.message);
-        return res.status(404).send('Not found');
-      }
-      res.set('Content-Type', 'text/plain; charset=utf-8');
-      res.set('Cache-Control', 'public, max-age=86400');
-      res.set('Content-Disposition', 'inline');
-      res.send(data);
-    });
-  });
-}
-app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => {
-  appleWellKnownFile(req, res, '');
-});
-app.get('/.well-known/apple-developer-merchantid-domain-association.txt', (req, res) => {
-  appleWellKnownFile(req, res, '.txt');
-});
-
-// ─── SECURITY LAYER ────────────────────────────────────────────────────────────
-
-// 1. Helmet: Sets 14 security HTTP headers (CSP, HSTS, X-Frame-Options, etc.)
-// Skip helmet in development to avoid CSP conflicts with Vite dev server
-if (process.env.NODE_ENV === 'development') {
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: false }));
-} else {
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "'unsafe-eval'",
-          "https://*.geidea.net",
-          "https://*.paymob.com",
-          "blob:",
-        ],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://*.geidea.net", "https://*.paymob.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://*.geidea.net", "https://*.paymob.com"],
-        imgSrc: ["'self'", "data:", "blob:", "https:"],
-        connectSrc: [
-          "'self'",
-          "wss:",
-          "ws:",
-          "https://*.geidea.net",
-          "https://*.paymob.com",
-        ],
-        frameSrc: [
-          "'self'",
-          "https://*.geidea.net",
-          "https://js.geidea.net",
-          "https://*.paymob.com",
-          "https://accept.paymob.com",
-          "https://ksa.paymob.com",
-        ],
-        frameAncestors: ["'self'", "https://*.paymob.com"],
-        workerSrc: ["'self'", "blob:"],
-        objectSrc: ["'none'"],
-        scriptSrcAttr: ["'unsafe-inline'"],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
-}
-
-// 2. Rate limiting — strict for auth, relaxed for general API
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many login attempts. Please try again in 15 minutes." },
-  skip: (req) => process.env.NODE_ENV === "development",
-});
-
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests. Please slow down." },
-  skip: (req) => process.env.NODE_ENV === "development",
-});
-
-app.use("/api/employees/login", authLimiter);
-app.use("/api/customers/login", authLimiter);
-app.use("/api/customers/register", authLimiter);
-app.use("/api", apiLimiter);
-
-// 3. Enable gzip compression (level 9 = max ratio, reduces bandwidth ~60-70% on text)
+// Gzip/Brotli compression — reduces response size by 60-80%, dramatically speeds up all API and static responses
 app.use(compression({
-  level: 9,
-  threshold: 512, // compress anything >512 bytes (not just >1KB)
+  level: 6,             // balanced speed vs compression (1=fastest, 9=smallest)
+  threshold: 1024,      // only compress responses > 1KB
   filter: (req, res) => {
-    if (req.headers['x-no-compression']) return false;
+    // Never compress SSE streams (WebSocket upgrades handled separately)
+    const accept = req.headers["accept"] || "";
+    if (accept.includes("text/event-stream")) return false;
+    if (res.getHeader("Content-Type") === "text/event-stream") return false;
     return compression.filter(req, res);
-  }
-}));
-
-// API performance & error monitoring (Phase 5: Reliability)
-import { apiMetricsMiddleware } from "./middleware/api-metrics";
-app.use(apiMetricsMiddleware);
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
-
-// 4. NoSQL Injection protection (strips $ and . from request body/query/params)
-app.use(mongoSanitize({
-  replaceWith: '_',
-  onSanitize: ({ req, key }) => {
-    console.warn(`[SECURITY] Sanitized suspicious key "${key}" from ${req.ip}`);
   },
 }));
 
-// 5. HTTP Parameter Pollution protection
-app.use(hpp());
+const httpServer = createServer(app);
+// Render recommends >= 120s to avoid intermittent connection resets
+httpServer.keepAliveTimeout = 120000;
+httpServer.headersTimeout = 125000; // slightly above keepAliveTimeout
 
-// Trust proxy - required for QIROX Studio and other reverse proxy services
-app.set('trust proxy', 1);
+declare module "http" {
+  interface IncomingMessage {
+    rawBody: unknown;
+  }
+}
 
-// Configure allowed hosts for QIROX Studio
+app.use(
+  express.json({
+    limit: "50mb",
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
+
+app.use(express.urlencoded({ extended: false }));
+
+// ── Security Headers ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, x-employee-id, x-restore-key');
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  // Allow iframe embedding (e.g., Replit canvas preview)
+  res.removeHeader("X-Frame-Options");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Allow camera, microphone, and screen capture globally (required for WebRTC meeting rooms)
+  // The app is a SPA — client-side routing means the initial document policy applies everywhere
+  res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
+
+  res.setHeader("X-Download-Options", "noopen");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  // Only set HSTS in production to avoid dev issues
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   next();
 });
 
-// 6. Disable X-Powered-By header
-app.disable('x-powered-by');
-
-// Session configuration
+// ── Cafe Site Proxy (strips X-Frame-Options so pages can be embedded) ─────────
+const CAFE_BASE = "https://cafe.qiroxstudio.online";
 app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "dev-secret",
-    resave: false,
-    saveUninitialized: false, 
-    name: 'cluny.sid', // custom cookie name
-    store: MongoStore.create({
-      // Reuse Mongoose's already-open MongoClient so sessions do not create
-      // a second connection pool to Atlas.
-      clientPromise: mongoose.connection
-        .asPromise()
-        .then((connection) => connection.getClient() as unknown as import("mongodb").MongoClient),
-      dbName: process.env.MONGODB_DATABASE,
-      collectionName: 'sessions',
-      ttl: 30 * 24 * 60 * 60,
-      autoRemove: 'native',
-      touchAfter: 24 * 3600,
-    }),
-    cookie: {
-      secure: process.env.NODE_ENV === 'production', 
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: "/",
+  "/cafe-proxy",
+  createProxyMiddleware({
+    target: CAFE_BASE,
+    changeOrigin: true,
+    selfHandleResponse: true,
+    pathRewrite: { "^/cafe-proxy": "" },
+    on: {
+      proxyRes: responseInterceptor(async (responseBuffer, proxyRes, _req, res) => {
+        // Strip frame-blocking headers from both proxyRes and res
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+        delete proxyRes.headers["content-security-policy-report-only"];
+        res.removeHeader("x-frame-options");
+        res.removeHeader("X-Frame-Options");
+        res.removeHeader("content-security-policy");
+        res.removeHeader("Content-Security-Policy");
+        res.removeHeader("content-security-policy-report-only");
+
+        const contentType = proxyRes.headers["content-type"] || "";
+        if (contentType.includes("text/html")) {
+          let html = responseBuffer.toString("utf8");
+          // Inject <base> so relative URLs resolve to the cafe domain
+          if (!html.includes("<base ")) {
+            html = html.replace("<head>", `<head><base href="${CAFE_BASE}/">`);
+          }
+          return html;
+        }
+        return responseBuffer;
+      }),
     },
   })
 );
 
-// ─── Session version guard ────────────────────────────────────────────────────
-// Bump this string whenever you want to force-logout every device that still
-// carries an old cookie (e.g. after a major update). Old sessions are destroyed
-// server-side and the cookie is cleared, so the user lands on the login screen.
-const SESSION_VERSION = '2026-07-06-v1';
+// ── E-Commerce Site Proxy (strips X-Frame-Options so pages can be embedded) ───
+const ECOMMERCE_BASE = "https://e-commerce.qiroxstudio.online";
+app.use(
+  "/ecommerce-proxy",
+  createProxyMiddleware({
+    target: ECOMMERCE_BASE,
+    changeOrigin: true,
+    selfHandleResponse: true,
+    pathRewrite: { "^/ecommerce-proxy": "" },
+    on: {
+      proxyRes: responseInterceptor(async (responseBuffer, proxyRes, _req, res) => {
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+        delete proxyRes.headers["content-security-policy-report-only"];
+        res.removeHeader("x-frame-options");
+        res.removeHeader("X-Frame-Options");
+        res.removeHeader("content-security-policy");
+        res.removeHeader("Content-Security-Policy");
+        res.removeHeader("content-security-policy-report-only");
+        const contentType = proxyRes.headers["content-type"] || "";
+        if (contentType.includes("text/html")) {
+          let html = responseBuffer.toString("utf8");
+          if (!html.includes("<base ")) {
+            html = html.replace("<head>", `<head><base href="${ECOMMERCE_BASE}/">`);
+          }
+          return html;
+        }
+        return responseBuffer;
+      }),
+    },
+  })
+);
 
+// ── E-Commerce API Proxy ──────────────────────────────────────────────────────
+app.use(
+  "/ecommerce-api",
+  createProxyMiddleware({
+    target: ECOMMERCE_BASE,
+    changeOrigin: true,
+    pathRewrite: { "^/ecommerce-api": "" },
+    on: {
+      proxyReq: (proxyReq, req) => {
+        if (req.headers.cookie) {
+          proxyReq.setHeader("Cookie", req.headers.cookie);
+        }
+      },
+      proxyRes: (proxyRes, _req, res) => {
+        const setCookie = proxyRes.headers["set-cookie"];
+        if (setCookie) {
+          const rewritten = setCookie.map((c) =>
+            c.replace(/;\s*Domain=[^;]+/i, "")
+          );
+          res.setHeader("set-cookie", rewritten);
+        }
+      },
+    },
+  })
+);
+
+// ── Cafe API Proxy (same-origin bridge for the embedded cafe demo SPA) ────────
+// The cafe-demo SPA sends API requests to /cafe-api/* — we forward them
+// server-side so the browser never sees a CORS error.
+app.use(
+  "/cafe-api",
+  createProxyMiddleware({
+    target: CAFE_BASE,
+    changeOrigin: true,
+    pathRewrite: { "^/cafe-api": "" },
+    on: {
+      proxyReq: (proxyReq, req) => {
+        // Forward the original host cookie so sessions work
+        if (req.headers.cookie) {
+          proxyReq.setHeader("Cookie", req.headers.cookie);
+        }
+      },
+      proxyRes: (proxyRes, _req, res) => {
+        // Rewrite Set-Cookie domain so the browser stores it under our domain
+        const setCookie = proxyRes.headers["set-cookie"];
+        if (setCookie) {
+          const rewritten = setCookie.map((c) =>
+            c.replace(/;\s*Domain=[^;]+/i, "")
+          );
+          res.setHeader("set-cookie", rewritten);
+        }
+      },
+    },
+  })
+);
+
+// ── Global API rate limiter — caps total requests per IP across all /api/ routes
+// Per-route limiters (login, OTP, register, contact) remain in effect as stricter overrides.
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15-minute window
+  max: 500,                    // 500 requests per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !req.path.startsWith("/api/"),
+  message: { error: "تجاوزت الحد المسموح به من الطلبات، يرجى المحاولة لاحقاً" },
+});
+app.use(globalApiLimiter);
+
+// ── Anti-scraping / bot detection ─────────────────────────────────────────────
+const suspiciousPatterns = [
+  /sqlmap/i, /nikto/i, /nmap/i, /masscan/i, /havij/i,
+  /acunetix/i, /burpsuite/i, /<script/i, /javascript:/i,
+  /union.*select/i, /drop.*table/i, /insert.*into/i,
+  /exec\s*\(/i, /eval\s*\(/i,
+];
 app.use((req, res, next) => {
-  // Skip non-session paths
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/employee') && !req.path.startsWith('/pos')) {
-    return next();
-  }
-  const sess = req.session as any;
-  if (sess && sess.employee && sess._sv !== SESSION_VERSION) {
-    // Old session — destroy it and clear the cookie
-    req.session.destroy(() => {});
-    res.clearCookie('cluny.sid', { path: '/' });
-    return res.status(401).json({ error: 'session_expired', message: 'جلسة منتهية — يرجى تسجيل الدخول مجدداً' });
+  const ua = req.headers["user-agent"] || "";
+  const isSuspicious = suspiciousPatterns.some(p => p.test(ua));
+  if (isSuspicious) {
+    return res.status(403).json({ error: "Access denied" });
   }
   next();
 });
 
-// Session debug middleware — only active in development
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV !== 'production' && process.env.DEBUG_SESSION === 'true') {
-    if (req.path.startsWith('/api/orders') || req.path.startsWith('/api/employees/login')) {
-      console.log(`  - Session ID:`, req.sessionID);
-      console.log(`  - Employee:`, req.session?.employee ? 'EXISTS' : 'MISSING');
-      console.log(`  - Cookie:`, req.headers.cookie ? 'PRESENT' : 'MISSING');
+let reconnecting = false;
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState === 1) return next();
+
+  if (req.method === "GET" && req.path.startsWith("/api/")) {
+    if (!reconnecting) {
+      const uri = connManager.primaryUri || process.env.MONGODB_URI;
+      if (!uri) return next();
+      reconnecting = true;
+      console.warn("[MongoDB] Disconnected — attempting reconnection...");
+      try {
+        await mongoose.connect(uri.replace(/\s+/g, ""), {
+          serverSelectionTimeoutMS: 5000,
+          socketTimeoutMS: 10000,
+          connectTimeoutMS: 5000,
+        });
+        console.log("[MongoDB] Reconnected successfully");
+      } catch (err: any) {
+        console.error("[MongoDB] Reconnection failed:", err.message);
+      } finally {
+        reconnecting = false;
+      }
     }
   }
+
   next();
 });
 
-// Health check endpoint for Render and other hosting services
-app.get('/healthz', (_req, res) => {
-  res.status(200).send('OK');
-});
-
-app.get('/health', (_req, res) => {
-  const dbStatus = getDbStatus();
-  const databaseReady = mongoose.connection.readyState === 1;
-  res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    database: databaseReady ? 'connected' : 'disconnected',
-    readyState: mongoose.connection.readyState,
-    dualDb: {
-      enabled: hasSecondaryDb(),
-      ...dbStatus,
-    },
-    cache: cache.stats(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
+export function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
   });
-});
 
-// Middleware to ensure DB connection for API routes
-app.use('/api', (req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
-    isDbConnected = false;
-    console.error(`🚨 API Request failed: Database not connected (State: ${mongoose.connection.readyState})`);
-    // Attempt to reconnect in background
-    connectDatabase();
-    return res.status(503).json({ 
-      message: "خدمة قاعدة البيانات غير متوفرة حالياً، يرجى المحاولة مرة أخرى خلال ثوانٍ.",
-      retryAfter: 5
-    });
-  }
-  next();
-});
-
-// IMPORTANT: Ensure /api, /attached_assets, and health routes are handled BEFORE SPA routing
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || 
-      req.path.startsWith('/attached_assets') || 
-      req.path === '/healthz' || 
-      req.path === '/health') {
-    return next();
-  }
-  next();
-});
-
-
-// Prefer generated WebP files for browsers that support them while preserving
-// the original URLs stored in MongoDB. This keeps existing product/image URLs
-// compatible and substantially reduces outbound bandwidth.
-function serveOptimizedWebp(rootDir: string) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== "GET" && req.method !== "HEAD") return next();
-    if (!req.headers.accept?.includes("image/webp")) return next();
-    if (!/\.(png|jpe?g)$/i.test(req.path)) return next();
-
-    const relativePath = decodeURIComponent(req.path).replace(/^[/\\]+/, "");
-    const originalPath = path.resolve(rootDir, relativePath);
-    const rootPath = path.resolve(rootDir) + path.sep;
-    if (!originalPath.startsWith(rootPath)) return next();
-
-    const extension = path.extname(originalPath);
-    const webpPath = originalPath.slice(0, -extension.length) + ".optimized.webp";
-    if (!fs.existsSync(webpPath)) return next();
-
-    res.set({
-      "Content-Type": "image/webp",
-      "Cache-Control": "public, max-age=2592000, stale-while-revalidate=86400",
-      Vary: "Accept",
-    });
-    return res.sendFile(webpPath);
-  };
+  console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-const attachedAssetsPath = path.resolve(__dirname, '..', 'attached_assets');
-const publicAssetsPath = path.resolve(__dirname, '..', 'public');
+const wss = new WebSocketServer({ noServer: true });
 
-// Serve attached assets for both development and production
-app.use('/attached_assets', serveOptimizedWebp(attachedAssetsPath));
-app.use('/attached_assets', express.static(path.resolve(__dirname, '..', 'attached_assets'), {
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    // Long cache for images — browser won't re-download if ETag matches
-    res.set('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400'); // 30 days
-    if (filePath.endsWith('.png')) res.set('Content-Type', 'image/png');
-    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) res.set('Content-Type', 'image/jpeg');
-    if (filePath.endsWith('.webp')) res.set('Content-Type', 'image/webp');
-  }
-}));
+wss.on("connection", (ws) => {
+  let userId: string | null = null;
+  let currentRoomId: string | null = null;
 
-// Fallback: serve brand logo for any missing /attached_assets/ file instead of 404
-app.get('/attached_assets/*', (req, res) => {
-  const brandLogo = path.resolve(__dirname, '..', 'public', 'images', 'brand-logo.png');
-  res.set('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400'); // 30 days
-  res.sendFile(brandLogo, (err) => {
-    if (err) res.status(404).json({ error: 'Image not found' });
+  ws.on("message", (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+
+      if (msg.type === "auth" && msg.userId) {
+        userId = String(msg.userId);
+        registerSocket(userId, ws);
+        ws.send(JSON.stringify({ type: "online_users", users: getOnlineUsers() }));
+        return;
+      }
+
+      if (!userId) return;
+
+      if (msg.type === "typing" && msg.toUserId) {
+        pushToUser(String(msg.toUserId), { type: "typing", fromUserId: userId, isTyping: msg.isTyping });
+        return;
+      }
+
+      if (msg.type === "voice_recording" && msg.toUserId) {
+        pushToUser(String(msg.toUserId), { type: "voice_recording", fromUserId: userId, isRecording: msg.isRecording });
+        return;
+      }
+
+      if (msg.type === "ping") {
+        ws.send(JSON.stringify({ type: "pong" }));
+        return;
+      }
+
+      // ── Sandbox Log Subscription ──────────────────────────────────────────
+      if (msg.type === "sandbox_subscribe" && msg.projectId) {
+        (async () => {
+          try {
+            const { SandboxProjectModel } = await import("./models");
+            const { UserModel } = await import("./models");
+            const project = await SandboxProjectModel.findById(msg.projectId);
+            if (!project) { ws.send(JSON.stringify({ type: "sandbox_error", error: "المشروع غير موجود" })); return; }
+            const ownerId = String(project.ownerId);
+            if (ownerId !== userId) {
+              const user = await UserModel.findById(userId);
+              if (!user || (user.role !== "admin" && user.role !== "manager")) {
+                ws.send(JSON.stringify({ type: "sandbox_error", error: "غير مصرح" }));
+                return;
+              }
+            }
+            subscribeSandboxLogs(userId, String(msg.projectId));
+            ws.send(JSON.stringify({ type: "sandbox_subscribed", projectId: msg.projectId }));
+             const { getProcessLogs } = await import("./sandbox-runner");
+             for (const log of getProcessLogs(String(msg.projectId))) {
+               ws.send(JSON.stringify({
+                 type: "sandbox-log",
+                 projectId: String(msg.projectId),
+                 stream: log.stream,
+                 text: log.text,
+                 ts: log.ts,
+               }));
+             }
+          } catch {
+            ws.send(JSON.stringify({ type: "sandbox_error", error: "خطأ في الاشتراك" }));
+          }
+        })();
+        return;
+      }
+      if (msg.type === "sandbox_unsubscribe" && msg.projectId) {
+        unsubscribeSandboxLogs(userId, String(msg.projectId));
+        return;
+      }
+
+      // ── WebRTC Meet Signaling ───────────────────────────────────────────────
+      if (msg.type === "webrtc_join" && msg.roomId) {
+        (async () => {
+          const rId = String(msg.roomId);
+          const uid = String(userId);
+
+          // ── Ban check ─────────────────────────────────────────────────────
+          if (isBannedFromRoom(rId, uid)) {
+            ws.send(JSON.stringify({ type: "webrtc_banned", roomId: rId }));
+            return;
+          }
+
+          // ── Lock check → send to lock-lobby instead of blocking ────────────
+          if (isRoomLocked(rId)) {
+            const hostId = getRoomHost(rId);
+            if (uid !== hostId) {
+              // Add to lock-pending list and notify host
+              addLockPending(rId, uid, msg.name || uid);
+              ws.send(JSON.stringify({ type: "webrtc_lobby_waiting", roomId: rId, reason: "locked" }));
+              // Notify host to approve/deny
+              if (hostId) {
+                pushToUser(hostId, {
+                  type: "webrtc_lock_join_request",
+                  roomId: rId,
+                  userId: uid,
+                  userName: msg.name || uid,
+                });
+              }
+              return;
+            }
+          }
+
+          // ── Lobby enforcement ─────────────────────────────────────────────
+          try {
+            const { QMeetingModel: QMF } = await import("./qmeet-db");
+            const meeting = await QMF().findOne({ roomName: rId });
+            if (meeting && meeting.lobbyEnabled) {
+              const inParticipants = (meeting.participantIds || []).some((id: any) => String(id) === uid);
+              const isHostUser = String(meeting.hostId) === uid;
+              if (!inParticipants && !isHostUser) {
+                const existing = (meeting.joinRequests || []).find((r: any) => String(r.userId) === uid && r.status === "pending");
+                if (!existing) {
+                  await QMF().findByIdAndUpdate(meeting._id, {
+                    $push: { joinRequests: { userId: uid, userName: msg.name || uid, userEmail: "", userPhone: "", status: "pending", requestedAt: new Date() } }
+                  });
+                }
+                ws.send(JSON.stringify({ type: "webrtc_lobby_waiting", roomId: rId, meetingId: String(meeting._id), meetingTitle: meeting.title }));
+                pushToUser(String(meeting.hostId), {
+                  type: "qmeet_join_request",
+                  meetingId: String(meeting._id),
+                  meetingTitle: meeting.title,
+                  userId: uid,
+                  userName: msg.name || uid,
+                  userEmail: "", userPhone: "",
+                  requestedAt: new Date().toISOString(),
+                  message: `${msg.name || uid} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
+                });
+                return;
+              }
+            }
+          } catch { /* on error, allow entry */ }
+
+          // ── Normal join ───────────────────────────────────────────────────
+          if (currentRoomId && currentRoomId !== rId) {
+            const prevRoomId = currentRoomId;
+            const wasHostPrev = getRoomHost(prevRoomId) === uid;
+            const remaining = leaveMeetRoom(prevRoomId, uid);
+            for (const peerId of remaining) {
+              pushToUser(peerId, { type: "webrtc_peer_left", peerId: uid, roomId: prevRoomId });
+            }
+            if (wasHostPrev && remaining.length > 0) {
+              const newHostId = remaining[0];
+              forceSetRoomHost(prevRoomId, newHostId);
+              for (const peerId of remaining) {
+                pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: prevRoomId });
+              }
+            }
+          }
+          currentRoomId = rId;
+          const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "", msg.facingMode || "user");
+          const hostId = getRoomHost(currentRoomId);
+          const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== uid);
+          ws.send(JSON.stringify({
+            type: "webrtc_peers",
+            peers: existingPeers,
+            peerInfoList,
+            roomId: currentRoomId,
+            hostId,
+            isLocked: isRoomLocked(currentRoomId),
+            activePoll: (() => { const p = getActivePoll(currentRoomId!); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+          }));
+          for (const peerId of existingPeers) {
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: uid, name: msg.name || uid, photoUrl: msg.photoUrl || "", facingMode: msg.facingMode || "user", roomId: currentRoomId });
+          }
+        })();
+        return;
+      }
+
+      if (msg.type === "webrtc_offer" && msg.to && msg.offer) {
+        pushToUser(String(msg.to), { type: "webrtc_offer", from: userId, offer: msg.offer });
+        return;
+      }
+
+      if (msg.type === "webrtc_answer" && msg.to && msg.answer) {
+        pushToUser(String(msg.to), { type: "webrtc_answer", from: userId, answer: msg.answer });
+        return;
+      }
+
+      if (msg.type === "webrtc_ice" && msg.to && msg.candidate !== undefined) {
+        pushToUser(String(msg.to), { type: "webrtc_ice", from: userId, candidate: msg.candidate });
+        return;
+      }
+
+      if (msg.type === "webrtc_leave" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const wasHost = getRoomHost(rId) === userId;
+        const remaining = leaveMeetRoom(rId, userId);
+        for (const peerId of remaining) {
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: rId });
+        }
+        if (wasHost && remaining.length > 0) {
+          const newHostId = remaining[0];
+          forceSetRoomHost(rId, newHostId);
+          for (const peerId of remaining) {
+            pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: rId });
+          }
+        }
+        currentRoomId = null;
+        return;
+      }
+
+      // Manual host transfer (current host → chosen participant)
+      if (msg.type === "webrtc_transfer_host" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        if (getRoomHost(rId) !== userId) return; // only host can transfer
+        const targetId = String(msg.targetId);
+        forceSetRoomHost(rId, targetId);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_host_changed", newHostId: targetId, roomId: rId });
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_chat" && msg.roomId && msg.text) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_chat", from: userId, name: msg.name || userId, text: msg.text, ts: Date.now() });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_media_state" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_media_state", from: userId, audio: msg.audio, video: msg.video, ...(msg.facingMode ? { facingMode: msg.facingMode } : {}) });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_kick" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+        // Ban the user from rejoining
+        if (msg.ban !== false) banFromRoom(rId, targetId);
+        // Remove from room
+        leaveMeetRoom(rId, targetId);
+        // Notify target
+        pushToUser(targetId, { type: "webrtc_kicked", roomId: rId, by: userId, ban: msg.ban !== false });
+        // Notify remaining peers
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: targetId, roomId: rId });
+        }
+        return;
+      }
+
+      // ── Lock / Unlock room ──────────────────────────────────────────────────
+      if (msg.type === "webrtc_lock_room" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const hostId = getRoomHost(rId);
+        if (String(userId) !== hostId) return; // only host can lock
+        const locked = !!msg.locked;
+        setRoomLocked(rId, locked);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_room_lock_changed", locked, by: userId });
+        }
+        // If unlocking: auto-approve all lock-pending users
+        if (!locked) {
+          const pending = getLockPending(rId);
+          for (const entry of [...pending]) {
+            removeLockPending(rId, entry.userId);
+            const existingPeers = joinMeetRoom(rId, entry.userId, entry.name, "");
+            const currentHostId = getRoomHost(rId);
+            const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== entry.userId);
+            pushToUser(entry.userId, {
+              type: "webrtc_peers",
+              peers: existingPeers,
+              peerInfoList,
+              roomId: rId,
+              hostId: currentHostId,
+              isLocked: false,
+              activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+            });
+            const entryInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === entry.userId);
+            for (const peerId of existingPeers) {
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: entry.userId, name: entry.name, photoUrl: "", facingMode: entryInfo?.facingMode || "user", roomId: rId });
+            }
+            pushToUser(entry.userId, { type: "webrtc_lobby_approved", roomId: rId });
+          }
+        }
+        return;
+      }
+
+      // ── Approve lobby (DB lobby or lock-pending) ──────────────────────────
+      if (msg.type === "webrtc_approve_lobby" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+
+        // Handle lock-pending approval (in-memory)
+        const pending = getLockPending(rId).find(e => e.userId === targetId);
+        if (pending) {
+          removeLockPending(rId, targetId);
+          const existingPeers = joinMeetRoom(rId, targetId, pending.name, "");
+          const hostId = getRoomHost(rId);
+          const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== targetId);
+          // Send peers list to approved user (triggers WebRTC setup)
+          pushToUser(targetId, {
+            type: "webrtc_peers",
+            peers: existingPeers,
+            peerInfoList,
+            roomId: rId,
+            hostId,
+            isLocked: isRoomLocked(rId),
+            activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+          });
+          // Notify existing peers of the new joiner
+          const pendingInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === targetId);
+          for (const peerId of existingPeers) {
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pending.name, photoUrl: "", facingMode: pendingInfo?.facingMode || "user", roomId: rId });
+          }
+          // Dismiss lobby screen on the approved user
+          pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+          return;
+        }
+
+        // Handle DB lobby approval — join the user to the room and send peer list
+        (async () => {
+          try {
+            const { QMeetingModel: QMF } = await import("./qmeet-db");
+            const meeting = await (QMF() as any).findOne({ roomName: rId });
+            const joinReq = (meeting?.joinRequests || []).find((r: any) => String(r.userId) === targetId);
+            const pName = joinReq?.userName || targetId;
+            const existingPeers = joinMeetRoom(rId, targetId, pName, "");
+            const currentHostId = getRoomHost(rId);
+            const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== targetId);
+            pushToUser(targetId, {
+              type: "webrtc_peers",
+              peers: existingPeers,
+              peerInfoList,
+              roomId: rId,
+              hostId: currentHostId,
+              isLocked: isRoomLocked(rId),
+              activePoll: null,
+            });
+            const dbApprovedInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === targetId);
+            for (const peerId of existingPeers) {
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pName, photoUrl: "", facingMode: dbApprovedInfo?.facingMode || "user", roomId: rId });
+            }
+          } catch { /* on error, still approve */ }
+          pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+        })();
+        return;
+      }
+
+      // ── Deny lobby (DB lobby or lock-pending) ────────────────────────────
+      if (msg.type === "webrtc_deny_lobby" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+        removeLockPending(rId, targetId);
+        pushToUser(targetId, { type: "webrtc_lobby_denied", roomId: rId });
+        return;
+      }
+
+      // ── Mute individual peer ──────────────────────────────────────────────
+      if (msg.type === "webrtc_mute_peer" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_mute_me", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      // ── Poll create ───────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_create" && msg.roomId && msg.question && msg.options) {
+        const rId = String(msg.roomId);
+        const poll = {
+          id: `poll-${Date.now()}`,
+          question: String(msg.question),
+          options: (msg.options as string[]).map((text: string) => ({ text, votes: 0 })),
+          voted: new Set<string>(),
+          hostId: String(userId),
+        };
+        setActivePoll(rId, poll);
+        const peers = getMeetRoomPeers(rId);
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId };
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_started", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_started", poll: pollPayload, roomId: rId }));
+        return;
+      }
+
+      // ── Poll vote ──────────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_vote" && msg.roomId && msg.pollId !== undefined && msg.optionIndex !== undefined) {
+        const rId = String(msg.roomId);
+        const poll = getActivePoll(rId);
+        if (!poll || poll.id !== msg.pollId) return;
+        const uid = String(userId);
+        if (poll.voted.has(uid)) return; // already voted
+        poll.voted.add(uid);
+        const idx = Number(msg.optionIndex);
+        if (idx >= 0 && idx < poll.options.length) poll.options[idx].votes++;
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId, totalVotes: poll.voted.size };
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_updated", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_updated", poll: pollPayload, roomId: rId, myVote: idx }));
+        return;
+      }
+
+      // ── Poll end ──────────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_end" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const poll = getActivePoll(rId);
+        if (!poll || String(poll.hostId) !== String(userId)) return;
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId, totalVotes: poll.voted.size };
+        setActivePoll(rId, null);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_ended", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_ended", poll: pollPayload, roomId: rId }));
+        return;
+      }
+
+      // ── Live caption relay ────────────────────────────────────────────────
+      if (msg.type === "webrtc_caption" && msg.roomId && msg.text) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_caption", from: userId, name: msg.name || userId, text: msg.text, ts: Date.now() });
+          }
+        }
+        return;
+      }
+
+      // ── Attendance log request ─────────────────────────────────────────────
+      if (msg.type === "webrtc_get_attendance" && msg.roomId) {
+        const log = getAttendanceLog(String(msg.roomId));
+        ws.send(JSON.stringify({ type: "webrtc_attendance_log", log, roomId: msg.roomId }));
+        return;
+      }
+
+      if (msg.type === "webrtc_draw" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_draw", from: userId, stroke: msg.stroke });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_whiteboard_clear" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_whiteboard_clear", from: userId });
+          }
+        }
+        return;
+      }
+
+      // ── End meeting for all (host only) ──────────────────────────────────
+      if (msg.type === "webrtc_end_meeting" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const hostId = getRoomHost(rId);
+        if (String(userId) !== hostId) return; // only host can end for all
+        const peers = getMeetRoomPeers(rId);
+        // Notify all participants that the meeting has ended
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_meeting_ended", roomId: rId, by: userId });
+          leaveMeetRoom(rId, peerId);
+        }
+        // Also update the meeting status in DB if possible (non-blocking)
+        (async () => {
+          try {
+            const { QMeetingModel: QM } = await import("./qmeet-db");
+            await QM().findOneAndUpdate({ roomName: rId }, { status: "completed", endedAt: new Date() });
+          } catch { /* non-critical */ }
+        })();
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_screen_share", from: userId, active: !!msg.active, name: msg.name || userId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share_request" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_screen_share_request", from: userId, name: msg.name || userId, roomId: msg.roomId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share_approve" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_screen_share_approved", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share_deny" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_screen_share_denied", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      if (msg.type === "webrtc_reaction" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_reaction", from: userId, emoji: msg.emoji, name: msg.name || userId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_raise_hand" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_raise_hand", from: userId, raised: msg.raised, name: msg.name || userId, userId: msg.userId || userId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_mute_all" && msg.roomId) {
+        // Only broadcast if sender is in the room (host check on client)
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_mute_all", from: userId });
+          }
+        }
+        return;
+      }
+    } catch {}
+  });
+
+  ws.on("close", () => {
+    if (userId) {
+      unregisterSocket(userId, ws);
+      if (currentRoomId) {
+        const closedRoomId = currentRoomId;
+        const wasHost = getRoomHost(closedRoomId) === userId;
+        const remaining = leaveMeetRoom(closedRoomId, userId);
+        for (const peerId of remaining) {
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: closedRoomId });
+        }
+        if (wasHost && remaining.length > 0) {
+          const newHostId = remaining[0];
+          forceSetRoomHost(closedRoomId, newHostId);
+          for (const peerId of remaining) {
+            pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: closedRoomId });
+          }
+        }
+        currentRoomId = null;
+      }
+    }
   });
 });
 
-// Serve public static files (audio, images, icons) explicitly so Vite dev middleware doesn't intercept
-app.use(serveOptimizedWebp(publicAssetsPath));
-app.use(express.static(path.resolve(__dirname, '..', 'public'), {
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.mp4') || filePath.endsWith('.mp3') || filePath.endsWith('.ogg') || filePath.endsWith('.wav')) {
-      res.set('Content-Type', filePath.endsWith('.mp4') ? 'video/mp4' : 'audio/mpeg');
-      res.set('Cache-Control', 'public, max-age=2592000'); // 30 days
-    } else if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.webp') || filePath.endsWith('.ico') || filePath.endsWith('.svg')) {
-      res.set('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400'); // 30 days
-    } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-      // Hashed bundles — safe to cache forever (immutable)
-      res.set('Cache-Control', 'public, max-age=31536000, immutable'); // 1 year
-    }
+httpServer.on("upgrade", (req, socket, head) => {
+  if (req.url === "/ws") {
+    wss.handleUpgrade(req, socket as any, head, (ws) => {
+      wss.emit("connection", ws, req);
+    });
   }
-}));
+  // /vite-hmr is handled by Vite middleware, do not destroy
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -855,11 +908,7 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      if (logLine.length > 200) logLine = logLine.slice(0, 200) + "…";
       log(logLine);
     }
   });
@@ -867,200 +916,322 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  registerQiroxRoutes(app);
-  const server = await registerRoutes(app);
-
-  // 404 guard for unknown /api/* paths — must come BEFORE Vite SPA fallback
-  // so unmatched API routes return JSON 404 instead of being swallowed by index.html
-  app.use("/api", (_req: Request, res: Response) => {
-    res.status(404).json({ error: "API endpoint not found" });
+// ── Graceful Shutdown ────────────────────────────────────────────────────────
+function gracefulShutdown(signal: string) {
+  console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
+  import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
+  httpServer.close(() => {
+    console.log("[Shutdown] HTTP server closed");
+    mongoose.connection.close().then(() => {
+      console.log("[Shutdown] MongoDB connections closed");
+      cache.destroy();
+      process.exit(0);
+    }).catch(() => process.exit(1));
   });
+  setTimeout(() => {
+    console.error("[Shutdown] Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+// ── Early health check — responds BEFORE DB connects ────────────────────────
+// This prevents Render from killing the app while MongoDB is still connecting
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString(), service: "QIROX Studio" });
+});
+
+// ── Sprint 003: Public feature-flags endpoint ────────────────────────────────
+// Exposes the state of FEATURE_* env vars so the React frontend can gate UI.
+// Read-only, no auth required.
+// Uses the DI container when available; falls back to raw env-var parsing.
+// ── Beta Readiness: OpenAPI / Swagger docs ───────────────────────────────────
+// Read-only reference UI at /api-docs. Additive — no existing route touched.
+registerApiDocsRoutes(app);
+
+app.get("/api/public/feature-flags", async (_req, res) => {
+  try {
+    const { container, TOKENS } = await import("./infrastructure");
+    const flags = container.tryResolve<{ snapshot(): Record<string, unknown> }>(TOKENS.FeatureFlags);
+    if (flags?.snapshot) {
+      return res.json({ ok: true, flags: flags.snapshot() });
+    }
+  } catch {
+    // container not yet initialised — fall through to env-var fallback
+  }
+  // Fallback: read FEATURE_* vars directly from process.env
+  const TRUTHY = new Set(["true", "1", "yes", "on"]);
+  const flags: Record<string, boolean> = {};
+  for (const [key, val] of Object.entries(process.env)) {
+    if (key.startsWith("FEATURE_") && val !== undefined) {
+      flags[key] = TRUTHY.has(val.toLowerCase().trim());
+    }
+  }
+  res.json({ ok: true, flags });
+});
+
+// ── Startup gate ─────────────────────────────────────────────────────────────
+// The HTTP listener intentionally starts before MongoDB and route registration
+// so platform health checks can connect quickly. Until the full app is ready,
+// serve the pre-built SPA instead of Express' default "Cannot GET /route"
+// response. API callers get an explicit retryable response during this short
+// window rather than an HTML 404.
+let applicationReady = false;
+const earlyFrontendIndex = path.resolve(process.cwd(), "dist/public/index.html");
+const earlyFrontendStatic = express.static(path.resolve(process.cwd(), "dist/public"), {
+  index: false,
+  fallthrough: true,
+});
+app.use((req, res, next) => {
+  if (applicationReady) return next();
+  if (req.path.startsWith("/api/")) {
+    return res.status(503).json({ error: "server_starting", retryAfterSeconds: 2 });
+  }
+  // During the startup window, serve hashed JS/CSS and other static files
+  // before falling back to index.html. Returning HTML for an asset makes the
+  // browser reject the module/stylesheet with a MIME-type error and leaves
+  // the SPA blank after a restart.
+  if (path.extname(req.path)) {
+    return earlyFrontendStatic(req, res, next);
+  }
+  if (existsSync(earlyFrontendIndex)) {
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    return res.sendFile(earlyFrontendIndex);
+  }
+  return next();
+});
+
+// ── Start HTTP server immediately (Render needs it responding fast) ──────────
+const port = parseInt(process.env.PORT || "5000", 10);
+httpServer.listen({ port, host: "0.0.0.0" }, () => {
+  log(`serving on port ${port}`);
+});
+
+// ── Full startup: DB → routes → Vite SPA catch-all ───────────────────────────
+// IMPORTANT: Vite must come LAST so it never intercepts /api/* requests
+(async () => {
+  // 1. Cafe demo static files (no async work needed)
+  const cafeDemoDir = path.resolve(process.cwd(), "public/cafe-demo");
+  if (existsSync(cafeDemoDir)) {
+    app.use("/cafe-demo", express.static(cafeDemoDir, { index: false }));
+    app.get("/cafe-demo", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    app.get("/cafe-demo/*path", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    console.log("[CafeDemo] Serving from", cafeDemoDir);
+  }
+
+  // 2. Connect to DB (health check already works via /api/health above)
+  try {
+    await connectToDatabase();
+  } catch (err: any) {
+    if (!process.env.MONGODB_URI) {
+      console.warn("[Startup] MongoDB URI is not configured; database-backed features are unavailable.");
+    } else {
+      console.error("[Startup] MongoDB connection failed:", err.message);
+      console.error("[Startup] Check MongoDB Atlas Network Access for the application host.");
+    }
+    // Don't crash — let the server stay up so health check keeps responding
+    // Render will restart the service, giving MongoDB time to become accessible
+  }
+
+  // 2b. Sprint 002: Initialise infrastructure layer (additive — no existing code affected)
+  //     Mounts /health/live, /health/ready, /health/detailed
+  //     Registers Logger, Config, FeatureFlags, EventBus in DI container
+  try {
+    const infraContainer = await initInfrastructure(app);
+    const { TOKENS } = await import("./infrastructure");
+    _structuredLogger = infraContainer.tryResolve(TOKENS.Logger);
+  } catch (err: any) {
+    console.error("[Bootstrap] ❌ Infrastructure init failed:", err.message);
+    // Non-fatal — existing server continues operating normally
+  }
+
+  // 3. Register ALL API routes BEFORE setting up Vite
+  //    This ensures Vite's SPA catch-all never intercepts /api/* requests
+  // Subdomain middleware FIRST — handles [slug].qiroxstudio.online requests
+  registerSubdomainMiddleware(app);
+  await registerRoutes(httpServer, app);
+  // Durable outbound-notification retries. This starts after routes and the
+  // database connection attempt, and is safe to run alongside existing mail/WA.
+  const { ensureNotificationTemplates, startNotificationWorker } = await import("./notifications/service");
+  await ensureNotificationTemplates().catch(error => console.error("[Notifications] template bootstrap:", error?.message || error));
+  startNotificationWorker();
+  const { startMailMonitor } = await import("./mail-monitor");
+  startMailMonitor();
+  registerQMeetRoutes(app);
+  startQMeetScheduler();
+  await registerInstallmentRoutes(app);
+  registerAiRoutes(app);
+  registerSandboxRoutes(app, httpServer);
+  registerDeploymentCloudRoutes(app);
+  registerCrmRoutes(app);
+  registerCrmV2Routes(app);
+
+  // ── Sprint D — Proposal Builder V2 ──────────────────────────────────────────
+  // Additive only. New /api/v2/proposals/* namespace. No existing endpoint
+  // touched. Gate: FEATURE_PROPOSAL_V2 (see server/domains/proposal-v2/routes.ts).
+  registerProposalV2Routes(app);
+  registerEmailMarketingRoutes(app);
+
+  // ── Email Marketing Cron Jobs ────────────────────────────────────────────────
+  // Daily bulk: every day at 9 AM
+  import("node-cron").then(({ default: cron }) => {
+    cron.schedule("0 9 * * *", async () => {
+      console.log("[EmailMarketing] Running daily bulk campaign...");
+      try {
+        const result = await runDailyBulkCampaign();
+        console.log(`[EmailMarketing] Daily bulk done: sent=${result.sent} skipped=${result.skipped}`);
+      } catch (err) {
+        console.error("[EmailMarketing] Daily bulk failed:", err);
+      }
+    }, { timezone: "Asia/Riyadh" });
+
+    // Weekly interested collection: every Sunday at 10 AM
+    cron.schedule("0 10 * * 0", async () => {
+      console.log("[EmailMarketing] Running weekly interested collection...");
+      try {
+        const result = await runWeeklyInterestedCollection();
+        console.log(`[EmailMarketing] Weekly done: newLeads=${result.newLeads} followUpSent=${result.followUpSent}`);
+      } catch (err) {
+        console.error("[EmailMarketing] Weekly collection failed:", err);
+      }
+    }, { timezone: "Asia/Riyadh" });
+
+    console.log("[EmailMarketing] Cron jobs scheduled (daily 9AM + weekly Sunday 10AM, Riyadh time)");
+  }).catch(() => {});
+
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    // Never expose internal stack traces in production
-    if (process.env.NODE_ENV === 'production') {
-      console.error(`[ERROR] ${_req.method} ${_req.path} → ${status}:`, message);
-    } else {
-      console.error(`[ERROR] ${_req.method} ${_req.path}:`, err);
-    }
+    // Beta readiness: route through the structured logger (falls back to
+    // console.error if the DI container isn't ready yet) and give ops a
+    // captured, greppable error event with path/method/status context.
+    logErrorEvent("Unhandled request error", err, { path: req.path, method: req.method, status });
 
-    if (!res.headersSent) {
-      res.status(status).json({ message, error: process.env.NODE_ENV !== 'production' ? err?.stack : undefined });
-    }
+    if (res.headersSent) return next(err);
+    return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
+  // 4. Frontend serving LAST — so it only catches non-API requests (SPA fallback)
+  // In development we first check whether a pre-built dist/public exists.
+  // If it does (common after `npm run build` or when cloned from a built repo),
+  // we serve those directly to avoid running Vite, which crashes with SIGBUS in
+  // memory-constrained environments.  If dist/public is absent we fall back to
+  // the in-process Vite dev server.
+  const workspaceRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  const distPublicPath = path.join(workspaceRoot, "dist", "public");
+  const hasPreBuiltDist = existsSync(path.join(distPublicPath, "index.html"));
+  if (process.env.NODE_ENV === "production") {
     serveStatic(app);
+  } else if (hasPreBuiltDist) {
+    // Serve pre-built files with no-cache so they can be rebuilt without restart
+    app.use(express.static(distPublicPath, {
+      etag: true,
+      lastModified: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, must-revalidate");
+        } else if (filePath.includes("/assets/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }));
+     app.use((req: Request, res: Response, next: NextFunction) => {
+       if (req.path.startsWith("/api/")) return next();
+      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      res.sendFile(path.join(distPublicPath, "index.html"));
+    });
+    console.log("[Dev] Serving pre-built frontend from dist/public (Vite HMR disabled)");
+  } else {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
   }
+  applicationReady = true;
+  console.log("[Startup] Application routes and frontend are ready");
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = Number(process.env.PORT) || 5000;
-  server.listen(port, "0.0.0.0", async () => {
-    log(`serving on port ${port}`);
+  // Cron jobs
+  const nodeCron = await import("node-cron");
 
-    // This changes existing records; only run it after explicitly reviewing the target branch.
-    if (process.env.ALLOW_MAIN_BRANCH_DATA_MIGRATION === "true") {
-      try {
-        const { OrderModel, BranchModel, CashierShiftModel, EmployeeModel } = await import("@shared/schema");
-        const mainOrderCount = await OrderModel.countDocuments({ branchId: "main" });
-        if (mainOrderCount > 0) {
-          const branches = await BranchModel.find({ id: { $ne: "main" } }).sort({ createdAt: 1 }).limit(1).lean();
-          if (branches.length > 0) {
-            const targetBranch = branches[0] as any;
-            const targetId = typeof targetBranch.id === "string" ? targetBranch.id.trim() : "";
-            if (!targetId || targetId.toLowerCase() === "undefined") {
-              console.error("⚠️ Main-branch migration skipped: the target branch has no valid ID.");
-            } else {
-              const ordersResult = await OrderModel.updateMany(
-                { branchId: "main" },
-                { $set: { branchId: targetId } }
-              );
-              await CashierShiftModel.updateMany(
-                { branchId: "main" },
-                { $set: { branchId: targetId, branchName: targetBranch.nameAr || "" } }
-              );
-              await EmployeeModel.updateMany(
-                { branchId: "main" },
-                { $set: { branchId: targetId } }
-              );
-              await BranchModel.findOneAndDelete({ $or: [{ id: "main" }, { nameEn: /^main$/i }] });
-              console.log(`✅ Auto-migrated ${ordersResult.modifiedCount} 'main' orders → branch "${targetBranch.nameAr}" (${targetId})`);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("⚠️ Auto-migration of main branch skipped:", err);
-      }
-    } else {
-      console.log("ℹ️ Skipping main-branch data migration; explicit opt-in is required.");
-    }
-
-    // ── Sync Geidea credentials only when explicitly provided in Replit Secrets.
-    // Credential sync must not override a different provider selected by the admin.
+  nodeCron.default.schedule("*/2 * * * *", async () => {
     try {
-      const { BusinessConfigModel: BCM } = await import("./models");
-      const geideaPublicKey = process.env.GEIDEA_PUBLIC_KEY?.trim();
-      const geideaApiPassword = process.env.GEIDEA_API_PASSWORD?.trim();
-      const requestedProvider = process.env.PAYMENT_GATEWAY_PROVIDER?.trim().toLowerCase();
-
-      if (geideaPublicKey && geideaApiPassword) {
-        const updates: Record<string, unknown> = {
-          'paymentGateway.geidea.publicKey': geideaPublicKey,
-          'paymentGateway.geidea.apiPassword': geideaApiPassword,
+      if (connManager.qmeetConn?.readyState !== 1) return;
+      const { QMeetingModel: QMF } = await import("./qmeet-db");
+      const QMeetingModel = QMF();
+      const { pushNotification } = await import("./ws");
+      const now = new Date();
+      const in5  = new Date(now.getTime() + 5  * 60 * 1000);
+      const in15 = new Date(now.getTime() + 15 * 60 * 1000);
+      const upcoming = await (QMeetingModel as any).find({
+        status: "scheduled",
+        reminderSent: { $ne: true },
+        scheduledAt: { $gt: in5, $lte: in15 },
+      });
+      for (const meeting of upcoming) {
+        const minutesLeft = Math.round((new Date(meeting.scheduledAt).getTime() - now.getTime()) / 60000);
+        const payload = {
+          title: `اجتماع قادم: ${meeting.title}`,
+          body: `يبدأ خلال ${minutesLeft} دقيقة`,
+          type: "meeting_reminder",
+          link: `/meeting/${meeting.roomName}`,
+          icon: "🎥",
         };
-        const existingConfig = await BCM.findOne({ tenantId: 'demo-tenant' })
-          .select('paymentGateway.provider')
-          .lean();
-        const selectedProvider = existingConfig?.paymentGateway?.provider;
-        if (requestedProvider === 'geidea' ||
-          (!requestedProvider && (!selectedProvider || selectedProvider === 'none'))) {
-          updates['paymentGateway.provider'] = 'geidea';
+        if (meeting.hostId) pushNotification(String(meeting.hostId), payload);
+        for (const pid of (meeting.participantIds || [])) {
+          pushNotification(String(pid), payload);
         }
-        const geideaBaseUrl = process.env.GEIDEA_BASE_URL?.trim();
-        const applePayMerchantId = process.env.APPLE_PAY_MERCHANT_ID?.trim();
-        if (geideaBaseUrl) updates['paymentGateway.geidea.baseUrl'] = geideaBaseUrl;
-        if (applePayMerchantId) updates['paymentGateway.geidea.applePayMerchantId'] = applePayMerchantId;
-
-        await BCM.updateOne({ tenantId: 'demo-tenant' }, { $set: updates }, { upsert: false });
-        console.log(`✅ Geidea credentials synced; active provider preserved (${selectedProvider || 'unset'})`);
-      } else {
-        console.warn('[Geidea] Credentials are not set in Replit Secrets; leaving existing payment settings unchanged.');
+        await (QMeetingModel as any).findByIdAndUpdate(meeting._id, { reminderSent: true });
       }
-    } catch (err) {
-      console.error('⚠️ Could not configure Geidea gateway:', err);
-    }
-
-    // Configure Paymob only when its credentials and merchant integration IDs are provided.
-    // The active provider is controlled explicitly so existing Geidea credentials cannot
-    // silently switch the checkout back to Geidea.
-    try {
-      const { BusinessConfigModel } = await import("./models");
-      const paymobSecretKey = process.env.PAYMOB_SECRET_KEY?.trim();
-      const paymobPublicKey = process.env.PAYMOB_PUBLIC_KEY?.trim();
-      const paymobHmacSecret = process.env.PAYMOB_HMAC_SECRET?.trim();
-      const cardIntegrationIdsFromEnv = (process.env.PAYMOB_CARD_INTEGRATION_ID || '')
-        .split(',')
-        .map(value => Number(value.trim()))
-        .filter(value => Number.isInteger(value) && value > 0);
-      const legacyIntegrationIds = (process.env.PAYMOB_INTEGRATION_IDS || '')
-        .split(',')
-        .map(value => Number(value.trim()))
-        .filter(value => Number.isInteger(value) && value > 0);
-      const paymobIntegrationIds = cardIntegrationIdsFromEnv.length
-        ? cardIntegrationIdsFromEnv
-        : legacyIntegrationIds;
-      const paymobApplePayIntegrationId = Number(process.env.PAYMOB_APPLE_PAY_INTEGRATION_ID?.trim() || 0);
-      const requestedProvider = process.env.PAYMENT_GATEWAY_PROVIDER?.trim().toLowerCase();
-
-      if (!paymobSecretKey || !paymobPublicKey || !paymobHmacSecret || paymobIntegrationIds.length === 0) {
-        console.log('ℹ️ Paymob is not fully configured; keeping the current payment provider unchanged');
-      } else {
-        const config = await BusinessConfigModel.findOne({ tenantId: 'demo-tenant' });
-        if (config) {
-          const pg = config.paymentGateway;
-          const shouldSelectPaymob = requestedProvider === 'paymob';
-          const idsMatch = JSON.stringify((pg?.paymob?.integrationIds || []).map(Number)) ===
-            JSON.stringify(paymobIntegrationIds);
-          const applePayIdMatches = !Number.isInteger(paymobApplePayIntegrationId) ||
-            paymobApplePayIntegrationId <= 0 ||
-            Number(pg?.paymob?.applePayIntegrationId) === paymobApplePayIntegrationId;
-          const needsUpdate = !pg?.paymob?.secretKey ||
-            !pg?.paymob?.publicKey ||
-            !pg?.paymob?.hmacSecret ||
-            !idsMatch ||
-            !applePayIdMatches ||
-            (shouldSelectPaymob && pg?.provider !== 'paymob');
-
-          if (needsUpdate) {
-            const updates: Record<string, unknown> = {
-              'paymentGateway.paymob.secretKey': paymobSecretKey,
-              'paymentGateway.paymob.publicKey': paymobPublicKey,
-              'paymentGateway.paymob.hmacSecret': paymobHmacSecret,
-              'paymentGateway.paymob.baseUrl': 'https://ksa.paymob.com',
-              'paymentGateway.paymob.integrationIds': paymobIntegrationIds,
-            };
-            if (Number.isInteger(paymobApplePayIntegrationId) && paymobApplePayIntegrationId > 0) {
-              updates['paymentGateway.paymob.applePayIntegrationId'] = paymobApplePayIntegrationId;
-            }
-            if (shouldSelectPaymob) updates['paymentGateway.provider'] = 'paymob';
-            await BusinessConfigModel.updateOne(
-              { tenantId: 'demo-tenant' },
-              { $set: updates },
-              { upsert: false },
-            );
-            console.log(`✅ Paymob credentials synced${shouldSelectPaymob ? ' and selected' : ''}`);
-          } else {
-            console.log('✅ Paymob credentials already configured');
-          }
-        }
-      }
-    } catch (err) {
-      console.error('❌ Failed to auto-configure PayMob:', err);
-    }
-    // Verify Mail Service on startup
-    try {
-      const { testEmailConnection } = await import("./mail-service");
-      console.log("📧 Performing startup email connection test...");
-      const success = await testEmailConnection();
-      if (success) {
-        console.log("✅ Mail service verified and ready on startup");
-      } else {
-        console.error("❌ Mail service failed verification on startup. Check credentials and connectivity.");
-      }
-    } catch (err) {
-      console.error("❌ Error during mail service startup test:", err);
-    }
+    } catch (e: any) { console.error("[MeetingReminder] error:", e.message); }
   });
+
+  nodeCron.default.schedule("0 8 * * *", async () => {
+    try {
+      const result = await runInstallmentLateCheck();
+      console.log(`[Installment] Late check: locked=${result.locked}, penalized=${result.penalized}`);
+    } catch (e: any) { console.error("[Installment] Late check error:", e.message); }
+  });
+
+  nodeCron.default.schedule("0 8 * * 0", async () => {
+    try {
+      const r = await fetch(`http://127.0.0.1:${port}/api/internal/weekly-report`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const data = await r.json() as any;
+      console.log(`[WeeklyReport] Sent to ${data.sent} admins — ${data.weekLabel}`);
+    } catch (e: any) { console.error("[WeeklyReport] error:", e.message); }
+  });
+
+  initCronJobs().catch(err => console.error("Cron init error:", err));
+
+  // ── WhatsApp auto-connect ─────────────────────────────────────────────────
+  // Delay slightly so the DB + SSE clients are ready before the socket fires events
+  setTimeout(async () => {
+    try {
+      const { waModule } = await import("./whatsapp-module");
+      await waModule.autoConnect();
+    } catch (e: any) {
+      console.error("[WA] Auto-connect startup error:", e.message);
+    }
+  }, 4000);
+
+  // ── Local AI — warm up embedding model if already downloaded ─────────────
+  // Non-blocking: runs in background. Does NOT re-download unless model was
+  // previously loaded (no creds.json = skips; model already cached = loads fast)
+  setTimeout(async () => {
+    try {
+      const { QiroxAISettingsModel } = await import("./models/qirox-ai");
+      const settings: any = await QiroxAISettingsModel.findOne({ singleton: "main" }).lean();
+      if (process.env.AI_PROVIDER !== "external" || settings?.useLocalAI) {
+        const { loadEmbeddingModel, loadGenerationModel } = await import("./lib/local-ai/index");
+        await loadEmbeddingModel();
+        // Generation is loaded independently; a failure here must not stop
+        // the server because the RAG extractor remains available.
+        loadGenerationModel().catch((e: any) =>
+          console.warn("[LocalAI] Generation warmup deferred:", e.message)
+        );
+        console.log("[LocalAI] Local models warmup started ✅");
+      }
+    } catch (e: any) {
+      console.warn("[LocalAI] Startup warmup skipped:", e.message);
+    }
+  }, 8000);
 })();

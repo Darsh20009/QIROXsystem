@@ -1,10 +1,13 @@
 kind = "design"
 previewPath = "/__mockup/"
 title = "Mockup Sandbox"
-description = "Isolated preview space for comparing the current CLUNY dashboard with the Black Rose-inspired CLUNY layout."
 version = "1.0.0"
 id = "artifacts/mockup-sandbox"
 router = "path"
+
+[[integratedSkills]]
+name = "mockup-sandbox"
+version = "1.0.0"
 
 [[services]]
 name = "Component Preview Server"

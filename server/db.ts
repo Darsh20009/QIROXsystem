@@ -1,0 +1,46 @@
+import { connManager } from "./connection-manager";
+import { loadSystemSettings } from "./system-settings";
+import { ensureInvestorDistributionIndex } from "./services/investor-distribution";
+import { ensurePendingProjectSubscriptionRenewalIndex } from "./models/project-subscriptions";
+import { ensureProjectAddonSubscriptionActionIndex } from "./models/services";
+
+export async function connectToDatabase() {
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI must be set. MongoDB is now the primary database.");
+  }
+
+  process.env.MONGODB_URI = process.env.MONGODB_URI.replace(/\s+/g, "");
+
+  await connManager.initFromEnv();
+
+  const saved = await loadSystemSettings();
+
+  if (saved.mainDbUri && saved.mainDbUri !== process.env.MONGODB_URI) {
+    console.log("[DB] Applying saved mainDbUri from SystemSettings...");
+    await connManager.switchMain(saved.mainDbUri, saved.prevMainDbUri || process.env.MONGODB_URI);
+  }
+
+  if (saved.qmeetDbUri) {
+    await connManager.switchQMeet(saved.qmeetDbUri, saved.prevQmeetDbUri);
+  }
+
+  const emailOverrides: Record<string, string> = {};
+  if (saved.emailSiteUrl) emailOverrides.siteUrl = saved.emailSiteUrl;
+  if (Object.keys(emailOverrides).length) {
+    connManager.setEmailSettings(emailOverrides as any);
+    console.log("[DB] Email settings applied from SystemSettings");
+  }
+  if (saved.emailLogoUrl) {
+    const { saveSystemSettings } = await import("./system-settings");
+    await saveSystemSettings({ emailLogoUrl: "" }).catch((error: any) => {
+      console.warn("[DB] Could not clear the obsolete global email logo setting:", error?.message || "unknown error");
+    });
+  }
+
+  await ensureInvestorDistributionIndex();
+  console.log("[DB] Investor distribution uniqueness index verified");
+  await ensurePendingProjectSubscriptionRenewalIndex();
+  console.log("[DB] Pending project renewal uniqueness index verified");
+  await ensureProjectAddonSubscriptionActionIndex();
+  console.log("[DB] Project addon subscription action uniqueness index verified");
+}
