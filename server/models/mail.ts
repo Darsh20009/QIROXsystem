@@ -20,6 +20,7 @@ const mailAccountSchema = new mongoose.Schema({
   isShared:        { type: Boolean, default: false },
   sharedWith:      [{ type: String }],
 }, { timestamps: true });
+let loggedMailboxCredentialDecryptionWarning = false;
 mailAccountSchema.pre("save", function () {
   if (this.isModified("password")) this.password = encryptMailPassword(this.password || "");
 });
@@ -40,7 +41,17 @@ function decryptMailAccountResult(result: any): void {
     return;
   }
   if (result && typeof result.password === "string") {
-    result.password = decryptMailPassword(result.password);
+    try {
+      result.password = decryptMailPassword(result.password);
+    } catch {
+      // Preserve the stored ciphertext and keep account queries available. The
+      // mailbox password can be re-entered from settings using the active key.
+      result.password = "";
+      if (!loggedMailboxCredentialDecryptionWarning) {
+        console.warn("[Mail] A saved mailbox password needs to be re-entered; encrypted data was preserved.");
+        loggedMailboxCredentialDecryptionWarning = true;
+      }
+    }
   }
 }
 mailAccountSchema.post("find", decryptMailAccountResult);
