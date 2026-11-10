@@ -87,11 +87,6 @@ APPLE_CLIENT_ID = "auth.qiroxstudio.online"
 APPLE_TEAM_ID = "V4K6RM59LS"
 PAYPAL_CLIENT_ID = "AXjzQSCwpCaGAYv6sM7ZNbIUgf4rHZQV_WIDt4cpzYcePKX7cXt6lQbrN_NWIfBkAT8PGZQ-8jN6ld5N"
 GOOGLE_CLIENT_ID = "982269596237-s4jq7ojfc3qri89cb5bhj5mcikbgpr9e.apps.googleusercontent.com"
-FEATURE_CUSTOMER_JOURNEY_V2 = "false"
-FEATURE_DASHBOARD_V2 = "false"
-FEATURE_LANDING_V2 = "false"
-FEATURE_LANDING_DS_V2 = "false"
-FEATURE_DS_V2_NAV_FOOTER = "false"
 APPLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback"
 GOOGLE_CALLBACK_URL = "https://qiroxstudio.online/api/auth/google/callback"
 OPENAI_BASE_URL = "https://bazaarlink.ai/v1"
@@ -101,6 +96,13 @@ CPANEL_USERNAME = "rfpeddku"
 
 [userenv.development]
 FEATURE_MANUAL_MARKETING = "true"
+FEATURE_CRM_V2 = "true"
+FEATURE_CUSTOMER_JOURNEY_V2 = "true"
+FEATURE_DASHBOARD_V2 = "true"
+FEATURE_DS_V2_NAV_FOOTER = "true"
+FEATURE_DS_V2_PHASE2_PAGES = "true"
+FEATURE_LANDING_DS_V2 = "true"
+FEATURE_LANDING_V2 = "true"
 
 [agent]
 expertMode = true

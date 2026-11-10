@@ -42,6 +42,7 @@ const ALL_NAV: Record<string, NavItem> = {
   // ── Main Operations ───────────────────────────────────────────────────────
   workspace:         { id: "workspace",         labelAr: "مساحات العمل",        labelEn: "Workspaces",            icon: LayoutDashboard, href: "/employee/workspace",         group: "main" },
   dashboard:         { id: "dashboard",         labelAr: "لوحتي",               labelEn: "My Dashboard",        icon: LayoutDashboard, href: "/employee/role-dashboard",    group: "main" },
+  dashboard_v2:      { id: "dashboard_v2",      labelAr: "لوحة العميل الجديدة", labelEn: "Customer Dashboard V2", icon: LayoutDashboard, href: "/dashboard-v2",                group: "main" },
   orders:            { id: "orders",            labelAr: "المشاريع",             labelEn: "Projects",             icon: Package,         href: "/admin/orders",               group: "main" },
   customers:         { id: "customers",         labelAr: "العملاء",              labelEn: "Clients",              icon: Users,           href: "/admin/customers",            group: "main" },
   new_order:         { id: "new_order",         labelAr: "عميل وطلب جديد",      labelEn: "New Order",            icon: PlusCircle,      href: "/employee/new-order",         group: "main" },
@@ -74,6 +75,7 @@ const ALL_NAV: Record<string, NavItem> = {
   // ── CRM & Leads ───────────────────────────────────────────────────────────
   leads_data:        { id: "leads_data",        labelAr: "داتا العملاء",         labelEn: "Leads Data",           icon: Building2,       href: "/employee/leads-data",        group: "main" },
   crm:               { id: "crm",               labelAr: "CRM",                  labelEn: "CRM",                  icon: TrendingUp,      href: "/employee/crm",               group: "main" },
+  crm_v2:            { id: "crm_v2",            labelAr: "CRM الجديد",           labelEn: "CRM V2",               icon: TrendingUp,      href: "/employee/crm-v2",            group: "main" },
   whatsapp_crm:      { id: "whatsapp_crm",      labelAr: "واتساب CRM",           labelEn: "WhatsApp CRM",         icon: MessageSquare,   href: "/employee/whatsapp-crm",      group: "main" },
   manual_marketing:  { id: "manual_marketing",  labelAr: "التسويق اليدوي",       labelEn: "Manual Marketing",     icon: Megaphone,       href: "/employee/manual-marketing",  group: "main" },
   // ── Logistics ─────────────────────────────────────────────────────────────
@@ -224,6 +226,24 @@ export function getAllowedEmployeeNavItems(role: string, allowedPages?: string[]
     ? allowedPages
     : (ROLE_ITEMS[role] || DEFAULT_ITEMS);
   return [ALL_NAV.workspace, ...ensureSecurityNav(ids).map(id => ALL_NAV[id]).filter(Boolean)];
+}
+
+function addEnabledFeatureNavItems(
+  items: NavItem[],
+  role: string,
+  dashboardV2Enabled: boolean,
+  crmV2Enabled: boolean,
+): NavItem[] {
+  return items.flatMap((item) => {
+    const extra: NavItem[] = [];
+    if (item.id === "dashboard" && dashboardV2Enabled && ["admin", "manager"].includes(role)) {
+      extra.push(ALL_NAV.dashboard_v2);
+    }
+    if (item.id === "crm" && crmV2Enabled) {
+      extra.push(ALL_NAV.crm_v2);
+    }
+    return [item, ...extra];
+  });
 }
 
 const WORKSPACE_META: Record<string, { labelAr: string; labelEn: string; descriptionAr: string; descriptionEn: string; icon: React.ElementType; candidates: string[] }> = {
@@ -537,6 +557,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const { lang } = useI18n();
   const { theme, toggle: toggleTheme } = useTheme();
   const manualMarketingEnabled = useFlag("FEATURE_MANUAL_MARKETING");
+  const dashboardV2Enabled = useFlag("FEATURE_DASHBOARD_V2");
+  const crmV2Enabled = useFlag("FEATURE_CRM_V2");
   const { mutate: logout, isPending: loggingOut } = useLogout();
   const L = lang === "ar";
 
@@ -547,9 +569,14 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     // Use custom allowedPages per employee if set by admin (overrides role default)
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
-    return getAllowedEmployeeNavItems(role, customPages)
+    return addEnabledFeatureNavItems(
+      getAllowedEmployeeNavItems(role, customPages),
+      role,
+      dashboardV2Enabled,
+      crmV2Enabled,
+    )
       .filter((item) => item.id !== "manual_marketing" || manualMarketingEnabled);
-  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, manualMarketingEnabled]);
+  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, manualMarketingEnabled, dashboardV2Enabled, crmV2Enabled]);
 
   const grouped = useMemo(() => {
     const g: Record<string, NavItem[]> = {};
@@ -598,10 +625,16 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const role = (canScope && viewAsRole) ? viewAsRole : ((user as any)?.role || "default");
     const customPages: string[] | null = (canScope && viewAsRole) ? null : ((user as any)?.allowedPages ?? null);
     const configuredIds = (customPages && customPages.length > 0) ? customPages : (MOBILE_ROLE_ITEMS[role] || ROLE_ITEMS[role] || DEFAULT_ITEMS);
-    return ensureSecurityNav(configuredIds)
+    return addEnabledFeatureNavItems(
+      ensureSecurityNav(configuredIds)
       .map(id => ALL_NAV[id])
-      .filter((item) => Boolean(item) && (item.id !== "manual_marketing" || manualMarketingEnabled));
-  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, manualMarketingEnabled]);
+      .filter((item) => Boolean(item)),
+      role,
+      dashboardV2Enabled,
+      crmV2Enabled,
+    )
+      .filter((item) => item.id !== "manual_marketing" || manualMarketingEnabled);
+  }, [(user as any)?.role, (user as any)?.allowedPages, viewAsRole, canScope, manualMarketingEnabled, dashboardV2Enabled, crmV2Enabled]);
 
   const mobileGrouped = useMemo(() => {
     const g: Record<string, NavItem[]> = {};
