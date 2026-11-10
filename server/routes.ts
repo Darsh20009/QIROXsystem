@@ -3835,38 +3835,57 @@ export async function registerRoutes(
       if (key in req.body) safeBody[key] = req.body[key];
     }
 
-    // Reject wallet/mixed orders if walletAmountUsed is missing or zero
-    if (safeBody.paymentMethod === "wallet" && (Number(safeBody.walletAmountUsed || 0) <= 0)) {
-      return res.status(400).json({ error: "يجب تحديد المبلغ المخصوم من المحفظة عند الدفع بمحفظة كيروكس باي" });
+    // A wallet-only payment must cover the full server-calculated total.
+    if (safeBody.paymentMethod === "wallet" && walletAmountUsed < orderTotal - 0.01) {
+      return res.status(400).json({ error: "رصيد محفظة كيروكس باي لا يغطي كامل قيمة الطلب" });
     }
 
-    // Auto-mark deposit as paid for instant payment methods (PayPal captured, wallet, mixed wallet+paypal)
-    const instantPayMethods = ["paypal", "wallet", "mixed"];
-    if (instantPayMethods.includes(safeBody.paymentMethod as string)) {
-      safeBody.isDepositPaid = true;
-      safeBody.paidAt = new Date();
-    }
+    // Payment state is never trusted from the client. Wallet orders become paid
+    // only after the atomic debit succeeds below; other methods remain pending
+    // until their payment is verified server-side.
+    safeBody.isDepositPaid = false;
+    safeBody.paymentStatus = "pending";
 
     const orderNum = await generateOrderNumber();
     const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending", orderNumber: orderNum } as any);
 
     // Deduct wallet atomically after order creation
+    let walletDebitApplied = false;
     if (walletDeducted > 0) {
       try {
         const debitAmt = parseFloat(walletDeducted.toFixed(2));
         const ok = await atomicWalletDebit(String(user.id), debitAmt);
-        if (ok) {
+        if (!ok) {
+          const { OrderModel } = await import("./models");
+          await OrderModel.findByIdAndDelete(String(order.id));
+          return res.status(409).json({ error: "تغير رصيد المحفظة قبل إتمام الدفع. حدّث الرصيد ثم حاول مرة أخرى." });
+        }
+        walletDebitApplied = true;
+        try {
           await WalletTransactionModel.create({
             userId: String(user.id), type: 'debit', amount: debitAmt,
             description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
             orderId: String(order.id), addedBy: String(user.id), note: 'wallet_payment',
           });
-        } else {
-          await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: رصيد المحفظة غير كافٍ — يرجى مراجعة الدفع]' } as any).catch(() => {});
+        } catch (txErr) {
+          console.error("[wallet-transaction-log]", txErr);
+        }
+        if (safeBody.paymentMethod === "wallet" && debitAmt >= orderTotal - 0.01) {
+          await storage.updateOrder(String(order.id), { isDepositPaid: true, paymentStatus: "approved" } as any);
+          (order as any).isDepositPaid = true;
+          (order as any).paymentStatus = "approved";
         }
       } catch (wErr) {
         console.error("[wallet-deduct]", wErr);
-        await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
+        if (walletDebitApplied) {
+          await storage.updateOrder(String(order.id), {
+            notes: `${(order as any).notes || ""} [تم خصم رصيد المحفظة؛ تعذر تحديث حالة الدفع وتلزم مراجعة الطلب]`,
+          } as any).catch(() => {});
+          return res.status(500).json({ error: "تمت معالجة خصم المحفظة لكن تعذّر تحديث الطلب. تواصل مع الدعم قبل إعادة المحاولة." });
+        }
+        const { OrderModel } = await import("./models");
+        await OrderModel.findByIdAndDelete(String(order.id)).catch(() => {});
+        return res.status(500).json({ error: "تعذّر إتمام خصم المحفظة، ولم يتم تسجيل الطلب." });
       }
     }
     const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);

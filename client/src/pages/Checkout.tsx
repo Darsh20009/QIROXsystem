@@ -238,7 +238,7 @@ export default function Checkout() {
 
   useEffect(() => {
     if (walletBalance > 0 && walletBalance >= total) setPayMethod("wallet");
-    else if (cardData?.cardActive) setPayMethod("card");
+    else if (cardData?.cardActive && walletBalance >= total) setPayMethod("card");
     else setPayMethod("bank");
   }, [walletBalance, cardData, total]);
 
@@ -432,8 +432,10 @@ export default function Checkout() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const effWallet = payMethod === "wallet" ? Math.min(walletUse || total, walletBalance) : 0;
-      const fullyWallet = payMethod === "wallet" && effWallet >= total - 0.01;
+      const effWallet = payMethod === "card"
+        ? Math.min(total, walletBalance)
+        : payMethod === "wallet" ? Math.min(walletUse || total, walletBalance) : 0;
+      const fullyWallet = (payMethod === "wallet" || payMethod === "card") && effWallet >= total - 0.01;
       const method = fullyWallet ? "wallet" : payMethod === "paypal" ? "paypal" : payMethod === "card" ? "wallet" : "bank_transfer";
       const addressLine = isProjectCheckout
         ? `بيانات التواصل: ${addr.recipientName} — ${addr.recipientPhone} | قد يتواصل فريق كيروكس عبر الواتساب أو الهاتف عند الحاجة لاستكمال ملفات أو تفاصيل ناقصة.`
@@ -464,7 +466,7 @@ export default function Checkout() {
           shippingFee: parseFloat(shippingFee.toFixed(2)),
         } : {}),
         walletAmountUsed: effWallet > 0 ? parseFloat(effWallet.toFixed(2)) : undefined,
-        walletPayPin: (payMethod === "wallet" || payMethod === "card") && walletPin ? walletPin : cardPin || undefined,
+        walletPayPin: payMethod === "wallet" ? walletPin : payMethod === "card" ? cardPin : undefined,
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
@@ -509,7 +511,7 @@ export default function Checkout() {
     ? !!(addr.recipientName.trim() && addr.recipientPhone.trim())
     : !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city) && (!hasPhysicalItems || !!selectedShippingCompanyId);
   const canProceedStep2 = (payMethod === "bank") ||
-    (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
+    (payMethod === "wallet") || (payMethod === "card" && !!cardPin && walletBalance >= total - 0.01);
 
   // ── Inline Auth Step (when user not logged in) ───────────────
   if (!user) {
@@ -958,6 +960,7 @@ export default function Checkout() {
                     {cardData?.cardActive && (
                       <button
                         onClick={() => setPayMethod("card")}
+                        disabled={walletBalance < total - 0.01}
                         className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "card" ? "border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]" : "border-black/[0.07] hover:border-black/20"}`}
                         data-testid="button-pay-card"
                       >
@@ -967,7 +970,7 @@ export default function Checkout() {
                           </div>
                           <div className="flex-1">
                             <p className="font-bold text-sm text-black">بطاقة Qirox</p>
-                            <p className="text-xs text-black/40">بطاقتك الرقمية</p>
+                            <p className="text-xs text-black/40">{walletBalance >= total - 0.01 ? "بطاقتك الرقمية" : "الرصيد غير كافٍ لتغطية الطلب"}</p>
                           </div>
                           {payMethod === "card" && <Check className="w-5 h-5 text-black dark:text-white shrink-0" />}
                         </div>
