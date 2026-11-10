@@ -9,16 +9,19 @@ import { useQuery } from "@tanstack/react-query";
 import type { Partner } from "@shared/schema";
 import { useI18n } from "@/lib/i18n";
 import { useSEO } from "@/hooks/use-seo";
+import { getPartnerLogoPresentation, normalizePartnerName } from "@/lib/partner-logo";
 
 const qahwaCupLogo = "";
 const genMZLogo = "";
-const beFluentLogo = "";
+const beFluentLogo = "/partners/be-fluent.png";
 const tuwaiqLogo = "";
 const blackRoseLogo = "";
 const qodratakLogo = "";
 const subwayLogo = "";
 const maestroLogo = "";
 const instapayLogo = "";
+const ofoqLogo = "/partners/ofoq.png";
+const tasaeedaLogo = "/partners/tasaeeda.png";
 
 const staticPartners = [
   { name: "QahwaCup",        nameAr: "قهوة كوب",        logo: qahwaCupLogo,   sector: "مطاعم ومقاهي",    sectorEn: "F&B",          url: null },
@@ -30,7 +33,24 @@ const staticPartners = [
   { name: "Subway",          nameAr: "صبواي",            logo: subwayLogo,     sector: "سلاسل المطاعم",    sectorEn: "F&B Chain",    url: "https://subway.com" },
   { name: "Maestro",         nameAr: "مايسترو",          logo: maestroLogo,    sector: "تقنية",            sectorEn: "Tech",         url: null },
   { name: "InstaPay",        nameAr: "إنستاباي",         logo: instapayLogo,   sector: "المدفوعات",        sectorEn: "Fintech",      url: null },
+  { name: "Ofoq",            nameAr: "أفق",              logo: ofoqLogo,       sector: "عميل",              sectorEn: "Client",       url: null },
+  { name: "Tasaeeda",        nameAr: "تسعيدة",           logo: tasaeedaLogo,   sector: "عميل",              sectorEn: "Client",       url: null },
 ];
+
+function safeWebsiteUrl(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (
+      !["http:", "https:"].includes(url.protocol)
+      || !url.hostname.includes(".")
+      || url.hostname.split(".").some(part => !part)
+    ) return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -48,6 +68,11 @@ const stagger = {
 export default function Partners() {
   const { lang, dir, t } = useI18n();
   const { data: dbPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+  const hasDbPartners = dbPartners && dbPartners.length > 0;
+  const dbPartnerNames = new Set((dbPartners || []).flatMap(partner => [partner.name, partner.nameAr].map(normalizePartnerName)));
+  const visibleStaticPartners = staticPartners.filter(partner =>
+    ![partner.name, partner.nameAr].some(name => dbPartnerNames.has(normalizePartnerName(name)))
+  );
 
   useSEO({
     title: lang === "ar"
@@ -68,8 +93,21 @@ export default function Partners() {
       "publisher": {
         "@type": "Organization",
         "name": "Qirox Studio",
-        "sameAs": "https://qiroxstudio.online"
-      }
+         "sameAs": ["https://qiroxstudio.online"]
+       },
+       "mentions": [
+          ...visibleStaticPartners.map(partner => ({
+           "@type": "Organization",
+           "name": partner.nameAr ? `${partner.nameAr} | ${partner.name}` : partner.name,
+           ...(safeWebsiteUrl(partner.url) ? { "url": safeWebsiteUrl(partner.url), "sameAs": [safeWebsiteUrl(partner.url)] } : {}),
+         })),
+         ...(dbPartners || []).map(partner => ({
+           "@type": "Organization",
+           "name": partner.nameAr ? `${partner.nameAr} | ${partner.name}` : partner.name,
+           ...(safeWebsiteUrl(partner.websiteUrl) ? { "url": safeWebsiteUrl(partner.websiteUrl), "sameAs": [safeWebsiteUrl(partner.websiteUrl)] } : {}),
+           ...(partner.category ? { "category": partner.category } : {}),
+         })),
+       ]
     }
   });
 
@@ -81,8 +119,6 @@ export default function Partners() {
     ctaDesc: lang === "ar" ? "انضم لعائلة QIROX وابدأ رحلة التحول الرقمي مع مصنع الأنظمة الأول" : "Join the QIROX family and start your digital transformation journey with the leading systems factory",
     ctaBtn: lang === "ar" ? "تواصل معنا" : "Contact Us",
   };
-
-  const hasDbPartners = dbPartners && dbPartners.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950" dir={dir}>
@@ -126,9 +162,15 @@ export default function Partners() {
             className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
           >
             {dbPartners.map((partner, idx) => {
-              const features = lang === "ar" && partner.featuresAr?.length ? partner.featuresAr : partner.features || [];
+              const manualFeatures = lang === "ar" && partner.featuresAr?.length ? partner.featuresAr : partner.features || [];
+              const features = Array.from(new Set([...(partner.serviceFeatures || []), ...manualFeatures]));
               const desc = lang === "ar" ? (partner.descriptionAr || partner.description) : (partner.description || partner.descriptionAr);
               const name = lang === "ar" && partner.nameAr ? partner.nameAr : partner.name;
+              const logoPresentation = getPartnerLogoPresentation(partner);
+              const logoSrc = logoPresentation.src;
+              const logoFrameClass = logoPresentation.darkSurface
+                ? "bg-[#18201d] border-white/[.08]"
+                : "bg-transparent border-black/[.06] dark:border-white/[.06]";
 
               return (
                 <motion.div key={partner.id} variants={fadeUp} custom={idx} className="group"
@@ -141,19 +183,19 @@ export default function Partners() {
                     <div className="p-6">
                       <div className="flex items-start gap-4 mb-4">
                         {/* Logo */}
-                        <div className="w-16 h-16 rounded-xl bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0 p-1.5">
-                          {partner.websiteUrl ? (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                         <div className={`w-16 h-16 rounded-xl ${logoFrameClass} border flex items-center justify-center overflow-hidden shrink-0 p-1.5`}>
+                          {safeWebsiteUrl(partner.websiteUrl) ? (
+                            <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer">
+                               <img src={logoSrc} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
                             </a>
                           ) : (
-                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                             <img src={logoSrc} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
                           )}
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          {partner.websiteUrl ? (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                           {safeWebsiteUrl(partner.websiteUrl) ? (
+                             <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer"
                               className="font-bold text-black dark:text-white hover:text-black dark:text-white dark:hover:text-black/70 dark:text-white/70 transition-colors leading-tight block"
                               data-testid={`link-partner-name-${partner.id}`}>
                               {name}
@@ -176,12 +218,12 @@ export default function Partners() {
                             )}
                           </div>
 
-                          {partner.websiteUrl && (
-                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                           {safeWebsiteUrl(partner.websiteUrl) && (
+                             <a href={safeWebsiteUrl(partner.websiteUrl)} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-[10px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white mt-1 transition-colors"
                               data-testid={`link-partner-website-${partner.id}`}>
                               <ExternalLink className="w-2.5 h-2.5" />
-                              {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return partner.websiteUrl; } })()}
+                               {new URL(safeWebsiteUrl(partner.websiteUrl)!).hostname.replace("www.", "")}
                             </a>
                           )}
                         </div>
@@ -228,35 +270,43 @@ export default function Partners() {
           initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
         >
-          {staticPartners.map((partner, idx) => (
-            <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
-              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
-                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-white p-1.5">
-                  {partner.url ? (
-                    <a href={partner.url} target="_blank" rel="noopener noreferrer">
-                      <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+          {visibleStaticPartners.map((partner, idx) => {
+            const displayName = lang === "ar" ? partner.nameAr || partner.name : partner.name;
+            const websiteUrl = safeWebsiteUrl(partner.url);
+            const logoContent = partner.logo ? (
+              <img src={partner.logo} alt={displayName} className="max-w-full max-h-full object-contain" loading="lazy" />
+            ) : (
+              <span aria-hidden="true" className="text-2xl font-black text-black/20 dark:text-white/20">
+                {displayName.trim().slice(0, 1)}
+              </span>
+            );
+
+            return (
+              <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
+                <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-transparent p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 relative overflow-hidden">
+                  <div className={`w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden p-1.5 ${partner.logo === ofoqLogo ? "bg-[#2b2740]" : "bg-transparent"}`}>
+                    {websiteUrl ? (
+                      <a href={websiteUrl} target="_blank" rel="noopener noreferrer">{logoContent}</a>
+                    ) : logoContent}
+                  </div>
+                  {websiteUrl ? (
+                    <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-bold text-black dark:text-white text-center hover:underline" data-testid={`link-static-partner-${idx}`}>
+                      {displayName}
                     </a>
                   ) : (
-                    <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                    <h3 className="text-xs font-bold text-black dark:text-white text-center">{displayName}</h3>
+                  )}
+                  <span className="text-[9px] text-black/35 dark:text-white/35 mt-1 font-medium">
+                    {lang === "ar" ? partner.sector : partner.sectorEn}
+                  </span>
+                  {websiteUrl && (
+                    <ExternalLink className="w-2.5 h-2.5 text-black/20 dark:text-white/20 absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                 </div>
-                {partner.url ? (
-                  <a href={partner.url} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-bold text-black dark:text-white text-center hover:underline" data-testid={`link-static-partner-${idx}`}>
-                    {lang === "ar" ? partner.nameAr : partner.name}
-                  </a>
-                ) : (
-                  <h3 className="text-xs font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
-                )}
-                <span className="text-[9px] text-black/35 dark:text-white/35 mt-1 font-medium">
-                  {lang === "ar" ? partner.sector : partner.sectorEn}
-                </span>
-                {partner.url && (
-                  <ExternalLink className="w-2.5 h-2.5 text-black/20 dark:text-white/20 absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                )}
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </motion.div>
       </section>
 

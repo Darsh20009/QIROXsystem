@@ -1,0 +1,125 @@
+{
+  "tier": "lite",
+  "features": [
+    {
+      "id": "menu",
+      "labelAr": "قائمة الطعام",
+      "labelEn": "Digital menu",
+      "minTier": "lite"
+    },
+    {
+      "id": "table-booking",
+      "labelAr": "حجز الطاولات",
+      "labelEn": "Table booking",
+      "minTier": "lite"
+    },
+    {
+      "id": "website",
+      "labelAr": "موقع المطعم",
+      "labelEn": "Restaurant website",
+      "minTier": "lite"
+    },
+    {
+      "id": "qr-menu",
+      "labelAr": "قائمة رقمية عبر QR",
+      "labelEn": "QR menu",
+      "minTier": "lite"
+    },
+    {
+      "id": "maps",
+      "labelAr": "الموقع والخرائط",
+      "labelEn": "Maps and location",
+      "minTier": "lite"
+    },
+    {
+      "id": "social",
+      "labelAr": "روابط التواصل الاجتماعي",
+      "labelEn": "Social links",
+      "minTier": "lite"
+    },
+    {
+      "id": "order-management",
+      "labelAr": "إدارة وتتبع الطلبات",
+      "labelEn": "Order management and tracking",
+      "minTier": "lite"
+    },
+    {
+      "id": "kitchen",
+      "labelAr": "شاشة المطبخ الأساسية",
+      "labelEn": "Core kitchen display",
+      "minTier": "lite"
+    },
+    {
+      "id": "invoice-printing",
+      "labelAr": "طباعة الفواتير والطلبات",
+      "labelEn": "Invoice and order printing",
+      "minTier": "lite"
+    },
+    {
+      "id": "pos",
+      "labelAr": "نقطة البيع POS",
+      "labelEn": "Point of sale",
+      "minTier": "lite"
+    },
+    {
+      "id": "pwa",
+      "labelAr": "تطبيق PWA",
+      "labelEn": "PWA",
+      "minTier": "pro"
+    },
+    {
+      "id": "push",
+      "labelAr": "الإشعارات الفورية",
+      "labelEn": "Push notifications",
+      "minTier": "pro"
+    },
+    {
+      "id": "sales-reports",
+      "labelAr": "تقارير المبيعات",
+      "labelEn": "Sales reports",
+      "minTier": "pro"
+    },
+    {
+      "id": "inventory",
+      "labelAr": "إدارة المخزون",
+      "labelEn": "Inventory",
+      "minTier": "infinity"
+    },
+    {
+      "id": "advanced-reports",
+      "labelAr": "التقارير المتقدمة",
+      "labelEn": "Advanced reports",
+      "minTier": "infinity"
+    },
+    {
+      "id": "attendance",
+      "labelAr": "الحضور والإدارة المؤسسية",
+      "labelEn": "Attendance and enterprise administration",
+      "minTier": "infinity"
+    }
+  ],
+  "customizations": [
+    "qr-menu",
+    "kitchen",
+    "pos",
+    "pwa",
+    "sales-reports",
+    "advanced-reports",
+    "order-management",
+    "invoice-printing",
+    "push",
+    "attendance",
+    "inventory"
+  ],
+  "delivery": {
+    "monthlyEmailLimit": 0,
+    "businessMailboxes": 0,
+    "postDeliveryRevisions": 0,
+    "postDeliveryFeatures": 0,
+    "prioritySupport": false
+  },
+  "externalServices": {
+    "provisioned": false,
+    "requiresProviderConfiguration": true
+  }
+}

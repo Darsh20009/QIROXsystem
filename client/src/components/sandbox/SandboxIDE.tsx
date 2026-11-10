@@ -13,12 +13,13 @@ import {
   Terminal, PanelRightClose, PanelRightOpen, Hammer,
   Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw,
   FolderTree, Search, GitBranch, KeyRound, Rocket, Command,
-  MoreHorizontal, Check, Circle, ChevronDown, ScrollText, TerminalSquare
+  MoreHorizontal, Check, Circle, ChevronDown, ScrollText, TerminalSquare,
+  MousePointer2
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { FileTree } from "./FileTree";
 import { CodeEditor } from "./CodeEditor";
-import { AIPanel } from "./AIPanel";
+import { AIPanel, type SelectedElement } from "./AIPanel";
 import { EnvVarsPanel } from "./EnvVarsPanel";
 import { GitHubPanel } from "./GitHubPanel";
 import { DeploymentPanel } from "./DeploymentPanel";
@@ -71,6 +72,44 @@ function flattenFiles(entries: FileEntry[], output: FileEntry[] = []) {
     if (entry.children) flattenFiles(entry.children, output);
   }
   return output;
+}
+
+function escapeCssIdentifier(value: string): string {
+  if (typeof window !== "undefined" && window.CSS?.escape) return window.CSS.escape(value);
+  return value.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`);
+}
+
+function getElementSelector(element: Element): string {
+  const segments: string[] = [];
+  let current: Element | null = element;
+  while (current && current.nodeType === 1 && current.tagName.toLowerCase() !== "html") {
+    const id = current.getAttribute("id");
+    if (id) {
+      segments.unshift(`#${escapeCssIdentifier(id)}`);
+      break;
+    }
+
+    let segment = current.tagName.toLowerCase();
+    const classes = Array.from(current.classList)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((className) => `.${escapeCssIdentifier(className)}`)
+      .join("");
+    segment += classes;
+
+    const parent = current.parentElement;
+    if (parent) {
+      const sameTag = Array.from(parent.children).filter(
+        (child) => child.tagName === current?.tagName,
+      );
+      if (sameTag.length > 1) {
+        segment += `:nth-of-type(${sameTag.indexOf(current) + 1})`;
+      }
+    }
+    segments.unshift(segment);
+    current = current.parentElement;
+  }
+  return segments.join(" > ") || element.tagName.toLowerCase();
 }
 
 interface StartResult {
@@ -143,6 +182,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsPanelTab, setLogsPanelTab] = useState<"shell" | "logs">("shell");
   const [showPreview, setShowPreview] = useState(false);
+  const [previewToken, setPreviewToken] = useState("");
   const [activityView, setActivityView] = useState<"files" | "search">("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -150,12 +190,115 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
   const [shellCommand, setShellCommand] = useState("");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const saveQueuesRef = useRef<Record<string, Promise<void>>>({});
+  const latestTabsRef = useRef(tabs);
+  latestTabsRef.current = tabs;
+  const [saveFailed, setSaveFailed] = useState(false);
+  const autoRunRef = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const previewRef = useRef<HTMLIFrameElement>(null);
+  const selectionCleanupRef = useRef<(() => void) | null>(null);
+  const importedDeploymentEnvRef = useRef(false);
   const { data: user } = useUser();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
 
   const leftPanel = useResizer(240, "horizontal", 150, 400);
   const rightPanel = useResizer(320, "horizontal", 200, 500);
   const logsPanel = useResizer(200, "vertical", 100, 400);
+
+  const installPreviewSelection = useCallback(() => {
+    selectionCleanupRef.current?.();
+    selectionCleanupRef.current = null;
+    if (!selectionMode) return;
+
+    const iframe = previewRef.current;
+    let documentNode: Document;
+    try {
+      if (!iframe?.contentDocument) throw new Error("preview-document-unavailable");
+      documentNode = iframe.contentDocument;
+    } catch {
+      toast({
+        title: ar ? "تعذر تفعيل التحديد" : "Selection is unavailable",
+        description: ar ? "افتح المعاينة داخل نفس النافذة ثم حاول مرة أخرى." : "Open the preview in this window and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const style = documentNode.createElement("style");
+    style.id = "qirox-preview-selection-style";
+    style.textContent = `
+      .qirox-preview-selection-hover {
+        outline: 2px solid #2563eb !important;
+        outline-offset: 2px !important;
+        cursor: crosshair !important;
+      }
+    `;
+    documentNode.head?.appendChild(style);
+
+    let hovered: Element | null = null;
+    const isSelectable = (target: EventTarget | null): target is Element => {
+      if (!(target instanceof Element)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag !== "html" && tag !== "head" && tag !== "body" && tag !== "script" && tag !== "style";
+    };
+    const setHovered = (next: Element | null) => {
+      if (hovered === next) return;
+      hovered?.classList.remove("qirox-preview-selection-hover");
+      hovered = next;
+      hovered?.classList.add("qirox-preview-selection-hover");
+    };
+    const onMouseOver = (event: MouseEvent) => {
+      if (isSelectable(event.target)) setHovered(event.target);
+    };
+    const onMouseOut = (event: MouseEvent) => {
+      const related = event.relatedTarget;
+      if (related instanceof Node && hovered?.contains(related)) return;
+      setHovered(null);
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!isSelectable(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.target;
+      const text = (target.textContent || "").replace(/\s+/g, " ").trim().slice(0, 500);
+      setSelectedElement({
+        tagName: target.tagName.toLowerCase(),
+        selector: getElementSelector(target),
+        text,
+        className: typeof target.className === "string" ? target.className.slice(0, 500) : "",
+        ariaLabel: target.getAttribute("aria-label") || "",
+      });
+      setSelectionMode(false);
+      setRightPanelOpen(true);
+      setRightPanelTab("ai");
+      toast({ title: ar ? "تم تحديد العنصر" : "Element selected" });
+    };
+
+    documentNode.addEventListener("mouseover", onMouseOver, true);
+    documentNode.addEventListener("mouseout", onMouseOut, true);
+    documentNode.addEventListener("click", onClick, true);
+    selectionCleanupRef.current = () => {
+      hovered?.classList.remove("qirox-preview-selection-hover");
+      documentNode.removeEventListener("mouseover", onMouseOver, true);
+      documentNode.removeEventListener("mouseout", onMouseOut, true);
+      documentNode.removeEventListener("click", onClick, true);
+      style.remove();
+    };
+  }, [ar, selectionMode, toast]);
+
+  useEffect(() => {
+    installPreviewSelection();
+    return () => {
+      selectionCleanupRef.current?.();
+      selectionCleanupRef.current = null;
+    };
+  }, [installPreviewSelection]);
+
+  useEffect(() => {
+    if (!showPreview && selectionMode) setSelectionMode(false);
+  }, [showPreview, selectionMode]);
 
   const { data: project, isLoading: projectLoading } = useQuery<SandboxProjectDetail>({
     queryKey: ["/api/sandbox/projects", projectId],
@@ -177,6 +320,28 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
     refetchInterval: 2000,
     staleTime: 0,
   });
+  useEffect(() => {
+    if (!runtimeStatus?.isRunning) return;
+    const load = () => apiRequest("POST", `/api/sandbox/projects/${projectId}/preview-token`, {})
+      .then(response => response.json()).then(data => setPreviewToken(data.token)).catch(() => setPreviewToken(""));
+    void load();
+    const timer = setInterval(load, 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [runtimeStatus?.isRunning, projectId]);
+
+  useEffect(() => {
+    if (!projectId || !user?._id || importedDeploymentEnvRef.current) return;
+    importedDeploymentEnvRef.current = true;
+    apiRequest("POST", `/api/sandbox/projects/${projectId}/env/import-deployment`, {})
+      .then((res) => {
+        if (res.ok) {
+          queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "env"] });
+        }
+      })
+      .catch(() => {
+        // A standalone sandbox has no deployment record; that is expected.
+      });
+  }, [projectId, user?._id, queryClient]);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -248,6 +413,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
 
   const startMutation = useMutation({
     mutationFn: async (): Promise<StartResult> => {
+      await flushPendingSaves();
       const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/start`, {});
       return res.json();
     },
@@ -259,6 +425,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId] });
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects"] });
       toast({ title: ar ? "تم التشغيل" : "Started" });
+      setShowPreview(true);
       setLogsOpen(true);
     },
     onError: (err: Error) => {
@@ -283,6 +450,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
 
   const restartMutation = useMutation({
     mutationFn: async (): Promise<StartResult> => {
+      await flushPendingSaves();
       const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/restart`, {});
       return res.json();
     },
@@ -298,16 +466,38 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
 
   const saveFile = useCallback(
     async (path: string, content: string) => {
-      try {
+      const previous = saveQueuesRef.current[path] || Promise.resolve();
+      const operation = previous.catch(() => {}).then(async () => {
         await apiRequest("PUT", `/api/sandbox/projects/${projectId}/file`, { path, content });
-        setTabs((prev) => prev.map((t) => (t.path === path ? { ...t, dirty: false } : t)));
+        setTabs((prev) => prev.map((t) => (t.path === path && t.content === content ? { ...t, dirty: false } : t)));
+      });
+      saveQueuesRef.current[path] = operation;
+      try {
+        await operation;
+        setSaveFailed(false);
+        return true;
       } catch (err: unknown) {
+        setSaveFailed(true);
         const message = err instanceof Error ? err.message : String(err);
         toast({ title: ar ? "خطأ في الحفظ" : "Save error", description: message, variant: "destructive" });
+        return false;
       }
     },
     [projectId, ar, toast]
   );
+  const flushPendingSaves = useCallback(async () => {
+    Object.values(saveTimerRef.current).forEach(clearTimeout);
+    saveTimerRef.current = {};
+    const pending = latestTabsRef.current.filter(tab => tab.dirty);
+    const saved = await Promise.all(pending.map(tab => saveFile(tab.path, tab.content)));
+    if (saved.some(value => !value)) throw new Error(ar ? "تعذر حفظ التعديلات؛ لن يتم التشغيل أو الرفع." : "Saving failed; run/push was cancelled.");
+    await Promise.all(Object.values(saveQueuesRef.current));
+  }, [saveFile, ar]);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("run") !== "1" || !project || autoRunRef.current) return;
+    autoRunRef.current = true;
+    startMutation.mutate();
+  }, [project, projectId]);
 
   const handleFileSelect = useCallback(
     async (path: string) => {
@@ -768,6 +958,22 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground">
                     /sandbox/{projectId}/preview/
                   </span>
+                   {isRunning && (
+                     <Button
+                       variant={selectionMode ? "default" : "ghost"}
+                       size="sm"
+                       className={`h-6 gap-1 px-2 text-[10px] ${selectionMode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                       onClick={() => {
+                         setSelectedElement(null);
+                         setSelectionMode((active) => !active);
+                       }}
+                       title={ar ? "حدد عنصراً من المعاينة ليعدله الوكيل" : "Select an element for the agent to edit"}
+                       data-testid="button-select-preview-element"
+                     >
+                       <MousePointer2 className="h-3 w-3" />
+                       {ar ? "تحديد" : "Select"}
+                     </Button>
+                   )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -784,7 +990,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    onClick={() => window.open(`/sandbox/${projectId}/preview/`, "_blank")}
+                    onClick={() => window.open(`/sandbox/${projectId}/preview/?token=${encodeURIComponent(previewToken)}`, "_blank", "noopener,noreferrer")}
                     data-testid="button-external-preview"
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -793,9 +999,11 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                 {isRunning ? (
                   <iframe
                     id="sandbox-preview"
-                    src={`/sandbox/${projectId}/preview/`}
+                     ref={previewRef}
+                    src={`/sandbox/${projectId}/preview/?token=${encodeURIComponent(previewToken)}`}
                     className="flex-1 w-full bg-white"
                     title="Preview"
+                     onLoad={installPreviewSelection}
                   />
                 ) : (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-muted text-muted-foreground">
@@ -936,6 +1144,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <AIPanel
                     projectId={projectId}
                     activeFile={activeTab}
+                    selectedElement={selectedElement}
                     onApplyToEditor={handleApplyToEditor}
                     onCreateFile={handleCreateFileFromAI}
                   />
@@ -944,7 +1153,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
                   <EnvVarsPanel projectId={projectId} />
                 </TabsContent>
                 <TabsContent value="github" className="m-0 flex-1 overflow-hidden">
-                  <GitHubPanel projectId={projectId} adminOrderId={adminOrderId} />
+                  <GitHubPanel projectId={projectId} adminOrderId={adminOrderId} beforePush={flushPendingSaves} />
                 </TabsContent>
                 <TabsContent value="deploy" className="m-0 flex-1 overflow-hidden">
                   <DeploymentPanel projectId={projectId} onDownload={handleDownload} />
@@ -958,7 +1167,7 @@ export function SandboxIDE({ projectId, adminOrderId }: SandboxIDEProps) {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-foreground">
               <Check className="h-3 w-3" />
-              {ar ? "تم الحفظ تلقائياً" : "Auto-saved"}
+              {saveFailed ? (ar ? "فشل الحفظ — تعديلاتك لم تُحفظ" : "Save failed — changes are not saved") : tabs.some(tab => tab.dirty) ? (ar ? "جارٍ حفظ التعديلات…" : "Saving changes…") : (ar ? "تم الحفظ تلقائياً" : "Auto-saved")}
             </span>
             <span dir="ltr">{project?.runtime || "node"} · {project?.githubBranch || "main"}</span>
           </div>

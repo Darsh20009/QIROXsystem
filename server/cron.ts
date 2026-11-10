@@ -96,10 +96,6 @@ export function stopCronJob(jobId: string) {
 }
 
 export async function initCronJobs() {
-  if (CronJobModel.db.readyState !== 1) {
-    console.warn("[Cron] Database unavailable; stored cron jobs were not loaded");
-    return;
-  }
   const jobs = await CronJobModel.find({ isActive: true });
   for (const job of jobs) {
     scheduleCronJob(String(job._id), job.schedule);

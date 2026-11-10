@@ -1,6 +1,7 @@
 # QMEET_ARCHITECTURE.md — QMeet Video Conferencing Architecture Blueprint
 
-> **Mode:** Blueprint only. No code modified.
+> **Mode:** Architecture blueprint. Native media implementation is staged and
+> not production-accepted until capacity evidence exists.
 > **Date:** 2026-07-08
 
 ---
@@ -177,17 +178,19 @@ All clients → Single Express + WS server
              → QMeet data in MongoDB Atlas (scalable)
 ```
 
-#### Phase 2: WebRTC SFU (Selective Forwarding Unit)
+#### Phase 2: Qirox-owned WebRTC SFU (Selective Forwarding Unit)
 ```
 For large meetings (>10 participants):
-    Client → QIROX Server (signaling only)
-           → Third-party SFU (e.g., Livekit, Mediasoup)
+    Client → QMeet Signaling (signaling only)
+           → QMeet SFU (self-hosted Go/Pion service)
+           → Qirox coturn when relay is required
            → SFU handles media routing (not the app server)
 
 Benefits:
     - App server only handles signaling (lightweight)
     - SFU handles all media bandwidth
-    - Scales to 100+ participants per room
+    - Qirox owns the media layer and deployment
+    - Initial target is one room with 50 participants
 ```
 
 #### Phase 3: Horizontal Scaling
@@ -199,6 +202,10 @@ Multiple QIROX Express instances behind load balancer
 
 Requires: Sticky sessions OR Redis adapter for Socket.IO/ws
 ```
+
+The native SFU is not a promise of unlimited scale. Multi-node rooms,
+multi-region routing, autoscaling, and recording remain deferred until the
+single-room 50-participant target is engineered and tested.
 
 ---
 

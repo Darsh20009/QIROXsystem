@@ -2,26 +2,27 @@ import webpush from "web-push";
 import http2 from "node:http2";
 import { createSign } from "node:crypto";
 
-let VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || "";
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || "";
-const VAPID_EMAIL = process.env.VAPID_SUBJECT || "mailto:info@qiroxstudio.online";
-const isBase64Url = (value: string) => /^[A-Za-z0-9_-]+$/.test(value);
-const hasValidVapidPair =
-  isBase64Url(VAPID_PUBLIC) &&
-  isBase64Url(VAPID_PRIVATE) &&
-  Buffer.from(VAPID_PUBLIC.replace(/-/g, "+").replace(/_/g, "/"), "base64").length === 65 &&
-  Buffer.from(VAPID_PRIVATE.replace(/-/g, "+").replace(/_/g, "/"), "base64").length === 32;
-let vapidConfigured = false;
+const VAPID_PUBLIC_FALLBACK = "BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4";
+const VAPID_PRIVATE_FALLBACK = "eFqX9qfBVzFTErtXbAEl-WqN1sBqoQfwHbafUGtXeGk";
 
-if (hasValidVapidPair) {
+function resolveVapidKey(envKey: string, fallback: string): string {
+  const val = process.env[envKey];
+  if (!val) return fallback;
   try {
-    webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
-    vapidConfigured = true;
+    const decoded = Buffer.from(val.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    if (envKey === "VAPID_PUBLIC_KEY" && decoded.length !== 65) return fallback;
+    if (envKey === "VAPID_PRIVATE_KEY" && decoded.length !== 32) return fallback;
+    return val;
   } catch {
-    VAPID_PUBLIC = "";
-    console.error("[PUSH] VAPID configuration is invalid; background push is disabled.");
+    return fallback;
   }
 }
+
+const VAPID_PUBLIC = resolveVapidKey("VAPID_PUBLIC_KEY", VAPID_PUBLIC_FALLBACK);
+const VAPID_PRIVATE = resolveVapidKey("VAPID_PRIVATE_KEY", VAPID_PRIVATE_FALLBACK);
+const VAPID_EMAIL = "mailto:info@qiroxstudio.online";
+
+webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 
 export { VAPID_PUBLIC };
 
@@ -74,7 +75,6 @@ export async function sendWebPush(
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!vapidConfigured) return;
   if (!userId || userId === "undefined" || userId === "null") {
     console.error("[PUSH] sendPushToUser called with invalid userId:", userId);
     return;

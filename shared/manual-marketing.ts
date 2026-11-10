@@ -136,6 +136,7 @@ const MANUAL_MARKETING_SYSTEM_PATHS: Record<ManualMarketingSector, string> = {
 
 const RESTAURANT_PORTFOLIO_LINKS = [
   "Black Rose: https://blackrose.com.sa",
+  "Cluny Cafe: https://cluny.cafe",
   "تطبيق Black Rose على App Store: https://apps.apple.com/sa/app/black-rose/id6765878892?l=ar",
   "Elwa: https://elwa.site",
   "Fuji Cafe: https://www.fuji.cafe",
@@ -305,6 +306,7 @@ export function generateManualMarketingMessage(
       ...(language === "en"
         ? [
             "Black Rose: https://blackrose.com.sa",
+            "Cluny Cafe: https://cluny.cafe",
             "Black Rose app on the App Store: https://apps.apple.com/sa/app/black-rose/id6765878892?l=ar",
             "Elwa: https://elwa.site",
             "Fuji Cafe: https://www.fuji.cafe",

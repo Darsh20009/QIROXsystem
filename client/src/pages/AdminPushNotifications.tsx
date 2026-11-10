@@ -36,7 +36,6 @@ function getTemplates(ar: boolean) {
       items: [
         { title: ar ? "عيد مبارك 🌙" : "Eid Mubarak 🌙", body: ar ? "تهنئكم منصة كيروكس ستوديو بمناسبة العيد المبارك! أعاده الله عليكم بالخير واليُمن والبركات." : "Qirox Studio wishes you a blessed Eid! May it bring you joy, peace, and prosperity." },
         { title: ar ? "رمضان كريم 🌙" : "Ramadan Kareem 🌙", body: ar ? "رمضان كريم! نسأل الله أن يتقبل صيامكم وقيامكم ويتغمدكم برحمته." : "Ramadan Kareem! May this holy month bring peace and blessings to you and your family." },
-        { title: ar ? "اليوم الوطني السعودي 🇸🇦" : "Saudi National Day 🇸🇦", body: ar ? "في ذكرى اليوم الوطني المجيد، نشارككم الفخر والاعتزاز بهذا الوطن العزيز. كل عام والمملكة بخير." : "Happy Saudi National Day! We're proud to serve this great nation." },
         { title: ar ? "صباح الخير ☀️" : "Good Morning ☀️", body: ar ? "صباح الخير! نتمنى لكم يوماً مليئاً بالإنجازات والنجاحات. فريق كيروكس ستوديو دائماً في خدمتكم." : "Good morning! We wish you a productive and successful day. Qirox Studio is always at your service." },
       ],
     },

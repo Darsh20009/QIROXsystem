@@ -67,6 +67,7 @@ const partnerSchema = new mongoose.Schema({
   features: { type: [String], default: [] },
   featuresAr: { type: [String], default: [] },
   relatedService: { type: String, default: "" },
+  serviceIds: { type: [String], default: [] },
   description: { type: String, default: "" },
   descriptionAr: { type: String, default: "" },
 }, { timestamps: true });

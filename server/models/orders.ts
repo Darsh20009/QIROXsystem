@@ -15,6 +15,7 @@ const orderSchema = new mongoose.Schema({
   items: { type: mongoose.Schema.Types.Mixed },
   projectType: String,
   sector: String,
+  targetAudience: String,
   competitors: String,
   visualStyle: String,
   favoriteExamples: String,
@@ -22,6 +23,18 @@ const orderSchema = new mongoose.Schema({
   requiredSystems: String,
   siteLanguage: String,
   whatsappIntegration: { type: Boolean, default: false },
+  needsPayment: { type: Boolean, default: false },
+  needsBooking: { type: Boolean, default: false },
+  brandColor: String,
+  setupFieldSubfields: {
+    type: [new mongoose.Schema({
+      id: { type: String, required: true },
+      fieldKey: { type: String, required: true },
+      name: { type: String, required: true },
+      value: { type: String, default: "" },
+    }, { _id: false })],
+    default: [],
+  },
   socialIntegration: { type: Boolean, default: false },
   hasLogo: { type: Boolean, default: false },
   needsLogoDesign: { type: Boolean, default: false },
@@ -63,10 +76,12 @@ const orderSchema = new mongoose.Schema({
   // compatibility. assignedToIds contains the complete assignment list.
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   assignedToIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  draftProjectId: { type: mongoose.Schema.Types.ObjectId, ref: "DraftProject", default: null },
   adminNotes: String,
   internalNotes: { type: String, default: "" },
   orderNumber: { type: String, sparse: true },
   githubVisibility: { type: String, enum: ["public", "private"], default: "private" },
+  githubRepositoryName: { type: String, default: "" },
 }, { timestamps: true });
 orderSchema.index({ userId: 1, status: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
@@ -140,6 +155,7 @@ const orderSpecsSchema = new mongoose.Schema({
   clientBrief: String,
   projectIdeas: String,
   customVars: { type: mongoose.Schema.Types.Mixed },
+  internalForms: { type: mongoose.Schema.Types.Mixed, default: [] },
 }, { timestamps: true });
 orderSpecsSchema.set('toJSON', { transform });
 orderSpecsSchema.set('toObject', { transform });
@@ -265,6 +281,9 @@ const priceRequestSchema = new mongoose.Schema({
   status:         { type: String, enum: ['pending', 'reviewing', 'quoted', 'accepted', 'rejected'], default: 'pending' },
   quotedPrice:    { type: Number, default: null },
   quotedCurrency: { type: String, default: 'SAR' },
+  baseWebsiteValue: { type: Number, default: null },
+  quoteMultiplier: { type: Number, default: null },
+  providerCostsIncluded: { type: Boolean, default: false },
   quotedAt:       { type: Date, default: null },
   adminNotes:     { type: String, default: '' },
 }, { timestamps: true });

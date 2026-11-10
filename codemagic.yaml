@@ -250,26 +250,55 @@ workflows:
       - name: Inject App.entitlements
         script: |
           cp ios-assets/App.entitlements ios/App/App/App.entitlements
-          echo "App.entitlements copied"
+          cp ios-assets/QMeetBroadcast.entitlements ios/App/QMeetBroadcast/QMeetBroadcast.entitlements
+          echo "App and QMeetBroadcast entitlements copied"
 
       - name: Install CocoaPods
         script: cd ios/App && pod install
 
       - name: Set build number
         script: |
+          set -e
+          BUILD_NUMBER="${BUILD_NUMBER:-1}"
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Invalid BUILD_NUMBER: $BUILD_NUMBER" && exit 1 ;;
+          esac
           # Use Codemagic BUILD_NUMBER (auto-increments each build) as CFBundleVersion
           PLIST="ios/App/App/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST"
+          # Info.plist resolves CFBundleVersion from this Xcode build setting,
+          # so update the project setting as well.
+          sed -i '' -E "s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" \
+            ios/App/App.xcodeproj/project.pbxproj
           echo "CFBundleVersion set to: $BUILD_NUMBER"
+          echo "CURRENT_PROJECT_VERSION settings:"
+          grep -n "CURRENT_PROJECT_VERSION" ios/App/App.xcodeproj/project.pbxproj
 
       - name: Set up code signing and build IPA
         script: |
           set -e
+          set -o pipefail
+          mkdir -p /tmp/xcodebuild_logs
           keychain add-certificates
-          xcode-project use-profiles
-          xcode-project build-ipa \
+          xcode-project use-profiles 2>&1 | tee /tmp/xcodebuild_logs/use-profiles.log
+          xcodebuild \
+            -workspace "ios/App/App.xcworkspace" \
+            -scheme "App" \
+            -configuration Release \
+            -showBuildSettings 2>&1 | tee /tmp/xcodebuild_logs/show-build-settings.log
+          if ! xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
-            --scheme "App"
+            --scheme "App" 2>&1 | tee /tmp/xcodebuild_logs/build-ipa.log; then
+            echo "----- iOS signing/archive diagnostics -----"
+            grep -E -i \
+              'error:|warning:.*sign|code ?sign|provision|profile|entitlement|No profiles|requires a provisioning profile|does not support' \
+              /tmp/xcodebuild_logs/build-ipa.log \
+              /tmp/xcodebuild_logs/use-profiles.log \
+              /tmp/xcodebuild_logs/show-build-settings.log \
+              || true
+            echo "----- End iOS signing/archive diagnostics -----"
+            exit 1
+          fi
 
       - name: Publish to TestFlight
         script: |

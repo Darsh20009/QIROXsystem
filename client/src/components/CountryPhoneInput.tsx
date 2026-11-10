@@ -222,9 +222,11 @@ interface CountryPhoneInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  id?: string;
+  autoFocus?: boolean;
 }
 
-export function CountryPhoneInput({ value, onChange, placeholder, className }: CountryPhoneInputProps) {
+export function CountryPhoneInput({ value, onChange, placeholder, className, id, autoFocus }: CountryPhoneInputProps) {
   const [selected, setSelected] = useState<CountryData>(COUNTRIES[0]);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -234,66 +236,105 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const userSelectedCountryRef = useRef(false);
+  const lastEmittedValueRef = useRef("");
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+
+  useEffect(() => {
+    const normalized = value.trim();
+    if (!normalized) {
+      setPhoneNumber("");
+      return;
+    }
+    const country = [...COUNTRIES]
+      .sort((a, b) => b.dial.length - a.dial.length)
+      .find(c => normalized.startsWith(c.dial));
+    if (country) {
+      // A user-selected country must not be replaced by the asynchronous
+      // parent update (or by a late geo-detection result).
+      if (normalized === lastEmittedValueRef.current) {
+        userSelectedCountryRef.current = false;
+      } else if (!userSelectedCountryRef.current) {
+        setSelected(country);
+      }
+      setPhoneNumber(normalized.slice(country.dial.length).replace(/\D/g, ""));
+    }
+  }, [value]);
 
   useEffect(() => {
     if (detected) return;
+    let cancelled = false;
     getCountryCode().then(code => {
-      if (code && COUNTRY_CODE_MAP[code]) {
+      if (cancelled) return;
+      if (!userSelectedCountryRef.current && !value.trim() && code && COUNTRY_CODE_MAP[code]) {
         setSelected(COUNTRY_CODE_MAP[code]);
       }
       setDetected(true);
-    }).catch(() => setDetected(true));
-  }, []);
-
-  // Position the fixed portal dropdown relative to the trigger (fixed = viewport coords, no scroll offset)
-  useLayoutEffect(() => {
-    if (!open || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setDropPos({
-      top: rect.bottom + 6,
-      left: rect.left,
-      width: rect.width,
+    }).catch(() => {
+      if (!cancelled) setDetected(true);
     });
-  }, [open]);
+    return () => { cancelled = true; };
+  }, [detected, value]);
+
+  // Keep the desktop menu attached to its trigger. Mobile uses a stable bottom sheet
+  // so opening the keyboard cannot move the menu off-screen.
+  useLayoutEffect(() => {
+    if (!open || !containerRef.current || isMobile) return;
+    const updatePosition = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDropPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, isMobile]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handlePointerDownOutside = (e: PointerEvent) => {
       const target = e.target as Node;
       const inContainer = containerRef.current?.contains(target);
       const inPortal = dropdownPortalRef.current?.contains(target);
       if (!inContainer && !inPortal) setOpen(false);
     };
-    const handleScroll = () => setOpen(false);
-    document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("pointerdown", handlePointerDownOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
     };
   }, []);
 
   useEffect(() => {
     if (open && searchRef.current) {
-      setTimeout(() => searchRef.current?.focus(), 50);
+      const focusTimer = window.setTimeout(() => searchRef.current?.focus(), isMobile ? 120 : 50);
+      return () => window.clearTimeout(focusTimer);
     } else {
       setSearch("");
     }
-  }, [open]);
+  }, [open, isMobile]);
 
   const filtered = COUNTRIES.filter(c =>
     c.nameAr.includes(search) || c.name.toLowerCase().includes(search.toLowerCase()) || c.dial.includes(search)
   );
 
   const handleSelect = (country: CountryData) => {
+    const nextValue = `${country.dial}${phoneNumber.replace(/^0+/, "")}`;
+    userSelectedCountryRef.current = true;
+    lastEmittedValueRef.current = nextValue;
     setSelected(country);
     setOpen(false);
-    onChange(`${country.dial}${phoneNumber}`);
+    onChange(nextValue);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const num = e.target.value.replace(/[^0-9]/g, "");
+    const nextValue = `${selected.dial}${num.replace(/^0+/, "")}`;
+    lastEmittedValueRef.current = nextValue;
     setPhoneNumber(num);
-    onChange(`${selected.dial}${num}`);
+    onChange(nextValue);
   };
 
   const activePlaceholder = placeholder || selected.placeholder;
@@ -304,14 +345,20 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
       className="bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden"
       style={{
         position: "fixed",
-        top: dropPos.top,
-        left: dropPos.left,
-        width: dropPos.width,
+        top: isMobile ? "auto" : dropPos.top,
+        bottom: isMobile ? "12px" : "auto",
+        left: isMobile ? "12px" : dropPos.left,
+        right: isMobile ? "12px" : "auto",
+        width: isMobile ? "auto" : dropPos.width,
         zIndex: 99999,
-        maxHeight: "240px",
+        height: isMobile ? "min(70dvh, 520px)" : "240px",
+        maxHeight: isMobile ? "calc(100dvh - 24px)" : "240px",
         display: "flex",
         flexDirection: "column",
+        minHeight: 0,
+        touchAction: "manipulation",
       }}
+      onPointerDown={e => e.stopPropagation()}
     >
       <div className="p-2 border-b border-black/[0.04] dark:border-white/[0.04] shrink-0">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.02] dark:bg-white/[0.04] rounded-lg">
@@ -327,7 +374,10 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
           />
         </div>
       </div>
-      <div className="overflow-y-auto flex-1">
+      <div
+        className="overflow-y-auto flex-1 min-h-0"
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain" }}
+      >
         {filtered.length === 0 ? (
           <div className="p-4 text-center text-xs text-black/30 dark:text-white/30">لا توجد نتائج</div>
         ) : (
@@ -355,11 +405,12 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
         className={`relative flex h-12 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] focus-within:border-black/20 dark:focus-within:border-white/20 transition-colors ${className || ""}`}
         ref={containerRef}
         dir="ltr"
+        style={{ touchAction: "manipulation" }}
       >
         <button
           type="button"
           onClick={() => setOpen(v => !v)}
-          className="flex items-center gap-1.5 px-3 border-r border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors min-w-[90px] shrink-0 rounded-l-xl"
+          className="flex items-center justify-center gap-1.5 px-3 border-r border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors min-w-[96px] shrink-0 rounded-l-xl"
           data-testid="btn-country-dial"
         >
           <span className="text-lg leading-none">{selected.flag}</span>
@@ -368,11 +419,14 @@ export function CountryPhoneInput({ value, onChange, placeholder, className }: C
         </button>
 
         <input
+          id={id}
           type="tel"
           value={phoneNumber}
           onChange={handlePhoneChange}
           placeholder={activePlaceholder}
-          className="flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
+          autoFocus={autoFocus}
+          aria-label="رقم الجوال"
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none rounded-r-xl"
           data-testid="input-phone-number"
           dir="ltr"
         />

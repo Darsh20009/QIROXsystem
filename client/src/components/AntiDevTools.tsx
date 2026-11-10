@@ -22,6 +22,11 @@ export function AntiDevTools() {
         e.preventDefault();
         return false;
       }
+      // Option+Command+I on macOS (the shortcut requested by product).
+      if (e.metaKey && e.altKey && ["I", "i"].includes(e.key)) {
+        e.preventDefault();
+        return false;
+      }
       // Ctrl+U (View Source)
       if ((e.ctrlKey || e.metaKey) && (e.key === "U" || e.key === "u")) {
         e.preventDefault();

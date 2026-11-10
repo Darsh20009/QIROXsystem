@@ -1,10 +1,11 @@
 import { ImapFlow } from "imapflow";
 import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
+import { randomUUID } from "crypto";
 import { MailAccountModel, MailCacheModel, UserModel } from "./models";
+import { encryptMailPassword, isEncryptedMailPassword } from "./mail-account-crypto";
 import type { Document } from "mongoose";
 import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
-import { getMailboxPassword } from "./mail-credentials";
 
 export interface MailAccountDoc {
   _id: string;
@@ -33,6 +34,7 @@ export interface EmailMessage {
   text: string;
   snippet: string;
   folder: string;
+  attachments?: Array<{ filename: string; contentType: string; content: Buffer }>;
 }
 
 async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> {
@@ -41,7 +43,13 @@ async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> 
   return { ...doc, id: doc._id.toString(), password: doc.password };
 }
 
-export async function fetchInbox(accountId: string, folder = "INBOX", maxMessages = 30): Promise<EmailMessage[]> {
+export async function fetchInbox(
+  accountId: string,
+  folder = "INBOX",
+  maxMessages = 30,
+  offset = 0,
+  includeAttachmentContent = false,
+): Promise<EmailMessage[]> {
   const account = await getAccountRaw(accountId);
   if (!account) throw new Error("Account not found");
 
@@ -49,7 +57,7 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
     host: account.imapHost,
     port: account.imapPort,
     secure: true,
-    auth: { user: account.emailAddress, pass: getMailboxPassword(account.emailAddress, account.password) },
+    auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
     socketTimeout: 8000,
@@ -82,13 +90,14 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
     const mailbox = await client.mailboxOpen(folder);
     const total = mailbox.exists;
 
-    if (total === 0) {
+    if (total === 0 || offset >= total) {
       await client.logout();
       return [];
     }
 
-    const start = Math.max(1, total - maxMessages + 1);
-    const range = `${start}:${total}`;
+    const end = Math.max(1, total - offset);
+    const start = Math.max(1, end - maxMessages + 1);
+    const range = `${start}:${end}`;
 
     for await (const msg of client.fetch(range, { uid: true, flags: true, envelope: true, source: true })) {
       try {
@@ -111,6 +120,13 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
           text,
           snippet,
           folder,
+          ...(includeAttachmentContent ? {
+            attachments: (parsed.attachments || []).slice(0, 20).map((attachment: any, index: number) => ({
+              filename: String(attachment.filename || `attachment-${index + 1}`).replace(/[\\/\r\n]/g, "_").slice(0, 180),
+              contentType: String(attachment.contentType || "application/octet-stream").slice(0, 160),
+              content: Buffer.from(attachment.content || []),
+            })),
+          } : {}),
         };
         messages.push(message);
 
@@ -121,7 +137,7 @@ export async function fetchInbox(accountId: string, folder = "INBOX", maxMessage
           { upsert: true }
         );
       } catch (e) {
-        // skip malformed message
+        console.warn(`[Mail] Skipped malformed message ${accountId}/${folder}/${msg.uid}:`, (e as any)?.message || e);
       }
     }
 
@@ -146,7 +162,7 @@ export async function fetchFolders(accountId: string): Promise<string[]> {
     host: account.imapHost,
     port: account.imapPort,
     secure: true,
-    auth: { user: account.emailAddress, pass: getMailboxPassword(account.emailAddress, account.password) },
+    auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
     socketTimeout: 8000,
@@ -178,7 +194,7 @@ export async function markSeen(accountId: string, folder: string, uid: number): 
     host: account.imapHost,
     port: account.imapPort,
     secure: true,
-    auth: { user: account.emailAddress, pass: getMailboxPassword(account.emailAddress, account.password) },
+    auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
     socketTimeout: 6000,
@@ -209,7 +225,7 @@ export async function deleteMessage(accountId: string, folder: string, uid: numb
     host: account.imapHost,
     port: account.imapPort,
     secure: true,
-    auth: { user: account.emailAddress, pass: getMailboxPassword(account.emailAddress, account.password) },
+    auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
     socketTimeout: 6000,
@@ -236,45 +252,64 @@ export function buildBrandedHtml(opts: {
   body: string;
   logoUrl?: string;
 }): string {
-  const logoUrl = opts.logoUrl || "https://qiroxstudio.online/logo.png";
+  const logoUrl = opts.logoUrl || "https://qiroxstudio.online/qirox-logo-nobg.png";
+  const escapeHtml = (value: string) => value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  const safeLogoUrl = escapeHtml(logoUrl);
+  const paragraphs = opts.body
+    .split(/\r?\n/)
+    .map(line => line.trim()
+      ? `<p style="margin:0 0 16px;color:#273244;font-size:15px;line-height:1.9;">${escapeHtml(line)}</p>`
+      : `<div style="height:4px;line-height:4px;">&nbsp;</div>`)
+    .join("");
+  const safeSenderName = escapeHtml(opts.senderName);
+  const safeSenderTitle = escapeHtml(opts.senderTitle);
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="x-apple-disable-message-reformatting"/>
 <style>
-  body{margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;}
-  .wrapper{max-width:620px;margin:30px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);}
-  .header{background:#000000;padding:24px 32px;text-align:center;}
-  .header img{height:40px;width:auto;object-fit:contain;}
-  .body-content{padding:32px 36px;color:#111111;font-size:15px;line-height:1.75;}
-  .body-content p{margin:0 0 16px;}
-  .signature{margin-top:32px;padding-top:20px;border-top:1px solid #e5e5e5;}
-  .sig-name{font-size:16px;font-weight:700;color:#000000;}
-  .sig-title{font-size:13px;color:#555555;margin-top:2px;}
-  .sig-company{font-size:12px;color:#888888;margin-top:6px;}
-  .footer{background:#000000;padding:16px 32px;text-align:center;}
-  .footer p{color:#ffffff;font-size:11px;margin:0;opacity:0.6;letter-spacing:0.05em;}
-  .footer a{color:#ffffff;text-decoration:none;}
+  body{margin:0;padding:0;background:#f1f4f8;font-family:Arial,'Segoe UI',sans-serif;direction:rtl;-webkit-text-size-adjust:100%;}
+  table{border-collapse:collapse;}
+  a{color:#185adb;}
+  @media(max-width:640px){.mail-shell{width:100%!important}.mail-pad{padding:24px 20px!important}.brand-pad{padding:22px 20px!important}}
 </style>
 </head>
 <body>
-<div class="wrapper">
-  <div class="header">
-    <img src="${logoUrl}" alt="QIROX"/>
-  </div>
-  <div class="body-content">
-    ${opts.body.split("\n").map(l => `<p>${l || "&nbsp;"}</p>`).join("")}
-    <div class="signature">
-      <div class="sig-name">${opts.senderName}</div>
-      <div class="sig-title">${opts.senderTitle}</div>
-      <div class="sig-company">QIROX Studio · qiroxstudio.online</div>
-    </div>
-  </div>
-  <div class="footer">
-    <p>© ${new Date().getFullYear()} QIROX Studio — <a href="https://qiroxstudio.online">qiroxstudio.online</a></p>
-  </div>
-</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">رسالة من فريق QIROX Studio</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f4f8;">
+  <tr><td align="center" style="padding:32px 12px;">
+    <table role="presentation" class="mail-shell" width="620" cellpadding="0" cellspacing="0" border="0" style="width:620px;max-width:620px;background:#ffffff;border:1px solid #e4e9f0;border-radius:16px;overflow:hidden;">
+      <tr><td class="brand-pad" style="padding:24px 36px;background:#111827;border-bottom:3px solid #315be8;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td align="right" style="vertical-align:middle;"><img src="${safeLogoUrl}" alt="QIROX Studio" style="display:block;max-height:52px;max-width:220px;width:auto;border:0;"/></td>
+          <td align="left" style="vertical-align:middle;color:#cbd5e1;font-size:10px;letter-spacing:1.2px;font-weight:700;">OFFICIAL<br/>COMMUNICATION</td>
+        </tr></table>
+      </td></tr>
+      <tr><td class="mail-pad" style="padding:38px 42px 30px;text-align:right;direction:rtl;">
+        <div style="margin:0 0 22px;color:#315be8;font-size:11px;font-weight:700;letter-spacing:1.2px;">رسالة رسمية</div>
+        ${paragraphs}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;border-top:1px solid #e7ebf1;">
+          <tr><td style="padding-top:20px;text-align:right;">
+            <div style="color:#172033;font-size:15px;font-weight:700;line-height:1.6;">${safeSenderName}</div>
+            <div style="color:#64748b;font-size:13px;line-height:1.7;">${safeSenderTitle}</div>
+            <div style="margin-top:5px;color:#64748b;font-size:12px;line-height:1.7;">QIROX Studio</div>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="padding:19px 28px;background:#f8fafc;border-top:1px solid #e7ebf1;text-align:center;color:#64748b;font-size:11px;line-height:1.8;">
+        QIROX Studio · <a href="https://qiroxstudio.online" style="color:#315be8;text-decoration:none;">qiroxstudio.online</a><br/>
+        © ${new Date().getFullYear()} QIROX Studio. جميع الحقوق محفوظة.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
 </body>
 </html>`;
 }
@@ -286,37 +321,106 @@ export async function sendMail(opts: {
   subject: string;
   body: string;
   attachments?: { filename: string; content: string; contentType: string; encoding?: string }[];
-}): Promise<void> {
-  const account = await getAccountRaw(opts.accountId);
-  if (!account) throw new Error("Account not found");
+}): Promise<{ sentCopySaved: boolean }> {
+  const contextAccount = await getAccountRaw(opts.accountId);
+  if (!contextAccount) throw new Error("Account not found");
+  const account = await MailAccountModel.findOne({ emailAddress: "noreply@qirox.online" }).lean() as MailAccountDoc | null;
+  if (!account?.password || !account.smtpHost) throw new Error("Default noreply account is not configured");
 
   const html = buildBrandedHtml({
-    senderName: account.displayName || account.emailAddress.split("@")[0],
-    senderTitle: account.jobTitle || "QIROX Studio",
+    senderName: contextAccount.displayName || contextAccount.emailAddress.split("@")[0],
+    senderTitle: contextAccount.jobTitle || "QIROX Studio",
     body: opts.body,
   });
 
-  const transport = nodemailer.createTransport({
-    host: account.smtpHost,
-    port: account.smtpPort,
-    secure: account.smtpPort === 465,
-    auth: { user: account.emailAddress, pass: getMailboxPassword(account.emailAddress, account.password) },
-    tls: { rejectUnauthorized: false },
-  });
-
-  await transport.sendMail({
+  const domain = account.emailAddress.split("@")[1] || "qirox.online";
+  const messageId = `<qirox-${randomUUID()}@${domain}>`;
+  const messageOptions: any = {
     from: `"${account.displayName || "QIROX"}" <${account.emailAddress}>`,
     to: opts.to,
+    replyTo: opts.replyTo || contextAccount.emailAddress,
     ...(opts.cc ? { cc: opts.cc } : {}),
     subject: opts.subject,
     html,
     text: opts.body,
+    messageId,
     attachments: (opts.attachments || []).map(a => ({
       filename: a.filename,
       content: Buffer.from(a.content, "base64"),
       contentType: a.contentType,
     })),
+  };
+  const rawTransport = nodemailer.createTransport({
+    streamTransport: true,
+    buffer: true,
+    newline: "unix",
+  } as any);
+  const rawInfo: any = await rawTransport.sendMail(messageOptions);
+  const rawMessage = Buffer.isBuffer(rawInfo.message)
+    ? rawInfo.message
+    : Buffer.from(rawInfo.message || "");
+
+  const transport = nodemailer.createTransport({
+    host: account.smtpHost,
+    port: account.smtpPort,
+    secure: account.smtpPort === 465,
+    auth: { user: account.emailAddress, pass: account.password },
+    tls: { rejectUnauthorized: false },
   });
+
+  await transport.sendMail(messageOptions);
+
+  let sentCopySaved = false;
+  try {
+    await appendSentCopy(account, rawMessage, messageId);
+    sentCopySaved = true;
+  } catch (error: any) {
+    // SMTP already accepted the message. Report the partial result without
+    // making the caller retry and accidentally send a duplicate.
+    console.error(`[Mail] SMTP delivered but Sent copy could not be saved for ${account.emailAddress}:`, error?.message || error);
+  }
+  return { sentCopySaved };
+}
+
+async function appendSentCopy(account: MailAccountDoc, rawMessage: Buffer, messageId: string): Promise<void> {
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: { user: account.emailAddress, pass: account.password },
+    logger: false,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
+    connectionTimeout: 8000,
+  });
+  client.on("error", () => {});
+
+  let connected = false;
+  try {
+    await client.connect();
+    connected = true;
+    const folders = await client.list();
+    const sentFolder = folders.find((folder: any) =>
+      String(folder.specialUse || "").toLowerCase().includes("\\sent"),
+    ) || folders.find((folder: any) =>
+      /(^|[./ ])sent(?: items| messages)?$/i.test(String(folder.path || "")),
+    );
+    if (!sentFolder?.path) throw new Error("Sent folder was not found");
+
+    await client.mailboxOpen(sentFolder.path);
+    let alreadySaved = false;
+    try {
+      const matches = await client.search({ header: { "Message-ID": messageId } });
+      alreadySaved = Array.isArray(matches) && matches.length > 0;
+    } catch {
+      // Some IMAP providers do not implement header search consistently.
+    }
+    if (!alreadySaved) await client.append(sentFolder.path, rawMessage, ["\\Seen"]);
+  } finally {
+    if (connected) {
+      try { await client.logout(); } catch {}
+    }
+  }
 }
 
 export async function testMailConnection(creds: {
@@ -340,16 +444,29 @@ export async function testMailConnection(creds: {
     socketTimeout: 8000,
     connectionTimeout: 8000,
   });
+  let imapConnected = false;
+  // ImapFlow may emit socket errors independently of connect() rejecting.
+  // Consume those events so an authentication failure cannot crash the process.
+  imapClient.on("error", () => {});
   try {
+    const connection = imapClient.connect();
+    // If the timeout wins, consume a later rejection from the connection
+    // attempt instead of allowing it to become an unhandled rejection.
+    connection.catch(() => {});
     await Promise.race([
-      imapClient.connect(),
+      connection,
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connection timeout")), 9000)),
     ]);
     imapOk = true;
-    await imapClient.logout();
+    imapConnected = true;
   } catch (e: any) {
     imapError = e.responseText || e.message || "Unknown error";
-    try { await imapClient.logout(); } catch {}
+  } finally {
+    // logout() is only valid after connect succeeds. Calling it after an
+    // authentication rejection emits a second "Connection not available".
+    if (imapConnected) {
+      try { await imapClient.logout(); } catch {}
+    }
   }
 
   // Test SMTP
@@ -380,9 +497,30 @@ export async function testMailConnection(creds: {
 }
 
 export async function seedDefaultAccounts(): Promise<void> {
+  const legacyPasswordAccounts = await MailAccountModel.collection
+    .find({ password: { $exists: true, $nin: ["", null] } }, { projection: { _id: 1, password: 1 } })
+    .toArray();
+  for (const account of legacyPasswordAccounts) {
+    if (!isEncryptedMailPassword(account.password)) {
+      await MailAccountModel.collection.updateOne(
+        { _id: account._id },
+        { $set: { password: encryptMailPassword(account.password) } },
+      );
+    }
+  }
+
   const defaults = [
     {
+      emailAddress: "noreply@qirox.online",
+      passwordEnv: "MAILBOX_NOREPLY_QIROX_ONLINE_PASSWORD",
+      displayName: "QIROX No Reply",
+      jobTitle: "البريد الآلي",
+      isShared: false,
+      sharedWith: [],
+    },
+    {
       emailAddress: "m.adbani@qirox.online",
+      passwordEnv: "MAILBOX_M_ADBANI_QIROX_ONLINE_PASSWORD",
       displayName: "محمد الدباني",
       jobTitle: "المدير التنفيذي - CEO",
       isShared: false,
@@ -390,6 +528,7 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "y.business@qirox.online",
+      passwordEnv: "MAILBOX_Y_BUSINESS_QIROX_ONLINE_PASSWORD",
       displayName: "يوسف درويش",
       jobTitle: "المدير التقني - CTO",
       isShared: false,
@@ -397,6 +536,7 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "hr@qirox.online",
+      passwordEnv: "MAILBOX_HR_QIROX_ONLINE_PASSWORD",
       displayName: "Qirox HR",
       jobTitle: "الموارد البشرية",
       isShared: true,
@@ -404,6 +544,7 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "info@qirox.online",
+      passwordEnv: "MAILBOX_INFO_QIROX_ONLINE_PASSWORD",
       displayName: "QIROX Info",
       jobTitle: "البريد العام",
       isShared: true,
@@ -411,31 +552,19 @@ export async function seedDefaultAccounts(): Promise<void> {
     },
     {
       emailAddress: "support@qirox.online",
+      passwordEnv: "MAILBOX_SUPPORT_QIROX_ONLINE_PASSWORD",
       displayName: "QIROX Support",
       jobTitle: "الدعم الفني",
       isShared: true,
       sharedWith: ALL_EMPLOYEE_MAIL_ROLES,
     },
     {
-      emailAddress: "marketing@qirox.online",
-      displayName: "QIROX Marketing",
-      jobTitle: "التسويق",
-      isShared: true,
-      sharedWith: ["admin", "cto", "ceo", "manager"],
-    },
-    {
-      emailAddress: "mohmmed.aldbani@qirox.online",
-      displayName: "Mohammed Aldbani",
-      jobTitle: "موظف",
+      emailAddress: "sohila@qirox.online",
+      passwordEnv: "MAILBOX_SOHILA_QIROX_ONLINE_PASSWORD",
+      displayName: "sohila",
+      jobTitle: "",
       isShared: false,
       sharedWith: [],
-    },
-    {
-      emailAddress: "noreply@qirox.online",
-      displayName: "QIROX No Reply",
-      jobTitle: "البريد الآلي",
-      isShared: true,
-      sharedWith: ["admin", "cto", "ceo", "manager"],
     },
   ];
 
@@ -448,23 +577,24 @@ export async function seedDefaultAccounts(): Promise<void> {
   await MailAccountModel.deleteOne({ emailAddress: "m.aldbani@qirox.online" }).catch(() => {});
 
   for (const acc of defaults) {
-    const {
-      isShared: _isShared,
-      sharedWith: _sharedWith,
-      ...rest
-    } = acc;
-    const password = getMailboxPassword(acc.emailAddress);
+    const { isShared: _isShared, sharedWith: _sharedWith, passwordEnv, ...rest } = acc;
     const isTeamWide = ["support@qirox.online", "info@qirox.online", "hr@qirox.online"].includes(acc.emailAddress);
+    const update: Record<string, any> = {
+      // Fresh installs need an account record, but mailbox credentials must be
+      // entered by an administrator rather than embedded in application code.
+      $setOnInsert: { ...rest, password: "" },
+    };
+    if (isTeamWide) {
+      update.$set = { isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES };
+    }
+    const configuredPassword = passwordEnv ? process.env[passwordEnv] : "";
+    if (configuredPassword) {
+      delete update.$setOnInsert.password;
+      update.$set = { ...(update.$set || {}), password: configuredPassword };
+    }
     await MailAccountModel.findOneAndUpdate(
       { emailAddress: acc.emailAddress },
-      {
-        $setOnInsert: { ...rest, password },
-        // Also update existing records so an old restricted assignment is
-        // corrected automatically on the next server start.
-        $set: isTeamWide
-          ? { isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES }
-          : { isShared: false, sharedWith: [] },
-      },
+      update,
       { upsert: true }
     );
   }

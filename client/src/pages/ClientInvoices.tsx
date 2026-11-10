@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useLocation } from "wouter";
 import { FileText, Download, CheckCircle, Clock, XCircle, Receipt } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { downloadAuthenticatedFile } from "@/lib/download-authenticated-file";
+import SARIcon from "@/components/SARIcon";
 
 function getStatusInfo(status: string, L: boolean) {
   return {
@@ -19,6 +22,7 @@ export default function ClientInvoices() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: invoices = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
@@ -43,14 +47,14 @@ export default function ClientInvoices() {
       <div className="grid grid-cols-2 gap-4">
         <Card className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-black dark:text-white">{totalPaid.toLocaleString()}</div>
-            <div className="text-xs text-black dark:text-white mt-1">{L ? "إجمالي المدفوع (ريال)" : "Total Paid (SAR)"}</div>
+            <div className="text-2xl font-bold text-black dark:text-white flex items-center justify-center gap-1">{totalPaid.toLocaleString()} <SARIcon size={17} /></div>
+            <div className="text-xs text-black dark:text-white mt-1 flex items-center justify-center gap-1">{L ? "إجمالي المدفوع" : "Total Paid"} <SARIcon size={10} /></div>
           </CardContent>
         </Card>
         <Card className="border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.06]">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-black dark:text-white">{totalUnpaid.toLocaleString()}</div>
-            <div className="text-xs text-black dark:text-white mt-1">{L ? "مستحق الدفع (ريال)" : "Pending Payment (SAR)"}</div>
+            <div className="text-2xl font-bold text-black dark:text-white flex items-center justify-center gap-1">{totalUnpaid.toLocaleString()} <SARIcon size={17} /></div>
+            <div className="text-xs text-black dark:text-white mt-1 flex items-center justify-center gap-1">{L ? "مستحق الدفع" : "Pending Payment"} <SARIcon size={10} /></div>
           </CardContent>
         </Card>
       </div>
@@ -84,7 +88,7 @@ export default function ClientInvoices() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="text-right">
-                        <div className="font-bold text-sm">{(inv.totalAmount || 0).toLocaleString()} <span className="text-xs text-black/40 font-normal">{L ? "ريال" : "SAR"}</span></div>
+                        <div className="font-bold text-sm flex items-center gap-1">{(inv.totalAmount || 0).toLocaleString()} <SARIcon size={12} className="opacity-60" /></div>
                         {inv.paidAt && (
                           <div className="text-[10px] text-black/30">{new Date(inv.paidAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
                         )}
@@ -94,7 +98,13 @@ export default function ClientInvoices() {
                         size="sm"
                         variant="outline"
                         className="border-black/20 gap-1.5 text-xs h-8"
-                        onClick={() => window.open(`/api/invoices/${inv._id || inv.id}/pdf`, "_blank")}
+                         onClick={() => downloadAuthenticatedFile(
+                           `/api/invoices/${inv._id || inv.id}/pdf`,
+                           `invoice-${inv.invoiceNumber || inv._id || inv.id}.pdf`,
+                         ).catch(() => toast({
+                           title: L ? "تعذّر تحميل PDF" : "PDF download failed",
+                           variant: "destructive",
+                         }))}
                         data-testid={`button-download-invoice-${inv._id || inv.id}`}
                       >
                         <Download className="w-3.5 h-3.5" /> {L ? "تحميل PDF" : "Download PDF"}

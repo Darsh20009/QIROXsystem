@@ -18,7 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
-import type { QiroxProduct } from "@shared/schema";
+import type { ProductOptionGroup, ProductVariant, QiroxProduct } from "@shared/schema";
+import { buildProductVariantMatrix, productVariantSummary, validateProductVariantData } from "@shared/product-variants";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
@@ -54,6 +55,14 @@ interface PlanBundle {
   customPrice: number | "";
   isFree: boolean;
   features: string;
+}
+
+interface EditableVariant extends Omit<ProductVariant, "price"> {
+  price: number | "";
+}
+
+function newOptionId(prefix: string) {
+  return `${prefix}_${crypto.randomUUID()}`;
 }
 
 const emptyBundle: PlanBundle = {
@@ -100,6 +109,8 @@ const emptyForm = {
   linkedPlanSlug: "", requiresShipping: false,
   shippingProviders: [] as ShippingProvider[],
   planBundles: [] as PlanBundle[],
+  optionGroups: [] as ProductOptionGroup[],
+  variants: [] as EditableVariant[],
 };
 
 export default function AdminProducts() {
@@ -114,6 +125,13 @@ export default function AdminProducts() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [activeTab, setActiveTab] = useState("info");
+  const [variantError, setVariantError] = useState("");
+  const { data: publicSettings } = useQuery<{ productVariantsV2?: boolean }>({
+    queryKey: ["/api/public/settings"],
+  });
+  const variantsEnabled = publicSettings?.productVariantsV2 === true;
+  const showVariantsTab = variantsEnabled && (form.category === "device" || form.optionGroups.length > 0);
 
   const { data: products, isLoading, isError, refetch } = useQuery<QiroxProduct[]>({
     queryKey: ["/api/admin/products"],
@@ -167,6 +185,8 @@ export default function AdminProducts() {
   const openCreate = () => {
     setForm({ ...emptyForm });
     setEditingId(null);
+    setActiveTab("info");
+    setVariantError("");
     setDialogOpen(true);
   };
 
@@ -198,12 +218,42 @@ export default function AdminProducts() {
         isFree: b.isFree ?? false,
         features: Array.isArray(b.features) ? b.features.join("، ") : (b.features || ""),
       })) as PlanBundle[],
+      optionGroups: ((p as any).optionGroups || []).map((group: any) => ({
+        id: String(group.id),
+        name: String(group.name || ""),
+        nameAr: String(group.nameAr || ""),
+        values: Array.isArray(group.values) ? group.values.map((value: any) => ({
+          id: String(value.id),
+          name: String(value.name || ""),
+          nameAr: String(value.nameAr || ""),
+        })) : [],
+      })),
+      variants: ((p as any).variants || []).map((variant: any) => ({
+        id: String(variant.id),
+        choices: { ...(variant.choices || {}) },
+        price: Number(variant.price),
+      })),
     });
     setEditingId(p.id);
+    setActiveTab("info");
+    setVariantError("");
     setDialogOpen(true);
   };
 
   const handleSubmit = () => {
+    const cleanVariants = form.variants.map(variant => ({
+      ...variant,
+      price: Number(variant.price),
+    })) as ProductVariant[];
+    if (showVariantsTab) {
+      const variantValidationError = validateProductVariantData(form.optionGroups, cleanVariants);
+      if (variantValidationError) {
+        setVariantError(variantValidationError);
+        setActiveTab("variants");
+        toast({ title: variantValidationError, variant: "destructive" });
+        return;
+      }
+    }
     let specsObj: any = undefined;
     if (form.specs.trim()) {
       try { specsObj = JSON.parse(form.specs); } catch { specsObj = { notes: form.specs }; }
@@ -223,8 +273,9 @@ export default function AdminProducts() {
       isFree: b.isFree,
       features: b.features ? b.features.split(/[،,\n]+/).map(f => f.trim()).filter(Boolean) : [],
     }));
+    const { optionGroups: _optionGroups, variants: _variants, ...baseForm } = form;
     const payload = {
-      ...form,
+      ...baseForm,
       price: Number(form.price),
       stock: Number(form.stock),
       displayOrder: Number(form.displayOrder),
@@ -232,12 +283,23 @@ export default function AdminProducts() {
       specs: specsObj,
       shippingProviders: cleanedProviders,
       planBundles: cleanedBundles,
+      ...(showVariantsTab ? { optionGroups: form.optionGroups, variants: cleanVariants } : {}),
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
     } else {
       createMutation.mutate(payload);
     }
+  };
+
+  const generateVariants = () => {
+    const result = buildProductVariantMatrix(
+      form.optionGroups,
+      form.variants.map(variant => ({ ...variant, price: Number(variant.price) })) as ProductVariant[],
+      Number(form.price) || 0,
+    );
+    setVariantError(result.error || "");
+    if (!result.error) setForm(current => ({ ...current, variants: result.variants }));
   };
 
   const toggleShippingProvider = (company: ShippingCompany) => {
@@ -451,9 +513,17 @@ export default function AdminProducts() {
             <DialogTitle className="font-bold text-lg">{editingId ? (L ? "تعديل المنتج" : "Edit Product") : (L ? "إضافة منتج جديد" : "Add New Product")}</DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="info" className="mt-2">
-            <TabsList className="w-full grid grid-cols-4 h-9 mb-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+            <TabsList className={`w-full grid ${showVariantsTab ? "grid-cols-5" : "grid-cols-4"} h-9 mb-4`}>
               <TabsTrigger value="info" className="text-xs gap-1"><Package className="w-3 h-3" />{L ? "المعلومات" : "Info"}</TabsTrigger>
+              {showVariantsTab && (
+                <TabsTrigger value="variants" className="text-xs gap-1">
+                  <LayoutGrid className="w-3 h-3" />{L ? "الخيارات" : "Options"}
+                  {form.variants.length > 0 && (
+                    <span className="bg-black dark:bg-white text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.variants.length}</span>
+                  )}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="bundles" className="text-xs gap-1">
                 <Crown className="w-3 h-3" />{L ? "الباقات" : "Bundles"}
                 {form.planBundles.length > 0 && (
@@ -468,6 +538,187 @@ export default function AdminProducts() {
               </TabsTrigger>
               <TabsTrigger value="advanced" className="text-xs gap-1"><Sparkles className="w-3 h-3" />{L ? "متقدم" : "Advanced"}</TabsTrigger>
             </TabsList>
+
+            {showVariantsTab && (
+              <TabsContent value="variants" className="space-y-4">
+                <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.03] p-4">
+                  <p className="text-sm font-bold">{L ? "خيارات وتركيبات المنتج" : "Product options and variants"}</p>
+                  <p className="text-xs text-black/50 dark:text-white/50 mt-1">
+                    {L
+                      ? "أضف خصائص مثل السعة أو اللون، ثم ولّد التركيبات وحدد السعر النهائي لكل تركيبة."
+                      : "Add options such as storage or color, generate combinations, and set a final price for each."}
+                  </p>
+                  <p className="text-[11px] text-black/40 dark:text-white/40 mt-2">
+                    {L ? "السعر هنا هو السعر الكامل للتركيبة، وليس زيادة على سعر المنتج." : "Each value is the full variant price, not an adjustment to the base price."}
+                  </p>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => {
+                      setForm(current => ({
+                        ...current,
+                        optionGroups: [...current.optionGroups, {
+                          id: newOptionId("option"),
+                          name: "",
+                          nameAr: "",
+                          values: [],
+                        }],
+                      }));
+                      setVariantError("");
+                    }}
+                    data-testid="button-add-product-option"
+                  >
+                    <Plus className="w-3.5 h-3.5 ml-1" />{L ? "إضافة خاصية" : "Add option"}
+                  </Button>
+                </div>
+
+                {form.optionGroups.length === 0 ? (
+                  <div className="text-center py-10 border-2 border-dashed border-black/[0.07] dark:border-white/[0.07] rounded-2xl">
+                    <LayoutGrid className="w-9 h-9 mx-auto mb-3 text-black/15 dark:text-white/15" />
+                    <p className="text-sm text-black/45 dark:text-white/45">{L ? "لا توجد خيارات بعد" : "No options yet"}</p>
+                    <p className="text-xs text-black/30 dark:text-white/30 mt-1">{L ? "مثال: السعة، اللون، أو حجم الجهاز" : "Examples: storage, color, or device size"}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {form.optionGroups.map((group, groupIndex) => (
+                      <div key={group.id} className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-4 space-y-3">
+                        <div className="flex items-start gap-2">
+                          <div className="grid grid-cols-2 gap-2 flex-1">
+                            <div>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "اسم الخاصية بالعربي" : "Option name (Arabic)"}</label>
+                              <Input value={group.nameAr} onChange={event => {
+                                setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? { ...item, nameAr: event.target.value } : item) }));
+                                setVariantError("");
+                              }} placeholder="السعة" data-testid={`input-option-name-ar-${groupIndex}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "اسم الخاصية بالإنجليزية" : "Option name (English)"}</label>
+                              <Input value={group.name} onChange={event => {
+                                setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? { ...item, name: event.target.value } : item) }));
+                                setVariantError("");
+                              }} placeholder="Storage" data-testid={`input-option-name-en-${groupIndex}`} />
+                            </div>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-600 mt-5"
+                            onClick={() => {
+                              setForm(current => ({ ...current, optionGroups: current.optionGroups.filter((_, i) => i !== groupIndex) }));
+                              setVariantError("");
+                            }}
+                            aria-label={L ? "حذف الخاصية" : "Remove option"}
+                            data-testid={`button-remove-option-${groupIndex}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40">{L ? "القيم المتاحة" : "Available values"}</p>
+                          {group.values.map((value, valueIndex) => (
+                            <div key={value.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                              <Input value={value.nameAr} onChange={event => {
+                                setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? {
+                                  ...item,
+                                  values: item.values.map((option, j) => j === valueIndex ? { ...option, nameAr: event.target.value } : option),
+                                } : item) }));
+                                setVariantError("");
+                              }} placeholder="مثال: ٢٥٦ جيجابايت" data-testid={`input-option-value-ar-${groupIndex}-${valueIndex}`} />
+                              <Input value={value.name} onChange={event => {
+                                setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? {
+                                  ...item,
+                                  values: item.values.map((option, j) => j === valueIndex ? { ...option, name: event.target.value } : option),
+                                } : item) }));
+                                setVariantError("");
+                              }} placeholder="e.g. 256 GB" data-testid={`input-option-value-en-${groupIndex}-${valueIndex}`} />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-600"
+                                onClick={() => {
+                                  setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? {
+                                    ...item,
+                                    values: item.values.filter((_, j) => j !== valueIndex),
+                                  } : item) }));
+                                  setVariantError("");
+                                }}
+                                aria-label={L ? "حذف القيمة" : "Remove value"}
+                                data-testid={`button-remove-option-value-${groupIndex}-${valueIndex}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => {
+                              setForm(current => ({ ...current, optionGroups: current.optionGroups.map((item, i) => i === groupIndex ? {
+                                ...item,
+                                values: [...item.values, { id: newOptionId("value"), name: "", nameAr: "" }],
+                              } : item) }));
+                              setVariantError("");
+                            }}
+                            data-testid={`button-add-option-value-${groupIndex}`}
+                          >
+                            <Plus className="w-3.5 h-3.5 ml-1" />{L ? "إضافة قيمة" : "Add value"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {form.optionGroups.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-bold">{L ? "التركيبات وأسعارها النهائية" : "Variants and their final prices"}</p>
+                        <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">
+                          {L ? "إعادة التوليد تحفظ أسعار التركيبات المطابقة وتضيف الجديدة بسعر المنتج الأساسي." : "Regenerating preserves matching prices and gives new combinations the product's base price."}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={generateVariants} data-testid="button-generate-product-variants">
+                        <Sparkles className="w-3.5 h-3.5 ml-1" />{L ? "توليد التركيبات" : "Generate variants"}
+                      </Button>
+                    </div>
+                    {variantError && <p className="text-xs text-red-600" role="alert">{variantError}</p>}
+                    {form.variants.length > 0 && (
+                      <div className="space-y-2">
+                        {form.variants.map((variant, variantIndex) => (
+                          <div key={variant.id} className="grid grid-cols-[1fr_130px] gap-3 items-center p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
+                            <p className="text-xs font-semibold">
+                              {productVariantSummary(variant as ProductVariant, form.optionGroups, L ? "ar" : "en") || (L ? "تركيبة غير مكتملة" : "Incomplete combination")}
+                            </p>
+                            <div>
+                              <label className="text-[9px] text-black/40 dark:text-white/40 mb-1 block">{L ? "السعر النهائي" : "Final price"}</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={variant.price}
+                                onChange={event => {
+                                  const price = event.target.value === "" ? "" : Number(event.target.value);
+                                  setForm(current => ({ ...current, variants: current.variants.map((item, i) => i === variantIndex ? { ...item, price } : item) }));
+                                  setVariantError("");
+                                }}
+                                data-testid={`input-variant-price-${variantIndex}`}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            )}
 
             {/* ── TAB: INFO ── */}
             <TabsContent value="info" className="space-y-4">

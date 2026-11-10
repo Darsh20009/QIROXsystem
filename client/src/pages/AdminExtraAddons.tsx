@@ -311,7 +311,7 @@ export default function AdminExtraAddons() {
             {customForm.price > 0 && customForm.cost > 0 && (
               <div className="text-xs bg-black/[0.04] border border-black/10 rounded-lg p-2 text-center">
                 {L ? "ربح متوقع:" : "Expected profit:"}{" "}
-                <span className="font-black">{(customForm.price - customForm.cost).toLocaleString()} {L ? "ر.س" : "SAR"}</span>
+                <span className="font-black flex items-center justify-center gap-1">{(customForm.price - customForm.cost).toLocaleString()} <SARIcon size={12} /></span>
               </div>
             )}
           </div>

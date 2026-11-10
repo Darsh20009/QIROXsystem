@@ -4,11 +4,27 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 
 const DEVICE_TOKEN_KEY = "qirox_device_token";
+const STAFF_ROUTE_PREFIXES = ["/admin", "/employee", "/supplier", "/sales", "/investor"];
 
 export function getUserHomePath(role?: string): string {
   if (role === "client") return "/dashboard";
   if (role === "admin" || role === "manager") return "/admin";
   return "/employee/role-dashboard";
+}
+
+export function isPathAllowedForRole(role: string | undefined, path: string): boolean {
+  if (!path || !path.startsWith("/") || path.startsWith("//")) return false;
+  if (role !== "client") return true;
+  return !STAFF_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+export function getSafePostLoginPath(
+  role: string | undefined,
+  candidate: unknown,
+  fallback = getUserHomePath(role),
+): string {
+  const path = typeof candidate === "string" ? candidate : "";
+  return isPathAllowedForRole(role, path) ? path : fallback;
 }
 
 export function getStoredDeviceToken(): string | null {
@@ -27,7 +43,7 @@ export function useUser() {
   return useQuery({
     queryKey: [api.auth.user.path],
     queryFn: async () => {
-      const res = await fetch(api.auth.user.path);
+      const res = await fetch(api.auth.user.path, { credentials: "include" });
       if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch user");
       return await res.json();
@@ -49,6 +65,7 @@ export function useLogin() {
         method: api.auth.login.method,
         headers,
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -65,6 +82,7 @@ export function useLogin() {
       if (user.requires2FA) return;
       if (user.needsDeviceVerification) return;
       if (user.needsVerification) return;
+      if (user.deviceToken) saveDeviceToken(user.deviceToken);
 
       queryClient.setQueryData([api.auth.user.path], user);
       const homePath = getUserHomePath(user.role);
@@ -72,7 +90,7 @@ export function useLogin() {
         const returnUrl = sessionStorage.getItem("returnAfterLogin");
         if (returnUrl) {
           sessionStorage.removeItem("returnAfterLogin");
-          setLocation(returnUrl);
+          setLocation(getSafePostLoginPath(user.role, returnUrl));
         } else {
           setLocation(homePath);
         }
@@ -90,6 +108,7 @@ export function useRegister() {
         method: api.auth.register.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -130,6 +149,7 @@ export function useLogout() {
       });
     },
     onSuccess: () => {
+      clearDeviceToken();
       queryClient.setQueryData([api.auth.user.path], null);
       setLocation("/");
     },

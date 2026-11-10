@@ -231,17 +231,7 @@ export default function AdminMailAccounts() {
                 const data = await r.json();
                 if (data.ok) {
                   qc.invalidateQueries({ queryKey: ["/api/mail/accounts/all"] });
-                  const results = Array.isArray(data.seeded) ? data.seeded : [];
-                  const failures = results.filter((item: any) => String(item.cpanelStatus || "").startsWith("error"));
-                  toast({
-                    title: failures.length
-                      ? (L ? "حُفظت السجلات، لكن تعذّر إنشاء بعض الصناديق" : "Records saved; some cPanel mailboxes failed")
-                      : (L ? "تمت تهيئة حسابات البريد الثمانية" : "8 mailboxes seeded successfully"),
-                    description: failures.length
-                      ? (L ? `تعذّر إنشاء ${failures.length} من ${results.length}. ${failures[0]?.cpanelStatus || ""}` : `${failures.length} of ${results.length} failed: ${failures[0]?.cpanelStatus || ""}`)
-                      : undefined,
-                    variant: failures.length ? "destructive" : undefined,
-                  });
+                  toast({ title: L ? "تم تهيئة الحسابات الأربعة بنجاح" : "4 system accounts seeded successfully" });
                 } else {
                   toast({ title: L ? "خطأ" : "Error", description: data.error, variant: "destructive" });
                 }
@@ -253,7 +243,7 @@ export default function AdminMailAccounts() {
             data-testid="button-seed-system-accounts"
           >
             <Shield className="w-3.5 h-3.5" />
-            {L ? "تهيئة صناديق البريد الثمانية" : "Seed 8 Mailboxes"}
+            {L ? "تهيئة حسابات النظام" : "Seed System Accounts"}
           </Button>
           <Button
             onClick={() => { setCreating(true); setEditingId(null); setTestResult(null); setForm({ imapHost: "server222.web-hosting.com", imapPort: 993, smtpHost: "server222.web-hosting.com", smtpPort: 465 }); }}
@@ -406,6 +396,13 @@ export default function AdminMailAccounts() {
                       <div>
                         <label className="text-xs font-medium block mb-1">{L ? "المنصب" : "Job Title"}</label>
                         <Input value={form.jobTitle || ""} onChange={e => setForm(f => ({ ...f, jobTitle: e.target.value }))} data-testid="input-edit-jobtitle" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-xs font-medium block mb-1">
+                          {L ? "كلمة المرور الجديدة" : "New Password"}
+                          <span className="text-black/40 dark:text-white/40 font-normal mr-1">{L ? "(اختر واختبر قبل الحفظ)" : "(enter then Test before saving)"}</span>
+                        </label>
+                        <Input type="password" value={form.password || ""} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" dir="ltr" data-testid="input-edit-password" />
                       </div>
                       <div className="col-span-2">
                         <label className="text-xs font-medium block mb-1.5 flex items-center justify-between">

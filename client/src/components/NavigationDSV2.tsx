@@ -322,7 +322,7 @@ export default function NavigationDSV2() {
                   <img
                     src="/qirox-logo-nobg.png"
                     alt="QIROX"
-                    className="h-10 w-auto object-contain dark:invert"
+                    className="h-10 w-auto object-contain brightness-0 dark:invert"
                   />
                 </div>
               </Link>

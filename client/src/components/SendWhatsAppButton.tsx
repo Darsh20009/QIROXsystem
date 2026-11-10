@@ -51,22 +51,6 @@ export function SendWhatsAppButton({
         body: JSON.stringify({ phone, text: message }),
       });
       const data = await r.json();
-      if (data.code === "WHATSAPP_NOT_REGISTERED") {
-        toast({
-          title: "لم تُرسل الرسالة",
-          description: "العميل لا يملك حساب واتساب بهذا الرقم.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (data.code === "WHATSAPP_CHECK_FAILED") {
-        toast({
-          title: "تعذر التحقق من واتساب",
-          description: "لم تُرسل الرسالة. تحقق من اتصال واتساب ثم حاول مجدداً.",
-          variant: "destructive",
-        });
-        return;
-      }
       if (!r.ok) throw new Error(data.error || "فشل الإرسال");
       toast({ title: "✅ تم إرسال الرسالة عبر واتساب" });
     } catch (e: any) {

@@ -1,6 +1,6 @@
 
 import SARIcon from "@/components/SARIcon";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
+import { productVariantSummary } from "@shared/product-variants";
+import type { ProductOptionGroup, ProductVariant } from "@shared/schema";
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const SECTORS = [
@@ -26,6 +28,19 @@ const SECTORS = [
   "الصحة والتجميل", "الذكاء الاصطناعي", "التعليم والمنصات",
   "ابدأ فكرتك",
 ];
+const MARKETING_LEAD_SECTOR_LABELS: Record<string, string> = {
+  restaurant: "مطاعم والمقاهي",
+  ecommerce: "المتاجر",
+  education: "التعليم والمنصات",
+  healthcare: "الصحة والتجميل",
+  realestate: "الشركات والوكلات",
+  corporate: "الشركات والوكلات",
+  fitness: "الصحة والتجميل",
+  beauty: "الصحة والتجميل",
+  events: "ابدأ فكرتك",
+  marketing: "الشركات والوكلات",
+  ai: "الذكاء الاصطناعي",
+};
 const PROJECT_TYPES = [
   "موقع إلكتروني", "تطبيق جوال", "نظام إداري", "متجر إلكتروني",
   "منصة تعليمية", "نظام حجوزات", "تطبيق مطاعم", "نظام عيادات",
@@ -71,7 +86,15 @@ function generateUsername(fullName: string): string {
 type Mode = "new" | "existing";
 type Step = "client" | "order" | "done";
 
-interface OrderItem { id: string; name: string; nameAr: string; price?: number; type?: string; }
+interface OrderItem {
+  id: string;
+  name: string;
+  nameAr: string;
+  price?: number;
+  type?: string;
+  refId?: string;
+  config?: Record<string, any>;
+}
 interface Result {
   client: { id: string; username?: string; fullName: string; email: string };
   order: { id: string } | null;
@@ -82,6 +105,9 @@ export default function EmployeeNewOrder() {
     const { toast } = useToast();
     const { lang, dir } = useI18n();
     const L = lang === "ar";
+  const [manualMarketingLeadId, setManualMarketingLeadId] = useState(
+    () => new URLSearchParams(window.location.search).get("manualMarketingLeadId") || "",
+  );
     const BILLING_LABELS: Record<string, string> = L
       ? { monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة" }
       : { monthly: "Monthly", sixmonth: "6-Month", annual: "Annual", lifetime: "Lifetime" };
@@ -140,6 +166,7 @@ export default function EmployeeNewOrder() {
   const [notes, setNotes] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
+  const [productOptionSelections, setProductOptionSelections] = useState<Record<string, Record<string, string>>>({});
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [customItem, setCustomItem] = useState("");
   const [selectedBilling, setSelectedBilling] = useState<string>("");
@@ -150,11 +177,51 @@ export default function EmployeeNewOrder() {
   const { data: extraAddons = [] } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
   const { data: products = [] } = useQuery<any[]>({ queryKey: ["/api/products"] });
+  const { data: marketingLead } = useQuery<any>({
+    queryKey: ["/api/whatsapp/crm/manual-marketing/leads", manualMarketingLeadId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/whatsapp/crm/manual-marketing/leads/${encodeURIComponent(manualMarketingLeadId)}`,
+        { credentials: "include" },
+      );
+      if (!response.ok) throw new Error("تعذر تحميل بيانات العميل المحتمل");
+      return response.json();
+    },
+    enabled: Boolean(manualMarketingLeadId),
+  });
+  const leadPrefilledRef = useRef("");
+
+  useEffect(() => {
+    if (!manualMarketingLeadId || !marketingLead || leadPrefilledRef.current === manualMarketingLeadId) return;
+    leadPrefilledRef.current = manualMarketingLeadId;
+    const contactName = marketingLead.lastReplyContactName && marketingLead.lastReplyContactName !== "غير ظاهر في واتساب"
+      ? marketingLead.lastReplyContactName
+      : marketingLead.businessName || "";
+    setPhone(marketingLead.normalizedPhone ? `+${marketingLead.normalizedPhone}` : "");
+    setFullName(contactName);
+    setUsername(generateUsername(contactName || `client${String(marketingLead.normalizedPhone || "").slice(-4)}`));
+    setBusinessName(marketingLead.businessName || contactName);
+    setBusinessType(
+      marketingLead.sector === "restaurant" ? "مطعم / مقهى" :
+      marketingLead.sector === "education" ? "تعليمي" :
+      marketingLead.sector === "healthcare" || marketingLead.sector === "beauty" ? "طبي / صحي" :
+      marketingLead.sector === "ecommerce" ? "تجاري" : "أخرى",
+    );
+    if (COUNTRIES.some((item) => item.code === marketingLead.countryCode)) setCountry(marketingLead.countryCode);
+    setSector(MARKETING_LEAD_SECTOR_LABELS[marketingLead.sector] || "");
+  }, [manualMarketingLeadId, marketingLead]);
 
   /* ── Mutations ── */
   const newClientMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/employee/create-client-order", data),
-    onSuccess: async (res: any) => { const data = await res.json(); setResult(data); setStep("done"); },
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      setResult(data);
+      setStep("done");
+      if (data.leadConversionWarning) {
+        toast({ title: data.leadConversionWarning, variant: "destructive" });
+      }
+    },
     onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
@@ -223,10 +290,42 @@ export default function EmployeeNewOrder() {
     if (price > 0 && !totalAmount) setTotalAmount(String(price));
   }
 
-  function selectProduct(product: any) {
-    const id = `prod-${product.id || product._id}`;
+  function getProductId(product: any): string {
+    return String(product.id || product._id || "");
+  }
+
+  function getSelectedProductVariant(product: any): ProductVariant | undefined {
+    const groups = (Array.isArray(product.optionGroups) ? product.optionGroups : []) as ProductOptionGroup[];
+    const variants = (Array.isArray(product.variants) ? product.variants : []) as ProductVariant[];
+    if (!groups.length || !variants.length) return undefined;
+    const selections = productOptionSelections[getProductId(product)] || {};
+    if (groups.some(group => !selections[group.id])) return undefined;
+    return variants.find(variant => groups.every(group => variant.choices?.[group.id] === selections[group.id]));
+  }
+
+  function selectProduct(product: any, selectedVariant?: ProductVariant) {
+    const productId = getProductId(product);
+    const groups = (Array.isArray(product.optionGroups) ? product.optionGroups : []) as ProductOptionGroup[];
+    const hasOptions = groups.length > 0;
+    if (hasOptions && !selectedVariant) {
+      toast({ title: L ? "اختر جميع مواصفات الجهاز أولاً" : "Choose all product options first", variant: "destructive" });
+      return;
+    }
+    const summaryAr = selectedVariant ? productVariantSummary(selectedVariant, groups, "ar") : "";
+    const summaryEn = selectedVariant ? productVariantSummary(selectedVariant, groups, "en") : "";
+    const id = `prod-${productId}${selectedVariant ? `-variant-${selectedVariant.id}` : ""}`;
     if (selectedItems.find(s => s.id === id)) { removeItem(id); return; }
-    setSelectedItems(prev => [...prev, { id, name: product.nameAr || product.name, nameAr: product.nameAr || product.name, price: product.price || 0, type: "product" }]);
+    const name = product.name || product.nameAr || "";
+    const nameAr = product.nameAr || product.name || "";
+    setSelectedItems(prev => [...prev, {
+      id,
+      name: [name, summaryEn].filter(Boolean).join(" — "),
+      nameAr: [nameAr, summaryAr].filter(Boolean).join(" — "),
+      price: selectedVariant ? Number(selectedVariant.price) : (product.price || 0),
+      type: "product",
+      refId: productId,
+      ...(selectedVariant ? { config: { productVariantId: selectedVariant.id } } : {}),
+    }]);
   }
 
   function calcDiscount(base: number): number {
@@ -256,6 +355,7 @@ export default function EmployeeNewOrder() {
         businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal,
         services: items, planPeriod: selectedBilling,
         planTier: selectedPlan?.tier || "", planSegment: selectedPlan?.segment || "",
+        ...(manualMarketingLeadId ? { manualMarketingLeadId } : {}),
       });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
@@ -721,17 +821,65 @@ export default function EmployeeNewOrder() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {products.map((prod: any) => {
-                      const prodId = `prod-${prod.id || prod._id}`;
-                      const selected = selectedItems.some(s => s.id === prodId);
+                      const productId = getProductId(prod);
+                      const prodId = `prod-${productId}`;
+                      const groups = (Array.isArray(prod.optionGroups) ? prod.optionGroups : []) as ProductOptionGroup[];
+                      const hasOptions = groups.length > 0;
+                      const selected = selectedItems.some(item => item.type === "product" && item.refId === productId);
+                      const selectedVariant = getSelectedProductVariant(prod);
+                      const variantAdded = Boolean(selectedVariant && selectedItems.some(item =>
+                        item.type === "product" && item.refId === productId && item.config?.productVariantId === selectedVariant.id,
+                      ));
+                      const cheapestVariantPrice = Array.isArray(prod.variants) && prod.variants.length
+                        ? Math.min(...prod.variants.map((variant: any) => Number(variant.price) || 0))
+                        : Number(prod.price) || 0;
+                      const displayPrice = selectedVariant ? Number(selectedVariant.price) : cheapestVariantPrice;
                       return (
-                        <button key={prod.id || prod._id} onClick={() => selectProduct(prod)}
-                          className={`flex flex-col p-3.5 rounded-xl border-2 text-right transition-all ${selected ? "border-black bg-black text-white" : "border-black/[0.08] hover:border-black/25 bg-white"}`}
-                          data-testid={`product-${prod.id || prod._id}`}>
-                          {prod.imageUrl && <img src={prod.imageUrl} alt={prod.nameAr || prod.name} className="w-full h-24 object-cover rounded-lg mb-2" />}
-                          <p className={`font-bold text-xs ${selected ? "text-white" : "text-black"}`}>{prod.nameAr || prod.name}</p>
-                          {prod.price != null && <p className={`text-[11px] mt-0.5 flex items-center gap-0.5 ${selected ? "text-white/60" : "text-black/40"}`}>{prod.price.toLocaleString()} <SARIcon size={8} className="opacity-60" /></p>}
-                          {selected && <CheckCircle2 className="w-3.5 h-3.5 text-white mt-1" />}
-                        </button>
+                        hasOptions ? (
+                          <div key={productId} className={`flex flex-col p-3.5 rounded-xl border-2 text-right transition-all ${selected ? "border-black bg-black/[0.02]" : "border-black/[0.08] bg-white"}`} data-testid={`product-${productId}`}>
+                            {prod.imageUrl && <img src={prod.imageUrl} alt={prod.nameAr || prod.name} className="w-full h-24 object-cover rounded-lg mb-2" />}
+                            <p className="font-bold text-xs text-black">{prod.nameAr || prod.name}</p>
+                            <p className="text-[11px] mt-0.5 flex items-center gap-0.5 text-black/45">
+                              {selectedVariant ? "" : (L ? "ابتداءً من " : "From ")}
+                              {displayPrice.toLocaleString()} <SARIcon size={8} className="opacity-60" />
+                            </p>
+                            {groups.map(group => (
+                              <label key={group.id} className="block mt-2">
+                                <span className="block text-[10px] font-semibold text-black/55 mb-1">{L ? group.nameAr : group.name}</span>
+                                <select
+                                  value={productOptionSelections[productId]?.[group.id] || ""}
+                                  onChange={event => setProductOptionSelections(previous => ({
+                                    ...previous,
+                                    [productId]: { ...previous[productId], [group.id]: event.target.value },
+                                  }))}
+                                  className="w-full rounded-md border border-black/10 bg-white px-2 py-2 text-[11px] text-black"
+                                >
+                                  <option value="">{L ? "اختر" : "Choose"}</option>
+                                  {(group.values || []).map(value => (
+                                    <option key={value.id} value={value.id}>{L ? value.nameAr : value.name}</option>
+                                  ))}
+                                </select>
+                              </label>
+                            ))}
+                            <button
+                              type="button"
+                              disabled={!selectedVariant}
+                              onClick={() => selectProduct(prod, selectedVariant)}
+                              className={`mt-3 w-full rounded-lg px-2 py-2 text-[11px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${variantAdded ? "bg-black text-white" : "bg-black/[0.06] text-black hover:bg-black/[0.1]"}`}
+                            >
+                              {variantAdded ? (L ? "أُضيفت التركيبة · إزالة" : "Added · Remove") : (L ? "إضافة هذه التركيبة" : "Add this option")}
+                            </button>
+                          </div>
+                        ) : (
+                          <button key={prodId} onClick={() => selectProduct(prod)}
+                            className={`flex flex-col p-3.5 rounded-xl border-2 text-right transition-all ${selected ? "border-black bg-black text-white" : "border-black/[0.08] hover:border-black/25 bg-white"}`}
+                            data-testid={`product-${productId}`}>
+                            {prod.imageUrl && <img src={prod.imageUrl} alt={prod.nameAr || prod.name} className="w-full h-24 object-cover rounded-lg mb-2" />}
+                            <p className={`font-bold text-xs ${selected ? "text-white" : "text-black"}`}>{prod.nameAr || prod.name}</p>
+                            {prod.price != null && <p className={`text-[11px] mt-0.5 flex items-center gap-0.5 ${selected ? "text-white/60" : "text-black/40"}`}>{prod.price.toLocaleString()} <SARIcon size={8} className="opacity-60" /></p>}
+                            {selected && <CheckCircle2 className="w-3.5 h-3.5 text-white mt-1" />}
+                          </button>
+                        )
                       );
                     })}
                   </div>
@@ -945,7 +1093,7 @@ export default function EmployeeNewOrder() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setSelectedBilling(""); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                   <Button onClick={() => { setManualMarketingLeadId(""); const url = new URL(window.location.href); url.searchParams.delete("manualMarketingLeadId"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); setStep("client"); setResult(null); setSelectedItems([]); setSelectedPlanId(null); setSelectedBilling(""); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
                     <Plus className="w-4 h-4" /> {L ? "مشروع جديد" : "New Project"}
                   </Button>
                   <Link href="/admin/orders">

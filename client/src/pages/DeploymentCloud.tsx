@@ -1328,6 +1328,16 @@ function ProjectSettings({ project }: { project: any }) {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const copyValue = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: `تم نسخ ${label}` });
+    } catch {
+      toast({ title: "تعذر النسخ", variant: "destructive" });
+    }
+  };
+
   const saveSettings = async () => {
     try {
       await apiRequest("PUT", `/api/deploy/projects/${project.id || project._id}`, { ...form, envVars });
@@ -1405,7 +1415,7 @@ function ProjectSettings({ project }: { project: any }) {
 
       <div className="bg-black/[0.025] dark:bg-white/[0.025] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 space-y-3">
         <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2"><Lock size={13} />متغيرات البيئة</h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2" dir="ltr">
           <input value={envKey} onChange={e => setEnvKey(e.target.value)} placeholder="KEY"
             className="flex-1 bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white font-mono outline-none focus:border-violet-500/50" />
           <input value={envVal} onChange={e => setEnvVal(e.target.value)} placeholder="VALUE"
@@ -1420,12 +1430,29 @@ function ProjectSettings({ project }: { project: any }) {
           </button>
         </div>
         <div className="space-y-1.5 max-h-48 overflow-y-auto">
-          {envVars.map((ev, i) => (
-            <div key={i} className="flex items-center gap-2 p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.07] dark:border-white/[0.07] rounded-xl">
-              <span className="text-xs text-violet-300 font-mono flex-1">{ev.key}</span>
-              <span className="text-xs text-gray-400 dark:text-white/35 font-mono flex-1 truncate">
-                {ev.isSecret && !showSecrets[i] ? "••••••••" : ev.value}
-              </span>
+           {envVars.map((ev, i) => (
+             <div key={i} className="flex items-center gap-2 p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.07] dark:border-white/[0.07] rounded-xl" dir="ltr">
+               <span className="text-xs text-violet-300 font-mono flex-1 truncate">{ev.key}</span>
+               <button
+                 type="button"
+                 onClick={() => copyValue(ev.key, "المفتاح")}
+                 className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white"
+                 title="نسخ المفتاح"
+               >
+                 <Copy size={11} />
+               </button>
+               <span className="text-xs text-gray-400 dark:text-white/35 font-mono flex-1 truncate">
+                 {ev.isSecret && !showSecrets[i] ? "••••••••" : (ev.value || "قيمة سرية محفوظة")}
+               </span>
+               <button
+                 type="button"
+                 onClick={() => copyValue(ev.value, "القيمة")}
+                 disabled={!ev.value}
+                 className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:text-gray-900 dark:hover:text-white disabled:opacity-30"
+                 title={ev.value ? "نسخ القيمة" : "القيمة السرية مخفية"}
+               >
+                 <Copy size={11} />
+               </button>
               {ev.isSecret && (
                 <button onClick={() => setShowSecrets(s => ({ ...s, [i]: !s[i] }))} className="text-gray-400 dark:text-white/25 hover:text-gray-700 dark:hover:text-white/70">
                   {showSecrets[i] ? <EyeOff size={11} /> : <Eye size={11} />}

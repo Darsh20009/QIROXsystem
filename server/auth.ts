@@ -7,8 +7,10 @@ import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
+import { verifyQMeetGuestTicket } from "./qmeet-guest-admission";
 
 const scryptAsync = promisify(scrypt);
+let sessionMiddlewareForWebSocket: any = null;
 
 const PUBLIC_ROUTE_PREFIXES = [
   "/api/public/",
@@ -48,6 +50,10 @@ export function invalidateUserCache(id?: string): void {
   } else {
     userCache.clear();
   }
+}
+
+function isTerminatedEmployee(user: any): boolean {
+  return Boolean(user && user.role !== "client" && user.employmentStatus === "terminated");
 }
 
 export async function hashPassword(password: string) {
@@ -113,6 +119,7 @@ export function setupAuth(app: Express) {
   }
 
   const sessionMiddleware = session(sessionSettings);
+  sessionMiddlewareForWebSocket = sessionMiddleware;
 
   app.use(sessionMiddleware);
   app.use(passport.initialize());
@@ -141,6 +148,7 @@ export function setupAuth(app: Express) {
 
       const user = await storage.getUser(String(deviceToken.userId));
       if (!user) return next();
+      if (isTerminatedEmployee(user)) return next();
 
       setCachedUser(user.id, user);
       (req as any).user = user;
@@ -154,7 +162,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user || isTerminatedEmployee(user) || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         } else {
           setCachedUser(user.id, user);
@@ -174,9 +182,19 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const cached = getCachedUser(id);
-      if (cached) return done(null, cached);
+      if (cached) {
+        if (isTerminatedEmployee(cached)) {
+          invalidateUserCache(id);
+          return done(null, false);
+        }
+        return done(null, cached);
+      }
 
       const user = await storage.getUser(id);
+      if (isTerminatedEmployee(user)) {
+        invalidateUserCache(id);
+        return done(null, false);
+      }
       if (user) setCachedUser(id, user);
       done(null, user);
     } catch (err) {
@@ -185,4 +203,71 @@ export function setupAuth(app: Express) {
   });
 
   return { hashPassword, comparePasswords };
+}
+
+/**
+ * Authenticate a WebSocket upgrade with the same Mongo-backed session used by
+ * HTTP requests. Browsers cannot attach arbitrary headers to a WebSocket
+ * constructor, so sessions and narrowly-scoped device/QMeet guest tickets are
+ * accepted through the negotiated protocol list.
+ */
+export async function authenticateWebSocketRequest(req: any): Promise<any | null> {
+  const sessionUserId = await new Promise<string | null>((resolve, reject) => {
+    if (!sessionMiddlewareForWebSocket) return resolve(null);
+
+    const response: any = {
+      _header: true,
+      getHeader: () => undefined,
+      setHeader: () => response,
+      removeHeader: () => response,
+      write: () => true,
+      _write: () => true,
+      _implicitHeader: () => undefined,
+      end: () => true,
+    };
+
+    sessionMiddlewareForWebSocket(req, response, (error?: unknown) => {
+      if (error) return reject(error);
+      resolve(req.session?.passport?.user ? String(req.session.passport.user) : null);
+    });
+  });
+
+  if (sessionUserId) {
+    const user = await storage.getUser(sessionUserId);
+    if (user && !isTerminatedEmployee(user)) return user;
+  }
+
+  const offeredProtocols = String(req.headers?.["sec-websocket-protocol"] || "")
+    .split(",")
+    .map((value: string) => value.trim())
+    .filter(Boolean);
+
+  const guestProtocol = offeredProtocols.find((value: string) => value.startsWith("qmeet-guest."));
+  if (guestProtocol) {
+    const claims = verifyQMeetGuestTicket(guestProtocol.slice("qmeet-guest.".length));
+    if (claims) {
+      return {
+        id: claims.guestId,
+        _id: claims.guestId,
+        fullName: claims.name,
+        username: claims.guestId,
+        role: "qmeet-guest",
+        qmeetGuestAdmission: claims,
+      };
+    }
+  }
+
+  const deviceToken = offeredProtocols.find((value: string) => /^[a-f0-9]{96}$/i.test(value));
+  if (!deviceToken) return null;
+
+  const { DeviceTokenModel } = await import("./models/auth");
+  const tokenHash = createHash("sha256").update(deviceToken).digest("hex");
+  const device = await DeviceTokenModel.findOne({
+    tokenHash,
+    expiresAt: { $gt: new Date() },
+  }).lean();
+  if (!device) return null;
+
+  const user = await storage.getUser(String(device.userId));
+  return isTerminatedEmployee(user) ? null : user;
 }

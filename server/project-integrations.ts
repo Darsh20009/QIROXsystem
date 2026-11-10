@@ -125,6 +125,11 @@ export const projectIntegrationApiDocs = {
       body: { channel: "email", recipient: { email: "customer@example.com", name: "اسم المستلم" }, subject: "عنوان الرسالة", message: "نص الرسالة" },
       description: "نقطة الربط العامة للمشروع؛ اختر email أو whatsapp مع نفس مفتاح الربط.",
     },
+    {
+      method: "GET",
+      path: "/api/v1/projects/:projectId/subscription",
+      description: "قراءة اشتراك مشروع QIROX المرتبط بالمفتاح. يعيد الخطة والفترة والحالة وتاريخ الانتهاء فقط؛ لا يتضمن بيانات دفع أو أسرار.",
+    },
   ],
   headers: {
     authorization: "Bearer qrx_project_<type>_<secret>",

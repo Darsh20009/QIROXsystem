@@ -24,13 +24,28 @@ interface MeetingInfo {
   joinCode: string;
 }
 
-function getOrCreateGuestId(): string {
-  let id = sessionStorage.getItem("qmeet_guest_id");
-  if (!id) {
-    id = "guest_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    sessionStorage.setItem("qmeet_guest_id", id);
+function getOrCreateGuestProof(): string {
+  let proof = sessionStorage.getItem("qmeet_guest_proof");
+  if (!proof) {
+    const bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    proof = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    sessionStorage.setItem("qmeet_guest_proof", proof);
   }
-  return id;
+  return proof;
+}
+
+function storeGuestAdmission(data: any, guestName?: string) {
+  if (typeof window === "undefined") return;
+  if (data?.guestId) sessionStorage.setItem("qmeet_guest_id", String(data.guestId));
+  if (data?.roomName) {
+    const roomName = String(data.roomName);
+    if (data.guestId) sessionStorage.setItem(`qmeet_guest_id:${roomName}`, String(data.guestId));
+    if (guestName) sessionStorage.setItem(`qmeet_guest_name:${roomName}`, guestName);
+    if (data.guestAdmissionToken) {
+      sessionStorage.setItem(`qmeet_guest_ticket:${roomName}`, String(data.guestAdmissionToken));
+    }
+  }
 }
 
 function formatWaitTime(seconds: number, isAr: boolean): string {
@@ -66,7 +81,7 @@ export default function QMeetJoinByCode() {
   const [autoJoinCount, setAutoJoinCount] = useState(4);
   const autoJoinRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const effectiveUserId = user ? (user._id || user.id) : getOrCreateGuestId();
+  const effectiveUserId = user ? String(user._id || user.id || "") : "";
 
   // Auto-fill code from URL ?code= param
   useEffect(() => {
@@ -120,13 +135,16 @@ export default function QMeetJoinByCode() {
 
     const checkStatus = async () => {
       try {
-        const guestQuery = user ? "" : `?guestId=${encodeURIComponent(String(effectiveUserId))}`;
-        const res = await fetch(`/api/qmeet/by-code/${code}/my-status${guestQuery}`, {
+        const headers: Record<string, string> = {};
+        if (!user) headers["x-qmeet-guest-proof"] = getOrCreateGuestProof();
+        const res = await fetch(`/api/qmeet/by-code/${code}/my-status`, {
+          headers,
           credentials: "include",
         });
         if (!res.ok) return;
         const data = await res.json();
         if (data.status === "approved" && data.meetingLink) {
+          if (!user) storeGuestAdmission(data, sessionStorage.getItem("qmeet_guest_name") || guestName);
           setMeetingLink(data.meetingLink);
           setStep("approved");
         } else if (data.status === "rejected") {
@@ -138,26 +156,33 @@ export default function QMeetJoinByCode() {
       }
     };
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    wsRef.current = ws;
-
-    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", userId: effectiveUserId }));
-
-    ws.onmessage = (event) => {
+    let ws: WebSocket | null = null;
+    if (user) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const protocols = ["qirox-auth"];
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === "qmeet_join_response") {
-          if (data.approved) {
-            setMeetingLink(data.meetingLink);
-            setStep("approved");
-          } else {
-            setStep("rejected");
-          }
-          ws.close();
-        }
+        const deviceToken = localStorage.getItem("qirox_device_token");
+        if (deviceToken) protocols.push(deviceToken);
       } catch {}
-    };
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws`, protocols);
+      wsRef.current = ws;
+
+      ws.onopen = () => ws?.send(JSON.stringify({ type: "auth", userId: effectiveUserId }));
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "qmeet_join_response") {
+            if (data.approved) {
+              setMeetingLink(data.meetingLink);
+              setStep("approved");
+            } else {
+              setStep("rejected");
+            }
+            ws?.close();
+          }
+        } catch {}
+      };
+    }
 
     // Do not leave a guest waiting forever when the approval WebSocket is
     // dropped or a proxy does not forward it.
@@ -165,11 +190,11 @@ export default function QMeetJoinByCode() {
     statusPollRef.current = setInterval(checkStatus, 3000);
 
     return () => {
-      ws.close();
+      ws?.close();
       if (statusPollRef.current) clearInterval(statusPollRef.current);
       statusPollRef.current = null;
     };
-  }, [step, effectiveUserId]);
+  }, [step, effectiveUserId, user, code]);
 
   const handleCodeInput = (val: string) => {
     setCode(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
@@ -203,9 +228,10 @@ export default function QMeetJoinByCode() {
     try {
       if (!user) {
         sessionStorage.setItem("qmeet_guest_name", guestName.trim());
-        sessionStorage.setItem("qmeet_guest_id", effectiveUserId);
       }
-      const body: any = !user ? { guestName: guestName.trim(), guestId: effectiveUserId } : {};
+      const body: any = !user
+        ? { guestName: guestName.trim(), guestProof: getOrCreateGuestProof() }
+        : {};
       const res = await fetch(`/api/qmeet/by-code/${code}/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -214,6 +240,7 @@ export default function QMeetJoinByCode() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || (L ? "حدث خطأ" : "An error occurred"));
+      if (!user) storeGuestAdmission(data, guestName.trim());
       if (data.status === "approved") { setMeetingLink(data.meetingLink); setStep("approved"); }
       else if (data.status === "pending") setStep("pending");
     } catch (err: any) {

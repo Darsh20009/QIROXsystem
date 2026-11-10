@@ -8,6 +8,10 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
+import { validateProductVariantData } from "@shared/product-variants";
+import { getPlanPrice, CUSTOM_QUOTE_BASE_WEBSITE_VALUE, CUSTOM_QUOTE_MULTIPLIER, CUSTOM_QUOTE_BASE_PRICE } from "@shared/plan-prices";
+import { applyProductVariantPricing } from "./product-variant-pricing";
+import { isManualMarketingSector, normalizeManualMarketingPhone } from "@shared/manual-marketing";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import multer from "multer";
 import path from "path";
@@ -19,10 +23,14 @@ import mongoose from "mongoose";
 import { Readable } from "stream";
 import { INTERNAL_CRON_SECRET } from "./internal-secret";
 import { registerMailRoutes } from "./domains/mail";
+import { registerDraftProjectRoutes } from "./domains/draft-projects/routes";
+import { registerSaasBuilderRoutes } from "./domains/saas-builder/routes";
+import { registerProjectBrandingRoutes } from "./domains/saas-builder/branding-routes";
 import {
   ensureGitHubRepository,
   githubFetch,
   githubRepositoryName,
+  customGitHubRepositoryName,
   resolveGitHubToken,
   seedGitHubProjectRepository,
   updateGitHubRepositoryVisibility,
@@ -46,10 +54,6 @@ import {
   roleCanAccess,
 } from "./data-entry-policy";
 
-// Hash phone-login codes with a server-only key so a database snapshot cannot
-// be used to brute-force the six-digit value offline.
-const phoneLoginOtpHmacKey = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-
 // ── Rate limiters ────────────────────────────────────────────────
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -64,6 +68,13 @@ const otpLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
+});
+const whatsappLoginStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "طلبات متابعة كثيرة جداً، حاول بعد قليل" },
 });
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -129,11 +140,12 @@ import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOt
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 import { fireNotify as _fireNotify, fireNotifyAdmins as _fireNotifyAdmins, fireNotifyMany as _fireNotifyMany } from "./notify";
-import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, retryNotificationDelivery } from "./notifications/service";
+import { dispatchNotification, getNotificationHealth, listNotificationTemplates, notificationApiDocs, notifyTaskAssignment, retryNotificationDelivery } from "./notifications/service";
 import { normalizePhone } from "./notifications/phone";
 import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 import { APPROVED_GOOGLE_CALLBACK_URL, isApprovedGoogleCallbackUrl } from "./config/google";
 import { createSolidPng } from "./lib/apple-wallet-png";
+import { normalizeProjectInternalForms } from "./project-internal-forms";
 import {
   claimStoreWhatsAppRequest,
   createStoreWhatsAppSecret,
@@ -164,13 +176,28 @@ import {
 } from "./project-subscriptions";
 
 async function attachAdminProjectSubscriptionSummaries(orders: any[], include: boolean) {
-  if (!include || orders.length === 0) return orders;
+  if (orders.length === 0) return orders;
   const { ProjectModel, ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel } = await import("./models");
   const orderIds = orders.map((order) => order?._id || order?.id).filter(Boolean);
   const projects = await ProjectModel.find({ orderId: { $in: orderIds } })
-    .select("_id orderId status")
+    .select("_id orderId status logoUrl branding.partnerId branding.publicName branding.publicNameAr")
     .lean();
   if (projects.length === 0) return orders;
+
+  const projectsByOrder = new Map(projects.map((project: any) => [String(project.orderId), project]));
+  const ordersWithProjectBranding = orders.map((order) => {
+    const project: any = projectsByOrder.get(String(order?._id || order?.id));
+    if (!project) return order;
+    return {
+      ...order,
+      projectId: String(project._id),
+      projectLogoUrl: project.logoUrl || "",
+      projectPartnerId: project.branding?.partnerId ? String(project.branding.partnerId) : "",
+      projectPublicName: project.branding?.publicName || "",
+      projectPublicNameAr: project.branding?.publicNameAr || "",
+    };
+  });
+  if (!include) return ordersWithProjectBranding;
 
   const projectIds = projects.map((project: any) => project._id);
   const [subscriptions, renewalRequests] = await Promise.all([
@@ -185,9 +212,8 @@ async function attachAdminProjectSubscriptionSummaries(orders: any[], include: b
     const key = String(request.projectId);
     if (!renewalByProject.has(key)) renewalByProject.set(key, serializeProjectSubscriptionRenewalRequest(request));
   }
-  const projectsByOrder = new Map(projects.map((project: any) => [String(project.orderId), project]));
 
-  return orders.map((order) => {
+  return ordersWithProjectBranding.map((order) => {
     const project: any = projectsByOrder.get(String(order?._id || order?.id));
     if (!project) return order;
     const renewalRequest = renewalByProject.get(String(project._id)) || null;
@@ -473,10 +499,34 @@ const upload = multer({
       cb(null, `${name}${ext}`);
     },
   }),
-  limits: { fileSize: 20 * 1024 * 1024 },
+   limits: {
+     fileSize: 20 * 1024 * 1024,
+     files: 10,
+     parts: 12,
+     fields: 4,
+     fieldSize: 64 * 1024,
+   },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav|webm|ogg|oga|weba|m4a|aac|opus)$/i;
-    if (allowed.test(path.extname(file.originalname))) {
+     const ext = path.extname(file.originalname).toLowerCase();
+     const allowedByMime: Record<string, string[]> = {
+       ".jpg": ["image/jpeg"], ".jpeg": ["image/jpeg"], ".png": ["image/png"],
+       ".gif": ["image/gif"], ".webp": ["image/webp"], ".pdf": ["application/pdf"],
+       ".doc": ["application/msword", "application/octet-stream"],
+       ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/octet-stream"],
+       ".xls": ["application/vnd.ms-excel", "application/octet-stream"],
+       ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream"],
+       ".ppt": ["application/vnd.ms-powerpoint", "application/octet-stream"],
+       ".pptx": ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/octet-stream"],
+       ".zip": ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+       ".rar": ["application/vnd.rar", "application/x-rar-compressed", "application/octet-stream"],
+       ".mp4": ["video/mp4"], ".mov": ["video/quicktime"], ".avi": ["video/x-msvideo"],
+       ".mp3": ["audio/mpeg"], ".wav": ["audio/wav", "audio/x-wav"],
+       ".webm": ["audio/webm", "video/webm"], ".ogg": ["audio/ogg", "video/ogg"],
+       ".oga": ["audio/ogg"], ".weba": ["audio/webm"], ".m4a": ["audio/mp4"],
+       ".aac": ["audio/aac"], ".opus": ["audio/ogg", "audio/opus"],
+     };
+     const allowedMimes = allowedByMime[ext];
+     if (allowedMimes?.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
       cb(new Error("نوع الملف غير مسموح به"));
@@ -493,10 +543,32 @@ const uploadLarge = multer({
       cb(null, `${name}${ext}`);
     },
   }),
-  limits: { fileSize: 500 * 1024 * 1024 },
+   limits: {
+     fileSize: 500 * 1024 * 1024,
+     files: 1,
+     parts: 8,
+     fields: 3,
+     fieldSize: 64 * 1024,
+   },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|webm|mkv|mp3|wav|ogg|m4a|jpg|jpeg|png|gif|webp)$/i;
-    if (allowed.test(path.extname(file.originalname))) {
+     const ext = path.extname(file.originalname).toLowerCase();
+     const allowedByMime: Record<string, string[]> = {
+       ".pdf": ["application/pdf"], ".doc": ["application/msword", "application/octet-stream"],
+       ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/octet-stream"],
+       ".xls": ["application/vnd.ms-excel", "application/octet-stream"],
+       ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream"],
+       ".ppt": ["application/vnd.ms-powerpoint", "application/octet-stream"],
+       ".pptx": ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/octet-stream"],
+       ".zip": ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+       ".rar": ["application/vnd.rar", "application/x-rar-compressed", "application/octet-stream"],
+       ".mp4": ["video/mp4"], ".mov": ["video/quicktime"], ".avi": ["video/x-msvideo"],
+       ".webm": ["audio/webm", "video/webm"], ".mkv": ["video/x-matroska"],
+       ".mp3": ["audio/mpeg"], ".wav": ["audio/wav", "audio/x-wav"],
+       ".ogg": ["audio/ogg", "video/ogg"], ".m4a": ["audio/mp4"],
+       ".jpg": ["image/jpeg"], ".jpeg": ["image/jpeg"], ".png": ["image/png"],
+       ".gif": ["image/gif"], ".webp": ["image/webp"],
+     };
+     if (allowedByMime[ext]?.includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
       cb(new Error("نوع الملف غير مسموح به"));
@@ -545,9 +617,103 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  const canonicalizeEmployeeOrderItems = async (items: any[]) => {
+    const { QiroxProductModel } = await import("./models");
+    const { getFlags, FeatureFlag } = await import("./infrastructure");
+    const variantsEnabled = getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2);
+    const canonicalItems: any[] = [];
+
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item || typeof item !== "object") {
+        canonicalItems.push(item);
+        continue;
+      }
+      const config = item.config && typeof item.config === "object" ? item.config : {};
+      const selectedVariantId = String(config.productVariantId || item.productVariantId || "");
+      if (item.type !== "product" && !selectedVariantId) {
+        canonicalItems.push(item);
+        continue;
+      }
+
+      const rawProductId = String(item.refId || item.productId || item.id || "").replace(/^prod-/, "");
+      if (!/^[\da-f]{24}$/i.test(rawProductId)) {
+        if (selectedVariantId) throw new Error("معرّف المنتج غير صالح لتركيبة الجهاز.");
+        canonicalItems.push(item);
+        continue;
+      }
+
+      const product: any = await QiroxProductModel.findById(rawProductId).lean();
+      if (!product) {
+        if (selectedVariantId) throw new Error("المنتج المحدد غير موجود. حدّث الصفحة وحاول مجددًا.");
+        canonicalItems.push(item);
+        continue;
+      }
+
+      const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+      if (!hasVariants && !selectedVariantId) {
+        canonicalItems.push(item);
+        continue;
+      }
+      if (!variantsEnabled) throw new Error("خيارات الأجهزة غير مفعّلة حاليًا.");
+
+      const priced = applyProductVariantPricing({
+        ...item,
+        type: "product",
+        refId: String(product._id),
+        config: { ...config, ...(selectedVariantId ? { productVariantId: selectedVariantId } : {}) },
+      }, product);
+      if (priced.error || !priced.item) throw new Error(priced.error || "تعذّر التحقق من تركيبة الجهاز.");
+      canonicalItems.push(priced.item);
+    }
+
+    return canonicalItems;
+  };
+
+  const employeeOrderItemNames = (items: any[]) => items.map((item: any) => {
+    const name = item?.nameAr || item?.name || item;
+    const variantSummary = item?.config?.variantSummaryAr;
+    return variantSummary ? `${name} — ${variantSummary}` : name;
+  }).filter(Boolean);
+
+  // Client accounts must not reach staff/admin API namespaces, regardless of
+  // what the browser renders or which URL is entered manually. Keep this
+  // middleware limited to client exclusion so existing staff-role-specific
+  // checks on individual endpoints remain authoritative.
+  app.use(
+    ["/api/admin", "/api/employee", "/api/supplier", "/api/sales", "/api/investor"],
+    (req, res, next) => {
+      if (!req.isAuthenticated()) return res.sendStatus(401);
+      if ((req.user as any)?.role === "client") return res.sendStatus(403);
+      next();
+    },
+  );
+
+  const getPdfBankDetails = async () => {
+    try {
+      const { BankSettingsModel } = await import("./models");
+      const bank: any = await BankSettingsModel.findOne({ key: "main" }).lean();
+      return bank ? {
+        bankName: bank.bankName,
+        beneficiaryName: bank.beneficiaryName,
+        iban: bank.iban,
+        accountNumber: bank.accountNumber,
+      } : {};
+    } catch {
+      return {};
+    }
+  };
   const dashboardForUser = (user: any) => {
     if (user.role === "client") return "/dashboard";
     return ["admin", "manager"].includes(user.role) ? "/admin" : "/employee/role-dashboard";
+  };
+  const issueDeviceToken = async (userId: string, userAgent = "") => {
+    const { DeviceTokenModel } = await import("./models");
+    const plainToken = crypto.randomBytes(48).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(plainToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await DeviceTokenModel.create({ userId, tokenHash, userAgent, expiresAt });
+    return plainToken;
   };
   // Native OAuth is opened in Capacitor Browser (SFSafariViewController on
   // iOS). Keep the provider callback on the server, then hand the short-lived
@@ -630,6 +796,65 @@ export async function registerRoutes(
       console.error("[AuthSecurity] could not record alert:", error?.message || error);
     }
   };
+  const describeLoginDevice = (userAgent: string) => {
+    const ua = String(userAgent || "");
+    const device = /iPad|Tablet/i.test(ua) ? "جهاز لوحي" : /Mobile|Android|iPhone/i.test(ua) ? "هاتف" : "حاسوب";
+    const platform = /iPhone|iPad|iPod/i.test(ua)
+      ? "iOS"
+      : /Android/i.test(ua)
+        ? "Android"
+        : /Windows/i.test(ua)
+          ? "Windows"
+          : /Mac OS X/i.test(ua)
+            ? "macOS"
+            : /Linux/i.test(ua)
+              ? "Linux"
+              : "غير معروف";
+    const browser = /Edg\//i.test(ua)
+      ? "Microsoft Edge"
+      : /Firefox\//i.test(ua)
+        ? "Firefox"
+        : /Chrome\//i.test(ua)
+          ? "Google Chrome"
+          : /Safari\//i.test(ua)
+            ? "Safari"
+            : "متصفح غير معروف";
+    return { device, platform, browser, userAgent: ua.slice(0, 180) || "غير متوفر" };
+  };
+  const notifyEmployeeLogin = async (user: any, req: any, method: string) => {
+    if (!user || user.role === "client") return;
+    const phone = normalizePhone(user.whatsappNumber || user.phone);
+    if (!phone.valid) return;
+    const details = describeLoginDevice(String(req.headers?.["user-agent"] || ""));
+    const loginTime = new Date().toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" });
+    await dispatchNotification({
+      event: "employee_login",
+      idempotencyKey: `employee-login:${String(user._id || user.id)}:${Date.now()}:${crypto.randomBytes(8).toString("hex")}`,
+      recipient: {
+        userId: String(user._id || user.id),
+        name: user.fullName || user.username,
+        phone: phone.e164,
+      },
+      subject: "تسجيل دخول جديد إلى QIROX",
+      message: [
+        "🔐 تم تسجيل دخول جديد إلى حسابك في QIROX",
+        "",
+        `الطريقة: ${method}`,
+        `الجهاز: ${details.device}`,
+        `النظام: ${details.platform}`,
+        `المتصفح: ${details.browser}`,
+        `الوقت: ${loginTime}`,
+        `عنوان الاتصال: ${String(req.ip || "غير متوفر").slice(0, 80)}`,
+        "",
+        "إذا لم تكن أنت، غيّر كلمة المرور وتواصل مع الإدارة فوراً.",
+      ].join("\n"),
+      actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/security/2fa`,
+      channels: ["whatsapp"],
+      whatsappTemplate: "employee_login_alert",
+      metadata: { method, device: details.device, platform: details.platform, browser: details.browser },
+      sensitive: true,
+    });
+  };
   const getEnabled2FAMethods = async (userId: string) => {
     const { UserModel, PushSubscriptionModel } = await import("./models");
     const user = await UserModel.findById(userId)
@@ -701,7 +926,6 @@ export async function registerRoutes(
     }
     return { expiresAt: expiresAt.getTime(), channels: results.map(result => result.channel) };
   };
-
   const send2FAWhatsAppCode = async (tempToken: string, user: any) => {
     const phone = normalizePhone(user.whatsappNumber || user.phone);
     if (!phone.valid) throw new Error("رقم واتساب غير متوفر أو غير صالح");
@@ -724,6 +948,41 @@ export async function registerRoutes(
     const { waModule } = await import("./whatsapp-module");
     await waModule.sendOTP(phone.e164, code, user.fullName || user.username || "");
     return { expiresAt: expiresAt.getTime() };
+  };
+  const createWhatsAppApprovalChallenge = async (user: any, purpose: "2fa" | "setup", tempToken = "") => {
+    const phone = normalizePhone(user.whatsappNumber || user.phone);
+    if (!phone.valid) throw new Error("رقم واتساب غير متوفر أو غير صالح");
+    const { WhatsAppLoginChallengeModel } = await import("./models");
+    const phoneDigits = phone.e164.replace(/\D/g, "");
+    await (WhatsAppLoginChallengeModel as any).updateMany(
+      { userId: user._id || user.id, status: "pending", usedAt: null },
+      { $set: { expiresAt: new Date() } },
+    );
+    const challengeId = crypto.randomBytes(24).toString("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await (WhatsAppLoginChallengeModel as any).create({
+      challengeId,
+      userId: user._id || user.id,
+      phoneDigits,
+      tempToken,
+      purpose,
+      status: "pending",
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+    });
+    const name = user.fullName || user.username || "مستخدم";
+    const message = purpose === "setup"
+      ? `مرحباً ${name}،\n\nطلب تفعيل التحقق الثنائي عبر واتساب في حسابك على QIROX.\nإذا كنت أنت، أرسل 1 أو اكتب: قبول / approve.\nلرفض الطلب، أرسل 2 أو اكتب: رفض / deny.\nصلاحية الطلب 10 دقائق.`
+      : `مرحباً ${name}،\n\nهناك محاولة دخول إلى حسابك في QIROX وتحتاج موافقتك عبر التحقق الثنائي.\nإذا كنت أنت، أرسل 1 أو اكتب: قبول / approve.\nلرفض الطلب، أرسل 2 أو اكتب: رفض / deny.\nصلاحية الطلب 10 دقائق.`;
+    try {
+      const { waModule } = await import("./whatsapp-module");
+      await waModule.sendText(`${phoneDigits}@s.whatsapp.net`, message, false);
+    } catch {
+      await (WhatsAppLoginChallengeModel as any).deleteOne({ challengeId });
+      throw new Error("واتساب غير متصل حالياً. حاول مرة أخرى بعد قليل.");
+    }
+    return { challengeId, expiresAt: expiresAt.getTime() };
   };
 
   // ─── Health endpoint ────────────────────────────────────────────────────────
@@ -868,6 +1127,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "Google").catch(error =>
+            console.error("[WhatsApp] Google login alert:", error?.message || error),
+          );
           const redirectPath = dashboardForUser(user);
           // Pass device token via /login?googleToken=... so client can store it, then navigates
           res.redirect(nativeOAuthRedirect(req, `/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`, nativeOAuth));
@@ -973,6 +1235,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "GitHub").catch(error =>
+            console.error("[WhatsApp] GitHub login alert:", error?.message || error),
+          );
           const MGMT_ROLES = ["admin", "manager"];
           const redirectPath = user.role === "client"
             ? "/dashboard"
@@ -1101,6 +1366,9 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          void notifyEmployeeLogin(user, req, "Apple").catch(error =>
+            console.error("[WhatsApp] Apple login alert:", error?.message || error),
+          );
           const MGMT_ROLES = ["admin", "manager"];
           const redirectPath = user.role === "client"
             ? "/dashboard"
@@ -1119,6 +1387,12 @@ export async function registerRoutes(
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();
+      if (ext === ".svg") {
+        // SVG is retained for brand/source fidelity but must not be rendered as
+        // same-origin active content when the original is opened directly.
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader("Content-Disposition", "attachment");
+      }
       // Audio MIME types — critical: .webm defaults to video/webm in most mime dbs
       // which causes browsers to refuse <audio> playback
       if      (ext === ".webm")  res.setHeader("Content-Type", "audio/webm; codecs=opus");
@@ -1239,6 +1513,25 @@ export async function registerRoutes(
     try {
       const { UserModel, OtpModel } = await import("./models");
       const incomingEmail = req.body.email ? String(req.body.email).toLowerCase().trim() : null;
+      const requestedRole = String(req.body.role || "client").trim().toLowerCase();
+      const isPrivilegedProvisioner =
+        req.isAuthenticated() &&
+        ["admin", "manager"].includes(String((req.user as any)?.role || ""));
+
+      // Public registration is customer registration. Never trust a role
+      // supplied by an unauthenticated browser; internal roles must be
+      // provisioned from an authenticated admin/manager session.
+      if (requestedRole !== "client" && !isPrivilegedProvisioner) {
+        return res.status(403).json({ error: "إنشاء حسابات الموظفين يتطلب صلاحية مسؤول" });
+      }
+      const role = requestedRole;
+
+      // Customer registrations must explicitly acknowledge the current terms.
+      // Internal employee provisioning uses this same endpoint but is not a customer
+      // contract, so it keeps its existing employee registration flow.
+      if (role === "client" && req.body.termsAccepted !== true) {
+        return res.status(400).json({ error: "يجب الموافقة على الشروط والأحكام لإنشاء الحساب" });
+      }
 
       // Check if username already exists
       const existingByUsername = await storage.getUserByUsername(req.body.username);
@@ -1303,14 +1596,15 @@ export async function registerRoutes(
       }
 
       // New account — create it
-      const role = req.body.role || "client";
       const hashedPassword = await hashPassword(req.body.password);
+      const { termsAccepted: _termsAccepted, ...registrationBody } = req.body;
       const user = await storage.createUser({
-        ...req.body,
+        ...registrationBody,
         username: String(req.body.username).trim().toLowerCase(),
         role,
         password: hashedPassword,
         email: String(incomingEmail || req.body.email).toLowerCase().trim(),
+        ...(role === "client" ? { termsAcceptedAt: new Date(), termsVersion: "2026-09-16" } : {}),
       });
 
       req.login(user, async (err) => {
@@ -1580,17 +1874,23 @@ export async function registerRoutes(
             || order.projectType
             || order.orderNumber
             || "QIROX Project";
+          const { OrderModel } = await import("./models");
+          const currentOrder = await OrderModel.findById(orderId).select("githubRepositoryName").lean();
+          const customName = customGitHubRepositoryName(currentOrder?.githubRepositoryName || "");
+          const selectedName = customName || githubRepositoryName(projectName, orderId);
+          const description = `QIROX project: ${String(projectName).slice(0, 120)}${customName ? ` [qirox-project:${orderId}]` : ""}`;
           repositoryMetadata = await ensureGitHubRepository({
             token: await getToken(),
-            name: githubRepositoryName(projectName, orderId),
-            description: `QIROX project: ${String(projectName).slice(0, 120)}`,
+            name: selectedName,
+            description,
+            ...(customName ? { expectedProjectMarker: `[qirox-project:${orderId}]` } : {}),
             visibility: desiredVisibility,
           });
           const isSystemGeneratedRepository = repositoryMetadata.created === true
             || (
               !project.repoUrl
               && !project.githubRepoName
-              && repositoryMetadata.name === githubRepositoryName(projectName, orderId)
+              && repositoryMetadata.name === selectedName
             );
           if (isSystemGeneratedRepository) {
             await seedGitHubProjectRepository({
@@ -1779,6 +2079,36 @@ export async function registerRoutes(
     res.json(serializeUsers(users));
   });
 
+  app.post("/api/admin/users/sync-whatsapp-phones", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { UserModel } = await import("./models");
+      const users = await (UserModel as any).find({
+        role: { $ne: "client" },
+        phone: { $type: "string", $ne: "" },
+      }).select("_id phone");
+      let updated = 0;
+      let skipped = 0;
+      for (const user of users) {
+        const normalized = normalizePhone(String(user.phone || ""));
+        if (!normalized.valid) {
+          skipped += 1;
+          continue;
+        }
+        const result = await (UserModel as any).updateOne(
+          { _id: user._id },
+          { $set: { phone: normalized.e164, whatsappNumber: normalized.e164, phoneVerified: true } },
+        );
+        updated += result.modifiedCount || 0;
+      }
+      res.json({ ok: true, scanned: users.length, updated, skipped });
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   const allowedRoles = [...staffRoles, "client"];
 
   app.post("/api/admin/users", async (req, res) => {
@@ -1817,6 +2147,17 @@ export async function registerRoutes(
         role,
         phone: normPhone || undefined,
       });
+      // Numbers entered by an administrator are trusted for staff operations.
+      // Keep phone and WhatsApp fields in sync so WhatsApp delivery and 2FA
+      // are available immediately instead of waiting for self-verification.
+      await UM2.findByIdAndUpdate((user as any)._id || (user as any).id, {
+        $set: {
+          whatsappNumber: normPhone || "",
+          phoneVerified: Boolean(normPhone),
+        },
+      });
+      (user as any).whatsappNumber = normPhone || "";
+      (user as any).phoneVerified = Boolean(normPhone);
       dispatchNotification({
         event: "employee_welcome",
         idempotencyKey: `employee-welcome:${(user as any).id || (user as any)._id}`,
@@ -1886,18 +2227,14 @@ export async function registerRoutes(
     try {
       const { MailAccountModel: MAM2 } = await import("./models");
       const { cpanelCreateEmail } = await import("./cpanel");
-      const smtpHost = process.env.CPANEL_SMTP_HOST || process.env.SMTP_HOST || "server222.web-hosting.com";
-      const smtpPass = process.env.CPANEL_SMTP_PASS || process.env.SMTP_PASS || "";
-      const smtpPort = parseInt(process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465", 10);
+      const smtpHost = process.env.SMTP_HOST || "server222.web-hosting.com";
+      const smtpPass = process.env.SMTP_PASS || "";
+      const smtpPort = parseInt(process.env.SMTP_PORT || "465");
       const MGMT = ["admin", "cto", "ceo", "manager"];
 
       const systemAccounts = [
         { emailAddress: "hr@qirox.online",        displayName: "Qirox HR",        jobTitle: "الموارد البشرية" },
-        { emailAddress: "m.adbani@qirox.online",   displayName: "Mohammed Aldbani", jobTitle: "الإدارة التنفيذية" },
         { emailAddress: "marketing@qirox.online",  displayName: "Qirox Marketing", jobTitle: "التسويق" },
-        { emailAddress: "mohmmed.aldbani@qirox.online", displayName: "Mohammed Aldbani", jobTitle: "موظف" },
-        { emailAddress: "noreply@qirox.online",    displayName: "QIROX No Reply",   jobTitle: "البريد الآلي" },
-        { emailAddress: "y.business@qirox.online", displayName: "Yousef Business", jobTitle: "الإدارة التقنية" },
         { emailAddress: "info@qirox.online",       displayName: "Qirox Info",      jobTitle: "المعلومات العامة" },
         { emailAddress: "support@qirox.online",    displayName: "Qirox Support",   jobTitle: "الدعم الفني" },
       ];
@@ -1919,23 +2256,18 @@ export async function registerRoutes(
         const doc = await MAM2.findOneAndUpdate(
           { emailAddress: acc.emailAddress },
           {
-            $setOnInsert: {
-              password: smtpPass,
-              assignedUserIds: [],
-              assignedUserId: null,
-            },
-            $set: {
-              displayName: acc.displayName,
-              jobTitle: acc.jobTitle,
-              imapHost: smtpHost,
-              imapPort: 993,
-              smtpHost,
-              smtpPort,
-              isShared: true,
-              sharedWith: ["hr@qirox.online", "info@qirox.online", "support@qirox.online"].includes(acc.emailAddress)
-                ? ALL_EMPLOYEE_MAIL_ROLES
-                : MGMT,
-            },
+            ...acc,
+            password: smtpPass,
+            imapHost: smtpHost,
+            imapPort: 993,
+            smtpHost: smtpHost,
+            smtpPort: smtpPort,
+             isShared: true,
+             sharedWith: ["hr@qirox.online", "info@qirox.online", "support@qirox.online"].includes(acc.emailAddress)
+               ? ALL_EMPLOYEE_MAIL_ROLES
+               : MGMT,
+            assignedUserIds: [],
+            assignedUserId: null,
           },
           { upsert: true, new: true }
         );
@@ -1962,16 +2294,22 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/users/:id", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes((req.user as any).role)) {
+    const callerRole = String((req.user as any)?.role || "").trim().toLowerCase();
+    if (!req.isAuthenticated() || !["admin", "manager", "data_entry"].includes(callerRole)) {
       return res.sendStatus(403);
     }
     try {
-      const callerRole = (req.user as any).role;
       const isDataEntry = callerRole === "data_entry";
+      // Customer records are managed by administration only. Data-entry
+      // staff may still update permitted employee records through this shared
+      // endpoint, but may not change a customer's identity or contact data.
+      const targetBeforeUpdate = await storage.getUser(req.params.id);
+      if (!targetBeforeUpdate) return res.sendStatus(404);
+      if (isDataEntry && (targetBeforeUpdate as any).role === "client") {
+        return res.status(403).json({ error: "لا يمكن للموظف تعديل بيانات العملاء. ارفع طلب تصحيح الرقم للمسؤول." });
+      }
       if (isDataEntry) {
-        const target = await storage.getUser(req.params.id);
-        if (!target) return res.sendStatus(404);
-        if (["admin", "manager"].includes((target as any).role)) {
+        if (["admin", "manager"].includes((targetBeforeUpdate as any).role)) {
           return res.status(403).json({ error: "لا يمكن لموظف إدخال البيانات تعديل حسابات الإدارة" });
         }
       }
@@ -2012,6 +2350,12 @@ export async function registerRoutes(
         const mongoose = await import("mongoose");
         const dupPhone = await UM3.findOne({ phone: sanitized.phone, _id: { $ne: new mongoose.Types.ObjectId(req.params.id) } });
         if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
+        sanitized.whatsappNumber = sanitized.phone;
+        sanitized.phoneVerified = true;
+      } else if (req.body.phone !== undefined && !String(req.body.phone || "").trim()) {
+        sanitized.whatsappNumber = "";
+        sanitized.phoneVerified = false;
+        sanitized.whatsappOtpEnabled = false;
       }
       if (sanitized.email) {
         const { UserModel: UM4 } = await import("./models");
@@ -2060,7 +2404,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/users/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const callerRole = (req.user as any).role;
+    const callerRole = String((req.user as any)?.role || "").trim().toLowerCase();
     const allowedRoles = ["admin", "manager"];
     if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     try {
@@ -2184,7 +2528,17 @@ export async function registerRoutes(
           }
           req.login(user, (loginErr: any) => {
             if (loginErr) return next(loginErr);
-            res.status(200).json(sanitizeUser(user));
+            issueDeviceToken(
+              String(user._id || user.id),
+              String(req.headers["user-agent"] || ""),
+            )
+               .then(deviceToken => {
+                 void notifyEmployeeLogin(user, req, "كلمة المرور").catch(error =>
+                   console.error("[WhatsApp] employee login alert:", error?.message || error),
+                 );
+                 return res.status(200).json({ ...sanitizeUser(user), deviceToken });
+               })
+              .catch(next);
           });
         } catch (e: any) {
           console.error("[2FA-check] Error during 2FA check:", e.message);
@@ -2196,11 +2550,26 @@ export async function registerRoutes(
 
   app.post("/api/auth/verify-2fa", loginLimiter, async (req, res, next) => {
     try {
-      const { tempToken, method, code } = req.body;
+      const { tempToken, method, code, challengeId } = req.body;
       if (!tempToken || !method) return res.status(400).json({ error: "بيانات ناقصة" });
       const session = await getPending2FA(tempToken);
       if (!session) return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" });
       if (!session.methods.includes(method)) return res.status(400).json({ error: "طريقة التحقق غير متوفرة" });
+      let whatsappApprovalChallenge: any = null;
+      if (method === "whatsapp") {
+        if (!challengeId) return res.status(400).json({ error: "ابدأ طلب الموافقة عبر واتساب أولاً" });
+        const { WhatsAppLoginChallengeModel } = await import("./models");
+        whatsappApprovalChallenge = await (WhatsAppLoginChallengeModel as any).findOne({
+          challengeId: String(challengeId),
+          tempToken: String(tempToken),
+          userId: session.userId,
+          purpose: "2fa",
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        });
+        if (!whatsappApprovalChallenge) return res.status(400).json({ error: "لم تتم الموافقة على طلب واتساب بعد" });
+      }
       const challenge = await consumePending2FAAttempt(tempToken);
       if (!challenge) {
         const { UserModel } = await import("./models");
@@ -2240,21 +2609,7 @@ export async function registerRoutes(
         ).select("+codeHash");
         verified = Boolean(usedOtp);
       } else if (method === "whatsapp") {
-        if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
-        const codeHash = crypto.createHash("sha256").update(`${tempToken}:${String(code).trim()}`).digest("hex");
-        const usedOtp = await OtpModel.findOneAndUpdate(
-          {
-            email: dbUser.email,
-            type: "2fa_whatsapp",
-            challengeToken: tempToken,
-            codeHash,
-            used: false,
-            expiresAt: { $gt: new Date() },
-          },
-          { $set: { used: true, usedAt: new Date() } },
-          { new: true },
-        ).select("+codeHash");
-        verified = Boolean(usedOtp);
+        verified = Boolean(whatsappApprovalChallenge);
       } else if (method === "passphrase") {
         if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
         const bcrypt = await import("bcryptjs");
@@ -2272,12 +2627,28 @@ export async function registerRoutes(
 
       const consumed = await consumePending2FA(tempToken);
       if (!consumed) return res.status(409).json({ error: "تم استخدام جلسة التحقق بالفعل. أعد تسجيل الدخول." });
+      if (whatsappApprovalChallenge) {
+        await whatsappApprovalChallenge.updateOne({ $set: { usedAt: new Date() } });
+      }
       const safeUser = await UserModel.findById(session.userId);
       if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
+      const deviceToken = await issueDeviceToken(
+        String(safeUser._id || safeUser.id),
+        String(req.headers["user-agent"] || ""),
+      );
       req.login(safeUser, (loginErr: any) => {
-        if (loginErr) return next(loginErr);
         deletePending2FA(tempToken).catch(() => {});
-        res.status(200).json({ ...sanitizeUser(safeUser), redirectPath: consumed.redirectPath || dashboardForUser(safeUser) });
+        if (loginErr) {
+          console.error("[2FA] Passport session failed; continuing with device token:", loginErr.message);
+        }
+        res.status(200).json({
+          ...sanitizeUser(safeUser),
+          deviceToken,
+          redirectPath: consumed.redirectPath || dashboardForUser(safeUser),
+        });
+        void notifyEmployeeLogin(safeUser, req, "التحقق الثنائي").catch(error =>
+          console.error("[WhatsApp] employee 2FA login alert:", error?.message || error),
+        );
       });
     } catch {
       res.status(500).json({ error: "تعذر إكمال التحقق الثنائي حالياً" });
@@ -2300,19 +2671,104 @@ export async function registerRoutes(
   });
 
   app.post("/api/auth/resend-2fa-whatsapp", otpLimiter, async (req, res) => {
+    return res.status(410).json({ error: "تحقق واتساب يعمل بالموافقة فقط" });
+  });
+
+  app.post("/api/auth/2fa/whatsapp/request", otpLimiter, async (req, res) => {
     try {
-      const { tempToken } = req.body;
+      const { tempToken } = req.body || {};
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
-      const session = await getPending2FA(tempToken);
-      if (!session || !session.methods.includes("whatsapp")) return res.status(400).json({ error: "الجلسة غير صالحة" });
-      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق. أعد تسجيل الدخول." });
+      const session = await getPending2FA(String(tempToken));
+      if (!session || !session.methods.includes("whatsapp")) return res.status(400).json({ error: "جلسة التحقق غير صالحة" });
+      if (session.usedAt || session.attempts >= session.maxAttempts) return res.status(429).json({ error: "انتهت صلاحية جلسة التحقق" });
       const { UserModel } = await import("./models");
-      const user = await UserModel.findById(session.userId).select("email fullName username phone whatsappNumber");
-      if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
-      const delivery = await send2FAWhatsAppCode(tempToken, user);
-      res.json({ ok: true, expiresAt: delivery.expiresAt });
+      const user = await UserModel.findById(session.userId).select("fullName username phone whatsappNumber phoneVerified whatsappOtpEnabled");
+      if (!user || !user.phoneVerified || !user.whatsappOtpEnabled) return res.status(400).json({ error: "طريقة واتساب غير مفعلة لهذا الحساب" });
+      const challenge = await createWhatsAppApprovalChallenge(user, "2fa", String(tempToken));
+      res.json({ ok: true, ...challenge });
     } catch (err: any) {
-      res.status(503).json({ error: err.message || "تعذر إرسال رمز واتساب" });
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب الموافقة عبر واتساب" });
+    }
+  });
+
+  app.get("/api/auth/2fa/whatsapp/status/:challengeId", otpLimiter, async (req, res) => {
+    try {
+      const tempToken = String(req.query.tempToken || "");
+      if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+        tempToken,
+        purpose: "2fa",
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب الموافقة غير موجود" });
+      if (challenge.expiresAt <= new Date()) return res.status(410).json({ error: "انتهت صلاحية طلب الموافقة" });
+      res.json({
+        status: challenge.usedAt ? "used" : challenge.status,
+        expiresAt: challenge.expiresAt.getTime(),
+        attemptsLeft: Math.max(0, challenge.maxAttempts - challenge.attempts),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب الموافقة" });
+    }
+  });
+
+  app.post("/api/2fa/whatsapp-approval/start", otpLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const me = req.user as any;
+      const user = await UserModel.findById(me._id || me.id).select("fullName username phone whatsappNumber phoneVerified");
+      if (!user?.phoneVerified || !normalizePhone(user.whatsappNumber || user.phone).valid) {
+        return res.status(400).json({ error: "وثّق رقم واتساب أولاً قبل تفعيل هذه الطريقة" });
+      }
+      const challenge = await createWhatsAppApprovalChallenge(user, "setup");
+      res.json({ ok: true, ...challenge });
+    } catch (err: any) {
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب تفعيل واتساب" });
+    }
+  });
+
+  app.get("/api/2fa/whatsapp-approval/status/:challengeId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const me = req.user as any;
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+        userId: me._id || me.id,
+        purpose: "setup",
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب التفعيل غير موجود" });
+      if (challenge.expiresAt <= new Date()) return res.status(410).json({ error: "انتهت صلاحية طلب التفعيل" });
+      res.json({ status: challenge.usedAt ? "used" : challenge.status, expiresAt: challenge.expiresAt.getTime() });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب التفعيل" });
+    }
+  });
+
+  app.post("/api/2fa/whatsapp-approval/complete", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { WhatsAppLoginChallengeModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOneAndUpdate(
+        {
+          challengeId: String(req.body?.challengeId || ""),
+          userId: me._id || me.id,
+          purpose: "setup",
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        },
+        { $set: { usedAt: new Date() } },
+        { new: true },
+      );
+      if (!challenge) return res.status(409).json({ error: "لم تتم الموافقة على طلب التفعيل بعد" });
+      await UserModel.findByIdAndUpdate(me._id || me.id, { whatsappOtpEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر تفعيل التحقق عبر واتساب" });
     }
   });
 
@@ -2698,6 +3154,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const service = await storage.createService(req.body);
+    cache.invalidate("public:partners");
     res.status(201).json(service);
   });
 
@@ -2706,6 +3163,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const service = await storage.updateService(req.params.id, req.body);
+    cache.invalidate("public:partners");
     res.json(service);
   });
 
@@ -2714,6 +3172,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     await storage.deleteService(req.params.id);
+    cache.invalidate("public:partners");
     res.sendStatus(204);
   });
 
@@ -3086,7 +3545,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/orders/:id/provision", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { OrderModel } = await import("./models");
       const order = await OrderModel.findById(req.params.id);
@@ -3095,12 +3554,12 @@ export async function registerRoutes(
       res.json({ ok: true, projectCreated, provisioning: toPublicProvisioning(provisioning) });
     } catch (error: any) {
       console.error("[OrderProvisioning] retry:", error?.message || error);
-      res.status(503).json({ error: "تعذر تجهيز المشروع حالياً. أعد المحاولة لاحقاً." });
+      res.status(error?.status === 409 ? 409 : 503).json({ error: error?.status === 409 ? error.message : "تعذر تجهيز المشروع حالياً. أعد المحاولة لاحقاً." });
     }
   });
 
   app.get("/api/admin/orders/:id/github", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
       const [order, specs, provisioning, project] = await Promise.all([
@@ -3135,6 +3594,7 @@ export async function registerRoutes(
       res.json({
         connection,
         repository: {
+          requestedName: (order as any).githubRepositoryName || "",
           status: (project as any)?.githubProvisioningStatus || (specs as any)?.githubProvisioningStatus || provisioning?.steps?.repository || "not_configured",
           url: (project as any)?.repoUrl || (specs as any)?.githubRepoUrl || "",
           name: (project as any)?.githubRepoName || (specs as any)?.githubRepoName || "",
@@ -3151,11 +3611,17 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/orders/:id/github/settings", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
-    const visibility = req.body?.visibility;
-    if (!["public", "private"].includes(visibility)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) return res.sendStatus(403);
+    let visibility = req.body?.visibility;
+    const nameOnly = visibility === undefined && req.body?.repositoryName !== undefined;
+    if (!nameOnly && !["public", "private"].includes(visibility)) {
       return res.status(400).json({ error: "الرؤية يجب أن تكون public أو private" });
     }
+    let requestedName: string | undefined;
+    try {
+      if (req.body?.repositoryName !== undefined) requestedName = customGitHubRepositoryName(req.body.repositoryName);
+    } catch (error: any) { return res.status(400).json({ error: error.message }); }
+    let releaseSettingsLease: (() => Promise<void>) | undefined;
     try {
       const { OrderModel, OrderSpecsModel, OrderProvisioningModel, ProjectModel } = await import("./models");
       const order = await OrderModel.findById(req.params.id);
@@ -3169,6 +3635,7 @@ export async function registerRoutes(
             orderId: req.params.id,
             clientId: order.userId,
             status: "queued",
+            repositoryVisibility: order.githubVisibility === "public" ? "public" : "private",
             steps: { project: "pending", repository: "not_configured", database: "not_configured", deployment: "not_configured" },
           },
         },
@@ -3191,29 +3658,44 @@ export async function registerRoutes(
             status: "in_progress",
             leaseToken: settingsLeaseToken,
             leaseExpiresAt: settingsLeaseExpiresAt,
-            repositoryVisibility: visibility,
+            ...(!nameOnly ? { repositoryVisibility: visibility } : {}),
           },
-          $inc: { repositoryVisibilityVersion: 1 },
+          ...(!nameOnly ? { $inc: { repositoryVisibilityVersion: 1 } } : {}),
         },
         { returnDocument: "before" },
       );
       if (!previousProvisioning) {
         return res.status(409).json({ error: "يجري تجهيز المستودع الآن. انتظر اكتماله ثم أعد حفظ الرؤية." });
       }
+      if (nameOnly) visibility = previousProvisioning.repositoryVisibility || order.githubVisibility || "private";
       const visibilityVersion = Number((previousProvisioning as any).repositoryVisibilityVersion || 0) + 1;
-      const restoreProvisioning = async () => {
+      const restoreProvisioning = async (restorePreviousVisibility = false) => {
         await OrderProvisioningModel.findOneAndUpdate(
           { orderId: req.params.id, leaseToken: settingsLeaseToken },
           {
             $set: {
               status: previousProvisioning.status || "queued",
-              repositoryVisibility: visibility,
+              repositoryVisibility: restorePreviousVisibility ? previousProvisioning.repositoryVisibility : visibility,
             },
             $unset: { leaseToken: 1, leaseExpiresAt: 1 },
           },
         );
       };
+      releaseSettingsLease = () => restoreProvisioning(true);
       const project = await ProjectModel.findOne({ orderId: req.params.id });
+      if (requestedName !== undefined) {
+        const specs = await OrderSpecsModel.findOne({ orderId: req.params.id }).select("githubRepoUrl githubRepoName").lean();
+        if (project?.repoUrl || project?.githubRepoName || specs?.githubRepoUrl || specs?.githubRepoName) {
+          await restoreProvisioning(true);
+          return res.status(409).json({ error: "المشروع مرتبط بمستودع بالفعل. تغيير الاسم هنا غير مسموح لحماية الكود؛ الاسم المخصص يُحدد قبل الإنشاء." });
+        }
+        await OrderModel.findByIdAndUpdate(req.params.id, { $set: { githubRepositoryName: requestedName } });
+        if (nameOnly) {
+          await restoreProvisioning(true);
+          releaseSettingsLease = undefined;
+          return res.json({ ok: true, repositoryName: requestedName, visibility });
+        }
+      }
       const provisioning = await OrderProvisioningModel.findOne({ orderId: req.params.id }).select("githubActorId").lean() as any;
       let repository: any = null;
       if (project?.githubRepoOwner && project?.githubRepoName && project?.githubProvisioningStatus === "ready") {
@@ -3278,9 +3760,12 @@ export async function registerRoutes(
         ]);
       }
       await restoreProvisioning();
-      res.json({ ok: true, visibility: repository?.visibility || visibility });
+      releaseSettingsLease = undefined;
+      res.json({ ok: true, visibility: repository?.visibility || visibility, ...(requestedName !== undefined ? { repositoryName: requestedName } : {}) });
     } catch {
       res.status(500).json({ error: "تعذر حفظ إعدادات GitHub" });
+    } finally {
+      await releaseSettingsLease?.().catch(() => {});
     }
   });
 
@@ -3345,7 +3830,7 @@ export async function registerRoutes(
       const sourceRemote = `https://x-access-token:${encodedToken}@github.com/${source.owner}/${source.name}.git`;
       const targetRemote = `https://x-access-token:${encodedToken}@github.com/${target.owner}/${target.name}.git`;
       try {
-        const simpleGit = (await import("simple-git")).default;
+        const { simpleGit } = await import("simple-git");
         await simpleGit().clone(sourceRemote, tempDir, ["--mirror"]);
         const mirror = simpleGit(tempDir);
         await mirror.push(["--mirror", targetRemote]);
@@ -3771,15 +4256,118 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     // ── Server-side totalAmount validation from cart ─────────────
-    const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
+    const { CartModel, UserModel, WalletTransactionModel, QiroxProductModel } = await import("./models");
     const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
     let serverTotal: number | null = null;
+    const pricedCartItems: any[] = [];
+    const { getFlags, FeatureFlag } = await import("./infrastructure");
+    const deviceVariantsEnabled = getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2);
     if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
-      const subtotal = cart.items.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (Number(i.qty) || 1), 0);
+      for (const cartItem of cart.items as any[]) {
+        let pricedItem = cartItem;
+        if (["product", "gift"].includes(cartItem.type) && cartItem.refId && mongoose.Types.ObjectId.isValid(String(cartItem.refId))) {
+          const product = await QiroxProductModel.findById(String(cartItem.refId)).lean() as any;
+          if (product) {
+            if ((product.variants || []).length && !deviceVariantsEnabled) {
+              return res.status(409).json({ error: "خيارات هذا المنتج غير مفعّلة حاليًا. أعد تحميل صفحة الأجهزة." });
+            }
+            const result = applyProductVariantPricing(cartItem, product);
+            if (result.error) return res.status(400).json({ error: result.error });
+            pricedItem = result.item;
+          } else if (cartItem.config?.productVariantId) {
+            return res.status(400).json({ error: "تعذّر العثور على المنتج المحدد في السلة." });
+          }
+        }
+        pricedCartItems.push(pricedItem);
+      }
+      const subtotal = pricedCartItems.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (Number(i.qty) || 1), 0);
       const discount = Number(cart.discountAmount) || 0;
       const afterDiscount = Math.max(0, subtotal - discount);
       const shippingFeeClient = parseFloat(Number(req.body.shippingFee || 0).toFixed(2));
       serverTotal = parseFloat((afterDiscount + shippingFeeClient).toFixed(2));
+      const clientTotal = parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
+      if (Math.abs(clientTotal - serverTotal) > 1.5) {
+        return res.status(400).json({ error: `إجمالي الطلب غير مطابق. المتوقع: ${serverTotal.toLocaleString()} ر.س` });
+      }
+    }
+
+    // ── Server-side package pricing ────────────────────────────────
+    // The package price is derived from the shared catalog on the server.
+    // Client-provided values are retained only for non-package add-ons/devices.
+    const requestItems = Array.isArray(req.body.items) ? req.body.items : [];
+    const variantCartItems = pricedCartItems.filter((item: any) => Boolean(item.config?.productVariantId));
+    const remainingVariantCartItems = [...variantCartItems];
+    const requestedItems: any[] = [];
+    for (const requestItem of requestItems) {
+      let pricedRequestItem = requestItem;
+      const hasVariantId = Boolean(requestItem.config?.productVariantId);
+      if (["product", "gift"].includes(requestItem.type) && requestItem.refId && mongoose.Types.ObjectId.isValid(String(requestItem.refId))) {
+        const product = await QiroxProductModel.findById(String(requestItem.refId)).lean() as any;
+        if (product && ((product.variants || []).length || hasVariantId)) {
+          if ((product.variants || []).length && !deviceVariantsEnabled) {
+            return res.status(409).json({ error: "خيارات هذا المنتج غير مفعّلة حاليًا. أعد تحميل صفحة الأجهزة." });
+          }
+          const result = applyProductVariantPricing(requestItem, product);
+          if (result.error) return res.status(400).json({ error: result.error });
+          pricedRequestItem = result.item;
+        } else if (!product && hasVariantId) {
+          return res.status(400).json({ error: "تعذّر العثور على المنتج المحدد." });
+        }
+      } else if (hasVariantId) {
+        return res.status(400).json({ error: "معرّف تركيبة المنتج غير صالح." });
+      }
+
+      if (pricedRequestItem.config?.productVariantId) {
+        const index = remainingVariantCartItems.findIndex((cartItem: any) =>
+          String(cartItem.refId) === String(pricedRequestItem.refId) &&
+          String(cartItem.config?.productVariantId) === String(pricedRequestItem.config?.productVariantId),
+        );
+        if (index >= 0) {
+          const [canonical] = remainingVariantCartItems.splice(index, 1);
+          pricedRequestItem = { ...pricedRequestItem, ...canonical, qty: canonical.qty || pricedRequestItem.qty || 1 };
+        } else if (user.role === "client") {
+          return res.status(400).json({ error: "خيارات المنتج في الطلب لا تطابق السلة. حدّث السلة وحاول مرة أخرى." });
+        }
+      }
+      requestedItems.push(pricedRequestItem);
+    }
+    if (user.role === "client" && remainingVariantCartItems.length > 0) {
+      return res.status(400).json({ error: "خيارات المنتج في الطلب لا تطابق السلة. حدّث السلة وحاول مرة أخرى." });
+    }
+    const hasPricedPackage = Boolean(
+      req.body.planTier && req.body.planPeriod && req.body.planSegment &&
+      requestedItems.length > 0,
+    );
+    let pricedItems = requestedItems;
+    let planPrice = 0;
+    if (hasPricedPackage) {
+      planPrice = getPlanPrice(
+        String(req.body.planTier),
+        String(req.body.planPeriod),
+        String(req.body.planSegment),
+        undefined,
+      );
+      if (planPrice > 0) {
+        pricedItems = requestedItems.map((item: any, index: number) =>
+          index === 0 ? { ...item, price: planPrice, qty: Number(item.qty) || 1 } : item,
+        );
+        serverTotal = parseFloat((
+          planPrice +
+          pricedItems.slice(1).reduce(
+            (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
+            0,
+          )
+        ).toFixed(2));
+      }
+    }
+    const hasVariantItems = (pricedItems || []).some((item: any) => Boolean(item.config?.productVariantId));
+    if (hasVariantItems && (serverTotal === null || user.role !== "client")) {
+      const subtotal = (pricedItems || []).reduce(
+        (sum: number, item: any) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
+        0,
+      );
+      const shippingFee = parseFloat(Number(req.body.shippingFee || 0).toFixed(2));
+      serverTotal = parseFloat((subtotal + shippingFee).toFixed(2));
       const clientTotal = parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
       if (Math.abs(clientTotal - serverTotal) > 1.5) {
         return res.status(400).json({ error: `إجمالي الطلب غير مطابق. المتوقع: ${serverTotal.toLocaleString()} ر.س` });
@@ -3834,61 +4422,49 @@ export async function registerRoutes(
     for (const key of ALLOWED_ORDER_FIELDS) {
       if (key in req.body) safeBody[key] = req.body[key];
     }
-
-    // A wallet-only payment must cover the full server-calculated total.
-    if (safeBody.paymentMethod === "wallet" && walletAmountUsed < orderTotal - 0.01) {
-      return res.status(400).json({ error: "رصيد محفظة كيروكس باي لا يغطي كامل قيمة الطلب" });
+    if (pricedItems !== requestedItems || hasVariantItems) safeBody.items = pricedItems;
+    if (planPrice > 0) {
+      safeBody.totalAmount = orderTotal;
     }
 
-    // Payment state is never trusted from the client. Wallet orders become paid
-    // only after the atomic debit succeeds below; other methods remain pending
-    // until their payment is verified server-side.
-    safeBody.isDepositPaid = false;
-    safeBody.paymentStatus = "pending";
+    // Reject wallet/mixed orders if walletAmountUsed is missing or zero
+    if (safeBody.paymentMethod === "wallet" && (Number(safeBody.walletAmountUsed || 0) <= 0)) {
+      return res.status(400).json({ error: "يجب تحديد المبلغ المخصوم من المحفظة عند الدفع بمحفظة كيروكس باي" });
+    }
+
+    // Auto-mark deposit as paid for instant payment methods (PayPal captured, wallet, mixed wallet+paypal)
+    const instantPayMethods = ["paypal", "wallet", "mixed"];
+    if (instantPayMethods.includes(safeBody.paymentMethod as string)) {
+      safeBody.isDepositPaid = true;
+      safeBody.paidAt = new Date();
+    }
 
     const orderNum = await generateOrderNumber();
     const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending", orderNumber: orderNum } as any);
 
     // Deduct wallet atomically after order creation
-    let walletDebitApplied = false;
     if (walletDeducted > 0) {
       try {
         const debitAmt = parseFloat(walletDeducted.toFixed(2));
         const ok = await atomicWalletDebit(String(user.id), debitAmt);
-        if (!ok) {
-          const { OrderModel } = await import("./models");
-          await OrderModel.findByIdAndDelete(String(order.id));
-          return res.status(409).json({ error: "تغير رصيد المحفظة قبل إتمام الدفع. حدّث الرصيد ثم حاول مرة أخرى." });
-        }
-        walletDebitApplied = true;
-        try {
+        if (ok) {
           await WalletTransactionModel.create({
             userId: String(user.id), type: 'debit', amount: debitAmt,
             description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
             orderId: String(order.id), addedBy: String(user.id), note: 'wallet_payment',
           });
-        } catch (txErr) {
-          console.error("[wallet-transaction-log]", txErr);
-        }
-        if (safeBody.paymentMethod === "wallet" && debitAmt >= orderTotal - 0.01) {
-          await storage.updateOrder(String(order.id), { isDepositPaid: true, paymentStatus: "approved" } as any);
-          (order as any).isDepositPaid = true;
-          (order as any).paymentStatus = "approved";
+        } else {
+          await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: رصيد المحفظة غير كافٍ — يرجى مراجعة الدفع]' } as any).catch(() => {});
         }
       } catch (wErr) {
         console.error("[wallet-deduct]", wErr);
-        if (walletDebitApplied) {
-          await storage.updateOrder(String(order.id), {
-            notes: `${(order as any).notes || ""} [تم خصم رصيد المحفظة؛ تعذر تحديث حالة الدفع وتلزم مراجعة الطلب]`,
-          } as any).catch(() => {});
-          return res.status(500).json({ error: "تمت معالجة خصم المحفظة لكن تعذّر تحديث الطلب. تواصل مع الدعم قبل إعادة المحاولة." });
-        }
-        const { OrderModel } = await import("./models");
-        await OrderModel.findByIdAndDelete(String(order.id)).catch(() => {});
-        return res.status(500).json({ error: "تعذّر إتمام خصم المحفظة، ولم يتم تسجيل الطلب." });
+        await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
       }
     }
-    const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
+    const items: string[] = (pricedItems || []).map((i: any) => {
+      const name = i.nameAr || i.name || "عنصر";
+      return i.config?.variantSummaryAr ? `${name} (${i.config.variantSummaryAr})` : name;
+    }).filter(Boolean);
     if ((user as any).email) {
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
       const { NotificationModel } = await import("./models");
@@ -3896,13 +4472,13 @@ export async function registerRoutes(
     }
     const _clientName = (user as any).fullName || (user as any).username;
     const _clientEmail = (user as any).email || "";
-    sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
-    sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+    sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
+    sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
     // Notify all managers + sales staff from DB
     UserModel.find({ role: { $in: ["admin", "manager", "supervisor"] }, email: { $exists: true, $ne: "" } }).select("email fullName").lean().then((staffList: any[]) => {
       for (const s of staffList) {
         if (s.email && s.email !== "info@qiroxstudio.online" && s.email !== "qiroxsystem@gmail.com") {
-          sendAdminNewOrderEmail(s.email, _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+          sendAdminNewOrderEmail(s.email, _clientName, _clientEmail, String(order.id), items, orderTotal).catch(console.error);
         }
       }
     }).catch(console.error);
@@ -3913,7 +4489,7 @@ export async function registerRoutes(
       orderId: String(order.id),
       details: [
         ["الخدمات", items.slice(0, 3).join("، ") || "—"],
-        ...(req.body.totalAmount ? [["المبلغ", `${Number(req.body.totalAmount).toLocaleString("ar-SA")} ر.س`] as [string,string]] : []),
+        ...(orderTotal ? [["المبلغ", `${Number(orderTotal).toLocaleString("ar-SA")} ر.س`] as [string,string]] : []),
       ],
       waMessage: `مرحباً ${_clientName} 👋\nتم استلام طلبك على QIROX Studio بنجاح ✅\nرقم الطلب: #${String(order.id).slice(-8).toUpperCase()}\nسيتواصل معك فريقنا قريباً لاستكمال التفاصيل.`,
     }).catch(console.error);
@@ -3938,7 +4514,7 @@ export async function registerRoutes(
     // Auto-create shipment for each physical product item
     try {
       const physicalTypes = ["product", "gift"];
-      const physicalItems = (req.body.items || []).filter((it: any) => physicalTypes.includes(it.type));
+      const physicalItems = (pricedItems || []).filter((it: any) => physicalTypes.includes(it.type));
       for (const item of physicalItems) {
         const shipping = item.config?.shipping || {};
         await DeviceShipmentModel.create({
@@ -3948,7 +4524,7 @@ export async function registerRoutes(
           clientEmail: _clientEmail,
           clientPhone: shipping.phone || (user as any).phone || "",
           productId: item.refId || item.id || new (await import("mongoose")).default.Types.ObjectId(),
-          productName: item.nameAr || item.name || "منتج",
+          productName: [item.nameAr || item.name || "منتج", item.config?.variantSummaryAr].filter(Boolean).join(" — "),
           quantity: item.qty || 1,
           totalPrice: (item.price || 0) * (item.qty || 1),
           shippingAddress: {
@@ -3990,7 +4566,7 @@ export async function registerRoutes(
       const { OrderModel, NotificationModel } = await import("./models");
       const order = await OrderModel.findById(req.params.id);
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
-      if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
+      if (String(order.userId) !== String(user.id || user._id)) return res.sendStatus(403);
       order.paymentProofUrl = paymentProofUrl;
       order.paymentStatus = "pending";
       order.paymentRejectionReason = "";
@@ -4020,6 +4596,32 @@ export async function registerRoutes(
   });
 
   // Client: update project details after payment
+  const projectSetupDetailFields = [
+    "businessName", "phone", "sector", "targetAudience", "siteLanguage",
+    "whatsappIntegration", "needsPayment", "needsBooking", "brandColor",
+    "requiredFunctions", "logoUrl", "commercialRegUrl", "taxRegUrl",
+    "nationalIdUrl", "ibanCertUrl",
+  ];
+  const projectSetupFieldKeys = new Set(projectSetupDetailFields);
+
+  app.get("/api/orders/:id/details", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { OrderModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id)
+        .select(["userId", ...projectSetupDetailFields, "setupFieldSubfields"].join(" "));
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const user = req.user as any;
+      if (String(order.userId) !== String(user.id || user._id)) return res.sendStatus(403);
+      const record = order.toObject() as any;
+      res.json(Object.fromEntries(
+        [...projectSetupDetailFields, "setupFieldSubfields"].map(key => [key, record[key]]),
+      ));
+    } catch {
+      res.status(500).json({ error: "تعذر تحميل تفاصيل المشروع" });
+    }
+  });
+
   app.patch("/api/orders/:id/details", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as any;
@@ -4028,11 +4630,36 @@ export async function registerRoutes(
       const order = await OrderModel.findById(req.params.id);
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
+      if (req.body.setupFieldSubfields !== undefined) {
+        const incoming = req.body.setupFieldSubfields;
+        if (!Array.isArray(incoming) || incoming.length > 100) {
+          return res.status(400).json({ error: "قائمة الحقول الفرعية غير صالحة" });
+        }
+        const seenIds = new Set<string>();
+        const normalizedSubfields = [];
+        for (const item of incoming) {
+          if (!item || typeof item !== "object") {
+            return res.status(400).json({ error: "بيانات الحقل الفرعي غير صالحة" });
+          }
+          const id = typeof item.id === "string" ? item.id.trim() : "";
+          const fieldKey = typeof item.fieldKey === "string" ? item.fieldKey : "";
+          const name = typeof item.name === "string" ? item.name.trim() : "";
+          const value = typeof item.value === "string" ? item.value : "";
+          if (!id || id.length > 128 || seenIds.has(id)
+            || !projectSetupFieldKeys.has(fieldKey)
+            || !name || name.length > 100 || value.length > 4000) {
+            return res.status(400).json({ error: "تحقق من أسماء وقيم الحقول الفرعية" });
+          }
+          seenIds.add(id);
+          normalizedSubfields.push({ id, fieldKey, name, value });
+        }
+        (order as any).setupFieldSubfields = normalizedSubfields;
+      }
       const allowed = ["businessName","phone","sector","targetAudience","visualStyle","siteLanguage",
         "whatsappIntegration","socialIntegration","hasLogo","needsLogoDesign","requiredFunctions",
         "brandColor","inspirationSites","needsPayment","needsBooking","hasContent",
         "logoUrl","commercialRegUrl","taxRegUrl","nationalIdUrl","ibanCertUrl",
-        "targetAudience","brandIdentityUrl","filesUrl"];
+        "brandIdentityUrl","filesUrl"];
       for (const key of allowed) {
         if (req.body[key] !== undefined) (order as any)[key] = req.body[key];
       }
@@ -4067,6 +4694,19 @@ export async function registerRoutes(
     res.json(projects);
   });
 
+  // Management screens need the complete project list. The general
+  // /api/projects endpoint intentionally filters projects for employees.
+  app.get("/api/admin/projects", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (role === "client" || role === "data_entry") return res.sendStatus(403);
+    try {
+      res.json(await storage.getProjects());
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   app.post("/api/admin/projects", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const role = (req.user as any).role;
@@ -4095,6 +4735,104 @@ export async function registerRoutes(
     const project = await storage.getProject(String(req.params.id));
     if (!project) return res.sendStatus(404);
     res.json(project);
+  });
+
+  const getEffectiveSiteSubscription = async (projectId: string) => {
+    const { ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel } = await import("./models");
+    const subscription = await ProjectSubscriptionModel.findOne({ projectId })
+      .select("projectId orderId clientId planTier planSegment period durationDays startedAt expiresAt status").lean();
+    if (!subscription) return null;
+    const renewal = await ProjectSubscriptionRenewalRequestModel.findOne({ projectId, status: "approved" })
+      .sort({ processedAt: -1 }).lean();
+    const { getEffectiveProjectSubscription } = await import("./project-subscriptions");
+    return getEffectiveProjectSubscription(subscription, renewal);
+  };
+
+  app.get("/api/admin/projects/:projectId/quick-management", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes(String((req.user as any).role))) return res.sendStatus(403);
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await ProjectModel.findById(req.params.projectId).select("siteControl productionUrl branding").lean() as any;
+      if (!project) return res.sendStatus(404);
+      const subscription: any = await getEffectiveSiteSubscription(req.params.projectId);
+      const expired = !!subscription && (subscription.status === "expired" || subscription.status === "suspended"
+        || (subscription.period !== "lifetime" && !!subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now()));
+      const siteControl = project.siteControl || {};
+      res.json({
+        projectId: req.params.projectId,
+        productionUrl: project.productionUrl || project.branding?.websiteUrl || "",
+        subscription: subscription ? {
+          status: subscription.status,
+          period: subscription.period,
+          expiresAt: subscription.expiresAt || null,
+          expired,
+        } : null,
+        site: {
+          manualSuspended: siteControl.manualSuspended === true,
+          autoSuspendOnExpiry: siteControl.autoSuspendOnExpiry !== false,
+          suspensionMessage: siteControl.suspensionMessage || "الموقع متوقف مؤقتًا. تواصل مع QIROX لمزيد من المعلومات.",
+          suspended: siteControl.manualSuspended === true || (siteControl.autoSuspendOnExpiry !== false && expired),
+          updatedAt: siteControl.updatedAt || null,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر تحميل الإدارة السريعة" });
+    }
+  });
+
+  app.patch("/api/admin/projects/:projectId/quick-management", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes(String((req.user as any).role))) return res.sendStatus(403);
+    const updates: Record<string, unknown> = {};
+    if (typeof req.body?.manualSuspended === "boolean") updates["siteControl.manualSuspended"] = req.body.manualSuspended;
+    if (typeof req.body?.autoSuspendOnExpiry === "boolean") updates["siteControl.autoSuspendOnExpiry"] = req.body.autoSuspendOnExpiry;
+    if (req.body?.suspensionMessage !== undefined) {
+      const message = String(req.body.suspensionMessage || "").trim();
+      if (!message || message.length > 1000) return res.status(400).json({ error: "رسالة الإيقاف مطلوبة وبحد أقصى 1000 حرف" });
+      updates["siteControl.suspensionMessage"] = message;
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ error: "لا توجد تغييرات صالحة" });
+    updates["siteControl.updatedAt"] = new Date();
+    updates["siteControl.updatedBy"] = String((req.user as any)._id || (req.user as any).id);
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await ProjectModel.findByIdAndUpdate(req.params.projectId, { $set: updates }, { new: true })
+        .select("siteControl").lean() as any;
+      if (!project) return res.sendStatus(404);
+      res.json({ ok: true, siteControl: project.siteControl });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "تعذر حفظ إعدادات الموقع" });
+    }
+  });
+
+  // Public runtime check used by QIROX-generated client sites. It returns only
+  // the public suspension state and message; never project credentials/data.
+  app.get("/api/public/projects/:projectId/site-status", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Vary", "Origin");
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await ProjectModel.findById(req.params.projectId).select("siteControl").lean() as any;
+      if (!project) return res.sendStatus(404);
+      const control = project.siteControl || {};
+      let expired = false;
+      if (control.autoSuspendOnExpiry !== false) {
+        const subscription: any = await getEffectiveSiteSubscription(req.params.projectId);
+        expired = !!subscription && (subscription.status === "expired" || subscription.status === "suspended"
+          || (subscription.period !== "lifetime" && !!subscription.expiresAt
+            && new Date(subscription.expiresAt).getTime() <= Date.now()));
+      }
+      const suspended = control.manualSuspended === true || expired;
+      res.json({
+        suspended,
+        message: suspended
+          ? (control.suspensionMessage || "الموقع متوقف مؤقتًا. تواصل مع QIROX لمزيد من المعلومات.")
+          : null,
+        contactUrl: "https://qiroxstudio.online/contact",
+      });
+    } catch {
+      res.status(503).json({ error: "تعذر التحقق من حالة الموقع" });
+    }
   });
 
   // A renewal request is intentionally a separate record from the original
@@ -4811,7 +5549,7 @@ export async function registerRoutes(
     try {
       if ((task as any).assignedTo) {
         const { UserModel, ProjectModel } = await import("./models");
-        const assignee = await UserModel.findById((task as any).assignedTo).select("email fullName username");
+        const assignee = await UserModel.findById((task as any).assignedTo).select("email fullName username phone whatsappNumber");
         const project = await ProjectModel?.findById(req.params.projectId).select("name");
         if (assignee?.email) {
           sendTaskAssignedEmail(
@@ -4823,6 +5561,21 @@ export async function registerRoutes(
             (task as any).deadline
           ).catch(console.error);
         }
+        await notifyTaskAssignment({
+          taskId: String((task as any)._id || (task as any).id),
+          taskType: "project",
+          recipient: {
+            userId: String((assignee as any)?._id || (task as any).assignedTo),
+            name: assignee?.fullName || assignee?.username,
+            email: assignee?.email,
+            phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+          },
+          title: (task as any).title || "مهمة جديدة",
+          context: project?.name || "المشروع",
+          priority: (task as any).priority || "medium",
+          deadline: (task as any).deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee/checklist`,
+        }).catch(error => console.error("[WhatsApp] project task assignment:", error?.message || error));
       }
     } catch (e) { console.error("[Email] task assigned email error:", e); }
   });
@@ -5191,7 +5944,7 @@ export async function registerRoutes(
         const branch = String(req.body?.branch || githubRepository.default_branch || "main");
         const encodedToken = encodeURIComponent(token);
         const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
-        const simpleGit = (await import("simple-git")).default;
+        const { simpleGit } = await import("simple-git");
         await simpleGit().clone(remoteUrl, repoDir, ["--branch", branch, "--depth", "1"]);
         const git = simpleGit(repoDir);
         const currentSha = (await git.revparse(["HEAD"])).trim();
@@ -5244,7 +5997,7 @@ export async function registerRoutes(
 
   // ── Project Code Workspace: editor, shell, run and live preview ──
   app.post("/api/admin/orders/:id/github/code/workspace", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -5281,6 +6034,7 @@ export async function registerRoutes(
         { sourceProjectId: project._id },
         {
           $set: {
+            sourceOrderId: order._id,
             githubRepo: String(githubRepository.html_url || repository.htmlUrl),
             githubBranch: branch,
             ...(projectLogoUrl ? { logoUrl: projectLogoUrl } : {}),
@@ -5288,7 +6042,6 @@ export async function registerRoutes(
           $setOnInsert: {
             ownerId: (req.user as any)._id,
             sourceProjectId: project._id,
-            sourceOrderId: order._id,
             name: `${workspaceName} — Code Workspace`,
             nameAr: `${workspaceName} — بيئة أكواد`,
             description: "QIROX project code workspace",
@@ -5304,17 +6057,23 @@ export async function registerRoutes(
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
       const workspaceId = String(workspace._id);
+      const { synchronizeSaasWorkspace } = await import("./domains/saas-builder/workspace");
+      await synchronizeSaasWorkspace(workspace);
       const { ensureProjectDir, getProjectDir } = await import("./sandbox-fs");
       const workspaceDir = ensureProjectDir(workspaceId);
       const gitDir = path.join(workspaceDir, ".git");
       if (!fs.existsSync(gitDir)) {
-        const simpleGit = (await import("simple-git")).default;
+        const { simpleGit } = await import("simple-git");
         const encodedToken = encodeURIComponent(token);
         const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
-        await fs.promises.rm(workspaceDir, { recursive: true, force: true });
-        await fs.promises.mkdir(path.dirname(workspaceDir), { recursive: true });
-        await simpleGit().clone(remoteUrl, workspaceDir, ["--branch", branch, "--depth", "1"]);
-        await simpleGit(workspaceDir).remote(["set-url", "origin", String(githubRepository.html_url || repository.htmlUrl)]);
+        const entries = await fs.promises.readdir(workspaceDir);
+        if (entries.length) {
+          const { attachWorkspaceGitHistory } = await import("./workspace-git");
+          await attachWorkspaceGitHistory(workspaceDir, remoteUrl, String(githubRepository.html_url || repository.htmlUrl), branch);
+        } else {
+          await simpleGit().clone(remoteUrl, workspaceDir, ["--branch", branch, "--depth", "1"]);
+          await simpleGit(workspaceDir).remote(["set-url", "origin", String(githubRepository.html_url || repository.htmlUrl)]);
+        }
       }
       res.json({
         success: true,
@@ -5335,7 +6094,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/orders/:id/github/code/workspace/sync", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -5359,11 +6118,14 @@ export async function registerRoutes(
       const githubRepository = await githubFetch(`/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}`, token);
       const branch = String((workspace as any).githubBranch || githubRepository.default_branch || "main");
       const workspaceDir = (await import("./sandbox-fs")).getProjectDir(String(workspace._id));
-      const simpleGit = (await import("simple-git")).default;
+      const { simpleGit } = await import("simple-git");
       const git = simpleGit(workspaceDir);
+      if (!(await git.status()).isClean()) return res.status(409).json({ error: "ارفع تعديلاتك أولًا؛ لن تتم مزامنة نسخة تستبدل ملفات غير محفوظة في GitHub" });
       const encodedToken = encodeURIComponent(token);
       const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
       await git.fetch(remoteUrl, branch);
+      const canFastForward = await git.raw(["merge-base", "--is-ancestor", "HEAD", "FETCH_HEAD"]).then(() => true, () => false);
+      if (!canFastForward) return res.status(409).json({ error: "مساحة العمل تحتوي على commits غير موجودة في GitHub؛ ارفعها قبل المزامنة" });
       await git.reset(["--hard", "FETCH_HEAD"]);
       await git.clean("f", ["-d"]);
       res.json({ success: true, branch, syncedAt: new Date().toISOString() });
@@ -5374,7 +6136,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/orders/:id/github/code/workspace/push", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+    if (!req.isAuthenticated() || !["admin", "manager", "cto"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -5397,24 +6159,29 @@ export async function registerRoutes(
       if (!token) return res.status(503).json({ error: "اتصال GitHub غير مهيأ" });
 
       const workspaceDir = (await import("./sandbox-fs")).getProjectDir(String(workspace._id));
-      const simpleGit = (await import("simple-git")).default;
-      const git = simpleGit(workspaceDir);
+      const { simpleGit } = await import("simple-git");
+      const remoteUrl = `https://x-access-token:${encodeURIComponent(token)}@github.com/${repository.owner}/${repository.name}.git`;
+      const { attachWorkspaceGitHistory } = await import("./workspace-git");
+      const git = await attachWorkspaceGitHistory(workspaceDir, remoteUrl, repository.htmlUrl, String((workspace as any).githubBranch || "main"));
       const status = await git.status();
-      const changedPaths = [...(status.modified || []), ...(status.created || []), ...(status.deleted || [])];
+      const changedPaths = [...(status.modified || []), ...(status.created || []), ...(status.deleted || []), ...(status.not_added || [])];
       const blocked = changedPaths.filter((filePath: string) => isProtectedProjectCodePath(filePath));
       if (blocked.length) {
         return res.status(400).json({ error: "تم منع الرفع لأن التغييرات تحتوي على أسرار أو شهادات.", blockedFiles: blocked.slice(0, 10) });
       }
-      if (status.isClean) return res.status(400).json({ error: "لا توجد تغييرات لرفعها" });
-
       const branch = String((workspace as any).githubBranch || "main");
-      const currentSha = (await git.revparse(["HEAD"])).trim();
-      const backupBranch = `qirox-backups/workspace-${new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "")}-${currentSha.slice(0, 10)}`;
-      const encodedToken = encodeURIComponent(token);
-      const remoteUrl = `https://x-access-token:${encodedToken}@github.com/${repository.owner}/${repository.name}.git`;
-      await git.push(remoteUrl, `${currentSha}:refs/heads/${backupBranch}`);
-      await git.add(["-A"]);
-      const commit = await git.commit(String(req.body?.commitMessage || "Update project code from QIROX IDE").slice(0, 120));
+      const currentSha = await git.revparse(["HEAD"]).then(value => value.trim(), () => "");
+      const hasFileChanges = !status.isClean();
+      if (!hasFileChanges) {
+        const remoteSha = (await git.listRemote([remoteUrl, `refs/heads/${branch}`])).trim().split(/\s+/)[0] || "";
+        if (currentSha === remoteSha) return res.status(400).json({ error: "لا توجد تغييرات لرفعها" });
+      }
+      const backupBranch = currentSha ? `qirox-backups/workspace-${Date.now()}-${currentSha.slice(0, 10)}` : null;
+      await git.addConfig("user.name", "QIROX Workspace");
+      await git.addConfig("user.email", "workspace@qirox.invalid");
+      if (backupBranch) await git.push(remoteUrl, `${currentSha}:refs/heads/${backupBranch}`);
+      if (hasFileChanges) await git.add(["-A"]);
+      const commit = hasFileChanges ? await git.commit(String(req.body?.commitMessage || "Update project code from QIROX IDE").slice(0, 120)) : { commit: currentSha };
       await git.push(remoteUrl, branch);
       res.json({ success: true, branch, backupBranch, commitSha: String(commit.commit || "").trim() });
     } catch (error: any) {
@@ -5438,7 +6205,7 @@ export async function registerRoutes(
       const { UserModel, ProjectModel } = await import("./models");
       const { NotificationModel } = await import("./models");
       if (input.assignedTo && (!oldTask || (oldTask as any).assignedTo?.toString() !== input.assignedTo)) {
-        const assignee = await UserModel.findById(input.assignedTo).select("email fullName username");
+        const assignee = await UserModel.findById(input.assignedTo).select("email fullName username phone whatsappNumber");
         const project = await ProjectModel?.findById((task as any).projectId).select("name");
         if (assignee?.email) {
           sendTaskAssignedEmail(
@@ -5450,6 +6217,21 @@ export async function registerRoutes(
             (task as any).deadline
           ).catch(console.error);
         }
+        await notifyTaskAssignment({
+          taskId: String((task as any)._id || (task as any).id),
+          taskType: "project",
+          recipient: {
+            userId: String((assignee as any)?._id || input.assignedTo),
+            name: assignee?.fullName || assignee?.username,
+            email: assignee?.email,
+            phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+          },
+          title: (task as any).title || "مهمة جديدة",
+          context: project?.name || "المشروع",
+          priority: (task as any).priority || "medium",
+          deadline: (task as any).deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/employee/checklist`,
+        }).catch(error => console.error("[WhatsApp] project task assignment:", error?.message || error));
         const taskTitle = (task as any).title || "مهمة جديدة";
         await NotificationModel.create({ userId: input.assignedTo, type: 'task', title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, link: `/projects/${(task as any).projectId}`, icon: '✅' }).catch(() => {});
         pushNotification(String(input.assignedTo), { title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, icon: '✅', link: `/projects/${(task as any).projectId}` });
@@ -7633,6 +8415,24 @@ export async function registerRoutes(
     }
     return handleProjectIntegrationMessage(channel, req, res, "api");
   });
+  app.get("/api/v1/projects/:projectId/subscription", async (req, res) => {
+    const integration = await resolveProjectIntegrationKey(req, res, "api");
+    if (!integration) return;
+    try {
+      const projectId = String(integration.projectId || req.params.projectId);
+      const { ProjectSubscriptionModel, ProjectSubscriptionRenewalRequestModel } = await import("./models");
+      const subscription = await (ProjectSubscriptionModel as any).findOne({ projectId })
+        .select("projectId orderId clientId planTier planSegment period durationDays startedAt expiresAt status").lean();
+      if (!subscription) return res.status(404).json({ error: "Project subscription not found" });
+      const renewal = await (ProjectSubscriptionRenewalRequestModel as any).findOne({ projectId, status: "approved" })
+        .sort({ processedAt: -1 }).lean();
+      const { getEffectiveProjectSubscription } = await import("./project-subscriptions");
+      const effective = getEffectiveProjectSubscription(subscription, renewal);
+      res.json({ data: effective });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Unable to read project subscription" });
+    }
+  });
 
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {
@@ -8090,12 +8890,13 @@ export async function registerRoutes(
   app.get("/api/admin/customers", async (req, res) => {
     const caller = req.user as any;
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    const callerRole = String(caller?.role || "").trim().toLowerCase();
     const allowedRoles = ["admin", "manager", "sales_manager", "sales", "accountant", "data_entry"];
-    if (!allowedRoles.includes(caller.role)) return res.sendStatus(403);
+    if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     const users = await storage.getUsers();
     const clients = users.filter((u: any) => u.role === "client");
     // Sales reps see only their assigned clients
-    if (caller.role === "sales") {
+    if (callerRole === "sales") {
       const scopedClients = clients.filter((c: any) =>
         c.assignedSalesId === String(caller.id || caller._id) ||
         c.assignedSalesUsername === caller.username
@@ -8108,7 +8909,8 @@ export async function registerRoutes(
   // PATCH /api/admin/customers/:id/assign-sales — assign a sales rep to a client (B4)
   app.patch("/api/admin/customers/:id/assign-sales", async (req, res) => {
     const caller = req.user as any;
-    if (!req.isAuthenticated() || !["admin", "manager", "sales_manager"].includes(caller.role)) return res.sendStatus(403);
+    const callerRole = String(caller?.role || "").trim().toLowerCase();
+    if (!req.isAuthenticated() || !["admin", "manager", "sales_manager"].includes(callerRole)) return res.sendStatus(403);
     try {
       const { UserModel } = await import("./models");
       const { salesRepId } = req.body;
@@ -8175,9 +8977,42 @@ export async function registerRoutes(
   });
 
   // === PARTNERS API ===
+  const getPartnersWithServiceFeatures = async (partners: any[]) => {
+    const services = await storage.getServices();
+    const serviceById = new Map(
+      services.map((service: any) => [String(service.id || service._id), service]),
+    );
+    return partners.map((partner: any) => {
+      const record = typeof partner?.toObject === "function" ? partner.toObject() : partner;
+      if (!record) return record;
+      const serviceIds = Array.isArray(record.serviceIds) ? record.serviceIds.map(String) : [];
+      const serviceFeatures = Array.from(new Set(
+        serviceIds.flatMap((id: string) => {
+          const service = serviceById.get(id) as any;
+          return Array.isArray(service?.features) ? service.features : [];
+        }).map((feature: unknown) => String(feature).trim()).filter(Boolean),
+      ));
+      return { ...record, serviceIds, serviceFeatures };
+    });
+  };
+
+  const validatePartnerServiceIds = async (value: unknown): Promise<string[] | null> => {
+    if (!Array.isArray(value) || value.length > 100 || value.some(id => typeof id !== "string" || !id.trim())) {
+      return null;
+    }
+    const ids = Array.from(new Set(value.map(id => String(id).trim())));
+    const services = await storage.getServices();
+    const knownIds = new Set(services.map((service: any) => String(service.id || service._id)));
+    return ids.every(id => knownIds.has(id)) ? ids : null;
+  };
+
   app.get("/api/partners", async (req, res) => {
     try {
-      const partners = await cache.getOrFetch("public:partners", () => storage.getPartners(), CACHE_TTL.PUBLIC);
+      const partners = await cache.getOrFetch(
+        "public:partners",
+        async () => getPartnersWithServiceFeatures(await storage.getPartners()),
+        CACHE_TTL.PUBLIC,
+      );
       res.json(partners);
     } catch (err) {
       res.status(500).json({ error: "Failed to load partners" });
@@ -8199,7 +9034,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "read")) {
       return res.sendStatus(403);
     }
-    const partners = await storage.getAllPartners();
+    const partners = await getPartnersWithServiceFeatures(await storage.getAllPartners());
     res.json((req.user as any).role === "data_entry"
       ? partners.map((partner: any) => redactDataEntryRecord(partner))
       : partners);
@@ -8209,10 +9044,15 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "create")) {
       return res.sendStatus(403);
     }
-    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
+    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "serviceIds", "description", "descriptionAr"];
     const input = Object.fromEntries(fields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
+    if (req.body.serviceIds !== undefined) {
+      const serviceIds = await validatePartnerServiceIds(req.body.serviceIds);
+      if (!serviceIds) return res.status(400).json({ error: "اختر خدمات موجودة من القائمة" });
+      input.serviceIds = serviceIds;
+    }
     if (!String(input.name || "").trim() || !String(input.logoUrl || "").trim()) return res.status(400).json({ error: "الاسم والشعار مطلوبان" });
-    const partner = await storage.createPartner(input);
+    const [partner] = await getPartnersWithServiceFeatures([await storage.createPartner(input)]);
     cache.invalidate("public:partners");
     res.status(201).json((req.user as any).role === "data_entry"
       ? redactDataEntryRecord(partner)
@@ -8223,9 +9063,14 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "partners", "update")) {
       return res.sendStatus(403);
     }
-    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "description", "descriptionAr"];
+    const fields = ["name", "nameAr", "logoUrl", "logoOriginalUrl", "logoProcessingStatus", "logoProcessingWarning", "logoProcessedAt", "websiteUrl", "category", "sortOrder", "isActive", "features", "featuresAr", "relatedService", "serviceIds", "description", "descriptionAr"];
     const input = Object.fromEntries(fields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
-    const partner = await storage.updatePartner(req.params.id, input);
+    if (req.body.serviceIds !== undefined) {
+      const serviceIds = await validatePartnerServiceIds(req.body.serviceIds);
+      if (!serviceIds) return res.status(400).json({ error: "اختر خدمات موجودة من القائمة" });
+      input.serviceIds = serviceIds;
+    }
+    const [partner] = await getPartnersWithServiceFeatures([await storage.updatePartner(req.params.id, input)]);
     cache.invalidate("public:partners");
     res.json((req.user as any).role === "data_entry"
       ? redactDataEntryRecord(partner)
@@ -8547,7 +9392,7 @@ export async function registerRoutes(
     ];
     await ModPlanConfigModel.insertMany(defaults);
   }
-  if (process.env.NODE_ENV !== "test" && mongoose.connection.readyState === 1) {
+  if (process.env.NODE_ENV !== "test") {
     seedModPlanConfigs().catch(console.error);
   }
 
@@ -8572,7 +9417,7 @@ export async function registerRoutes(
       );
     }
   }
-  if (process.env.NODE_ENV !== "test" && mongoose.connection.readyState === 1) {
+  if (process.env.NODE_ENV !== "test") {
     migrateModPlanConfigs().catch(console.error);
   }
 
@@ -8871,7 +9716,9 @@ export async function registerRoutes(
     const cacheKey = `public:products:${category || "all"}:${serviceSlug || "all"}`;
     try {
       const products = await cache.getOrFetch(cacheKey, () => storage.getQiroxProducts({ category, serviceSlug, active: true }), CACHE_TTL.PUBLIC);
-      res.json(products);
+      const { getFlags, FeatureFlag } = await import("./infrastructure");
+      const variantsEnabled = getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2);
+      res.json(variantsEnabled ? products : products.filter((product: any) => !(product.variants || []).length));
     } catch (err) {
       res.status(500).json({ error: "Failed to load products" });
     }
@@ -8886,6 +9733,13 @@ export async function registerRoutes(
 
   app.post("/api/admin/products", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if ("optionGroups" in (req.body || {}) || "variants" in (req.body || {})) {
+      if (!["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+      const { getFlags, FeatureFlag } = await import("./infrastructure");
+      if (!getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2)) return res.sendStatus(404);
+      const validationError = validateProductVariantData(req.body.optionGroups, req.body.variants);
+      if (validationError) return res.status(400).json({ error: validationError });
+    }
     const product = await storage.createQiroxProduct(req.body);
     cache.invalidatePattern("^public:products:");
     res.status(201).json(product);
@@ -8893,6 +9747,16 @@ export async function registerRoutes(
 
   app.patch("/api/admin/products/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    if ("optionGroups" in (req.body || {}) || "variants" in (req.body || {})) {
+      if (!["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+      const { getFlags, FeatureFlag } = await import("./infrastructure");
+      if (!getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2)) return res.sendStatus(404);
+      if (!("optionGroups" in req.body) || !("variants" in req.body)) {
+        return res.status(400).json({ error: "يجب إرسال الخصائص والتركيبات معًا." });
+      }
+      const validationError = validateProductVariantData(req.body.optionGroups, req.body.variants);
+      if (validationError) return res.status(400).json({ error: validationError });
+    }
     const product = await storage.updateQiroxProduct(req.params.id, req.body);
     cache.invalidatePattern("^public:products:");
     res.json(product);
@@ -9073,6 +9937,25 @@ export async function registerRoutes(
     // Strip any client-side _id or id to let MongoDB auto-generate it
     const { _id, id, ...cleanItem } = req.body;
     try {
+      if (["product", "gift"].includes(cleanItem.type) && cleanItem.refId && mongoose.Types.ObjectId.isValid(String(cleanItem.refId))) {
+        const { QiroxProductModel } = await import("./models");
+        const product = await QiroxProductModel.findById(String(cleanItem.refId)).lean() as any;
+        if (product) {
+          if ((product.variants || []).length) {
+            const { getFlags, FeatureFlag } = await import("./infrastructure");
+            if (!getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2)) {
+              return res.status(409).json({ error: "خيارات هذا المنتج غير مفعّلة حاليًا. أعد تحميل صفحة الأجهزة." });
+            }
+          }
+          const result = applyProductVariantPricing(cleanItem, product);
+          if (result.error) return res.status(400).json({ error: result.error });
+          Object.assign(cleanItem, result.item);
+        } else if (cleanItem.config?.productVariantId) {
+          return res.status(400).json({ error: "تعذّر العثور على المنتج المحدد." });
+        }
+      } else if (cleanItem.config?.productVariantId) {
+        return res.status(400).json({ error: "معرّف تركيبة المنتج غير صالح." });
+      }
       const cart = await storage.upsertCartItem(userId, cleanItem);
       res.json(cart);
     } catch (err: any) {
@@ -9156,7 +10039,7 @@ export async function registerRoutes(
     // their work, but never financial totals.
     res.json(redactFields(
       specs?.toObject ? specs.toObject() : (specs || {}),
-      assignedDataEntrySpecFinancialFields,
+      [...assignedDataEntrySpecFinancialFields, "customSections", "internalForms"],
     ));
   });
 
@@ -9180,9 +10063,12 @@ export async function registerRoutes(
       : dataEntrySpecFields;
     const updates = isDataEntry
       ? Object.fromEntries(allowedDataEntryFields.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]))
-      : req.body;
+      : Object.fromEntries(Object.entries(req.body || {}).filter(([key]) => !["customSections", "internalForms"].includes(key)));
     if (isDataEntry && Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "لا توجد حقول مسموحة للتعديل" });
+    }
+    if (!isDataEntry && Object.keys(req.body || {}).length > 0 && Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "استخدم مسار حفظ النماذج الداخلية المخصص" });
     }
     const specs = await storage.upsertOrderSpecs(req.params.id, updates);
     if (!isDataEntry) return res.json(specs);
@@ -9191,6 +10077,23 @@ export async function registerRoutes(
       specs?.toObject ? specs.toObject() : specs,
       assignedDataEntrySpecFinancialFields,
     ));
+  });
+
+  app.put("/api/admin/orders/:id/specs/internal-forms", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client" || user.role === "data_entry") return res.sendStatus(403);
+
+    const normalized = normalizeProjectInternalForms(req.body?.internalForms);
+    if (!normalized.ok) return res.status(400).json({ error: normalized.error });
+
+    const order = await storage.getOrderWithUser(req.params.id);
+    if (!order) return res.sendStatus(404);
+
+    const specs = await storage.upsertOrderSpecs(req.params.id, {
+      internalForms: normalized.forms,
+    });
+    res.json(specs);
   });
 
   // Get project associated with an order (for admin usage guide management)
@@ -9226,7 +10129,10 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const specs = await storage.getOrderSpecs(req.params.id);
-    res.json(specs || {});
+    const clientSafeSpecs = { ...((specs || {}) as any) };
+    delete clientSafeSpecs.customSections;
+    delete clientSafeSpecs.internalForms;
+    res.json(clientSafeSpecs);
   });
 
   // ═══════════════════════════════════════════════════════════
@@ -10796,8 +11702,22 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
-    const totalAmount = req.body.amount || 0;
-    const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount: 0, totalAmount });
+    const amount = Number(req.body.amount) || 0;
+    const discountPercent = Math.min(100, Math.max(0, Number(req.body.discountPercent) || 0));
+    const discountAmount = Math.round(amount * discountPercent) / 100;
+    const vatRate = Math.min(100, Math.max(0, Number(req.body.vatRate ?? 15) || 0));
+    const vatAmount = Math.round((amount - discountAmount) * vatRate) / 100;
+    const totalAmount = amount - discountAmount + vatAmount;
+    const invoice = await InvoiceModel.create({
+      ...req.body,
+      invoiceNumber: invNum,
+      amount,
+      discountPercent,
+      discountAmount,
+      vatRate,
+      vatAmount,
+      totalAmount,
+    });
     try {
       if (req.body.userId) {
         const { NotificationModel } = await import("./models");
@@ -10816,7 +11736,20 @@ export async function registerRoutes(
   app.patch("/api/invoices/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
-    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) }, { returnDocument: "after" });
+    const current: any = await InvoiceModel.findById(req.params.id);
+    if (!current) return res.sendStatus(404);
+    const updates: any = { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) };
+    const amount = Number(req.body.amount ?? current.amount) || 0;
+    const discountPercent = Math.min(100, Math.max(0, Number(req.body.discountPercent ?? current.discountPercent) || 0));
+    const vatRate = Math.min(100, Math.max(0, Number(req.body.vatRate ?? current.vatRate ?? 15) || 0));
+    const discountAmount = Math.round(amount * discountPercent) / 100;
+    updates.amount = amount;
+    updates.discountPercent = discountPercent;
+    updates.discountAmount = discountAmount;
+    updates.vatRate = vatRate;
+    updates.vatAmount = Math.round((amount - discountAmount) * vatRate) / 100;
+    updates.totalAmount = amount - discountAmount + updates.vatAmount;
+    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, updates, { returnDocument: "after" });
     res.json(invoice);
   });
 
@@ -10864,7 +11797,9 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { InvoiceModel } = await import("./models");
-      const invoice: any = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username phone whatsappNumber");
+      const invoice: any = await InvoiceModel.findById(req.params.id)
+        .populate("userId", "fullName email username phone whatsappNumber")
+        .populate("orderId", "projectType sector services");
       if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
       const snap = invoice.clientSnapshot || {};
       const u = invoice.userId || {};
@@ -10872,7 +11807,47 @@ export async function registerRoutes(
       const targetEmail = (req.body?.toEmail) || invoice.externalEmail || snap.email || u.email;
       const targetName = (req.body?.toName) || invoice.externalName || snap.fullName || u.fullName || u.username || "عميل";
       if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للمستلم" });
+       const language = req.body?.language === "en" ? "en" : ((invoice.language as "ar" | "en") === "en" ? "en" : "ar");
+       if (req.body?.language === "ar" || req.body?.language === "en") {
+         await InvoiceModel.findByIdAndUpdate(invoice._id, { $set: { language } });
+       }
       const { sendInvoiceEmail } = await import("./email");
+       const { generateInvoicePdf } = await import("./services/pdf.service");
+       const bank = await getPdfBankDetails();
+       const snapForPdf = invoice.clientSnapshot || {};
+       const clientForPdf = invoice.userId || {};
+       let pdfBytes: Uint8Array | undefined;
+       try {
+         pdfBytes = await generateInvoicePdf({
+           invoiceNumber: invoice.invoiceNumber,
+           title: invoice.title,
+           clientName: snapForPdf.fullName || clientForPdf.fullName || invoice.externalName || "—",
+           clientEmail: snapForPdf.email || clientForPdf.email || invoice.externalEmail,
+           clientPhone: snapForPdf.phone || clientForPdf.phone,
+           clientAddress: snapForPdf.address || clientForPdf.address,
+           clientCity: snapForPdf.city || clientForPdf.city,
+           clientTaxNumber: snapForPdf.taxNumber || clientForPdf.taxNumber,
+           clientOrganization: snapForPdf.organizationName || clientForPdf.organizationName || invoice.externalCompany,
+           clientCommercialReg: snapForPdf.commercialRegistration || clientForPdf.commercialRegistration,
+           totalAmount: invoice.totalAmount,
+           vatRate: invoice.vatRate,
+           vatAmount: invoice.vatAmount,
+           amount: invoice.amount,
+           discountPercent: invoice.discountPercent,
+           discountAmount: invoice.discountAmount,
+           dueDate: invoice.dueDate,
+           paidAt: invoice.paidAt ? new Date(invoice.paidAt).toISOString() : undefined,
+           orderTitle: invoice.orderId?.projectType || invoice.orderId?.sector,
+           status: invoice.status,
+           items: invoice.items,
+           notes: invoice.notes,
+           createdAt: invoice.createdAt,
+            language,
+           ...bank,
+         });
+       } catch (pdfErr) {
+         console.error("[INVOICE PDF EMAIL] generation error:", pdfErr);
+       }
       await sendInvoiceEmail(targetEmail, targetName, {
         invoiceNumber: (invoice as any).invoiceNumber,
         amount: (invoice as any).amount,
@@ -10883,6 +11858,8 @@ export async function registerRoutes(
         notes: (invoice as any).notes,
         items: (invoice as any).items,
         createdAt: (invoice as any).createdAt,
+          language,
+         pdfBytes,
       });
       dispatchNotification({
         event: "invoice_sent",
@@ -10933,6 +11910,50 @@ export async function registerRoutes(
     res.json(receipt);
   });
 
+  // GET /api/receipts/:id/pdf — canonical server-generated receipt PDF
+  app.get("/api/receipts/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ReceiptVoucherModel } = await import("./models");
+      const receipt: any = await ReceiptVoucherModel.findById(req.params.id)
+        .populate("userId", "fullName email username phone whatsappNumber")
+        .populate("invoiceId", "invoiceNumber");
+      if (!receipt) return res.status(404).json({ error: "السند غير موجود" });
+
+      const user = req.user as any;
+      const ownerId = receipt.userId?._id ? String(receipt.userId._id) : String(receipt.userId || "");
+      const privileged = ["admin", "manager", "accountant", "sales_manager"].includes(user.role);
+      if (!privileged && ownerId !== String(user.id)) return res.sendStatus(403);
+
+      const { generateReceiptPdf } = await import("./services/pdf.service");
+      const bank = await getPdfBankDetails();
+      const client = receipt.userId || {};
+      const invoice = receipt.invoiceId || {};
+      const pdfBytes = await generateReceiptPdf({
+        receiptNumber: receipt.receiptNumber,
+        clientName: client.fullName || client.username || "—",
+        clientEmail: client.email,
+        clientPhone: client.phone || client.whatsappNumber,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: receipt.amount,
+        amountInWords: receipt.amountInWords,
+        paymentMethod: receipt.paymentMethod,
+        paymentRef: receipt.paymentRef,
+        description: receipt.description,
+        receivedBy: receipt.receivedBy,
+        notes: receipt.notes,
+        createdAt: receipt.createdAt,
+        ...bank,
+      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      console.error("[RECEIPT PDF] error:", err);
+      res.status(500).json({ error: "فشل توليد PDF" });
+    }
+  });
+
   app.post("/api/receipts", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
@@ -10974,6 +11995,29 @@ export async function registerRoutes(
       const user = (receipt as any).userId;
       if (!user?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
       const { sendReceiptEmail } = await import("./email");
+       const { generateReceiptPdf } = await import("./services/pdf.service");
+       const bank = await getPdfBankDetails();
+       let pdfBytes: Uint8Array | undefined;
+       try {
+         pdfBytes = await generateReceiptPdf({
+           receiptNumber: receipt.receiptNumber,
+           clientName: user.fullName || user.username || "—",
+           clientEmail: user.email,
+           clientPhone: user.phone || user.whatsappNumber,
+           invoiceNumber: receipt.invoiceId?.invoiceNumber,
+           amount: receipt.amount,
+           amountInWords: receipt.amountInWords,
+           paymentMethod: receipt.paymentMethod,
+           paymentRef: receipt.paymentRef,
+           description: receipt.description,
+           receivedBy: receipt.receivedBy,
+           notes: receipt.notes,
+           createdAt: receipt.createdAt,
+           ...bank,
+         });
+       } catch (pdfErr) {
+         console.error("[RECEIPT PDF EMAIL] generation error:", pdfErr);
+       }
       await sendReceiptEmail(user.email, user.fullName || user.username, {
         receiptNumber: (receipt as any).receiptNumber,
         amount: (receipt as any).amount,
@@ -10981,6 +12025,7 @@ export async function registerRoutes(
         paymentMethod: (receipt as any).paymentMethod,
         description: (receipt as any).description,
         createdAt: (receipt as any).createdAt,
+         pdfBytes,
       });
       res.json({ ok: true, message: "تم إرسال السند بنجاح" });
     } catch (err) {
@@ -11048,7 +12093,7 @@ export async function registerRoutes(
     const { QuotationModel } = await import("./models");
     const user = req.user as any;
     const quotation = await QuotationModel.findById(req.params.id)
-      .populate("userId", "username fullName email phone country address city taxNumber organizationName commercialRegistration");
+      .populate("userId", "username fullName email phone country address city taxNumber organizationName commercialRegistration nationalAddress");
     if (!quotation) return res.sendStatus(404);
     if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
     res.json(quotation);
@@ -11059,12 +12104,16 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const { userId, externalName, externalEmail, externalCompany, title, items, vatRate, discountPercent, validUntil, notes, termsAndConditions } = req.body;
+    const { userId, externalName, externalEmail, externalCompany, title, items, vatRate, discountPercent, validUntil, notes, paymentTerms, language, termsAndConditions } = req.body;
     if (!userId && !externalEmail) return res.status(400).json({ error: "يجب تحديد العميل أو إدخال بريد إلكتروني خارجي" });
-    const { calculateQuotationTotals } = await import("./quotation-calculation");
-    let totals;
-    try { totals = calculateQuotationTotals(items, vatRate ?? 15, discountPercent ?? 0); }
-    catch (error: any) { return res.status(400).json({ error: error.message }); }
+    const itemList = Array.isArray(items) ? items : [];
+    const amount = itemList.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
+    const safeDiscountPercent = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+    const discountAmount = Math.round(amount * safeDiscountPercent) / 100;
+    const taxableAmount = amount - discountAmount;
+    const vat = (Number(vatRate) || 0) / 100;
+    const vatAmount = Math.round(taxableAmount * vat * 100) / 100;
+    const totalAmount = Math.round((taxableAmount + vatAmount) * 100) / 100;
     const quotationNumber = await generateQuotationNumber();
     const quotation = await QuotationModel.create({
       quotationNumber,
@@ -11072,8 +12121,11 @@ export async function registerRoutes(
       externalName: externalName || "",
       externalEmail: externalEmail || "",
       externalCompany: externalCompany || "",
-      title: title || "", ...totals,
-      validUntil: validUntil || null, notes: notes || "", termsAndConditions: termsAndConditions || "",
+      title: title || "", items: itemList,
+      amount, discountPercent: safeDiscountPercent, discountAmount,
+      vatRate: Number(vatRate) || 0, vatAmount, totalAmount,
+      validUntil: validUntil || null, notes: notes || "", paymentTerms: paymentTerms || "",
+      language: language === "en" ? "en" : "ar", termsAndConditions: termsAndConditions || "",
       status: "draft", createdBy: user.id,
     });
     res.json(quotation);
@@ -11084,24 +12136,51 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const { items, vatRate, discountPercent, status, title, notes, termsAndConditions, validUntil, userId } = req.body;
+    const { items, vatRate, discountPercent, status, title, notes, paymentTerms, language, termsAndConditions, validUntil, userId } = req.body;
     const updates: any = {};
     if (title !== undefined) updates.title = title;
     if (notes !== undefined) updates.notes = notes;
+    if (paymentTerms !== undefined) updates.paymentTerms = paymentTerms;
+    if (language !== undefined) updates.language = language === "en" ? "en" : "ar";
     if (termsAndConditions !== undefined) updates.termsAndConditions = termsAndConditions;
     if (validUntil !== undefined) updates.validUntil = validUntil || null;
     if (userId !== undefined) updates.userId = userId;
     if (status) updates.status = status;
     if (Array.isArray(items)) {
-      const { calculateQuotationTotals } = await import("./quotation-calculation");
-      try {
-        Object.assign(updates, calculateQuotationTotals(items, vatRate ?? 15, discountPercent ?? 0));
-      } catch (error: any) {
-        return res.status(400).json({ error: error.message });
-      }
+      updates.items = items;
+      updates.amount = items.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
+      updates.discountPercent = Math.min(100, Math.max(0, Number(discountPercent) || 0));
+      updates.discountAmount = Math.round(updates.amount * updates.discountPercent) / 100;
+      const taxableAmount = updates.amount - updates.discountAmount;
+      const vat = (Number(vatRate) || 0) / 100;
+      updates.vatRate = Number(vatRate) || 0;
+      updates.vatAmount = Math.round(taxableAmount * vat * 100) / 100;
+      updates.totalAmount = Math.round((taxableAmount + updates.vatAmount) * 100) / 100;
+    }
+    const currentQuotation = await QuotationModel.findById(req.params.id);
+    if (!currentQuotation) return res.sendStatus(404);
+    const recalculatesTotals = Array.isArray(items) || discountPercent !== undefined || vatRate !== undefined;
+    if (recalculatesTotals) {
+      const nextAmount = Array.isArray(items)
+        ? items.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0)
+        : Number((currentQuotation as any).amount) || 0;
+      const nextDiscountPercent = discountPercent !== undefined
+        ? Math.min(100, Math.max(0, Number(discountPercent) || 0))
+        : Number((currentQuotation as any).discountPercent) || 0;
+      const nextDiscountAmount = Math.round(nextAmount * nextDiscountPercent) / 100;
+      const nextVatRate = vatRate !== undefined
+        ? Number(vatRate) || 0
+        : Number((currentQuotation as any).vatRate) || 0;
+      const nextTaxableAmount = nextAmount - nextDiscountAmount;
+      const nextVatAmount = Math.round(nextTaxableAmount * (nextVatRate / 100) * 100) / 100;
+      updates.amount = nextAmount;
+      updates.discountPercent = nextDiscountPercent;
+      updates.discountAmount = nextDiscountAmount;
+      updates.vatRate = nextVatRate;
+      updates.vatAmount = nextVatAmount;
+      updates.totalAmount = Math.round((nextTaxableAmount + nextVatAmount) * 100) / 100;
     }
     const quotation = await QuotationModel.findByIdAndUpdate(req.params.id, { $set: updates }, { returnDocument: "after", new: true });
-    if (!quotation) return res.sendStatus(404);
     res.json(quotation);
   });
 
@@ -11123,8 +12202,6 @@ export async function registerRoutes(
       title: (original as any).title ? `${(original as any).title} (نسخة)` : "",
       items: (original as any).items || [],
       amount: (original as any).amount || 0,
-      discountPercent: (original as any).discountPercent || 0,
-      discountAmount: (original as any).discountAmount || 0,
       vatRate: (original as any).vatRate || 15,
       vatAmount: (original as any).vatAmount || 0,
       totalAmount: (original as any).totalAmount || 0,
@@ -11155,6 +12232,10 @@ export async function registerRoutes(
     if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
 
     const { externalEmail, externalName, companyName } = req.body || {};
+    const language = req.body?.language === "en" ? "en" : ((quotation as any).language === "en" ? "en" : "ar");
+    if (req.body?.language === "ar" || req.body?.language === "en") {
+      await QuotationModel.findByIdAndUpdate(quotation._id, { $set: { language } });
+    }
 
     const client = (quotation as any).userId as any;
     const targetEmail: string = externalEmail?.trim() || client?.email || (quotation as any).externalEmail;
@@ -11164,7 +12245,8 @@ export async function registerRoutes(
     if (!targetEmail) return res.status(400).json({ error: "البريد الإلكتروني غير موجود" });
 
     const { sendQuotationEmail } = await import("./email");
-    const { generateQuotationPdf } = await import("./pdf");
+    const { generateQuotationPdf } = await import("./services/pdf.service");
+    const bank = await getPdfBankDetails();
     const siteUrl = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 
     const isRegistered = !!client?.email && !externalEmail;
@@ -11178,6 +12260,7 @@ export async function registerRoutes(
       pdfBytes = await generateQuotationPdf({
         quotationNumber: quotation.quotationNumber,
         title: (quotation as any).title,
+        projectDescription: (quotation as any).projectDescription || (quotation as any).description,
         clientName: targetName,
         clientEmail: targetEmail,
         clientPhone: cu.phone,
@@ -11193,9 +12276,14 @@ export async function registerRoutes(
         discountPercent: (quotation as any).discountPercent,
         discountAmount: (quotation as any).discountAmount,
         validUntil: (quotation as any).validUntil,
+        status: (quotation as any).status,
         items: (quotation as any).items,
         notes: (quotation as any).notes,
         createdAt: (quotation as any).createdAt,
+        paymentTerms: (quotation as any).paymentTerms,
+        termsAndConditions: (quotation as any).termsAndConditions,
+         language,
+        ...bank,
       });
     } catch (pdfErr) {
       console.error("[PDF] generation error:", pdfErr);
@@ -11211,6 +12299,7 @@ export async function registerRoutes(
       notes: (quotation as any).notes,
       link,
       pdfBytes,
+      language,
     });
     if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
     dispatchNotification({
@@ -11256,15 +12345,17 @@ export async function registerRoutes(
       .populate("userId", "fullName email username phone country address city taxNumber organizationName commercialRegistration");
     if (!quotation) return res.sendStatus(404);
     if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
-    const { generateQuotationPdf } = await import("./pdf");
+      const { generateQuotationPdf } = await import("./services/pdf.service");
     const client = (quotation as any).userId as any;
     const clientName = (quotation as any).externalName || client?.fullName || client?.username || "العميل";
     const clientEmail = (quotation as any).externalEmail || client?.email || "";
     const clientCompany = (quotation as any).externalCompany || client?.organizationName || "";
     try {
+      const bank = await getPdfBankDetails();
       const pdfBytes = await generateQuotationPdf({
         quotationNumber: (quotation as any).quotationNumber,
         title: (quotation as any).title,
+        projectDescription: (quotation as any).projectDescription || (quotation as any).description,
         clientName,
         clientEmail,
         clientPhone: client?.phone,
@@ -11277,10 +12368,17 @@ export async function registerRoutes(
         vatRate: (quotation as any).vatRate,
         vatAmount: (quotation as any).vatAmount,
         amount: (quotation as any).amount,
+        discountPercent: (quotation as any).discountPercent,
+        discountAmount: (quotation as any).discountAmount,
         validUntil: (quotation as any).validUntil,
+        status: (quotation as any).status,
         items: (quotation as any).items,
         notes: (quotation as any).notes,
         createdAt: (quotation as any).createdAt,
+        paymentTerms: (quotation as any).paymentTerms,
+        termsAndConditions: (quotation as any).termsAndConditions,
+        language: (quotation as any).language,
+        ...bank,
       });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="quotation-${(quotation as any).quotationNumber}.pdf"`);
@@ -11352,6 +12450,8 @@ export async function registerRoutes(
       quotationId: q._id,
       title: (q as any).title || "",
       amount: (q as any).amount,
+      discountPercent: (q as any).discountPercent,
+      discountAmount: (q as any).discountAmount,
       vatRate: (q as any).vatRate,
       vatAmount: (q as any).vatAmount,
       totalAmount: (q as any).totalAmount,
@@ -11361,6 +12461,7 @@ export async function registerRoutes(
       externalName: (q as any).externalName,
       externalEmail: (q as any).externalEmail,
       externalCompany: (q as any).externalCompany,
+      language: (q as any).language === "en" ? "en" : "ar",
       createdBy: user.id,
       clientSnapshot,
     });
@@ -11373,7 +12474,8 @@ export async function registerRoutes(
     try {
       const { InvoiceModel } = await import("./models");
       const invoice: any = await InvoiceModel.findById(req.params.id)
-        .populate("userId", "fullName email username phone address city taxNumber organizationName commercialRegistration");
+        .populate("userId", "fullName email username phone address city taxNumber organizationName commercialRegistration")
+        .populate("orderId", "projectType sector services");
       if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
       const u = req.user as any;
       const ownerId = invoice.userId?._id ? String(invoice.userId._id) : String(invoice.userId || "");
@@ -11382,7 +12484,8 @@ export async function registerRoutes(
       if (!privileged && ownerId !== String(u.id)) return res.sendStatus(403);
       const snap = invoice.clientSnapshot || {};
       const client = invoice.userId || {};
-      const { generateInvoicePdf } = await import("./pdf");
+      const { generateInvoicePdf } = await import("./services/pdf.service");
+      const bank = await getPdfBankDetails();
       const pdfBytes = await generateInvoicePdf({
         invoiceNumber: invoice.invoiceNumber,
         title: invoice.title,
@@ -11398,11 +12501,17 @@ export async function registerRoutes(
         vatRate: invoice.vatRate,
         vatAmount: invoice.vatAmount,
         amount: invoice.amount,
+         discountPercent: invoice.discountPercent,
+         discountAmount: invoice.discountAmount,
         dueDate: invoice.dueDate,
+        paidAt: invoice.paidAt ? new Date(invoice.paidAt).toISOString() : undefined,
+        orderTitle: invoice.orderId?.projectType || invoice.orderId?.sector,
         status: invoice.status,
         items: invoice.items,
         notes: invoice.notes,
         createdAt: invoice.createdAt,
+        language: invoice.language === "en" ? "en" : "ar",
+         ...bank,
       });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
@@ -12172,6 +13281,9 @@ export async function registerRoutes(
         projectType, sector, idea, services, totalAmount, notes,
         planTier, planPeriod, planSegment,
       } = req.body;
+      const manualMarketingLeadId = typeof req.body?.manualMarketingLeadId === "string"
+        ? req.body.manualMarketingLeadId.trim()
+        : "";
 
       if (!fullName || !email || !username || !password) {
         return res.status(400).json({ error: "يجب إدخال الاسم الكامل والبريد والمستخدم وكلمة المرور" });
@@ -12180,6 +13292,32 @@ export async function registerRoutes(
       const normalizedPlanPeriod = String(planPeriod || "").toLowerCase();
       if (!validPlanPeriods.includes(normalizedPlanPeriod)) {
         return res.status(400).json({ error: "يجب تحديد مدة الاشتراك للطلب" });
+      }
+      let orderServices: any[];
+      try {
+        orderServices = await canonicalizeEmployeeOrderItems(services || []);
+      } catch (variantError: any) {
+        return res.status(400).json({ error: variantError.message || "تعذّر التحقق من خيارات المنتج." });
+      }
+
+      let manualMarketingLead: any = null;
+      if (manualMarketingLeadId) {
+        if (!/^[\da-f]{24}$/i.test(manualMarketingLeadId)) {
+          return res.status(400).json({ error: "معرّف العميل المحتمل غير صالح" });
+        }
+        const {
+          ManualMarketingLeadModel,
+          ensureManualMarketingLeadStore,
+        } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        manualMarketingLead = await ManualMarketingLeadModel.findById(manualMarketingLeadId).lean();
+        if (!manualMarketingLead) return res.status(404).json({ error: "العميل المحتمل غير موجود" });
+        if (manualMarketingLead.leadStatus === "converted") {
+          return res.status(409).json({ error: "تم تحويل هذا العميل المحتمل إلى عميل فعلي مسبقًا" });
+        }
+        if (normalizeManualMarketingPhone(phone) !== manualMarketingLead.normalizedPhone) {
+          return res.status(400).json({ error: "رقم العميل لا يطابق رقم العميل المحتمل المحدد" });
+        }
       }
 
       const normalizedEmail = String(email).toLowerCase().trim().trim();
@@ -12224,8 +13362,8 @@ export async function registerRoutes(
       sendAdminNewClientEmail("qiroxsystem@gmail.com", fullName, normalizedEmail, phone || "", actor.fullName || actor.username).catch(console.error);
 
       let createdOrder = null;
-      if (projectType || idea || (services && services.length > 0)) {
-        const serviceNames: string[] = (services || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+      if (projectType || idea || orderServices.length > 0) {
+        const serviceNames: string[] = employeeOrderItemNames(orderServices);
         const orderNum = await generateOrderNumber();
         const orderData = {
           userId: String(newClient._id),
@@ -12239,7 +13377,7 @@ export async function registerRoutes(
           planSegment: planSegment || sector || "",
           status: "pending",
           paymentMethod: "bank_transfer",
-          items: services || [],
+          items: orderServices,
           orderNumber: orderNum,
           adminNotes: `أُنشئ بواسطة الموظف: ${actor.fullName || actor.username}`,
         };
@@ -12252,9 +13390,44 @@ export async function registerRoutes(
         sendAdminNewOrderEmail("qiroxsystem@gmail.com", fullName, normalizedEmail, String(createdOrder.id), serviceNames, totalAmount).catch(console.error);
       }
 
+      let leadConversionWarning = "";
+      if (manualMarketingLead) {
+        try {
+          const { ManualMarketingLeadModel, ManualMarketingCampaignModel } = await import("./models/whatsapp");
+          const now = new Date();
+          const actorId = (actor as any)._id || (actor as any).id;
+          const updatedLead = await ManualMarketingLeadModel.findOneAndUpdate(
+            { _id: manualMarketingLead._id, leadStatus: { $ne: "converted" } },
+            {
+              $set: {
+                leadStatus: "converted",
+                convertedClientId: newClient._id,
+                convertedAt: now,
+                convertedBy: actorId || null,
+                statusUpdatedAt: now,
+                statusUpdatedBy: actorId || null,
+              },
+            },
+            { new: true },
+          );
+          if (!updatedLead) {
+            leadConversionWarning = "تم إنشاء حساب العميل، لكن سجل العميل المحتمل تغيّر بالتزامن. راجع قائمة العملاء المحتملين.";
+          } else {
+            await ManualMarketingCampaignModel.updateMany(
+              { normalizedPhone: manualMarketingLead.normalizedPhone, status: { $in: ["active", "sending"] } },
+              { $set: { status: "superseded" } },
+            );
+          }
+        } catch (conversionError: any) {
+          leadConversionWarning = "تم إنشاء حساب العميل، لكن تعذّر تحديث حالة العميل المحتمل. يمكنك ربطه من صفحة العملاء المحتملين.";
+          console.error("[ManualMarketing] Could not mark lead converted after client creation:", conversionError?.message || conversionError);
+        }
+      }
+
       res.status(201).json({
         client: { id: String(newClient._id), username: newClient.username, fullName: newClient.fullName, email: newClient.email },
         order: createdOrder,
+        ...(leadConversionWarning ? { leadConversionWarning } : {}),
       });
     } catch (err: any) {
       console.error("[employee/create-client-order]", err);
@@ -12276,9 +13449,15 @@ export async function registerRoutes(
        if (!validPlanPeriods.includes(normalizedPlanPeriod)) {
          return res.status(400).json({ error: "يجب تحديد مدة الاشتراك للطلب" });
        }
+      let canonicalItems: any[];
+      try {
+        canonicalItems = await canonicalizeEmployeeOrderItems(items || []);
+      } catch (variantError: any) {
+        return res.status(400).json({ error: variantError.message || "تعذّر التحقق من خيارات المنتج." });
+      }
       const client = await UserModel.findById(clientId);
       if (!client || client.role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
-      const serviceNames: string[] = (items || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+      const serviceNames: string[] = employeeOrderItemNames(canonicalItems);
       const orderNum = await generateOrderNumber();
       const orderData = {
         userId: String(client._id),
@@ -12292,7 +13471,7 @@ export async function registerRoutes(
         planSegment: planSegment || sector || "",
         status: "pending",
         paymentMethod: paymentMethod || "bank_transfer",
-        items: items || [],
+        items: canonicalItems,
         orderNumber: orderNum,
         adminNotes: `أُنشئ بواسطة: ${actor.fullName || actor.username}`,
       };
@@ -12750,14 +13929,23 @@ export async function registerRoutes(
       }
       // Build a plain user object with id set so Passport's serializeUser works
       const user = { ...userDoc.toObject(), id: userDoc._id.toString() };
+      const deviceToken = await issueDeviceToken(
+        String(userDoc._id),
+        String(req.headers["user-agent"] || ""),
+      );
+      const dash = userDoc.role === "admin" ? "/admin" : "/employee/role-dashboard";
       // Log in the user via Passport
       req.login(user, (err) => {
         if (err) {
           console.error("[QR Login] req.login error:", err);
-          void auditQrLogin(req, "qr_login_failed", { userId: String(userDoc._id), token, reason: "session_error", role: userDoc.role });
-          return res.redirect("/login?qr=error");
+          void auditQrLogin(req, "qr_login_succeeded", {
+            userId: String(userDoc._id),
+            token,
+            reason: "device_token_fallback",
+            role: userDoc.role,
+          });
+          return res.redirect(`/login?deviceToken=${encodeURIComponent(deviceToken)}&next=${encodeURIComponent(dash)}`);
         }
-        const dash = userDoc.role === "admin" ? "/admin" : "/employee";
         // Save session before redirect to ensure cookie is set
         req.session.save((saveErr) => {
           if (saveErr) {
@@ -12766,7 +13954,7 @@ export async function registerRoutes(
           } else {
             void auditQrLogin(req, "qr_login_succeeded", { userId: String(userDoc._id), token, role: userDoc.role });
           }
-          return res.redirect(dash);
+          return res.redirect(`/login?deviceToken=${encodeURIComponent(deviceToken)}&next=${encodeURIComponent(dash)}`);
         });
       });
     } catch (err) {
@@ -13770,7 +14958,7 @@ export async function registerRoutes(
       const userId = user._id || user.id;
       await NativePushTokenModel.findOneAndUpdate(
         { token },
-        { userId, token, platform, bundleId: "sa.qirox.studio" },
+        { userId, token, platform, bundleId: process.env.APNS_BUNDLE_ID || "qiroxstudio.online" },
         { upsert: true, new: true }
       );
       res.json({ ok: true });
@@ -13852,7 +15040,7 @@ export async function registerRoutes(
       // Notify primary assignee
       if (assignedTo) {
         try {
-          const assignee = await (UserModel as any).findById(assignedTo).select("email fullName username");
+          const assignee = await (UserModel as any).findById(assignedTo).select("email fullName username phone whatsappNumber");
           if (assignee?.email) {
             const { sendTaskAssignedEmail } = await import("./email");
             await sendTaskAssignedEmail(
@@ -13864,12 +15052,26 @@ export async function registerRoutes(
               dueDate
             );
           }
+          await notifyTaskAssignment({
+            taskId: String(item._id),
+            taskType: "checklist",
+            recipient: {
+              userId: String((assignee as any)?._id || assignedTo),
+              name: assignee?.fullName || assignee?.username,
+              email: assignee?.email,
+              phone: (assignee as any)?.whatsappNumber || (assignee as any)?.phone,
+            },
+            title,
+            context: category || "عام",
+            priority: priority || "medium",
+            deadline: dueDate,
+          }).catch(error => console.error("[WhatsApp] checklist assignment:", error?.message || error));
         } catch (e) { console.error("[Email] checklist assign error:", e); }
       }
       // Notify extra assignees
       for (const coId of extraAssignees) {
         try {
-          const coAssignee = await (UserModel as any).findById(coId).select("email fullName username");
+          const coAssignee = await (UserModel as any).findById(coId).select("email fullName username phone whatsappNumber");
           if (coAssignee?.email) {
             const { sendTaskAssignedEmail } = await import("./email");
             await sendTaskAssignedEmail(
@@ -13881,6 +15083,20 @@ export async function registerRoutes(
               dueDate
             );
           }
+          await notifyTaskAssignment({
+            taskId: String(item._id),
+            taskType: "checklist",
+            recipient: {
+              userId: String((coAssignee as any)?._id || coId),
+              name: coAssignee?.fullName || coAssignee?.username,
+              email: coAssignee?.email,
+              phone: (coAssignee as any)?.whatsappNumber || (coAssignee as any)?.phone,
+            },
+            title,
+            context: category || "عام",
+            priority: priority || "medium",
+            deadline: dueDate,
+          }).catch(error => console.error("[WhatsApp] checklist co-assignment:", error?.message || error));
         } catch (e) { console.error("[Email] checklist co-assign error:", e); }
       }
       const populated = await (ChecklistItemModel as any).findById(item._id)
@@ -14231,6 +15447,9 @@ export async function registerRoutes(
       const ticket = await PriceRequestModel.create({
         ticketNumber, sector, sectorLabel: sectorLabel || sector, duration: duration || "", requirements,
         contactName, contactPhone, contactEmail: contactEmail || "", userId,
+        baseWebsiteValue: CUSTOM_QUOTE_BASE_WEBSITE_VALUE,
+        quoteMultiplier: CUSTOM_QUOTE_MULTIPLIER,
+        providerCostsIncluded: false,
       });
 
       // Notify all admins/managers via push + internal notification
@@ -14268,7 +15487,16 @@ export async function registerRoutes(
         await sendDirectEmail("info@qirox.online", "فريق كيروكس", subject, body).catch(() => {});
       } catch {}
 
-      res.status(201).json({ ticketNumber, id: ticket._id });
+      res.status(201).json({
+        ticketNumber,
+        id: ticket._id,
+        pricingPolicy: {
+          baseWebsiteValue: CUSTOM_QUOTE_BASE_WEBSITE_VALUE,
+          multiplier: CUSTOM_QUOTE_MULTIPLIER,
+          calculatedBasePrice: CUSTOM_QUOTE_BASE_PRICE,
+          providerCostsIncluded: false,
+        },
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -15941,16 +17169,18 @@ export async function registerRoutes(
   app.get("/api/admin/connection-settings", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
     const { connManager } = await import("./connection-manager");
+    const { maskUri } = await import("./connection-manager");
     const { loadSystemSettings } = await import("./system-settings");
     const saved = await loadSystemSettings();
     const status = connManager.getStatus();
     res.json({
       status,
       settings: {
-        mainDbUri: saved.mainDbUri || "",
-        prevMainDbUri: saved.prevMainDbUri || "",
-        qmeetDbUri: saved.qmeetDbUri || "",
-        prevQmeetDbUri: saved.prevQmeetDbUri || "",
+        mainDbUri: saved.mainDbUri ? maskUri(saved.mainDbUri) : "",
+        prevMainDbUri: saved.prevMainDbUri ? maskUri(saved.prevMainDbUri) : "",
+        qmeetDbUri: saved.qmeetDbUri ? maskUri(saved.qmeetDbUri) : "",
+        prevQmeetDbUri: saved.prevQmeetDbUri ? maskUri(saved.prevQmeetDbUri) : "",
+        emailLogoUrl: saved.emailLogoUrl || "",
         emailSiteUrl: saved.emailSiteUrl || "",
       },
       env: {
@@ -16019,18 +17249,18 @@ export async function registerRoutes(
 
   app.post("/api/admin/connection-settings/email", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
-    const { emailSiteUrl } = req.body;
-    const updates: Record<string, string> = { emailLogoUrl: "" };
-    const emailOverrides: { siteUrl?: string } = {};
-    if (typeof emailSiteUrl === "string") {
-      updates.emailSiteUrl = emailSiteUrl;
-      emailOverrides.siteUrl = emailSiteUrl;
-    }
+    const { emailLogoUrl, emailSiteUrl } = req.body;
+    const updates: Record<string, string> = {};
+    if (emailLogoUrl !== undefined) updates.emailLogoUrl = emailLogoUrl;
+    if (emailSiteUrl !== undefined) updates.emailSiteUrl = emailSiteUrl;
     try {
       const { connManager } = await import("./connection-manager");
       const { saveSystemSettings } = await import("./system-settings");
       await saveSystemSettings(updates);
-      connManager.setEmailSettings(emailOverrides);
+      connManager.setEmailSettings({
+        logoUrl: updates.emailLogoUrl,
+        siteUrl: updates.emailSiteUrl,
+      } as any);
       res.json({ ok: true, message: "تم حفظ إعدادات البريد بنجاح" });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -16043,7 +17273,7 @@ export async function registerRoutes(
       const { sendTestEmail } = await import("./email");
       const user = req.user as any;
       const ok = await sendTestEmail(user.email, user.fullName || user.username);
-      res.json({ ok, message: ok ? "تم إرسال بريد اختباري بنجاح" : "فشل إرسال البريد - تحقق من مفتاح API" });
+      res.json({ ok, message: ok ? "تم إرسال بريد اختباري بنجاح" : "فشل إرسال البريد عبر SMTP. تحقق من اختبار SMTP في صفحة حسابات البريد ومن إعدادات المضيف والمنفذ والحساب." });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
@@ -16703,10 +17933,12 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   app.get("/api/public/settings", async (_req, res) => {
     try {
       const { QiroxSystemSettingsModel } = await import("./models");
+      const { getFlags, FeatureFlag } = await import("./infrastructure");
       let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
       if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
-      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, domain, address, city, country, taxNumber, commercialReg, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn } = settings as any;
-      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, domain, address, city, country, taxNumber, commercialReg, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn } = settings as any;
+      const productVariantsV2 = getFlags().isEnabled(FeatureFlag.DEVICE_VARIANTS_V2);
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr, metaPixelId, tiktokPixelId, snapPixelId, ga4Id, gtmId, maintenanceMode, maintenanceMsgAr, maintenanceMsgEn, productVariantsV2 });
     } catch { res.json({}); }
   });
 
@@ -17452,7 +18684,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // ── Daily subscription renewal reminder job ──────────────────────────────
   async function checkSubscriptionRenewals() {
-    if (mongoose.connection.readyState !== 1) return;
     try {
       const { UserModel, NotificationModel } = await import("./models");
       const now = new Date();
@@ -17506,7 +18737,6 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
 
   // ─── Addon Subscription Expiry Checker ──────────────────────────────────────
   async function checkAddonExpiry() {
-    if (mongoose.connection.readyState !== 1) return;
     try {
       const { pushToUser } = await import("./ws");
       const { ProjectAddonSubscriptionModel } = await import("./models");
@@ -17542,7 +18772,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   }
 
   // Initialize seed data (deferred — don't block Vite startup)
-  if (process.env.NODE_ENV !== "test" && mongoose.connection.readyState === 1) {
+  if (process.env.NODE_ENV !== "test") {
     seedDatabase().catch((e: any) => console.error("[Seed] error:", e.message));
   }
 
@@ -18012,14 +19242,14 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     try {
       const { UserModel } = await import("./models");
       const user = req.user as any;
-      const dbUser = await UserModel.findById(user._id || user.id).select("phone whatsappNumber phoneVerified");
+      const dbUser = await UserModel.findById(user._id || user.id).select("fullName username phone whatsappNumber phoneVerified");
       if (!dbUser?.phoneVerified || !normalizePhone(dbUser.whatsappNumber || dbUser.phone).valid) {
         return res.status(400).json({ error: "وثّق رقم جوالك أولاً قبل تفعيل التحقق عبر واتساب" });
       }
-      await UserModel.findByIdAndUpdate(user._id || user.id, { whatsappOtpEnabled: true });
-      res.json({ ok: true });
-    } catch {
-      res.status(500).json({ error: "تعذر تفعيل التحقق عبر واتساب" });
+      const challenge = await createWhatsAppApprovalChallenge(dbUser, "setup");
+      res.json({ ok: true, ...challenge });
+    } catch (err: any) {
+      res.status(503).json({ error: err.message || "تعذر إرسال طلب تفعيل واتساب" });
     }
   });
 
@@ -18811,7 +20041,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         plan: plan || {},
       });
       const populated = await (KanbanTaskModel as any).findById(task._id)
-        .populate("assignedTo", "fullName username")
+        .populate("assignedTo", "fullName username email phone whatsappNumber")
         .populate("createdBy", "fullName username")
         .lean();
       // Notify assignee
@@ -18833,6 +20063,22 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
             title: `✅ مهمة جديدة: ${title.trim()}`,
             body: `عيّنها لك ${creatorName}`,
           });
+          const assignedUser = populated?.assignedTo as any;
+          await notifyTaskAssignment({
+            taskId: String(task._id),
+            taskType: "kanban",
+            recipient: {
+              userId: String(assignedUser?._id || assignedTo),
+              name: assignedUser?.fullName || assignedUser?.username,
+              email: assignedUser?.email,
+              phone: assignedUser?.whatsappNumber || assignedUser?.phone,
+            },
+            title: title.trim(),
+            context: "لوحة المهام",
+            priority: priority || "medium",
+            deadline,
+            actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/admin/kanban`,
+          }).catch(error => console.error("[WhatsApp] kanban assignment:", error?.message || error));
         } catch (e) { console.error("[KanbanTask] notify error:", e); }
       }
       res.status(201).json(populated);
@@ -18888,6 +20134,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     if (!req.isAuthenticated() || !roleCanAccess((req.user as any).role, "tasks", "update")) return res.sendStatus(403);
     try {
       const { KanbanTaskModel } = await import("./models");
+      const previous = await (KanbanTaskModel as any).findById(req.params.id).lean();
       const { title, description, priority, assignedTo, deadline, plan, devPlan, projectName } = req.body;
       const update: any = {};
       if (title !== undefined) update.title = title.trim();
@@ -18900,11 +20147,29 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (projectName !== undefined) update.projectName = projectName;
       if (!update.title && title !== undefined && !update.title.trim()) return res.status(400).json({ error: "العنوان مطلوب" });
       const task = await (KanbanTaskModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true })
-        .populate("assignedTo", "fullName username")
+        .populate("assignedTo", "fullName username email phone whatsappNumber")
         .populate("createdBy", "fullName username")
         .lean();
       if (!task) return res.status(404).json({ error: "المهمة غير موجودة" });
       res.json((req.user as any).role === "data_entry" ? redactDataEntryTask(task) : task);
+      if (assignedTo && String(previous?.assignedTo || "") !== String(assignedTo)) {
+        const assignedUser = task.assignedTo as any;
+        await notifyTaskAssignment({
+          taskId: String(task._id),
+          taskType: "kanban",
+          recipient: {
+            userId: String(assignedUser?._id || assignedTo),
+            name: assignedUser?.fullName || assignedUser?.username,
+            email: assignedUser?.email,
+            phone: assignedUser?.whatsappNumber || assignedUser?.phone,
+          },
+          title: task.title || "مهمة جديدة",
+          context: "لوحة المهام",
+          priority: task.priority || "medium",
+          deadline: task.deadline,
+          actionUrl: `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/admin/kanban`,
+        }).catch(error => console.error("[WhatsApp] kanban reassignment:", error?.message || error));
+      }
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -19150,32 +20415,20 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         })();
         return res.json({ method: "call", expiresAt, phone: normPhone });
       } else if (method === "whatsapp") {
-        const clientName = dbUser?.fullName || dbUser?.username || "عميل";
-        const waPhone = normPhone.replace("+", "").replace(/\s/g, "");
-        const waMsg = encodeURIComponent(`رمز توثيق جوالك على منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
-        const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
-        const { sendEmail, baseTemplate } = await import("./email");
-        // Only notify the internal admin — OTP is NOT sent to the client's email.
-        // The employee will forward it to the client via WhatsApp manually.
-        const adminHtml = baseTemplate(
-          `<div style="text-align:center;margin-bottom:12px;">
-            <span style="background:#25D366;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">📱 توثيق جوال</span>
-          </div>
-          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;">
-            <tr><td style="padding:6px 0;color:#666;width:120px;">العميل</td><td style="padding:6px 0;font-weight:600;">${clientName}</td></tr>
-            <tr><td style="padding:6px 0;color:#666;">الجوال</td><td style="padding:6px 0;font-weight:600;direction:ltr;">${normPhone}</td></tr>
-            <tr><td style="padding:6px 0;color:#666;">رمز OTP</td><td style="padding:6px 0;"><strong style="font-size:22px;letter-spacing:4px;color:#1a1a1a;">${otp}</strong></td></tr>
-            <tr><td style="padding:6px 0;color:#666;">صالح حتى</td><td style="padding:6px 0;color:#888;">${expiresAt.toLocaleString("ar-SA")}</td></tr>
-          </table>
-          <div style="text-align:center;margin:20px 0 8px;">
-            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:15px;font-weight:700;">📲 أرسل الرمز للعميل عبر واتساب</a>
-          </div>
-          <p style="font-size:11px;color:#aaa;text-align:center;margin-top:12px;">تم إرسال الرمز للعميل على بريده الإلكتروني أيضاً.</p>`
-        );
-        sendEmail("youssefd.business@gmail.com", "Youssef",
-          `📱 توثيق جوال — ${clientName} (${normPhone})`,
-          adminHtml
-        ).catch(() => {});
+        const { waModule } = await import("./whatsapp-module");
+        const phoneDigits = normPhone.replace(/\D/g, "");
+        try {
+          await waModule.sendText(
+            `${phoneDigits}@s.whatsapp.net`,
+            `رمز توثيق رقم جوالك في QIROX هو: ${otp}\nصالح لمدة 15 دقيقة.\nلا تشارك هذا الرمز مع أي شخص.`,
+            false,
+          );
+        } catch {
+          await (PhoneVerifyOtpModel as any).deleteOne({ token, verified: false });
+          return res.status(503).json({
+            error: "واتساب غير متصل حالياً. افتح ربط واتساب من لوحة الإدارة ثم أعد المحاولة.",
+          });
+        }
         return res.json({ method: "whatsapp", expiresAt, phone: normPhone, sent: true });
       }
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -19199,7 +20452,11 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       record.verified = true;
       await record.save();
-      await (UserModel as any).findByIdAndUpdate(me._id || me.id, { phone: record.phone, phoneVerified: true });
+      await (UserModel as any).findByIdAndUpdate(me._id || me.id, {
+        phone: record.phone,
+        whatsappNumber: record.phone,
+        phoneVerified: true,
+      });
       res.json({ success: true, phone: record.phone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -19460,17 +20717,16 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       // Expire previous login OTPs for this user
       await (PhoneVerifyOtpModel as any).updateMany(
         { userId: dbUser._id, verified: false, purpose: "login" },
-        { $set: { expiresAt: new Date() }, $unset: { otp: 1, otpHash: 1 } }
+        { expiresAt: new Date() }
       );
       const otp = genOtp();
       const token = genPhoneToken();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-      const otpHash = crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${token}:${otp}`).digest("hex");
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
       await (PhoneVerifyOtpModel as any).create({
         userId: dbUser._id,
         phone: normPhone,
         token,
-        otpHash,
+        otp,
         method,
         expiresAt,
         verified: false,
@@ -19485,66 +20741,185 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         const waSent = await _waOtp.sendOTP(waPhone, otp, clientName).then(() => true).catch(() => false);
 
         if (!waSent) {
-          await (PhoneVerifyOtpModel as any).deleteOne({ token });
-          return res.status(503).json({ error: "تعذر إرسال الرمز عبر واتساب. تحقق من اتصال واتساب ثم حاول مجدداً." });
+          // WhatsApp not connected — fall back to email alert for the admin to send manually
+          const { sendEmail, baseTemplate } = await import("./email");
+          const waMsg = encodeURIComponent(`رمز دخولك إلى منصة QIROX هو: ${otp}\nصالح 15 دقيقة.`);
+          const waLink = `https://wa.me/${waPhone}?text=${waMsg}`;
+          sendEmail("youssefd.business@gmail.com", "Youssef",
+            `🔑 طلب دخول بالجوال — ${clientName} (${normPhone})`,
+            baseTemplate(`<p>العميل <strong>${clientName}</strong> يريد الدخول عبر رقم <strong dir="ltr">${normPhone}</strong></p>
+            <p>رمز OTP: <strong style="font-size:24px;letter-spacing:6px;">${otp}</strong></p>
+            <p style="color:#e53e3e;">⚠️ واتساب غير متصل — الرجاء الإرسال يدوياً:</p>
+            <a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;">📲 أرسل عبر واتساب</a>`)
+          ).catch(() => {});
         }
       }
-      return res.json({ sent: true, expiresAt, phone: normPhone });
+      return res.json({ sent: true, token, expiresAt: expiresAt.getTime() });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // POST /api/auth/phone-otp/verify — verify login OTP and create session
   app.post("/api/auth/phone-otp/verify", otpLimiter, async (req, res) => {
     try {
-      const { phone, otp } = req.body;
-      if (!phone || !otp) return res.status(400).json({ error: "phone و otp مطلوبان" });
-      if (!/^\d{6}$/.test(String(otp).trim())) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
-      const normPhone = normalisePhone(String(phone).trim());
+      const { phone, token, otp } = req.body;
+      if ((!phone && !token) || !otp) return res.status(400).json({ error: "بيانات التحقق ناقصة" });
+      const normPhone = phone ? normalisePhone(String(phone).trim()) : "";
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
-      const record = await (PhoneVerifyOtpModel as any).findOneAndUpdate({
-        phone: normPhone,
+      const record = await (PhoneVerifyOtpModel as any).findOne({
+        ...(token ? { token: String(token) } : { phone: normPhone }),
+        otp: String(otp).trim(),
         verified: false,
         purpose: "login",
         expiresAt: { $gt: new Date() },
-        $expr: {
-          $lt: [
-            { $ifNull: ["$attempts", 0] },
-            { $ifNull: ["$maxAttempts", 5] },
-          ],
-        },
-      }, { $inc: { attempts: 1 } }, { new: true }).select("+otpHash");
+      });
       if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
-      const submittedOtp = String(otp).trim();
-      const expectedHash = record.otpHash || (record.otp ? crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${record.token}:${record.otp}`).digest("hex") : "");
-      const submittedHash = crypto.createHmac("sha256", phoneLoginOtpHmacKey).update(`${record.token}:${submittedOtp}`).digest("hex");
-      const expected = Buffer.from(expectedHash);
-      const submitted = Buffer.from(submittedHash);
-      if (expected.length !== submitted.length || !crypto.timingSafeEqual(expected, submitted)) {
-        return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
-      }
-      const consumed = await (PhoneVerifyOtpModel as any).findOneAndUpdate(
-        { _id: record._id, verified: false, expiresAt: { $gt: new Date() } },
-        { $set: { verified: true }, $unset: { otp: 1, otpHash: 1 } },
-        { new: true },
-      );
-      if (!consumed) return res.status(400).json({ error: "الرمز غير صحيح أو انتهت صلاحيته" });
+      record.verified = true;
+      await record.save();
       const dbUser = await (UserModel as any).findById(record.userId);
       if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
-      const { methods } = await getEnabled2FAMethods(String(dbUser._id));
-      if (methods.length > 0) {
-        const challenge = await create2FAChallenge(dbUser, methods, "password");
-        return res.json({ success: false, requires2FA: true, methods, ...challenge });
+      const { user: authUser, methods } = await getEnabled2FAMethods(String(dbUser._id));
+      if (authUser && methods.length > 0) {
+        const challenge = await create2FAChallenge(authUser, methods, "password");
+        return res.json({ requires2FA: true, methods, ...challenge });
       }
       return new Promise<void>((resolve) => {
         req.logIn(dbUser, (err) => {
           if (err) { res.status(500).json({ error: "خطأ في تسجيل الدخول" }); return resolve(); }
           const u = dbUser.toObject();
           delete u.password;
-          res.json({ success: true, user: u });
-          resolve();
+          issueDeviceToken(String(dbUser._id || dbUser.id), String(req.headers["user-agent"] || ""))
+            .then(deviceToken => { res.json({ success: true, user: u, deviceToken }); })
+            .catch(() => { res.json({ success: true, user: u }); })
+            .finally(() => resolve());
         });
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── WhatsApp login approval ─────────────────────────────────────────────
+  // This is intentionally separate from the legacy numeric OTP flow: the
+  // approval is a short-lived, one-use challenge answered from the linked
+  // WhatsApp account with 1/قبول/approve or 2/رفض/deny.
+  app.post("/api/auth/whatsapp-login/start", otpLimiter, async (req, res) => {
+    return res.status(410).json({ error: "الدخول عبر واتساب متاح كتحقق ثنائي فقط" });
+    try {
+      const rawPhone = String(req.body?.phone || "").trim();
+      if (!rawPhone) return res.status(400).json({ error: "رقم واتساب مطلوب" });
+      const normPhone = normalisePhone(rawPhone);
+      const digits = normPhone.replace(/\D/g, "");
+      if (digits.length < 9) return res.status(400).json({ error: "رقم واتساب غير صالح" });
+
+      const { UserModel, WhatsAppLoginChallengeModel } = await import("./models");
+      const last9 = digits.slice(-9);
+      const user: any = await (UserModel as any).findOne({
+        $or: [
+          { phone: normPhone },
+          { whatsappNumber: normPhone },
+          { phone: { $regex: last9 } },
+          { whatsappNumber: { $regex: last9 } },
+        ],
+      }).select("_id fullName username phone whatsappNumber").lean();
+      if (!user) {
+        return res.status(404).json({ error: "رقم واتساب غير مرتبط بحساب QIROX", notRegistered: true });
+      }
+
+      await (WhatsAppLoginChallengeModel as any).updateMany(
+        { userId: user._id, status: "pending", usedAt: null },
+        { $set: { expiresAt: new Date() } },
+      );
+
+      const challengeId = crypto.randomBytes(24).toString("hex");
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await (WhatsAppLoginChallengeModel as any).create({
+        challengeId,
+        userId: user._id,
+        phoneDigits: digits,
+        status: "pending",
+        attempts: 0,
+        maxAttempts: 5,
+        expiresAt,
+      });
+
+      const { waModule } = await import("./whatsapp-module");
+      const name = user.fullName || user.username || "مستخدم";
+      const message =
+        `مرحباً ${name}،\n\n` +
+        `هناك محاولة لتسجيل الدخول إلى حسابك في QIROX.\n` +
+        `إذا كنت أنت، أرسل رقم 1 أو اكتب: قبول / approve\n` +
+        `لرفض الطلب، أرسل رقم 2 أو اكتب: رفض / deny\n\n` +
+        `صلاحية الطلب 10 دقائق. إذا لم تكن أنت، أرسل 2 ولا تشارك هذا الطلب مع أي شخص.\n\n` +
+        `Hello ${name},\n` +
+        `A QIROX login request was started for your account.\n` +
+        `Reply 1, قبول, or approve to allow it.\n` +
+        `Reply 2, رفض, or deny to reject it.\n` +
+        `This request expires in 10 minutes.`;
+      try {
+        await waModule.sendText(`${digits}@s.whatsapp.net`, message, false);
+      } catch (sendError: any) {
+        await (WhatsAppLoginChallengeModel as any).deleteOne({ challengeId });
+        return res.status(503).json({ error: "واتساب غير متصل حالياً. حاول مرة أخرى بعد قليل." });
+      }
+
+      res.json({ challengeId, expiresAt: expiresAt.toISOString(), phone: normPhone });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر إنشاء طلب دخول واتساب" });
+    }
+  });
+
+  app.get("/api/auth/whatsapp-login/status/:challengeId", whatsappLoginStatusLimiter, async (req, res) => {
+    return res.status(410).json({ error: "الدخول عبر واتساب متاح كتحقق ثنائي فقط" });
+    try {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOne({
+        challengeId: req.params.challengeId,
+      }).select("status expiresAt attempts maxAttempts usedAt");
+      if (!challenge) return res.status(404).json({ error: "طلب الدخول غير موجود" });
+      if (challenge.expiresAt <= new Date()) {
+        await (WhatsAppLoginChallengeModel as any).deleteOne({ _id: challenge._id });
+        return res.status(410).json({ error: "انتهت صلاحية طلب الدخول" });
+      }
+      res.json({
+        status: challenge.usedAt ? "used" : challenge.status,
+        expiresAt: challenge.expiresAt.toISOString(),
+        attemptsLeft: Math.max(0, challenge.maxAttempts - challenge.attempts),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر قراءة حالة طلب الدخول" });
+    }
+  });
+
+  app.post("/api/auth/whatsapp-login/complete", otpLimiter, async (req, res, next) => {
+    return res.status(410).json({ error: "الدخول عبر واتساب متاح كتحقق ثنائي فقط" });
+    try {
+      const challengeId = String(req.body?.challengeId || "");
+      if (!challengeId) return res.status(400).json({ error: "بيانات طلب الدخول ناقصة" });
+      const { WhatsAppLoginChallengeModel, UserModel } = await import("./models");
+      const challenge: any = await (WhatsAppLoginChallengeModel as any).findOneAndUpdate(
+        {
+          challengeId,
+          status: "approved",
+          usedAt: null,
+          expiresAt: { $gt: new Date() },
+        },
+        { $set: { usedAt: new Date() } },
+        { new: true },
+      );
+      if (!challenge) return res.status(409).json({ error: "لم تتم الموافقة أو تم استخدام طلب الدخول" });
+
+      const user = await (UserModel as any).findById(challenge.userId);
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const deviceToken = await issueDeviceToken(String(user._id), req.headers["user-agent"] || "");
+      req.logIn(user, (loginErr: any) => {
+        if (loginErr) return next(loginErr);
+        res.json({
+          ...sanitizeUser(user),
+          deviceToken,
+          redirectPath: dashboardForUser(user),
+        });
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "تعذر إكمال تسجيل الدخول" });
+    }
   });
 
   // ─── T002: Reviews & Ratings ──────────────────────────────────────────────────
@@ -20497,6 +21872,9 @@ ${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
 
   // ─── Corporate Mail Routes (see server/routes-mail.ts) ─────────────────────
   await registerMailRoutes(app);
+  registerDraftProjectRoutes(app, provisionApprovedOrder);
+  registerSaasBuilderRoutes(app);
+  registerProjectBrandingRoutes(app);
 
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -20589,10 +21967,38 @@ ${p.image ? `    <image:image>
 
   // LLMs.txt — AI Engine Optimization (AEO)
   // Served dynamically so it can include real-time data if needed
-  app.get("/llms.txt", (_req, res) => {
+  const safePublicPartnerUrl = (value: unknown): string | null => {
+    try {
+      const parsed = new URL(String(value || ""));
+      if (
+        !["http:", "https:"].includes(parsed.protocol)
+        || !parsed.hostname.includes(".")
+        || parsed.hostname.split(".").some(part => !part)
+      ) return null;
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  };
+
+  app.get("/llms.txt", async (_req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=86400");
-    res.sendFile("llms.txt", { root: process.cwd() + "/client/public" });
+    try {
+      const base = fs.readFileSync(path.join(process.cwd(), "client/public/llms.txt"), "utf8");
+      const partners = await storage.getPartners();
+      const partnerLines = partners.length
+        ? `\n\n## Partners / الشركاء\n${partners.map((partner: any) => {
+            const name = partner.nameAr ? `${partner.nameAr} / ${partner.name}` : partner.name;
+            const website = safePublicPartnerUrl(partner.websiteUrl) ? ` — Website: ${safePublicPartnerUrl(partner.websiteUrl)}` : "";
+            const category = partner.category ? ` — Category: ${partner.category}` : "";
+            return `- ${name}${category}${website}`;
+          }).join("\n")}`
+        : "\n\n## Partners / الشركاء\n- لا توجد بيانات شركاء منشورة حالياً / No publicly listed partners at this time.";
+      res.send(base + partnerLines);
+    } catch {
+      res.sendFile("llms.txt", { root: process.cwd() + "/client/public" });
+    }
   });
 
   // AI Plugin Discovery — for ChatGPT plugins and AI agents
@@ -20613,8 +22019,12 @@ ${p.image ? `    <image:image>
   });
 
   // Public company info API — for AI agents and third-party integrations
-  app.get("/api/public/info", (_req, res) => {
+  app.get("/api/public/info", async (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=3600");
+    let partners: any[] = [];
+    try {
+      partners = await storage.getPartners();
+    } catch {}
     res.json({
       company: {
         name: "Qirox Studio",
@@ -20670,6 +22080,13 @@ ${p.image ? `    <image:image>
         "عيادات وصحة", "عقارات", "رياضة ولياقة", "شركات ومؤسسات",
         "فعاليات وضيافة", "تقنية وشركات ناشئة"
       ],
+      partners: partners.map((partner: any) => ({
+        name: partner.name,
+        nameAr: partner.nameAr || partner.name,
+        website: safePublicPartnerUrl(partner.websiteUrl),
+        category: partner.category || null,
+        relatedService: partner.relatedService || null,
+      })),
       pricing: {
         currency: "SAR",
         note: "أسعار تنافسية جداً مقارنة بالسوق السعودي — تقسيط متاح",
@@ -22191,19 +23608,12 @@ export async function registerInstallmentRoutes(app: Express) {
       req.on("close", () => { clearInterval(hb); waModule.removeSSEClient(res); });
     });
 
-    // QR image fallback — returns current QR as base64 PNG (poll every 2s while connecting)
+    // QR polling fallback returns the raw WhatsApp challenge, matching the
+    // QRCodeCanvas value used by the client. Returning a PNG data URL here
+    // causes the client to try encoding the image as another QR payload.
     app.get("/api/admin/whatsapp/qr-image", async (req, res) => {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
-      const { status, qr } = waModule.getStatus();
-      if (!qr) return res.json({ status, qr: null });
-      try {
-        const QRCode = await import("qrcode" as any);
-        const dataUrl = await QRCode.toDataURL(qr, { width: 280, margin: 2, color: { dark: "#000000", light: "#ffffff" } });
-        res.json({ status, qr: dataUrl });
-      } catch {
-        // fallback: send raw QR string so frontend can render it
-        res.json({ status, qr });
-      }
+      res.json(waModule.getStatus());
     });
 
     app.get("/api/admin/whatsapp/status", (req, res) => {
@@ -22221,6 +23631,16 @@ export async function registerInstallmentRoutes(app: Express) {
       if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
       await waModule.shutdown(true);
       res.json({ ok: true });
+    });
+
+    app.post("/api/admin/whatsapp/reset-session", async (req, res) => {
+      if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any)?.role)) return res.sendStatus(403);
+      try {
+        const status = await waModule.resetAndConnect();
+        res.json({ ok: true, status });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر مسح جلسة واتساب القديمة" });
+      }
     });
 
     app.get("/api/admin/whatsapp/chats", async (req, res) => {
@@ -22254,18 +23674,11 @@ export async function registerInstallmentRoutes(app: Express) {
       if (!phone || !text?.trim()) return res.status(400).json({ error: "phone و text مطلوبان" });
       try {
         const normPhone = String(phone).replace(/\D/g, "");
-        if (normPhone.length < 7 || normPhone.length > 15) {
-          return res.status(400).json({ error: "رقم هاتف غير صالح" });
-        }
+        if (!normPhone) return res.status(400).json({ error: "رقم هاتف غير صالح" });
         const chatId = `${normPhone}@s.whatsapp.net`;
         await waModule.sendText(chatId, text.trim(), false);
-        res.json({ ok: true, sent: true, chatId });
-      } catch (e: any) {
-        const status = e?.code === "WHATSAPP_NOT_REGISTERED" ? 422
-          : e?.code === "WHATSAPP_CHECK_FAILED" ? 503
-          : 500;
-        res.status(status).json({ ok: false, sent: false, code: e?.code, error: e.message });
-      }
+        res.json({ ok: true, chatId });
+      } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
 
     app.post("/api/admin/whatsapp/chats/:chatId/ai-toggle", async (req, res) => {
@@ -22323,149 +23736,15 @@ export async function registerInstallmentRoutes(app: Express) {
       } catch (e: any) { res.status(500).json({ error: e.message }); }
     });
 
-    // Manual marketing is opt-in and remains hidden unless its feature flag is enabled.
-    app.get("/api/whatsapp/crm/manual-marketing/campaigns", async (req, res) => {
-      const role = (req.user as any)?.role;
-      if (!req.isAuthenticated() || !["admin", "manager", "sales_manager", "sales", "marketing", "data_entry"].includes(role)) {
-        return res.sendStatus(403);
-      }
-      if (!["true", "1", "yes", "on"].includes(String(process.env.FEATURE_MANUAL_MARKETING || "").toLowerCase().trim())) {
-        return res.sendStatus(404);
-      }
-      try {
-        const { ManualMarketingCampaignModel } = await import("./models/whatsapp");
-        const campaigns = await ManualMarketingCampaignModel.find()
-          .sort({ createdAt: -1 })
-          .limit(100)
-          .populate("sentBy", "fullName username")
-          .lean();
-        res.json(campaigns);
-      } catch {
-        res.status(500).json({ error: "تعذر تحميل سجل التسويق" });
-      }
-    });
-
-    app.post("/api/whatsapp/crm/manual-marketing/send", async (req, res) => {
-      const actor: any = req.user;
-      const role = actor?.role;
-      if (!req.isAuthenticated() || !["admin", "manager", "sales_manager", "sales", "marketing", "data_entry"].includes(role)) {
-        return res.sendStatus(403);
-      }
-      if (!["true", "1", "yes", "on"].includes(String(process.env.FEATURE_MANUAL_MARKETING || "").toLowerCase().trim())) {
-        return res.sendStatus(404);
-      }
-
-      const rawPhone = typeof req.body?.phone === "string" ? req.body.phone.trim() : "";
-      let phone = rawPhone.replace(/\D/g, "");
-      if (phone.startsWith("00")) phone = phone.slice(2);
-      if (phone.startsWith("05") && phone.length === 10) phone = `966${phone.slice(1)}`;
-      else if (phone.startsWith("5") && phone.length === 9) phone = `966${phone}`;
-      const businessName = typeof req.body?.businessName === "string"
-        ? req.body.businessName.trim().replace(/[\r\n]+/g, " ").slice(0, 80)
-        : "";
-      const sector = typeof req.body?.sector === "string" ? req.body.sector.trim().slice(0, 40) : "";
-      const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
-      const consentConfirmed = req.body?.consentConfirmed === true;
-      const confirmRepeat = req.body?.confirmRepeat === true;
-      const supportedSectors = new Set([
-        "restaurant", "ecommerce", "education", "healthcare", "realestate",
-        "corporate", "fitness", "beauty", "events", "marketing", "ai",
-      ]);
-      const idempotencyKey = typeof req.body?.idempotencyKey === "string"
-        ? req.body.idempotencyKey.trim().slice(0, 100)
-        : "";
-      const senderId = actor?._id || actor?.id;
-
-      if (phone.length < 9 || phone.length > 15) return res.status(400).json({ error: "أدخل رقم هاتف صالحًا" });
-      if (!supportedSectors.has(sector)) return res.status(400).json({ error: "اختر قطاع العميل" });
-      if (!message || message.length > 2000) return res.status(400).json({ error: "الرسالة مطلوبة وبحد أقصى 2000 حرف" });
-      if (!consentConfirmed) return res.status(400).json({ error: "يجب تأكيد موافقة العميل على استلام الرسالة" });
-      if (!idempotencyKey || idempotencyKey.length < 8) return res.status(400).json({ error: "تعذر تأكيد طلب الإرسال؛ أعد المحاولة" });
-      if (!senderId) return res.sendStatus(401);
-
-      const { ManualMarketingCampaignModel, ensureManualMarketingCampaignIndexes } = await import("./models/whatsapp");
-      try {
-        await ensureManualMarketingCampaignIndexes();
-      } catch {
-        return res.status(503).json({ ok: false, sent: false, error: "تعذر تجهيز سجل الإرسال؛ لم تُرسل الرسالة." });
-      }
-      const previousCampaign = await ManualMarketingCampaignModel.findOne({
-        normalizedPhone: phone,
-        status: "sent",
-      }).sort({ sentAt: -1 }).lean();
-      if (previousCampaign && !confirmRepeat) {
-        return res.status(409).json({
-          ok: false,
-          sent: false,
-          error: "سبق إرسال رسالة لهذا الرقم. أكد أن المتابعة الجديدة مقصودة قبل الإرسال.",
-        });
-      }
-      let campaign: any;
-      try {
-        campaign = await ManualMarketingCampaignModel.create({
-          normalizedPhone: phone,
-          businessName,
-          sector,
-          message,
-          status: "sending",
-          consentConfirmed: true,
-          idempotencyKey,
-          sentBy: senderId,
-        });
-      } catch (error: any) {
-        if (error?.code === 11000) {
-          const previous: any = await ManualMarketingCampaignModel.findOne({ sentBy: senderId, idempotencyKey }).lean();
-          return res.status(409).json({
-            ok: false,
-            sent: previous?.status === "sent",
-            error: previous?.status === "sent"
-              ? "تم إرسال هذا الطلب مسبقًا؛ لن نكرر الرسالة."
-              : "طلب الإرسال موجود مسبقًا؛ تحقق من السجل قبل إعادة المحاولة.",
-          });
-        }
-        return res.status(500).json({ ok: false, sent: false, error: "تعذر تجهيز سجل الإرسال؛ لم تُرسل الرسالة." });
-      }
-
-      let acceptedByWhatsApp = false;
-      try {
-        const { waModule } = await import("./whatsapp-module");
-        await waModule.sendText(`${phone}@s.whatsapp.net`, message, false);
-        acceptedByWhatsApp = true;
-        await ManualMarketingCampaignModel.updateOne(
-          { _id: campaign._id },
-          { $set: { status: "sent", sentAt: new Date() } },
-        );
-        res.json({ ok: true, sent: true, campaignId: String(campaign._id) });
-      } catch (error: any) {
-        const code = error?.code || "";
-        const errorMessage = error?.message || "تعذر إرسال الرسالة";
-        await ManualMarketingCampaignModel.updateOne(
-          { _id: campaign._id },
-          { $set: {
-            status: acceptedByWhatsApp ? "sent" : "failed",
-            ...(acceptedByWhatsApp ? { sentAt: new Date() } : { failureCode: code, failureMessage: errorMessage.slice(0, 300) }),
-          } },
-        ).catch(() => {});
-        if (acceptedByWhatsApp) {
-          return res.json({
-            ok: true,
-            sent: true,
-            campaignId: String(campaign._id),
-            warning: "قبل واتساب الرسالة، لكن تعذر تحديث السجل. لا تعِد الإرسال.",
-          });
-        }
-        const status = code === "WHATSAPP_NOT_REGISTERED" ? 422
-          : code === "WHATSAPP_CHECK_FAILED" ? 503
-          : errorMessage.includes("غير متصل") ? 503
-          : 502;
-        res.status(status).json({ ok: false, sent: false, code, error: errorMessage });
-      }
-    });
-
     // Employee CRM client directory — profile/contact fields only, never admin settings.
+    const whatsappCrmAllowedRoles = [
+      "admin", "manager", "accountant", "sales_manager", "sales", "developer",
+      "designer", "support", "merchant", "hr", "marketing", "content", "data_entry",
+    ];
+
     app.get("/api/whatsapp/crm/clients", async (req, res) => {
       const role = (req.user as any)?.role;
-      if (!req.isAuthenticated() || !["admin", ...staffRoles].includes(role)) return res.sendStatus(403);
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
       try {
         const { UserModel } = await import("./models");
         const clients = await UserModel.find({ role: "client" })
@@ -22475,6 +23754,486 @@ export async function registerInstallmentRoutes(app: Express) {
         res.json(clients);
       } catch {
         res.status(500).json({ error: "تعذر تحميل قائمة العملاء" });
+      }
+    });
+
+    app.get("/api/whatsapp/crm/connection-status", (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      res.json({ connected: waModule.getStatus().status === "connected" });
+    });
+
+    app.get("/api/whatsapp/crm/manual-marketing/daily-quota", async (req, res) => {
+      const actor: any = req.user;
+      const role = actor?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      try {
+        const { UserModel } = await import("./models");
+        const { getSaudiDayWindow, getManualMarketingDailyCounts } = await import("./manual-marketing-quota");
+        const { dayKey, start, end } = getSaudiDayWindow();
+        const counts = await getManualMarketingDailyCounts(start, end);
+        const actorId = String(actor?._id || actor?.id || "");
+        const currentUser: any = await UserModel.findById(actorId)
+          .select("role fullName manualMarketingDailyQuota")
+          .lean();
+        if (!currentUser) return res.sendStatus(401);
+        const quota = Math.max(0, Number(currentUser.manualMarketingDailyQuota) || 0);
+        const sent = counts.get(actorId) || 0;
+        const canManage = role === "admin" || role === "manager";
+        let staff: any[] = [];
+        if (canManage) {
+          const employees: any[] = await UserModel.find({
+            role: "data_entry",
+            employmentStatus: { $ne: "terminated" },
+          }).select("fullName username manualMarketingDailyQuota").sort({ fullName: 1 }).lean();
+          staff = employees.map(employee => {
+            const employeeQuota = Math.max(0, Number(employee.manualMarketingDailyQuota) || 0);
+            const employeeSent = counts.get(String(employee._id)) || 0;
+            return {
+              id: String(employee._id),
+              name: employee.fullName || employee.username,
+              username: employee.username,
+              quota: employeeQuota,
+              sent: employeeSent,
+              remaining: employeeQuota ? Math.max(0, employeeQuota - employeeSent) : null,
+            };
+          });
+        }
+        res.json({
+          dayKey,
+          sent,
+          quota,
+          remaining: quota ? Math.max(0, quota - sent) : null,
+          completed: Boolean(quota && sent >= quota),
+          canManage,
+          staff,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحميل عداد التسويق اليومي" });
+      }
+    });
+
+    app.patch("/api/whatsapp/crm/manual-marketing/daily-quota/:employeeId", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !["admin", "manager"].includes(role)) return res.sendStatus(403);
+      if (!/^[\da-f]{24}$/i.test(req.params.employeeId)) return res.status(400).json({ error: "معرّف الموظف غير صالح" });
+      const dailyQuota = req.body?.dailyQuota;
+      if (!Number.isInteger(dailyQuota) || dailyQuota < 0 || dailyQuota > 10000) {
+        return res.status(400).json({ error: "أدخل حصة صحيحة من 0 إلى 10000 رسالة" });
+      }
+      try {
+        const { UserModel } = await import("./models");
+        const employee: any = await UserModel.findOneAndUpdate(
+          { _id: req.params.employeeId, role: "data_entry", employmentStatus: { $ne: "terminated" } },
+          { $set: { manualMarketingDailyQuota: dailyQuota } },
+          { new: true, runValidators: true },
+        ).select("fullName username manualMarketingDailyQuota").lean();
+        if (!employee) return res.status(404).json({ error: "لم يتم العثور على موظف Data Entry نشط" });
+        void import("./manual-marketing-quota")
+          .then(({ notifyManualMarketingQuotaCompletion }) => notifyManualMarketingQuotaCompletion(String(employee._id)))
+          .catch((error: any) => console.error("[ManualMarketingQuota] Quota-change check failed:", error?.message || error));
+        res.json({
+          id: String(employee._id),
+          name: employee.fullName || employee.username,
+          dailyQuota: Math.max(0, Number(employee.manualMarketingDailyQuota) || 0),
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر حفظ حصة الموظف" });
+      }
+    });
+
+    app.get("/api/whatsapp/crm/manual-marketing/leads", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      try {
+        const { ManualMarketingLeadModel, ensureManualMarketingLeadStore } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        const limit = Math.min(2000, Math.max(1, Number(req.query.limit) || 1000));
+        const skip = Math.max(0, Number(req.query.skip) || 0);
+        const q = String(req.query.q || "").trim();
+        const filter: any = {};
+        if (["sent", "excluded", "converted"].includes(String(req.query.status || ""))) {
+          filter.leadStatus = String(req.query.status);
+        }
+        if (q) {
+          const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const digits = normalizeManualMarketingPhone(q);
+          filter.$or = [
+            { businessName: { $regex: escaped, $options: "i" } },
+            { sector: { $regex: escaped, $options: "i" } },
+            { lastReplyPreview: { $regex: escaped, $options: "i" } },
+            { lastReplyContactName: { $regex: escaped, $options: "i" } },
+            { normalizedPhone: { $regex: digits || escaped, $options: "i" } },
+          ];
+        }
+        const [leads, total] = await Promise.all([
+          ManualMarketingLeadModel.find(filter).sort({ sentAt: -1, updatedAt: -1 }).skip(skip).limit(limit).lean(),
+          ManualMarketingLeadModel.countDocuments(filter),
+        ]);
+        res.json({
+          leads: leads.map((lead: any) => ({ ...lead, id: String(lead._id) })),
+          total,
+          hasMore: total > skip + leads.length,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحميل العملاء المحتملين" });
+      }
+    });
+
+    app.get("/api/whatsapp/crm/manual-marketing/leads/lookup", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      const phone = normalizeManualMarketingPhone(req.query.phone);
+      if (!phone) return res.status(400).json({ error: "أدخل رقم واتساب صالحًا" });
+      try {
+        const { ManualMarketingLeadModel, ensureManualMarketingLeadStore } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        const lead: any = await ManualMarketingLeadModel.findOne({ normalizedPhone: phone }).lean();
+        res.json({
+          lead: lead ? { ...lead, id: String(lead._id) } : null,
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر التحقق من سجل الرقم" });
+      }
+    });
+
+    app.get("/api/whatsapp/crm/manual-marketing/leads/:id", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      if (!/^[\da-f]{24}$/i.test(req.params.id)) return res.status(400).json({ error: "معرّف العميل المحتمل غير صالح" });
+      try {
+        const { ManualMarketingLeadModel, ensureManualMarketingLeadStore } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        const lead: any = await ManualMarketingLeadModel.findById(req.params.id).lean();
+        if (!lead) return res.sendStatus(404);
+        res.json({ ...lead, id: String(lead._id) });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحميل بيانات العميل المحتمل" });
+      }
+    });
+
+    app.patch("/api/whatsapp/crm/manual-marketing/leads/:id/status", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      const leadStatus = req.body?.leadStatus;
+      if (!["sent", "excluded"].includes(leadStatus)) {
+        return res.status(400).json({ error: "اختر حالة صالحة للعميل المحتمل" });
+      }
+      if (!/^[\da-f]{24}$/i.test(req.params.id)) return res.status(400).json({ error: "معرّف العميل المحتمل غير صالح" });
+      try {
+        const { ManualMarketingLeadModel, ManualMarketingCampaignModel, ensureManualMarketingLeadStore } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        const existing: any = await ManualMarketingLeadModel.findById(req.params.id).lean();
+        if (!existing) return res.sendStatus(404);
+        if (existing.leadStatus === "converted") {
+          return res.status(409).json({ error: "هذا السجل مرتبط بعميل فعلي ولا يمكن تغيير حالته" });
+        }
+        if (leadStatus === "sent" && existing.exclusionSource === "recipient_opt_out") {
+          return res.status(409).json({ error: "طلب هذا الرقم إيقاف الرسائل؛ لا يمكن إعادة تفعيله للتسويق" });
+        }
+        const now = new Date();
+        const actorId = (req.user as any)?._id || (req.user as any)?.id;
+        const updated: any = await ManualMarketingLeadModel.findByIdAndUpdate(
+          req.params.id,
+          {
+            $set: {
+              leadStatus,
+              exclusionSource: leadStatus === "excluded" ? "manual" : null,
+              excludedAt: leadStatus === "excluded" ? now : null,
+              statusUpdatedAt: now,
+              statusUpdatedBy: actorId || null,
+            },
+          },
+          { new: true, runValidators: true },
+        ).lean();
+        if (leadStatus === "excluded") {
+          await ManualMarketingCampaignModel.updateMany(
+            { normalizedPhone: existing.normalizedPhone, status: { $in: ["active", "sending"] } },
+            { $set: { status: "opted_out" } },
+          );
+          await waModule.setHumanOverride(existing.chatId, 999 * 60).catch(() => {});
+        }
+        res.json({ ...updated, id: String(updated._id) });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحديث حالة العميل المحتمل" });
+      }
+    });
+
+    app.post("/api/whatsapp/crm/manual-marketing/leads/:id/convert", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+      if (!/^[\da-f]{24}$/i.test(req.params.id)) return res.status(400).json({ error: "معرّف العميل المحتمل غير صالح" });
+      try {
+        const { UserModel } = await import("./models");
+        const { ManualMarketingLeadModel, ManualMarketingCampaignModel, ensureManualMarketingLeadStore } = await import("./models/whatsapp");
+        await ensureManualMarketingLeadStore();
+        const lead: any = await ManualMarketingLeadModel.findById(req.params.id).lean();
+        if (!lead) return res.sendStatus(404);
+
+        let client: any = lead.convertedClientId
+          ? await UserModel.findOne({ _id: lead.convertedClientId, role: "client" }).select("fullName username email phone").lean()
+          : null;
+        if (!client) {
+          const phoneVariants = [lead.normalizedPhone, `+${lead.normalizedPhone}`, `00${lead.normalizedPhone}`];
+          const candidates: any[] = await UserModel.find({
+            role: "client",
+            $or: [
+              { phone: { $in: phoneVariants } },
+              { whatsappNumber: { $in: phoneVariants } },
+            ],
+          }).select("fullName username email phone whatsappNumber").limit(20).lean();
+          client = candidates.find((candidate) =>
+            [candidate.phone, candidate.whatsappNumber]
+              .some((value) => normalizeManualMarketingPhone(value) === lead.normalizedPhone),
+          ) || null;
+        }
+
+        if (!client) {
+          if (lead.leadStatus === "converted") {
+            return res.status(409).json({
+              error: "سجل العميل معلّم كعميل فعلي لكن حسابه غير متاح. راجع مسؤول النظام قبل إنشاء حساب جديد.",
+            });
+          }
+          return res.status(409).json({
+            requiresNewClient: true,
+            error: "لا يوجد حساب عميل بهذا الرقم. أكمل إنشاء حساب العميل وطلبه لربطه بهذا السجل.",
+            createClientUrl: `/employee/new-order?manualMarketingLeadId=${encodeURIComponent(String(lead._id))}`,
+          });
+        }
+
+        const now = new Date();
+        const actorId = (req.user as any)?._id || (req.user as any)?.id;
+        const updated: any = await ManualMarketingLeadModel.findByIdAndUpdate(
+          req.params.id,
+          {
+            $set: {
+              leadStatus: "converted",
+              convertedClientId: client._id,
+              convertedAt: now,
+              convertedBy: actorId || null,
+              statusUpdatedAt: now,
+              statusUpdatedBy: actorId || null,
+            },
+          },
+          { new: true },
+        ).lean();
+        await ManualMarketingCampaignModel.updateMany(
+          { normalizedPhone: lead.normalizedPhone, status: { $in: ["active", "sending"] } },
+          { $set: { status: "superseded" } },
+        );
+        res.json({
+          ok: true,
+          lead: { ...updated, id: String(updated._id) },
+          client: {
+            id: String(client._id),
+            fullName: client.fullName,
+            username: client.username,
+            email: client.email,
+            phone: client.phone,
+          },
+        });
+      } catch (error: any) {
+        res.status(500).json({ error: error?.message || "تعذر تحويل العميل المحتمل" });
+      }
+    });
+
+    app.post("/api/whatsapp/crm/manual-marketing/send", async (req, res) => {
+      const role = (req.user as any)?.role;
+      if (!req.isAuthenticated() || !whatsappCrmAllowedRoles.includes(role)) return res.sendStatus(403);
+
+      const normalizedPhone = normalizeManualMarketingPhone(req.body?.phone);
+      const sector = req.body?.sector;
+      const rawCountryCode = req.body?.countryCode;
+      const countryCode = rawCountryCode == null
+        ? "SA"
+        : typeof rawCountryCode === "string"
+          ? rawCountryCode.trim().toUpperCase()
+          : "";
+      const language = req.body?.language == null ? "ar" : req.body.language;
+      const businessName = typeof req.body?.businessName === "string"
+        ? req.body.businessName.replace(/[\r\n]+/g, " ").trim().slice(0, 80)
+        : "";
+      const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+      const confirmRepeat = req.body?.confirmRepeat === true;
+      const senderId = (req.user as any)?._id || (req.user as any)?.id;
+
+      if (!normalizedPhone) return res.status(400).json({ error: "أدخل رقم واتساب صالحًا" });
+      if (!senderId) return res.status(401).json({ error: "تعذر تحديد حساب المرسل. سجّل الدخول مجددًا ثم حاول." });
+      if (!isManualMarketingSector(sector)) return res.status(400).json({ error: "اختر قطاعًا صحيحًا" });
+      if (!/^[A-Z]{2}$/.test(countryCode)) return res.status(400).json({ error: "اختر بلدًا صحيحًا للعميل" });
+      if (!["ar", "en"].includes(language)) return res.status(400).json({ error: "اختر لغة رسالة صحيحة" });
+      if (req.body?.consentConfirmed !== true) {
+        return res.status(400).json({ error: "يجب تأكيد موافقة العميل على استلام الرسالة" });
+      }
+      if (!message || message.length > 2000) {
+        return res.status(400).json({ error: "الرسالة مطلوبة ويجب ألا تتجاوز 2000 حرف" });
+      }
+
+      const chatId = `${normalizedPhone}@s.whatsapp.net`;
+      const sendAttemptId = crypto.randomUUID();
+      let campaign: any;
+      let marketingMessageDelivered = false;
+      let logoAttached = false;
+      let logoWarning = "";
+      try {
+        const {
+          ManualMarketingCampaignModel,
+          ManualMarketingLeadModel,
+          ensureManualMarketingIndexes,
+          ensureManualMarketingLeadStore,
+        } = await import("./models/whatsapp");
+        await ensureManualMarketingIndexes();
+        await ensureManualMarketingLeadStore();
+        const existingLead: any = await ManualMarketingLeadModel.findOne({ normalizedPhone }).lean();
+        if (existingLead?.leadStatus === "excluded") {
+          return res.status(409).json({
+            error: existingLead.exclusionSource === "recipient_opt_out"
+              ? "هذا الرقم طلب إيقاف الرسائل؛ لن نرسل إليه مرة أخرى."
+              : "هذا الرقم مستبعد من التواصل. غيّر حالته من صفحة العملاء المحتملين إذا أعاد العميل فتح التواصل.",
+            lead: { ...existingLead, id: String(existingLead._id) },
+          });
+        }
+        if (existingLead?.leadStatus === "converted") {
+          return res.status(409).json({
+            error: "هذا الرقم مرتبط بعميل فعلي بالفعل، ولن نرسل له رسالة تسويقية.",
+            lead: { ...existingLead, id: String(existingLead._id) },
+          });
+        }
+        if (existingLead?.leadStatus === "sent" && !confirmRepeat) {
+          return res.status(409).json({
+            error: "سبق إرسال رسالة لهذا الرقم. فعّل تأكيد إرسال المتابعة إذا كان التواصل الجديد مقصودًا.",
+            lead: { ...existingLead, id: String(existingLead._id) },
+          });
+        }
+        if (waModule.getStatus().status !== "connected") {
+          return res.status(503).json({ error: "حساب واتساب QIROX غير متصل. اطلب من المسؤول إعادة توصيله ثم أعد الإرسال." });
+        }
+        const logoCandidates = [
+          path.join(process.cwd(), "client", "public", "qirox-logo-full.png"),
+          path.join(process.cwd(), "dist", "public", "qirox-logo-full.png"),
+        ];
+        const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
+        if (!logoPath) throw new Error("QIROX marketing logo asset is unavailable");
+        const logoBuffer = await fs.promises.readFile(logoPath);
+
+        campaign = await ManualMarketingCampaignModel.create({
+          normalizedPhone,
+          chatId,
+          sector,
+          countryCode,
+          language,
+          businessName,
+          message,
+          status: "sending",
+          sendAttemptId,
+          sendStartedAt: new Date(),
+          sentBy: senderId,
+          recipientConsentConfirmed: true,
+        });
+
+        if (message.length <= 900) {
+          await waModule.sendImageBuffer(chatId, logoBuffer, message, false);
+          marketingMessageDelivered = true;
+          logoAttached = true;
+        } else {
+          await waModule.sendText(chatId, message, false);
+          marketingMessageDelivered = true;
+          try {
+            await waModule.sendImageBuffer(chatId, logoBuffer, "QIROX Studio — Build systems. Stay human.", false);
+            logoAttached = true;
+          } catch (logoError: any) {
+            logoWarning = "وصل نص الرسالة، لكن تعذّر إرفاق شعار QIROX. لا تعِد إرسال النص حتى لا يتكرر.";
+            console.error("[ManualMarketing] Message delivered, QIROX logo attachment failed:", logoError?.message || logoError);
+          }
+        }
+
+        await ManualMarketingCampaignModel.updateOne(
+          { _id: campaign._id, sendAttemptId },
+          { $set: { status: "active", sentAt: new Date() } },
+        ).catch((error: any) => {
+          // Keep a successfully delivered campaign in "sending" if the status
+          // update fails; incoming-reply routing also recognizes that state.
+          console.error("[ManualMarketing] Message sent but campaign status update failed:", error?.message || error);
+        });
+        await waModule.setHumanOverride(chatId, 999 * 60).catch((error: any) => {
+          // Campaign reply handling independently pauses AI for any incoming reply.
+          console.error("[ManualMarketing] Could not pause AI after sending:", error?.message || error);
+        });
+        const sentAt = new Date();
+        const savedLead: any = await ManualMarketingLeadModel.findOneAndUpdate(
+          { normalizedPhone },
+          {
+            $set: {
+              chatId,
+              sector,
+              countryCode,
+              language,
+              businessName,
+              leadStatus: "sent",
+              exclusionSource: null,
+              latestCampaignId: campaign._id,
+              sentAt,
+              sentBy: senderId,
+              recipientConsentConfirmed: true,
+              excludedAt: null,
+              statusUpdatedAt: sentAt,
+              statusUpdatedBy: senderId,
+            },
+          },
+          { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
+        ).lean();
+        await ManualMarketingCampaignModel.updateMany(
+          {
+            normalizedPhone,
+            _id: { $ne: campaign._id },
+            status: { $in: ["active", "opted_out"] },
+          },
+          { $set: { status: "superseded" } },
+        ).catch((error: any) => {
+          console.error("[ManualMarketing] Could not archive an older campaign:", error?.message || error);
+        });
+        void import("./manual-marketing-quota")
+          .then(({ notifyManualMarketingQuotaCompletion }) => notifyManualMarketingQuotaCompletion(String(senderId), sentAt))
+          .catch((error: any) => console.error("[ManualMarketingQuota] Completion check failed:", error?.message || error));
+        res.json({
+          ok: true,
+          campaignId: String(campaign._id),
+          leadId: String(savedLead._id),
+          leadStatus: "sent",
+          logoAttached,
+          ...(logoWarning ? { warning: logoWarning } : {}),
+        });
+      } catch (error: any) {
+        if (campaign?._id) {
+          const { ManualMarketingCampaignModel } = await import("./models/whatsapp");
+          await ManualMarketingCampaignModel.updateOne(
+            { _id: campaign._id, sendAttemptId },
+            marketingMessageDelivered
+              ? { $set: { status: "active", sentAt: new Date() } }
+              : { $set: { status: "failed" } },
+          ).catch(() => {});
+        }
+        if (marketingMessageDelivered) {
+          res.json({
+            ok: true,
+            campaignId: campaign?._id ? String(campaign._id) : undefined,
+            logoAttached,
+            warning: "وصل نص الرسالة، لكن تعذّر إكمال الإجراء بعد الإرسال. لا تعِد إرسال النص حتى لا يتكرر.",
+          });
+          return;
+        }
+        const failureMessage = error?.message || "تعذر إرسال الرسالة";
+        const disconnected = failureMessage.includes("WhatsApp غير متصل") || waModule.getStatus().status !== "connected";
+        const campaignCreated = Boolean(campaign?._id);
+        const status = disconnected ? 503 : campaignCreated ? 502 : 500;
+        console.error("[ManualMarketing] WhatsApp send failed:", failureMessage);
+        res.status(status).json({
+          error: disconnected
+            ? "حساب واتساب QIROX غير متصل. اطلب من المسؤول إعادة توصيله ثم أعد الإرسال."
+            : campaignCreated
+              ? "لم يؤكد واتساب إرسال الرسالة. تحقق من الرقم واتصال الحساب قبل إعادة المحاولة."
+              : "تعذر تجهيز عملية الإرسال، ولم تُرسل الرسالة. حاول مرة أخرى.",
+        });
       }
     });
   }

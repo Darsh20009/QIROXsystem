@@ -5,6 +5,7 @@ export interface ConnectionSettings {
   prevMainDbUri?: string;
   qmeetDbUri?: string;
   prevQmeetDbUri?: string;
+  emailLogoUrl?: string;
   emailSiteUrl?: string;
 }
 
@@ -19,8 +20,12 @@ class ConnectionManager {
   private _prevQmeetConn: mongoose.Connection | null = null;
 
   private _emailSettings: {
+    senderName: string;
+    logoUrl: string;
     siteUrl: string;
   } = {
+    senderName: "",
+    logoUrl: "",
     siteUrl: "",
   };
 
@@ -81,6 +86,8 @@ class ConnectionManager {
     this._qmeetConn.on("error", (e) => console.error("[ConnManager] QMeet error:", e.message));
 
     this._emailSettings = {
+      senderName: "QIROX Studio",
+      logoUrl: process.env.EMAIL_LOGO_URL || "https://qiroxstudio.online/qirox-icon-nobg.png",
       siteUrl: process.env.EMAIL_SITE_URL || "https://qiroxstudio.online",
     };
   }
@@ -92,6 +99,7 @@ class ConnectionManager {
     if (settings.qmeetDbUri && settings.qmeetDbUri !== this._qmeetUri) {
       await this.switchQMeet(settings.qmeetDbUri, settings.prevQmeetDbUri);
     }
+    if (settings.emailLogoUrl !== undefined) this._emailSettings.logoUrl = settings.emailLogoUrl;
     if (settings.emailSiteUrl !== undefined) this._emailSettings.siteUrl = settings.emailSiteUrl;
   }
 

@@ -19,7 +19,6 @@
 
 import { connManager } from "../../connection-manager";
 import { cleanName }   from "../../utils";
-import { getMailboxPassword } from "../../mail-credentials";
 import type {
   EmailConfig,
   SmtpConfig,
@@ -62,23 +61,22 @@ type BadgeKey = keyof Pick<typeof S, "badgeBlack" | "badgeGreen" | "badgeBlue" |
 /**
  * Resolve the active email configuration from connManager and environment variables.
  *
- * Business rule: only the public site URL can be overridden at runtime.
- * Sender name and logo are fixed to QIROX; SMTP credentials come from env vars.
+ * Business rule: connManager settings take precedence over env vars for
+ * senderName / siteUrl / logoUrl. SMTP credentials always come from env vars.
  *
  * This function is called once per send operation so that dynamic
  * connection-settings changes take effect without a server restart.
  */
 export function resolveEmailConfig(): EmailConfig {
   const s = connManager.emailSettings;
-  const smtpUser = "noreply@qirox.online";
   return {
-    senderName: "QIROX",
+    senderName: s.senderName || "Qirox",
     siteUrl:    s.siteUrl || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online",
-    logoUrl:    "https://qiroxstudio.online/qirox-icon-nobg.png",
+    logoUrl:    s.logoUrl || process.env.EMAIL_LOGO_URL || `${process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/logo.png`,
     smtpHost:   process.env.CPANEL_SMTP_HOST || process.env.SMTP_HOST || "",
     smtpPort:   parseInt(process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465"),
-    smtpUser,
-    smtpPass:   getMailboxPassword(smtpUser, process.env.CPANEL_SMTP_PASS || process.env.SMTP_PASS || ""),
+    smtpUser:   process.env.CPANEL_SMTP_USER || process.env.SMTP_USER || "",
+    smtpPass:   process.env.CPANEL_SMTP_PASS || process.env.SMTP_PASS || "",
     smtpSecure: (process.env.CPANEL_SMTP_PORT || process.env.SMTP_PORT || "465") !== "587",
   };
 }
@@ -116,7 +114,7 @@ export function resolveAccountSmtpConfig(
     port,
     secure:     port !== 587,
     user:       account.emailAddress,
-    pass:       getMailboxPassword(account.emailAddress, account.password) || baseConfig.smtpPass,
+    pass:       account.password || baseConfig.smtpPass,
     senderName: account.displayName || baseConfig.senderName,
   };
 }

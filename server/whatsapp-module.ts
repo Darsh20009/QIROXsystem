@@ -7,8 +7,12 @@
  */
 
 import { EventEmitter } from "events";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { normalizeManualMarketingPhone } from "@shared/manual-marketing";
+import { normalizeArabicDigits } from "@shared/arabic-digits";
+import { enqueueWhatsAppSend } from "./whatsapp-send-queue";
 
 export type WAStatus = "disconnected" | "qr" | "connecting" | "connected";
 
@@ -28,44 +32,17 @@ const ARABIC_STATUS: Record<string, string> = {
   cancelled: "ملغى",
 };
 
+export const MANUAL_MARKETING_REPLY_CHAT_ID = "966532441566@s.whatsapp.net";
+
 function cleanText(value: unknown): string {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-export class WhatsAppRecipientCheckError extends Error {
-  constructor(
-    message: string,
-    public readonly code: "WHATSAPP_NOT_REGISTERED" | "WHATSAPP_CHECK_FAILED",
-  ) {
-    super(message);
-    this.name = "WhatsAppRecipientCheckError";
-  }
-}
-
-/** Query WhatsApp live before sending; an unknown check fails closed. */
-export async function verifyWhatsAppRecipient(sock: any, phoneRaw: string): Promise<void> {
-  const phone = String(phoneRaw || "").replace(/\D/g, "");
-  try {
-    const results = await sock.onWhatsApp(`${phone}@s.whatsapp.net`);
-    if (!Array.isArray(results)) {
-      throw new WhatsAppRecipientCheckError(
-        "تعذر التحقق من الرقم عبر واتساب؛ لم تُرسل الرسالة.",
-        "WHATSAPP_CHECK_FAILED",
-      );
-    }
-    if (!results.some((result: any) => result?.exists === true)) {
-      throw new WhatsAppRecipientCheckError(
-        "لم تُرسل الرسالة: العميل لا يملك حساب واتساب بهذا الرقم.",
-        "WHATSAPP_NOT_REGISTERED",
-      );
-    }
-  } catch (error: any) {
-    if (error instanceof WhatsAppRecipientCheckError) throw error;
-    throw new WhatsAppRecipientCheckError(
-      "تعذر التحقق من الرقم عبر واتساب؛ لم تُرسل الرسالة.",
-      "WHATSAPP_CHECK_FAILED",
-    );
-  }
+function normalizeApprovalText(value: unknown): string {
+  return normalizeArabicDigits(cleanText(value).normalize("NFKC"))
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .toLocaleLowerCase("ar-SA");
 }
 
 function isArabicMessage(value: string): boolean {
@@ -81,12 +58,24 @@ function isBadArabicReply(reply: string, userMessage: string): boolean {
   return frenchMarkers.test(reply) || (arabicChars < 8 && latinChars > 12);
 }
 
+function phoneDigits(value: unknown): string {
+  return normalizeArabicDigits(String(value || "")).replace(/\D/g, "");
+}
+
+function samePhoneNumber(left: string, right: string): boolean {
+  const a = phoneDigits(left);
+  const b = phoneDigits(right);
+  if (a.length < 9 || b.length < 9) return false;
+  return a === b || a.endsWith(b) || b.endsWith(a);
+}
+
 // ── Singleton module ──────────────────────────────────────────────────────────
 class WhatsAppModule extends EventEmitter {
   private sock: any = null;
   private status: WAStatus = "disconnected";
   private qrString: string | null = null;
   private connectedPhone: string | null = null;
+  private connectionError: string | null = null;
   private pendingAITimers = new Map<string, ReturnType<typeof setTimeout>>();
   private sseClients = new Set<any>(); // res objects for SSE
 
@@ -94,6 +83,9 @@ class WhatsAppModule extends EventEmitter {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private disconnectAlertSent = false; // send email only once per outage
+  private authSaveQueue: Promise<void> = Promise.resolve();
+  private stopping = false;
+  private connectionGeneration = 0;
 
   // LID → real phone number mapping (WhatsApp new Linked Device ID system)
   private lidToPhone = new Map<string, string>(); // e.g. "179289265815634@lid" → "966532441566"
@@ -162,6 +154,7 @@ class WhatsAppModule extends EventEmitter {
       status: this.status,
       qr: this.qrString,
       phoneNumber: this.connectedPhone,
+      error: this.connectionError,
     };
   }
 
@@ -169,6 +162,10 @@ class WhatsAppModule extends EventEmitter {
   async autoConnect() {
     const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
     const credsFile = path.join(AUTH_DIR, "creds.json");
+    const generation = this.connectionGeneration;
+    const isCurrentStartup = () => this.connectionGeneration === generation && !this.stopping;
+    await this.restoreAuthState(AUTH_DIR, isCurrentStartup);
+    if (!isCurrentStartup()) return;
     if (!fs.existsSync(credsFile)) {
       console.log("[WA] No saved session found — skipping auto-connect. Scan QR from admin panel.");
       return;
@@ -182,20 +179,26 @@ class WhatsAppModule extends EventEmitter {
         return;
       }
     } catch {}
+    if (!isCurrentStartup()) return;
     console.log("[WA] Found saved session — auto-connecting...");
     this.connect().catch(e => console.error("[WA] Auto-connect failed:", e.message));
   }
 
   // ── Connection ────────────────────────────────────────────────────────────
   async connect() {
+    if (this.status === "connected" || this.status === "qr" || this.status === "connecting") return;
     // Prevent concurrent connect calls
     if (this.sock) await this.shutdown(false);
+    const generation = ++this.connectionGeneration;
+    const isCurrentConnection = () => this.connectionGeneration === generation && !this.stopping;
+    this.stopping = false;
 
     // Clear any pending reconnect timer
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
 
     this.status = "connecting";
     this.qrString = null;
+    this.connectionError = null;
     this.sendSSE({ type: "status", ...this.getStatus() });
 
     try {
@@ -203,22 +206,38 @@ class WhatsAppModule extends EventEmitter {
       // @whiskeysockets/baileys is ESM-only; require() breaks it at runtime on Render
       const _dyn = new Function("m", "return import(m)");
       const baileys = await _dyn("@whiskeysockets/baileys");
+      if (!isCurrentConnection()) return;
       const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = baileys;
 
       const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
       if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true });
+      await this.restoreAuthState(AUTH_DIR, isCurrentConnection);
+      if (!isCurrentConnection()) return;
 
       const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+      // Persist an existing local session as well, so a deployment that still
+      // has the auth directory seeds the durable MongoDB copy immediately.
+      await this.persistAuthState(AUTH_DIR);
+      if (!isCurrentConnection()) return;
 
       // Fetch latest WA version with a safe fallback — external HTTP, can fail
       let version: number[];
       try {
-        const v = await fetchLatestBaileysVersion();
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        const v = await Promise.race([
+          fetchLatestBaileysVersion(),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => reject(new Error("Timed out fetching the WhatsApp Web version")), 8000);
+          }),
+        ]).finally(() => {
+          if (timeout) clearTimeout(timeout);
+        });
         version = v.version;
-      } catch {
+      } catch (error: any) {
         version = [2, 3000, 1015901307]; // known-good fallback
-        console.warn("[WA] fetchLatestBaileysVersion failed — using fallback version");
+        console.warn("[WA] Could not fetch WhatsApp Web version; using fallback:", error?.message || error);
       }
+      if (!isCurrentConnection()) return;
 
       const silentLogger = {
         level: "silent",
@@ -231,7 +250,7 @@ class WhatsAppModule extends EventEmitter {
         }),
       };
 
-      this.sock = makeWASocket({
+      const socket = makeWASocket({
         version,
         auth: state,
         browser: Browsers.ubuntu("QIROX CRM"),
@@ -240,16 +259,30 @@ class WhatsAppModule extends EventEmitter {
         syncFullHistory: false,
         getMessage: async () => undefined,
       });
+      if (!isCurrentConnection()) {
+        try { socket.ws?.terminate?.(); } catch {}
+        try { socket.ev?.removeAllListeners?.(); } catch {}
+        return;
+      }
+      this.sock = socket;
 
-      this.sock.ev.on("creds.update", saveCreds);
+      socket.ev.on("creds.update", () => {
+        if (!isCurrentConnection()) return;
+        this.queueAuthPersistence(saveCreds, AUTH_DIR).catch((err) => {
+          console.error("[WA] Failed to persist auth state:", err?.message || err);
+        });
+      });
 
-      this.sock.ev.on("connection.update", (update: any) => {
+      socket.ev.on("connection.update", (update: any) => {
+        if (!isCurrentConnection()) return;
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
           this.qrString = qr;
           this.status = "qr";
+          this.connectionError = null;
           this.reconnectAttempts = 0; // QR appeared = fresh session, reset counter
+          console.info("[WA] QR challenge received");
           this.sendSSE({ type: "status", ...this.getStatus() });
         }
 
@@ -258,7 +291,9 @@ class WhatsAppModule extends EventEmitter {
           this.disconnectAlertSent = false; // reset alert so next outage triggers a new one
           this.status = "connected";
           this.qrString = null;
-          this.connectedPhone = this.sock?.user?.id?.split(":")?.[0] || null;
+          this.connectionError = null;
+          this.connectedPhone = socket?.user?.id?.split(":")?.[0] || null;
+          console.info("[WA] WhatsApp connection opened");
           this.sendSSE({ type: "status", ...this.getStatus() });
           this.updateSettingsPhone(this.connectedPhone);
         }
@@ -269,14 +304,22 @@ class WhatsAppModule extends EventEmitter {
 
           this.status = "disconnected";
           this.connectedPhone = null;
+          this.connectionError = loggedOut
+            ? "انتهت جلسة واتساب. استخدم «ربط جديد» لمسح الجلسة القديمة وإنشاء باركود."
+            : "انقطع اتصال واتساب. جرّب إعادة الاتصال أو إنشاء باركود جديد.";
+          console.warn("[WA] Connection closed:", {
+            code: code ?? null,
+            reason: (lastDisconnect?.error as any)?.message || "unknown",
+          });
           this.sendSSE({ type: "status", ...this.getStatus() });
 
-          if (loggedOut) {
+          if (loggedOut && !this.stopping) {
             // Logged out — clear auth, stop reconnecting
             this.reconnectAttempts = 0;
             const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
             try { if (fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch {}
-          } else {
+            this.clearPersistedAuthState().catch(() => {});
+           } else if (!this.stopping) {
             // Unlimited retries with exponential backoff (max 60s between attempts)
             this.reconnectAttempts++;
             const delay = Math.min(5000 * Math.min(this.reconnectAttempts, 12), 60_000);
@@ -297,7 +340,8 @@ class WhatsAppModule extends EventEmitter {
       });
 
       // ── Build LID → phone mapping from contacts ───────────────────────────
-      this.sock.ev.on("contacts.upsert", (contacts: any[]) => {
+      socket.ev.on("contacts.upsert", (contacts: any[]) => {
+        if (!isCurrentConnection()) return;
         for (const c of contacts) {
           // Primary JID is phone-based but also has a LID alias
           if (c.id?.endsWith("@s.whatsapp.net") && c.lid) {
@@ -311,7 +355,8 @@ class WhatsAppModule extends EventEmitter {
           }
         }
       });
-      this.sock.ev.on("contacts.update", (contacts: any[]) => {
+      socket.ev.on("contacts.update", (contacts: any[]) => {
+        if (!isCurrentConnection()) return;
         for (const c of contacts) {
           if (c.id?.endsWith("@s.whatsapp.net") && c.lid) {
             this.registerLID(c.lid, c.id.replace("@s.whatsapp.net", ""));
@@ -320,7 +365,8 @@ class WhatsAppModule extends EventEmitter {
       });
 
       // Wrap async message handler — never let it bubble up as UnhandledRejection
-      this.sock.ev.on("messages.upsert", ({ messages, type }: any) => {
+      socket.ev.on("messages.upsert", ({ messages, type }: any) => {
+        if (!isCurrentConnection()) return;
         if (type !== "notify") return;
         for (const msg of messages) {
           if (msg.key.fromMe) continue;
@@ -329,13 +375,17 @@ class WhatsAppModule extends EventEmitter {
       });
 
     } catch (err: any) {
+      if (!isCurrentConnection()) return;
       console.error("[WA] Connect error:", err.message);
       this.status = "disconnected";
+      this.connectionError = String(err?.message || "تعذر بدء اتصال واتساب").slice(0, 240);
       this.sendSSE({ type: "status", ...this.getStatus() });
     }
   }
 
   async shutdown(clearAuth = true) {
+    this.connectionGeneration += 1;
+    this.stopping = true;
     // Cancel pending reconnect timer — prevents ghost reconnects after manual disconnect
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
     this.reconnectAttempts = 0;
@@ -355,11 +405,117 @@ class WhatsAppModule extends EventEmitter {
     this.status = "disconnected";
     this.qrString = null;
     this.connectedPhone = null;
+    if (clearAuth) this.connectionError = null;
     this.sendSSE({ type: "status", ...this.getStatus() });
 
+    // Finish any already-queued credential write before deleting saved auth,
+    // otherwise a queued Mongo write could recreate the session after reset.
+    await this.authSaveQueue.catch(() => {});
     if (clearAuth) {
       const AUTH_DIR = path.join(process.cwd(), ".whatsapp-auth");
       if (fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+      await this.clearPersistedAuthState();
+    }
+  }
+
+  async resetAndConnect() {
+    await this.shutdown(true);
+    await this.connect();
+    return this.getStatus();
+  }
+
+  private authEncryptionKey(): Buffer | null {
+    const secret = process.env.WA_AUTH_ENCRYPTION_KEY || process.env.SESSION_SECRET;
+    if (!secret) return null;
+    return crypto.createHash("sha256").update(secret).digest();
+  }
+
+  private encryptAuthPayload(payload: string): string | null {
+    const key = this.authEncryptionKey();
+    if (!key) return null;
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+    const encrypted = Buffer.concat([cipher.update(payload, "utf8"), cipher.final()]);
+    return [iv.toString("base64"), cipher.getAuthTag().toString("base64"), encrypted.toString("base64")].join(".");
+  }
+
+  private decryptAuthPayload(value: string): string | null {
+    try {
+      const key = this.authEncryptionKey();
+      if (!key) return null;
+      const [ivRaw, tagRaw, encryptedRaw] = value.split(".");
+      if (!ivRaw || !tagRaw || !encryptedRaw) return null;
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(ivRaw, "base64"));
+      decipher.setAuthTag(Buffer.from(tagRaw, "base64"));
+      return Buffer.concat([
+        decipher.update(Buffer.from(encryptedRaw, "base64")),
+        decipher.final(),
+      ]).toString("utf8");
+    } catch {
+      return null;
+    }
+  }
+
+  private async persistAuthState(authDir: string) {
+    const encryptedPayload = this.encryptAuthPayload(JSON.stringify(
+      Object.fromEntries(
+        fs.readdirSync(authDir)
+          .filter((name) => name.endsWith(".json"))
+          .map((name) => [name, fs.readFileSync(path.join(authDir, name), "utf8")]),
+      ),
+    ));
+    if (!encryptedPayload) {
+      console.warn("[WA] Auth persistence skipped: WA_AUTH_ENCRYPTION_KEY or SESSION_SECRET is missing");
+      return;
+    }
+    const { WAAuthStateModel } = await import("./models/whatsapp");
+    await WAAuthStateModel.findOneAndUpdate(
+      { name: "default" },
+      { $set: { payload: encryptedPayload } },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
+  }
+
+  private queueAuthPersistence(saveCreds: () => Promise<void>, authDir: string) {
+    this.authSaveQueue = this.authSaveQueue.catch(() => {}).then(async () => {
+      await saveCreds();
+      await this.persistAuthState(authDir);
+    });
+    return this.authSaveQueue;
+  }
+
+  private async clearPersistedAuthState() {
+    try {
+      const { WAAuthStateModel } = await import("./models/whatsapp");
+      await WAAuthStateModel.deleteOne({ name: "default" });
+    } catch (err: any) {
+      console.error("[WA] Failed to clear persisted auth state:", err?.message || err);
+      throw err;
+    }
+  }
+
+  private async restoreAuthState(authDir: string, isCurrent: () => boolean = () => true) {
+    if (fs.existsSync(path.join(authDir, "creds.json"))) return;
+    try {
+      const { WAAuthStateModel } = await import("./models/whatsapp");
+      const saved: any = await WAAuthStateModel.findOne({ name: "default" }).lean();
+      if (!isCurrent()) return;
+      if (!saved?.payload) return;
+      const decrypted = this.decryptAuthPayload(saved.payload);
+      if (!decrypted) {
+        console.warn("[WA] Saved auth state could not be decrypted with the current key");
+        return;
+      }
+      const files = JSON.parse(decrypted) as Record<string, string>;
+      if (!isCurrent()) return;
+      fs.mkdirSync(authDir, { recursive: true });
+      for (const [name, contents] of Object.entries(files)) {
+        if (!name.endsWith(".json") || typeof contents !== "string") continue;
+        fs.writeFileSync(path.join(authDir, name), contents, "utf8");
+      }
+      console.log("[WA] Restored saved session from encrypted MongoDB state");
+    } catch (err: any) {
+      console.error("[WA] Failed to restore saved session:", err?.message || err);
     }
   }
 
@@ -407,61 +563,97 @@ class WhatsAppModule extends EventEmitter {
     await this.sendText(chatId, message, false);
   }
 
-  // ── Send messages ─────────────────────────────────────────────────────────
-  async sendText(chatId: string, text: string, aiGenerated = false) {
+  async sendDocumentNotification(
+    phoneRaw: string | null | undefined,
+    content: Buffer,
+    filename: string,
+    contentType: string,
+    caption = "",
+  ) {
+    if (!phoneRaw) throw new Error("رقم واتساب غير متوفر");
     if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
-    if (chatId.endsWith("@s.whatsapp.net")) {
-      await verifyWhatsAppRecipient(this.sock, chatId.split("@")[0]);
-    }
-    await this.sock.sendMessage(chatId, { text });
-    const timestamp = new Date();
-    try {
-      await this.persistMessage({ chatId, fromMe: true, body: text, aiGenerated, timestamp });
-    } catch (error: any) {
-      // WhatsApp has accepted the message; a local logging failure must not
-      // make callers report that delivery failed or invite a duplicate send.
-      console.error("[WA] Message accepted by WhatsApp but local history could not be saved:", error?.message || error);
-    }
-    this.sendSSE({ type: "message", chatId, fromMe: true, body: text, aiGenerated, timestamp: timestamp.toISOString() });
-  }
-
-  async sendImageUrl(chatId: string, imageUrl: string, caption?: string) {
-    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
-    if (chatId.endsWith("@s.whatsapp.net")) {
-      await verifyWhatsAppRecipient(this.sock, chatId.split("@")[0]);
-    }
-    const resp = await fetch(imageUrl);
-    const buf = Buffer.from(await resp.arrayBuffer());
-    await this.sock.sendMessage(chatId, { image: buf, caption: caption || "" });
-    await this.persistMessage({ chatId, fromMe: true, body: caption || "[صورة]", aiGenerated: true, timestamp: new Date(), mediaType: "image" });
-  }
-
-  /** Send an already-loaded image with the same fail-closed recipient check as text messages. */
-  async sendImageBuffer(chatId: string, image: Buffer, caption = "", aiGenerated = false) {
-    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
-    if (!Buffer.isBuffer(image) || image.length === 0) throw new Error("ملف الصورة غير صالح");
-    if (chatId.endsWith("@s.whatsapp.net")) {
-      await verifyWhatsAppRecipient(this.sock, chatId.split("@")[0]);
-    }
-    await this.sock.sendMessage(chatId, { image, caption });
-    const timestamp = new Date();
+    const sock = this.sock;
+    const phone = phoneRaw.replace(/\D/g, "");
+    if (phone.length < 7) throw new Error("رقم واتساب غير صالح");
+    const chatId = `${phone}@s.whatsapp.net`;
+    await enqueueWhatsAppSend(async () => {
+      if (this.sock !== sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+      return sock.sendMessage(chatId, {
+      document: content,
+      mimetype: contentType || "application/octet-stream",
+      fileName: filename || "attachment",
+      ...(caption ? { caption } : {}),
+      });
+    });
+    const sentAt = new Date();
     await this.persistMessage({
       chatId,
       fromMe: true,
-      body: caption || "[صورة]",
-      aiGenerated,
-      timestamp,
-      mediaType: "image",
+      body: caption || `[Email attachment: ${filename || "attachment"}]`,
+      timestamp: sentAt,
+      mediaType: "document",
     });
     this.sendSSE({
       type: "message",
       chatId,
       fromMe: true,
-      body: caption || "[صورة]",
-      aiGenerated,
-      timestamp: timestamp.toISOString(),
-      mediaType: "image",
+      body: caption || `[Email attachment: ${filename || "attachment"}]`,
+      timestamp: sentAt.toISOString(),
     });
+  }
+
+  // ── Send messages ─────────────────────────────────────────────────────────
+  async sendText(chatId: string, text: string, aiGenerated = false) {
+    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+    const sock = this.sock;
+    await enqueueWhatsAppSend(async () => {
+      if (this.sock !== sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+      return sock.sendMessage(chatId, { text });
+    });
+    const sentAt = new Date();
+    this.sendSSE({ type: "message", chatId, fromMe: true, body: text, aiGenerated, timestamp: sentAt.toISOString() });
+    void this.persistMessage({ chatId, fromMe: true, body: text, aiGenerated, timestamp: sentAt })
+      .catch(error => console.error("[WhatsApp] Could not persist sent message:", error));
+  }
+
+  async sendImageBuffer(chatId: string, image: Buffer, caption = "", aiGenerated = false) {
+    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+    const sock = this.sock;
+    await enqueueWhatsAppSend(async () => {
+      if (this.sock !== sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+      return sock.sendMessage(chatId, { image, caption });
+    });
+    const sentAt = new Date();
+    const body = caption || "[صورة]";
+    this.sendSSE({
+      type: "message",
+      chatId,
+      fromMe: true,
+      body,
+      aiGenerated,
+      mediaType: "image",
+      timestamp: sentAt.toISOString(),
+    });
+    void this.persistMessage({
+      chatId,
+      fromMe: true,
+      body,
+      aiGenerated,
+      mediaType: "image",
+      timestamp: sentAt,
+    }).catch(error => console.error("[WhatsApp] Could not persist sent image:", error));
+  }
+
+  async sendImageUrl(chatId: string, imageUrl: string, caption?: string) {
+    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+    const resp = await fetch(imageUrl);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const sock = this.sock;
+    await enqueueWhatsAppSend(async () => {
+      if (this.sock !== sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+      return sock.sendMessage(chatId, { image: buf, caption: caption || "" });
+    });
+    await this.persistMessage({ chatId, fromMe: true, body: caption || "[صورة]", aiGenerated: true, timestamp: new Date(), mediaType: "image" });
   }
 
   async sendLink(chatId: string, url: string, title?: string) {
@@ -521,7 +713,18 @@ class WhatsAppModule extends EventEmitter {
       "";
 
     const pushName: string = msg.pushName || "";
-    const resolvedPhone = this.resolvePhone(chatId);     // "" if LID not mapped yet
+    // Baileys can deliver a direct message with a @lid remote JID while the
+    // phone-based alternate JID is present on the message key. Prefer that
+    // alternate identity and cache it so approval replies can find the
+    // challenge created against the user's phone number.
+    const alternateJids = [
+      msg.key.remoteJidAlt,
+      msg.key.participantAlt,
+      msg.key.participant,
+    ].filter((value): value is string => typeof value === "string" && value.length > 0);
+    const alternatePhone = alternateJids.map(jid => this.resolvePhone(jid)).find(Boolean) || "";
+    if (chatId.endsWith("@lid") && alternatePhone) this.registerLID(chatId, alternatePhone);
+    const resolvedPhone = this.resolvePhone(chatId) || alternatePhone;
     const displayPhone  = this.resolveDisplayPhone(chatId, pushName);
     const senderName: string = pushName || displayPhone;
     const ts = new Date((Number(msg.messageTimestamp) || Date.now() / 1000) * 1000);
@@ -538,18 +741,219 @@ class WhatsAppModule extends EventEmitter {
     // ── Identify sender from the database ──────────────────────────────────
     const { UserModel, OrderModel, ProjectModel } = await import("./models");
     const last9 = resolvedPhone ? resolvedPhone.slice(-9) : "";
-    const matchedUser: any = last9 ? await UserModel.findOne({
+    const matchedUsers: any[] = last9 ? await UserModel.find({
       $or: [
         { phone: { $regex: last9 } },
         { whatsappNumber: { $regex: last9 } },
       ],
-    }).select("fullName username role email phone whatsappNumber _id").lean() : null;
+    }).select("fullName username role email phone whatsappNumber _id").limit(2).lean() : [];
+    const matchedUser: any = matchedUsers.length === 1 ? matchedUsers[0] : null;
+
+    // WhatsApp login approvals must be handled before admin, employee, client,
+    // or AI routing. This keeps a reply such as "1" from being interpreted as
+    // a normal chat command while a login challenge is active.
+    if (resolvedPhone) {
+      const { WhatsAppLoginChallengeModel } = await import("./models");
+      const normalizedReply = normalizeApprovalText(body);
+      const isApprove = ["1", "قبول", "موافق", "موافقة", "نعم", "تم", "approve", "approved", "yes", "ok"].includes(normalizedReply);
+      const isDeny = ["2", "رفض", "غير موافق", "لا", "deny", "denied", "reject", "no"].includes(normalizedReply);
+      if (isApprove || isDeny) {
+        const incomingDigits = phoneDigits(resolvedPhone);
+        const incomingLast9 = incomingDigits.slice(-9);
+      const challenge: any = await WhatsAppLoginChallengeModel.findOneAndUpdate(
+          {
+            phoneDigits: { $regex: `${incomingLast9}$` },
+            status: "pending",
+            usedAt: null,
+            expiresAt: { $gt: new Date() },
+            $expr: { $lt: ["$attempts", "$maxAttempts"] },
+          },
+          { $inc: { attempts: 1 }, $set: { status: isApprove ? "approved" : "denied" } },
+          { new: true, sort: { createdAt: -1 } },
+        ).lean();
+      if (challenge) {
+        const approvalMessage = challenge.purpose === "setup"
+          ? "تمت الموافقة على تفعيل التحقق الثنائي عبر واتساب في QIROX."
+          : challenge.purpose === "2fa"
+            ? "تمت الموافقة على طلب التحقق الثنائي في QIROX."
+            : "تمت الموافقة على طلب تسجيل الدخول إلى QIROX. يمكنك العودة إلى صفحة الدخول.";
+          await this.sendText(
+            chatId,
+          isApprove
+            ? approvalMessage
+            : challenge.purpose === "setup"
+              ? "تم رفض طلب تفعيل التحقق الثنائي عبر واتساب."
+              : "تم رفض طلب التحقق في QIROX. لن يتم فتح الجلسة.",
+            false,
+          );
+          return;
+        }
+      }
+    }
+
+    // Replies to a manually sent marketing message go to the designated sales
+    // contact, never to the AI auto-responder. Keep login approval handling
+    // above this branch so authentication replies retain priority.
+    const normalizedMarketingPhone = normalizeManualMarketingPhone(resolvedPhone);
+    if (normalizedMarketingPhone) {
+      const {
+        ManualMarketingCampaignModel,
+        ManualMarketingLeadModel,
+        ensureManualMarketingLeadStore,
+      } = await import("./models/whatsapp");
+      const campaign: any = await ManualMarketingCampaignModel.findOne({
+        normalizedPhone: normalizedMarketingPhone,
+        status: { $in: ["active", "sending", "opted_out"] },
+      }).sort({ sentAt: -1, createdAt: -1 }).lean();
+
+      if (campaign?.status === "opted_out") {
+        await ensureManualMarketingLeadStore();
+        const replyText = body.trim()
+          ? body.trim().slice(0, 3000)
+          : "[وصل رد واتساب بدون نص، قد يحتوي على وسائط]";
+        const isOptOutReply =
+          /^(?:إيقاف|ايقاف|وقف|إلغاء|الغاء|لا ترسل(?:ون)?|stop|unsubscribe)(?:$|[\s.!،])/i.test(
+            body.trim().toLowerCase(),
+          );
+        const replyUpdate: any = {
+          lastReplyAt: new Date(ts.getTime()),
+          lastReplyPreview: replyText.slice(0, 500),
+          lastReplyContactName: (cleanText(pushName) || "غير ظاهر في واتساب").slice(0, 120),
+        };
+        if (isOptOutReply) {
+          Object.assign(replyUpdate, {
+            leadStatus: "excluded",
+            exclusionSource: "recipient_opt_out",
+            excludedAt: new Date(ts.getTime()),
+            statusUpdatedAt: new Date(ts.getTime()),
+          });
+        }
+        await ManualMarketingLeadModel.updateOne(
+          { normalizedPhone: normalizedMarketingPhone },
+          { $set: replyUpdate },
+        ).catch((error: any) => {
+          console.error("[WhatsApp] Could not persist manual marketing opt-out:", error?.message || error);
+        });
+        await this.setHumanOverride(chatId, 999 * 60);
+        return;
+      }
+
+      if (campaign && ["active", "sending"].includes(campaign.status)) {
+        await ensureManualMarketingLeadStore();
+        await this.setHumanOverride(chatId, 999 * 60);
+        const inboundMessageId = String(
+          msg.key.id || `${normalizedMarketingPhone}-${ts.getTime()}-${body.slice(0, 80)}`,
+        );
+        const claimedCampaign = await ManualMarketingCampaignModel.findOneAndUpdate(
+          {
+            _id: campaign._id,
+            status: { $in: ["active", "sending"] },
+            forwardedMessageIds: { $ne: inboundMessageId },
+          },
+          { $addToSet: { forwardedMessageIds: inboundMessageId } },
+          { new: true },
+        ).lean();
+
+        if (!claimedCampaign) return;
+
+        const normalizedReply = body.trim().normalize("NFKC");
+        const isOptOutReply =
+          /^(?:إيقاف|ايقاف|وقف|إلغاء|الغاء|لا ترسل(?:ون)?|stop|unsubscribe)(?:$|[\s.!،])/i.test(normalizedReply);
+        const replyText = body.trim()
+          ? body.trim().slice(0, 3000)
+          : "[وصل رد واتساب بدون نص، قد يحتوي على وسائط]";
+        const contactName = cleanText(pushName) || "غير ظاهر في واتساب";
+        const businessName = cleanText(campaign.businessName) || "لم يُحدد";
+        const leadReplySet: any = {
+          lastReplyAt: new Date(ts.getTime()),
+          lastReplyPreview: replyText.slice(0, 500),
+          lastReplyContactName: contactName.slice(0, 120),
+        };
+        if (isOptOutReply) {
+          Object.assign(leadReplySet, {
+            leadStatus: "excluded",
+            exclusionSource: "recipient_opt_out",
+            excludedAt: new Date(ts.getTime()),
+            statusUpdatedAt: new Date(ts.getTime()),
+          });
+        }
+        const leadInsertDefaults: any = {
+          chatId: campaign.chatId || chatId,
+          sector: campaign.sector,
+          countryCode: campaign.countryCode || "SA",
+          language: campaign.language || "ar",
+          businessName: campaign.businessName || "",
+          latestCampaignId: campaign._id,
+          sentAt: campaign.sentAt || ts,
+          sentBy: campaign.sentBy || null,
+          recipientConsentConfirmed: campaign.recipientConsentConfirmed === true,
+        };
+        if (!isOptOutReply) leadInsertDefaults.leadStatus = "sent";
+        await ManualMarketingLeadModel.findOneAndUpdate(
+          { normalizedPhone: normalizedMarketingPhone },
+          {
+            $set: leadReplySet,
+            $setOnInsert: leadInsertDefaults,
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: false },
+        ).catch((error: any) => {
+          console.error("[WhatsApp] Could not update manual marketing lead reply:", error?.message || error);
+        });
+        const forwardMessage = [
+          "📩 رد على رسالة التسويق اليدوي",
+          `اسم العميل على واتساب: ${contactName}`,
+          `اسم المقهى/الشركة: ${businessName}`,
+          `رقم العميل: +${normalizedMarketingPhone}`,
+          `القطاع: ${campaign.sector}`,
+          "",
+          replyText,
+          body.trim().length > 3000 ? "\n[تم اختصار الرد لطوله]" : "",
+        ].filter(Boolean).join("\n");
+
+        try {
+          await this.sendText(MANUAL_MARKETING_REPLY_CHAT_ID, forwardMessage, false);
+        } catch (error: any) {
+          await ManualMarketingCampaignModel.updateOne(
+            { _id: campaign._id },
+            { $pull: { forwardedMessageIds: inboundMessageId } },
+          );
+          console.error("[WhatsApp] Could not forward manual marketing reply:", error?.message || error);
+        }
+
+        if (isOptOutReply) {
+          await ManualMarketingCampaignModel.updateMany(
+            { normalizedPhone: normalizedMarketingPhone, status: { $in: ["active", "sending"] } },
+            { $set: { status: "opted_out" } },
+          );
+        }
+        return;
+      }
+    }
 
     // ── Admin WA command check (by saved admin numbers) ────────────────────
     const adminNums: string[] = settings.adminNumbers || [];
     const isWAAdmin = last9 && adminNums.some((n: string) => n.replace(/\D/g, "").slice(-9) === last9);
+    const isMailCommand = /أرسل بريد|ارسل بريد|send email/i.test(body);
     if (isWAAdmin) {
-      await this.handleAdminCommand(chatId, body, settings);
+      if (isMailCommand) {
+        if (!matchedUser) {
+          await this.sendText(chatId, "⛔ لا يمكن إرسال البريد لأن رقم واتساب غير مرتبط بحساب موظف موثّق.", false);
+        } else {
+          await this.handleMailboxEmailCommand(chatId, body, matchedUser);
+        }
+        return;
+      }
+      await this.handleAdminCommand(chatId, body, settings, matchedUser);
+      return;
+    }
+
+    if (isMailCommand) {
+      const { ALL_EMPLOYEE_MAIL_ROLES } = await import("./mail-access");
+      if (!matchedUser || !ALL_EMPLOYEE_MAIL_ROLES.includes(matchedUser.role) || matchedUser.role === "investor") {
+        await this.sendText(chatId, "⛔ أمر إرسال البريد متاح للموظفين المرتبطين بحساب موثّق فقط.", false);
+      } else {
+        await this.handleMailboxEmailCommand(chatId, body, matchedUser);
+      }
       return;
     }
 
@@ -795,7 +1199,8 @@ class WhatsAppModule extends EventEmitter {
       `📋 *أوامر الموظفين — QIROX*\n\n` +
       `• *help* — قائمة الأوامر\n` +
       `• *اعرض الطلبات* — آخر الطلبات النشطة\n` +
-      `• *أرسل بريد [email] موضوع [X] محتوى [Y]*\n` +
+      `• *أرسل بريد إلى [email] موضوع [X] محتوى [Y]* — الإرسال من info\n` +
+      `• *أرسل بريد من [mailbox] إلى [email] موضوع [X] محتوى [Y]*\n` +
       `\nمرحباً ${name} 👋`;
 
     // help
@@ -820,20 +1225,7 @@ class WhatsAppModule extends EventEmitter {
 
     // send email
     if (/أرسل بريد|ارسل بريد|send email/.test(lower)) {
-      const emailMatch = body.match(/[\w.+%-]+@[\w.-]+\.[a-z]{2,}/i);
-      if (!emailMatch) return this.sendText(chatId, "⚠️ لم أجد عنوان البريد الإلكتروني في رسالتك.", false);
-      const to = emailMatch[0];
-      const subjectMatch = body.match(/موضوع[هه]?\s*[:：]?\s*(.+?)(?:\s+(?:محتوى|نص|الرسالة|body)|$)/i);
-      const bodyMatch    = body.match(/(?:محتوى|نص|الرسالة|body)[:\s]+(.+)/is);
-      const subject = subjectMatch?.[1]?.trim() || "رسالة من QIROX";
-      const emailBody = bodyMatch?.[1]?.trim() || body;
-      try {
-        const { sendDirectEmail } = await import("./email");
-        await sendDirectEmail(to, "مستخدم QIROX", subject, emailBody);
-        return this.sendText(chatId, `✅ تم إرسال البريد إلى ${to}`, false);
-      } catch (e: any) {
-        return this.sendText(chatId, `❌ فشل إرسال البريد: ${e.message}`, false);
-      }
+      return this.handleMailboxEmailCommand(chatId, body, employee);
     }
 
     // Fallback — plain-text AI (no json_object, compatible with all providers)
@@ -903,8 +1295,65 @@ class WhatsAppModule extends EventEmitter {
     return reply;
   }
 
+  private async handleMailboxEmailCommand(chatId: string, command: string, sender: any) {
+    const { ALL_EMPLOYEE_MAIL_ROLES } = await import("./mail-access");
+    const role = String(sender?.role || "");
+    if (!sender?._id || !ALL_EMPLOYEE_MAIL_ROLES.includes(role) || role === "investor") {
+      return this.sendText(chatId, "⛔ لا تملك صلاحية إرسال البريد.", false);
+    }
+
+    const explicitMailbox = command.match(/(?:من|from)\s+([\w.-]+(?:@[\w.-]+\.[a-z]{2,})?)/i)?.[1]?.trim().toLowerCase();
+    const { MailAccountModel } = await import("./models/mail");
+    const mailboxes = await MailAccountModel.find({}).select("_id emailAddress accountType").lean() as any[];
+    const requestedMailbox = explicitMailbox || "info";
+    const matches = mailboxes.filter((candidate) => {
+      if (candidate.accountType === "customer") return false;
+      const address = String(candidate.emailAddress || "").trim().toLowerCase();
+      if (!address) return false;
+      return requestedMailbox.includes("@")
+        ? address === requestedMailbox
+        : address.split("@")[0] === requestedMailbox;
+    });
+    if (matches.length !== 1) {
+      return this.sendText(chatId, "⚠️ لم أجد صندوق البريد المطلوب أو أن اسمه غير فريد. استخدم عنوان البريد الكامل.", false);
+    }
+    const mailbox = matches[0];
+
+    const explicitTo = command.match(/(?:إلى|الى|to)\s*([\w.+%-]+@[\w.-]+\.[a-z]{2,})/i)?.[1];
+    const emailCandidates = [...command.matchAll(/[\w.+%-]+@[\w.-]+\.[a-z]{2,}/ig)].map((match) => match[0]);
+    const to = explicitTo || emailCandidates.find((address) =>
+      address.toLowerCase() !== String(mailbox.emailAddress).toLowerCase(),
+    );
+    if (!to) return this.sendText(chatId, "⚠️ أضف عنوان المستلم بهذا الشكل: إلى user@example.com", false);
+
+    const subjectMatch = command.match(/(?:موضوع|subject)\s*[:：]?\s*(.+?)(?:\s+(?:محتوى|نص|الرسالة|body)\s*[:：]?|$)/i);
+    const bodyMatch = command.match(/(?:محتوى|نص|الرسالة|body)\s*[:：]?\s*([\s\S]+)$/i);
+    const subject = subjectMatch?.[1]?.trim();
+    const body = bodyMatch?.[1]?.trim();
+    if (!subject || !body) {
+      return this.sendText(chatId, "⚠️ أضف الموضوع والمحتوى بهذا الشكل: أرسل بريد إلى user@example.com موضوع: ... محتوى: ...", false);
+    }
+
+    try {
+      const { sendWhatsAppAccountMail } = await import("./domains/mail/service");
+      const result = await sendWhatsAppAccountMail(
+        { fromAddress: String(mailbox.emailAddress), to, subject, body },
+        { _id: String(sender._id), role },
+      );
+      if (!result.ok) {
+        return this.sendText(chatId, "⛔ لا تملك صلاحية الإرسال من هذا الصندوق أو تعذر العثور عليه.", false);
+      }
+      const sentCopyWarning = result.data.sentCopySaved
+        ? ""
+        : "\n⚠️ تم قبول الرسالة للإرسال، لكن تعذر حفظ نسخة في Sent. لا تعِد الإرسال لتجنب التكرار.";
+      return this.sendText(chatId, `✅ تم إرسال البريد من ${mailbox.emailAddress} إلى ${to}${sentCopyWarning}`, false);
+    } catch (error: any) {
+      return this.sendText(chatId, `❌ فشل إرسال البريد: ${error?.message || "خطأ غير معروف"}`, false);
+    }
+  }
+
   // ── Admin command handler ─────────────────────────────────────────────────
-  private async handleAdminCommand(chatId: string, command: string, settings: any) {
+  private async handleAdminCommand(chatId: string, command: string, settings: any, sender?: any) {
     const lower = command.toLowerCase().trim().replace(/['"''""]/g, "").replace(/\s+/g, " ");
 
     const HELP_MSG =
@@ -912,7 +1361,8 @@ class WhatsAppModule extends EventEmitter {
       `• *help* — قائمة الأوامر\n` +
       `• *أوقف الذكاء* / *شغّل الذكاء*\n` +
       `• *أنشئ كود [X]%* — كود خصم\n` +
-      `• *أرسل بريد [email] موضوع [X] محتوى [Y]*\n` +
+      `• *أرسل بريد إلى [email] موضوع [X] محتوى [Y]* — الإرسال من info\n` +
+      `• *أرسل بريد من [mailbox] إلى [email] موضوع [X] محتوى [Y]*\n` +
       `• *اعرض الطلبات*\n` +
       `• *أرسل رابط [صفحة]*`;
 
@@ -964,21 +1414,7 @@ class WhatsAppModule extends EventEmitter {
 
     // send email
     if (/أرسل بريد|ارسل بريد|send email/.test(lower)) {
-      const emailMatch = command.match(/[\w.+%-]+@[\w.-]+\.[a-z]{2,}/i);
-      if (!emailMatch) return this.sendText(chatId, "⚠️ لم أجد عنوان البريد الإلكتروني في رسالتك.", false);
-      const to = emailMatch[0];
-      // Extract subject and body from the natural-language command
-      const subjectMatch = command.match(/موضوع[هه]?\s*[:：]?\s*(.+?)(?:\s+(?:محتوى|نص|الرسالة|body)|$)/i);
-      const bodyMatch   = command.match(/(?:محتوى|نص|الرسالة|body)[:\s]+(.+)/is);
-      const subject = subjectMatch?.[1]?.trim() || "رسالة من QIROX";
-      const body    = bodyMatch?.[1]?.trim()    || command;
-      try {
-        const { sendDirectEmail } = await import("./email");
-        await sendDirectEmail(to, "عميل QIROX", subject, body);
-        return this.sendText(chatId, `✅ تم إرسال البريد إلى ${to}`, false);
-      } catch (e: any) {
-        return this.sendText(chatId, `❌ فشل إرسال البريد: ${e.message}`, false);
-      }
+      return this.handleMailboxEmailCommand(chatId, command, sender);
     }
 
     // send link

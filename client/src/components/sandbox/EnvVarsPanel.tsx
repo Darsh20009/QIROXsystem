@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Eye, EyeOff, Loader2, KeyRound, Pencil, Check, X, ShieldCheck, ScanSearch, WandSparkles, LockKeyhole } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Loader2, KeyRound, Pencil, Check, X, Copy, ShieldCheck, ScanSearch, WandSparkles, LockKeyhole } from "lucide-react";
 
 interface EnvVar {
   id: string;
@@ -36,6 +36,15 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: ar ? `تم نسخ ${label}` : `${label} copied` });
+    } catch {
+      toast({ title: ar ? "تعذر النسخ" : "Copy failed", variant: "destructive" });
+    }
+  };
 
   const { data: envVars, isLoading } = useQuery<EnvVar[]>({
     queryKey: ["/api/sandbox/projects", projectId, "env"],
@@ -253,9 +262,18 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
             <div
               key={v.id}
               className="flex items-center gap-2 rounded-lg border border-border bg-muted px-2.5 py-2 text-xs"
+              dir="ltr"
               data-testid={`env-var-${v.key}`}
             >
               <span className="font-mono font-medium min-w-0 truncate flex-shrink-0">{v.key}</span>
+              <button
+                className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={() => copyText(v.key, ar ? "المفتاح" : "Key")}
+                title={ar ? "نسخ المفتاح" : "Copy key"}
+                type="button"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
               <span className="text-muted-foreground">=</span>
               {editingKey === v.key ? (
                 <>
@@ -291,6 +309,14 @@ export function EnvVarsPanel({ projectId }: EnvVarsPanelProps) {
                   <span className="font-mono flex-1 min-w-0 truncate">
                     {visibleKeys.has(v.key) ? v.value : "••••••••"}
                   </span>
+                  <button
+                    className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    onClick={() => copyText(v.value, ar ? "القيمة" : "Value")}
+                    title={ar ? "نسخ القيمة" : "Copy value"}
+                    type="button"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
                   <button
                      className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={() => startEdit(v)}

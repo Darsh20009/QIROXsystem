@@ -112,7 +112,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
   app.put("/api/mail/accounts/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
     try {
-      const { assignedUserId, assignedUserIds, displayName, jobTitle, isShared, sharedWith } = req.body;
+      const { assignedUserId, assignedUserIds, displayName, jobTitle, isShared, sharedWith, password } = req.body;
       const update: any = {};
       if (assignedUserId !== undefined) update.assignedUserId = assignedUserId || null;
       if (assignedUserIds !== undefined) {
@@ -124,6 +124,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
       if (jobTitle !== undefined) update.jobTitle = jobTitle;
       if (isShared !== undefined) update.isShared = isShared;
       if (sharedWith !== undefined) update.sharedWith = sharedWith;
+      if (password) update.password = password;
       const account = await MailAccountModel.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean() as any;
       if (!account) return res.status(404).json({ error: "Not found" });
       const { password: _pw, ...safe } = account;
@@ -221,7 +222,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
         if (!acc) return res.status(404).json({ error: "Account not found" });
         creds = {
           emailAddress: acc.emailAddress,
-          password: password || (await import("./mail-credentials")).getMailboxPassword(acc.emailAddress, acc.password),
+          password: password || acc.password,
           imapHost: imapHost || acc.imapHost,
           imapPort: imapPort || acc.imapPort,
           smtpHost: smtpHost || acc.smtpHost,

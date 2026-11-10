@@ -14,15 +14,16 @@ import { useUser } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useState } from "react";
-import type { QiroxProduct } from "@shared/schema";
+import { useEffect, useState } from "react";
+import type { ProductVariant, QiroxProduct } from "@shared/schema";
+import { productVariantSummary } from "@shared/product-variants";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import {
   Search, ShoppingCart, Star, Package, Cpu, Globe, Mail, Server,
   Gift, Code2, Truck, MapPin, ExternalLink,
   X, MessageSquare, ChevronLeft, ChevronRight,
   Zap, Shield, Sparkles, Check, Monitor,
-  Tag, Info
+  Tag, Info, LayoutGrid
 } from "lucide-react";
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string; bg: string; dark: string; accent: string }> = {
@@ -118,30 +119,54 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
   product: QiroxProduct;
   user: any;
   onClose: () => void;
-  onAddToCart: (shipping?: typeof emptyShipping | null, notes?: string, selectedBundle?: any) => void;
+  onAddToCart: (shipping?: typeof emptyShipping | null, notes?: string, selectedBundle?: any, selectedVariant?: ProductVariant) => void;
   isPending: boolean;
 }) {
-  const { dir } = useI18n();
+  const { dir, lang } = useI18n();
+  const L = lang === "ar";
   const cfg = categoryConfig[p.category] || categoryConfig.other;
   const Icon = cfg.icon;
   const isPhysical = PHYSICAL_CATS.includes(p.category);
   const planBundles: any[] = (p as any).planBundles || [];
+  const optionGroups = p.optionGroups || [];
+  const variants = p.variants || [];
+  const hasVariantOptions = optionGroups.length > 0;
   const hasBundles = planBundles.length > 0;
   const [selectedBundleIdx, setSelectedBundleIdx] = useState<number | null>(hasBundles ? 0 : null);
+  const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
   const [bundleError, setBundleError] = useState("");
+  const [variantError, setVariantError] = useState("");
 
+  useEffect(() => {
+    setSelectedChoices({});
+    setSelectedBundleIdx(planBundles.length ? 0 : null);
+    setVariantError("");
+    setBundleError("");
+    setNotes("");
+  }, [p.id]);
+
+  const selectedVariant = hasVariantOptions && optionGroups.every(group => Boolean(selectedChoices[group.id]))
+    ? variants.find(variant => optionGroups.every(group => variant.choices?.[group.id] === selectedChoices[group.id]))
+    : undefined;
+  const minimumVariantPrice = variants.length ? Math.min(...variants.map(variant => Number(variant.price))) : p.price;
+  const productPrice = selectedVariant ? Number(selectedVariant.price) : (hasVariantOptions ? minimumVariantPrice : p.price);
   const selectedBundle = selectedBundleIdx !== null ? planBundles[selectedBundleIdx] : null;
   const bundlePrice = selectedBundle ? (selectedBundle.isFree ? 0 : (selectedBundle.customPrice || 0)) : 0;
-  const totalPrice = p.price + bundlePrice;
+  const totalPrice = productPrice + bundlePrice;
 
   function handleBuy() {
+    if (hasVariantOptions && !selectedVariant) {
+      setVariantError(L ? "اختر قيمة صالحة لكل خاصية قبل الإضافة للسلة." : "Choose a valid value for every option before adding to cart.");
+      return;
+    }
     if (hasBundles && selectedBundleIdx === null) {
       setBundleError("يرجى اختيار باقة من القائمة");
       return;
     }
+    setVariantError("");
     setBundleError("");
-    onAddToCart(null, notes, selectedBundle);
+    onAddToCart(null, notes, selectedBundle, selectedVariant);
   }
 
   const imgs = (p.images || []).filter(Boolean);
@@ -198,7 +223,8 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           </div>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-black dark:text-white">{p.price.toLocaleString()}</span>
+            {hasVariantOptions && !selectedVariant && <span className="text-xs text-black/40 dark:text-white/40">{L ? "ابتداءً من" : "From"}</span>}
+            <span className="text-3xl font-black text-black dark:text-white">{productPrice.toLocaleString()}</span>
             <span className="text-sm text-black/40 dark:text-white/40">{p.currency}</span>
           </div>
 
@@ -211,6 +237,52 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           {p.descriptionAr && (
             <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl p-4">
               <p className="text-sm text-black/65 dark:text-white/65 leading-relaxed">{p.descriptionAr}</p>
+            </div>
+          )}
+
+          {hasVariantOptions && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-black text-black/60 dark:text-white/60 uppercase tracking-wider flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5" />{L ? "اختر المواصفات" : "Choose options"}
+              </h3>
+              {optionGroups.map(group => {
+                const availableValues = group.values.filter(value => variants.some(variant =>
+                  variant.choices?.[group.id] === value.id &&
+                  optionGroups.every(otherGroup =>
+                    otherGroup.id === group.id ||
+                    !selectedChoices[otherGroup.id] ||
+                    variant.choices?.[otherGroup.id] === selectedChoices[otherGroup.id],
+                  ),
+                ));
+                return (
+                  <div key={group.id} className="space-y-1.5">
+                    <label className="text-xs font-bold text-black/70 dark:text-white/70">{L ? group.nameAr : group.name}</label>
+                    <Select
+                      value={selectedChoices[group.id] || "none"}
+                      onValueChange={value => {
+                        setSelectedChoices(current => ({ ...current, [group.id]: value === "none" ? "" : value }));
+                        setVariantError("");
+                      }}
+                    >
+                      <SelectTrigger data-testid={`select-product-option-${group.id}`}>
+                        <SelectValue placeholder={L ? `اختر ${group.nameAr}` : `Choose ${group.name}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{L ? "اختر..." : "Choose..."}</SelectItem>
+                        {availableValues.map(value => (
+                          <SelectItem key={value.id} value={value.id}>{L ? value.nameAr : value.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+              {variantError && <p className="text-xs text-red-600" role="alert">{variantError}</p>}
+              {selectedVariant && (
+                <p className="text-xs text-black/50 dark:text-white/50">
+                  {productVariantSummary(selectedVariant, optionGroups, L ? "ar" : "en")}
+                </p>
+              )}
             </div>
           )}
 
@@ -310,11 +382,14 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
               </div>
 
               {/* Price summary */}
-              {selectedBundle && (
+              {(selectedBundle || hasVariantOptions) && (
                 <div className="mt-3 p-3 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
                   <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
-                    <span>سعر المنتج</span>
-                    <span className="flex items-center gap-0.5">{p.price.toLocaleString()} <SARIcon size={8} className="opacity-50" /></span>
+                    <span>{L ? "سعر المنتج" : "Product price"}</span>
+                    <span className="flex items-center gap-0.5">
+                      {hasVariantOptions && !selectedVariant ? (L ? `ابتداءً من ${productPrice.toLocaleString()}` : `From ${productPrice.toLocaleString()}`) : productPrice.toLocaleString()}
+                      <SARIcon size={8} className="opacity-50" />
+                    </span>
                   </div>
                   {bundlePrice > 0 && (
                     <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
@@ -360,14 +435,16 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
         ) : (
           <Button
             onClick={handleBuy}
-            disabled={isPending}
+            disabled={isPending || (hasVariantOptions && !selectedVariant)}
             className="w-full h-12 rounded-2xl font-black text-sm gap-2 bg-black dark:bg-white text-white dark:text-black hover:opacity-85 shadow-lg"
             data-testid="button-buy-now"
           >
             {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-            {hasBundles && totalPrice !== p.price
-              ? <span className="flex items-center gap-1">أضف للسلة {totalPrice.toLocaleString()} <SARIcon size={10} /></span>
-              : "أضف للسلة"
+            {(hasBundles || hasVariantOptions) && selectedVariant
+              ? <span className="flex items-center gap-1">{L ? "أضف للسلة" : "Add to cart"} {totalPrice.toLocaleString()} <SARIcon size={10} /></span>
+              : hasVariantOptions
+                ? (L ? "اختر الخيارات أولاً" : "Choose options first")
+                : (L ? "أضف للسلة" : "Add to cart")
             }
           </Button>
         )}
@@ -386,11 +463,15 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
 function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
   product: QiroxProduct; index: number; user: any; addedIds: Set<string>; onOpen: () => void; isFeat?: boolean;
 }) {
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const cfg = categoryConfig[p.category] || categoryConfig.other;
   const Icon = cfg.icon;
   const isAdded = addedIds.has(p.id);
   const isPhysical = PHYSICAL_CATS.includes(p.category);
   const imgs = (p.images || []).filter(Boolean);
+  const hasVariants = Boolean(p.optionGroups?.length && p.variants?.length);
+  const displayPrice = hasVariants ? Math.min(...(p.variants || []).map(variant => Number(variant.price))) : p.price;
   const [imgIdx, setImgIdx] = useState(0);
 
   return (
@@ -475,9 +556,9 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
           <div>
-            <p className="text-lg font-black text-black dark:text-white leading-tight">{p.price.toLocaleString()}</p>
+            <p className="text-lg font-black text-black dark:text-white leading-tight">{displayPrice.toLocaleString()}</p>
             <p className="text-[10px] text-black/35 dark:text-white/35">
-              {p.currency}{p.stock === -1 ? " متوفر" : p.stock === 0 ? " نفد المخزون" : ` ${p.stock} وحدة`}
+              {hasVariants ? (L ? `ابتداءً من · ${p.currency}` : `Starting at · ${p.currency}`) : p.currency}{p.stock === -1 ? (L ? " · متوفر" : " · available") : p.stock === 0 ? (L ? " · نفد المخزون" : " · out of stock") : ` · ${p.stock} ${L ? "وحدة" : "units"}`}
             </p>
           </div>
           {p.stock !== 0 ? (
@@ -509,12 +590,20 @@ export default function Devices() {
   const [selectedProduct, setSelectedProduct] = useState<QiroxProduct | null>(null);
 
   // Save product to sessionStorage and go to checkout (for non-logged users)
-  function goToCheckoutWithProduct(product: QiroxProduct, selectedBundle?: any) {
+  function goToCheckoutWithProduct(product: QiroxProduct, selectedBundle?: any, selectedVariant?: ProductVariant) {
     const type = product.category === "domain" ? "domain" : product.category === "email" ? "email" : product.category === "hosting" ? "hosting" : product.category === "gift" ? "gift" : "product";
+    const optionGroups = product.optionGroups || [];
     const cartItems: any[] = [{
       type, refId: product.id, name: product.name, nameAr: product.nameAr,
-      price: product.price, qty: 1, imageUrl: product.images?.[0],
-      config: { ...(product as any).specs },
+      price: selectedVariant?.price ?? product.price, qty: 1, imageUrl: product.images?.[0],
+      config: {
+        ...(product as any).specs,
+        ...(selectedVariant ? {
+          productVariantId: selectedVariant.id,
+          variantSummaryAr: productVariantSummary(selectedVariant, optionGroups, "ar"),
+          variantSummary: productVariantSummary(selectedVariant, optionGroups, "en"),
+        } : {}),
+      },
     }];
     if (selectedBundle && !selectedBundle.isFree && (selectedBundle.customPrice || 0) > 0) {
       cartItems.push({
@@ -533,19 +622,25 @@ export default function Devices() {
   const { data: myShipments } = useQuery<any[]>({ queryKey: ["/api/shipments/my"], enabled: !!user });
 
   const addToCartMutation = useMutation({
-    mutationFn: async ({ product, shipping, notes, selectedBundle }: { product: QiroxProduct; shipping?: typeof emptyShipping | null; notes?: string; selectedBundle?: any }) => {
+    mutationFn: async ({ product, shipping, notes, selectedBundle, selectedVariant }: { product: QiroxProduct; shipping?: typeof emptyShipping | null; notes?: string; selectedBundle?: any; selectedVariant?: ProductVariant }) => {
       const isPhysical = PHYSICAL_CATS.includes(product.category);
       const type = product.category === "domain" ? "domain" : product.category === "email" ? "email" : product.category === "hosting" ? "hosting" : product.category === "gift" ? "gift" : "product";
+      const optionGroups = product.optionGroups || [];
       const res = await apiRequest("POST", "/api/cart/items", {
         type,
         refId: product.id,
         name: product.name,
         nameAr: product.nameAr,
-        price: product.price,
+        price: selectedVariant?.price ?? product.price,
         qty: 1,
         imageUrl: product.images?.[0],
         config: {
           ...product.specs,
+          ...(selectedVariant ? {
+            productVariantId: selectedVariant.id,
+            variantSummaryAr: productVariantSummary(selectedVariant, optionGroups, "ar"),
+            variantSummary: productVariantSummary(selectedVariant, optionGroups, "en"),
+          } : {}),
           ...(isPhysical && shipping ? { shipping } : {}),
           ...(notes ? { notes } : {}),
         },
@@ -807,12 +902,12 @@ export default function Devices() {
               product={selectedProduct}
               user={user}
               onClose={() => setSelectedProduct(null)}
-              onAddToCart={(shipping, notes, selectedBundle) => {
+              onAddToCart={(shipping, notes, selectedBundle, selectedVariant) => {
                 if (!user) {
-                  goToCheckoutWithProduct(selectedProduct, selectedBundle);
+                  goToCheckoutWithProduct(selectedProduct, selectedBundle, selectedVariant);
                   return;
                 }
-                addToCartMutation.mutate({ product: selectedProduct, shipping: shipping ?? undefined, notes, selectedBundle });
+                addToCartMutation.mutate({ product: selectedProduct, shipping: shipping ?? undefined, notes, selectedBundle, selectedVariant });
               }}
               isPending={addToCartMutation.isPending}
             />

@@ -299,6 +299,8 @@ export default function AdminEmployees() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [credResult, setCredResult] = useState<CredentialResult | null>(null);
+  const [newEmployeePromptId, setNewEmployeePromptId] = useState<string | null>(null);
+  const [roleMessagePromptId, setRoleMessagePromptId] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [uploadingAvatarId, setUploadingAvatarId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -306,6 +308,7 @@ export default function AdminEmployees() {
   const avatarTargetId = useRef<string | null>(null);
 
   const { data: users, isLoading, isError, refetch } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
+  const canSyncWhatsappPhones = ["admin", "manager"].includes(String((currentUser as any)?.role || ""));
 
   const getUserId = (user: User) => String((user as any).id || (user as any)._id || "");
   const canDeleteUser = (user: User) =>
@@ -367,8 +370,10 @@ export default function AdminEmployees() {
       return { user: json, form: data };
     },
     onSuccess: async ({ user, form }) => {
+      const createdUserId = String(user.id || user._id || "");
       await saveSalaryData(user.id || user._id, form);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setNewEmployeePromptId(createdUserId);
       setCredResult({ username: form.username, rawPassword: form.password, email: form.email, fullName: form.fullName });
       resetForm();
     },
@@ -385,12 +390,37 @@ export default function AdminEmployees() {
       if (salaryType) await saveSalaryData(id, data as EmployeeForm);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_response, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: L ? "تم تحديث البيانات بنجاح" : "Data updated successfully" });
+      const existingEmployee = users?.find((user) => getUserId(user) === variables.id);
+      if (variables.data.role && existingEmployee?.role && variables.data.role !== existingEmployee.role) {
+        setRoleMessagePromptId(variables.id);
+      }
       resetForm();
     },
     onError: (err: any) => toast({ title: L ? "خطأ" : "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const syncWhatsappPhonesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/users/sync-whatsapp-phones", {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: L ? "تمت مزامنة أرقام واتساب" : "WhatsApp numbers synced",
+        description: L
+          ? `تم اعتماد ${data.updated || 0} رقم. الأرقام غير الصالحة: ${data.skipped || 0}.`
+          : `${data.updated || 0} numbers verified. Invalid numbers skipped: ${data.skipped || 0}.`,
+      });
+    },
+    onError: (err: any) => toast({
+      title: L ? "تعذرت مزامنة الأرقام" : "Could not sync phone numbers",
+      description: err.message,
+      variant: "destructive",
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -549,14 +579,34 @@ export default function AdminEmployees() {
           </h1>
           <p className="text-xs text-black/30 mt-1">{employees.length} {L ? "موظف" : "employees"} · {clients.length} {L ? "عميل" : "clients"}</p>
         </div>
-        {canManageStaff && <Button
-          className="bg-black text-white hover:bg-black/80 text-xs h-9 px-5"
-          onClick={() => { resetForm(); setShowForm(true); }}
-          data-testid="button-add-employee"
-        >
-          <UserPlus className="w-4 h-4 ml-1.5" />
-          {L ? "إضافة موظف" : "Add Employee"}
-        </Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {canSyncWhatsappPhones && <Button
+            variant="outline"
+            className="text-xs h-9 px-4"
+            onClick={() => {
+              if (window.confirm(L
+                ? "سيتم اعتماد الأرقام الصالحة الموجودة للموظفين كأرقام واتساب موثقة. هل تريد المتابعة؟"
+                : "This will mark existing valid employee phone numbers as verified WhatsApp numbers. Continue?")) {
+                syncWhatsappPhonesMutation.mutate();
+              }
+            }}
+            disabled={syncWhatsappPhonesMutation.isPending}
+            data-testid="button-sync-whatsapp-phones"
+          >
+            {syncWhatsappPhonesMutation.isPending
+              ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" />
+              : <Shield className="w-4 h-4 ml-1.5" />}
+            {L ? "اعتماد أرقام واتساب" : "Verify WhatsApp numbers"}
+          </Button>}
+          {canManageStaff && <Button
+            className="bg-black text-white hover:bg-black/80 text-xs h-9 px-5"
+            onClick={() => { resetForm(); setShowForm(true); }}
+            data-testid="button-add-employee"
+          >
+            <UserPlus className="w-4 h-4 ml-1.5" />
+            {L ? "إضافة موظف" : "Add Employee"}
+          </Button>}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -1152,12 +1202,49 @@ export default function AdminEmployees() {
               <p className="text-black dark:text-white text-xs">{L ? "تم إرسال هذه البيانات إلى" : "These credentials were sent to"}: <strong>{credResult?.email}</strong></p>
             </div>
 
+            {newEmployeePromptId && <Button
+              className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
+              onClick={() => {
+                  window.open(
+                    `/admin/employee-operations?tab=role&employeeId=${encodeURIComponent(newEmployeePromptId)}`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+              }}
+            >
+              {L ? "مراجعة رسالة الدور وإرسالها" : "Review and send role message"}
+            </Button>}
             <Button
               className="w-full bg-black text-white hover:bg-black/80"
-              onClick={() => { setCredResult(null); setShowPassword(false); }}
+              onClick={() => { setCredResult(null); setShowPassword(false); setNewEmployeePromptId(null); }}
             >
               {L ? "تم، إغلاق" : "Done, Close"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!roleMessagePromptId} onOpenChange={(open) => { if (!open) setRoleMessagePromptId(null); }}>
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">{L ? "تم تغيير دور الموظف" : "Employee role updated"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-black/60">
+            {L ? "يمكنك الآن مراجعة رسالة واتساب التي توضح دوره الجديد. لن تُرسل إلا بعد موافقتك." : "Review a WhatsApp message explaining the new role. It will only be sent after you approve it."}
+          </p>
+          <div className="flex gap-2">
+            <Button className="flex-1 bg-emerald-700 text-white hover:bg-emerald-800" onClick={() => {
+              if (roleMessagePromptId) {
+                window.open(
+                  `/admin/employee-operations?tab=role&employeeId=${encodeURIComponent(roleMessagePromptId)}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }
+              setRoleMessagePromptId(null);
+            }}>
+              {L ? "مراجعة الرسالة" : "Review message"}
+            </Button>
+            <Button variant="outline" onClick={() => setRoleMessagePromptId(null)}>{L ? "لاحقًا" : "Later"}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -19,24 +19,24 @@ import {
   type AuditInput,
   type SecurityInput,
   type PerfInput,
-} from "../logger/ILogger";
+} from "./logger/ILogger";
 import {
   type LogContext,
   mergeContext,
   generateCorrelationId,
-} from "../logger/context";
+} from "./logger/context";
 import {
   LogLevel,
   LOG_LEVEL_LABEL,
   shouldLog,
   type LogLevel as LogLevelType,
-} from "../logger/levels";
+} from "./logger/levels";
 import type {
   ApplicationLogEntry,
   AuditLogEntry,
   SecurityLogEntry,
   PerformanceLogEntry,
-} from "../logger/contracts";
+} from "./logger/contracts";
 
 // ── ANSI colour codes (development only) ─────────────────────────────────────
 

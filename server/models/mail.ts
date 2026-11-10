@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { decryptMailPassword, encryptMailPassword } from "../mail-account-crypto";
 
 const mailAccountSchema = new mongoose.Schema({
   emailAddress:   { type: String, required: true, unique: true },
@@ -19,6 +20,32 @@ const mailAccountSchema = new mongoose.Schema({
   isShared:        { type: Boolean, default: false },
   sharedWith:      [{ type: String }],
 }, { timestamps: true });
+mailAccountSchema.pre("save", function () {
+  if (this.isModified("password")) this.password = encryptMailPassword(this.password || "");
+});
+mailAccountSchema.pre("findOneAndUpdate", function () {
+  const update = this.getUpdate() as Record<string, any> | null;
+  if (!update) return;
+  if (typeof update.password === "string") update.password = encryptMailPassword(update.password);
+  for (const key of ["$set", "$setOnInsert"]) {
+    if (typeof update[key]?.password === "string") {
+      update[key].password = encryptMailPassword(update[key].password);
+    }
+  }
+  this.setUpdate(update);
+});
+function decryptMailAccountResult(result: any): void {
+  if (Array.isArray(result)) {
+    for (const account of result) decryptMailAccountResult(account);
+    return;
+  }
+  if (result && typeof result.password === "string") {
+    result.password = decryptMailPassword(result.password);
+  }
+}
+mailAccountSchema.post("find", decryptMailAccountResult);
+mailAccountSchema.post("findOne", decryptMailAccountResult);
+mailAccountSchema.post("findOneAndUpdate", decryptMailAccountResult);
 mailAccountSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.password; ret.id = ret._id?.toString(); return ret; } });
 export const MailAccountModel = mongoose.models.MailAccount || mongoose.model("MailAccount", mailAccountSchema);
 
@@ -34,6 +61,8 @@ const mailCacheSchema = new mongoose.Schema({
   html:       { type: String, default: "" },
   text:       { type: String, default: "" },
   snippet:    { type: String, default: "" },
+  whatsappAlertRequested: { type: Boolean, default: false },
+  whatsappNotifiedTo: { type: [String], default: [] },
 }, { timestamps: true });
 mailCacheSchema.index({ accountId: 1, folder: 1, uid: 1 }, { unique: true });
 mailCacheSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });

@@ -131,7 +131,8 @@ export const DATA_ENTRY_ORDER_HIDDEN_FIELDS = [
 
 export const DATA_ENTRY_SPEC_HIDDEN_FIELDS = [
   "totalBudget", "paidAmount", "databaseUri", "serverIp",
-  "deploymentUsername", "deploymentPassword", "variables", "customVars",
+  "deploymentUsername", "deploymentPassword", "variables", "customVars", "customSections",
+  "internalForms",
 ] as const;
 
 export const DATA_ENTRY_RESPONSE_HIDDEN_FIELDS = [

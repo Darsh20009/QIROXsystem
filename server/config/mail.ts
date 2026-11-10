@@ -51,13 +51,13 @@ export interface SmtpConfig {
 
 /** Branding values embedded in outgoing email templates. */
 export interface EmailBrandingConfig {
-  /** Fixed QIROX display name in the From header. */
+  /** Display name in the From header. Maps to: SMTP2GO_SENDER_NAME */
   senderName: string;
 
-  /** Fixed QIROX no-reply address. */
+  /** From address. Maps to: SMTP2GO_SENDER */
   senderEmail: string;
 
-  /** Fixed QIROX logo URL embedded in templates. */
+  /** URL of the logo image embedded in templates. Maps to: EMAIL_LOGO_URL */
   logoUrl: string;
 
   /** Canonical site URL linked in templates. Maps to: EMAIL_SITE_URL */
@@ -96,8 +96,8 @@ export const MAIL_DEFAULTS: Readonly<Partial<MailConfig>> = {
     timeoutMs: 10_000,
   },
   branding: {
-    senderName:  "QIROX",
-    senderEmail: "noreply@qirox.online",
+    senderName:  "QIROX Studio",
+    senderEmail: "noreply@qiroxstudio.online",
     logoUrl:     "https://qiroxstudio.online/qirox-icon-nobg.png",
     siteUrl:     "https://qiroxstudio.online",
   },
@@ -123,9 +123,9 @@ export function buildMailConfig(env: EnvBag = process.env): MailConfig {
       timeoutMs: envInt(env.SMTP_TIMEOUT_MS, 10_000),
     },
     branding: {
-      senderName:  "QIROX",
-      senderEmail: "noreply@qirox.online",
-      logoUrl:     "https://qiroxstudio.online/qirox-icon-nobg.png",
+      senderName:  env.SMTP2GO_SENDER_NAME ?? "QIROX Studio",
+      senderEmail: env.SMTP2GO_SENDER ?? "noreply@qiroxstudio.online",
+      logoUrl:     env.EMAIL_LOGO_URL ?? `${siteUrl}/qirox-icon-nobg.png`,
       siteUrl,
     },
     enabled: envBool(env.MAIL_ENABLED, true),

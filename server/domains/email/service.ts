@@ -53,6 +53,7 @@ async function dispatchViaSMTP(
   htmlBody:    string,
   textBody?:   string,
   attachments?: EmailAttachment[],
+  replyTo?:    string,
 ): Promise<boolean> {
   const transporter = nodemailer.createTransport({
     host:   cfg.host,
@@ -65,6 +66,7 @@ async function dispatchViaSMTP(
   const mailOptions: nodemailer.SendMailOptions = {
     from:    `"${cfg.senderName}" <${cfg.user}>`,
     to:      `${toName} <${to}>`,
+    ...(replyTo ? { replyTo } : {}),
     subject,
     html:    htmlBody,
     text:    textBody || domain.stripHtml(htmlBody),
@@ -98,16 +100,18 @@ export async function sendEmail(
   htmlBody:     string,
   textBody?:    string,
   attachments?: EmailAttachment[],
+  replyTo?:     string,
 ): Promise<SendResult> {
-  const cfg = domain.resolveEmailConfig();
   try {
-    if (!domain.isSmtpConfigured(cfg)) {
-      console.warn("[EmailDomain] No SMTP configured — set SMTP_HOST, SMTP_USER, and SMTP_PASS");
+    const account = await repository.findMailAccountByEmail("noreply@qirox.online");
+    if (!account?.password || !account.smtpHost) {
+      console.warn("[EmailDomain] Default noreply account is not configured");
       return { sent: false };
     }
-    const smtpCfg = domain.resolveDefaultSmtpConfig(cfg);
-    console.log(`[EmailDomain] Sending via SMTP (${cfg.smtpHost}) to ${to}`);
-    const sent = await dispatchViaSMTP(smtpCfg, to, toName, subject, htmlBody, textBody, attachments);
+    const baseConfig = domain.resolveEmailConfig();
+    const smtpCfg = domain.resolveAccountSmtpConfig(baseConfig, account);
+    console.log(`[EmailDomain] Sending via default noreply account to ${to}`);
+    const sent = await dispatchViaSMTP(smtpCfg, to, toName, subject, htmlBody, textBody, attachments, replyTo);
     return { sent };
   } catch (err) {
     console.error("[EmailDomain] send error:", err);
@@ -130,21 +134,7 @@ export async function sendEmailAs(
   htmlBody:     string,
   textBody?:    string,
 ): Promise<SendResult> {
-  try {
-    const account = await repository.findMailAccountByEmail(fromEmail);
-    if (!account) {
-      console.warn(`[EmailDomain] sendEmailAs: no account for ${fromEmail}, using default`);
-      return sendEmail(to, toName, subject, htmlBody, textBody);
-    }
-    const baseCfg  = domain.resolveEmailConfig();
-    const smtpCfg  = domain.resolveAccountSmtpConfig(baseCfg, account);
-    console.log(`[EmailDomain] Sending as ${fromEmail} to ${to}`);
-    const sent = await dispatchViaSMTP(smtpCfg, to, toName, subject, htmlBody, textBody);
-    return { sent };
-  } catch (err) {
-    console.error(`[EmailDomain] sendEmailAs(${fromEmail}) error:`, err);
-    return sendEmail(to, toName, subject, htmlBody, textBody);
-  }
+  return sendEmail(to, toName, subject, htmlBody, undefined, undefined, fromEmail);
 }
 
 // ── Transactional email use cases ─────────────────────────────────────────────
@@ -292,7 +282,7 @@ export async function sendOwnerWAEmail(opts: {
 export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
   const cfg = domain.resolveEmailConfig();
   const tpl = domain.buildWelcomeWithCredentialsEmail(name, username, password, cfg);
-  const r   = await sendEmail(to, cleanName(name), tpl.subject, tpl.html);
+  const r   = await sendEmailAs("hr@qirox.online", to, cleanName(name), tpl.subject, tpl.html);
   return r.sent;
 }
 
@@ -374,14 +364,14 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string;
   items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  orderId?: string; createdAt?: string;
+  orderId?: string; createdAt?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendInvoiceEmail(to, clientName, invoice);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
   receiptNumber: string; amount: number; amountInWords?: string;
-  paymentMethod: string; description?: string; createdAt?: string;
+  paymentMethod: string; description?: string; createdAt?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendReceiptEmail(to, clientName, receipt);
 }
@@ -389,7 +379,7 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
   quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string; link?: string; pdfBytes?: Uint8Array;
+  notes?: string; link?: string; pdfBytes?: Uint8Array; language?: "ar" | "en";
 }): Promise<boolean> {
   return LegacyEmailAdapter.sendQuotationEmail(to, clientName, quotation);
 }

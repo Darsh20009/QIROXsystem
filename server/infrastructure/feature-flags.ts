@@ -36,6 +36,8 @@ export const FeatureFlag = {
   STRUCTURED_LOGGING:       "FEATURE_STRUCTURED_LOGGING",
   HEALTH_DETAILED_PUBLIC:   "FEATURE_HEALTH_DETAILED_PUBLIC",
   EVENT_BUS_DEBUG:          "FEATURE_EVENT_BUS_DEBUG",
+  NATIVE_SFU:               "FEATURE_NATIVE_SFU",
+  QMEET_PRESENTATION_V2:    "FEATURE_QMEET_PRESENTATION_V2",
 
   // ── Sprint 003 — Customer Journey V2 flags ────────────────────────────────
   CUSTOMER_JOURNEY_V2:      "FEATURE_CUSTOMER_JOURNEY_V2",
@@ -43,6 +45,7 @@ export const FeatureFlag = {
 
   // ── Sprint 008 — CRM V2 Foundation ────────────────────────────────────────
   CRM_V2:                   "FEATURE_CRM_V2",
+  EMPLOYEE_OPERATIONS_V2:   "FEATURE_EMPLOYEE_OPERATIONS_V2",
 
   // ── Sprint D — Proposal Builder V2 ─────────────────────────────────────────
   PROPOSAL_V2:              "FEATURE_PROPOSAL_V2",
@@ -58,7 +61,7 @@ export const FeatureFlag = {
 
   // ── Design System V2 — Phase 2 (Contact / Systems / Service Detail) ─────────
   DS_V2_PHASE2_PAGES:       "FEATURE_DS_V2_PHASE2_PAGES",
-  MANUAL_MARKETING:          "FEATURE_MANUAL_MARKETING",
+  DEVICE_VARIANTS_V2:       "FEATURE_DEVICE_VARIANTS_V2",
 } as const;
 
 export type FeatureFlagName = typeof FeatureFlag[keyof typeof FeatureFlag];
@@ -97,6 +100,8 @@ export class FeatureFlagEngine {
     [FeatureFlag.STRUCTURED_LOGGING, false],
     [FeatureFlag.HEALTH_DETAILED_PUBLIC, false],
     [FeatureFlag.EVENT_BUS_DEBUG, false],
+    [FeatureFlag.NATIVE_SFU, false],
+    [FeatureFlag.QMEET_PRESENTATION_V2, true],
 
     // Sprint 003 — Customer Journey V2 flags (off by default)
     [FeatureFlag.CUSTOMER_JOURNEY_V2,  false],
@@ -104,6 +109,7 @@ export class FeatureFlagEngine {
 
     // Sprint 008 — CRM V2 (off by default)
     [FeatureFlag.CRM_V2,               false],
+    [FeatureFlag.EMPLOYEE_OPERATIONS_V2, false],
 
     // Sprint D — Proposal Builder V2 (off by default — do not activate)
     [FeatureFlag.PROPOSAL_V2,          false],
@@ -116,8 +122,7 @@ export class FeatureFlagEngine {
 
     // Design System V2 — Phase 2 pages: Contact/Systems/Service Detail (off by default)
     [FeatureFlag.DS_V2_PHASE2_PAGES,   false],
-    // Manual Marketing routes and UI remain off until explicitly enabled.
-    [FeatureFlag.MANUAL_MARKETING,     false],
+    [FeatureFlag.DEVICE_VARIANTS_V2,   false],
 
     // All V4 product flags off by default — activated via env or override
     [FeatureFlag.HOME_V4,              false],

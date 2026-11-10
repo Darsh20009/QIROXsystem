@@ -483,7 +483,7 @@ export default function AdminPayroll() {
             <div>
               <label className="text-xs text-black/50 dark:text-white/50 mb-1 block">{L ? "اسم المشروع (اختياري)" : "Project Name (optional)"}</label>
               <Input
-                placeholder={L ? "مثال: موقع كيروكس" : "e.g. QIROX Website"} value={form.projectName}
+                placeholder={L ? "مثال: موقع كلوني كافيه" : "e.g. Cluny Cafe Website"} value={form.projectName}
                 onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))}
                 className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                 data-testid="input-project-name"

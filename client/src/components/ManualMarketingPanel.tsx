@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Link2, LoaderCircle, MessageCircle, Phone, Send, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Link2, LoaderCircle, MessageCircle, Phone, Send, Sparkles, Target, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   inferManualMarketingCountryCode,
@@ -42,7 +41,10 @@ function getCountryName(code: string, language: ManualMarketingLanguage): string
 
 export default function ManualMarketingPanel() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [dailyQuota, setDailyQuota] = useState<any>(null);
+  const [quotaLoadError, setQuotaLoadError] = useState("");
+  const [quotaDrafts, setQuotaDrafts] = useState<Record<string, number>>({});
+  const [savingQuotaFor, setSavingQuotaFor] = useState("");
   const [phone, setPhone] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [sector, setSector] = useState<ManualMarketingSector>("restaurant");
@@ -53,7 +55,78 @@ export default function ManualMarketingPanel() {
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [lastSentFingerprint, setLastSentFingerprint] = useState("");
+  const [knownLead, setKnownLead] = useState<any>(null);
+  const [checkingLead, setCheckingLead] = useState(false);
+  const [leadLookupError, setLeadLookupError] = useState("");
   const [confirmRepeat, setConfirmRepeat] = useState(false);
+  const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(null);
+
+  const loadDailyQuota = useCallback(async () => {
+    try {
+      const response = await fetch("/api/whatsapp/crm/manual-marketing/daily-quota", { credentials: "include" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "تعذر تحميل عداد اليوم");
+      setDailyQuota(data);
+      setQuotaLoadError("");
+      if (Array.isArray(data.staff)) {
+        setQuotaDrafts(current => {
+          const next = { ...current };
+          for (const employee of data.staff) {
+            if (next[employee.id] === undefined) next[employee.id] = Number(employee.quota) || 0;
+          }
+          return next;
+        });
+      }
+    } catch (error: any) {
+      setQuotaLoadError(error.message || "تعذر تحميل عداد اليوم");
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDailyQuota();
+    const timer = window.setInterval(() => void loadDailyQuota(), 30000);
+    return () => window.clearInterval(timer);
+  }, [loadDailyQuota]);
+
+  async function saveEmployeeQuota(employeeId: string) {
+    setSavingQuotaFor(employeeId);
+    try {
+      const response = await fetch(`/api/whatsapp/crm/manual-marketing/daily-quota/${encodeURIComponent(employeeId)}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyQuota: Number(quotaDrafts[employeeId]) || 0 }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "تعذر حفظ الحصة");
+      toast({ title: "تم حفظ الحصة اليومية", description: `${data.name}: ${data.dailyQuota} رسالة` });
+      await loadDailyQuota();
+    } catch (error: any) {
+      toast({ title: "تعذر حفظ الحصة", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingQuotaFor("");
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    const checkConnection = async () => {
+      try {
+        const response = await fetch("/api/whatsapp/crm/connection-status", { credentials: "include" });
+        if (!response.ok) throw new Error("تعذر التحقق من اتصال واتساب");
+        const data = await response.json();
+        if (active) setWhatsappConnected(data.connected === true);
+      } catch {
+        if (active) setWhatsappConnected(null);
+      }
+    };
+    void checkConnection();
+    const timer = window.setInterval(checkConnection, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const currencyDefinition = getCurrencyForCountry(countryCode);
   const currencyLocaleParts = currencyDefinition.locale.split("-");
@@ -89,6 +162,37 @@ export default function ManualMarketingPanel() {
   const alreadySent = Boolean(fingerprint && fingerprint === lastSentFingerprint && !confirmRepeat);
   const selectedSector = MANUAL_MARKETING_SECTORS.find((item) => item.key === sector)!;
 
+  useEffect(() => {
+    setKnownLead(null);
+    setLeadLookupError("");
+    setConfirmRepeat(false);
+    if (!normalizedPhone) {
+      setCheckingLead(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setCheckingLead(true);
+      try {
+        const response = await fetch(
+          `/api/whatsapp/crm/manual-marketing/leads/lookup?phone=${encodeURIComponent(normalizedPhone)}`,
+          { credentials: "include", signal: controller.signal },
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "تعذر فحص سجل الرقم");
+        setKnownLead(data.lead || null);
+      } catch (error: any) {
+        if (!controller.signal.aborted) setLeadLookupError(error.message || "تعذر فحص سجل الرقم");
+      } finally {
+        if (!controller.signal.aborted) setCheckingLead(false);
+      }
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [normalizedPhone]);
+
   async function sendManualMarketingMessage(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!normalizedPhone) {
@@ -101,6 +205,14 @@ export default function ManualMarketingPanel() {
     }
     if (!consentConfirmed) {
       toast({ title: "أكد موافقة العميل قبل الإرسال", variant: "destructive" });
+      return;
+    }
+    if (knownLead?.leadStatus === "excluded" || knownLead?.leadStatus === "converted") {
+      toast({ title: knownLead.leadStatus === "excluded" ? "هذا الرقم مستبعد من التواصل" : "هذا الرقم مرتبط بعميل فعلي", variant: "destructive" });
+      return;
+    }
+    if (knownLead?.leadStatus === "sent" && !confirmRepeat) {
+      toast({ title: "سبق إرسال رسالة لهذا الرقم", description: "أكد إرسال المتابعة أولًا إذا كان التواصل الجديد مقصودًا.", variant: "destructive" });
       return;
     }
     if (!message.trim() || message.trim().length > 2000) {
@@ -123,15 +235,26 @@ export default function ManualMarketingPanel() {
           message: message.trim(),
           consentConfirmed: true,
           confirmRepeat,
-          idempotencyKey: crypto.randomUUID(),
         }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "تعذر إرسال الرسالة");
+      void loadDailyQuota();
       setLastSentFingerprint(fingerprint);
+      setKnownLead((current: any) => ({
+        ...(current || {}),
+        id: data.leadId || current?.id,
+        normalizedPhone,
+        sector,
+        countryCode,
+        language,
+        businessName,
+        leadStatus: "sent",
+        sentAt: new Date().toISOString(),
+        exclusionSource: null,
+      }));
       setConfirmRepeat(false);
       setConsentConfirmed(false);
-      void queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/crm/manual-marketing/campaigns"] });
       toast(data.warning
         ? {
             title: "تم إرسال النص",
@@ -169,6 +292,88 @@ export default function ManualMarketingPanel() {
         </div>
       </div>
 
+      <div className="mx-4 mt-4 rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-2 text-sm font-black text-black dark:text-white">
+          <Target className="h-4 w-4 text-emerald-600" />
+          عداد التسويق اليدوي اليوم
+          {dailyQuota?.dayKey && <span className="text-[10px] font-medium text-black/45 dark:text-white/45">{dailyQuota.dayKey} · توقيت الرياض</span>}
+        </div>
+        {quotaLoadError ? (
+          <p className="mt-2 text-xs text-red-600">{quotaLoadError}</p>
+        ) : dailyQuota ? (
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span>أرسلت بنجاح اليوم: <strong>{dailyQuota.sent}</strong> رسالة</span>
+              {dailyQuota.quota > 0 ? (
+                <span>حصتك: <strong>{dailyQuota.quota}</strong> · المتبقي: <strong>{dailyQuota.remaining}</strong></span>
+              ) : (
+                <span className="text-black/50 dark:text-white/50">لم يحدد المدير حصة يومية لحسابك</span>
+              )}
+            </div>
+            {dailyQuota.quota > 0 && (
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${Math.min(100, (dailyQuota.sent / dailyQuota.quota) * 100)}%` }}
+                />
+              </div>
+            )}
+            {dailyQuota.completed && (
+              <p className="mt-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">اكتملت حصتك؛ وصل إشعار إلى المدير.</p>
+            )}
+            {dailyQuota.canManage && (
+              <div className="mt-4 border-t border-emerald-200/70 pt-3 dark:border-emerald-900/50">
+                <div className="mb-2 flex items-center gap-2 text-xs font-black">
+                  <Users className="h-4 w-4 text-emerald-600" />
+                  حصص موظفي Data Entry
+                </div>
+                {dailyQuota.staff?.length ? (
+                  <div className="space-y-2">
+                    {dailyQuota.staff.map((employee: any) => (
+                      <div key={employee.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/80 p-2 dark:bg-gray-900/70">
+                        <div className="min-w-[140px] flex-1">
+                          <p className="text-xs font-bold">{employee.name}</p>
+                          <p className="text-[10px] text-black/50 dark:text-white/50">
+                            أرسل {employee.sent} · {employee.quota > 0 ? `المتبقي ${employee.remaining}` : "لا توجد حصة محددة"}
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-1.5 text-[10px] text-black/60 dark:text-white/60">
+                          الحصة
+                          <input
+                            type="number"
+                            min={0}
+                            max={10000}
+                            step={1}
+                            value={quotaDrafts[employee.id] ?? employee.quota}
+                            onChange={event => setQuotaDrafts(current => ({ ...current, [employee.id]: Math.max(0, Math.min(10000, Number(event.target.value) || 0)) }))}
+                            className="h-8 w-20 rounded-md border border-black/10 bg-white px-2 text-sm text-black outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-gray-950 dark:text-white"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={savingQuotaFor === employee.id}
+                          onClick={() => void saveEmployeeQuota(employee.id)}
+                          className="h-8 rounded-md bg-emerald-600 px-3 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          {savingQuotaFor === employee.id ? "جارٍ الحفظ..." : "حفظ"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-black/50 dark:text-white/50">لا يوجد موظفو Data Entry نشطون.</p>
+                )}
+                <p className="mt-2 text-[10px] text-black/45 dark:text-white/45">
+                  يُرسل إشعار إكمال الحصة فورًا، وملخص غير المكتملين يوميًا عند 11:59 مساءً بتوقيت الرياض.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-black/50 dark:text-white/50">جارٍ تحميل العداد…</p>
+        )}
+      </div>
+
       <form onSubmit={sendManualMarketingMessage} className="p-4 md:p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1.5">
@@ -182,7 +387,6 @@ export default function ManualMarketingPanel() {
                   const nextPhone = event.target.value;
                   setPhone(nextPhone);
                   setConsentConfirmed(false);
-                  setConfirmRepeat(false);
                   const detectedCountry = inferManualMarketingCountryCode(
                     nextPhone,
                     COUNTRIES,
@@ -212,6 +416,44 @@ export default function ManualMarketingPanel() {
               <span className="block text-[10px] text-emerald-700 dark:text-emerald-300">
                 تم استنتاج {getArabicCountryName(countryCode)} من مفتاح الرقم.
               </span>
+            )}
+            {checkingLead && (
+              <span className="block text-[10px] text-black/50 dark:text-white/50">
+                جارٍ التحقق من سجل هذا الرقم...
+              </span>
+            )}
+            {leadLookupError && !checkingLead && (
+              <span className="block text-[10px] text-amber-700 dark:text-amber-300">
+                تعذّر تحميل سجل الرقم؛ سيعيد النظام التحقق قبل الإرسال.
+              </span>
+            )}
+            {knownLead?.leadStatus === "sent" && (
+              <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                <p className="font-bold">
+                  سبق إرسال رسالة إلى هذا الرقم
+                  {knownLead.sentAt && ` بتاريخ ${new Date(knownLead.sentAt).toLocaleDateString("ar-SA")}`}.
+                  {" "}الحالة الحالية: {knownLead.businessName || knownLead.lastReplyContactName || `+${knownLead.normalizedPhone}`}.
+                </p>
+                <label className="flex cursor-pointer items-start gap-2 leading-relaxed">
+                  <input
+                    type="checkbox"
+                    checked={confirmRepeat}
+                    onChange={(event) => setConfirmRepeat(event.target.checked)}
+                    className="mt-0.5 accent-amber-600"
+                  />
+                  <span>أؤكد أن هذه متابعة مقصودة، وأوافق على إرسال رسالة أخرى لهذا الرقم.</span>
+                </label>
+              </div>
+            )}
+            {knownLead?.leadStatus === "excluded" && (
+              <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-xs leading-relaxed text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+                هذا الرقم مسجل كمستبعد من التواصل، ولن يُرسل إليه. {knownLead.exclusionSource === "recipient_opt_out" ? "العميل طلب إيقاف الرسائل." : "يمكن مراجعة حالته من صفحة العملاء المحتملين إذا عاد العميل وطلب التواصل."}
+              </div>
+            )}
+            {knownLead?.leadStatus === "converted" && (
+              <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                هذا الرقم مرتبط بعميل فعلي؛ أوقف التسويق اليدوي لهذا الرقم.
+              </div>
             )}
           </div>
 
@@ -362,27 +604,25 @@ export default function ManualMarketingPanel() {
             />
             <span>أؤكد أن العميل وافق على استلام رسالة واتساب تسويقية، وسأحترم طلبه بإيقاف التواصل.</span>
           </label>
-          <label className="flex items-start gap-2 text-xs leading-relaxed text-black/65 dark:text-white/65 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={confirmRepeat}
-              onChange={(event) => setConfirmRepeat(event.target.checked)}
-              className="mt-0.5 accent-amber-600"
-            />
-            <span>أؤكد أن الرسالة متابعة مقصودة لرقم سبق التواصل معه.</span>
-          </label>
           <button
             type="submit"
-            disabled={isSending || !normalizedPhone || !consentConfirmed || !message.trim() || alreadySent}
+            disabled={isSending || checkingLead || !normalizedPhone || !consentConfirmed || !message.trim() || alreadySent || whatsappConnected === false || knownLead?.leadStatus === "excluded" || knownLead?.leadStatus === "converted" || (knownLead?.leadStatus === "sent" && !confirmRepeat)}
+            title={
+              whatsappConnected === false ? "حساب واتساب QIROX غير متصل"
+              : knownLead?.leadStatus === "excluded" ? "هذا الرقم مستبعد من التواصل"
+              : knownLead?.leadStatus === "converted" ? "هذا الرقم مرتبط بعميل فعلي"
+              : knownLead?.leadStatus === "sent" && !confirmRepeat ? "أكد المتابعة بعد الإرسال السابق"
+              : undefined
+            }
             className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isSending ? <LoaderCircle className="w-4 h-4 animate-spin" /> : alreadySent ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-            {isSending ? "جارٍ الإرسال..." : alreadySent ? "تم إرسال هذه الرسالة" : "إرسال يدوي"}
+            {isSending ? "جارٍ الإرسال..." : knownLead?.leadStatus === "sent" && !confirmRepeat ? "تأكيد المتابعة مطلوب" : alreadySent ? "تم إرسال هذه الرسالة" : "إرسال يدوي"}
           </button>
         </div>
         <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1.5">
           <MessageCircle className="w-3.5 h-3.5" />
-          ستُوجّه الردود إلى مسؤول المتابعة، ولن يرد المساعد الآلي على محادثة الحملة.
+          عند الرد على هذه الرسالة، سيصل الرد إلى 0532441566، ولن يرد المساعد الآلي على محادثة الحملة.
         </p>
       </form>
     </section>

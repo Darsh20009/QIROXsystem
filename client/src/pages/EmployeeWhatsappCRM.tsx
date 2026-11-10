@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-auth";
 import {
   Search, MessageCircle, Phone, User2, Copy, Star,
   CheckCircle2, Clock, Filter, Pencil, X, Send,
@@ -95,7 +95,7 @@ export default function EmployeeWhatsappCRM() {
   const [, setLocation] = useLocation();
   const { data: currentUser } = useUser();
   const L = lang === "ar";
-  const canManageWhatsApp = ["admin", "manager"].includes(currentUser?.role || "");
+  const canManageWhatsApp = ["admin", "manager"].includes(currentUser?.role);
 
   // ── State
   const [search, setSearch] = useState("");

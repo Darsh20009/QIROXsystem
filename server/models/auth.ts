@@ -65,14 +65,27 @@ const pushChallengeSchema = new mongoose.Schema({
 });
 export const PushChallengeModel = mongoose.models.PushChallenge || mongoose.model("PushChallenge", pushChallengeSchema);
 
+const whatsappLoginChallengeSchema = new mongoose.Schema({
+  challengeId: { type: String, required: true, unique: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  phoneDigits: { type: String, required: true, index: true },
+  tempToken: { type: String, default: "", index: true },
+  purpose: { type: String, enum: ["login", "2fa", "setup"], default: "login", index: true },
+  status: { type: String, enum: ["pending", "approved", "denied"], default: "pending" },
+  attempts: { type: Number, default: 0 },
+  maxAttempts: { type: Number, default: 5 },
+  usedAt: { type: Date, default: null },
+  expiresAt: { type: Date, required: true, index: { expires: 0 } },
+}, { timestamps: true });
+export const WhatsAppLoginChallengeModel =
+  mongoose.models.WhatsAppLoginChallenge ||
+  mongoose.model("WhatsAppLoginChallenge", whatsappLoginChallengeSchema);
+
 const phoneVerifyOtpSchema = new mongoose.Schema({
   userId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   phone:     { type: String, required: true, index: true },
   token:     { type: String, required: true, unique: true },
   otp:       { type: String },
-  otpHash:   { type: String, select: false },
-  attempts:  { type: Number, default: 0 },
-  maxAttempts: { type: Number, default: 5 },
   otpSent:   { type: Boolean, default: false },
   telegramChatId: { type: String },
   method:    { type: String, enum: ["telegram", "call", "whatsapp"], required: true },

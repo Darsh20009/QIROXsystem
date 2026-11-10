@@ -1212,8 +1212,8 @@ ${logText}
           detail: `اضغط Add Record ثم اختر CNAME`,
           record: {
             type: "CNAME",
-            name: `*.${domain.split(".").slice(1).join(".")}`,
-            value: "qiroxstudio.online",
+            name: `*.${domain}`,
+            value: process.env.QIROX_CLOUD_DNS_TARGET || "qiroxstudio.online",
             ttl: "14400"
           }
         },
@@ -1223,15 +1223,15 @@ ${logText}
           detail: `إذا كان مزوّد DNS لا يدعم wildcard CNAME، أضف A record`,
           record: {
             type: "A",
-            name: `*.${domain.split(".").slice(1).join(".")}`,
-            value: "سيظهر هنا IP الخادم بعد الانتهاء من إعداد Render",
+            name: `*.${domain}`,
+            value: process.env.QIROX_CLOUD_DNS_TARGET || "سيظهر هنا عنوان الخادم العام بعد إعداد مزود النشر",
             ttl: "14400"
           }
         },
         {
           step: 4,
           title: "أضف الدومين في Render Dashboard",
-          detail: `اذهب إلى Render → Service → Settings → Custom Domains → أضف *.${domain.split(".").slice(1).join(".")}`
+           detail: `اذهب إلى مزود النشر → إعدادات الخدمة → Custom Domains → أضف *.${domain}`
         },
         {
           step: 5,
@@ -1242,7 +1242,7 @@ ${logText}
     });
   });
 
-  console.log(`[DeploymentCloud] Routes registered | Mode: ${VERCEL_TOKEN ? "Vercel (real)" : "Simulation"}`);
+  console.log("[DeploymentCloud] Routes registered");
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1376,10 +1376,6 @@ export function registerSubdomainMiddleware(app: Express): void {
   const mainDomain = deploymentDomain.split(".").slice(-2).join("."); // qiroxstudio.online
 
   app.use(async (req: Request, res: Response, next: NextFunction) => {
-    // Requests still need to reach the regular SPA when the optional database
-    // connection is unavailable. Custom-domain resolution is database-backed.
-    if (DeploymentProjectModel.db.readyState !== 1) return next();
-
     const host = (req.headers.host || "").split(":")[0].toLowerCase();
 
     if (!host) return next();

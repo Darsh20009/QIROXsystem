@@ -765,7 +765,15 @@ export default function Cart() {
                         )}
                         {item.type !== 'plan' && item.config && Object.keys(item.config).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
-                            {Object.entries(item.config).slice(0, 3).map(([k, v]) => (
+                            {item.config.variantSummaryAr && (
+                              <span className="text-[10px] bg-black/[0.04] dark:bg-slate-800 border border-black/[0.07] dark:border-slate-700 px-2 py-1 rounded-md text-black/65 dark:text-slate-300 font-medium">
+                                {String(item.config.variantSummaryAr)}
+                              </span>
+                            )}
+                            {Object.entries(item.config)
+                              .filter(([key]) => !["productVariantId", "variantSummaryAr", "variantSummary"].includes(key))
+                              .slice(0, 3)
+                              .map(([k, v]) => (
                               typeof v === 'string' || typeof v === 'number' ? (
                                 <span key={k} className="text-[9px] bg-black/[0.03] dark:bg-slate-800 border border-black/[0.05] dark:border-slate-700 px-1.5 py-0.5 rounded text-black/40 dark:text-slate-500 font-mono">
                                   {String(v)}

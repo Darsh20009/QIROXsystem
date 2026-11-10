@@ -1,13 +1,13 @@
 ---
-name: dist/index.cjs git exclusion
-description: The bundled server artifact must not be committed — it bakes in secrets that trigger GitHub push protection.
+name: dist/index.cjs deployment bundle
+description: The bundled server artifact is intentionally tracked because Render deploys the pre-built server bundle.
 ---
 
-# dist/index.cjs — excluded from git
+# dist/index.cjs — tracked deployment bundle
 
 ## Rule
-`dist/index.cjs` (and `dist/index.cjs.map`) must stay in `.gitignore` and must never be committed.
+`dist/index.cjs` is intentionally committed because the current Render deployment serves the pre-built server bundle directly. Keep build-time environment values out of the bundle and use runtime secrets for production configuration.
 
-**Why:** The esbuild server bundle inlines all `import`ed source, including any API keys stored in env-loaded modules (e.g. Mistral AI key). GitHub's push protection scans for known secret patterns and rejects the push with `GH013: Repository rule violations`.
+**Why:** Removing the tracked bundle would break the deployment contract. The previous exclusion note was stale and conflicted with the current `.gitignore` and deployment setup.
 
-**How to apply:** After every `node script/build.mjs` the file is regenerated locally and used at runtime, but `git add -A` will skip it because `.gitignore` has the entry. Confirm with `git status` before pushing — if `dist/index.cjs` appears as staged, run `git rm --cached dist/index.cjs` before committing.
+**How to apply:** Preserve the tracked bundle for GitHub backups and deployment, but never build it with secret values embedded. Confirm runtime credentials are supplied through Replit/Render environment secrets rather than source or generated artifacts.

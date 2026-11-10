@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+
 /**
  * Capacitor Native Detection & Server URL Resolution
  *
@@ -11,16 +13,27 @@
 
 export function isCapacitorNative(): boolean {
   try {
-    // Capacitor 7 exposes the platform check as a function. Use the imported
-    // runtime API first because the global `isNative` flag is not guaranteed
-    // when the app uses `server.url`, which made iOS builds take the
-    // external-browser OAuth path. Avoid importing @capacitor/core here:
-    // this project intentionally leaves Capacitor packages external in the
-    // browser bundle and the native runtime provides the global object.
+    // Prefer the official Capacitor runtime. This is important when
+    // capacitor.config points the WebView at the production HTTPS URL: in that
+    // case location.protocol is "https", not "capacitor:".
+    if (Capacitor.getPlatform() !== "web") return true;
+
+    // Keep the global/bridge checks as compatibility fallbacks for older
+    // native shells and for the first render before the bridge is ready.
     const capacitor = (window as any).Capacitor;
     if (typeof capacitor?.isNativePlatform === "function") {
       return !!capacitor.isNativePlatform();
     }
+
+    // When `server.url` points at the production site, the WebView location
+    // is HTTPS instead of `capacitor://localhost`. In that configuration the
+    // global Capacitor object is not guaranteed to be populated before the
+    // first render, but the native bridge is already present. Detecting the
+    // bridge prevents OAuth buttons from taking the user to external Safari.
+    const webkitBridge = (window as any).webkit?.messageHandlers?.bridge;
+    const androidBridge = (window as any).androidBridge;
+    if (webkitBridge || androidBridge) return true;
+
     return (
       !!capacitor?.isNative ||
       window.location.protocol === "capacitor:" ||
@@ -58,19 +71,20 @@ export function apiUrl(path: string): string {
  * one-time device bearer token to native API calls and route relative API
  * URLs to the configured server.
  *
- * This is intentionally installed only in native builds. Browser requests
- * continue using normal same-origin cookies and are not modified.
+ * Native requests are routed to the configured server. Browser requests stay
+ * same-origin, but may also carry the device token when cookie persistence is
+ * blocked by an embedded browser or privacy settings.
  */
 export function installNativeAuthFetch(): void {
-  if (!isCapacitorNative() || typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-  const marker = "__qiroxNativeAuthFetchInstalled";
+  const marker = "__qiroxAuthFetchInstalled";
   if ((window as any)[marker]) return;
   (window as any)[marker] = true;
 
   const originalFetch = window.fetch.bind(window);
+  const native = isCapacitorNative();
   const serverBase = getServerUrl();
-  if (!serverBase) return;
 
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const inputUrl =
@@ -79,7 +93,7 @@ export function installNativeAuthFetch(): void {
         : input instanceof URL
           ? new URL(input.href)
           : new URL(input.url, window.location.href);
-    const serverOrigin = new URL(serverBase).origin;
+    const serverOrigin = serverBase ? new URL(serverBase).origin : window.location.origin;
     const isRelativeApi =
       inputUrl.origin === window.location.origin &&
       (inputUrl.pathname === "/api" || inputUrl.pathname.startsWith("/api/"));
@@ -89,7 +103,7 @@ export function installNativeAuthFetch(): void {
       return originalFetch(input, init);
     }
 
-    const targetUrl = isRelativeApi
+    const targetUrl = native && isRelativeApi
       ? `${serverBase}${inputUrl.pathname}${inputUrl.search}${inputUrl.hash}`
       : inputUrl.href;
     const token = (() => {

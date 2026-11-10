@@ -11,7 +11,7 @@ import Footer from "@/components/Footer";
 const POSTERS = [
   {
     id: 1,
-    src: "/posters/poster1.png",
+    src: "/posters/poster1.webp",
     alt: "ميزانيتك لا توقف فكرتك - كيروكس استوديو",
     titleAr: "ميزانيتك لا توقف فكرتك",
     titleEn: "Your Budget Doesn't Stop Your Vision",
@@ -23,7 +23,7 @@ const POSTERS = [
   },
   {
     id: 2,
-    src: "/posters/poster2.png",
+    src: "/posters/poster2.webp",
     alt: "أنت تتخيل ونحن نحولها إلى تقنية - كيروكس",
     titleAr: "أنت تتخيل ونحن نحوّلها إلى تقنية",
     titleEn: "You Imagine, We Build the Technology",
@@ -35,7 +35,7 @@ const POSTERS = [
   },
   {
     id: 3,
-    src: "/posters/poster3.png",
+    src: "/posters/poster3.webp",
     alt: "خدمات تقنية متكاملة لنمو أعمالك - كيروكس",
     titleAr: "خدمات تقنية متكاملة لنمو أعمالك",
     titleEn: "Integrated Tech Services for Business Growth",
@@ -47,7 +47,7 @@ const POSTERS = [
   },
   {
     id: 4,
-    src: "/posters/poster4.png",
+    src: "/posters/poster4.webp",
     alt: "مواقع تطبيقات وأنظمة تحت سقف واحد - كيروكس",
     titleAr: "مواقع، تطبيقات، وأنظمة تحت سقف واحد",
     titleEn: "Websites, Apps & Systems Under One Roof",
@@ -59,7 +59,7 @@ const POSTERS = [
   },
   {
     id: 5,
-    src: "/posters/poster5.png",
+    src: "/posters/poster5.webp",
     alt: "نظام إداري احترافي للشركات - كيروكس",
     titleAr: "نظام إداري احترافي لشركتك",
     titleEn: "Professional Management System for Your Company",
@@ -71,7 +71,7 @@ const POSTERS = [
   },
   {
     id: 6,
-    src: "/posters/poster6.png",
+    src: "/posters/poster6.webp",
     alt: "متجر إلكتروني احترافي - كيروكس",
     titleAr: "متجرك الإلكتروني يستحق الأفضل",
     titleEn: "Your Online Store Deserves the Best",
@@ -83,7 +83,7 @@ const POSTERS = [
   },
   {
     id: 7,
-    src: "/posters/poster7.png",
+    src: "/posters/poster7.webp",
     alt: "تطبيق جوال احترافي - كيروكس استوديو",
     titleAr: "تطبيق جوال يُرتقى بتجربة عملائك",
     titleEn: "A Mobile App That Elevates Your Customer Experience",
@@ -95,7 +95,7 @@ const POSTERS = [
   },
   {
     id: 8,
-    src: "/posters/poster8.png",
+    src: "/posters/poster8.webp",
     alt: "مش كل ERP معقد - كيروكس",
     titleAr: "مش كل ERP معقد — التعقيد في الاختيار الغلط",
     titleEn: "Not Every ERP is Complicated — the Complexity is in Choosing Wrong",
@@ -107,7 +107,7 @@ const POSTERS = [
   },
   {
     id: 9,
-    src: "/posters/poster9.png",
+    src: "/posters/poster9.webp",
     alt: "تطبيقات ذكية تصمم لتخدم أعمالك - كيروكس",
     titleAr: "تطبيقات ذكية تُصمَّم لتخدم أعمالك",
     titleEn: "Smart Applications Designed to Power Your Business",

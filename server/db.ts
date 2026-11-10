@@ -25,16 +25,11 @@ export async function connectToDatabase() {
   }
 
   const emailOverrides: Record<string, string> = {};
+  if (saved.emailLogoUrl) emailOverrides.logoUrl = saved.emailLogoUrl;
   if (saved.emailSiteUrl) emailOverrides.siteUrl = saved.emailSiteUrl;
   if (Object.keys(emailOverrides).length) {
     connManager.setEmailSettings(emailOverrides as any);
     console.log("[DB] Email settings applied from SystemSettings");
-  }
-  if (saved.emailLogoUrl) {
-    const { saveSystemSettings } = await import("./system-settings");
-    await saveSystemSettings({ emailLogoUrl: "" }).catch((error: any) => {
-      console.warn("[DB] Could not clear the obsolete global email logo setting:", error?.message || "unknown error");
-    });
   }
 
   await ensureInvestorDistributionIndex();

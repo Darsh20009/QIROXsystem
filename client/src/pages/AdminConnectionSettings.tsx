@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export default function AdminConnectionSettings() {
   const [showMainUri, setShowMainUri] = useState(false);
   const [showQmeetUri, setShowQmeetUri] = useState(false);
 
-  const [emailForm, setEmailForm] = useState({ emailSiteUrl: "" });
+  const [emailForm, setEmailForm] = useState({ emailLogoUrl: "", emailSiteUrl: "" });
   const [provisionDays, setProvisionDays] = useState("30");
   const [provisionResult, setProvisionResult] = useState<any>(null);
 
@@ -60,10 +60,20 @@ export default function AdminConnectionSettings() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  const { data, isLoading, refetch } = useQuery<any>({
+  const { data, isLoading, isError, error, refetch } = useQuery<any>({
     queryKey: ["/api/admin/connection-settings"],
     refetchInterval: 15000,
   });
+  const emailFormInitialized = useRef(false);
+
+  useEffect(() => {
+    if (!data?.settings || emailFormInitialized.current) return;
+    setEmailForm({
+      emailLogoUrl: data.settings.emailLogoUrl || "",
+      emailSiteUrl: data.settings.emailSiteUrl || "",
+    });
+    emailFormInitialized.current = true;
+  }, [data]);
 
   const changeMainDb = useMutation({
     mutationFn: (uri: string) => apiRequest("POST", "/api/admin/connection-settings/main-db", { uri }).then(r => r.json()),
@@ -120,6 +130,17 @@ export default function AdminConnectionSettings() {
   }
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><RefreshCw className="w-8 h-8 animate-spin text-black/20" /></div>;
+  if (isError) return (
+    <div className="max-w-3xl mx-auto p-6" dir={dir}>
+      <Card>
+        <CardHeader><CardTitle>{L ? "تعذر تحميل إعدادات الاتصال" : "Could not load connection settings"}</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-red-600">{(error as Error)?.message || (L ? "تحقق من صلاحيات حساب المدير والاتصال بالخادم." : "Check administrator access and server connectivity.")}</p>
+          <Button variant="outline" onClick={() => refetch()} className="gap-2"><RefreshCw className="w-4 h-4" />{L ? "إعادة المحاولة" : "Try again"}</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   const status = data?.status;
   const settings = data?.settings;
@@ -291,9 +312,16 @@ export default function AdminConnectionSettings() {
           <TabsContent value="email" className="mt-4 space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Mail className="w-4 h-4 text-black dark:text-white" />{L ? "إعدادات البريد الإلكتروني (cPanel SMTP)" : "Email Settings (cPanel SMTP)"}</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Mail className="w-4 h-4 text-black dark:text-white" />{L ? "إعدادات البريد الإلكتروني" : "Email Settings"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-xs text-black/55 dark:text-white/55">
+                  {L
+                    ? "هذه الصفحة تحفظ شعار ورابط الموقع وتختبر الإرسال. بيانات SMTP تُدار من إدارة البريد المؤسسي أو من إعدادات أسرار بيئة العمل."
+                    : "This page saves the email logo/site URL and tests delivery. SMTP credentials are managed in Corporate Mail or workspace secrets."}
+                  {" "}
+                  <a href="/admin/mail-accounts" className="font-semibold underline underline-offset-2">{L ? "فتح إدارة البريد المؤسسي" : "Open Corporate Mail"}</a>
+                </p>
                 {env && (
                   <div className="bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/10 rounded-xl p-3">
                     <p className="text-xs font-semibold mb-2">{L ? "حالة خادم البريد" : "Mail Server Status"}</p>
@@ -314,15 +342,17 @@ export default function AdminConnectionSettings() {
                   </div>
                 )}
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="flex items-center gap-3 rounded-xl border border-black/10 dark:border-white/10 p-3">
-                      <img src="/qirox-icon-nobg.png" alt="QIROX" className="h-10 w-10 object-contain" />
-                      <div>
-                        <Label className="text-xs">{L ? "هوية البريد" : "Email Branding"}</Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {L ? "شعار QIROX ثابت لجميع رسائل النظام؛ شعارات المشاريع تبقى خاصة بكل مشروع." : "QIROX branding is fixed for system emails; project logos stay scoped to their projects."}
-                        </p>
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">{L ? "رابط الشعار في البريد" : "Email Logo URL"}</Label>
+                      <Input
+                        value={emailForm.emailLogoUrl}
+                        onChange={e => setEmailForm(f => ({ ...f, emailLogoUrl: e.target.value }))}
+                        placeholder="https://yoursite.com/logo.png"
+                        dir="ltr"
+                        className="text-xs mt-1"
+                        data-testid="input-email-logo-url"
+                      />
                     </div>
                     <div>
                       <Label className="text-xs">{L ? "رابط الموقع في البريد" : "Email Site URL"}</Label>

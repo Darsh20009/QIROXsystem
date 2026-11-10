@@ -7,9 +7,8 @@ import {
   InterestedLeadModel,
   GlobalSentEmailModel,
 } from "./models";
-import { getEmailProviderStatus, sendEmail } from "./email";
+import { sendEmail } from "./email";
 import { connManager } from "./connection-manager";
-import { getEmailMarketingBaseUrl } from "./email-marketing-utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,7 +17,8 @@ function genTrackId(): string {
 }
 
 function getBaseUrl(): string {
-  return getEmailMarketingBaseUrl();
+  const domain = process.env.REPLIT_DEV_DOMAIN || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
+  return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
 /** Wrap all links in the HTML body with tracking redirects */
@@ -47,11 +47,6 @@ function buildTrackedEmail(htmlBody: string, trackId: string): string {
 // ── Daily bulk send (1000 emails) ────────────────────────────────────────────
 
 export async function runDailyBulkCampaign(): Promise<{ sent: number; skipped: number; campaignId: string | null }> {
-  const emailStatus = getEmailProviderStatus();
-  if (!emailStatus.configured) {
-    throw new Error(`إعدادات البريد غير مكتملة: ${emailStatus.missing.join(", ")}`);
-  }
-
   // Find an active daily template (most recent manual campaign marked as template, or create default)
   const templateCampaign = await EmailCampaignModel.findOne({ type: "daily_bulk", status: "completed" }).sort({ completedAt: -1 }).lean();
 
@@ -117,12 +112,7 @@ export async function runDailyBulkCampaign(): Promise<{ sent: number; skipped: n
               { upsert: true }
             );
           }
-        } catch {
-          await EmailCampaignRecipientModel.updateOne(
-            { trackId: r.trackId },
-            { $set: { status: "failed", sentAt: null } },
-          ).catch(() => {});
-        }
+        } catch {}
       })
     );
     // Small delay between batches
@@ -130,11 +120,7 @@ export async function runDailyBulkCampaign(): Promise<{ sent: number; skipped: n
   }
 
   await EmailCampaignModel.updateOne({ _id: campaign._id }, {
-    $set: {
-      status: sent === candidates.length ? "completed" : "failed",
-      totalSent: sent,
-      completedAt: new Date(),
-    }
+    $set: { status: "completed", totalSent: sent, completedAt: new Date() }
   });
 
   return { sent, skipped: candidates.length - sent, campaignId: String(campaign._id) };
@@ -211,8 +197,8 @@ function getDefaultMarketingHtml(): string {
   body{margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;direction:rtl}
   .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}
   .header{background:#000;padding:32px;text-align:center}
-  .header img{width:60px;height:60px;border-radius:50%}
-  .header h1{color:#fff;margin:12px 0 0;font-size:24px;letter-spacing:1px}
+  .header img{width:52px;height:52px;border-radius:14px;object-fit:contain;background:#101827;border:1px solid #263247;padding:6px}
+  .header h1{color:#fff;margin:12px 0 0;font-size:22px;letter-spacing:2px}
   .body{padding:36px 32px}
   .body h2{font-size:22px;color:#111;margin-bottom:12px}
   .body p{color:#444;font-size:15px;line-height:1.8;margin-bottom:16px}
@@ -228,7 +214,7 @@ function getDefaultMarketingHtml(): string {
 <body>
 <div class="wrap">
   <div class="header">
-    <img src="${site}/qirox-icon.png" alt="Qirox" />
+    <img src="${site}/qirox-icon-nobg.png" alt="QIROX Studio" />
     <h1>QIROX</h1>
   </div>
   <div class="body">
@@ -293,19 +279,6 @@ function getFollowUpHtml(): string {
 // ── Route registration ────────────────────────────────────────────────────────
 
 export function registerEmailMarketingRoutes(app: Express) {
-
-  // Fail fast when MongoDB is down instead of letting Mongoose buffer requests
-  // until they time out. Keep tracking pixels/redirects available.
-  app.use("/api/email-marketing", (req, res, next) => {
-    if (req.path.startsWith("/track/")) return next();
-    if (connManager.getStatus().primary.state !== "connected") {
-      return res.status(503).json({
-        error: "قاعدة البيانات غير متصلة",
-        code: "DATABASE_UNAVAILABLE",
-      });
-    }
-    next();
-  });
 
   // ── Tracking (public, no auth) ──────────────────────────────────────────────
 
@@ -527,16 +500,8 @@ export function registerEmailMarketingRoutes(app: Express) {
 
   // Send / launch campaign (picks unsent emails)
   app.post("/api/email-marketing/campaigns/:id/send", async (req, res) => {
-    if (!(req as any).isAuthenticated?.() || !["admin", "manager", "marketing"].includes((req as any).user?.role)) {
+    if (!(req as any).isAuthenticated?.() || !["admin", "manager"].includes((req as any).user?.role)) {
       return res.status(403).json({ error: "Forbidden" });
-    }
-    const emailStatus = getEmailProviderStatus();
-    if (!emailStatus.configured) {
-      return res.status(503).json({
-        error: "إعدادات البريد غير مكتملة؛ لن تبدأ الحملة حتى يتم إعداد SMTP.",
-        code: "EMAIL_PROVIDER_NOT_CONFIGURED",
-        missing: emailStatus.missing,
-      });
     }
     try {
       const campaign = await EmailCampaignModel.findById(req.params.id).lean();
@@ -556,14 +521,6 @@ export function registerEmailMarketingRoutes(app: Express) {
             unsubscribed: false,
             bounced: false,
           }).limit(batchSize).lean();
-
-          if (!candidates.length) {
-            await EmailCampaignModel.updateOne(
-              { _id: campaign._id },
-              { $set: { status: "completed", totalTarget: 0, totalSent: 0, completedAt: new Date() } },
-            );
-            return;
-          }
 
           let sent = 0;
           const recipients: any[] = candidates.map(c => ({
@@ -594,22 +551,11 @@ export function registerEmailMarketingRoutes(app: Express) {
                     { upsert: true }
                   );
                 }
-              } catch {
-                await EmailCampaignRecipientModel.updateOne(
-                  { trackId: r.trackId },
-                  { $set: { status: "failed", sentAt: null } },
-                ).catch(() => {});
-              }
+              } catch {}
             }));
             await new Promise(res => setTimeout(res, 200));
           }
-          await EmailCampaignModel.updateOne({ _id: campaign._id }, {
-            $set: {
-              status: sent === candidates.length ? "completed" : "failed",
-              totalSent: sent,
-              completedAt: new Date(),
-            }
-          });
+          await EmailCampaignModel.updateOne({ _id: campaign._id }, { $set: { status: "completed", totalSent: sent, completedAt: new Date() } });
         } catch (err) {
           await EmailCampaignModel.updateOne({ _id: campaign._id }, { $set: { status: "failed" } });
         }
@@ -645,16 +591,8 @@ export function registerEmailMarketingRoutes(app: Express) {
 
   // ── Manual triggers ─────────────────────────────────────────────────────────
   app.post("/api/email-marketing/run-daily", async (req, res) => {
-    if (!(req as any).isAuthenticated?.() || !["admin", "manager", "marketing"].includes((req as any).user?.role)) {
+    if (!(req as any).isAuthenticated?.() || !["admin", "manager"].includes((req as any).user?.role)) {
       return res.status(403).json({ error: "Forbidden" });
-    }
-    const emailStatus = getEmailProviderStatus();
-    if (!emailStatus.configured) {
-      return res.status(503).json({
-        error: "إعدادات البريد غير مكتملة؛ لم تبدأ الحملة.",
-        code: "EMAIL_PROVIDER_NOT_CONFIGURED",
-        missing: emailStatus.missing,
-      });
     }
     try {
       res.json({ success: true, message: "بدأ الإرسال اليومي في الخلفية" });
@@ -665,7 +603,7 @@ export function registerEmailMarketingRoutes(app: Express) {
   });
 
   app.post("/api/email-marketing/run-weekly", async (req, res) => {
-    if (!(req as any).isAuthenticated?.() || !["admin", "manager", "marketing"].includes((req as any).user?.role)) {
+    if (!(req as any).isAuthenticated?.() || !["admin", "manager"].includes((req as any).user?.role)) {
       return res.status(403).json({ error: "Forbidden" });
     }
     try {

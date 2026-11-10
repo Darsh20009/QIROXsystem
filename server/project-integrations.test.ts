@@ -112,7 +112,8 @@ test("project integration secrets stay one-time and rate limits are isolated", a
   assert.equal(serializedText.includes(secret.rawKey), false, "raw key must never be serialized");
   assert.equal(serializedText.includes(secret.keyHash), false, "key hash must never be serialized");
   assert.equal(serialized?.keyPrefix, secret.keyPrefix);
-  assert.equal(projectIntegrationApiDocs.endpoints.length, 3);
+  assert.equal(projectIntegrationApiDocs.endpoints.length, 4);
+  assert.ok(projectIntegrationApiDocs.endpoints.some((endpoint) => endpoint.path.endsWith("/subscription")));
   assert.deepEqual(projectIntegrationApiDocs.limits.api.channels, ["email", "whatsapp"]);
   assert.equal(JSON.stringify(projectIntegrationApiDocs).includes("WHATSAPP_META_ACCESS_TOKEN"), false);
 

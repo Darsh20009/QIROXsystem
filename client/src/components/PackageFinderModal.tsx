@@ -62,6 +62,10 @@ function PriceSection({ tier, plans }: { tier: Tier; plans: PricingPlan[] }) {
       {monthly  && <PriceRow label="شهري"           price={monthly.price}  currency={monthly.currency} />}
       {yearly   && <PriceRow label="سنوي (الأوفر)"  price={yearly.price}   currency={yearly.currency}  highlight />}
       {lifetime && <PriceRow label="مدى الحياة"     price={lifetime.price} currency={lifetime.currency} />}
+      <p className="mt-3 border-t border-white/[0.06] pt-3 text-[10px] leading-relaxed text-white/40">
+        الباقات المحددة المدة تتضمن شارة «صنع بواسطة QIROX Studio»،
+        وباقة مدى الحياة تتيح إمكانية إزالتها.
+      </p>
     </div>
   );
 }

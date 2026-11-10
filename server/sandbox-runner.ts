@@ -1,5 +1,6 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
+import net from "node:net";
 import { getProjectDir } from "./sandbox-fs";
 import { pushToUser, broadcastSandboxLog } from "./ws";
 
@@ -105,9 +106,9 @@ export async function startProcess(
 
   const envVars: Record<string, string> = {
     ...process.env as Record<string, string>,
+    ...(opts.env || {}),
     PORT: String(port),
     NODE_ENV: "development",
-    ...(opts.env || {}),
   };
 
   if (opts.installCmd) {
@@ -141,6 +142,7 @@ export async function startProcess(
     cwd,
     env: envVars,
     stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
   });
 
   child.stdout?.on("data", (data: Buffer) => {
@@ -174,7 +176,20 @@ export async function startProcess(
     logs: [],
   });
 
-  return { port, pid: child.pid || 0 };
+  const deadline = Date.now() + 60000;
+  while (Date.now() < deadline && runningProcesses.get(projectId)?.process === child) {
+    const ready = await new Promise<boolean>(resolve => {
+      const socket = net.createConnection({ host: "127.0.0.1", port });
+      socket.setTimeout(500);
+      socket.once("connect", () => { socket.destroy(); resolve(true); });
+      socket.once("error", () => { socket.destroy(); resolve(false); });
+      socket.once("timeout", () => { socket.destroy(); resolve(false); });
+    });
+    if (ready) return { port, pid: child.pid || 0 };
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  await stopProcess(projectId);
+  throw new Error("لم يفتح النظام منفذ التشغيل؛ راجع سجل التشغيل لمعرفة السبب");
 }
 
 function runCommand(cmd: string, cwd: string, env: Record<string, string>, ownerId: string, projectId: string): Promise<void> {

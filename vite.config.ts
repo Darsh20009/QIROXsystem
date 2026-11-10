@@ -57,9 +57,13 @@ export default defineConfig({
     minify: "esbuild",
     cssMinify: true,
     rollupOptions: {
+      // Capacitor's JavaScript proxies must be bundled into the web assets.
+      // Leaving them as bare external imports makes the browser request
+      // /@capacitor/* and leaves the whole app blank. Native implementations
+      // are still provided by the iOS/Android plugins at runtime.
       external: hasReactDom
-        ? (id: string) => id.startsWith("@capacitor/")
-        : (id: string) => id.startsWith("@capacitor/") || ["react", "react-dom", "react-dom/client"].includes(id),
+        ? []
+        : (id: string) => ["react", "react-dom", "react-dom/client"].includes(id),
       onwarn(warning, defaultHandler) {
         if (
           warning.code === "UNRESOLVED_IMPORT" &&

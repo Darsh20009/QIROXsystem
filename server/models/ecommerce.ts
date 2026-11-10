@@ -1,6 +1,25 @@
 import mongoose from "mongoose";
 import { transform } from "./utils";
 
+const productOptionValueSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+}, { _id: false });
+
+const productOptionGroupSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  values: { type: [productOptionValueSchema], default: [] },
+}, { _id: false });
+
+const productVariantSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  choices: { type: mongoose.Schema.Types.Mixed, required: true },
+  price: { type: Number, required: true, min: 0 },
+}, { _id: false });
+
 const qiroxProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
   nameAr: { type: String, required: true },
@@ -35,6 +54,8 @@ const qiroxProductSchema = new mongoose.Schema({
     isFree: { type: Boolean, default: false },
     features: [String],
   }],
+  optionGroups: { type: [productOptionGroupSchema], default: [] },
+  variants: { type: [productVariantSchema], default: [] },
   requiresShipping: { type: Boolean, default: false },
   shippingProviders: [{
     companyId:   { type: String, required: true },

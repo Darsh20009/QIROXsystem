@@ -147,3 +147,4 @@ export const FEATURE_FLAGS_QUERY_KEY = ["public-feature-flags"] as const;
 /** Feature flag names consumed by this feature. */
 export const FLAG_CUSTOMER_JOURNEY_V2 = "FEATURE_CUSTOMER_JOURNEY_V2";
 export const FLAG_DASHBOARD_V2        = "FEATURE_DASHBOARD_V2";
+export const FLAG_NATIVE_SFU          = "FEATURE_NATIVE_SFU";

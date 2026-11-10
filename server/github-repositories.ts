@@ -28,10 +28,81 @@ export function githubRepositoryName(projectName: unknown, projectId?: unknown):
   return `${base}-${suffix || "workspace"}`.slice(0, 100);
 }
 
+export function customGitHubRepositoryName(value: unknown): string {
+  if (typeof value !== "string") throw githubRepositoryError("اسم المستودع يجب أن يكون نصاً", 400);
+  const name = value.trim();
+  if (name && (!/^[a-zA-Z0-9._-]{1,100}$/.test(name) || !/[a-zA-Z0-9]/.test(name) || /\.git$/i.test(name))) {
+    throw githubRepositoryError("استخدم اسماً من 1 إلى 100 حرف إنجليزي أو رقم، ويمكن استخدام - أو _ أو نقطة، دون .git", 400);
+  }
+  return name;
+}
+
 export function githubRepositoryError(message: string, status?: number): Error & { status?: number } {
   const error = new Error(message) as Error & { status?: number };
   error.status = status;
   return error;
+}
+
+export type GitHubApiOperation =
+  | "repository_read"
+  | "branch_read"
+  | "commit_read"
+  | "tree_read"
+  | "backup_ref_create"
+  | "blob_create"
+  | "tree_create"
+  | "commit_create"
+  | "branch_update"
+  | "other";
+
+export function classifyGitHubApiOperation(path: string, method = "GET"): GitHubApiOperation {
+  const route = path.split("?")[0];
+  const verb = method.toUpperCase();
+  if (verb === "PATCH" && /\/git\/refs\/heads\/[^/]+$/.test(route)) return "branch_update";
+  if (verb === "POST" && route.endsWith("/git/refs")) return "backup_ref_create";
+  if (verb === "POST" && route.endsWith("/git/blobs")) return "blob_create";
+  if (verb === "POST" && route.endsWith("/git/trees")) return "tree_create";
+  if (verb === "POST" && route.endsWith("/git/commits")) return "commit_create";
+  if (verb === "GET" && /\/git\/ref\/heads\/[^/]+$/.test(route)) return "branch_read";
+  if (verb === "GET" && /\/git\/commits\/[^/]+$/.test(route)) return "commit_read";
+  if (verb === "GET" && /\/git\/trees\/[^/]+$/.test(route)) return "tree_read";
+  if (verb === "GET" && /^\/repos\/[^/]+\/[^/]+$/.test(route)) return "repository_read";
+  return "other";
+}
+
+export function classifyGitHubApiError(status: number, message: unknown): string {
+  const normalized = String(message || "").toLowerCase();
+  if (status === 429) return "github_rate_limit";
+  if (/secondary rate limit|api rate limit|rate limit exceeded/.test(normalized)) return "github_rate_limit";
+  if (/secret scanning|push protection|gh013|repository rule violations|protected branch|branch protection|ruleset/.test(normalized)) {
+    return "github_repository_rules";
+  }
+  if (/resource not accessible|personal access token|access token does not have|required permissions|integration.*permission/.test(normalized)) {
+    return "github_token_scope";
+  }
+  if (status === 401) return "github_unauthorized";
+  if (status === 403) return "github_forbidden";
+  return `github_http_${status}`;
+}
+
+export function githubRateLimitRetryDelayMs(headers: Pick<Headers, "get">, now = Date.now()): number {
+  const retryAfter = headers.get("retry-after");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    const retryAt = Number.isFinite(seconds) ? now + seconds * 1000 : Date.parse(retryAfter);
+    if (Number.isFinite(retryAt)) return Math.max(1000, retryAt - now);
+  }
+
+  if (Number(headers.get("x-ratelimit-remaining")) === 0) {
+    const resetAtSeconds = Number(headers.get("x-ratelimit-reset"));
+    if (Number.isFinite(resetAtSeconds) && resetAtSeconds > 0) {
+      return Math.max(1000, resetAtSeconds * 1000 - now + 1000);
+    }
+  }
+
+  // GitHub asks clients to wait at least one minute when a secondary limit
+  // response does not include a Retry-After or primary reset header.
+  return 60_000;
 }
 
 export async function githubFetch(
@@ -39,22 +110,42 @@ export async function githubFetch(
   token: string,
   init: RequestInit = {},
 ): Promise<any> {
-  const response = await fetch(`${GITHUB_API_URL}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      Authorization: `Bearer ${token}`,
-      ...(init.headers || {}),
-    },
-  });
-  const text = await response.text();
-  let body: any = {};
-  try { body = text ? JSON.parse(text) : {}; } catch { body = { message: text }; }
-  if (!response.ok) {
-    throw githubRepositoryError(`GitHub API request failed (${response.status})`, response.status);
+  const maxRateLimitRetries = 1;
+  const maxAutomaticWaitMs = 120_000;
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`${GITHUB_API_URL}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        Authorization: `Bearer ${token}`,
+        ...(init.headers || {}),
+      },
+    });
+    const text = await response.text();
+    let body: any = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { body = { message: text }; }
+    if (response.ok) return body;
+
+    const code = classifyGitHubApiError(response.status, body?.message);
+    const retryDelayMs = code === "github_rate_limit"
+      ? githubRateLimitRetryDelayMs(response.headers)
+      : 0;
+    if (code === "github_rate_limit" && attempt < maxRateLimitRetries && retryDelayMs <= maxAutomaticWaitMs) {
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+      continue;
+    }
+
+    const error = githubRepositoryError(`GitHub API request failed (${response.status})`, response.status) as Error & {
+      code?: string;
+      operation?: GitHubApiOperation;
+      retryAfterSeconds?: number;
+    };
+    error.code = code;
+    error.operation = classifyGitHubApiOperation(path, init.method || "GET");
+    if (code === "github_rate_limit") error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
+    throw error;
   }
-  return body;
 }
 
 export async function resolveGitHubToken(req?: Request, preferManaged = false, userId?: string): Promise<string> {
@@ -96,6 +187,7 @@ export async function ensureGitHubRepository(input: {
   name: string;
   description?: string;
   visibility: GitHubRepositoryVisibility;
+  expectedProjectMarker?: string;
 }): Promise<GitHubRepositoryMetadata> {
   if (!input.token) throw githubRepositoryError("GitHub connection is not configured");
   const account = await githubFetch("/user", input.token);
@@ -104,6 +196,9 @@ export async function ensureGitHubRepository(input: {
 
   try {
     const existing = await githubFetch(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(input.name)}`, input.token);
+    if (input.expectedProjectMarker && !String(existing.description || "").endsWith(input.expectedProjectMarker)) {
+      throw githubRepositoryError("اسم المستودع محجوز لمستودع آخر. اختر اسماً مختلفاً؛ لم يتم تغيير الكود الموجود.", 409);
+    }
     if (Boolean(existing.private) !== (input.visibility === "private")) {
       const updated = await githubFetch(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(input.name)}`, input.token, {
         method: "PATCH",
@@ -132,6 +227,9 @@ export async function ensureGitHubRepository(input: {
   } catch (error: any) {
     if (error?.status !== 422) throw error;
     const existing = await githubFetch(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(input.name)}`, input.token);
+    if (input.expectedProjectMarker && !String(existing.description || "").endsWith(input.expectedProjectMarker)) {
+      throw githubRepositoryError("اسم المستودع محجوز لمستودع آخر. اختر اسماً مختلفاً؛ لم يتم تغيير الكود الموجود.", 409);
+    }
     return repositoryMetadata(existing, owner);
   }
 }
