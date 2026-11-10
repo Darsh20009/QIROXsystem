@@ -1,18 +1,21 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const trackedFiles = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
+const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
+  encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
+})
   .split("\0")
   .filter(Boolean);
 
 const highConfidenceRules = [
   {
     name: "private-key-material",
-    pattern: /-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----[\s\S]{80,}?-----END /,
+    pattern: /-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\r?\n(?:[A-Za-z0-9+/=]{1,76}\r?\n)+-----END (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/,
   },
   {
     name: "mongodb-credential-uri",
-    pattern: /mongodb(?:\+srv)?:\/\/(?!user:pass@)[^<>{}\s"'`]+:[^<>{}\s"'`]+@/i,
+    pattern: /mongodb(?:\+srv)?:\/\/(?!user:pass@)[^<>{}\s"'`]+:[^<>{}\s"'`]+@(?![^/\s]+\.example(?:\/|$))/i,
   },
   {
     name: "github-token",
