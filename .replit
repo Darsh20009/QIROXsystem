@@ -86,6 +86,8 @@ QMEET_SFU_ADDR = ":8008"
 QMEET_SFU_ALLOWED_ORIGINS = "https://d5c542de-437a-45b2-a75b-c35c6efc753c-00-1z93j4za1zdht.sisko.replit.dev"
 QMEET_SFU_URL = "wss://d5c542de-437a-45b2-a75b-c35c6efc753c-00-1z93j4za1zdht.sisko.replit.dev:8008/ws"
 MAIL_ALERT_CEO_WHATSAPP_NUMBER = "+966532441566"
+SMTP_HOST = "server222.web-hosting.com"
+SMTP_USER = "noreply@qirox.online"
 
 [userenv.development]
 FEATURE_EMPLOYEE_OPERATIONS_V2 = "true"
