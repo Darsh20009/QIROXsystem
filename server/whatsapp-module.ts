@@ -563,6 +563,17 @@ class WhatsAppModule extends EventEmitter {
     await this.sendText(chatId, message, false);
   }
 
+  async hasWhatsAppAccount(phoneRaw: string): Promise<boolean> {
+    if (!this.sock || this.status !== "connected") throw new Error("WhatsApp غير متصل");
+    const phone = normalizeManualMarketingPhone(phoneRaw);
+    if (!phone || phone.length < 7) throw new Error("رقم واتساب غير صالح");
+    const sock = this.sock;
+    const result = await sock.onWhatsApp(phone);
+    if (this.sock !== sock || this.status !== "connected") throw new Error("تغير اتصال واتساب أثناء التحقق");
+    if (!Array.isArray(result)) throw new Error("تعذر التحقق من تسجيل الرقم في واتساب");
+    return result.some((entry: any) => entry?.exists === true);
+  }
+
   async sendDocumentNotification(
     phoneRaw: string | null | undefined,
     content: Buffer,

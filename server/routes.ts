@@ -24108,6 +24108,20 @@ export async function registerInstallmentRoutes(app: Express) {
         if (waModule.getStatus().status !== "connected") {
           return res.status(503).json({ error: "حساب واتساب QIROX غير متصل. اطلب من المسؤول إعادة توصيله ثم أعد الإرسال." });
         }
+        let recipientHasWhatsApp: boolean;
+        try {
+          recipientHasWhatsApp = await waModule.hasWhatsAppAccount(normalizedPhone);
+        } catch (verificationError: any) {
+          console.error("[ManualMarketing] WhatsApp recipient verification failed:", verificationError?.message || verificationError);
+          return res.status(502).json({
+            error: "تعذر التحقق من وجود حساب واتساب لهذا الرقم. لم يتم إرسال الرسالة؛ حاول مرة أخرى لاحقًا.",
+          });
+        }
+        if (!recipientHasWhatsApp) {
+          return res.status(422).json({
+            error: "هذا الرقم لا يملك حساب واتساب. لم يتم إرسال الرسالة ولم يُسجّل كإرسال ناجح.",
+          });
+        }
         const logoCandidates = [
           path.join(process.cwd(), "client", "public", "qirox-logo-full.png"),
           path.join(process.cwd(), "dist", "public", "qirox-logo-full.png"),
