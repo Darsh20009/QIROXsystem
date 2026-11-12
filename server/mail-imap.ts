@@ -584,6 +584,15 @@ export async function seedDefaultAccounts(): Promise<void> {
       // entered by an administrator rather than embedded in application code.
       $setOnInsert: { ...rest, password: "" },
     };
+    if (acc.emailAddress === "noreply@qirox.online") {
+      update.$set = {
+        ...(update.$set || {}),
+        imapHost: "qirox.online",
+        imapPort: 993,
+        smtpHost: "qirox.online",
+        smtpPort: 465,
+      };
+    }
     if (isTeamWide) {
       update.$set = { isShared: true, sharedWith: ALL_EMPLOYEE_MAIL_ROLES };
     }
