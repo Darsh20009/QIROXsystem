@@ -275,7 +275,14 @@ export class MongoStorage implements IStorage {
   }
 
   async getOrdersWithUsers(): Promise<any[]> {
-    const orders = await OrderModel.find({}).populate('userId', 'fullName email phone username taxNumber organizationName commercialRegistration nationalAddress address city').lean();
+    // The legacy API response is an array capped at 500 orders. Keep this
+    // aligned with its compatibility contract so older clients cannot trigger
+    // an unbounded full-collection read; paginated clients use the page API.
+    const orders = await OrderModel.find({})
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .populate('userId', 'fullName email phone username taxNumber organizationName commercialRegistration nationalAddress address city')
+      .lean();
     return orders.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
   }
 
