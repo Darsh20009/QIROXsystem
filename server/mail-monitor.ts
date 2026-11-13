@@ -6,6 +6,25 @@ import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 let monitorTimer: NodeJS.Timeout | null = null;
 let tickRunning = false;
 const initializedAccounts = new Set<string>();
+const MAILBOX_RETRY_DELAY_MS = 5 * 60 * 1000;
+
+export class MailboxRetryGate {
+  private retryAtByAccount = new Map<string, number>();
+
+  canAttempt(accountId: string, now = Date.now()): boolean {
+    return now >= (this.retryAtByAccount.get(accountId) || 0);
+  }
+
+  failed(accountId: string, now = Date.now()): void {
+    this.retryAtByAccount.set(accountId, now + MAILBOX_RETRY_DELAY_MS);
+  }
+
+  succeeded(accountId: string): void {
+    this.retryAtByAccount.delete(accountId);
+  }
+}
+
+const mailboxRetryGate = new MailboxRetryGate();
 
 export function recipientIds(account: any, usersByRole: Map<string, any[]>): string[] {
   if (account.accountType === "customer") {
@@ -103,6 +122,7 @@ async function pollMailboxes(): Promise<void> {
 
     for (const account of accounts) {
       const accountId = String(account._id);
+      if (!mailboxRetryGate.canAttempt(accountId)) continue;
       const cached = await MailCacheModel.find(
         { accountId, folder: "INBOX" },
         { uid: 1, whatsappNotifiedTo: 1, whatsappAlertRequested: 1 },
@@ -111,6 +131,7 @@ async function pollMailboxes(): Promise<void> {
 
       try {
         let messages = await fetchInbox(accountId, "INBOX", 100);
+        mailboxRetryGate.succeeded(accountId);
         if (!initializedAccounts.has(accountId)) {
           initializedAccounts.add(accountId);
           // Do not alert on an existing mailbox during first-time setup. A
@@ -178,8 +199,10 @@ async function pollMailboxes(): Promise<void> {
         }
       } catch (error: any) {
         // Mailbox failures are isolated; one unavailable account must not stop
-        // monitoring for every other employee/customer mailbox.
-        console.error(`[MailMonitor] ${account.emailAddress}:`, error?.message || error);
+        // monitoring for every other employee/customer mailbox. Back off
+        // failing mailboxes to avoid hammering IMAP servers every minute.
+        mailboxRetryGate.failed(accountId);
+        console.error(`[MailMonitor] ${account.emailAddress}:`, error?.message || error, "(retrying in 5 minutes)");
       }
     }
   } catch (error: any) {

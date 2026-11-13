@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildMailWhatsAppSummary, filterMailboxesForMonitoring, recipientIds, whatsappAlertTargets } from "./mail-monitor";
+import { buildMailWhatsAppSummary, filterMailboxesForMonitoring, MailboxRetryGate, recipientIds, whatsappAlertTargets } from "./mail-monitor";
 
 test("employee mailbox alerts route only to explicitly assigned employees", () => {
   const account = {
@@ -68,4 +68,17 @@ test("mail monitor skips unusable credentials and never retains passwords", () =
     { _id: "valid", emailAddress: "valid@example.com" },
   ]);
   assert.equal("password" in accounts[0], false);
+});
+
+test("mail monitor backs off failed mailboxes and clears the delay after success", () => {
+  const gate = new MailboxRetryGate();
+  const failedAt = 1000;
+
+  assert.equal(gate.canAttempt("mail-1", failedAt), true);
+  gate.failed("mail-1", failedAt);
+  assert.equal(gate.canAttempt("mail-1", failedAt + 60_000), false);
+  assert.equal(gate.canAttempt("mail-1", failedAt + 5 * 60_000), true);
+  gate.failed("mail-1", failedAt + 5 * 60_000);
+  gate.succeeded("mail-1");
+  assert.equal(gate.canAttempt("mail-1", failedAt + 5 * 60_000), true);
 });
