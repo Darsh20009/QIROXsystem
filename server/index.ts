@@ -1216,6 +1216,16 @@ const earlyFrontendStatic = express.static(path.resolve(process.cwd(), "dist/pub
 });
 app.use((req, res, next) => {
   if (applicationReady) return next();
+  if (req.path === "/health/live") {
+    return res.status(200).json({ status: "alive", starting: true });
+  }
+  if (req.path === "/health/ready") {
+    return res.status(503).json({
+      status: "not_ready",
+      error: "server_starting",
+      retryAfterSeconds: 2,
+    });
+  }
   if (req.path.startsWith("/api/")) {
     return res.status(503).json({ error: "server_starting", retryAfterSeconds: 2 });
   }

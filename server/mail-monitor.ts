@@ -53,6 +53,12 @@ export function buildMailWhatsAppSummary(account: any, message: any): string {
   ].join("\n");
 }
 
+export function filterMailboxesForMonitoring(accounts: any[]): any[] {
+  return accounts
+    .filter((account) => typeof account.password === "string" && account.password.trim().length > 0)
+    .map(({ password: _password, ...account }) => account);
+}
+
 async function sendWhatsAppMailAlert(account: any, message: any, target: { key: string; phone: string }): Promise<void> {
   const { waModule } = await import("./whatsapp-module");
   const marker = `${target.key}:summary`;
@@ -72,10 +78,13 @@ async function pollMailboxes(): Promise<void> {
   try {
     // Do not poll mailboxes that have not been configured with a password yet.
     // The seed path intentionally creates metadata-only records on fresh installs.
-    const accounts = await MailAccountModel.find(
-      { password: { $exists: true, $ne: "" } },
-      { password: 0 },
+    const storedAccounts = await MailAccountModel.find(
+      { password: { $exists: true, $nin: ["", null] } },
     ).lean() as any[];
+    // Query middleware clears credentials that can no longer be decrypted.
+    // Do not poll those mailboxes every minute or retain credentials in the
+    // monitor's account objects after checking that they are usable.
+    const accounts = filterMailboxesForMonitoring(storedAccounts);
     if (!accounts.length) return;
 
     const employees = await UserModel.find(

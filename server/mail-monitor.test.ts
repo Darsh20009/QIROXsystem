@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildMailWhatsAppSummary, recipientIds, whatsappAlertTargets } from "./mail-monitor";
+import { buildMailWhatsAppSummary, filterMailboxesForMonitoring, recipientIds, whatsappAlertTargets } from "./mail-monitor";
 
 test("employee mailbox alerts route only to explicitly assigned employees", () => {
   const account = {
@@ -55,4 +55,17 @@ test("customer mailbox notifications are suppressed when the owner is the CTO", 
     recipientIds({ accountType: "customer", ownerUserId: "client-1" }, usersByRole),
     ["client-1"],
   );
+});
+
+test("mail monitor skips unusable credentials and never retains passwords", () => {
+  const accounts = filterMailboxesForMonitoring([
+    { _id: "valid", emailAddress: "valid@example.com", password: "decrypted-password" },
+    { _id: "missing", emailAddress: "missing@example.com", password: "" },
+    { _id: "absent", emailAddress: "absent@example.com" },
+  ]);
+
+  assert.deepEqual(accounts, [
+    { _id: "valid", emailAddress: "valid@example.com" },
+  ]);
+  assert.equal("password" in accounts[0], false);
 });
