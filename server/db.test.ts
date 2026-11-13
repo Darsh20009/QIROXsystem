@@ -25,3 +25,24 @@ test("database bootstrap rejects a missing MongoDB URI before connecting", async
     else process.env.MONGODB_URI = previousUri;
   }
 });
+
+test("database bootstrap stops when the primary database is unavailable", async () => {
+  const previousUri = process.env.MONGODB_URI;
+  const originalInit = connManager.initFromEnv;
+
+  try {
+    process.env.MONGODB_URI = "mongodb://unavailable.example/test";
+    (connManager as any).initFromEnv = async () => {
+      throw new Error("simulated database outage");
+    };
+
+    await assert.rejects(
+      connectToDatabase(),
+      /simulated database outage/,
+    );
+  } finally {
+    (connManager as any).initFromEnv = originalInit;
+    if (previousUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previousUri;
+  }
+});
