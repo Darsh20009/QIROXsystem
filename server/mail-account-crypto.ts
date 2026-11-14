@@ -33,3 +33,18 @@ export function decryptMailPassword(value: string): string {
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 }
+
+export function isMailPasswordUsable(value: unknown): boolean {
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    decryptMailPassword(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function decryptMailAccount<T extends Record<string, any>>(account: T): T {
+  if (typeof account.password !== "string" || !account.password) return account;
+  return { ...account, password: decryptMailPassword(account.password) };
+}

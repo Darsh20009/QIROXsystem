@@ -19,6 +19,7 @@
 //   once the DI container is wired (Migration 010+).
 
 import { MailAccountModel } from "../../models";
+import { decryptMailAccount } from "../../mail-account-crypto";
 import type { MailAccountRecord } from "./types";
 
 // ── Read queries ───────────────────────────────────────────────────────────────
@@ -36,5 +37,5 @@ export async function findMailAccountByEmail(
   emailAddress: string,
 ): Promise<MailAccountRecord | null> {
   const doc = await MailAccountModel.findOne({ emailAddress }).lean() as MailAccountRecord | null;
-  return doc ?? null;
+  return doc ? decryptMailAccount(doc) : null;
 }

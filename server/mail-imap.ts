@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
 import { randomUUID } from "crypto";
 import { MailAccountModel, MailCacheModel, UserModel } from "./models";
-import { encryptMailPassword, isEncryptedMailPassword } from "./mail-account-crypto";
+import { decryptMailAccount, encryptMailPassword, isEncryptedMailPassword } from "./mail-account-crypto";
 import type { Document } from "mongoose";
 import { ALL_EMPLOYEE_MAIL_ROLES } from "./mail-access";
 
@@ -40,7 +40,7 @@ export interface EmailMessage {
 async function getAccountRaw(accountId: string): Promise<MailAccountDoc | null> {
   const doc = await MailAccountModel.findById(accountId).lean() as any;
   if (!doc) return null;
-  return { ...doc, id: doc._id.toString(), password: doc.password };
+  return decryptMailAccount({ ...doc, id: doc._id.toString() }) as MailAccountDoc;
 }
 
 export async function fetchInbox(
@@ -60,7 +60,10 @@ export async function fetchInbox(
     auth: { user: account.emailAddress, pass: account.password },
     logger: false,
     tls: { rejectUnauthorized: false },
-    socketTimeout: 8000,
+    // Mailbox polling downloads complete MIME sources for recent messages.
+    // cPanel can pause while streaming large messages, so the short connect
+    // timeout is not appropriate for an established FETCH session.
+    socketTimeout: 30_000,
     connectionTimeout: 8000,
   });
   // ImapFlow emits socket failures independently of the promise returned by
@@ -70,6 +73,7 @@ export async function fetchInbox(
 
   const messages: EmailMessage[] = [];
   let connected = false;
+  let stage = "connect";
 
   // Race against a timeout to avoid hanging the API response
   const connectWithTimeout = () => {
@@ -87,17 +91,19 @@ export async function fetchInbox(
   try {
     await connectWithTimeout();
     connected = true;
+    stage = "open mailbox";
     const mailbox = await client.mailboxOpen(folder);
     const total = mailbox.exists;
 
     if (total === 0 || offset >= total) {
-      await client.logout();
+      try { await client.logout(); } catch {}
       return [];
     }
 
     const end = Math.max(1, total - offset);
     const start = Math.max(1, end - maxMessages + 1);
     const range = `${start}:${end}`;
+    stage = "fetch messages";
 
     for await (const msg of client.fetch(range, { uid: true, flags: true, envelope: true, source: true })) {
       try {
@@ -141,14 +147,15 @@ export async function fetchInbox(
       }
     }
 
-    await client.logout();
-  } catch (err) {
+    stage = "logout";
+    try { await client.logout(); } catch {}
+  } catch (err: any) {
     // A timed-out connection cannot be logged out cleanly; calling logout on
     // that state emits a second unhandled "Connection not available" error.
     if (connected) {
       try { await client.logout(); } catch {}
     }
-    throw err;
+    throw new Error(`IMAP ${stage} failed: ${err?.message || "Unknown error"}`);
   }
 
   return messages.reverse();
@@ -324,7 +331,8 @@ export async function sendMail(opts: {
 }): Promise<{ sentCopySaved: boolean }> {
   const contextAccount = await getAccountRaw(opts.accountId);
   if (!contextAccount) throw new Error("Account not found");
-  const account = await MailAccountModel.findOne({ emailAddress: "noreply@qirox.online" }).lean() as MailAccountDoc | null;
+  const rawAccount = await MailAccountModel.findOne({ emailAddress: "noreply@qirox.online" }).lean() as MailAccountDoc | null;
+  const account = rawAccount ? decryptMailAccount(rawAccount) : null;
   if (!account?.password || !account.smtpHost) throw new Error("Default noreply account is not configured");
 
   const html = buildBrandedHtml({

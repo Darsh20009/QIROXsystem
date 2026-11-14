@@ -8,18 +8,21 @@
 //     and mapping to response DTOs.
 
 import { MailAccountModel, MailCacheModel, UserModel } from "../../models";
+import { decryptMailAccount } from "../../mail-account-crypto";
 import type { MailAccountEntity } from "./types";
 
 // ── Account operations ────────────────────────────────────────────────────────
 
 /** Q-01: Fetch all mail accounts. Returns lean documents (password included). */
 export async function findAllAccounts(): Promise<MailAccountEntity[]> {
-  return MailAccountModel.find().lean() as Promise<any[]>;
+  const accounts = await MailAccountModel.find().lean() as any[];
+  return accounts.map(decryptMailAccount) as MailAccountEntity[];
 }
 
 /** Q-02: Find a single account by MongoDB ID. Returns null if not found. */
 export async function findAccountById(id: string): Promise<MailAccountEntity | null> {
-  return MailAccountModel.findById(id).lean() as Promise<any>;
+  const account = await MailAccountModel.findById(id).lean() as any;
+  return account ? decryptMailAccount(account) as MailAccountEntity : null;
 }
 
 /** Q-03: Create a new account. Returns the saved Mongoose document. */
@@ -44,11 +47,12 @@ export async function updateAccountById(
   id: string,
   update: Record<string, any>
 ): Promise<MailAccountEntity | null> {
-  return MailAccountModel.findByIdAndUpdate(
+  const account = await MailAccountModel.findByIdAndUpdate(
     id,
     { $set: update },
     { new: true }
-  ).lean() as Promise<any>;
+  ).lean() as any;
+  return account ? decryptMailAccount(account) as MailAccountEntity : null;
 }
 
 /** Q-05: Delete an account by ID. */

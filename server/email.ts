@@ -1,6 +1,7 @@
 import { connManager } from "./connection-manager";
 import nodemailer from "nodemailer";
 import { cleanName } from "./utils";
+import { decryptMailAccount } from "./mail-account-crypto";
 
 function getEmailCfg() {
   const s = connManager.emailSettings;
@@ -80,7 +81,8 @@ async function sendWithRetry(send: () => Promise<boolean>, context: string): Pro
 export async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[], replyTo?: string): Promise<boolean> {
   try {
     const { MailAccountModel } = await import("./models");
-    const account = await MailAccountModel.findOne({ emailAddress: "noreply@qirox.online" }).lean() as any;
+    const rawAccount = await MailAccountModel.findOne({ emailAddress: "noreply@qirox.online" }).lean() as any;
+    const account = rawAccount ? decryptMailAccount(rawAccount) : null;
     if (!account?.smtpHost || !account?.password) {
       console.error("[Email] Default noreply account is not configured");
       return false;

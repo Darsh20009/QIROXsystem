@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { isTeamWideMailAccount } from "./mail-access";
+import { decryptMailAccount, isMailPasswordUsable } from "./mail-account-crypto";
 
 /**
  * Corporate Mail routes — IMAP/SMTP email account management for employees.
@@ -75,7 +76,14 @@ export async function registerMailRoutes(app: Express): Promise<void> {
         // Keep `assignedUser` for backward compatibility (first user)
         const assignedUser = assignedUsers[0] || null;
         const { password, ...rest } = a;
-        return { ...rest, id: a._id.toString(), assignedUserIds: ids, assignedUser, assignedUsers };
+        return {
+          ...rest,
+          id: a._id.toString(),
+          assignedUserIds: ids,
+          assignedUser,
+          assignedUsers,
+          credentialNeedsReset: !isMailPasswordUsable(password),
+        };
       }));
       res.json(withUsers);
     } catch (err: any) {
@@ -222,7 +230,7 @@ export async function registerMailRoutes(app: Express): Promise<void> {
         if (!acc) return res.status(404).json({ error: "Account not found" });
         creds = {
           emailAddress: acc.emailAddress,
-          password: password || acc.password,
+          password: password || decryptMailAccount(acc).password,
           imapHost: imapHost || acc.imapHost,
           imapPort: imapPort || acc.imapPort,
           smtpHost: smtpHost || acc.smtpHost,

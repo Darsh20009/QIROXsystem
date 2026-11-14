@@ -24,6 +24,7 @@ interface MailAccount {
   assignedUserIds?: string[];
   assignedUser?: AssignedUser | null;
   assignedUsers?: AssignedUser[];
+  credentialNeedsReset?: boolean;
 }
 
 interface Employee {
@@ -325,6 +326,14 @@ export default function AdminMailAccounts() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm">{account.displayName || account.emailAddress.split("@")[0]}</span>
                       <span className="text-xs text-black/40 dark:text-white/40 font-mono">{account.emailAddress}</span>
+                      {account.credentialNeedsReset && (
+                        <Badge
+                          className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                          data-testid={`badge-mail-password-reset-${account.id}`}
+                        >
+                          {L ? "تحتاج إعادة إدخال كلمة المرور" : "Password needs reset"}
+                        </Badge>
+                      )}
                       {account.isShared && (
                         <Badge className="text-[10px] bg-black/5 dark:bg-white/5 text-black/60 dark:text-white/60 border-0">
                           <Users className="w-2.5 h-2.5 mr-1" />{L ? "مشترك" : "Shared"}
