@@ -23,6 +23,7 @@ import {
   Layers3, SquareDashed, FlipVertical, MoveHorizontal
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import AudioTranscriptionPanel from "@/components/tools/AudioTranscriptionPanel";
 
 // ─── All 62 Tool Definitions ─────────────────────────────────────────────────
 export const ALL_TOOLS = [
@@ -33,6 +34,7 @@ export const ALL_TOOLS = [
   { id: "pdf-rotate",     cat: "pdf",         icon: RotateCw,       label: "تدوير PDF",               desc: "دوّر صفحات PDF بالزاوية التي تريدها",           color: "from-black dark:from-white to-black dark:to-white",      badge: "" },
   { id: "pdf-watermark",  cat: "pdf",         icon: Type,           label: "ختم مائي PDF",            desc: "أضف ختماً مائياً على جميع صفحات PDF",           color: "from-black dark:from-white to-black dark:to-white",    badge: "" },
   { id: "docx-to-pdf",    cat: "pdf",         icon: FileText,       label: "Word → PDF",              desc: "حوّل ملف Word إلى PDF بجودة عالية",             color: "from-black dark:from-white to-black dark:to-white",     badge: "" },
+  { id: "media-to-text",  cat: "media",       icon: Volume2,        label: "تحويل الصوت والفيديو إلى نص", desc: "فرّغ التسجيلات بالعربية والإنجليزية واستخرج الصوت من الفيديو", color: "from-violet-500 to-indigo-600", badge: "جديد" },
   // Tech Tools
   { id: "html-publish",   cat: "tech",        icon: Globe,          label: "نشر HTML",                desc: "انشر صفحة HTML واحصل على رابط مباشر",          color: "from-black dark:from-white to-black dark:to-white",       badge: "مميز" },
   { id: "url-shorten",    cat: "tech",        icon: Link2,          label: "اختصار الروابط",          desc: "قصّر أي رابط طويل واحصل على رابط قصير",        color: "from-black dark:from-white to-black dark:to-white",       badge: "" },
@@ -100,6 +102,7 @@ export const ALL_TOOLS = [
 ];
 
 export const CATEGORIES = [
+  { id: "media",        label: "🎙️ الصوت والفيديو",       color: "from-violet-500 to-indigo-600" },
   { id: "pdf",          label: "📄 أدوات PDF",            color: "from-black dark:from-white to-black dark:to-white"    },
   { id: "tech",         label: "⚡ خدمات تقنية",           color: "from-black dark:from-white to-black dark:to-white"    },
   { id: "text",         label: "📝 أدوات النصوص",          color: "from-black dark:from-white to-black dark:to-white" },
@@ -2034,6 +2037,7 @@ function NumberBasePanel() {
 
 function ToolPanel({ id }: { id: string }) {
   const map: Record<string, JSX.Element> = {
+    "media-to-text":  <AudioTranscriptionPanel />,
     "img-to-pdf":     <ImgToPdfPanel />,
     "pdf-merge":      <PdfMergePanel />,
     "pdf-split":      <PdfSplitPanel />,

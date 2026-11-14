@@ -69,6 +69,13 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
 });
+const mediaProcessLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "تم الوصول إلى حد المعالجة المؤقت. حاول بعد 15 دقيقة." },
+});
 const whatsappLoginStatusLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 120,
@@ -17912,6 +17919,134 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       res.json({ html: result.value, messages: result.messages });
     } catch (e) {
       res.status(500).json({ error: "فشل التحويل" });
+    }
+  });
+
+  // Audio/video transcription and audio extraction. Uploaded media is held in
+  // memory only; no source file or transcript is persisted by this endpoint.
+  const mediaUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 100 * 1024 * 1024, files: 1, fields: 2, parts: 4 },
+    fileFilter: (_req, file, callback) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const allowed = new Set([
+        ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".opus", ".webm",
+        ".mp4", ".mov", ".mkv", ".avi",
+      ]);
+      if (!allowed.has(ext)) return callback(new Error("صيغة الملف غير مدعومة"));
+      callback(null, true);
+    },
+  });
+
+  const runMediaUpload = (req: any, res: any, next: any) => {
+    mediaUpload.single("file")(req, res, (error: any) => {
+      if (!error) return next();
+      if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({ error: "الحد الأقصى لحجم الملف 100 ميجابايت" });
+      }
+      return res.status(400).json({ error: error.message || "تعذر استقبال الملف" });
+    });
+  };
+
+  async function convertMediaToMp3(input: Buffer): Promise<Buffer> {
+    const { spawn } = await import("node:child_process");
+    return await new Promise<Buffer>((resolve, reject) => {
+      const ffmpeg = spawn("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
+        "-vn", "-ac", "1", "-ar", "16000", "-b:a", "64k",
+        "-f", "mp3", "pipe:1",
+      ], { stdio: ["pipe", "pipe", "pipe"] });
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      let stderr = "";
+      let settled = false;
+      const maxBytes = 24 * 1024 * 1024;
+      const timeout = setTimeout(() => ffmpeg.kill("SIGKILL"), 4 * 60 * 1000);
+      const fail = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        reject(error);
+      };
+      ffmpeg.stdout.on("data", (chunk: Buffer) => {
+        totalBytes += chunk.length;
+        if (totalBytes > maxBytes) {
+          ffmpeg.kill("SIGKILL");
+          fail(new Error("OUTPUT_TOO_LARGE"));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      ffmpeg.stderr.on("data", (chunk: Buffer) => {
+        if (stderr.length < 2000) stderr += chunk.toString();
+      });
+      ffmpeg.on("error", (error: Error) => fail(error));
+      ffmpeg.on("close", (code: number | null) => {
+        if (settled) return;
+        clearTimeout(timeout);
+        if (code !== 0 || !totalBytes) return fail(new Error(stderr || "MEDIA_CONVERSION_FAILED"));
+        settled = true;
+        resolve(Buffer.concat(chunks, totalBytes));
+      });
+      ffmpeg.stdin.on("error", () => {});
+      ffmpeg.stdin.end(input);
+    });
+  }
+
+  app.post("/api/tools/media-process", mediaProcessLimiter, (req, res, next) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "يجب تسجيل الدخول لاستخدام الأداة" });
+    next();
+  }, runMediaUpload, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "اختر ملفاً صوتياً أو فيديو" });
+    const action = req.body?.action === "extract" ? "extract" : "transcribe";
+    const file = req.file as Express.Multer.File;
+    const ext = path.extname(file.originalname).toLowerCase();
+    const isVideo = [".mp4", ".mov", ".mkv", ".avi"].includes(ext) || file.mimetype.startsWith("video/");
+
+    try {
+      let audioBuffer = file.buffer;
+      let audioName = file.originalname;
+      let audioMimeType = file.mimetype;
+      if (action === "extract" || isVideo || file.size > 24 * 1024 * 1024) {
+        audioBuffer = await convertMediaToMp3(file.buffer);
+        audioName = `${path.basename(file.originalname, ext) || "audio"}.mp3`;
+        audioMimeType = "audio/mpeg";
+      }
+
+      if (audioBuffer.length > 24 * 1024 * 1024) {
+        return res.status(413).json({ error: "حجم الصوت بعد المعالجة يتجاوز الحد المسموح. جرّب ملفاً أقصر." });
+      }
+
+      if (action === "extract") {
+        const safeName = `${path.basename(file.originalname, ext) || "audio"}-audio.mp3`.replace(/["\r\n]/g, "_");
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+        return res.send(audioBuffer);
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ error: "خدمة التفريغ غير مفعّلة حالياً" });
+      }
+      const { getOpenAIClient } = await import("./lib/openai-client");
+      const { toFile } = await import("openai/uploads");
+      const language = ["ar", "en"].includes(req.body?.language) ? req.body.language : undefined;
+      const transcription = await getOpenAIClient().audio.transcriptions.create({
+        file: await toFile(audioBuffer, audioName, { type: audioMimeType || "application/octet-stream" }),
+        model: "gpt-4o-transcribe",
+        response_format: "json",
+        ...(language ? { language } : {}),
+      });
+      return res.json({ text: transcription.text || "" });
+    } catch (error: any) {
+      if (error?.message === "OUTPUT_TOO_LARGE") {
+        return res.status(413).json({ error: "التسجيل طويل جداً بعد استخراج الصوت. جرّب ملفاً أقصر." });
+      }
+      if (error?.message === "MEDIA_CONVERSION_FAILED") {
+        return res.status(400).json({ error: "تعذر استخراج الصوت من هذا الفيديو. جرّب صيغة فيديو أخرى." });
+      }
+      console.error("[MEDIA PROCESS] Failed to process uploaded audio/video", error?.message || "unknown error");
+      if (error?.status === 429) return res.status(429).json({ error: "تجاوزت الخدمة حد الاستخدام مؤقتاً. حاول لاحقاً." });
+      return res.status(502).json({ error: "فشلت معالجة الملف. تأكد من وضوح الصوت وحاول مرة أخرى." });
     }
   });
 
