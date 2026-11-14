@@ -11,6 +11,7 @@ export {
   generateQuotationPdf,
   generateReceiptPdf,
   generateEmployeeWorkContractPdf,
+  generateTranscriptPdf,
 } from "../pdf";
 
 export type {

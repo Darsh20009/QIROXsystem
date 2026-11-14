@@ -1714,3 +1714,64 @@ export async function generateEmployeeWorkContractPdf(
 
   return pdfDoc.save();
 }
+
+export async function generateTranscriptPdf(data: {
+  text: string;
+  language?: "ar" | "en";
+}): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+  const arabicFont = await embedArabicFont(pdfDoc, "transcription");
+  const latinFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const language = data.language || (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(data.text) ? "ar" : "en");
+  const title = language === "ar" ? "تفريغ التسجيل" : "Audio transcription";
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const margin = 48;
+  const lineHeight = 18;
+  const color = rgb(0.12, 0.15, 0.19);
+  const muted = rgb(0.40, 0.44, 0.49);
+  const pages: any[] = [];
+  let page: any;
+  let y = 0;
+
+  const addPage = () => {
+    page = pdfDoc.addPage([pageWidth, pageHeight]);
+    pages.push(page);
+    page.drawRectangle({ x: 0, y: pageHeight - 7, width: pageWidth, height: 7, color: rgb(0.32, 0.25, 0.73) });
+    drawMixedText(page, title, pageWidth - margin, pageHeight - 44, 16, color, arabicFont);
+    page.drawLine({
+      start: { x: margin, y: pageHeight - 60 },
+      end: { x: pageWidth - margin, y: pageHeight - 60 },
+      thickness: 0.7,
+      color: rgb(0.86, 0.87, 0.90),
+    });
+    y = pageHeight - 88;
+  };
+  const ensureSpace = () => {
+    if (y < 54) addPage();
+  };
+
+  addPage();
+  for (const paragraph of data.text.replace(/\r\n/g, "\n").split("\n")) {
+    if (!paragraph.trim()) {
+      y -= lineHeight * 0.6;
+      ensureSpace();
+      continue;
+    }
+    const lines = wrapPdfText(paragraph, pageWidth - margin * 2, 10.5, latinFont, arabicFont);
+    for (const line of lines) {
+      ensureSpace();
+      drawMixedText(page, line, pageWidth - margin, y, 10.5, color, arabicFont);
+      y -= lineHeight;
+    }
+  }
+
+  pages.forEach((pdfPage, index) => {
+    const pageLabel = language === "ar" ? `صفحة ${index + 1}` : `Page ${index + 1}`;
+    drawMixedText(pdfPage, pageLabel, pageWidth - margin, 28, 8, muted, arabicFont);
+  });
+  pdfDoc.setTitle(title);
+  pdfDoc.setSubject("Audio transcription");
+  return pdfDoc.save();
+}

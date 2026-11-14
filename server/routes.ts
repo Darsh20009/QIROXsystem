@@ -17926,7 +17926,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
   // memory only; no source file or transcript is persisted by this endpoint.
   const mediaUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 100 * 1024 * 1024, files: 1, fields: 2, parts: 4 },
+    limits: { fileSize: 100 * 1024 * 1024, files: 1, fields: 3, parts: 5 },
     fileFilter: (_req, file, callback) => {
       const ext = path.extname(file.originalname).toLowerCase();
       const allowed = new Set([
@@ -18007,6 +18007,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       let audioBuffer = file.buffer;
       let audioName = file.originalname;
       let audioMimeType = file.mimetype;
+      const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim().slice(0, 1000) : "";
       if (action === "extract" || isVideo || file.size > 24 * 1024 * 1024) {
         audioBuffer = await convertMediaToMp3(file.buffer);
         audioName = `${path.basename(file.originalname, ext) || "audio"}.mp3`;
@@ -18034,6 +18035,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         file: await toFile(audioBuffer, audioName, { type: audioMimeType || "application/octet-stream" }),
         model: "gpt-4o-transcribe",
         response_format: "json",
+        ...(prompt ? { prompt } : {}),
         ...(language ? { language } : {}),
       });
       return res.json({ text: transcription.text || "" });
@@ -18047,6 +18049,27 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       console.error("[MEDIA PROCESS] Failed to process uploaded audio/video", error?.message || "unknown error");
       if (error?.status === 429) return res.status(429).json({ error: "تجاوزت الخدمة حد الاستخدام مؤقتاً. حاول لاحقاً." });
       return res.status(502).json({ error: "فشلت معالجة الملف. تأكد من وضوح الصوت وحاول مرة أخرى." });
+    }
+  });
+
+  app.post("/api/tools/transcription-pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "يجب تسجيل الدخول لتنزيل الملف" });
+    const text = typeof req.body?.text === "string" ? req.body.text : "";
+    if (!text.trim()) return res.status(400).json({ error: "النص مطلوب لإنشاء ملف PDF" });
+    if (text.length > 250_000) return res.status(413).json({ error: "النص طويل جداً لإنشاء ملف PDF واحد" });
+    try {
+      const { generateTranscriptPdf } = await import("./services/pdf.service");
+      const pdfBytes = await generateTranscriptPdf({
+        text,
+        language: ["ar", "en"].includes(req.body?.language) ? req.body.language : undefined,
+      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", 'attachment; filename="transcription.pdf"');
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.send(Buffer.from(pdfBytes));
+    } catch (error: any) {
+      console.error("[TRANSCRIPTION PDF] PDF generation failed", error?.message || "unknown error");
+      return res.status(500).json({ error: "تعذر إنشاء PDF. حاول مرة أخرى." });
     }
   });
 

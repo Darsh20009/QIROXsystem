@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
@@ -18,12 +19,6 @@ function saveBlob(blob: Blob, name: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[char] || char);
-}
-
 export default function AudioTranscriptionPanel() {
   const { lang, dir } = useI18n();
   const isArabic = lang === "ar";
@@ -33,7 +28,9 @@ export default function AudioTranscriptionPanel() {
   const [action, setAction] = useState<Action>("transcribe");
   const [language, setLanguage] = useState<"auto" | "ar" | "en">("auto");
   const [transcript, setTranscript] = useState("");
+  const [vocabulary, setVocabulary] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [error, setError] = useState("");
 
   const isVideo = file?.type.startsWith("video/") || /\.(mp4|mov|mkv|avi)$/i.test(file?.name || "");
@@ -47,6 +44,7 @@ export default function AudioTranscriptionPanel() {
       body.append("file", file);
       body.append("action", action);
       body.append("language", language);
+      body.append("prompt", vocabulary.slice(0, 1000));
       const response = await fetch("/api/tools/media-process", { method: "POST", body });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -73,16 +71,26 @@ export default function AudioTranscriptionPanel() {
     }
   }
 
-  function downloadPdf() {
+  async function downloadPdf() {
     if (!transcript.trim()) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast({ title: isArabic ? "اسمح بفتح النوافذ المنبثقة لحفظ PDF" : "Allow pop-ups to save the PDF", variant: "destructive" });
-      return;
+    setPdfBusy(true);
+    try {
+      const response = await fetch("/api/tools/transcription-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: transcript, language }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || (isArabic ? "تعذر إنشاء PDF" : "Could not create the PDF"));
+      }
+      saveBlob(await response.blob(), "transcription.pdf");
+      toast({ title: isArabic ? "تم تنزيل ملف PDF" : "PDF downloaded" });
+    } catch (cause: any) {
+      toast({ title: cause?.message || (isArabic ? "تعذر إنشاء PDF" : "Could not create the PDF"), variant: "destructive" });
+    } finally {
+      setPdfBusy(false);
     }
-    const title = isArabic ? "تفريغ التسجيل" : "Transcription";
-    printWindow.document.write(`<!doctype html><html lang="${isArabic ? "ar" : "en"}" dir="${isArabic ? "rtl" : "ltr"}"><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,Tahoma,sans-serif;max-width:850px;margin:48px auto;padding:0 28px;color:#171717;line-height:1.9}h1{font-size:22px;border-bottom:1px solid #ddd;padding-bottom:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:16px/1.9 Arial,Tahoma,sans-serif;direction:${isArabic ? "rtl" : "ltr"};unicode-bidi:plaintext}@media print{body{margin:18mm auto}}</style></head><body><h1>${title}</h1><pre>${escapeHtml(transcript)}</pre><script>window.onload=()=>window.print()<\/script></body></html>`);
-    printWindow.document.close();
   }
 
   return (
@@ -103,13 +111,20 @@ export default function AudioTranscriptionPanel() {
       </div>
 
       {action === "transcribe" && (
-        <div>
-          <label className="mb-2 block text-xs font-semibold text-black/50 dark:text-white/50">{isArabic ? "لغة التسجيل" : "Recording language"}</label>
-          <select value={language} onChange={(event) => setLanguage(event.target.value as typeof language)} className="h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-black dark:border-white/10 dark:bg-gray-900 dark:text-white">
-            <option value="auto">{isArabic ? "تحديد تلقائي" : "Auto-detect"}</option>
-            <option value="ar">{isArabic ? "العربية" : "Arabic"}</option>
-            <option value="en">English</option>
-          </select>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-black/50 dark:text-white/50">{isArabic ? "لغة التسجيل" : "Recording language"}</label>
+            <select value={language} onChange={(event) => setLanguage(event.target.value as typeof language)} className="h-10 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-black dark:border-white/10 dark:bg-gray-900 dark:text-white">
+              <option value="auto">{isArabic ? "تحديد تلقائي" : "Auto-detect"}</option>
+              <option value="ar">{isArabic ? "العربية" : "Arabic"}</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-black/50 dark:text-white/50">{isArabic ? "أسماء أو مصطلحات خاصة (اختياري)" : "Names or special terms (optional)"}</label>
+            <Input value={vocabulary} onChange={(event) => setVocabulary(event.target.value.slice(0, 1000))} maxLength={1000} placeholder={isArabic ? "مثال: أسماء الأشخاص، الشركات، أو المصطلحات" : "Names, companies, or technical terms"} />
+            <p className="mt-1 text-[11px] text-black/40 dark:text-white/40">{isArabic ? "تساعد هذه الكلمات على تحسين كتابة الأسماء والمصطلحات في التفريغ." : "These hints can improve spelling of names and technical terms."}</p>
+          </div>
         </div>
       )}
 
@@ -171,13 +186,13 @@ export default function AudioTranscriptionPanel() {
               <Button variant="outline" size="sm" onClick={() => saveBlob(new Blob([transcript], { type: "text/plain;charset=utf-8" }), "transcription.txt")}>
                 <Download className="me-1 h-4 w-4" />TXT
               </Button>
-              <Button variant="outline" size="sm" onClick={downloadPdf}>
-                <Download className="me-1 h-4 w-4" />PDF
+              <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfBusy}>
+                {pdfBusy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Download className="me-1 h-4 w-4" />}{pdfBusy ? (isArabic ? "جارٍ الإنشاء" : "Creating") : "PDF"}
               </Button>
             </div>
           </div>
           <Textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={12} className="min-h-48 leading-7" dir="auto" aria-label={isArabic ? "النص المستخرج" : "Transcript text"} />
-          <p className="text-xs text-black/40 dark:text-white/40">{isArabic ? "لإنشاء PDF، اختر «حفظ كـ PDF» في نافذة الطباعة." : "To create a PDF, choose “Save as PDF” in the print dialog."}</p>
+          <p className="text-xs text-black/40 dark:text-white/40">{isArabic ? "يمكنك تعديل النص قبل تنزيله." : "You can edit the transcript before downloading it."}</p>
         </div>
       )}
     </div>
