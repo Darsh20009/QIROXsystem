@@ -88,5 +88,6 @@
 - [SaaS template build isolation](saas-template-build-isolation.md) — use independent installs; parent upgrades may leave firewall-blocked transitive packages pinned in the lockfile.
 - [Draft promotion side effects](draft-promotion-side-effects.md) — Link drafts to existing client projects directly; rerunning order provisioning can alter GitHub settings.
 - [SaaS tenant rebranding](saas-tenant-rebranding.md) — Inject customer names/assets at generation time; rebrand visible copy without rewriting QIROX platform endpoints.
+- [Qmail product scope](qmail-product-scope.md) — Qmail is a page at `/qmail` inside QIROX, not a standalone application.
 - [Android TWA screen sharing](android-twa-screen-sharing.md) — Keep the existing Android TWA; only browser-supported screen capture is in scope unless native Android is explicitly approved.
 - [QIROX branded email identity](qirox-branded-email-identity.md) — User confirmed QIROX has a registered trademark and verified Apple Business account; domain authentication still needs validation.
