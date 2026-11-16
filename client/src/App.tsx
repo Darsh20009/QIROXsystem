@@ -452,6 +452,7 @@ function AdminRouter() {
         <Route path="/employee" component={EmployeeWelcome} />
         <Route path="/employee/workspace" component={EmployeeWorkspace} />
         <Route path="/employee/profile" component={EmployeeHub} />
+        <Route path="/qmail" component={EmployeeMail} />
         <Route path="/employee/mail" component={EmployeeMail} />
         <Route path="/admin/mail-accounts" component={AdminMailAccounts} />
         <Route path="/employee/demos" component={EmployeeDemos} />
@@ -1271,8 +1272,9 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
 function AppInner() {
   const [location, navigate] = useLocation();
-  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location === "/employee/qi-agent" || location === "/employee/studio" || location === "/admin/studio" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location === "/employee/mail" || location === "/qmail" || location === "/employee/qi-agent" || location === "/employee/studio" || location === "/admin/studio" || location.startsWith("/project/") && location.endsWith("/workspace");
   const hideCompanion = location === "/employee/mail"
+    || location === "/qmail"
     || location === "/admin/mail-accounts"
     || location === "/admin/email-marketing"
     || location === "/admin/email-guide";
